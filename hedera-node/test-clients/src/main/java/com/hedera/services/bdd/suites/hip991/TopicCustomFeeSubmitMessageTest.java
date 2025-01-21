@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.maxCustomFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.maxHtsCustomFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -203,8 +204,36 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         }
 
         @HapiTest
+        @DisplayName("Submit to topic with fee with 2 layers should have 0 child records")
+        final Stream<DynamicTest> validateNumberOfChildRecords2Layers() {
+            return hapiTest(flattened(
+                    cryptoCreate("collector").balance(0L),
+                    cryptoCreate("treasury"),
+                    // create token with custom fee
+                    tokenCreate("token").treasury("treasury").withCustom(fixedHbarFee(10, "collector")),
+                    // associate token to collector and submitter
+                    tokenAssociate("collector", "token"),
+                    tokenAssociate(SUBMITTER, "token"),
+                    cryptoTransfer(moving(2, "token").between("treasury", SUBMITTER)),
+
+                    // create topic with 2 layer fees
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(1, "token", "collector")),
+                    // submit message
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    // validate 0 child records and 2 assessed custom fees
+                    withOpContext((spec, log) -> {
+                        final var record =
+                                getTxnRecord("submit").andAllChildRecords().hasAssessedCustomFeesSize(2);
+                        allRunFor(spec, record);
+                        assertEquals(0, record.getChildRecords().size());
+                    }),
+                    // assert topic fee collector balance
+                    getAccountBalance("collector").hasTinyBars(10).hasTokenBalance("token", 1)));
+        }
+
+        @HapiTest
         @DisplayName("Validate the number of child records of the submit message transaction")
-        final Stream<DynamicTest> validateNumberOfChildRecords() {
+        final Stream<DynamicTest> validateNumberOfChildRecords10fees() {
             return hapiTest(flattened(
                     // create 9 denomination tokens and transfer them to the submitter
                     createMultipleTokensWith2LayerFees(SUBMITTER, 9),

@@ -48,7 +48,6 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
@@ -174,12 +173,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
             // create synthetic body and dispatch crypto transfer
             final var syntheticBodies = customFeeAssessor.assessCustomFee(feesToBeCharged, handleContext.payer());
-            // build a list with the top level custom fees
-            final var assessedCustomFees =
-                    new ArrayList<>(buildTopLevelAssessedCustomFees(handleContext.payer(), syntheticBodies));
+            final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
 
-            // dispatch transfers to pay the fees, but suppress any child records. All assessed fees will be
-            // externalized in to the top level txn record/stream
+            // dispatch transfers to pay the fees, but suppress any child records.
+            // All assessed fees will be externalized in to the top level txn record/stream
             for (final var syntheticBody : syntheticBodies) {
                 final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
@@ -190,11 +187,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                         SUPPRESSING_TRANSACTION_CUSTOMIZER));
 
                 validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
-
-                // check if there is nested custom fees
-                if (!dispatchedStreamBuilder.getAssessedCustomFees().isEmpty()) {
-                    assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
-                }
+                assessedCustomFees.addAll(
+                        customFeeAssessor.assessedCustomFees(handleContext.payer(), dispatchedStreamBuilder));
             }
 
             // externalize all custom fees
@@ -509,36 +503,5 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + op.message().length())
                 .addNetworkRamByteSeconds((LONG_SIZE + TX_HASH_SIZE) * RECEIPT_STORAGE_TIME_SEC)
                 .calculate();
-    }
-
-    private List<AssessedCustomFee> buildTopLevelAssessedCustomFees(
-            AccountID payer, List<CryptoTransferTransactionBody> bodies) {
-        final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
-        for (final var body : bodies) {
-            final var customFeeBuilder = AssessedCustomFee.newBuilder().effectivePayerAccountId(payer);
-            if (body.tokenTransfers().isEmpty()) {
-                final var aa = body.transfers().accountAmounts();
-                for (final var amount : aa) {
-                    if (amount.amount() > 0) {
-                        customFeeBuilder.amount(amount.amount());
-                        customFeeBuilder.feeCollectorAccountId(amount.accountID());
-                    }
-                }
-            } else {
-                final var tokenTransferLists = body.tokenTransfers();
-                for (final var tokenTransferList : tokenTransferLists) {
-                    customFeeBuilder.tokenId(tokenTransferList.token());
-                    for (final var transfer : tokenTransferList.transfers()) {
-                        if (transfer.amount() > 0) {
-                            customFeeBuilder.amount(transfer.amount());
-                            customFeeBuilder.feeCollectorAccountId(transfer.accountID());
-                        }
-                    }
-                }
-            }
-            assessedCustomFees.add(customFeeBuilder.build());
-        }
-
-        return assessedCustomFees;
     }
 }
