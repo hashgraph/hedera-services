@@ -61,7 +61,7 @@ jobs:
           echo "Prefixed number is: $build_tag"
 
           # Export to Github output and Github summary
-          BUILD_TAG=BUILD_TAG=$build_tag
+          BUILD_TAG=$build_tag
           echo "BUILD_TAG=$build_tag" >> ${GITHUB_OUTPUT}
           echo "Build Tag to Release (Step Process Input): ${BUILD_TAG}" >> ${GITHUB_STEP_SUMMARY}
 
