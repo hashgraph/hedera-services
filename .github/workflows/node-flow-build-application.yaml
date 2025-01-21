@@ -51,7 +51,7 @@ on:
   push:
     branches:
       - main
-      - 'release/*'
+      - "release/*"
 
 defaults:
   run:
@@ -103,4 +103,4 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{
             "ref": "${{ github.ref }}"
-          }'
+            }'
