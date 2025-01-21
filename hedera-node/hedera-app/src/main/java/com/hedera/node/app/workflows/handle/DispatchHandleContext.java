@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -60,6 +61,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -105,6 +107,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ThrottleAdviser throttleAdviser;
     private final FeeAccumulator feeAccumulator;
     private Map<AccountID, Long> dispatchPaidRewards;
+    private final TransactionChecker transactionChecker;
 
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
@@ -128,7 +131,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser,
-            @NonNull final FeeAccumulator feeAccumulator) {
+            @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final TransactionChecker transactionChecker) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -153,6 +157,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
         this.networkInfo = requireNonNull(networkInfo);
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     @NonNull
@@ -396,5 +401,16 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NodeInfo creatorInfo() {
         return creatorInfo;
+    }
+
+    @Nullable
+    @Override
+    public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws HandleException {
+        try {
+            final var transactionInfo = transactionChecker.check(tx, null);
+            return transactionInfo.txBody();
+        } catch (PreCheckException e) {
+            throw new HandleException(e.responseCode());
+        }
     }
 }

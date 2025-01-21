@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -120,6 +121,7 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public ChildDispatchFactory(
@@ -130,7 +132,8 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TransactionChecker transactionChecker) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -139,6 +142,7 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -283,7 +287,8 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                childFeeAccumulator);
+                childFeeAccumulator,
+                transactionChecker);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(

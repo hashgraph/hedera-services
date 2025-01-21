@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,6 +105,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -249,6 +250,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private Predicate<Key> signatureTest;
+
+    @Mock
+    private TransactionChecker transactionChecker;
 
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
@@ -780,7 +784,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                feeAccumulator,
+                transactionChecker);
     }
 
     private void mockNeeded() {

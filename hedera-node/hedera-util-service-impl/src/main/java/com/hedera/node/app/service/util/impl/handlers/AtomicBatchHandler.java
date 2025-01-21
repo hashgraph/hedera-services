@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
+import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.util.records.AtomicBatchStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -39,9 +41,7 @@ public class AtomicBatchHandler implements TransactionHandler {
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {
-        // exists for Dagger injection
-    }
+    public AtomicBatchHandler() {}
 
     /**
      * Performs checks independent of state or context.
@@ -66,14 +66,18 @@ public class AtomicBatchHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
-        requireNonNull(handleContext);
-        // TODO
-        if (!handleContext
-                .configuration()
-                .getConfigData(AtomicBatchConfig.class)
-                .isEnabled()) {
-            return;
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
+        final var batchConfig = context.configuration().getConfigData(AtomicBatchConfig.class);
+        final var op = context.body().atomicBatchOrThrow();
+        if (batchConfig.isEnabled()) {
+            final var transactions = op.transactions();
+            for (final var transaction : transactions) {
+                final var body = context.bodyFromTransaction(transaction);
+                final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+                final var dispatchOptions = atomicBatchDispatch(payerId, body, AtomicBatchStreamBuilder.class);
+                context.dispatch(dispatchOptions);
+            }
         }
     }
 }
