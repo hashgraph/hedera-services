@@ -175,13 +175,6 @@ jobs:
       - name: View Status After Running Semantic Release
         run: git status
 
-      # TODO: Remove delete tag step before merging to mainline (we want to keep the new tag)
-      - name: Delete Created Tag
-        if: always()
-        run: |
-          git tag --delete v${{ steps.next_version.outputs.next_release }}
-          git push --delete origin v${{ steps.next_version.outputs.next_release }}
-
       - name: Ensure Branch Not in Use and Delete Worktree
         if: always()
         run: |
