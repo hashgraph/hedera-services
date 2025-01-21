@@ -24,18 +24,6 @@ on:
       ref:
         required: true
         description: "The github branch or tag that triggered the workflow"
-      author:
-        required: false
-        description: "The author of the commit"
-        default: ""
-      msg:
-        required: false
-        description: "The message on the head commit"
-        default: ""
-      sha:
-        required: false
-        description: "The commit ID of the commit that triggered the workflow"
-        default: ""
 
 defaults:
   run:
@@ -181,9 +169,7 @@ jobs:
 
       - name: Check Integration Job State
         id: check-integration-job
-        if: ${{ needs.release-branch.result == 'success' &&
-            (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
-            !cancelled() }}
+        if: ${{ needs.release-branch.result == 'success' && !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -193,9 +179,7 @@ jobs:
           echo "enabled=${JOB_ENABLED}" >> $GITHUB_OUTPUT
 
       - name: Trigger ZXF Deploy Integration
-        if: ${{ needs.release-branch.result == 'success' && steps.check-integration-job.outputs.enabled == 'true' &&
-          (inputs.author != '' && inputs.msg != '' && inputs.sha != '') &&
-          !cancelled() }}
+        if: ${{ needs.release-branch.result == 'success' && steps.check-integration-job.outputs.enabled == 'true' && !cancelled() }}
         uses: step-security/workflow-dispatch@4d1049025980f72b1327cbfdeecb07fe7a20f577 # v1.2.4
         with:
           workflow: .github/workflows/node-zxf-deploy-integration.yaml
@@ -203,10 +187,7 @@ jobs:
           ref: main # ensure we are always using the workflow definition from the main branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{
-              "ref": "${{ inputs.ref }}",
-              "author": "${{ inputs.author }}",
-              "msg": "${{ inputs.msg }}",
-              "sha": "${{ inputs.sha }}"
+              "ref": "${{ inputs.ref }}"
             }'
 
   update-hedera-protobufs:

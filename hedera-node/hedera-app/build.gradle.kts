@@ -144,6 +144,9 @@ tasks.register<JavaExec>("run") {
     workingDir = nodeWorkingDir.get().asFile
     jvmArgs = listOf("-cp", "data/lib/*:data/apps/*")
     mainClass.set("com.hedera.node.app.ServicesMain")
+
+    // Add arguments for the application to run a local node
+    args = listOf("-local", "0")
 }
 
 val cleanRun =

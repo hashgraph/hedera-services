@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -51,7 +50,6 @@ public class CesEvent extends AbstractSerializableHashable
     public static final long UNDEFINED = -1;
 
     public static final long CLASS_ID = 0xe250a9fbdcc4b1baL;
-    private static final int CES_EVENT_VERSION_ORIGINAL = 1;
     private static final int CES_EVENT_VERSION_PBJ_EVENT = 2;
     private static final int CONSENSUS_DATA_CLASS_VERSION = 2;
 
@@ -108,7 +106,6 @@ public class CesEvent extends AbstractSerializableHashable
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         this.platformEvent = switch (version) {
-            case CES_EVENT_VERSION_ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(in, false);
             case CES_EVENT_VERSION_PBJ_EVENT -> new PlatformEvent(in.readPbjRecord(GossipEvent.PROTOBUF));
             default -> throw new IOException("Unsupported version " + version);};
 

@@ -52,7 +52,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Compile
-        run: ./gradlew assemble --scan
+        run: ./gradlew assemble
 
       - name: Disable Gradle Configuration Cache
         run: sed -i 's/^org.gradle.configuration-cache=.*$/org.gradle.configuration-cache=false/' gradle.properties

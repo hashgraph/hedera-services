@@ -34,6 +34,9 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -47,11 +50,13 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,26 +65,25 @@ import org.apache.logging.log4j.Logger;
  * also saves them to disk in a comma separated value (.csv) file. Each transaction is 100 random bytes. So
  * StatsSigningDemoState.handleTransaction doesn't actually do anything.
  */
-public class StatsSigningTestingToolMain implements SwirldMain {
+public class StatsSigningTestingToolMain implements SwirldMain<StatsSigningTestingToolState> {
     // the first four come from the parameters in the config.txt file
 
+    public static final byte SYSTEM_TRANSACTION_MARKER = 0;
     private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolMain.class);
 
     static {
         try {
             logger.info(STARTUP.getMarker(), "Registering StatsSigningTestingToolState with ConstructableRegistry");
-            ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
+            final ConstructableRegistry constructableRegistry = ConstructableRegistry.getInstance();
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(StatsSigningTestingToolState.class, () -> {
-                        StatsSigningTestingToolState statsSigningTestingToolState = new StatsSigningTestingToolState(
-                                FAKE_MERKLE_STATE_LIFECYCLES,
-                                version -> new BasicSoftwareVersion(version.major()),
-                                () -> null);
+                        StatsSigningTestingToolState statsSigningTestingToolState =
+                                new StatsSigningTestingToolState(version -> new BasicSoftwareVersion(version.major()));
                         return statsSigningTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
             logger.info(STARTUP.getMarker(), "StatsSigningTestingToolState is registered with ConstructableRegistry");
-        } catch (ConstructableRegistryException e) {
+        } catch (final ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register StatsSigningTestingToolState", e);
             throw new RuntimeException(e);
         }
@@ -257,7 +261,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
         if (transPerSecToCreate > -1) { // if not unlimited (-1 means unlimited)
             // ramp up the TPS to the expected value
-            long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
+            final long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
             double rampUpTPS = 0;
             if (elapsedTime < TPS_RAMP_UP_WINDOW_MILLISECONDS) {
                 rampUpTPS = expectedTPS * elapsedTime / ((double) (TPS_RAMP_UP_WINDOW_MILLISECONDS));
@@ -297,13 +301,16 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
-        final PlatformMerkleStateRoot state = new StatsSigningTestingToolState(
-                FAKE_MERKLE_STATE_LIFECYCLES,
-                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()),
-                () -> sttTransactionPool);
+    public StatsSigningTestingToolState newMerkleStateRoot() {
+        final StatsSigningTestingToolState state = new StatsSigningTestingToolState(
+                version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
+    }
+
+    @Override
+    public StateLifecycles<StatsSigningTestingToolState> newStateLifecycles() {
+        return new StatsSigningTestingToolStateLifecycles(() -> sttTransactionPool);
     }
 
     /**
@@ -312,5 +319,22 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
         return softwareVersion;
+    }
+
+    @Override
+    @NonNull
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        final var bytes = new ByteArrayOutputStream();
+        final var out = new WritableStreamingData(bytes);
+
+        // Add a marker to indicate the start of a system transaction. This is used
+        // to later differentiate between application transactions and system transactions.
+        out.writeByte(SYSTEM_TRANSACTION_MARKER);
+        try {
+            StateSignatureTransaction.PROTOBUF.write(transaction, out);
+            return Bytes.wrap(bytes.toByteArray());
+        } catch (final IOException e) {
+            throw new IllegalStateException("Failed to encode a system transaction.", e);
+        }
     }
 }
