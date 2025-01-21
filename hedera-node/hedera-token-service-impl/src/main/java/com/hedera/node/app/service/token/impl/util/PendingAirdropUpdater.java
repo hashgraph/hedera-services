@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.validation.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -52,9 +54,10 @@ public class PendingAirdropUpdater {
     public void removePendingAirdrops(
             @NonNull final List<PendingAirdropId> airdropsToRemove,
             @NonNull final WritableAirdropStore pendingAirdropStore,
-            @NonNull final WritableAccountStore accountStore) {
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final EntityNumGenerator entityNumGenerator) {
         for (final var id : airdropsToRemove) {
-            removePendingAirdrops(id, pendingAirdropStore, accountStore);
+            removePendingAirdrops(id, pendingAirdropStore, accountStore, entityNumGenerator);
         }
     }
 
@@ -68,7 +71,8 @@ public class PendingAirdropUpdater {
     private void removePendingAirdrops(
             @NonNull final PendingAirdropId airdropId,
             @NonNull final WritableAirdropStore pendingAirdropStore,
-            @NonNull final WritableAccountStore accountStore) {
+            @NonNull final WritableAccountStore accountStore,
+            @NonNull final EntityNumGenerator entityNumGenerator) {
         final var airdrop = pendingAirdropStore.getForModify(airdropId);
         validateTrue(airdrop != null, INVALID_PENDING_AIRDROP_ID);
 
@@ -107,5 +111,6 @@ public class PendingAirdropUpdater {
             accountStore.put(updatedSender.build());
         }
         pendingAirdropStore.remove(airdropId);
+        entityNumGenerator.decrementEntityTypeCounter(EntityType.AIRDROP);
     }
 }

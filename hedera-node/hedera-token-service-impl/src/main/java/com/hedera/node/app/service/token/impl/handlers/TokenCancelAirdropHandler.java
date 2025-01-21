@@ -121,7 +121,8 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         final var standardAirdropIds =
                 standardizeAirdropIds(accountStore, airdropStore, op.pendingAirdrops(), EnumSet.of(SENDER));
-        pendingAirdropUpdater.removePendingAirdrops(standardAirdropIds, airdropStore, accountStore);
+        pendingAirdropUpdater.removePendingAirdrops(
+                standardAirdropIds, airdropStore, accountStore, context.entityNumGenerator());
     }
 
     /**

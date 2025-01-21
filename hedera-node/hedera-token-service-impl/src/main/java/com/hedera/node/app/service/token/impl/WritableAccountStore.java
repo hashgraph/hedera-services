@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,15 +171,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         // Get the account number based on the account identifier. It may be null.
         final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getOriginalValue(accountId);
-    }
-
-    /**
-     * Removes the {@link Account} with the given {@link AccountID} from the state.
-     * This will add value of the accountId to num in the modifications in state.
-     * @param accountID - the account id of the account to be removed.
-     */
-    public void remove(@NonNull final AccountID accountID) {
-        accountState().remove(accountID);
     }
 
     /**

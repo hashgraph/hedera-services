@@ -72,6 +72,27 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
         return newEntityNum;
     }
 
+    /**
+     * Decrements the current entity type counter in state.
+     *
+     * @param entityType the entity type to decrement
+     */
+    public void decrementEntityTypeCount(final EntityType entityType) {
+        final var entityCounts = requireNonNull(entityCountsState.get());
+        final var newEntityCounts = entityCounts.copyBuilder();
+        switch (entityType) {
+            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() - 1);
+            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() - 1);
+            case CONTRACT_STORAGE -> newEntityCounts.numContractStorageSlots(
+                    entityCounts.numContractStorageSlots() - 1);
+            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() - 1);
+            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() - 1);
+            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() - 1);
+            default -> throw new IllegalStateException("Entity counts of " + entityType + " cannot be decremented");
+        }
+        entityCountsState.put(newEntityCounts.build());
+    }
+
     private EntityCounts incrementEntityTypeCount(final EntityType entityType) {
         final var entityCounts = requireNonNull(entityCountsState.get());
         final var newEntityCounts = entityCounts.copyBuilder();

@@ -45,4 +45,14 @@ public interface EntityNumGenerator {
      * @return the next entity number
      */
     long peekAtNewEntityNum();
+
+    /**
+     * Decrements the entity type counter for the given entity type.
+     * Since entity counters are used to determine the size of the state, when an entity is removed,
+     * the counter must be decremented.
+     * This method is called when a remove operation is performed on a store.
+     *
+     * @param entityType the type of entity for which to decrement the number
+     */
+    void decrementEntityTypeCounter(EntityType entityType);
 }

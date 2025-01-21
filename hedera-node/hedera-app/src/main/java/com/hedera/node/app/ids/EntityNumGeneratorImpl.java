@@ -44,4 +44,9 @@ public class EntityNumGeneratorImpl implements EntityNumGenerator {
     public long peekAtNewEntityNum() {
         return entityIdStore.peekAtNextNumber();
     }
+
+    @Override
+    public void decrementEntityTypeCounter(EntityType entityType) {
+        entityIdStore.decrementEntityTypeCount(entityType);
+    }
 }

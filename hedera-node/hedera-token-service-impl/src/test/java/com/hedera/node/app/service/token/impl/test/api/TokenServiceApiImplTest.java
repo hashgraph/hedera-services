@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -109,6 +110,9 @@ class TokenServiceApiImplTest {
 
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
 
     private TokenServiceApiImpl subject;
 
@@ -239,7 +243,7 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        subject.deleteContract(CONTRACT_ID_BY_NUM);
+        subject.deleteContract(CONTRACT_ID_BY_NUM, entityNumGenerator);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -255,7 +259,7 @@ class TokenServiceApiImplTest {
                 .build());
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS, entityNumGenerator);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -276,7 +280,7 @@ class TokenServiceApiImplTest {
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
         accountStore.putAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS, entityNumGenerator);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = requireNonNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
