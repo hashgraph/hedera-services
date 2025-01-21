@@ -158,10 +158,7 @@ jobs:
           echo "Current version is: ${current_version}"
           echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
 
-      - name: Create Release Notes with Conventional Commits
-        run: |
-          echo git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
-          git-semver log --conventional-commits ${{ steps.next_version.outputs.next_release }}
+      # TODO: Push the new tag to remote
 
       - name: Create Release Notes with Markdown
         run: |
@@ -177,7 +174,7 @@ jobs:
       - name: View Status After Running Semantic Release
         run: git status
 
-      # TODO: Remove this delete step before merging to mainline
+      # TODO: Remove delete tag step before merging to mainline (we want to keep the new tag)
       - name: Delete Created Tag
         if: always()
         run: |
