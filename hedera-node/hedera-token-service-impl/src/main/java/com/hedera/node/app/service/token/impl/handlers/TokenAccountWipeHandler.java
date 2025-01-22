@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -196,7 +195,6 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                             accountStore);
                 }
                 nftStore.remove(tokenId, serialNum);
-                context.entityNumGenerator().decrementEntityTypeCounter(EntityType.NFT);
             });
         }
 

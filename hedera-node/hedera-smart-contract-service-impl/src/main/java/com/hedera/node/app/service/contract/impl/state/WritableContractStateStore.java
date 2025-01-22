@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -39,6 +41,7 @@ import java.util.Set;
 public class WritableContractStateStore implements ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<ContractID, Bytecode> bytecode;
+    private final EntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableContractStateStore} instance.
@@ -50,7 +53,8 @@ public class WritableContractStateStore implements ContractStateStore {
     public WritableContractStateStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final EntityCounters entityCounters) {
         requireNonNull(states);
         this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
         this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
@@ -64,6 +68,7 @@ public class WritableContractStateStore implements ContractStateStore {
         final long maxContractsCapacity = contractsConfig.maxNumber();
         final var contractStoreMetrics = storeMetricsService.get(StoreType.CONTRACT, maxContractsCapacity);
         bytecode.setMetrics(contractStoreMetrics);
+        this.entityCounters = entityCounters;
     }
 
     /**
@@ -88,6 +93,7 @@ public class WritableContractStateStore implements ContractStateStore {
     @Override
     public void removeSlot(@NonNull final SlotKey key) {
         storage.remove(requireNonNull(key));
+        entityCounters.decrementEntityTypeCounter(EntityType.CONTRACT_STORAGE);
     }
 
     /**
@@ -135,11 +141,11 @@ public class WritableContractStateStore implements ContractStateStore {
      */
     @Override
     public long getNumSlots() {
-        return storage.size();
+        return entityCounters.numContractStorageSlots();
     }
 
     @Override
     public long getNumBytecodes() {
-        return bytecode.size();
+        return entityCounters.numContractBytecodes();
     }
 }

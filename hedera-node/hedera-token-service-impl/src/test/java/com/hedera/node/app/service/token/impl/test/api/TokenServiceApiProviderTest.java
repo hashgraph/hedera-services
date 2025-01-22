@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,13 +57,15 @@ class TokenServiceApiProviderTest {
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
         assertInstanceOf(
                 TokenServiceApiImpl.class,
-                TOKEN_SERVICE_API_PROVIDER.newInstance(DEFAULT_CONFIG, storeMetricsService, writableStates));
+                TOKEN_SERVICE_API_PROVIDER.newInstance(
+                        DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters));
     }
 
     @Test
     void testsCustomFeesByCreatingStep() {
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
-        final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(DEFAULT_CONFIG, storeMetricsService, writableStates);
+        final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(
+                DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters);
         assertFalse(api.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }
 
@@ -72,7 +74,8 @@ class TokenServiceApiProviderTest {
         given(writableStates.get(any())).willReturn(null);
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
         given(writableStates.get(V0490TokenSchema.TOKEN_RELS_KEY)).willThrow(IllegalStateException.class);
-        final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(DEFAULT_CONFIG, storeMetricsService, writableStates);
+        final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(
+                DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters);
         assertFalse(api.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -205,10 +204,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         // Finally, update the account and the token relations via their respective stores
         accountStore.put(updatedAcct);
         updatedTokenRels.updatedTokenRelsStillInChain().forEach(tokenRelStore::put);
-        tokenRelsToRemove.forEach(rel -> {
-            tokenRelStore.remove(rel);
-            context.entityNumGenerator().decrementEntityTypeCounter(EntityType.TOKEN_ASSOCIATION);
-        });
+        tokenRelsToRemove.forEach(tokenRelStore::remove);
         treasuryBalancesToUpdate.forEach(tokenRelStore::put);
     }
 

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -30,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A writeable store for entity ids.
  */
-public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
+public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements EntityCounters {
     /**
      * The underlying data storage class that holds the entity id data.
      */
@@ -72,27 +73,6 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
         return newEntityNum;
     }
 
-    /**
-     * Decrements the current entity type counter in state.
-     *
-     * @param entityType the entity type to decrement
-     */
-    public void decrementEntityTypeCount(final EntityType entityType) {
-        final var entityCounts = requireNonNull(entityCountsState.get());
-        final var newEntityCounts = entityCounts.copyBuilder();
-        switch (entityType) {
-            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() - 1);
-            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() - 1);
-            case CONTRACT_STORAGE -> newEntityCounts.numContractStorageSlots(
-                    entityCounts.numContractStorageSlots() - 1);
-            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() - 1);
-            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() - 1);
-            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() - 1);
-            default -> throw new IllegalStateException("Entity counts of " + entityType + " cannot be decremented");
-        }
-        entityCountsState.put(newEntityCounts.build());
-    }
-
     private EntityCounts incrementEntityTypeCount(final EntityType entityType) {
         final var entityCounts = requireNonNull(entityCountsState.get());
         final var newEntityCounts = entityCounts.copyBuilder();
@@ -113,5 +93,22 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
             case STAKING_INFO -> newEntityCounts.numStakingInfos(entityCounts.numStakingInfos() + 1);
         }
         return newEntityCounts.build();
+    }
+
+    @Override
+    public void decrementEntityTypeCounter(final EntityType entityType) {
+        final var entityCounts = requireNonNull(entityCountsState.get());
+        final var newEntityCounts = entityCounts.copyBuilder();
+        switch (entityType) {
+            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() - 1);
+            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() - 1);
+            case CONTRACT_STORAGE -> newEntityCounts.numContractStorageSlots(
+                    entityCounts.numContractStorageSlots() - 1);
+            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() - 1);
+            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() - 1);
+            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() - 1);
+            default -> throw new IllegalStateException("Entity counts of " + entityType + " cannot be decremented");
+        }
+        entityCountsState.put(newEntityCounts.build());
     }
 }

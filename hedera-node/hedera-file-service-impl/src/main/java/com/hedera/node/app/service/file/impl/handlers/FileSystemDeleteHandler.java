@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -114,7 +113,6 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         // If the file is already expired, remove it from state completely otherwise change the deleted flag to be true.
         if (newExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId);
-            handleContext.entityNumGenerator().decrementEntityTypeCounter(EntityType.FILE);
         } else {
             /* Get all the fields from existing file and change deleted flag */
             final var fileBuilder = new File.Builder()

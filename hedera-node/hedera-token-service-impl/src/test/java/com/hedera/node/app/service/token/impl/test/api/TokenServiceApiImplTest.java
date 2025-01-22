@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -114,12 +115,16 @@ class TokenServiceApiImplTest {
     @Mock
     private EntityNumGenerator entityNumGenerator;
 
+    @Mock
+    private EntityCounters entityCounters;
+
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
-        accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest);
+        accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService, entityCounters);
+        subject = new TokenServiceApiImpl(
+                DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest, entityCounters);
     }
 
     @Test
@@ -243,7 +248,7 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        subject.deleteContract(CONTRACT_ID_BY_NUM, entityNumGenerator);
+        subject.deleteContract(CONTRACT_ID_BY_NUM);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -259,7 +264,7 @@ class TokenServiceApiImplTest {
                 .build());
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteContract(CONTRACT_ID_BY_ALIAS, entityNumGenerator);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
@@ -280,7 +285,7 @@ class TokenServiceApiImplTest {
         accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
         accountStore.putAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
-        subject.deleteContract(CONTRACT_ID_BY_ALIAS, entityNumGenerator);
+        subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = requireNonNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
@@ -482,7 +487,8 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
+            subject =
+                    new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest, entityCounters);
 
             // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -512,7 +518,8 @@ class TokenServiceApiImplTest {
             final var config =
                     configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
+            subject =
+                    new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest, entityCounters);
 
             // When we charge fees of 10 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -552,7 +559,8 @@ class TokenServiceApiImplTest {
                     .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
+            subject =
+                    new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest, entityCounters);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -569,7 +577,8 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
+            subject =
+                    new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest, entityCounters);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -586,7 +595,8 @@ class TokenServiceApiImplTest {
                     .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
 
-            subject = new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest);
+            subject =
+                    new TokenServiceApiImpl(config, storeMetricsService, writableStates, customFeeTest, entityCounters);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -600,7 +610,11 @@ class TokenServiceApiImplTest {
             fees = new Fees(1000, 100, 0); // more than the 100 the user has
 
             subject = new TokenServiceApiImpl(
-                    configBuilder.getOrCreateConfig(), storeMetricsService, writableStates, customFeeTest);
+                    configBuilder.getOrCreateConfig(),
+                    storeMetricsService,
+                    writableStates,
+                    customFeeTest,
+                    entityCounters);
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
 
             final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));

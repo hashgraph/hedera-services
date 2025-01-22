@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.FilesConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -41,6 +43,8 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableKVState<FileID, File> filesState;
 
+    private final EntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableFileStore} instance.
      *
@@ -51,9 +55,11 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     public WritableFileStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final EntityCounters entityCounters) {
         super(states);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(FilesConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.FILE, maxCapacity);
@@ -98,7 +104,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      * @return the number of files in the state
      */
     public long sizeOfState() {
-        return filesState.size();
+        return entityCounters.numFiles();
     }
 
     /**
@@ -117,5 +123,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      */
     public void removeFile(final FileID fileId) {
         filesState.remove(fileId);
+        entityCounters.decrementEntityTypeCounter(EntityType.FILE);
     }
 }

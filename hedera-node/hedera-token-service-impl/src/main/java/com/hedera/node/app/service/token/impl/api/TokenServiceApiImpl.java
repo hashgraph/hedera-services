@@ -42,7 +42,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -76,19 +76,22 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     /**
      * Constructs a {@link TokenServiceApiImpl}.
-     * @param config the configuration
+     *
+     * @param config              the configuration
      * @param storeMetricsService the store metrics service
-     * @param writableStates the writable states
-     * @param customFeeTest a predicate for determining if a transfer has custom fees
+     * @param writableStates      the writable states
+     * @param customFeeTest       a predicate for determining if a transfer has custom fees
+     * @param entityCounters
      */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableStates writableStates,
-            @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
+            @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest,
+            @NonNull final EntityCounters entityCounters) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
+        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService, entityCounters);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);
@@ -190,7 +193,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void deleteContract(@NonNull final ContractID contractId, final EntityNumGenerator entityNumGenerator) {
+    public void deleteContract(@NonNull final ContractID contractId) {
         requireNonNull(contractId);
 
         // If the contractId cannot find a contract, then we have nothing to do here. But that would be an error
@@ -214,7 +217,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // from the contract account.
         final var evmAddress = contract.alias();
         accountStore.removeAlias(evmAddress);
-        entityNumGenerator.decrementEntityTypeCounter(EntityType.ALIAS);
         accountStore.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
 
         // It may be (but should never happen) that the alias in the given contractId does not match the alias on the
@@ -230,7 +232,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                     evmAddress,
                     usedEvmAddress);
             accountStore.removeAlias(usedEvmAddress);
-            entityNumGenerator.decrementEntityTypeCounter(EntityType.ALIAS);
         }
     }
 
@@ -496,8 +497,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final AccountID obtainerId,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final DeleteCapableTransactionStreamBuilder recordBuilder,
-            @NonNull final FreeAliasOnDeletion freeAliasOnDeletion,
-            @NonNull final EntityNumGenerator entityNumGenerator) {
+            @NonNull final FreeAliasOnDeletion freeAliasOnDeletion) {
         // validate the semantics involving dynamic properties and state.
         // Gets delete and transfer accounts from state
         final var deleteAndTransferAccounts = validateSemantics(deletedId, obtainerId, expiryValidator);
@@ -509,7 +509,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         final var builder = updatedDeleteAccount.copyBuilder().deleted(true);
         if (freeAliasOnDeletion == YES) {
             accountStore.removeAlias(updatedDeleteAccount.alias());
-            entityNumGenerator.decrementEntityTypeCounter(EntityType.ALIAS);
             builder.alias(Bytes.EMPTY);
         }
         accountStore.put(builder.build());

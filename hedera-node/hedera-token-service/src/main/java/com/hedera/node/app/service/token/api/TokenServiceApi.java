@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
@@ -66,12 +65,11 @@ public interface TokenServiceApi {
     /**
      * Deletes the account with the given id and transfers any remaining hbar balance to the given obtainer id.
      *
-     * @param deletedId           the id of the account to delete
-     * @param obtainerId          the id of the account to transfer the remaining hbar balance to
-     * @param expiryValidator     the expiry validator to use
-     * @param recordBuilder       the record builder to record the transfer in
+     * @param deletedId the id of the account to delete
+     * @param obtainerId the id of the account to transfer the remaining hbar balance to
+     * @param expiryValidator the expiry validator to use
+     * @param recordBuilder the record builder to record the transfer in
      * @param freeAliasOnDeletion whether to free the deleted account's alias (if any)
-     * @param entityNumGenerator
      * @throws HandleException if the account could not be deleted for some reason
      */
     void deleteAndTransfer(
@@ -79,8 +77,7 @@ public interface TokenServiceApi {
             @NonNull AccountID obtainerId,
             @NonNull ExpiryValidator expiryValidator,
             @NonNull DeleteCapableTransactionStreamBuilder recordBuilder,
-            @NonNull FreeAliasOnDeletion freeAliasOnDeletion,
-            @NonNull final EntityNumGenerator entityNumGenerator);
+            @NonNull FreeAliasOnDeletion freeAliasOnDeletion);
 
     /**
      * Validates the creation of a given staking election relative to the given account store, network info,
@@ -144,10 +141,9 @@ public interface TokenServiceApi {
     /**
      * Deletes the contract with the given id.
      *
-     * @param contractId         the id of the contract to delete
-     * @param entityNumGenerator
+     * @param contractId the id of the contract to delete
      */
-    void deleteContract(@NonNull ContractID contractId, final EntityNumGenerator entityNumGenerator);
+    void deleteContract(@NonNull ContractID contractId);
 
     /**
      * Increments the nonce of the given contract.

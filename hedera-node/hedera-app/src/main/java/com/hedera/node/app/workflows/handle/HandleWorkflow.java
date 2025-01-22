@@ -64,6 +64,8 @@ import com.hedera.node.app.hints.impl.ReadableHintsStoreImpl;
 import com.hedera.node.app.hints.impl.WritableHintsStoreImpl;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.impl.WritableHistoryStoreImpl;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -88,7 +90,6 @@ import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -482,11 +483,13 @@ public class HandleWorkflow {
             var nextTime = boundaryStateChangeListener
                     .lastConsensusTimeOrThrow()
                     .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
+            final var writableEntityIdStore = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
             // Now we construct the iterator and start executing transactions in this interval
             final var iter = scheduleService.executableTxns(
                     executionStart,
                     consensusNow,
-                    StoreFactoryImpl.from(state, ScheduleService.NAME, config, storeMetricsService));
+                    StoreFactoryImpl.from(
+                            state, ScheduleService.NAME, config, storeMetricsService, writableEntityIdStore));
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             // Configuration sets a maximum number of execution slots per user transaction
             int n = schedulingConfig.maxExecutionsPerUserTxn();
@@ -557,9 +560,10 @@ public class HandleWorkflow {
     private void purgeScheduling(@NonNull final State state, final Instant then, final Instant now) {
         if (!Instant.EPOCH.equals(then) && then.getEpochSecond() < now.getEpochSecond()) {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
+            final var entityCounters = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
             doStreamingKVChanges(writableStates, now, () -> {
                 final var scheduleStore = new WritableScheduleStoreImpl(
-                        writableStates, configProvider.getConfiguration(), storeMetricsService);
+                        writableStates, configProvider.getConfiguration(), storeMetricsService, entityCounters);
                 scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
             });
         }
@@ -610,12 +614,12 @@ public class HandleWorkflow {
                     // (FUTURE) Verify we can remove this deprecated node metadata sync now that DAB is active;
                     // it should never happen case that nodes are added or removed from the address book without
                     // those changes already being visible in the FAB
-                    final var addressBookWritableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    addressBookHelper.adjustPostUpgradeNodeMetadata(
-                            networkInfo,
+                    final var writableNodeStore = new WritableNodeStore(
+                            userTxn.stack().getWritableStates(AddressBookService.NAME),
                             userTxn.config(),
-                            addressBookWritableStoreFactory.getStore(WritableNodeStore.class));
+                            storeMetricsService,
+                            new WritableEntityIdStore(userTxn.stack().getWritableStates(EntityIdService.NAME)));
+                    addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), writableNodeStore);
 
                     if (streamMode != RECORDS) {
                         // Only externalize this if we are streaming blocks

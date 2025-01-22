@@ -557,7 +557,7 @@ class HandleHederaOperationsTest {
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         subject.deleteUnaliasedContract(CALLED_CONTRACT_ID.contractNumOrThrow());
-        verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID, entityNumGenerator);
+        verify(tokenServiceApi).deleteContract(CALLED_CONTRACT_ID);
     }
 
     @Test
@@ -567,7 +567,7 @@ class HandleHederaOperationsTest {
         subject.deleteAliasedContract(CANONICAL_ALIAS);
         verify(tokenServiceApi)
                 .deleteContract(
-                        ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build(), entityNumGenerator);
+                        ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build());
     }
 
     @Test

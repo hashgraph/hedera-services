@@ -26,8 +26,10 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -48,6 +50,7 @@ import java.util.Set;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
+    private final EntityCounters entityCounters;
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
@@ -58,8 +61,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public WritableAccountStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final EntityCounters entityCounters) {
         super(states);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
@@ -127,6 +132,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         // FUTURE: It might be worth adding a log statement here if we see an empty alias, but maybe not.
         if (alias.length() > 0) {
             aliases().remove(new ProtoBytes(alias));
+            entityCounters.decrementEntityTypeCounter(EntityType.ALIAS);
         }
     }
 
@@ -180,7 +186,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the number of accounts in the state
      */
     public long sizeOfAccountState() {
-        return accountState().size();
+        return entityCounters.numAccounts();
     }
 
     /**
@@ -190,7 +196,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the number of aliases in the state
      */
     public long sizeOfAliasesState() {
-        return aliases().size();
+        return entityCounters.numAliases();
     }
 
     /**

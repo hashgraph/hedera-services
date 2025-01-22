@@ -160,8 +160,7 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         }
         // do the crypto transfer
         transferForFree(new ArrayList<>(transfers.values()), context, recordBuilder);
-        pendingAirdropUpdater.removePendingAirdrops(
-                validatedAirdropIds, pendingAirdropStore, accountStore, context.entityNumGenerator());
+        pendingAirdropUpdater.removePendingAirdrops(validatedAirdropIds, pendingAirdropStore, accountStore);
     }
 
     /**

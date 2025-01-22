@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TokensConfig;
@@ -44,6 +45,8 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<TokenID, Token> tokenState;
 
+    private final EntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableTokenStore} instance.
      *
@@ -54,9 +57,11 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     public WritableTokenStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final EntityCounters entityCounters) {
         super(states);
         this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.TOKEN, maxCapacity);
@@ -93,7 +98,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * @return the number of tokens in the state
      */
     public long sizeOfState() {
-        return tokenState.size();
+        return entityCounters.numTokens();
     }
 
     /**

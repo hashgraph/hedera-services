@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,10 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
+import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -54,6 +56,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private final WritableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduleUsagesMutable;
     private final WritableKVState<ScheduledOrder, ScheduleID> scheduleOrdersMutable;
 
+    private final EntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableScheduleStoreImpl} instance.
      *
@@ -64,7 +68,8 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     public WritableScheduleStoreImpl(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            final EntityCounters entityCounters) {
         super(states);
         requireNonNull(configuration);
         requireNonNull(storeMetricsService);
@@ -79,6 +84,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
                 configuration.getConfigData(SchedulingConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.SCHEDULE, maxCapacity);
         schedulesByIdMutable.setMetrics(storeMetrics);
+        this.entityCounters = entityCounters;
     }
 
     /**
@@ -190,7 +196,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     /**
      * Purge a schedule from the store.
      *
-     * @param scheduleId The ID of the schedule to purge
+     * @param scheduleId             The ID of the schedule to purge
      */
     private void purge(@NonNull final ScheduleID scheduleId) {
         final var schedule = schedulesByIdMutable.get(scheduleId);
@@ -201,6 +207,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             logger.error("Schedule {} not found in state schedulesByIdMutable.", scheduleId);
         }
         schedulesByIdMutable.remove(scheduleId);
+        entityCounters.decrementEntityTypeCounter(EntityType.SCHEDULE);
         logger.debug("Purging expired schedule {} from state.", scheduleId);
     }
 

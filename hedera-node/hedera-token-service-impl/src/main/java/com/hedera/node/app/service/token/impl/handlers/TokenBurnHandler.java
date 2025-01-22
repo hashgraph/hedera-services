@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -172,10 +171,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             accountStore.put(updatedTreasuryAcct);
 
             // Remove the nft objects
-            nftSerialNums.forEach(serialNum -> {
-                nftStore.remove(tokenId, serialNum);
-                context.entityNumGenerator().decrementEntityTypeCounter(EntityType.NFT);
-            });
+            nftSerialNums.forEach(serialNum -> nftStore.remove(tokenId, serialNum));
             record.newTotalSupply(newTotalSupply);
         }
         record.tokenType(token.tokenType());
