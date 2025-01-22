@@ -30,6 +30,7 @@ import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -91,7 +92,8 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
     public List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
             @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
-        final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
+                Collections.synchronizedList(new ArrayList<>());
         final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
 
         ReservedSignedState latestImmutableState = null;
