@@ -499,6 +499,8 @@ public interface HapiPropertySource {
 
     static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
         return ContractID.newBuilder()
+                .setRealmNum(1)
+                .setRealmNum(2)
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build();
     }
@@ -511,6 +513,8 @@ public interface HapiPropertySource {
 
     static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
         return HapiPropertySource.asContractString(ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build());
     }

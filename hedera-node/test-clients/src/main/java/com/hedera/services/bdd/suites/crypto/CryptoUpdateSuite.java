@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -469,6 +469,8 @@ public class CryptoUpdateSuite {
                 sourcing(() -> cryptoUpdate(TARGET_ACCOUNT)
                         .protoKey(Key.newBuilder()
                                 .setContractID(ContractID.newBuilder()
+                                        .setShardNum(1)
+                                        .setRealmNum(2)
                                         .setContractNum(id.get())
                                         .build())
                                 .build())

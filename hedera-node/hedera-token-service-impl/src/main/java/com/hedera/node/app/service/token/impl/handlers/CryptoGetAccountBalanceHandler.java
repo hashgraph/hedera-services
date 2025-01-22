@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             throws PreCheckException {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
         final ContractID contractId = (ContractID) op.balanceSource().value();
-        validateTruePreCheck(contractId.shardNum() == 0, INVALID_CONTRACT_ID);
-        validateTruePreCheck(contractId.realmNum() == 0, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.shardNum() == 1, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.realmNum() == 2, INVALID_CONTRACT_ID);
         validateTruePreCheck(
                 (contractId.hasContractNum() && contractId.contractNumOrThrow() >= 0) || contractId.hasEvmAddress(),
                 INVALID_CONTRACT_ID);
@@ -125,8 +125,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
             throws PreCheckException {
         AccountID accountId = (AccountID) op.balanceSource().value();
-        validateTruePreCheck(accountId.shardNum() == 0, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(accountId.realmNum() == 0, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.shardNum() == 1, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.realmNum() == 2, INVALID_ACCOUNT_ID);
         validateAccountID(accountId, INVALID_ACCOUNT_ID);
         final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
         validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);

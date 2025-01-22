@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,8 +250,10 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
         final var effContract = contract.startsWith("0x") ? contract.substring(2) : contract;
         if (effContract.length() == HEXED_EVM_ADDRESS_LEN) {
-            opBuilder.setContractID(
-                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
+            opBuilder.setContractID(ContractID.newBuilder()
+                    .setShardNum(1)
+                    .setRealmNum(2)
+                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
         } else {
             opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
         }

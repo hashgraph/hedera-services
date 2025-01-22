@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -332,6 +332,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             config = b -> b.setContractID(TxnUtils.asContractId(account, spec));
         } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
             final var cid = ContractID.newBuilder()
+                    .setShardNum(1)
+                    .setRealmNum(2)
                     .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(literalHexedAlias)))
                     .build();
             config = b -> b.setContractID(cid);
