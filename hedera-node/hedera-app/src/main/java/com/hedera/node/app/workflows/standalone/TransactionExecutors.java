@@ -255,8 +255,8 @@ public enum TransactionExecutors {
                         ThrottleAccumulator::new));
         final var hintsService =
                 new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl());
-        final var contractService =
-                new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
+        final var contractService = new ContractServiceImpl(
+                appContext, NO_OP_METRICS, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
         final var component = DaggerExecutorComponent.builder()

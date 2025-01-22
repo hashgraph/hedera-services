@@ -25,14 +25,12 @@ import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
-import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,16 +55,10 @@ class HistoryServiceImplTest {
     private ActiveRosters activeRosters;
 
     @Mock
-    private WritableHistoryStore historyStore;
-
-    @Mock
-    private SchemaRegistry schemaRegistry;
+    private HistoryLibraryCodec codec;
 
     @Mock
     private HistoryLibrary library;
-
-    @Mock
-    private HistoryLibraryCodec codec;
 
     private HistoryServiceImpl subject;
 

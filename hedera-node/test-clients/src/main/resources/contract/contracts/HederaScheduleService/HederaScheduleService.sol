@@ -47,9 +47,9 @@ abstract contract HederaScheduleService {
     /// @param scheduleAddress the address of the schedule transaction
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return fungibleTokenInfo The token information for the scheduled fungible token create transaction
-    function getScheduledFungibleTokenCreateTransaction(address scheduleAddress) internal returns (int64 responseCode, IHederaTokenService.FungibleTokenInfo memory fungibleTokenInfo) {
+    function getScheduledCreateFungibleTokenInfo(address scheduleAddress) internal returns (int64 responseCode, IHederaTokenService.FungibleTokenInfo memory fungibleTokenInfo) {
         (bool success, bytes memory result) = scheduleSystemContractAddress.call(
-            abi.encodeWithSelector(IHederaScheduleService.getScheduledFungibleTokenCreateTransaction.selector, scheduleAddress));
+            abi.encodeWithSelector(IHederaScheduleService.getScheduledCreateFungibleTokenInfo.selector, scheduleAddress));
         IHederaTokenService.FungibleTokenInfo memory defaultTokenInfo;
         (responseCode, fungibleTokenInfo) = success ? abi.decode(result, (int64, IHederaTokenService.FungibleTokenInfo)) : (int64(HederaResponseCodes.UNKNOWN), defaultTokenInfo);
     }
@@ -58,9 +58,9 @@ abstract contract HederaScheduleService {
     /// @param scheduleAddress the address of the schedule transaction
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return nonFungibleTokenInfo The token information for the scheduled non fungible token create transaction
-    function getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress) internal returns (int64 responseCode, IHederaTokenService.NonFungibleTokenInfo memory nonFungibleTokenInfo) {
+    function getScheduledCreateNonFungibleTokenInfo(address scheduleAddress) internal returns (int64 responseCode, IHederaTokenService.NonFungibleTokenInfo memory nonFungibleTokenInfo) {
         (bool success, bytes memory result) = scheduleSystemContractAddress.call(
-            abi.encodeWithSelector(IHederaScheduleService.getScheduledNonFungibleTokenCreateTransaction.selector, scheduleAddress));
+            abi.encodeWithSelector(IHederaScheduleService.getScheduledCreateNonFungibleTokenInfo.selector, scheduleAddress));
         IHederaTokenService.NonFungibleTokenInfo memory defaultTokenInfo;
         (responseCode, nonFungibleTokenInfo) = success ? abi.decode(result, (int64, IHederaTokenService.NonFungibleTokenInfo)) : (int64(HederaResponseCodes.UNKNOWN), defaultTokenInfo);
     }

@@ -8,7 +8,7 @@ pragma experimental ABIEncoderV2;
 contract GetScheduleInfo is HederaScheduleService {
 
     function getFungibleCreateTokenInfo(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.FungibleTokenInfo memory fungibleTokenInfo) {
-        (responseCode, fungibleTokenInfo) = getScheduledFungibleTokenCreateTransaction(scheduleAddress);
+        (responseCode, fungibleTokenInfo) = getScheduledCreateFungibleTokenInfo(scheduleAddress);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -16,7 +16,7 @@ contract GetScheduleInfo is HederaScheduleService {
     }
 
     function getNonFungibleCreateTokenInfo(address scheduleAddress) external returns (int64 responseCode, IHederaTokenService.NonFungibleTokenInfo memory nonFungibleTokenInfo) {
-        (responseCode, nonFungibleTokenInfo) = getScheduledNonFungibleTokenCreateTransaction(scheduleAddress);
+        (responseCode, nonFungibleTokenInfo) = getScheduledCreateNonFungibleTokenInfo(scheduleAddress);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }

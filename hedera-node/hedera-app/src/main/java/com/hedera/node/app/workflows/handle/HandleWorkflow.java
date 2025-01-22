@@ -325,7 +325,8 @@ public class HandleWorkflow {
                                 creator,
                                 platformTxn,
                                 event.getSoftwareVersion(),
-                                simplifiedStateSignatureTxnCallback);
+                                simplifiedStateSignatureTxnCallback,
+                                userTransactionsHandled);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -353,10 +354,11 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state      the writable {@link State} that this transaction will work on
-     * @param creator    the {@link NodeInfo} of the creator of the transaction
-     * @param txn        the {@link ConsensusTransaction} to be handled
+     * @param state the writable {@link State} that this transaction will work on
+     * @param creator the {@link NodeInfo} of the creator of the transaction
+     * @param txn the {@link ConsensusTransaction} to be handled
      * @param txnVersion the software version for the event containing the transaction
+     * @param userTxnHandled whether a user transaction has been handled in this round
      * @return {@code true} if the transaction was a user transaction, {@code false} if a system transaction
      */
     private boolean handlePlatformTransaction(
@@ -364,7 +366,8 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final SemanticVersion txnVersion,
-            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback,
+            final boolean userTxnHandled) {
         final var handleStart = System.nanoTime();
 
         // Temporary check until we can deprecate StateSignatureTransaction
@@ -398,6 +401,9 @@ public class HandleWorkflow {
         }
         if (streamMode != RECORDS) {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+            if (!userTxnHandled) {
+                blockStreamManager.setRoundFirstUserTransactionTime(handleOutput.firstAssignedConsensusTime());
+            }
         }
 
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -797,7 +803,7 @@ public class HandleWorkflow {
                 requireNonNull(userTxn.txnInfo().transactionID()),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
-        return new HandleOutput(blockRecordSource, recordSource);
+        return new HandleOutput(blockRecordSource, recordSource, userTxn.consensusNow());
     }
 
     /**

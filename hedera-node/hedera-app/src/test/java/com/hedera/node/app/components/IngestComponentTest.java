@@ -129,7 +129,7 @@ class IngestComponentTest {
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
-                .contractServiceImpl(new ContractServiceImpl(appContext))
+                .contractServiceImpl(new ContractServiceImpl(appContext, NO_OP_METRICS))
                 .scheduleService(new ScheduleServiceImpl())
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)

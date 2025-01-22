@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
@@ -71,7 +70,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -390,9 +388,5 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
-    }
-
-    private static AccountID accountIdOf(@NonNull final Address address) {
-        return fromPbj(parseAccount(address.getMemo()));
     }
 }
