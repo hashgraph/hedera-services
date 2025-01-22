@@ -132,7 +132,7 @@ public class AddedEventMetrics {
      *
      * @param event the event that was added
      */
-    public void eventAdded(final EventImpl event, final boolean isNewFormat) {
+    public void eventAdded(final EventImpl event) {
         if (Objects.equals(event.getCreatorId(), selfId)) {
             eventsCreatedPerSecond.cycle();
             if (!event.getBaseEvent().getOtherParents().isEmpty()) {
@@ -163,9 +163,9 @@ public class AddedEventMetrics {
         final Iterator<Transaction> iterator = event.getBaseEvent().transactionIterator();
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
-                numAppTrans++;
-                appSize += transaction.getBytesSize();
-                avgBytesPerTransaction.update(transaction.getBytesSize());
+            numAppTrans++;
+            appSize += transaction.getBytesSize();
+            avgBytesPerTransaction.update(transaction.getBytesSize());
         }
         avgTransactionsPerEvent.update(numAppTrans);
         bytesPerSecondTrans.update(appSize);
