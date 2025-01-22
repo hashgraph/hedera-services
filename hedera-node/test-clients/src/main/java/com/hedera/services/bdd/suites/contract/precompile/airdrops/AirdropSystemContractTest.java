@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
@@ -42,6 +43,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -594,6 +596,51 @@ public class AirdropSystemContractTest {
                     receiver7.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
                     receiver8.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
                     receiver9.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)));
+        }));
+    }
+
+    @HapiTest
+    @Order(14)
+    @DisplayName("Cannot distribute NFTs to multiple accounts when some of the NFTs do not exist")
+    public Stream<DynamicTest> failToDistributeNfts(
+            @NonNull @NonFungibleToken(numPreMints = 6) final SpecNonFungibleToken nft,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver2,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver3,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver4,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver5,
+            @NonNull @Account(maxAutoAssociations = -1) final SpecAccount receiver6) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.associateTokens(nft),
+                    // We have six pre minted serials
+                    // Burning some of them to make them invalid
+                    burnToken(nft.name(), List.of(3L, 4L)),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver3.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver4.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver5.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver6.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 0L)),
+                    receiver1.getInfo(),
+                    receiver1.getInfo(),
+                    receiver3.getInfo(),
+                    receiver4.getInfo(),
+                    receiver5.getInfo(),
+                    receiver6.getInfo(),
+                    nft.treasury().transferNFTsTo(sender, nft, 1L, 2L, 5L, 6L));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call(
+                                    "nftAirdropDistribute",
+                                    nft,
+                                    sender,
+                                    prepareAccountAddresses(
+                                            spec, receiver1, receiver2, receiver3, receiver4, receiver5, receiver6))
+                            .gas(1500000)
+                            .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_NFT_ID)));
         }));
     }
 }
