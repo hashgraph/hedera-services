@@ -647,7 +647,9 @@ public class PlatformWiring {
         stateSignerWiring
                 .getOutputWire()
                 .buildTransformer(
-                        "postSigner_encode_systemTransactions", "system transactions", systemTransactionEncoder)
+                        "postSigner_encode_systemTransactions",
+                        "system transactions from signer",
+                        systemTransactionEncoder)
                 .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.

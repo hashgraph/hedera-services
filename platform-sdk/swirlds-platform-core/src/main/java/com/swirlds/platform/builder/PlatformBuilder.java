@@ -303,6 +303,7 @@ public final class PlatformBuilder {
      * @param systemTransactionEncoder the callback to register
      * @return this
      */
+    @NonNull
     public PlatformBuilder withSystemTransactionEncoderCallback(
             @NonNull final Function<StateSignatureTransaction, Bytes> systemTransactionEncoder) {
         throwIfAlreadyUsed();
