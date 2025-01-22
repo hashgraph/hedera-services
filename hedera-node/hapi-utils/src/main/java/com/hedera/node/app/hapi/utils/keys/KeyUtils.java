@@ -27,9 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
-import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.openssl.PKCS8Generator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPKCS8Generator;
@@ -41,7 +39,6 @@ import org.bouncycastle.operator.OperatorCreationException;
  */
 public final class KeyUtils {
     public static final Provider BC_PROVIDER = new BouncyCastleProvider();
-    public static final ECNamedCurveParameterSpec EC_SPEC = ECNamedCurveTable.getParameterSpec("secp256k1");
     public static final String TEST_CLIENTS_PREFIX = "hedera-node" + File.separator + "test-clients" + File.separator;
 
     private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;

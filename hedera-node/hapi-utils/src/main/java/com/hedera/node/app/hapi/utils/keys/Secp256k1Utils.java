@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.keys;
 
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.BC_PROVIDER;
-import static com.hedera.node.app.hapi.utils.keys.KeyUtils.EC_SPEC;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.relocatedIfNotPresentInWorkingDir;
 
 import java.io.File;
@@ -25,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.interfaces.ECPrivateKey;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -39,7 +39,8 @@ import org.bouncycastle.pkcs.PKCSException;
 public class Secp256k1Utils {
 
     public static byte[] extractEcdsaPublicKey(final ECPrivateKey key) {
-        final ECPoint pointQ = EC_SPEC.getG().multiply(key.getS());
+        final ECPoint pointQ =
+                ECNamedCurveTable.getParameterSpec("secp256k1").getG().multiply(key.getS());
         return pointQ.getEncoded(true);
     }
 
