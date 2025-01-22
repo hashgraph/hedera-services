@@ -163,9 +163,9 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public Network migrationNetworkOrThrow() {
+    public Network migrationNetworkOrThrow(final Configuration platformConfig) {
         return loadNetwork(AssetUse.MIGRATION, configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
-                .or(() -> networkFromConfigTxt(configProvider.getConfiguration()))
+                .or(() -> networkFromConfigTxt(platformConfig))
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
     }
 

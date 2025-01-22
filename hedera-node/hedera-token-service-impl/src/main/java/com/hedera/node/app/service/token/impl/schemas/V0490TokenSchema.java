@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,7 @@ public class V0490TokenSchema extends Schema {
                 throw new IllegalStateException("Aliases map should be empty at genesis");
             }
             for (final Account acct : syntheticAccountCreator.blocklistAccounts()) {
-                final var id = asAccountId(ctx.newEntityNum(), hederaConfig);
+                final var id = asAccountId(ctx.newEntityNumForAccount(), hederaConfig);
                 if (!Objects.equals(
                         id.accountNumOrThrow(), acct.accountIdOrThrow().accountNumOrThrow())) {
                     throw new IllegalStateException(

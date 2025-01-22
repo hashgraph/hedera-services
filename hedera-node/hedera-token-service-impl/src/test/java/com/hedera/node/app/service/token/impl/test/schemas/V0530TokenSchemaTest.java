@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.schemas;
 
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -93,12 +95,16 @@ class V0530TokenSchemaTest {
                 accounts,
                 MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
                 entityIdState,
-                stakingInfosState);
+                stakingInfosState,
+                new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY, () -> EntityCounts.newBuilder().build(), c -> {}));
         final var newStates = newStatesInstance(
                 accounts,
                 MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
                 entityIdState,
-                stakingInfosState);
+                stakingInfosState,
+                new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY, () -> EntityCounts.newBuilder().build(), c -> {}));
         final var entityIdStore = new WritableEntityIdStore(newStates);
 
         final var networkInfo = new FakeNetworkInfo();
@@ -134,7 +140,8 @@ class V0530TokenSchemaTest {
             final MapWritableKVState<AccountID, Account> accts,
             final MapWritableKVState<Bytes, AccountID> aliases,
             final WritableSingletonState<EntityNumber> entityIdState,
-            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
+            final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo,
+            final WritableSingletonState<EntityCounts> entityCounts) {
         //noinspection ReturnOfNull
         return MapWritableStates.builder()
                 .state(accts)
@@ -142,6 +149,7 @@ class V0530TokenSchemaTest {
                 .state(stakingInfo)
                 .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
                 .state(entityIdState)
+                .state(entityCounts)
                 .build();
     }
 }

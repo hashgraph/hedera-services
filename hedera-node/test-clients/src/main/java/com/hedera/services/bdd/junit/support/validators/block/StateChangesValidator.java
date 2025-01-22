@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
@@ -41,6 +42,7 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -235,7 +237,19 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
+            Timestamp expectedFirstUserTxnTime = null;
+            boolean firstUserTxnSeen = false;
             for (final var item : block.items()) {
+                if (item.hasBlockHeader()) {
+                    if (i == 0) {
+                        assertEquals(0, item.blockHeaderOrThrow().number(), "Genesis block number should be 0");
+                    }
+                    expectedFirstUserTxnTime = item.blockHeaderOrThrow().firstTransactionConsensusTime();
+                } else if (item.hasTransactionResult() && !firstUserTxnSeen) {
+                    final var result = item.transactionResultOrThrow();
+                    assertEquals(expectedFirstUserTxnTime, result.consensusTimestampOrThrow());
+                    firstUserTxnSeen = true;
+                }
                 servicesWritten.clear();
                 if (shouldVerifyProof) {
                     hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
@@ -244,6 +258,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
+            }
+            if (!firstUserTxnSeen) {
+                assertNull(expectedFirstUserTxnTime, "Block had no user transactions");
             }
             final var lastBlockItem = block.items().getLast();
             assertTrue(lastBlockItem.hasBlockProof());
@@ -593,6 +610,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
             case HINTS_CONSTRUCTION_VALUE -> singletonUpdateChange.hintsConstructionValueOrThrow();
+            case ENTITY_COUNTS_VALUE -> singletonUpdateChange.entityCountsValueOrThrow();
+            case HISTORY_PROOF_CONSTRUCTION_VALUE -> singletonUpdateChange.historyProofConstructionValueOrThrow();
         };
     }
 
@@ -627,6 +646,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TSS_VOTE_MAP_KEY -> mapChangeKey.tssVoteMapKeyOrThrow();
             case HINTS_PARTY_ID_KEY -> mapChangeKey.hintsPartyIdKeyOrThrow();
             case PREPROCESSING_VOTE_ID_KEY -> mapChangeKey.preprocessingVoteIdKeyOrThrow();
+            case NODE_ID_KEY -> mapChangeKey.nodeIdKeyOrThrow();
+            case CONSTRUCTION_NODE_ID_KEY -> mapChangeKey.constructionNodeIdKeyOrThrow();
         };
     }
 

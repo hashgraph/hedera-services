@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
@@ -43,6 +44,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.impl.FakeHintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.roster.RosterService;
@@ -417,7 +419,12 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 TssBlockHashSigner::new,
                 appContext ->
                         new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary()),
-                HistoryServiceImpl::new,
+                appContext -> new HistoryServiceImpl(
+                        metrics,
+                        ForkJoinPool.commonPool(),
+                        appContext,
+                        new HistoryLibraryImpl(),
+                        HISTORY_LIBRARY_CODEC),
                 metrics);
     }
 

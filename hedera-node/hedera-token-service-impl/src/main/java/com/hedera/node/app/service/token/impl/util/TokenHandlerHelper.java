@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class TokenHandlerHelper {
         final var isContract = acct.smartContract();
 
         validateFalse(acct.deleted(), errorOnAccountDeleted);
-        final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
+        final var type = isContract ? EntityType.CONTRACT_BYTECODE : EntityType.ACCOUNT;
 
         final var expiryStatus =
                 expiryValidator.expirationStatus(type, acct.expiredAndPendingRemoval(), acct.tinybarBalance());

@@ -63,6 +63,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
@@ -128,8 +129,8 @@ class DiskStartupNetworksTest {
 
     @Test
     void throwsOnMissingMigrationNetwork() {
-        givenConfig();
-        assertThatThrownBy(() -> subject.migrationNetworkOrThrow()).isInstanceOf(IllegalStateException.class);
+        final var config = givenConfig();
+        assertThatThrownBy(() -> subject.migrationNetworkOrThrow(config)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -144,7 +145,7 @@ class DiskStartupNetworksTest {
     void findsAvailableMigrationNetwork() throws IOException {
         givenConfig();
         putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
-        final var network = subject.migrationNetworkOrThrow();
+        final var network = subject.migrationNetworkOrThrow(configProvider.getConfiguration());
         assertThat(network).isEqualTo(NETWORK);
     }
 
@@ -326,10 +327,11 @@ class DiskStartupNetworksTest {
         ((CommittableWritableStates) writableStates).commit();
     }
 
-    private void givenConfig() {
+    private Configuration givenConfig() {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("networkAdmin.upgradeSysFilesLoc", tempDir.toString())
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 123L));
+        return config;
     }
 }
