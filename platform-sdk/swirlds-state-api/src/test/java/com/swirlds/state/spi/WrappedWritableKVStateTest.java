@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,16 +76,12 @@ class WrappedWritableKVStateTest extends StateTestBase {
 
             // Before inserting, the size of backing store should be 2 (setup of the test adds 2 keys) and modifications
             // are none
-            assertEquals(2, state.size());
-            assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             state.put(C_KEY, CHERRY);
 
             // After doing a put, the size is increased as modifications are considered.
             // But the modifiedKeys or size of delegate doesn't change until commit
-            assertEquals(3, state.size());
-            assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             // Commit should not cause the size of backing store to be increased by 1.
@@ -94,8 +90,6 @@ class WrappedWritableKVStateTest extends StateTestBase {
             state.commit();
             Mockito.verify(state, Mockito.times(1)).putIntoDataSource(C_KEY, CHERRY);
             Mockito.verify(state, Mockito.never()).removeFromDataSource(anyString());
-            assertEquals(3, state.size());
-            assertEquals(3, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
         }
 
@@ -107,8 +101,6 @@ class WrappedWritableKVStateTest extends StateTestBase {
 
             // Before remove, the size of backing store should be 2 (setup of the test adds 2 keys) and modifications
             // are none
-            assertEquals(2, state.size());
-            assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             state.remove(A_KEY);
@@ -117,8 +109,6 @@ class WrappedWritableKVStateTest extends StateTestBase {
             // 1
             // So the size of state should be 1. But those changes don't affect delegate
             // until commit.
-            assertEquals(1, state.size());
-            assertEquals(2, delegate.size());
             assertEquals(0, delegate.modifiedKeys().size());
 
             // Commit should cause change in modifications on delegate.
@@ -126,8 +116,6 @@ class WrappedWritableKVStateTest extends StateTestBase {
             state.commit();
             Mockito.verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
             Mockito.verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
-            assertEquals(1, state.size());
-            assertEquals(1, delegate.size());
             assertEquals(1, delegate.modifiedKeys().size());
         }
     }

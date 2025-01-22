@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
@@ -127,14 +128,14 @@ class WritableContractStateStoreTest {
 
     @Test
     void getsSizeAsExpected() {
-        given(storage.size()).willReturn(1L);
+        given(entityCounters.getCounterFor(EntityType.CONTRACT_STORAGE)).willReturn(1L);
 
         assertSame(1L, subject.getNumSlots());
     }
 
     @Test
     void getsNumBytecodesAsExpected() {
-        given(bytecode.size()).willReturn(123L);
+        given(entityCounters.getCounterFor(EntityType.CONTRACT_BYTECODE)).willReturn(123L);
 
         assertSame(123L, subject.getNumBytecodes());
     }

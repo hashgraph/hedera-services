@@ -124,9 +124,6 @@ public class V0490TokenSchema extends Schema {
 
         // Get the map for storing all the created accounts
         final var accounts = ctx.newStates().<AccountID, Account>get(ACCOUNTS_KEY);
-        if (accounts.size() != 0) {
-            throw new IllegalStateException("Accounts map should be empty at genesis");
-        }
 
         // We will use these various configs for creating accounts. It would be nice to consolidate them somehow
         final var ledgerConfig = ctx.appConfig().getConfigData(LedgerConfig.class);
@@ -167,9 +164,6 @@ public class V0490TokenSchema extends Schema {
         // ---------- Create blocklist accounts -------------------------
         if (accountsConfig.blocklistEnabled()) {
             final var existingAliases = ctx.newStates().<Bytes, AccountID>get(ALIASES_KEY);
-            if (existingAliases.size() != 0) {
-                throw new IllegalStateException("Aliases map should be empty at genesis");
-            }
             for (final Account acct : syntheticAccountCreator.blocklistAccounts()) {
                 final var id = asAccountId(ctx.newEntityNumForAccount(), hederaConfig);
                 if (!Objects.equals(
@@ -211,7 +205,7 @@ public class V0490TokenSchema extends Schema {
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
         long curAccountId = 1; // Start with the first account ID
-        long totalAccounts = accounts.size();
+        long totalAccounts = hederaConfig.firstUserEntity();
         do {
             final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {

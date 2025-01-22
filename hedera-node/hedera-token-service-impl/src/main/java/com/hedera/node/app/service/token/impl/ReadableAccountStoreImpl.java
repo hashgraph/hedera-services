@@ -177,7 +177,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
 
     @Override
     public long getNumberOfAccounts() {
-        return accountState.size();
+        return entityCounters.getCounterFor(EntityType.ACCOUNT);
     }
 
     /**

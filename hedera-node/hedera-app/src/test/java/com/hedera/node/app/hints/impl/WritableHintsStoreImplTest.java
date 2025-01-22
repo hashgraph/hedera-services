@@ -34,7 +34,6 @@ import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -58,7 +57,6 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.ReadableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -323,17 +321,6 @@ class WritableHintsStoreImplTest {
         subject.purgeStateAfterHandoff(activeRosters);
 
         assertSame(nextConstruction, constructionNow(ACTIVE_CONSTRUCTION_KEY));
-
-        assertEquals(0L, votesNow().size());
-        assertEquals(0L, keySetsNow().size());
-    }
-
-    private ReadableKVState<PreprocessingVoteId, PreprocessingVote> votesNow() {
-        return state.getWritableStates(HintsService.NAME).get(V059HintsSchema.PREPROCESSING_VOTES_KEY);
-    }
-
-    private ReadableKVState<HintsPartyId, HintsKeySet> keySetsNow() {
-        return state.getWritableStates(HintsService.NAME).get(V059HintsSchema.HINTS_KEY_SETS_KEY);
     }
 
     private HintsConstruction constructionNow(@NonNull final String key) {
