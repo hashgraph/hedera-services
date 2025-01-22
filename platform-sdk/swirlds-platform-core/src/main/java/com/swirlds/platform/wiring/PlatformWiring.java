@@ -489,12 +489,14 @@ public class PlatformWiring {
 
         final Function<StateSignatureTransaction, Bytes> systemTransactionEncoder =
                 applicationCallbacks.systemTransactionEncoder();
-        splitTransactionResubmitterOutput
-                .buildTransformer(
-                        "postSplitTransactionResubmitter_encode_systemTransactions",
-                        "system transactions",
-                        systemTransactionEncoder)
-                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
+
+        final OutputWire<Bytes> systemTransactionEncoderOutputWireForResubmitter =
+                splitTransactionResubmitterOutput.buildTransformer(
+                        "postResubmitter_encode_systemTransactions",
+                        "system transactions from resubmitter",
+                        systemTransactionEncoder);
+        systemTransactionEncoderOutputWireForResubmitter.solderTo(
+                transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         if (publishStaleEvents) {
             staleEventsFromStaleEventDetector.solderTo(
@@ -644,13 +646,14 @@ public class PlatformWiring {
                 .buildTransformer("postHasher_notifier", "state and round", StateHashedNotification::from)
                 .solderTo(notifierWiring.getInputWire(AppNotifier::sendStateHashedNotification));
 
-        stateSignerWiring
+        final OutputWire<Bytes> systemTransactionEncoderOutputWireForStateSigner = stateSignerWiring
                 .getOutputWire()
                 .buildTransformer(
                         "postSigner_encode_systemTransactions",
                         "system transactions from signer",
-                        systemTransactionEncoder)
-                .solderTo(transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
+                        systemTransactionEncoder);
+        systemTransactionEncoderOutputWireForStateSigner.solderTo(
+                transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         // FUTURE WORK: combine the signedStateHasherWiring State and Round outputs into a single StateAndRound output.
         // FUTURE WORK: Split the single StateAndRound output into separate State and Round wires.
