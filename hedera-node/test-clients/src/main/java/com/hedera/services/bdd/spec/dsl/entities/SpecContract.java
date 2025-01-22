@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokenOperation;
@@ -203,7 +204,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      * @param args the arguments
      */
     public void setConstructorArgs(@NonNull final Object... args) {
-        this.constructorArgs = args;
+        constructorArgs = args;
     }
 
     /**
@@ -214,6 +215,17 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     public Account contractOrThrow(@NonNull final HederaNetwork network) {
         return modelOrThrow(network);
+    }
+
+    /**
+     * Returns an operation to authorize the given contract to act on behalf of this account.
+     *
+     * @param contract the contract to authorize
+     * @return the operation
+     */
+    public AuthorizeContractOperation authorizeContract(@NonNull final SpecContract contract) {
+        requireNonNull(contract);
+        return new AuthorizeContractOperation(this, contract);
     }
 
     /**
@@ -249,9 +261,9 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     @Override
     protected Result<Account> resultForSuccessful(
-            @NonNull Creation<SpecOperation, Account> creation, @NonNull HapiSpec spec) {
+            @NonNull final Creation<SpecOperation, Account> creation, @NonNull final HapiSpec spec) {
         final HapiContractCreate contractCreate;
-        if (creation.op() instanceof HapiContractCreate inlineCreate) {
+        if (creation.op() instanceof final HapiContractCreate inlineCreate) {
             contractCreate = inlineCreate;
         } else {
             contractCreate = (HapiContractCreate) ((InBlockingOrder) creation.op()).last();

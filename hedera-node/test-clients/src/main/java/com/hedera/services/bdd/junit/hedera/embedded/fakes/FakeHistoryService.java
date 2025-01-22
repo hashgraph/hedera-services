@@ -37,11 +37,6 @@ public class FakeHistoryService implements HistoryService {
     }
 
     @Override
-    public HistoryHandlers handlers() {
-        throw new AssertionError("Not implemented");
-    }
-
-    @Override
     public boolean isReady() {
         return true;
     }
@@ -69,5 +64,10 @@ public class FakeHistoryService implements HistoryService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
+    }
+
+    @Override
+    public HistoryHandlers handlers() {
+        throw new AssertionError("Not implemented");
     }
 }
