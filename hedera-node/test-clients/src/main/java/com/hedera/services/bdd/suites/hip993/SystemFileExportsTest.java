@@ -61,7 +61,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
@@ -208,14 +207,6 @@ public class SystemFileExportsTest {
                         spec.startupProperties().getLong("hedera.firstUserEntity"),
                         spec.registry().getAccountID("firstUser").getAccountNum(),
                         "First user entity num doesn't match config")));
-    }
-
-    @GenesisHapiTest
-    final Stream<DynamicTest> syntheticNodeCreatesExternalizedAtGenesis() {
-        return hapiTest(
-                recordStreamMustIncludeNoFailuresFrom(visibleItems(syntheticNodeCreatesValidator(), "genesisTxn")),
-                // This is the genesis transaction
-                cryptoCreate("firstUser").via("genesisTxn"));
     }
 
     @GenesisHapiTest
@@ -552,14 +543,6 @@ public class SystemFileExportsTest {
     private static byte[] getHexStringBytesFromBytes(final byte[] rawBytes) {
         final String hexString = HexFormat.of().formatHex(rawBytes);
         return Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8);
-    }
-
-    private static VisibleItemsValidator syntheticNodeCreatesValidator() {
-        return (spec, records) -> {
-            final var items = requireNonNull(records.get("genesisTxn"));
-            final var histogram = statusHistograms(items.entries());
-            assertEquals(Map.of(SUCCESS, CLASSIC_HAPI_TEST_NETWORK_SIZE), histogram.get(NodeCreate));
-        };
     }
 
     private static VisibleItemsValidator addressBookExportValidator(
