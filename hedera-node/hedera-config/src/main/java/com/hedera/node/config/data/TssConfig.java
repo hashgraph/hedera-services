@@ -28,5 +28,7 @@ import java.time.Duration;
 public record TssConfig(
         @ConfigProperty(defaultValue = "60s") @NetworkProperty Duration bootstrapHintsKeyGracePeriod,
         @ConfigProperty(defaultValue = "300s") @NetworkProperty Duration transitionHintsKeyGracePeriod,
+        @ConfigProperty(defaultValue = "60s") @NetworkProperty Duration bootstrapProofKeyGracePeriod,
+        @ConfigProperty(defaultValue = "300s") @NetworkProperty Duration transitionProofKeyGracePeriod,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean hintsEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean historyEnabled) {}

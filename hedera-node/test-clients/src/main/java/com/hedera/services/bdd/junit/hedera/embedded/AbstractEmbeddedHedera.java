@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
@@ -49,6 +48,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHintsService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHistoryService;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
@@ -70,7 +70,6 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -141,6 +140,13 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHintsService hintsService;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HistoryServiceFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's
+     * {@link HistoryServiceImpl} delegate needs to be constructed from the Hedera
+     * instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
+    protected FakeHistoryService historyService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -175,7 +181,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 (hintsService, historyService, configProvider) ->
                         this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
                 appContext -> this.hintsService = new FakeHintsService(appContext),
-                HistoryServiceImpl::new,
+                appContext -> this.historyService = new FakeHistoryService(),
                 metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
@@ -381,9 +387,5 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
-    }
-
-    private static AccountID accountIdOf(@NonNull final Address address) {
-        return fromPbj(parseAccount(address.getMemo()));
     }
 }
