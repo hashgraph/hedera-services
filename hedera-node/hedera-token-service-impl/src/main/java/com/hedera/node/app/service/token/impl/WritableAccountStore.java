@@ -180,26 +180,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the number of accounts in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of accounts in the state
-     */
-    public long sizeOfAccountState() {
-        return entityCounters.numAccounts();
-    }
-
-    /**
-     * Returns the number of aliases in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of aliases in the state
-     */
-    public long sizeOfAliasesState() {
-        return entityCounters.numAliases();
-    }
-
-    /**
      * Returns the set of accounts modified in existing state.
      *
      * @return the set of accounts modified in existing state

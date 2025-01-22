@@ -27,6 +27,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -38,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenServiceApiProviderTest {
+class TokenServiceApiProviderTest extends CryptoTokenHandlerTestBase {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Mock
@@ -58,14 +59,14 @@ class TokenServiceApiProviderTest {
         assertInstanceOf(
                 TokenServiceApiImpl.class,
                 TOKEN_SERVICE_API_PROVIDER.newInstance(
-                        DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters));
+                        DEFAULT_CONFIG, storeMetricsService, writableStates, writableEntityCounters));
     }
 
     @Test
     void testsCustomFeesByCreatingStep() {
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
         final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(
-                DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters);
+                DEFAULT_CONFIG, storeMetricsService, writableStates, writableEntityCounters);
         assertFalse(api.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }
 
@@ -75,7 +76,7 @@ class TokenServiceApiProviderTest {
         given(writableStates.get("ACCOUNTS")).willReturn(new MapWritableKVState<>("ACCOUNTS"));
         given(writableStates.get(V0490TokenSchema.TOKEN_RELS_KEY)).willThrow(IllegalStateException.class);
         final var api = TOKEN_SERVICE_API_PROVIDER.newInstance(
-                DEFAULT_CONFIG, storeMetricsService, writableStates, entityCounters);
+                DEFAULT_CONFIG, storeMetricsService, writableStates, writableEntityCounters);
         assertFalse(api.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT));
     }
 }

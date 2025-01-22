@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -128,7 +129,10 @@ public class ConsensusTestBase {
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private WritableEntityCounters entityCounters;
+    protected WritableEntityCounters entityCounters;
+
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
 
     protected MapReadableKVState<TopicID, Topic> readableTopicState;
     protected MapWritableKVState<TopicID, Topic> writableTopicState;
@@ -147,7 +151,7 @@ public class ConsensusTestBase {
         writableTopicState = emptyWritableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, entityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService, entityCounters);
         given(handleContext.storeFactory()).willReturn(storeFactory);
@@ -159,7 +163,7 @@ public class ConsensusTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, entityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
         writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService, entityCounters);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);

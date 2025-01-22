@@ -165,7 +165,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        final var readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         final var context = new FakePreHandleContext(accountStore, txn);
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -181,7 +181,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        final var readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         final var context = new FakePreHandleContext(accountStore, txn);
         context.registerStore(ReadableTopicStore.class, readableStore);

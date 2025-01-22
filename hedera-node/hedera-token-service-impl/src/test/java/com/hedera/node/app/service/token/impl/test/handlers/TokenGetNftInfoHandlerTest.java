@@ -140,7 +140,7 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
     void validatesQueryIfInvalidNftInTrans() {
         final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
-        final var store = new ReadableNftStoreImpl(readableStates, entityCounters);
+        final var store = new ReadableNftStoreImpl(readableStates, readableEntityCounters);
         ;
 
         final var query = createEmptyTokenGetNftInfoQuery();
@@ -174,9 +174,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
     void getsResponseIfInvalidNft() {
         final var state = MapReadableKVState.<NftID, Nft>builder(NFTS).build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
-        final var store = new ReadableNftStoreImpl(readableStates, entityCounters);
+        final var store = new ReadableNftStoreImpl(readableStates, readableEntityCounters);
         ;
-        final var tokenStore = new ReadableTokenStoreImpl(readableStates, entityCounters);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
 
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
@@ -214,9 +214,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(nftIdSl1, nftSl1)
                 .build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
-        final var store = new ReadableNftStoreImpl(readableStates, entityCounters);
+        final var store = new ReadableNftStoreImpl(readableStates, readableEntityCounters);
         ;
-        final var tokenStore = new ReadableTokenStoreImpl(readableStates, entityCounters);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
 
         checkResponse(responseHeader, expectedInfo, store, tokenStore);
     }
@@ -237,9 +237,9 @@ class TokenGetNftInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(nftIdSl1, nftSl1)
                 .build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(state);
-        final var store = new ReadableNftStoreImpl(readableStates, entityCounters);
+        final var store = new ReadableNftStoreImpl(readableStates, readableEntityCounters);
         ;
-        final var tokenStore = new ReadableTokenStoreImpl(readableStates, entityCounters);
+        final var tokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
 
         checkResponse(responseHeader, expectedInfo, store, tokenStore);
     }

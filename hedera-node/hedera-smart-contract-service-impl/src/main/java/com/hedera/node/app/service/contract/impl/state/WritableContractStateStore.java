@@ -38,7 +38,7 @@ import java.util.Set;
 /**
  * A fully mutable {@link ContractStateStore}.
  */
-public class WritableContractStateStore implements ContractStateStore {
+public class WritableContractStateStore extends ReadableContractStateStore implements ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<ContractID, Bytecode> bytecode;
     private final WritableEntityCounters entityCounters;
@@ -55,6 +55,7 @@ public class WritableContractStateStore implements ContractStateStore {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
         requireNonNull(states);
         this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
         this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
@@ -68,7 +69,7 @@ public class WritableContractStateStore implements ContractStateStore {
         final long maxContractsCapacity = contractsConfig.maxNumber();
         final var contractStoreMetrics = storeMetricsService.get(StoreType.CONTRACT, maxContractsCapacity);
         bytecode.setMetrics(contractStoreMetrics);
-        this.entityCounters = entityCounters;
+        this.entityCounters = requireNonNull(entityCounters);
     }
 
     /**
@@ -134,18 +135,5 @@ public class WritableContractStateStore implements ContractStateStore {
     @Override
     public @Nullable SlotValue getOriginalSlotValue(@NonNull final SlotKey key) {
         return storage.getOriginalValue(requireNonNull(key));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getNumSlots() {
-        return entityCounters.numContractStorageSlots();
-    }
-
-    @Override
-    public long getNumBytecodes() {
-        return entityCounters.numContractBytecodes();
     }
 }

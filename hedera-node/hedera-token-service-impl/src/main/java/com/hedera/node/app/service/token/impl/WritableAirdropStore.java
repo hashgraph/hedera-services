@@ -56,7 +56,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         airdropState = states.get(AIRDROPS_KEY);
         this.entityCounters = entityCounters;
 

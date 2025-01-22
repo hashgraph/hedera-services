@@ -63,7 +63,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         this.tokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
         this.entityCounters = entityCounters;
 

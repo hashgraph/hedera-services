@@ -56,10 +56,10 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
                     final var assessor = new CustomFeeAssessmentStep(op);
                     try {
                         final var result = assessor.assessFees(
-                                new ReadableTokenStoreImpl(writableStates),
-                                new ReadableTokenRelationStoreImpl(writableStates),
+                                new ReadableTokenStoreImpl(writableStates, entityCounters),
+                                new ReadableTokenRelationStoreImpl(writableStates, entityCounters),
                                 configuration,
-                                new ReadableAccountStoreImpl(writableStates),
+                                new ReadableAccountStoreImpl(writableStates, entityCounters),
                                 AccountID::hasAlias);
                         return !result.assessedCustomFees().isEmpty();
                     } catch (Exception ignore) {

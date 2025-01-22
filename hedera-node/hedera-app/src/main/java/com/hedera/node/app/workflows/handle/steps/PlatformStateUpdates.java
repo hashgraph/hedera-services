@@ -25,6 +25,8 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -111,11 +113,13 @@ public class PlatformStateUpdates {
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
                     final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
+                    final var entityIdStore =
+                            new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
                     if (addressBookConfig.useRosterLifecycle()
                             && addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
                         logger.info("Creating candidate roster at PREPARE_UPGRADE");
-                        final var nodeStore =
-                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                        final var nodeStore = new ReadableNodeStoreImpl(
+                                state.getReadableStates(AddressBookService.NAME), entityIdStore);
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
                         final var stakingInfoStore =
                                 new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
@@ -147,8 +151,8 @@ public class PlatformStateUpdates {
                     } else if (networkAdminConfig.exportCandidateRoster()) {
                         // Having the option to export candidate-roster.json even before using the roster
                         // lifecycle simplifies test automation in the adoption period
-                        final var nodeStore =
-                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                        final var nodeStore = new ReadableNodeStoreImpl(
+                                state.getReadableStates(AddressBookService.NAME), entityIdStore);
                         final var candidateRoster = new Roster(StreamSupport.stream(
                                         Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT),
                                         false)

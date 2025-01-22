@@ -59,7 +59,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
         this.entityCounters = entityCounters;
 
@@ -91,14 +91,6 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         requireNonNull(tokenId);
         final var token = tokenState.getForModify(tokenId);
         return Optional.ofNullable(token);
-    }
-
-    /**
-     * Returns the number of tokens in the state.
-     * @return the number of tokens in the state
-     */
-    public long sizeOfState() {
-        return entityCounters.numTokens();
     }
 
     /**

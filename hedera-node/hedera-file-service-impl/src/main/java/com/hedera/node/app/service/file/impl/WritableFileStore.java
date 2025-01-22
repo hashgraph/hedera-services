@@ -57,7 +57,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
         this.entityCounters = entityCounters;
 
@@ -96,15 +96,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     public @NonNull Optional<File> getForModify(final FileID fileId) {
         final var file = filesState.getForModify(fileId);
         return Optional.ofNullable(file);
-    }
-
-    /**
-     * Returns the number of files in the state.
-     *
-     * @return the number of files in the state
-     */
-    public long sizeOfState() {
-        return entityCounters.numFiles();
     }
 
     /**

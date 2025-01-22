@@ -104,7 +104,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         given(storeFactory.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
         writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class), entityCounters);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
@@ -160,7 +160,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
         context.registerStore(ReadableTopicStore.class, readableStore);
 

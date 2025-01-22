@@ -70,7 +70,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         requireNonNull(configuration);
         requireNonNull(storeMetricsService);
 

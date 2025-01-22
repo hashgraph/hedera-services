@@ -61,7 +61,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
         this.entityCounters = entityCounters;
 

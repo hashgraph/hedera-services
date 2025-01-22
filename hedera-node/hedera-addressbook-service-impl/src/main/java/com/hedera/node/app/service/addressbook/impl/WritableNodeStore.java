@@ -51,7 +51,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
 
         final long maxCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.NODE, maxCapacity);
@@ -83,15 +83,6 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     public Node getForModify(final long nodeId) {
         return nodesState()
                 .getForModify(EntityNumber.newBuilder().number(nodeId).build());
-    }
-
-    /**
-     * Returns the number of nodes in the state.
-     * @return the number of nodes in the state
-     */
-    @Override
-    public long sizeOfState() {
-        return entityCounters.numNodes();
     }
 
     /**

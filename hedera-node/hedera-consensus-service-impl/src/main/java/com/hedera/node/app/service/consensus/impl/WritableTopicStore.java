@@ -51,7 +51,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableEntityCounters entityCounters) {
-        super(states);
+        super(states, entityCounters);
         this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
@@ -85,14 +85,6 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     public Topic getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
         return topicState().getForModify(topicID);
-    }
-
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return entityCounters.numNodes();
     }
 
     /**

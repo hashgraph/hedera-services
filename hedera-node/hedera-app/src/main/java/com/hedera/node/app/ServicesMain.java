@@ -44,6 +44,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.impl.FakeHintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -394,7 +396,9 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
      * @return the event stream name
      */
     private static String canonicalEventStreamLoc(final long nodeId, @NonNull final State root) {
-        final var nodeStore = new ReadableNodeStoreImpl(root.getReadableStates(AddressBookService.NAME));
+        final var nodeStore = new ReadableNodeStoreImpl(
+                root.getReadableStates(AddressBookService.NAME),
+                new ReadableEntityIdStoreImpl(root.getReadableStates(EntityIdService.NAME)));
         final var accountId = requireNonNull(nodeStore.get(nodeId)).accountIdOrThrow();
         return accountId.shardNum() + "." + accountId.realmNum() + "." + accountId.accountNumOrThrow();
     }
