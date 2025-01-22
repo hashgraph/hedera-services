@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.sync;
 
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

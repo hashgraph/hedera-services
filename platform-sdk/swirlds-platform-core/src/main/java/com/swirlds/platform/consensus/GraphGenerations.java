@@ -20,14 +20,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface GraphGenerations {
-    // FUTURE WORK: move this to EventConstants.java
-    long FIRST_GENERATION = 0;
-
-    /**
-     * @return The minimum judge generation number from the most recent fame-decided round, if there is one.
-     * Else this returns {@link #FIRST_GENERATION}.
-     */
-    long getMaxRoundGeneration();
 
     /**
      * Return the minimum generation of all the famous witnesses that are not in ancient rounds.
@@ -48,25 +40,15 @@ public interface GraphGenerations {
      * disk).
      *
      * @return The minimum generation of all the judges that are not ancient. If no judges are
-     * ancient, returns {@link #FIRST_GENERATION}.
+     * ancient, returns {@link com.swirlds.platform.system.events.EventConstants#FIRST_GENERATION}.
      */
     long getMinGenerationNonAncient();
 
     /**
      * @return The minimum judge generation number from the oldest non-expired round, if we have expired any rounds.
-     * Else this returns {@link #FIRST_GENERATION}.
+     * Else this returns {@link com.swirlds.platform.system.events.EventConstants#FIRST_GENERATION}.
      */
     long getMinRoundGeneration();
-
-    /**
-     * Checks if we have any ancient rounds yet. For a short period after genesis, there will be no ancient rounds.
-     * After that, this will always return true.
-     *
-     * @return true if there are any ancient events, false otherwise
-     */
-    default boolean areAnyEventsAncient() {
-        return getMinGenerationNonAncient() > FIRST_GENERATION;
-    }
 
     /**
      * Checks if the supplied event is ancient or not. An event is ancient if its generation is smaller than the round

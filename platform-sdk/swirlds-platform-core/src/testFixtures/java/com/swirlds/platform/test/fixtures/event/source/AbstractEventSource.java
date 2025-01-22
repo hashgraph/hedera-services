@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event.source;
 
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION_tmp;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
@@ -233,8 +233,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
                 otherParent == null ? null : otherParent.getRecentEvent(random, otherParentIndex);
         final EventImpl latestSelfEvent = getLatestEvent(random);
         final long generation = Math.max(
-                        otherParentEvent == null ? (FIRST_GENERATION - 1) : otherParentEvent.getGeneration(),
-                        latestSelfEvent == null ? (FIRST_GENERATION - 1) : latestSelfEvent.getGeneration())
+                        otherParentEvent == null ? (FIRST_GENERATION_tmp - 1) : otherParentEvent.getGeneration(),
+                        latestSelfEvent == null ? (FIRST_GENERATION_tmp - 1) : latestSelfEvent.getGeneration())
                 + 1;
 
         event = RandomEventUtils.randomEventWithTimestamp(

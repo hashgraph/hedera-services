@@ -20,6 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.MinimumJudgeInfo;
+import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,22 +37,22 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
 
     /**
      * The minimum judge generation number from the oldest non-expired round, if we have expired any rounds. Else, this
-     * is {@link GraphGenerations#FIRST_GENERATION}.
+     * is {@link EventConstants#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
-    private volatile long minRoundGeneration = GraphGenerations.FIRST_GENERATION;
+    private volatile long minRoundGeneration = EventConstants.FIRST_GENERATION;
 
     /** the minimum generation of all the judges that are not ancient */
-    private volatile long minGenNonAncient = GraphGenerations.FIRST_GENERATION;
+    private volatile long minGenNonAncient = EventConstants.FIRST_GENERATION;
 
     /**
      * The minimum judge generation number from the most recent fame-decided round, if there is one. Else, this is
-     * {@link GraphGenerations#FIRST_GENERATION}.
+     * {@link EventConstants#FIRST_GENERATION}.
      *
      * <p>Updated only on consensus thread, read concurrently from gossip threads.
      */
-    private volatile long maxRoundGeneration = GraphGenerations.FIRST_GENERATION;
+    private volatile long maxRoundGeneration = EventConstants.FIRST_GENERATION;
 
     /** fame has been decided for all rounds less than this, but not for this round. */
     private volatile long fameDecidedBelow = ConsensusConstants.ROUND_FIRST;
@@ -84,9 +85,9 @@ public class ThreadSafeConsensusInfo implements GraphGenerations, RoundNumberPro
 
         if (fameDecidedBelow == ConsensusConstants.ROUND_FIRST) {
             // if there are no rounds, set the defaults
-            maxRoundGeneration = GraphGenerations.FIRST_GENERATION;
-            minGenNonAncient = GraphGenerations.FIRST_GENERATION;
-            minRoundGeneration = GraphGenerations.FIRST_GENERATION;
+            maxRoundGeneration = EventConstants.FIRST_GENERATION;
+            minGenNonAncient = EventConstants.FIRST_GENERATION;
+            minRoundGeneration = EventConstants.FIRST_GENERATION;
             return;
         }
 

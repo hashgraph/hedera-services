@@ -1081,7 +1081,7 @@ class TipsetEventCreatorTests {
                     if (useBirthRoundForAncient) {
                         ancientThreshold = Math.max(EventConstants.MINIMUM_ROUND_CREATED, eventIndex - 26);
                     } else {
-                        ancientThreshold = Math.max(EventConstants.FIRST_GENERATION, eventIndex - 26);
+                        ancientThreshold = Math.max(EventConstants.FIRST_GENERATION_tmp, eventIndex - 26);
                     }
 
                     // Set non-ancientEventWindow after creating genesis event from each node.

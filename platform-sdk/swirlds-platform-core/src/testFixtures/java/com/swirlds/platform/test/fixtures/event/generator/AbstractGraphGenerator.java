@@ -18,7 +18,6 @@ package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventConstants;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -163,6 +162,6 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      */
     @Override
     public long getMaxGeneration() {
-        return maxGenerationPerCreator.values().stream().max(Long::compareTo).orElse(GraphGenerations.FIRST_GENERATION);
+        return maxGenerationPerCreator.values().stream().max(Long::compareTo).orElse(EventConstants.FIRST_GENERATION);
     }
 }

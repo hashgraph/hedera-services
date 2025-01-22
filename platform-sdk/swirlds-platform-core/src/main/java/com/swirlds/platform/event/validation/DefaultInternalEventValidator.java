@@ -19,7 +19,7 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION_tmp;
 
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
@@ -269,7 +269,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
         final EventDescriptorWrapper selfParent = event.getSelfParent();
         if (selfParent != null) {
-            if (selfParent.eventDescriptor().generation() < FIRST_GENERATION) {
+            if (selfParent.eventDescriptor().generation() < FIRST_GENERATION_tmp) {
                 inconsistentSelfParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has self parent with generation less than the FIRST_GENERATION. self-parent generation: %s"
@@ -280,7 +280,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         }
 
         for (final EventDescriptorWrapper otherParent : event.getOtherParents()) {
-            if (otherParent.eventDescriptor().generation() < FIRST_GENERATION) {
+            if (otherParent.eventDescriptor().generation() < FIRST_GENERATION_tmp) {
                 inconsistentOtherParentLogger.error(
                         EXCEPTION.getMarker(),
                         "Event %s has other parent with generation less than the FIRST_GENERATION. other-parent: %s"
@@ -317,11 +317,11 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
     private boolean isEventGenerationValid(@NonNull final PlatformEvent event) {
         final long eventGeneration = event.getGeneration();
 
-        if (eventGeneration < FIRST_GENERATION) {
+        if (eventGeneration < FIRST_GENERATION_tmp) {
             invalidGenerationLogger.error(
                     EXCEPTION.getMarker(),
                     "Event %s has an invalid generation. Event generation: %s, the min generation is: %s"
-                            .formatted(event, eventGeneration, FIRST_GENERATION));
+                            .formatted(event, eventGeneration, FIRST_GENERATION_tmp));
             invalidGenerationAccumulator.update(1);
             return false;
         }

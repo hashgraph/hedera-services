@@ -58,6 +58,6 @@ public final class RoundCalculationUtils {
         // which is -1. in this case we will return FIRST_GENERATION, which is 0
         return Math.max(
                 roundGenerationProvider.applyAsLong(getOldestNonAncientRound(roundsNonAncient, lastRoundDecided)),
-                GraphGenerations.FIRST_GENERATION);
+                EventConstants.FIRST_GENERATION);
     }
 }

@@ -19,7 +19,7 @@ package com.swirlds.platform.consensus;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_NEGATIVE_INFINITY;
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION_tmp;
 
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.event.AncientMode;
@@ -63,11 +63,11 @@ public class EventWindow {
         }
 
         if (ancientMode == GENERATION_THRESHOLD) {
-            if (ancientThreshold < FIRST_GENERATION) {
+            if (ancientThreshold < FIRST_GENERATION_tmp) {
                 throw new IllegalArgumentException(
                         "the minimum generation non-ancient cannot be lower than the first generation for events.");
             }
-            if (expiredThreshold < FIRST_GENERATION) {
+            if (expiredThreshold < FIRST_GENERATION_tmp) {
                 throw new IllegalArgumentException(
                         "the minimum generation non-expired cannot be lower than the first generation for events.");
             }
@@ -96,7 +96,7 @@ public class EventWindow {
      */
     @NonNull
     public static EventWindow getGenesisEventWindow(@NonNull final AncientMode ancientMode) {
-        final long firstIndicator = ancientMode == GENERATION_THRESHOLD ? FIRST_GENERATION : ROUND_FIRST;
+        final long firstIndicator = ancientMode == GENERATION_THRESHOLD ? FIRST_GENERATION_tmp : ROUND_FIRST;
         return new EventWindow(ROUND_NEGATIVE_INFINITY, firstIndicator, firstIndicator, ancientMode);
     }
 

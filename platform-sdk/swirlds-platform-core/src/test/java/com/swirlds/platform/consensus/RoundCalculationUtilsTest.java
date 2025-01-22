@@ -58,7 +58,7 @@ class RoundCalculationUtilsTest {
                 RoundCalculationUtils.getMinGenNonAncient(10, 5, map::get),
                 "if no rounds are ancient yet, then the minGenNonAncient is the first round generation");
         Assertions.assertEquals(
-                GraphGenerations.FIRST_GENERATION,
+                EventConstants.FIRST_GENERATION,
                 RoundCalculationUtils.getMinGenNonAncient(10, 5, l -> EventConstants.GENERATION_UNDEFINED),
                 "if no round generation is not defined yet, then the minGenNonAncient is the first generation");
     }

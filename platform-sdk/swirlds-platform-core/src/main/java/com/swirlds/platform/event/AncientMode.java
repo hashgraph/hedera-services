@@ -17,7 +17,7 @@
 package com.swirlds.platform.event;
 
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static com.swirlds.platform.consensus.GraphGenerations.FIRST_GENERATION;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.eventhandling.EventConfig;
