@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_ADD_LIVE_HASH;
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.UNCHECKED_SUBMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -28,6 +32,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WAITING_FOR_LEDGER_ID;
@@ -57,7 +62,10 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoAddLiveHashTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
@@ -342,7 +350,7 @@ class IngestCheckerTest extends AppTestBase {
     class DuplicationTests {
         @Test
         @DisplayName("The second of two transactions with the same transaction ID should be rejected")
-        void testThrottleFails() throws PreCheckException {
+        void testThrottleFails() {
             // Given a deduplication cache, and a transaction with an ID already in the deduplication cache
             final var id = txBody.transactionIDOrThrow();
             deduplicationCache.add(id);
@@ -370,6 +378,99 @@ class IngestCheckerTest extends AppTestBase {
                     .isInstanceOf(PreCheckException.class)
                     .hasFieldOrPropertyWithValue("responseCode", BUSY);
             verify(opWorkflowMetrics).incrementThrottled(UNCHECKED_SUBMIT);
+        }
+
+        @Test
+        @DisplayName("Unsupported transaction functionality should throw NOT_SUPPORTED")
+        void unsupportedTransactionFunctionality() throws PreCheckException {
+            final TransactionBody cryptoAddLiveHashTxBody = TransactionBody.newBuilder()
+                    .cryptoAddLiveHash(
+                            CryptoAddLiveHashTransactionBody.newBuilder().build())
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(ALICE.accountID())
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
+                    .nodeAccountID(nodeSelfAccountId)
+                    .build();
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, cryptoAddLiveHashTxBody))
+                    .build();
+            final var cryptoAddLiveHashTx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+
+            final var cryptoAddLiveHashTransactionInfo = new TransactionInfo(
+                    cryptoAddLiveHashTx,
+                    cryptoAddLiveHashTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    cryptoAddLiveHashTx.signedTransactionBytes(),
+                    CRYPTO_ADD_LIVE_HASH,
+                    null);
+            when(transactionChecker.check(cryptoAddLiveHashTx, null)).thenReturn(cryptoAddLiveHashTransactionInfo);
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, cryptoAddLiveHashTx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+        }
+
+        @Test
+        @DisplayName("Privileged transaction functionality should throw NOT_SUPPORTED for non-privileged accounts")
+        void privilegedTransactionFunctionality() throws PreCheckException {
+            final TransactionBody freezeTxBody = TransactionBody.newBuilder()
+                    .freeze(FreezeTransactionBody.newBuilder().build())
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(ALICE.accountID())
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
+                    .nodeAccountID(nodeSelfAccountId)
+                    .build();
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, freezeTxBody))
+                    .build();
+            final var freezeTx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+
+            final var freezeTransactionInfo = new TransactionInfo(
+                    freezeTx, freezeTxBody, MOCK_SIGNATURE_MAP, freezeTx.signedTransactionBytes(), FREEZE, null);
+            when(transactionChecker.check(freezeTx, null)).thenReturn(freezeTransactionInfo);
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, freezeTx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+        }
+
+        @Test
+        @DisplayName("Transaction with negative gas limit should throw INSUFFICIENT_GAS")
+        void transactionWithNegativeGasLimit() throws PreCheckException {
+            final TransactionBody contractCreateTxBody = TransactionBody.newBuilder()
+                    .contractCreateInstance(
+                            ContractCreateTransactionBody.newBuilder().gas(-1L).build())
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(ALICE.accountID())
+                            .transactionValidStart(
+                                    Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
+                    .nodeAccountID(nodeSelfAccountId)
+                    .build();
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, contractCreateTxBody))
+                    .build();
+            final var contractCreateTx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+
+            final var contractCreateTransactionInfo = new TransactionInfo(
+                    contractCreateTx,
+                    contractCreateTxBody,
+                    MOCK_SIGNATURE_MAP,
+                    contractCreateTx.signedTransactionBytes(),
+                    CONTRACT_CREATE,
+                    null);
+            when(transactionChecker.check(contractCreateTx, null)).thenReturn(contractCreateTransactionInfo);
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, contractCreateTx, configuration))
+                    .isInstanceOf(PreCheckException.class)
+                    .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_GAS);
         }
 
         @Test
