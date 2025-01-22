@@ -75,6 +75,8 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -829,6 +831,33 @@ public class TxnUtils {
             final var entry = RecordStreamEntry.from(item);
             return entry.function() == FileUpdate
                     && idFilter.test(entry.body().getFileUpdate().getFileID());
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    public static Transaction normalizeTransaction(Transaction txn) {
+        if (txn.hasBody()) {
+            return txn;
+        } else {
+            try {
+                final ByteString bodyBytes;
+                final SignatureMap signatureMap;
+                if (!txn.getSignedTransactionBytes().isEmpty()) {
+                    final var signedTransaction = SignedTransaction.parseFrom(txn.getSignedTransactionBytes());
+                    bodyBytes = signedTransaction.getBodyBytes();
+                    signatureMap = signedTransaction.getSigMap();
+                } else {
+                    bodyBytes = txn.getBodyBytes();
+                    signatureMap = txn.getSigMap();
+                }
+                final var txBody = TransactionBody.parseFrom(bodyBytes);
+                return Transaction.newBuilder()
+                        .setBody(txBody)
+                        .setSigMap(signatureMap)
+                        .build();
+            } catch (InvalidProtocolBufferException ex) {
+                throw new IllegalStateException("Unable to normalize transaction: " + txn, ex);
+            }
         }
     }
 }
