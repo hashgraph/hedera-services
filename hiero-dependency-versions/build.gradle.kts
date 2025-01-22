@@ -79,7 +79,7 @@ dependencies.constraints {
     api("com.google.jimfs:jimfs:1.3.0") { because("com.google.common.jimfs") }
     api("com.google.protobuf:protobuf-java:$protobuf") { because("com.google.protobuf") }
     api("com.google.protobuf:protobuf-java-util:$protobuf") { because("com.google.protobuf.util") }
-    api("com.hedera.pbj:pbj-runtime:0.9.2") { because("com.hedera.pbj.runtime") }
+    api("com.hedera.pbj:pbj-runtime:0.9.15") { because("com.hedera.pbj.runtime") }
     api("com.squareup:javapoet:1.13.0") { because("com.squareup.javapoet") }
     api("net.java.dev.jna:jna:5.12.1") { because("com.sun.jna") }
     api("com.google.dagger:dagger:$dagger") { because("dagger") }
