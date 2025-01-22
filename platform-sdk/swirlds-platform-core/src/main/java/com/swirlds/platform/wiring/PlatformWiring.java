@@ -490,13 +490,14 @@ public class PlatformWiring {
         final Function<StateSignatureTransaction, Bytes> systemTransactionEncoder =
                 applicationCallbacks.systemTransactionEncoder();
 
-        final OutputWire<Bytes> systemTransactionEncoderOutputWireForResubmitter =
-                splitTransactionResubmitterOutput.buildTransformer(
-                        "postResubmitter_encode_systemTransactions",
-                        "system transactions from resubmitter",
-                        systemTransactionEncoder);
-        systemTransactionEncoderOutputWireForResubmitter.solderTo(
-                transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
+        // TODO clean up this code
+        //        final OutputWire<Bytes> systemTransactionEncoderOutputWireForResubmitter =
+        //                splitTransactionResubmitterOutput.buildTransformer(
+        //                        "postResubmitter_encode_systemTransactions",
+        //                        "system transactions from resubmitter",
+        //                        systemTransactionEncoder);
+        //        systemTransactionEncoderOutputWireForResubmitter.solderTo(
+        //                transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));
 
         if (publishStaleEvents) {
             staleEventsFromStaleEventDetector.solderTo(
