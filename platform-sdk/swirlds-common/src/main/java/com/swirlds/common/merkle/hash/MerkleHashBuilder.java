@@ -140,6 +140,10 @@ public class MerkleHashBuilder {
         }
     }
 
+    /**
+     * TraverseTask processes the current node in the tree and either hashes it or adds
+     * to a parallel structure of ComputeTasks and creates TraverseTasks for its children.
+     */
     class TraverseTask extends AbstractTask {
         final MerkleNode node;
         final AbstractTask out;
@@ -156,13 +160,13 @@ public class MerkleHashBuilder {
                 if (node == null || node.getHash() != null) {
                     out.send();
                 } else if (node.isLeaf()) {
-                    merkleCryptography.digestSync(node, MERKLE_DIGEST_TYPE);
+                    merkleCryptography.digestSync(node.asLeaf(), MERKLE_DIGEST_TYPE);
                     out.send();
                 } else {
                     MerkleInternal internal = node.asInternal();
                     int nChildren = internal.getNumberOfChildren();
                     if (nChildren == 0) {
-                        merkleCryptography.digestSync(node, MERKLE_DIGEST_TYPE);
+                        merkleCryptography.digestSync(internal, MERKLE_DIGEST_TYPE);
                         out.send();
                     } else {
                         ComputeTask compute = new ComputeTask(internal, nChildren, out);
@@ -179,6 +183,9 @@ public class MerkleHashBuilder {
         }
     }
 
+    /**
+     * ComputeTask computes internal node's hash once all its children have their hashes computed.
+     */
     class ComputeTask extends AbstractTask {
         final MerkleInternal internal;
         final AbstractTask out;
@@ -197,6 +204,9 @@ public class MerkleHashBuilder {
         }
     }
 
+    /**
+     * ResultTask connects asynchronous parallel execution to FutureMerkleHash.
+     */
     class ResultTask extends AbstractTask {
         final FutureMerkleHash future;
         final MerkleNode root;
