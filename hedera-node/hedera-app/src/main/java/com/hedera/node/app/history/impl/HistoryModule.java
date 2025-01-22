@@ -16,18 +16,21 @@
 
 package com.hedera.node.app.history.impl;
 
-import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.history.History;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
+import com.hedera.node.app.spi.AppContext;
+import com.swirlds.state.lifecycle.info.NodeInfo;
+import dagger.Module;
+import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
+import javax.inject.Singleton;
 
-class HistoryLibraryCodecTest {
-    @Test
-    void nothingSupportedYet() {
-        assertThrows(UnsupportedOperationException.class, () -> HISTORY_LIBRARY_CODEC.encodeHistory(History.DEFAULT));
-        assertThrows(
-                UnsupportedOperationException.class, () -> HISTORY_LIBRARY_CODEC.encodeAddressBook(Map.of(), Map.of()));
+@Module
+public interface HistoryModule {
+    @Provides
+    @Singleton
+    static Supplier<NodeInfo> provideSelfNodeInfoSupplier(@NonNull final AppContext appContext) {
+        return requireNonNull(appContext).selfNodeInfoSupplier();
     }
 }
