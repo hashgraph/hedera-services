@@ -156,7 +156,7 @@ public class TransactionPoolNexus implements TransactionSupplier {
             return false;
         }
 
-        return submitTransaction(appTransaction, false, false);
+        return submitTransaction(appTransaction, false);
     }
 
     /**
@@ -169,19 +169,18 @@ public class TransactionPoolNexus implements TransactionSupplier {
      *                    functionalities.
      * @return true if successful
      */
-    public synchronized boolean submitTransaction(
-            @NonNull final Bytes transaction, final boolean priority, final boolean isSystem) {
+    public synchronized boolean submitTransaction(@NonNull final Bytes transaction, final boolean priority) {
         Objects.requireNonNull(transaction);
 
         // Always submit system transactions. If it's not a system transaction, then only submit it if we
         // don't violate queue size capacity restrictions.
-        if (!isSystem
+        if (!priority
                 && (bufferedTransactions.size() + priorityBufferedTransactions.size()) > throttleTransactionQueueSize) {
             transactionPoolMetrics.recordRejectedAppTransaction();
             return false;
         }
 
-        if (isSystem) {
+        if (priority) {
             bufferedSignatureTransactionCount++;
             transactionPoolMetrics.recordSubmittedPlatformTransaction();
         } else {
