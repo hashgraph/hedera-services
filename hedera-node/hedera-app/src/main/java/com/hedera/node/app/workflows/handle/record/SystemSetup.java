@@ -392,7 +392,7 @@ public class SystemSetup {
         }
 
         if (!genesisNodes.isEmpty()) {
-            createNodeRecordBuilders(genesisNodes, context);
+            createNodeRecordBuilders(genesisNodes, context, exchangeRateSet);
             log.info(" - Queued {} node create records", genesisNodes.size());
             genesisNodes = null;
         }
@@ -430,11 +430,14 @@ public class SystemSetup {
         createAccountRecordBuilders(map, context, recordMemo, null, exchangeRateSet);
     }
 
-    private void createNodeRecordBuilders(SortedSet<Node> nodes, @NonNull final TokenContext context) {
+    private void createNodeRecordBuilders(
+            SortedSet<Node> nodes,
+            @NonNull final TokenContext context,
+            @NonNull final ExchangeRateSet exchangeRateSet) {
         for (final Node node : nodes) {
             final var recordBuilder =
                     context.addPrecedingChildRecordBuilder(NodeCreateStreamBuilder.class, NODE_CREATE);
-            recordBuilder.nodeID(node.nodeId());
+            recordBuilder.nodeID(node.nodeId()).exchangeRate(exchangeRateSet);
 
             final var op = newNodeCreate(node);
             final var bodyBuilder = TransactionBody.newBuilder().nodeCreate(op);
