@@ -1077,6 +1077,10 @@ public final class Hedera
 
     @Override
     public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
+        if (stateSignatureTransaction == null) {
+            return StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.DEFAULT);
+        }
+
         final var config = appContext.configSupplier().get().getConfigData(HederaConfig.class);
         final var instant = appContext.instantSource().instant();
         final var nodeAccountID = appContext.selfNodeInfoSupplier().get().accountId();
