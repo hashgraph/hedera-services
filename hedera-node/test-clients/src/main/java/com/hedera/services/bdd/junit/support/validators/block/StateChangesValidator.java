@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_M
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
 import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
@@ -40,6 +42,7 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -63,11 +66,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -205,16 +206,12 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadLegacyBookWithGeneratedCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
-        final var hedera = ServicesMain.newHedera(NodeId.of(0L), metrics);
+        final var hedera = ServicesMain.newHedera(metrics);
         this.state = hedera.newMerkleStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
+        hedera.initializeConfigProvider(GENESIS);
         hedera.initializeStatesApi(
-                state,
-                metrics,
-                InitTrigger.GENESIS,
-                DiskStartupNetworks.fromLegacyAddressBook(addressBook),
-                platformConfig,
-                addressBook);
+                state, GENESIS, DiskStartupNetworks.fromLegacyAddressBook(addressBook), platformConfig, addressBook);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
@@ -240,7 +237,19 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
+            Timestamp expectedFirstUserTxnTime = null;
+            boolean firstUserTxnSeen = false;
             for (final var item : block.items()) {
+                if (item.hasBlockHeader()) {
+                    if (i == 0) {
+                        assertEquals(0, item.blockHeaderOrThrow().number(), "Genesis block number should be 0");
+                    }
+                    expectedFirstUserTxnTime = item.blockHeaderOrThrow().firstTransactionConsensusTime();
+                } else if (item.hasTransactionResult() && !firstUserTxnSeen) {
+                    final var result = item.transactionResultOrThrow();
+                    assertEquals(expectedFirstUserTxnTime, result.consensusTimestampOrThrow());
+                    firstUserTxnSeen = true;
+                }
                 servicesWritten.clear();
                 if (shouldVerifyProof) {
                     hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
@@ -249,6 +258,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                     applyStateChanges(item.stateChangesOrThrow());
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());
+            }
+            if (!firstUserTxnSeen) {
+                assertNull(expectedFirstUserTxnTime, "Block had no user transactions");
             }
             final var lastBlockItem = block.items().getLast();
             assertTrue(lastBlockItem.hasBlockProof());
@@ -305,9 +317,9 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var itemSerialized = BlockItem.PROTOBUF.toBytes(item);
         final var digest = sha384DigestOrThrow();
         switch (item.item().kind()) {
-            case EVENT_HEADER, EVENT_TRANSACTION -> inputTreeHasher.addLeaf(
+            case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> inputTreeHasher.addLeaf(
                     ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
-            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+            case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES, BLOCK_HEADER -> outputTreeHasher.addLeaf(
                     ByteBuffer.wrap(digest.digest(itemSerialized.toByteArray())));
             default -> {
                 // Other items are not part of the input/output trees
@@ -597,6 +609,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case BLOCK_STREAM_INFO_VALUE -> singletonUpdateChange.blockStreamInfoValueOrThrow();
             case PLATFORM_STATE_VALUE -> singletonUpdateChange.platformStateValueOrThrow();
             case ROSTER_STATE_VALUE -> singletonUpdateChange.rosterStateValueOrThrow();
+            case HINTS_CONSTRUCTION_VALUE -> singletonUpdateChange.hintsConstructionValueOrThrow();
+            case ENTITY_COUNTS_VALUE -> singletonUpdateChange.entityCountsValueOrThrow();
         };
     }
 
@@ -629,6 +643,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case SCHEDULED_ORDER_KEY -> mapChangeKey.scheduledOrderKeyOrThrow();
             case TSS_MESSAGE_MAP_KEY -> mapChangeKey.tssMessageMapKeyOrThrow();
             case TSS_VOTE_MAP_KEY -> mapChangeKey.tssVoteMapKeyOrThrow();
+            case HINTS_PARTY_ID_KEY -> mapChangeKey.hintsPartyIdKeyOrThrow();
+            case PREPROCESSING_VOTE_ID_KEY -> mapChangeKey.preprocessingVoteIdKeyOrThrow();
         };
     }
 
@@ -657,6 +673,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TSS_ENCRYPTION_KEYS_VALUE -> mapChangeValue.tssEncryptionKeysValue();
             case TSS_MESSAGE_VALUE -> mapChangeValue.tssMessageValueOrThrow();
             case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
+            case HINTS_KEY_SET_VALUE -> mapChangeValue.hintsKeySetValueOrThrow();
+            case PREPROCESSING_VOTE_VALUE -> mapChangeValue.preprocessingVoteValueOrThrow();
         };
     }
 

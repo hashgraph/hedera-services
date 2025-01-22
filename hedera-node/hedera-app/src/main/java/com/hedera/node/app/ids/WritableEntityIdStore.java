@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 package com.hedera.node.app.ids;
 
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,11 +30,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A writeable store for entity ids.
  */
-public class WritableEntityIdStore {
+public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
     /**
      * The underlying data storage class that holds the entity id data.
      */
     private final WritableSingletonState<EntityNumber> entityIdState;
+
+    private final WritableSingletonState<EntityCounts> entityCountsState;
 
     /**
      * Create a new {@link WritableEntityIdStore} instance.
@@ -39,8 +44,10 @@ public class WritableEntityIdStore {
      * @param states The state to use.
      */
     public WritableEntityIdStore(@NonNull final WritableStates states) {
+        super(states);
         requireNonNull(states);
         this.entityIdState = states.getSingleton(ENTITY_ID_STATE_KEY);
+        this.entityCountsState = states.getSingleton(ENTITY_COUNTS_KEY);
     }
 
     /**
@@ -58,9 +65,32 @@ public class WritableEntityIdStore {
      *
      * @return the next new entity number
      */
-    public long incrementAndGet() {
+    public long incrementAndGet(final EntityType entityType) {
         final var newEntityNum = peekAtNextNumber();
         entityIdState.put(new EntityNumber(newEntityNum));
+        entityCountsState.put(incrementEntityTypeCount(entityType));
         return newEntityNum;
+    }
+
+    private EntityCounts incrementEntityTypeCount(final EntityType entityType) {
+        final var entityCounts = requireNonNull(entityCountsState.get());
+        final var newEntityCounts = entityCounts.copyBuilder();
+        switch (entityType) {
+            case ACCOUNT -> newEntityCounts.numAccounts(entityCounts.numAccounts() + 1);
+            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() + 1);
+            case TOKEN -> newEntityCounts.numTokens(entityCounts.numTokens() + 1);
+            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() + 1);
+            case TOPIC -> newEntityCounts.numTopics(entityCounts.numTopics() + 1);
+            case FILE -> newEntityCounts.numFiles(entityCounts.numFiles() + 1);
+            case CONTRACT_BYTECODE -> newEntityCounts.numContractBytecodes(entityCounts.numContractBytecodes() + 1);
+            case CONTRACT_STORAGE -> newEntityCounts.numContractStorageSlots(
+                    entityCounts.numContractStorageSlots() + 1);
+            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() + 1);
+            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() + 1);
+            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() + 1);
+            case NODE -> newEntityCounts.numNodes(entityCounts.numNodes() + 1);
+            case STAKING_INFO -> newEntityCounts.numStakingInfos(entityCounts.numStakingInfos() + 1);
+        }
+        return newEntityCounts.build();
     }
 }

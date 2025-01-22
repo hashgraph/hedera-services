@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.virtualmap.constructable.ConstructableUtils.registerVirtualMapConstructables;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -41,6 +42,7 @@ import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
+import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.gui.WindowConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.health.OSHealthChecker;
@@ -54,7 +56,6 @@ import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.awt.Dimension;
@@ -70,8 +71,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -134,7 +136,7 @@ public final class BootstrapUtils {
      * @param configuration the configuration
      */
     public static void performHealthChecks(@NonNull final Path configPath, @NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration);
+        requireNonNull(configuration);
         final OSFileSystemChecker osFileSystemChecker = new OSFileSystemChecker(configPath);
 
         OSHealthChecker.performOSHealthChecks(
@@ -191,7 +193,7 @@ public final class BootstrapUtils {
      * @param appMainName the name of the app main class
      */
     public static @NonNull SwirldMain loadAppMain(@NonNull final String appMainName) {
-        Objects.requireNonNull(appMainName);
+        requireNonNull(appMainName);
         try {
             final Class<?> mainClass = Class.forName(appMainName);
             final Constructor<?>[] constructors = mainClass.getDeclaredConstructors();
@@ -226,7 +228,7 @@ public final class BootstrapUtils {
      */
     public static boolean detectSoftwareUpgrade(
             @NonNull final SoftwareVersion appVersion, @Nullable final SignedState loadedSignedState) {
-        Objects.requireNonNull(appVersion, "The app version must not be null.");
+        requireNonNull(appVersion, "The app version must not be null.");
 
         final SoftwareVersion loadedSoftwareVersion;
         if (loadedSignedState == null) {
@@ -262,7 +264,7 @@ public final class BootstrapUtils {
      * @param configuration the configuration object
      */
     public static void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration);
+        requireNonNull(configuration);
 
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
@@ -291,8 +293,8 @@ public final class BootstrapUtils {
      */
     public static @NonNull SwirldMain buildAppMain(
             @NonNull final ApplicationDefinition appDefinition, @NonNull final SwirldAppLoader appLoader) {
-        Objects.requireNonNull(appDefinition);
-        Objects.requireNonNull(appLoader);
+        requireNonNull(appDefinition);
+        requireNonNull(appLoader);
         try {
             return appLoader.instantiateSwirldMain();
         } catch (final Exception e) {
@@ -311,7 +313,7 @@ public final class BootstrapUtils {
      * @param configuration the configuration values to write
      */
     public static void writeSettingsUsed(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration);
+        requireNonNull(configuration);
         final StringBuilder settingsUsedBuilder = new StringBuilder();
 
         // Add all settings values to the string builder
@@ -339,28 +341,29 @@ public final class BootstrapUtils {
      * through the system environment.   If no nodes are specified on the commandline or through the system environment,
      * all nodes in the address book are returned to run locally.
      *
-     * @param addressBook   the address book
      * @param cliNodesToRun nodes specified to start by the user on the command line
      * @param configNodesToRun nodes specified to start by the user in configuration
+     * @param knownNodeIds the set of known node ids
+     * @param validNodeId a predicate that determines if a node id is valid
      * @return A non-empty list of nodes to run locally
-     * @throws IllegalArgumentException if a node to run is not in the address book or the list of nodes to run is
-     *                                  empty
+     * @throws IllegalArgumentException if a node to run is invalid or the list of nodes to run is empty
      */
     public static @NonNull List<NodeId> getNodesToRun(
-            @NonNull final AddressBook addressBook,
             @NonNull final Set<NodeId> cliNodesToRun,
-            @NonNull final List<NodeId> configNodesToRun) {
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(cliNodesToRun);
-        Objects.requireNonNull(configNodesToRun);
+            @NonNull final List<NodeId> configNodesToRun,
+            @NonNull final Supplier<Set<NodeId>> knownNodeIds,
+            @NonNull final Predicate<NodeId> validNodeId) {
+        requireNonNull(validNodeId);
+        requireNonNull(cliNodesToRun);
+        requireNonNull(configNodesToRun);
+        requireNonNull(knownNodeIds);
 
         final List<NodeId> nodesToRun = new ArrayList<>();
-        final Set<NodeId> addressBookNodeIds = addressBook.getNodeIdSet();
-
         if (cliNodesToRun.isEmpty()) {
             if (configNodesToRun.isEmpty()) {
-                // if no node ids are provided by cli or config, run all nodes from the address book.
-                return new ArrayList<>(addressBookNodeIds);
+                // If no node ids are provided by cli or config, run all nodes from the address book;
+                // this will only be a useful fallback for Browser-based platform testing apps
+                return new ArrayList<>(knownNodeIds.get());
             } else {
                 // CLI did not provide any nodes to run, so use the node ids from the config
                 nodesToRun.addAll(configNodesToRun);
@@ -371,12 +374,14 @@ public final class BootstrapUtils {
         }
 
         for (final NodeId nodeId : nodesToRun) {
-            if (!addressBook.contains(nodeId)) {
+            if (!validNodeId.test(nodeId)) {
+                final String errorMessage = "Node " + nodeId + " is invalid and cannot be started.";
                 // all nodes to start must exist in the address book
-                logger.error(
-                        EXCEPTION.getMarker(), "Node {} is not in the address book and cannot be started.", nodeId);
-                exitSystem(
-                        NODE_ADDRESS_MISMATCH, "Node " + nodeId + " is not in the address book and cannot be started.");
+                logger.error(EXCEPTION.getMarker(), errorMessage);
+                exitSystem(NODE_ADDRESS_MISMATCH, errorMessage);
+                // the following throw is not reachable in production,
+                // but reachable in testing with static mocked system exit calls.
+                throw new ConfigurationException(errorMessage);
             }
         }
 
@@ -395,8 +400,8 @@ public final class BootstrapUtils {
     @NonNull
     public static Map<NodeId, SwirldMain> loadSwirldMains(
             @NonNull final ApplicationDefinition appDefinition, @NonNull final Collection<NodeId> nodesToRun) {
-        Objects.requireNonNull(appDefinition, "appDefinition must not be null");
-        Objects.requireNonNull(nodesToRun, "nodesToRun must not be null");
+        requireNonNull(appDefinition, "appDefinition must not be null");
+        requireNonNull(nodesToRun, "nodesToRun must not be null");
         try {
             // Create the SwirldAppLoader
             final SwirldAppLoader appLoader;
