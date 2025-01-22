@@ -17,7 +17,6 @@
 package com.swirlds.platform;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -25,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /** An interface for classes that calculate consensus of events */
-public interface Consensus extends GraphGenerations, RoundNumberProvider {
+public interface Consensus extends RoundNumberProvider {
 
     /**
      * Set the flag to signal whether we are currently replaying the PCES (preconsensus event stream) or not.
