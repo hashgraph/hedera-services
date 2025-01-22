@@ -41,7 +41,6 @@ class ConsensusRoundTests {
     @Test
     void testConstructor() {
         final Randotron r = Randotron.create();
-        final GraphGenerations g = mock(GraphGenerations.class);
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
 
         when(snapshot.round()).thenReturn(1L);
@@ -55,7 +54,6 @@ class ConsensusRoundTests {
                 mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
-                g,
                 mock(EventWindow.class),
                 snapshot,
                 false,
@@ -64,7 +62,6 @@ class ConsensusRoundTests {
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
         assertEquals(1, round.getRoundNum(), "roundNum does not match the events provided.");
-        assertSame(g, round.getGenerations(), "getGenerations should match the supplied generations");
     }
 
     @Test
@@ -87,7 +84,6 @@ class ConsensusRoundTests {
                 mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
-                mock(GraphGenerations.class),
                 mock(EventWindow.class),
                 mock(ConsensusSnapshot.class),
                 false,

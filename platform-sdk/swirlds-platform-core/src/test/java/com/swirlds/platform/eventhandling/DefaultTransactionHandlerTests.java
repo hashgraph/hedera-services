@@ -96,7 +96,6 @@ class DefaultTransactionHandlerTests {
                 roster,
                 events,
                 keystone,
-                new Generations(),
                 EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD),
                 SyntheticSnapshot.GENESIS_SNAPSHOT,
                 pcesRound,

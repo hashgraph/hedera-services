@@ -174,7 +174,6 @@ class StaleEventDetectorTests {
                 mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
-                mock(Generations.class),
                 eventWindow,
                 mock(ConsensusSnapshot.class),
                 false,

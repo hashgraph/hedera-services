@@ -86,7 +86,6 @@ class ConsistencyTestingToolRoundTests {
                 mock(Roster.class),
                 mockEvents,
                 mock(PlatformEvent.class),
-                mock(GraphGenerations.class),
                 mock(EventWindow.class),
                 mockSnapshot,
                 false,

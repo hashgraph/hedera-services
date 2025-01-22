@@ -77,7 +77,6 @@ class RoundDurabilityBufferTests {
                 mock(Roster.class),
                 List.of(),
                 keystoneEvent,
-                mock(Generations.class),
                 mock(EventWindow.class),
                 mock(ConsensusSnapshot.class),
                 false,

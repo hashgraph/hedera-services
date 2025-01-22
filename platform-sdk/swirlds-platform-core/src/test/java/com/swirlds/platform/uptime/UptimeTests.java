@@ -100,7 +100,6 @@ class UptimeTests {
                 roster,
                 events,
                 mock(PlatformEvent.class),
-                mock(GraphGenerations.class),
                 mock(EventWindow.class),
                 snapshot,
                 false,

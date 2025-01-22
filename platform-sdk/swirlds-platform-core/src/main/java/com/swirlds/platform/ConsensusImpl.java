@@ -759,7 +759,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 roster,
                 consensusEvents,
                 recentEvents.getLast().getBaseEvent(),
-                new Generations(this),
                 new EventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
                         decidedRoundNumber,

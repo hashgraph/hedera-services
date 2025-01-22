@@ -90,7 +90,6 @@ class StatsSigningTestingToolStateTest {
                 roster,
                 List.of(event),
                 event,
-                new Generations(),
                 eventWindow,
                 new ConsensusSnapshot(),
                 false,
