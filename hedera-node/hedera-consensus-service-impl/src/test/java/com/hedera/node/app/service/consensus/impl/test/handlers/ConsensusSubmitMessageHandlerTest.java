@@ -50,6 +50,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusMessageChunkInfo;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -552,6 +553,10 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         // mock crypto transfer dispatch results
         given(handleContext.dispatch(any(DispatchOptions.class))).willReturn(streamBuilder);
         given(streamBuilder.status()).willReturn(SUCCESS);
+        given(streamBuilder.transactionBody())
+                .willReturn(TransactionBody.newBuilder()
+                        .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
+                        .build());
         // mock signature is not in FEKL
         given(handleContext.keyVerifier()).willReturn(keyVerifier);
         given(keyVerifier.verificationFor(any(Key.class), any())).willReturn(signatureVerification);
