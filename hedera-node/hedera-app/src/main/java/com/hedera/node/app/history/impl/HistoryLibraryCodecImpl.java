@@ -19,36 +19,23 @@ package com.hedera.node.app.history.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.history.History;
-import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * Utility to extract information from byte arrays returned by the {@link HistoryLibrary}, encode protobuf
- * messages in the form the library expects, and so on.
+ * Default implementation of {@link HistoryLibraryCodec}.
  */
 public enum HistoryLibraryCodecImpl implements HistoryLibraryCodec {
     HISTORY_LIBRARY_CODEC;
 
-    /**
-     * Encodes the given address book hash and metadata into a history record to be signed via
-     * {@link HistoryLibrary#signSchnorr(Bytes, Bytes)}.
-     *
-     * @param history@return the bytes for signing
-     */
+    @Override
     public @NonNull Bytes encodeHistory(@NonNull final History history) {
         requireNonNull(history);
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * Encodes the given roster and public keys into an address book for use with the {@link HistoryLibrary}.
-     *
-     * @param weights the roster
-     * @param publicKeys the available Schnorr public keys for the nodes in the roster
-     * @return the history address book
-     */
+    @Override
     public @NonNull Bytes encodeAddressBook(
             @NonNull final Map<Long, Long> weights, @NonNull final Map<Long, Bytes> publicKeys) {
         requireNonNull(weights);
@@ -56,13 +43,7 @@ public enum HistoryLibraryCodecImpl implements HistoryLibraryCodec {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    /**
-     * Encodes the given roster and public keys into an address book for use with the {@link HistoryLibrary}.
-     *
-     * @param addressBookHash the hash of the first address book to use TSS
-     * @param snarkVerificationKey the verification key for the SNARK used to prove address book transitions
-     * @return the history address book
-     */
+    @Override
     public @NonNull Bytes encodeLedgerId(
             @NonNull final Bytes addressBookHash, @NonNull final Bytes snarkVerificationKey) {
         requireNonNull(addressBookHash);

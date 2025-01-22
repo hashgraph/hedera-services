@@ -26,6 +26,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
+/**
+ * Provides write access to the {@link HistoryService} state.
+ */
 public interface WritableHistoryStore extends ReadableHistoryStore {
     /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.

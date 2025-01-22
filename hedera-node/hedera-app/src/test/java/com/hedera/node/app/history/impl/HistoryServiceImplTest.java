@@ -17,13 +17,19 @@
 package com.hedera.node.app.history.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.state.history.History;
+import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -73,5 +79,25 @@ class HistoryServiceImplTest {
     void metadataAsExpected() {
         assertEquals(HistoryService.NAME, subject.getServiceName());
         assertEquals(HistoryService.MIGRATION_ORDER, subject.migrationOrder());
+    }
+
+    @Test
+    void onlyReadyGivenProof() {
+        assertFalse(subject.isReady());
+        subject.accept(HistoryProof.DEFAULT);
+        assertTrue(subject.isReady());
+    }
+
+    @Test
+    void refusesToProveMismatchedMetadata() {
+        final var oldVk = Bytes.wrap("X");
+        final var currentVk = Bytes.wrap("Z");
+        final var currentProof = HistoryProof.newBuilder()
+                .targetHistory(History.newBuilder().metadata(currentVk))
+                .build();
+
+        subject.accept(currentProof);
+        assertThrows(IllegalArgumentException.class, () -> subject.getCurrentProof(oldVk));
+        assertEquals(currentProof.proof(), subject.getCurrentProof(currentVk));
     }
 }
