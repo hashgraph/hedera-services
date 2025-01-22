@@ -30,7 +30,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -128,7 +128,7 @@ public class ConsensusTestBase {
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private EntityCounters entityCounters;
+    private WritableEntityCounters entityCounters;
 
     protected MapReadableKVState<TopicID, Topic> readableTopicState;
     protected MapWritableKVState<TopicID, Topic> writableTopicState;

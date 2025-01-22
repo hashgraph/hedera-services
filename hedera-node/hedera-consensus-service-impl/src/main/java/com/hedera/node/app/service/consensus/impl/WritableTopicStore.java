@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TopicsConfig;
@@ -38,7 +38,7 @@ import java.util.Set;
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableTopicStore extends ReadableTopicStoreImpl {
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableTopicStore} instance.
      *
@@ -50,7 +50,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         super(states);
         this.entityCounters = entityCounters;
 

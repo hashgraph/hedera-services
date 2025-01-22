@@ -26,7 +26,7 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -50,7 +50,7 @@ import java.util.Set;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
@@ -62,8 +62,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
-        super(states);
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
         this.entityCounters = entityCounters;
 
         final long maxCapacity =

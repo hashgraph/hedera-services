@@ -62,7 +62,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -110,7 +110,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private EntityCounters entityCounters;
+    private WritableEntityCounters entityCounters;
 
     private Configuration configuration;
 
@@ -429,7 +429,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         readableAccounts = emptyStateBuilder.build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
     }
 
     private void updateWritableStore(Map<Long, Account> accountsToAdd) {

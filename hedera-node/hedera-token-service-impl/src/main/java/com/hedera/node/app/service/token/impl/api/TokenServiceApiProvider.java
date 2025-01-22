@@ -24,7 +24,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableStates;
@@ -47,7 +47,7 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableStates writableStates,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         return new TokenServiceApiImpl(
                 configuration,
                 storeMetricsService,

@@ -48,8 +48,8 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicH
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -94,7 +94,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
-    private EntityCounters entityCounters;
+    private WritableEntityCounters entityCounters;
 
     private WritableTopicStore topicStore;
     private Configuration config;

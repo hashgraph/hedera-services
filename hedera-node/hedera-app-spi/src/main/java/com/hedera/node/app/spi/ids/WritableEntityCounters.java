@@ -16,12 +16,13 @@
 
 package com.hedera.node.app.spi.ids;
 
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.node.app.spi.validation.EntityType;
 
 /**
  * Provides a way to generate entity numbers.
  */
-public interface EntityCounters {
+public interface WritableEntityCounters extends ReadableEntityCounters {
     /**
      * Decrements the entity type counter for the given entity type.
      * Since entity counters are used to determine the size of the state, when an entity is removed,
@@ -32,27 +33,10 @@ public interface EntityCounters {
      */
     void decrementEntityTypeCounter(EntityType entityType);
 
-    long numNodes();
-
-    long numAccounts();
-
-    long numTokens();
-
-    long numFiles();
-
-    long numTopics();
-
-    long numContractBytecodes();
-
-    long numContractStorageSlots();
-
-    long numNfts();
-
-    long numTokenRelations();
-
-    long numAliases();
-
-    long numSchedules();
-
-    long numAirdrops();
+    /**
+     * Increments the entity type counter for the given entity type.
+     * @param entityType the type of entity for which to increment the number
+     * @return the updated entity counts
+     */
+    EntityCounts incrementEntityTypeCount(final EntityType entityType);
 }

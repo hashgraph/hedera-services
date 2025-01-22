@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.api;
 
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableStates;
@@ -48,5 +48,5 @@ public interface ServiceApiProvider<T> {
             @NonNull Configuration configuration,
             @NonNull StoreMetricsService storeMetricsService,
             @NonNull WritableStates writableStates,
-            @NonNull final EntityCounters entityCounters);
+            @NonNull final WritableEntityCounters entityCounters);
 }

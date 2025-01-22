@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -43,7 +43,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableKVState<FileID, File> filesState;
 
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableFileStore} instance.
@@ -56,7 +56,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         super(states);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
         this.entityCounters = entityCounters;

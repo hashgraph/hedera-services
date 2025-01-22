@@ -25,7 +25,7 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -49,7 +49,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final Instant consensusTime,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");

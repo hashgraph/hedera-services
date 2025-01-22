@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -31,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A writeable store for entity ids.
  */
-public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements EntityCounters {
+public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements WritableEntityCounters {
     /**
      * The underlying data storage class that holds the entity id data.
      */
@@ -73,7 +73,8 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements 
         return newEntityNum;
     }
 
-    private EntityCounts incrementEntityTypeCount(final EntityType entityType) {
+    @Override
+    public EntityCounts incrementEntityTypeCount(final EntityType entityType) {
         final var entityCounts = requireNonNull(entityCountsState.get());
         final var newEntityCounts = entityCounts.copyBuilder();
         switch (entityType) {

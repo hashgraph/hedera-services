@@ -29,7 +29,7 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -56,7 +56,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     private final WritableKVState<TimestampSeconds, ThrottleUsageSnapshots> scheduleUsagesMutable;
     private final WritableKVState<ScheduledOrder, ScheduleID> scheduleOrdersMutable;
 
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableScheduleStoreImpl} instance.
@@ -69,7 +69,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            final EntityCounters entityCounters) {
+            final WritableEntityCounters entityCounters) {
         super(states);
         requireNonNull(configuration);
         requireNonNull(storeMetricsService);

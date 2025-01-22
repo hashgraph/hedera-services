@@ -43,7 +43,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
@@ -127,7 +127,7 @@ public class WritableStoreFactory {
     private final WritableStates states;
     private final Configuration configuration;
     private final StoreMetricsService storeMetricsService;
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Constructor of {@code WritableStoreFactory}
@@ -144,7 +144,7 @@ public class WritableStoreFactory {
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         requireNonNull(state);
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
@@ -192,7 +192,7 @@ public class WritableStoreFactory {
                 @NonNull WritableStates states,
                 @NonNull Configuration configuration,
                 @NonNull StoreMetricsService storeMetricsService,
-                @NonNull EntityCounters entityCounters);
+                @NonNull WritableEntityCounters entityCounters);
     }
 
     private record StoreEntry(@NonNull String name, @NonNull StoreFactory factory) {}

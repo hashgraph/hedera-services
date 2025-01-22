@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.TokensConfig;
@@ -44,7 +44,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
      */
     private final WritableKVState<PendingAirdropId, AccountPendingAirdrop> airdropState;
 
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableAirdropStore} instance.
@@ -55,7 +55,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         super(states);
         airdropState = states.get(AIRDROPS_KEY);
         this.entityCounters = entityCounters;

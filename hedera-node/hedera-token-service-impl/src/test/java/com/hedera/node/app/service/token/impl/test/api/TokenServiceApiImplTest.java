@@ -42,8 +42,8 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.ids.EntityCounters;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -116,7 +116,7 @@ class TokenServiceApiImplTest {
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
-    private EntityCounters entityCounters;
+    private WritableEntityCounters entityCounters;
 
     private TokenServiceApiImpl subject;
 

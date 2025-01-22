@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -44,7 +44,7 @@ class WritableTopicStoreTest extends ConsensusTestBase {
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private EntityCounters entityCounters;
+    private WritableEntityCounters entityCounters;
 
     private Topic topic;
 

@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.NodesConfig;
@@ -38,7 +38,7 @@ import java.util.Set;
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableNodeStore extends ReadableNodeStoreImpl {
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableNodeStore} instance.
      *
@@ -50,7 +50,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         super(states);
 
         final long maxCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();

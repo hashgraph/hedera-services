@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -47,7 +47,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     /** The underlying data storage class that holds the NFT data. */
     private final WritableKVState<NftID, Nft> nftState;
 
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableNftStore} instance.
@@ -60,7 +60,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         super(states);
         this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
         this.entityCounters = entityCounters;

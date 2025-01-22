@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
-import com.hedera.node.app.spi.ids.EntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -41,7 +41,7 @@ import java.util.Set;
 public class WritableContractStateStore implements ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<ContractID, Bytecode> bytecode;
-    private final EntityCounters entityCounters;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Create a new {@link WritableContractStateStore} instance.
@@ -54,7 +54,7 @@ public class WritableContractStateStore implements ContractStateStore {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final EntityCounters entityCounters) {
+            @NonNull final WritableEntityCounters entityCounters) {
         requireNonNull(states);
         this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
         this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
