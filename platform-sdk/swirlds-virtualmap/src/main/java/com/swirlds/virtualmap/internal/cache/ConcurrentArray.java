@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.threading.futures.StandardFuture;
 import java.util.NoSuchElementException;
@@ -362,7 +362,7 @@ final class ConcurrentArray<T> {
                         result.complete(null);
                     }
                 } catch (Exception e) {
-                    logger.error(VIRTUAL_MERKLE_STATS.getMarker(), "Exception in parallelTraverse", e);
+                    logger.error(EXCEPTION.getMarker(), "Exception in parallelTraverse", e);
                     // Don't cancel the result future more than once
                     if (exceptionThrown.compareAndSet(false, true)) {
                         result.cancelWithError(e);
