@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WAITING_FOR_LEDGER_ID;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
@@ -39,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -59,6 +61,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -133,6 +136,9 @@ class IngestCheckerTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
 
+    @Mock(strictness = LENIENT)
+    private BlockStreamManager blockStreamManager;
+
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
 
@@ -184,6 +190,7 @@ class IngestCheckerTest extends AppTestBase {
         subject = new IngestChecker(
                 nodeSelfAccountId,
                 currentPlatformStatus,
+                blockStreamManager,
                 transactionChecker,
                 solvencyPreCheck,
                 signatureExpander,
@@ -204,7 +211,8 @@ class IngestCheckerTest extends AppTestBase {
         @Test
         @DisplayName("When the node is ok, no exception should be thrown")
         void testNodeStateSucceeds() {
-            assertThatCode(() -> subject.checkNodeState()).doesNotThrowAnyException();
+            given(blockStreamManager.hasLedgerId()).willReturn(true);
+            assertThatCode(() -> subject.verifyPlatformActive()).doesNotThrowAnyException();
         }
 
         @ParameterizedTest
@@ -216,12 +224,24 @@ class IngestCheckerTest extends AppTestBase {
             if (status != PlatformStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
                 when(currentPlatformStatus.get()).thenReturn(status);
+                given(blockStreamManager.hasLedgerId()).willReturn(true);
                 // When we try to parse and check a transaction, it should fail because the platform is not active
-                assertThatThrownBy(() -> subject.checkNodeState())
+                assertThatThrownBy(() -> subject.verifyPlatformActive())
                         .isInstanceOf(PreCheckException.class)
                         .has(responseCode(PLATFORM_NOT_ACTIVE));
                 verify(opWorkflowMetrics, never()).incrementThrottled(any());
             }
+        }
+
+        @Test
+        @DisplayName("Even if the platform is not ACTIVE, waits for ledger id to be available")
+        void testParseAndCheckWithUnknownLedgerIdFails() {
+            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+            // When we try to parse and check a transaction, it should fail because the platform is not active
+            assertThatThrownBy(() -> subject.verifyReadyForTransactions())
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(WAITING_FOR_LEDGER_ID));
+            verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
     }
 
@@ -236,6 +256,7 @@ class IngestCheckerTest extends AppTestBase {
         subject = new IngestChecker(
                 otherNodeSelfAccountId,
                 currentPlatformStatus,
+                blockStreamManager,
                 transactionChecker,
                 solvencyPreCheck,
                 signatureExpander,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public interface MigrationContext {
      * Consumes and returns the next entity number. For use by migrations that need to create entities.
      * @return the next entity number
      */
-    long newEntityNum();
+    long newEntityNumForAccount();
 
     /**
      * Copies and releases the underlying on-disk state for the given key. If this is not called

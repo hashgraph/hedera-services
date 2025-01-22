@@ -190,7 +190,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
             try (final var wrappedState = stateAccessor.apply(responseType)) {
                 // 2. Do some general pre-checks
-                ingestChecker.checkNodeState();
+                ingestChecker.verifyPlatformActive();
                 if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
@@ -225,6 +225,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
                     // A super-user does not have to pay for a query and has all permissions
                     if (!authorizer.isSuperUser(payerID)) {
+                        // But if payment is required, we must be able to submit a transaction
+                        ingestChecker.verifyReadyForTransactions();
+
                         // 3.ii Validate CryptoTransfer
                         queryChecker.validateCryptoTransfer(transactionInfo);
 
