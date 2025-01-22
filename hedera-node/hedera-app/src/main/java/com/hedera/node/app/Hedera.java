@@ -1078,7 +1078,15 @@ public final class Hedera
     @Override
     public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
         if (stateSignatureTransaction == null) {
-            return StateSignatureTransaction.PROTOBUF.toBytes(StateSignatureTransaction.DEFAULT);
+            final var transactionBody =
+                    TransactionBody.newBuilder().stateSignatureTransaction(StateSignatureTransaction.DEFAULT);
+
+            final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
+                    .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
+                    .sigMap(SignatureMap.DEFAULT)
+                    .build();
+
+            return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
         }
 
         final var config = appContext.configSupplier().get().getConfigData(HederaConfig.class);
