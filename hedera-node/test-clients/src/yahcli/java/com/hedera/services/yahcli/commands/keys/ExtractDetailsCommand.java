@@ -43,6 +43,10 @@ import picocli.CommandLine;
 public class ExtractDetailsCommand implements Callable<Integer> {
     public static final String DER_EDDSA_PREFIX = "302e020100300506032b657004220420";
 
+    // The length of a hex-encoded ECDSA private key is 64 characters, or 32 bytes
+    private static final int ECDSA_HEX_KEY_LENGTH = 64;
+    public static final String HEX_ZERO_PREFIX = "00";
+
     @CommandLine.ParentCommand
     private KeysCommand keysCommand;
 
@@ -105,9 +109,23 @@ public class ExtractDetailsCommand implements Callable<Integer> {
     private static KeyOutput asSecp256k1Output(final ECPrivateKey privateKey) {
         final var publicKey = Secp256k1Utils.extractEcdsaPublicKey(privateKey);
         final var hexedPubKey = CommonUtils.hex(publicKey);
-        final var hexedPrivKey = CommonUtils.hex(privateKey.getS().toByteArray());
+
+        String hexedPrivKey = CommonUtils.hex(privateKey.getS().toByteArray());
+        // It's possible to compute a legitimate private ECDSA key with more than ECDSA_HEX_KEY_LENGTH bytes _if_ the
+        // key has leading zeros. In such cases, strip out the leading zeros
+        hexedPrivKey = stripPrefixPaddingBytes(hexedPrivKey);
+
         final var derEncoded = CommonUtils.hex(privateKey.getEncoded());
+
         return new KeyOutput(hexedPubKey, hexedPrivKey, derEncoded);
+    }
+
+    private static String stripPrefixPaddingBytes(final String hexKey) {
+        String current = hexKey;
+        while (current.length() > ECDSA_HEX_KEY_LENGTH && current.startsWith(HEX_ZERO_PREFIX)) {
+            current = current.substring(2);
+        }
+        return current;
     }
 
     private static EdDSAPrivateKey ed25519FromMnemonic(final String wordsLoc)
