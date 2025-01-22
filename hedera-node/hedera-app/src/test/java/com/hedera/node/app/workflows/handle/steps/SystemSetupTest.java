@@ -307,6 +307,7 @@ class SystemSetupTest {
                 })
                 .when(syntheticNodeCreator)
                 .generateSyntheticNodes(any(), any());
+        given(genesisNodeRecordBuilder.nodeID(any(Long.class))).willReturn(genesisNodeRecordBuilder);
 
         // Call the first time to make sure records are generated
         subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT);
@@ -334,15 +335,18 @@ class SystemSetupTest {
 
         // Call externalizeInitSideEffects() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
+        Mockito.clearInvocations(genesisNodeRecordBuilder);
         assertThatThrownBy(() -> subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT))
                 .isInstanceOf(NullPointerException.class);
         verifyNoInteractions(genesisAccountRecordBuilder);
+        verifyNoInteractions(genesisNodeRecordBuilder);
     }
 
     @Test
     void externalizeInitSideEffectsCreatesNoRecordsWhenEmpty() {
         subject.externalizeInitSideEffects(context, ExchangeRateSet.DEFAULT);
         verifyNoInteractions(genesisAccountRecordBuilder);
+        verifyNoInteractions(genesisNodeRecordBuilder);
     }
 
     private void verifyBuilderInvoked(final AccountID acctId, final String expectedMemo) {
