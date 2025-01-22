@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class SysFileOverrideOp extends UtilOp {
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        allRunFor(spec, getFileContents("0.0." + target.number()).consumedBy(bytes -> this.originalContents = bytes));
+        allRunFor(spec, getFileContents("1.2." + target.number()).consumedBy(bytes -> this.originalContents = bytes));
         log.info("Took snapshot of {}", target);
         final var styledContents = overrideSupplier.get();
         // The supplier can return null to indicate that this operation should not update the file,
@@ -102,7 +102,7 @@ public class SysFileOverrideOp extends UtilOp {
                     spec,
                     updateLargeFile(
                             GENESIS,
-                            "0.0." + target.number(),
+                            "1.2." + target.number(),
                             ByteString.copyFrom(rawContents),
                             true,
                             OptionalLong.of(ONE_HBAR)));
@@ -127,7 +127,7 @@ public class SysFileOverrideOp extends UtilOp {
                     spec,
                     updateLargeFile(
                             GENESIS,
-                            "0.0." + target.number(),
+                            "1.2." + target.number(),
                             ByteString.copyFrom(originalContents),
                             true,
                             OptionalLong.of(ONE_HBAR)));

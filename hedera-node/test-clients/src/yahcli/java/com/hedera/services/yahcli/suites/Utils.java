@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,8 +103,11 @@ public class Utils {
     private static final Map<FileID, String> IDS_TO_NAMES = NAMES_TO_NUMBERS.entrySet().stream()
             .filter(entry -> !entry.getKey().contains("."))
             .collect(Collectors.toMap(
-                    (Map.Entry<String, Long> entry) ->
-                            FileID.newBuilder().setFileNum(entry.getValue()).build(),
+                    (Map.Entry<String, Long> entry) -> FileID.newBuilder()
+                            .setShardNum(1)
+                            .setRealmNum(2)
+                            .setFileNum(entry.getValue())
+                            .build(),
                     Map.Entry::getKey));
 
     private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());

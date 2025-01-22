@@ -63,7 +63,11 @@ public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
 
     private static final com.hedera.hapi.node.base.FileID UPGRADE_FILE_ID =
-            com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
+            com.hedera.hapi.node.base.FileID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .fileNum(150L)
+                    .build();
 
     private final NodesConfig nodesConfig;
     private final AddressBookConfig addressBookConfig;

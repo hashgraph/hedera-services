@@ -172,8 +172,11 @@ public class V053AddressBookSchema extends Schema {
         }
 
         if (readableFiles != null) {
-            final var nodeDetailFile = readableFiles.get(
-                    FileID.newBuilder().fileNum(fileConfig.nodeDetails()).build());
+            final var nodeDetailFile = readableFiles.get(FileID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .fileNum(fileConfig.nodeDetails())
+                    .build());
             if (nodeDetailFile != null) {
                 try {
                     final var nodeDetails = NodeAddressBook.PROTOBUF
