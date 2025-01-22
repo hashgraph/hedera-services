@@ -99,7 +99,7 @@ public class CreateSuite extends HapiSuite {
                     int attemptNo = 1;
                     do {
                         System.out.print("Creation attempt #" + attemptNo + "...");
-                        final var creation = TxnVerbs.cryptoCreate(newAccount)
+                        var creation = TxnVerbs.cryptoCreate(newAccount)
                                 .balance(initialBalance)
                                 .blankMemo()
                                 .entityMemo(memo)
@@ -108,6 +108,7 @@ public class CreateSuite extends HapiSuite {
                                 .hasPrecheckFrom(OK, BUSY)
                                 .exposingCreatedIdTo(id -> createdNo.set(id.getAccountNum()))
                                 .noLogging();
+                        creation = (sigType == SigControl.SECP256K1_ON) ? creation.withMatchingEvmAddress() : creation;
                         CustomSpecAssert.allRunFor(spec, creation);
                         if (creation.getActualPrecheck() == OK) {
                             System.out.println("SUCCESS");
