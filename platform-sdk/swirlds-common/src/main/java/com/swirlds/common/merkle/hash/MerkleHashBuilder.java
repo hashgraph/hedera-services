@@ -113,14 +113,12 @@ public class MerkleHashBuilder {
         } else if (root.getHash() != null) {
             return new StandardFuture<>(root.getHash());
         } else {
-            resultFuture = new FutureMerkleHash();
+            FutureMerkleHash resultFuture = new FutureMerkleHash();
             ResultTask resultTask = new ResultTask(root, resultFuture);
             new TraverseTask(root, resultTask).send();
             return resultFuture;
         }
     }
-
-    FutureMerkleHash resultFuture;
 
     /**
      * The root of a merkle tree.
@@ -177,7 +175,7 @@ public class MerkleHashBuilder {
                     }
                 }
             } catch (Exception ex) {
-                resultFuture.cancelWithException(ex);
+                out.completeExceptionally(ex);
             }
             return true;
         }
@@ -202,6 +200,12 @@ public class MerkleHashBuilder {
             out.send();
             return true;
         }
+
+        @Override
+        public void completeExceptionally(Throwable ex) {
+            out.completeExceptionally(ex);
+            super.completeExceptionally(ex);
+        }
     }
 
     /**
@@ -221,6 +225,12 @@ public class MerkleHashBuilder {
         protected boolean exec() {
             future.set(root.getHash());
             return true;
+        }
+
+        @Override
+        public void completeExceptionally(Throwable ex) {
+            future.cancelWithException(ex);
+            super.completeExceptionally(ex);
         }
     }
 }
