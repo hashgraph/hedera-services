@@ -19,7 +19,6 @@ package com.swirlds.platform.components.consensus;
 import static com.swirlds.platform.system.status.PlatformStatus.REPLAYING_EVENTS;
 
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.Consensus;
@@ -112,10 +111,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
             return List.of();
         }
 
-        final List<Bytes> transactions = event.getGossipEvent().transactions();
-        final boolean isNewFormat = !transactions.isEmpty();
         final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
-        eventAddedMetrics.eventAdded(linkedEvent, isNewFormat);
+        eventAddedMetrics.eventAdded(linkedEvent);
 
         if (!consensusRounds.isEmpty()) {
             // If multiple rounds reach consensus at the same moment there is no need to pass in

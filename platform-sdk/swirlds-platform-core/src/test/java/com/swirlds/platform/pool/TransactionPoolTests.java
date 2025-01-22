@@ -37,14 +37,13 @@ class TransactionPoolTests {
     void addTransactionTest() {
         final List<Bytes> transactionList = new ArrayList<>();
         final TransactionPoolNexus transactionPoolNexus = mock(TransactionPoolNexus.class);
-        when(transactionPoolNexus.submitTransaction(any(), anyBoolean(), anyBoolean()))
-                .thenAnswer(invocation -> {
-                    final Bytes transaction = invocation.getArgument(0);
-                    final boolean isPriority = invocation.getArgument(1);
-                    assertTrue(isPriority);
-                    transactionList.add(transaction);
-                    return true;
-                });
+        when(transactionPoolNexus.submitTransaction(any(), anyBoolean())).thenAnswer(invocation -> {
+            final Bytes transaction = invocation.getArgument(0);
+            final boolean isPriority = invocation.getArgument(1);
+            assertTrue(isPriority);
+            transactionList.add(transaction);
+            return true;
+        });
 
         final TransactionPool transactionPool = new DefaultTransactionPool(transactionPoolNexus);
         final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()

@@ -44,7 +44,7 @@ public class DefaultTransactionPool implements TransactionPool {
     @Override
     public void submitSystemTransaction(@NonNull final Bytes payload) {
         Objects.requireNonNull(payload);
-        transactionPoolNexus.submitTransaction(payload, true, true);
+        transactionPoolNexus.submitTransaction(payload, true);
     }
 
     /**
