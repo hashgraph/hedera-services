@@ -4,7 +4,7 @@
 
 ## Background
 
-The Release Process within Hedera-Services will be changing beginning with Release 0.62. This will be the first step in
+The Release Process within Hedera-Services will be changing beginning with Release 0.61. This will be the first step in
 migrating to a fully automated release process with CITR.
 
 ### Historical Process
@@ -45,7 +45,7 @@ longevity testing.
 
 ## CITR Release Process
 
-The release process will be changing in the following areas beginning with `Release 0.62`:
+The release process will be changing in the following areas beginning with `Release 0.61`:
 
 | Stage                                                   | Duration |
 |---------------------------------------------------------|----------|
@@ -70,11 +70,11 @@ The XTS workflow will tag a commit with a `build-xxxxx` tag upon successful comp
 The release managers will pull a release candidate from this set of tags.
 
 The release managers will run the workflow `[Main] Create New Release`, specifying the build number, in order to
-create the release tagged commit (v0.62.0 or similar)
+create the release tagged commit (v0.61.0 or similar)
 
 **Note:** The build number is the actual number described in the build tag. The tag `build-00025` has a build number `25`.
 
-This release tag (v0.62.0 or similar) is the tag that will be deployed to preview-net, test-net, and main-net.
+This release tag (v0.61.0 or similar) is the tag that will be deployed to preview-net, test-net, and main-net.
 
 If bugs are discovered in the build during release testing we can run `[Main] Create New Release` on a new build
 candidate, as determined by the release managers.
@@ -85,16 +85,16 @@ Release Version` workflow).
 
 ## Impacts for Developers
 
-**Beginning with release 0.62**:
+**Beginning with release 0.61**:
 
 - The following items will be restricted:
-  - Creating release branches in Hedera-Services (like release/0.62)
-  - Creating versioned tags like (v0.62.*)
+  - Creating release branches in Hedera-Services (like release/0.61)
+  - Creating versioned tags like (v0.61.*)
 - The following workflows will be added:
   - `[Main] Create New Release` - Generate a release tag given an XTS passing build id.
   - `[Main] Prepare Next Release Version` - Roll the version specified in `version.txt` for the current development cycle on the default
     branch.
-  - **Note**: Executing the `[Main] Prepare Next Release Version` workflow will modify the development state (ie: 0.62-SNAPSHOT to 0.63-SNAPSHOT)
+  - **Note**: Executing the `[Main] Prepare Next Release Version` workflow will modify the development state (ie: 0.61-SNAPSHOT to 0.62-SNAPSHOT)
     - To support executive vision, hedera-services developers should choose an internal version (different from the
       release version number) to determine when to migrate state.
 - Release managers will need to choose a build candidate from a list of associated builds (recommendation will be the
