@@ -61,7 +61,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .value(spenderId, spenderAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates,configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
     }
 
     @Test

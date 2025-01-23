@@ -404,7 +404,8 @@ public class SigReqAdapterUtils {
      */
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         return new ReadableAccountStoreImpl(
-                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),CONFIGURATION);
+                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
+                CONFIGURATION);
     }
 
     /**

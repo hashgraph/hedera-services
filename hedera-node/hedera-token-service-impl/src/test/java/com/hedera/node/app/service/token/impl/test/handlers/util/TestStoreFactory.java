@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ public final class TestStoreFactory {
      * @return the new store
      */
     public static ReadableAccountStore newReadableStoreWithAccounts(Account... accounts) {
-        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)),CONFIGURATION);
+        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)), CONFIGURATION);
     }
 
     private static Map<String, MapWritableKVState<?, ?>> writableAccountStates(final Account... accounts) {

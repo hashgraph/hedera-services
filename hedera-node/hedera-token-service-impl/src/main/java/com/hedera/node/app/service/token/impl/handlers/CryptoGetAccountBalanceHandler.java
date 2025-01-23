@@ -47,6 +47,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.Metrics;
@@ -68,13 +70,15 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             .withDescription("Number of balances requested in GetAccountBalance queries per second");
 
     private final SpeedometerMetric balanceSpeedometer;
+    private final HederaConfig hederaConfig;
 
     /**
      * Default constructor for injection.
      */
     @Inject
-    public CryptoGetAccountBalanceHandler(@NonNull final Metrics metrics) {
+    public CryptoGetAccountBalanceHandler(@NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
         this.balanceSpeedometer = metrics.getOrCreate(BALANCE_SPEEDOMETER_CONFIG);
+        this.hederaConfig = requireNonNull(configProvider).getConfiguration().getConfigData(HederaConfig.class);
     }
 
     @Override
@@ -111,8 +115,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             throws PreCheckException {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
         final ContractID contractId = (ContractID) op.balanceSource().value();
-        validateTruePreCheck(contractId.shardNum() == 1, INVALID_CONTRACT_ID);
-        validateTruePreCheck(contractId.realmNum() == 2, INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.shardNum() == hederaConfig.shard(), INVALID_CONTRACT_ID);
+        validateTruePreCheck(contractId.realmNum() == hederaConfig.realm(), INVALID_CONTRACT_ID);
         validateTruePreCheck(
                 (contractId.hasContractNum() && contractId.contractNumOrThrow() >= 0) || contractId.hasEvmAddress(),
                 INVALID_CONTRACT_ID);
@@ -125,8 +129,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
             throws PreCheckException {
         AccountID accountId = (AccountID) op.balanceSource().value();
-        validateTruePreCheck(accountId.shardNum() == 1, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(accountId.realmNum() == 2, INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.shardNum() == hederaConfig.shard(), INVALID_ACCOUNT_ID);
+        validateTruePreCheck(accountId.realmNum() == hederaConfig.realm(), INVALID_ACCOUNT_ID);
         validateAccountID(accountId, INVALID_ACCOUNT_ID);
         final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
         validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
