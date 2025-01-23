@@ -17,8 +17,6 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,18 +42,6 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     private Bytes hash;
     /** The bytes of the transaction */
     private Bytes transaction;
-
-    /**
-     * Constructs a new transaction wrapper
-     *
-     * @param transaction the hapi transaction
-     *
-     * @throws NullPointerException if transaction is null
-     */
-    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
-        Objects.requireNonNull(transaction, "transaction should not be null");
-        this.payload = new EventTransaction(transaction);
-    }
 
     /**
      * Constructs a new transaction wrapper
@@ -126,7 +112,6 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      * @return the payload
      */
     @NonNull
-    @Override
     public EventTransaction getTransaction() {
         return payload;
     }
@@ -134,6 +119,14 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public Bytes getTransactionBytes() {
         return transaction;
+    }
+
+    @NonNull
+    @Override
+    public Bytes getApplicationTransaction() {
+        return !isSystem()
+                ? (getTransaction() != null ? getTransaction().transaction().as() : getTransactionBytes())
+                : Bytes.EMPTY;
     }
 
     /**
@@ -145,6 +138,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     @Override
     public int getSize() {
         return TransactionUtils.getLegacyTransactionSize(transaction);
+    }
+
+    @Override
+    public boolean isSystem() {
+        return TransactionUtils.isSystemTransaction(getTransaction());
     }
 
     /**

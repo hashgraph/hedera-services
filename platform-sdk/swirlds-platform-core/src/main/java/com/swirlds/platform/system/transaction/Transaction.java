@@ -16,11 +16,8 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.util.TransactionUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -32,13 +29,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 public sealed interface Transaction permits ConsensusTransaction {
 
     /**
-     * Returns the transaction as a PBJ record
+     * Returns the transaction
      * @return the transaction
      */
-    @NonNull
-    @Deprecated
-    EventTransaction getTransaction();
-
     Bytes getTransactionBytes();
 
     /**
@@ -47,11 +40,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      *
      * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
-    default @NonNull Bytes getApplicationTransaction() {
-        return !isSystem()
-                ? (getTransaction() != null ? getTransaction().transaction().as() : getTransactionBytes())
-                : Bytes.EMPTY;
-    }
+    Bytes getApplicationTransaction();
 
     /**
      * Get the size of the transaction
@@ -67,9 +56,7 @@ public sealed interface Transaction permits ConsensusTransaction {
      * 		transaction
      */
     @Deprecated
-    default boolean isSystem() {
-        return TransactionUtils.isSystemTransaction(getTransaction());
-    }
+    boolean isSystem();
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.
