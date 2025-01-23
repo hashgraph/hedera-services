@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(FileBlockItemWriter.class);
 
     /** The file extension for block files. */
-    public static final String RECORD_EXTENSION = "blk";
+    private static final String RECORD_EXTENSION = "blk";
 
     /** The suffix added to RECORD_EXTENSION when they are compressed. */
-    public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
+    private static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
 
     /** Whether to compress the block files. */
     private final boolean compressFiles;
