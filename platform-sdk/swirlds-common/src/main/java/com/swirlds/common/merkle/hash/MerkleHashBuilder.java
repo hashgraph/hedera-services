@@ -176,6 +176,7 @@ public class MerkleHashBuilder {
                 }
             } catch (Exception ex) {
                 out.completeExceptionally(ex);
+                return false;
             }
             return true;
         }
@@ -203,8 +204,11 @@ public class MerkleHashBuilder {
 
         @Override
         public void completeExceptionally(Throwable ex) {
-            out.completeExceptionally(ex);
             super.completeExceptionally(ex);
+            // Try to reduce exception propagation; OK if multiple exceptions reported to out
+            if (!out.isCompletedAbnormally()) {
+                out.completeExceptionally(ex);
+            }
         }
     }
 
@@ -229,8 +233,10 @@ public class MerkleHashBuilder {
 
         @Override
         public void completeExceptionally(Throwable ex) {
-            future.cancelWithException(ex);
             super.completeExceptionally(ex);
+            if (!future.isCancelled()) {
+                future.cancelWithException(ex);
+            }
         }
     }
 }
