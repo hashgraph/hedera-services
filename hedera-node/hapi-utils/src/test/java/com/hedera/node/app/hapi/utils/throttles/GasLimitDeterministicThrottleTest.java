@@ -103,7 +103,8 @@ class GasLimitDeterministicThrottleTest {
     void throwsOnNegativeGasLimit() {
         final long gasLimitForTX = -1;
         final Instant now = Instant.ofEpochSecond(1_234_567L);
-        assertThrows(IllegalArgumentException.class, () -> subject.allow(now, gasLimitForTX), "Negative gas should throw");
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.allow(now, gasLimitForTX), "Negative gas should throw");
     }
 
     @Test
