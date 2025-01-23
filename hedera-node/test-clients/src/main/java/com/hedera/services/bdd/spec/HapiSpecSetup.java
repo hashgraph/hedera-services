@@ -507,11 +507,11 @@ public class HapiSpecSetup {
     }
 
     public AccountID stakingRewardAccount() {
-        return asAccount("0.0.800");
+        return asAccount(props.get("default.shard"),props.get("default.realm"),"800");
     }
 
     public AccountID feeCollectorAccount() {
-        return asAccount("0.0.802");
+        return asAccount(props.get("default.shard"), props.get("default.realm"), "802");
     }
 
     public String nodeRewardAccountName() {
