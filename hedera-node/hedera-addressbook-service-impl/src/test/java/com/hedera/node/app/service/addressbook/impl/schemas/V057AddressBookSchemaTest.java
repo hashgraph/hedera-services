@@ -18,7 +18,6 @@ package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.WITH_ROSTER_LIFECYCLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -70,7 +69,7 @@ class V057AddressBookSchemaTest {
         final var bootstrapAdminKey = Key.newBuilder()
                 .ed25519(DEFAULT_CONFIG.getConfigData(BootstrapConfig.class).genesisPublicKey())
                 .build();
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(NETWORK);
         given(ctx.newStates()).willReturn(writableStates);

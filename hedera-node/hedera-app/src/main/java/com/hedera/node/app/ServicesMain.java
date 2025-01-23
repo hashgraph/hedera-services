@@ -286,20 +286,19 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         logger.info("Starting node {} with version {}", selfId, version);
 
         // --- Build required infrastructure to load the initial state, then initialize the States API ---
-        final var maybeDiskAddressBook = loadLegacyAddressBook();
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
         StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = hedera.newStateLifecycles();
+        final var maybeDiskAddressBook = loadLegacyAddressBook();
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
                 version,
                 () -> {
                     isGenesis.set(true);
-                    final var genesisAddressBook = maybeDiskAddressBook.orElse(null);
                     Network genesisNetwork;
                     try {
                         genesisNetwork = hedera.startupNetworks().genesisNetworkOrThrow(platformConfig);
@@ -308,8 +307,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(maybeDiskAddressBook.orElseThrow());
                     }
                     final var genesisState = hedera.newMerkleStateRoot();
-                    hedera.initializeStatesApi(
-                            genesisState, GENESIS, genesisNetwork, platformConfig, genesisAddressBook);
+                    hedera.initializeStatesApi(genesisState, GENESIS, genesisNetwork, platformConfig);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -318,7 +316,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         final var initialState = reservedState.state();
         final var state = initialState.get().getState();
         if (!isGenesis.get()) {
-            hedera.initializeStatesApi(state, RESTART, null, platformConfig, null);
+            hedera.initializeStatesApi(state, RESTART, null, platformConfig);
         }
         hedera.setInitialStateHash(reservedState.hash());
 

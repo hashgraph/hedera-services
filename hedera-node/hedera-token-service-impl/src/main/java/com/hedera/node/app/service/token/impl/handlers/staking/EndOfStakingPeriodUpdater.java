@@ -172,6 +172,7 @@ public class EndOfStakingPeriodUpdater {
             if (!nodeInfo.deleted()) {
                 nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(nodeRewardRates.get(nodeId), nodeInfo));
             }
+            stakingInfoStore.put(nodeId, nodeInfo);
         }
 
         // Update the staking reward values for the network

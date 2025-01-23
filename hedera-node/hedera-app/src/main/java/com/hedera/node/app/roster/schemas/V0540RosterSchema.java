@@ -100,8 +100,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
                 rosterStore.putActiveRoster(
                         RosterUtils.rosterFrom(startupNetworks.genesisNetworkOrThrow(ctx.platformConfig())), 0L);
             } else if (rosterStore.getActiveRoster() == null) {
-                // (FUTURE) Once the roster lifecycle is active by default, remove this code building an initial
-                // roster history from the last address book and the first roster at the upgrade boundary
+                // (FUTURE) Once there are no production states without a roster, we can remove this branch
                 final var previousRoster =
                         requireNonNull(RosterRetriever.retrieveActiveOrGenesisRoster(stateSupplier.get()));
                 rosterStore.putActiveRoster(previousRoster, 0);

@@ -150,7 +150,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
@@ -328,9 +327,8 @@ public final class Hedera
     private HederaInjectionComponent daggerApp;
 
     /**
-     * When applying and migrating schemas to a target state, it is set here to support
-     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
-     * before the roster lifecycle is adopted.
+     * Gives the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
+     * at the 0.59 migration boundary enabling the roster lifecycle.
      */
     @Nullable
     @Deprecated
@@ -601,17 +599,14 @@ public final class Hedera
      * @param trigger the trigger that is calling migration
      * @param genesisNetwork the genesis network, if applicable
      * @param platformConfig the platform configuration
-     * @param diskAddressBook the address book from disk, if the roster lifecycle is not enabled
      */
     public void initializeStatesApi(
             @NonNull final State state,
             @NonNull final InitTrigger trigger,
             @Nullable final Network genesisNetwork,
-            @NonNull final Configuration platformConfig,
-            @Deprecated @Nullable final AddressBook diskAddressBook) {
+            @NonNull final Configuration platformConfig) {
         requireNonNull(state);
         requireNonNull(platformConfig);
-        requireNonNull(configProvider);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
@@ -636,7 +631,7 @@ public final class Hedera
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
         try {
-            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisNetwork, platformConfig, diskAddressBook);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisNetwork, platformConfig);
             logConfiguration();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during schema migration", t);
@@ -665,7 +660,7 @@ public final class Hedera
         }
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
-            initializeStatesApi(state, trigger, null, platform.getContext().getConfiguration(), null);
+            initializeStatesApi(state, trigger, null, platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
@@ -692,7 +687,6 @@ public final class Hedera
      * @param trigger trigger that is calling migration
      * @param genesisNetwork the genesis address book, if applicable
      * @param platformConfig platform configuration
-     * @param diskAddressBook before enabling the roster lifecycle, the address book from disk
      */
     private void migrateSchemas(
             @NonNull final State state,
@@ -700,8 +694,7 @@ public final class Hedera
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
             @Nullable final Network genesisNetwork,
-            @NonNull final Configuration platformConfig,
-            @Deprecated @Nullable final AddressBook diskAddressBook) {
+            @NonNull final Configuration platformConfig) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(

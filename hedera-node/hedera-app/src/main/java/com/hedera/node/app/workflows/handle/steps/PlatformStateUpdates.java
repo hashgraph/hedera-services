@@ -106,7 +106,6 @@ public class PlatformStateUpdates {
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
                     final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
                     if (addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
-                        System.out.println("BOOP");
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));

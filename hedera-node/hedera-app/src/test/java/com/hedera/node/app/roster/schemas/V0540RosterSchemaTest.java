@@ -17,7 +17,6 @@
 package com.hedera.node.app.roster.schemas;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.fixtures.AppTestBase.WITH_ROSTER_LIFECYCLE;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.swirlds.platform.roster.RosterRetriever.buildRoster;
@@ -237,7 +236,7 @@ class V0540RosterSchemaTest {
 
     @Test
     void restartSetsActiveRosterFromOverrideIfPresent() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.newStates()).willReturn(writableStates);
@@ -253,7 +252,7 @@ class V0540RosterSchemaTest {
 
     @Test
     void restartSetsActiveRosterFromOverrideWithPreservedWeightsIfPresent() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
+        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.newStates()).willReturn(writableStates);

@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A genesis-only schema that ensures address book state reflects the genesis {@link Network}s returned from
- * {@link MigrationContext#startupNetworks()} on disk at startup when using the roster lifecycle.
+ * {@link MigrationContext#startupNetworks()} on disk at startup.
  */
 public class V057AddressBookSchema extends Schema implements AddressBookTransplantSchema {
     private static final SemanticVersion VERSION =
