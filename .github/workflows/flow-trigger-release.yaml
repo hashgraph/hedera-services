@@ -101,7 +101,6 @@ jobs:
 
       - name: Create a Temporary Semantic Release Branch
         run: |
-          echo "Going to run the following command:"
           echo "git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}"
           git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
