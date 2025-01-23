@@ -205,7 +205,7 @@ public class V0490TokenSchema extends Schema {
             @NonNull final WritableKVState<AccountID, Account> accounts, @NonNull final HederaConfig hederaConfig) {
         long totalBalance = 0;
         long curAccountId = 1; // Start with the first account ID
-        long totalAccounts = hederaConfig.firstUserEntity();
+        long totalAccounts = 704; // Since this runs only on genesis, we know the total number of system accounts
         do {
             final Account account = accounts.get(asAccountId(curAccountId, hederaConfig));
             if (account != null) {
