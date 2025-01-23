@@ -20,6 +20,8 @@ import static com.swirlds.platform.state.service.ReadablePlatformStateStore.UNKN
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.roster.RosterService;
@@ -58,6 +60,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -119,6 +122,8 @@ public class ReadableStoreFactory {
                 ReadablePlatformStateStore.class,
                 new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
         newMap.put(ReadableRosterStore.class, new StoreEntry(RosterService.NAME, ReadableRosterStoreImpl::new));
+        // Entity ids
+        newMap.put(ReadableEntityIdStore.class, new StoreEntry(EntityIdService.NAME, ReadableEntityIdStoreImpl::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -143,10 +148,10 @@ public class ReadableStoreFactory {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @param <C> Interface class for a Store
+     * @param <C>            Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @throws NullPointerException     if {@code storeInterface} is {@code null}
      */
     @NonNull
     public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {

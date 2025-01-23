@@ -1640,4 +1640,10 @@ enum ResponseCodeEnum {
      * approximately four million times with typical network configuration.)
      */
     RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
+
+    /**
+     * The target network is waiting for the ledger ID to be set, which is a
+     * side effect of finishing the network's TSS construction.
+     */
+    WAITING_FOR_LEDGER_ID = 375;
 }

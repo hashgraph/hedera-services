@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 package com.hedera.node.app.ids;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.spi.validation.EntityType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,11 +44,11 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testNewEntityNumWithInitialState() {
-        when(entityIdStore.incrementAndGet()).thenReturn(1L);
-        final var actual = subject.newEntityNum();
+        when(entityIdStore.incrementAndGet(EntityType.ACCOUNT)).thenReturn(1L);
+        final var actual = subject.newEntityNum(EntityType.ACCOUNT);
 
         assertThat(actual).isEqualTo(1L);
-        verify(entityIdStore).incrementAndGet();
+        verify(entityIdStore).incrementAndGet(EntityType.ACCOUNT);
     }
 
     @Test
@@ -61,12 +63,12 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testNewEntityNum() {
-        when(entityIdStore.incrementAndGet()).thenReturn(43L);
+        when(entityIdStore.incrementAndGet(EntityType.ACCOUNT)).thenReturn(43L);
 
-        final var actual = subject.newEntityNum();
+        final var actual = subject.newEntityNum(EntityType.ACCOUNT);
 
         assertThat(actual).isEqualTo(43L);
-        verify(entityIdStore).incrementAndGet();
+        verify(entityIdStore).incrementAndGet(EntityType.ACCOUNT);
         verify(entityIdStore, never()).peekAtNextNumber();
     }
 
@@ -78,6 +80,6 @@ class EntityNumGeneratorImplTest {
 
         assertThat(actual).isEqualTo(43L);
         verify(entityIdStore).peekAtNextNumber();
-        verify(entityIdStore, never()).incrementAndGet();
+        verify(entityIdStore, never()).incrementAndGet(any());
     }
 }

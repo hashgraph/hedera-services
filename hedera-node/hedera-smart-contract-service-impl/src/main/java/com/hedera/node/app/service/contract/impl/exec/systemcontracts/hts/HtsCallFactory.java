@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CallType;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -44,17 +45,20 @@ public class HtsCallFactory implements CallFactory<HtsCallAttempt> {
     private final CallAddressChecks addressChecks;
     private final VerificationStrategies verificationStrategies;
     private final List<CallTranslator<HtsCallAttempt>> callTranslators;
+    private final SystemContractMethodRegistry systemContractMethodRegistry;
 
     @Inject
     public HtsCallFactory(
             @NonNull final SyntheticIds syntheticIds,
             @NonNull final CallAddressChecks addressChecks,
             @NonNull final VerificationStrategies verificationStrategies,
-            @NonNull @Named("HtsTranslators") final List<CallTranslator<HtsCallAttempt>> callTranslators) {
+            @NonNull @Named("HtsTranslators") final List<CallTranslator<HtsCallAttempt>> callTranslators,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry) {
         this.syntheticIds = requireNonNull(syntheticIds);
         this.addressChecks = requireNonNull(addressChecks);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.callTranslators = requireNonNull(callTranslators);
+        this.systemContractMethodRegistry = requireNonNull(systemContractMethodRegistry);
     }
 
     /**
@@ -93,6 +97,7 @@ public class HtsCallFactory implements CallFactory<HtsCallAttempt> {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
+                systemContractMethodRegistry,
                 frame.isStatic());
     }
 }

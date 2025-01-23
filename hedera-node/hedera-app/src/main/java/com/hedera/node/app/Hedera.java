@@ -51,8 +51,12 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
@@ -374,6 +378,8 @@ public final class Hedera
     @Nullable
     private StartupNetworks startupNetworks;
 
+    private boolean onceOnlyServiceInitializationPostDaggerHasHappened = false;
+
     @FunctionalInterface
     public interface StartupNetworksFactory {
         @NonNull
@@ -479,7 +485,7 @@ public final class Hedera
                         ThrottleAccumulator::new));
         hintsService = hintsServiceFactory.apply(appContext);
         historyService = historyServiceFactory.apply(appContext);
-        contractServiceImpl = new ContractServiceImpl(appContext);
+        contractServiceImpl = new ContractServiceImpl(appContext, metrics);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
@@ -674,7 +680,13 @@ public final class Hedera
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
-        contractServiceImpl.registerMetrics();
+
+        // Perform any service initialization that has to be postponed until Dagger is available
+        // (simple boolean is usable since we're still single-threaded when `onStateInitialized` is called)
+        if (!onceOnlyServiceInitializationPostDaggerHasHappened) {
+            contractServiceImpl.createMetrics();
+            onceOnlyServiceInitializationPostDaggerHasHappened = true;
+        }
     }
 
     /**
@@ -1061,6 +1073,28 @@ public final class Hedera
 
     public BoundaryStateChangeListener boundaryStateChangeListener() {
         return boundaryStateChangeListener;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
+        final var nodeAccountID = appContext.selfNodeInfoSupplier().get().accountId();
+
+        final var transactionID = TransactionID.newBuilder()
+                .transactionValidStart(Timestamp.DEFAULT)
+                .accountID(nodeAccountID);
+
+        final var transactionBody = TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .nodeAccountID(nodeAccountID)
+                .transactionValidDuration(Duration.DEFAULT)
+                .stateSignatureTransaction(stateSignatureTransaction);
+
+        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
+                .sigMap(SignatureMap.DEFAULT)
+                .build();
+
+        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
     }
 
     /*==================================================================================================================

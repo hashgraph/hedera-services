@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
@@ -38,6 +39,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -121,12 +123,13 @@ class IngestComponentTest {
                 throttleFactory);
         final var hintsService =
                 new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class));
-        final var historyService = new HistoryServiceImpl(appContext);
+        final var historyService = new HistoryServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HistoryLibraryImpl(), HISTORY_LIBRARY_CODEC);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
-                .contractServiceImpl(new ContractServiceImpl(appContext))
+                .contractServiceImpl(new ContractServiceImpl(appContext, NO_OP_METRICS))
                 .scheduleService(new ScheduleServiceImpl())
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
