@@ -60,22 +60,14 @@ public class V0540PlatformStateSchema extends Schema {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(54).patch(0).build();
 
-    private final Supplier<AddressBook> addressBook;
     private final Function<Configuration, SoftwareVersion> versionFn;
 
     public V0540PlatformStateSchema() {
-        this(UNAVAILABLE_DISK_ADDRESS_BOOK, UNAVAILABLE_VERSION_FN);
+        this(UNAVAILABLE_VERSION_FN);
     }
 
     public V0540PlatformStateSchema(@NonNull final Function<Configuration, SoftwareVersion> versionFn) {
-        this(UNAVAILABLE_DISK_ADDRESS_BOOK, versionFn);
-    }
-
-    public V0540PlatformStateSchema(
-            @NonNull final Supplier<AddressBook> addressBook,
-            @NonNull final Function<Configuration, SoftwareVersion> versionFn) {
         super(VERSION);
-        this.addressBook = requireNonNull(addressBook);
         this.versionFn = requireNonNull(versionFn);
     }
 

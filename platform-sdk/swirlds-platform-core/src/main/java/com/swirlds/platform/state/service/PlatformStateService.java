@@ -26,7 +26,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.state.service.schemas.V059RosterLifecycleTransitionSchema;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -52,17 +51,11 @@ public enum PlatformStateService implements Service {
     private static final AtomicReference<Function<Configuration, SoftwareVersion>> APP_VERSION_FN =
             new AtomicReference<>();
     /**
-     * Temporary access to the disk address book used in upgrade or network transplant
-     * scenarios before the roster lifecycle is enabled.
-     */
-    @Deprecated
-    private static final AtomicReference<AddressBook> DISK_ADDRESS_BOOK = new AtomicReference<>();
-    /**
      * The schemas to register with the {@link SchemaRegistry}.
      */
     private static final Collection<Schema> SCHEMAS = List.of(
-            new V0540PlatformStateSchema(DISK_ADDRESS_BOOK::get, config -> requireNonNull(APP_VERSION_FN.get())
-                    .apply(config)),
+            new V0540PlatformStateSchema(
+                    config -> requireNonNull(APP_VERSION_FN.get()).apply(config)),
             new V059RosterLifecycleTransitionSchema());
 
     public static final String NAME = "PlatformStateService";
@@ -85,20 +78,6 @@ public enum PlatformStateService implements Service {
      */
     public void setAppVersionFn(@NonNull final Function<Configuration, SoftwareVersion> appVersionFn) {
         APP_VERSION_FN.set(requireNonNull(appVersionFn));
-    }
-
-    /**
-     * Sets the disk address book to the given address book.
-     */
-    public void setDiskAddressBook(@NonNull final AddressBook addressBook) {
-        DISK_ADDRESS_BOOK.set(requireNonNull(addressBook));
-    }
-
-    /**
-     * Clears the disk address book.
-     */
-    public void clearDiskAddressBook() {
-        DISK_ADDRESS_BOOK.set(null);
     }
 
     /**

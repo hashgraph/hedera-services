@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.addressbook.impl.test.handlers.Address
 import static com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase.WITH_ROSTER_LIFECYCLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -67,15 +66,6 @@ class V057AddressBookSchemaTest {
     private final V057AddressBookSchema subject = new V057AddressBookSchema();
 
     @Test
-    void migrationIsNoOpIfRosterLifecycleNotEnabled() {
-        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
-
-        subject.restart(ctx);
-
-        verifyNoMoreInteractions(ctx);
-    }
-
-    @Test
     void usesGenesisNodeMetadataIfPresent() {
         final var bootstrapAdminKey = Key.newBuilder()
                 .ed25519(DEFAULT_CONFIG.getConfigData(BootstrapConfig.class).genesisPublicKey())
@@ -112,7 +102,6 @@ class V057AddressBookSchemaTest {
 
     @Test
     void usesOverrideMetadataIfPresent() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(startupNetworks.overrideNetworkFor(0L, DEFAULT_CONFIG)).willReturn(Optional.of(NETWORK));

@@ -723,11 +723,6 @@ public final class Hedera
         blockStreamService.resetMigratedLastBlockHash();
         startupNetworks = startupNetworksFactory.apply(configProvider);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
-        // If the client code did not provide a disk address book, we are reconnecting; and
-        // PlatformState schemas must not try to update the current address book anyway
-        if (diskAddressBook != null) {
-            PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
-        }
         this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
@@ -742,7 +737,6 @@ public final class Hedera
                 metrics,
                 startupNetworks);
         this.initState = null;
-        PLATFORM_STATE_SERVICE.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();

@@ -132,7 +132,7 @@ class DiskStartupNetworksTest {
     @Test
     void findsAvailableGenesisNetwork() throws IOException {
         givenConfig();
-        putJsonAt(GENESIS_NETWORK_JSON, WithTssState.NO);
+        putJsonAt(GENESIS_NETWORK_JSON);
         final var network = subject.genesisNetworkOrThrow(DEFAULT_CONFIG);
         assertThat(network).isEqualTo(NETWORK);
     }
@@ -140,7 +140,7 @@ class DiskStartupNetworksTest {
     @Test
     void findsAvailableMigrationNetwork() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON);
         final var network = subject.migrationNetworkOrThrow(configProvider.getConfiguration());
         assertThat(network).isEqualTo(NETWORK);
     }
@@ -175,7 +175,7 @@ class DiskStartupNetworksTest {
     @Test
     void archivesGenesisNetworks() throws IOException {
         givenConfig();
-        putJsonAt(GENESIS_NETWORK_JSON, WithTssState.NO);
+        putJsonAt(GENESIS_NETWORK_JSON);
         final var genesisJson = tempDir.resolve(GENESIS_NETWORK_JSON);
 
         assertThat(Files.exists(genesisJson)).isTrue();
@@ -191,7 +191,7 @@ class DiskStartupNetworksTest {
     @Test
     void archivesUnscopedOverrideNetwork() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON);
         final var overrideJson = tempDir.resolve(OVERRIDE_NETWORK_JSON);
 
         assertThat(Files.exists(overrideJson)).isTrue();
@@ -207,7 +207,7 @@ class DiskStartupNetworksTest {
     void archivesScopedOverrideNetwork() throws IOException {
         givenConfig();
         Files.createDirectory(tempDir.resolve("" + ROUND_NO));
-        putJsonAt(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON, WithTssState.YES);
+        putJsonAt(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON);
         final var overrideJson = tempDir.resolve(ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON);
 
         assertThat(Files.exists(overrideJson)).isTrue();
@@ -223,7 +223,7 @@ class DiskStartupNetworksTest {
     @Test
     void overrideNetworkOnlyStillAvailableAtSameRound() throws IOException {
         givenConfig();
-        putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
+        putJsonAt(OVERRIDE_NETWORK_JSON);
 
         final var maybeOverrideNetwork = subject.overrideNetworkFor(ROUND_NO, DEFAULT_CONFIG);
         assertThat(maybeOverrideNetwork).isPresent();
@@ -256,13 +256,7 @@ class DiskStartupNetworksTest {
         }
     }
 
-    private enum WithTssState {
-        YES,
-        NO
-    }
-
-    private void putJsonAt(@NonNull final String fileName, @NonNull final WithTssState withTssState)
-            throws IOException {
+    private void putJsonAt(@NonNull final String fileName) throws IOException {
         final var loc = tempDir.resolve(fileName);
         try (final var fout = Files.newOutputStream(loc)) {
             Network.JSON.write(NETWORK, new WritableStreamingData(fout));
@@ -273,8 +267,8 @@ class DiskStartupNetworksTest {
         final var state = new FakeState();
         final var servicesRegistry = new FakeServicesRegistry();
         final var tssBaseService = new TssBaseServiceImpl();
+        given(startupNetworks.genesisNetworkOrThrow(DEFAULT_CONFIG)).willReturn(network);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
-        PLATFORM_STATE_SERVICE.setDiskAddressBook(new AddressBook());
         Set.of(
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,

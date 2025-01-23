@@ -194,7 +194,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, false, true));
+        subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
         final var platformState = platformStateBackingStore.get();
@@ -211,7 +211,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(FREEZE_UPGRADE));
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(false, false, true));
+        subject.handleTxBody(state, txBody.build(), configWith(false, true));
 
         // then
         final var platformState = platformStateBackingStore.get();
@@ -220,7 +220,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void putsCandidateRosterWhenNotKeyingButUsingRosterLifecycle() {
+    void putsCandidateRosterWhenRequested() {
         // given
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
@@ -238,7 +238,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 StakingNodeInfo.newBuilder().stake(1000).weight(1).build());
 
         // when
-        subject.handleTxBody(state, txBody.build(), configWith(true, true, true));
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
 
         // then
         final var captor = ArgumentCaptor.forClass(Path.class);
@@ -261,34 +261,9 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                         .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
                         .build());
 
-        subject.handleTxBody(state, txBody.build(), configWith(true, true, true));
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
 
         verify(rosterExportHelper, never()).accept(any(), any());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void exportsCandidateRosterIfRequestedEvenWhenNotUsingRosterLifecycle() {
-        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
-        freezeTimeBackingStore.set(freezeTime);
-        final var txBody = TransactionBody.newBuilder()
-                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
-        nodes.put(
-                new EntityNumber(0L),
-                Node.newBuilder()
-                        .weight(1)
-                        .gossipCaCertificate(Bytes.fromHex("0123"))
-                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
-                        .build());
-
-        // when
-        subject.handleTxBody(state, txBody.build(), configWith(false, true, true));
-
-        // then
-        final var captor = ArgumentCaptor.forClass(Path.class);
-        verify(rosterExportHelper).accept(any(), captor.capture());
-        final var path = captor.getValue();
-        assertEquals("candidate-network.json", path.getFileName().toString());
     }
 
     @Test
@@ -328,7 +303,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 new EntityNumber(1),
                 StakingNodeInfo.newBuilder().stake(1000).deleted(true).weight(1).build());
 
-        subject.handleTxBody(state, txBody.build(), configWith(true, true, false));
+        subject.handleTxBody(state, txBody.build(), configWith(true, false));
         final var candidateRosterHash = state.getWritableStates(RosterService.NAME)
                 .<RosterState>getSingleton("ROSTER_STATE")
                 .get()
@@ -345,13 +320,9 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         assertEquals(candidateRoster.rosterEntries().get(2).weight(), 0);
     }
 
-    private Configuration configWith(
-            final boolean useRosterLifecycle,
-            final boolean createCandidateRoster,
-            final boolean exportCandidateRoster) {
+    private Configuration configWith(final boolean createCandidateRoster, final boolean exportCandidateRoster) {
         return HederaTestConfigBuilder.create()
                 .withValue("addressBook.createCandidateRosterOnPrepareUpgrade", "" + createCandidateRoster)
-                .withValue("addressBook.useRosterLifecycle", "" + useRosterLifecycle)
                 .withValue("networkAdmin.exportCandidateRoster", "" + exportCandidateRoster)
                 .withValue("networkAdmin.candidateRosterExportFile", "candidate-network.json")
                 .getOrCreateConfig();
