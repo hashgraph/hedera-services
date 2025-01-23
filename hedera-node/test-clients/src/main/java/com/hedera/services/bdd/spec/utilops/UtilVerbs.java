@@ -1902,6 +1902,35 @@ public class UtilVerbs {
         });
     }
 
+    public static CustomSpecAssert validateChargedUsdWithoutGas(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsed(spec, txn);
+            final var gasCharged = getChargedGas(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged - gasCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee without gas (%s) more than %.2f percent different than expected!",
+                            sdec(actualUsdCharged - gasCharged, 4), txn, allowedPercentDiff));
+        });
+    }
+
+    public static CustomSpecAssert validateChargedUsdForGasOnly(
+            String txn, double expectedUsdForGas, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var gasCharged = getChargedGas(spec, txn);
+            assertEquals(
+                    expectedUsdForGas,
+                    gasCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsdForGas,
+                    String.format(
+                            "%s gas charge (%s) more than %.2f percent different than expected!",
+                            sdec(expectedUsdForGas, 4), txn, allowedPercentDiff));
+        });
+    }
+
     /**
      * Validates that an amount is within a certain percentage of an expected value.
      * @param expected expected value
@@ -2445,6 +2474,20 @@ public class UtilVerbs {
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    private static double getChargedGas(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).logged();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        final var gasUsed = rcd.getContractCallResult().getGasUsed();
+        return (gasUsed * 71.0)
                 / ONE_HBAR
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
