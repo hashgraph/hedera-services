@@ -20,7 +20,7 @@ import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.node.app.spi.validation.EntityType;
 
 /**
- * Provides a way to generate entity numbers.
+ * Provides a way to update entity number counts.
  */
 public interface WritableEntityCounters extends ReadableEntityCounters {
     /**
@@ -35,6 +35,8 @@ public interface WritableEntityCounters extends ReadableEntityCounters {
 
     /**
      * Increments the entity type counter for the given entity type.
+     * This is called when a new entity is created.
+     *
      * @param entityType the type of entity for which to increment the number
      * @return the updated entity counts
      */

@@ -19,11 +19,13 @@ package com.hedera.node.app.spi.ids;
 import com.hedera.node.app.spi.validation.EntityType;
 
 /**
- * Provides a way to generate entity numbers.
+ * Provides a way to get the entity type counter for a given entity type.
  */
 public interface ReadableEntityCounters {
     /**
      * Returns the counter for the given entity type.
+     * This is used to determine the size of the state.
+     *
      * @param entityType the type of entity for which to get the counter
      * @return the counter for the given entity type
      */
