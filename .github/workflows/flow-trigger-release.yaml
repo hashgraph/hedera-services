@@ -73,14 +73,6 @@ jobs:
           ref: ${{ steps.validate.outputs.BUILD_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Display Current Branch or Tag
-        run: |
-          # Check if it's a tag
-          if git describe --exact-match --tags >/dev/null 2>&1; then
-            echo "Checked out tag: $(git describe --exact-match --tags)"
-          else
-            echo "Checked out branch: $(git symbolic-ref --short HEAD)"
-          fi
 
       - name: Import GPG Key
         uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
