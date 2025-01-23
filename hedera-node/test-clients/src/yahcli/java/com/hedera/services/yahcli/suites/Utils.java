@@ -103,11 +103,8 @@ public class Utils {
     private static final Map<FileID, String> IDS_TO_NAMES = NAMES_TO_NUMBERS.entrySet().stream()
             .filter(entry -> !entry.getKey().contains("."))
             .collect(Collectors.toMap(
-                    (Map.Entry<String, Long> entry) -> FileID.newBuilder()
-                            .setShardNum(1)
-                            .setRealmNum(2)
-                            .setFileNum(entry.getValue())
-                            .build(),
+                    (Map.Entry<String, Long> entry) ->
+                            FileID.newBuilder().setFileNum(entry.getValue()).build(),
                     Map.Entry::getKey));
 
     private static final Set<Long> VALID_NUMBERS = new HashSet<>(NAMES_TO_NUMBERS.values());
