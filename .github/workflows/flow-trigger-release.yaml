@@ -137,14 +137,9 @@ jobs:
           echo "Applying computed version tag"
           git tag --annotate v${{ steps.next_version.outputs.next_release }} --message "v${{ steps.next_version.outputs.next_release }}"
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
-          echo "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
-
-      - name: Identify Current Version Number After Tagging
-        run: |
-          echo "Find the current version number after we applied the new tag"
           current_version=$(git-semver latest)
-          echo "Current version is: ${current_version}"
-          echo "Should match version we just applied: ${{ steps.next_version.outputs.next_release }}"
+          echo "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
+          echo "Current version is: ${current_version}" >> ${GITHUB_STEP_SUMMARY}       
 
       - name: Push Release Tag to Remote
         run: |
