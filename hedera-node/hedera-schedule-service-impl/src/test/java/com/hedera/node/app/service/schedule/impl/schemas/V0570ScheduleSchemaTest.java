@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("Migrated 2 schedules from SCHEDULES_BY_EQUALITY_KEY");
-        //        assertThat(writableScheduleIdByEquality.size()).isEqualTo(2L);
+        assertThat(writableScheduleIdByEquality.size()).isEqualTo(2L);
     }
 
     private void setupMigrationContext() {

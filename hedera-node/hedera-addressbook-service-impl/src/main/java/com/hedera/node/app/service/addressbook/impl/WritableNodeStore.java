@@ -86,6 +86,16 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     }
 
     /**
+     * Returns the number of nodes in the state.
+     * @return the number of nodes in the state
+     */
+    @Override
+    public long sizeOfState() {
+        return nodesState().size();
+        // FUTURE: Use entityCounters to get size.
+    }
+
+    /**
      * Returns the set of nodes modified in existing state.
      * @return the set of nodes modified in existing state
      */

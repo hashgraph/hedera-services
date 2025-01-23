@@ -25,7 +25,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,7 +81,8 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
      * @return the number of topics in the state
      */
     public long sizeOfState() {
-        return entityCounters.getCounterFor(EntityType.NODE);
+        return nodesState.size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     protected <T extends ReadableKVState<EntityNumber, Node>> T nodesState() {

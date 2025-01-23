@@ -35,7 +35,6 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,7 +147,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     @Test
     void returnSizeOfState() {
         final var store = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
-        assertEquals(readableEntityCounters.getCounterFor(EntityType.TOKEN), store.sizeOfState());
+        assertEquals(readableStates.get(TOKENS).size(), store.sizeOfState());
     }
 
     @Test

@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import org.assertj.core.api.Assertions;
@@ -102,8 +101,7 @@ class ReadableTokenRelationStoreImplTest {
     @Test
     void testSizeOfState() {
         final var expectedSize = 3L;
-        given(readableEntityCounters.getCounterFor(EntityType.TOKEN_ASSOCIATION))
-                .willReturn(expectedSize);
+        given(tokenRelState.size()).willReturn(expectedSize);
 
         final var result = subject.sizeOfState();
         Assertions.assertThat(result).isEqualTo(expectedSize);

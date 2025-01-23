@@ -99,6 +99,16 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     }
 
     /**
+     * Returns the number of files in the state.
+     *
+     * @return the number of files in the state
+     */
+    public long sizeOfState() {
+        return filesState.size();
+        // FUTURE: Use entityCounters to get size.
+    }
+
+    /**
      * Returns the set of files modified in existing state.
      *
      * @return the set of files modified in existing state

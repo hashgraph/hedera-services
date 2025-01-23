@@ -40,7 +40,6 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -220,7 +219,7 @@ final class V0490TokenSchemaTest {
         }
 
         // Finally, verify that the size is exactly as expected
-        assertThat(entityIdStore.getCounterFor(EntityType.ACCOUNT))
+        assertThat(acctsStateResult.size())
                 .isEqualTo(
                         // All the system accounts
                         DEFAULT_NUM_SYSTEM_ACCOUNTS

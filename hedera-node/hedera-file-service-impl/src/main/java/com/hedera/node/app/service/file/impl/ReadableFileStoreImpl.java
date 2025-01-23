@@ -24,7 +24,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,6 +80,7 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      * @return the number of files in the state
      */
     public long sizeOfState() {
-        return entityCounters.getCounterFor(EntityType.FILE);
+        return fileState.size();
+        // FUTURE: Use entityCounters to get size.
     }
 }
