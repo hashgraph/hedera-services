@@ -43,6 +43,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -59,6 +60,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
@@ -248,18 +250,45 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     }
 
     @Test
-    void worksAroundFailureToPutCandidateRoster() {
+    void usesActiveRosterWeightsIfCandidateHasZeroWeight() {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
         final var txBody = TransactionBody.newBuilder()
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        final var fakeEndpoint = new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org");
         nodes.put(
                 new EntityNumber(0L),
                 Node.newBuilder()
                         .weight(0)
                         .gossipCaCertificate(Bytes.fromHex("0123"))
-                        .gossipEndpoint(new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org"))
+                        .gossipEndpoint(fakeEndpoint)
                         .build());
+        final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
+        rosterStore.putActiveRoster(
+                new Roster(List.of(new RosterEntry(0L, 1, Bytes.fromHex("0123"), List.of(fakeEndpoint)))), 123L);
+
+        subject.handleTxBody(state, txBody.build(), configWith(true, true));
+
+        verify(rosterExportHelper).accept(any(), any());
+    }
+
+    @Test
+    void worksAroundInvalidCandidate() {
+        final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
+        freezeTimeBackingStore.set(freezeTime);
+        final var txBody = TransactionBody.newBuilder()
+                .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
+        final var fakeEndpoint = new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org");
+        nodes.put(
+                new EntityNumber(0L),
+                Node.newBuilder()
+                        .weight(0)
+                        .gossipCaCertificate(Bytes.EMPTY)
+                        .gossipEndpoint(fakeEndpoint)
+                        .build());
+        final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
+        rosterStore.putActiveRoster(
+                new Roster(List.of(new RosterEntry(0L, 1, Bytes.fromHex("0123"), List.of(fakeEndpoint)))), 123L);
 
         subject.handleTxBody(state, txBody.build(), configWith(true, true));
 

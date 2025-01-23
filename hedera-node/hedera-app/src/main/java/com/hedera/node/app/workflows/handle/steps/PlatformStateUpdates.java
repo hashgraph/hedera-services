@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -40,8 +41,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -121,7 +124,13 @@ public class PlatformStateUpdates {
                             // Default weight if no staking info is found or the node is deleted
                             return 0L;
                         };
-                        final var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        // Ensure we don't have a candidate roster with all zero weights by preserving
+                        // weights from the current roster when no HBAR is staked to any node
+                        if (hasZeroWeight(candidateRoster)) {
+                            candidateRoster =
+                                    assignWeights(candidateRoster, requireNonNull(rosterStore.getActiveRoster()));
+                        }
                         logger.info("Candidate roster with updated weights is {}", candidateRoster);
                         boolean rosterAccepted = false;
                         try {
@@ -140,6 +149,20 @@ public class PlatformStateUpdates {
                 }
             }
         }
+    }
+
+    private Roster assignWeights(@NonNull final Roster to, @NonNull final Roster from) {
+        final Map<Long, Long> fromWeights =
+                from.rosterEntries().stream().collect(Collectors.toMap(RosterEntry::nodeId, RosterEntry::weight));
+        return new Roster(to.rosterEntries().stream()
+                .map(entry -> entry.copyBuilder()
+                        .weight(fromWeights.getOrDefault(entry.nodeId(), 0L))
+                        .build())
+                .toList());
+    }
+
+    private boolean hasZeroWeight(@NonNull final Roster roster) {
+        return roster.rosterEntries().stream().mapToLong(RosterEntry::weight).sum() == 0L;
     }
 
     private void doExport(@NonNull final Roster candidateRoster, @NonNull final NetworkAdminConfig networkAdminConfig) {
