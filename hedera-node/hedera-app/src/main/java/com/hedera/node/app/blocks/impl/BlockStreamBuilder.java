@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1181,26 +1181,46 @@ public class BlockStreamBuilder
                     CONTRACT_DELETE,
                     CONTRACT_UPDATE,
                     ETHEREUM_TRANSACTION -> new ContractOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, contractId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    contractId);
             case CRYPTO_CREATE, CRYPTO_UPDATE -> new CryptoOpContext(
                     memo,
                     translationContextExchangeRates,
                     transactionId,
-                    transaction,
+                    getSerializedTransaction(),
                     functionality,
                     accountId,
                     evmAddress);
             case FILE_CREATE -> new FileOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, fileId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    fileId);
             case NODE_CREATE -> new NodeOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, nodeId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    nodeId);
             case SCHEDULE_DELETE -> new ScheduleOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, scheduleId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    scheduleId);
             case CONSENSUS_SUBMIT_MESSAGE -> new SubmitOpContext(
                     memo,
                     translationContextExchangeRates,
                     transactionId,
-                    transaction,
+                    getSerializedTransaction(),
                     functionality,
                     runningHash,
                     runningHashVersion,
@@ -1213,7 +1233,7 @@ public class BlockStreamBuilder
                         memo,
                         translationContextExchangeRates,
                         transactionId,
-                        transaction,
+                        getSerializedTransaction(),
                         functionality,
                         pendingAirdropRecords);
             }
@@ -1221,18 +1241,33 @@ public class BlockStreamBuilder
                     memo,
                     translationContextExchangeRates,
                     transactionId,
-                    transaction,
+                    getSerializedTransaction(),
                     functionality,
                     serialNumbers,
                     newTotalSupply);
             case TOKEN_BURN, TOKEN_ACCOUNT_WIPE -> new SupplyChangeOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, newTotalSupply);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    newTotalSupply);
             case TOKEN_CREATE -> new TokenOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, tokenId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    tokenId);
             case CONSENSUS_CREATE_TOPIC -> new TopicOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality, topicId);
+                    memo,
+                    translationContextExchangeRates,
+                    transactionId,
+                    getSerializedTransaction(),
+                    functionality,
+                    topicId);
             default -> new BaseOpContext(
-                    memo, translationContextExchangeRates, transactionId, transaction, functionality);
+                    memo, translationContextExchangeRates, transactionId, getSerializedTransaction(), functionality);
         };
     }
 }
