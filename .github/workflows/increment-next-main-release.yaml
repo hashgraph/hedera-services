@@ -104,7 +104,7 @@ jobs:
 
       - name: Publish to Maven Central
         run: |
-          ./gradlew versionAsSpecified -PnewVersion=${{ steps.increment_version.outputs.new_version }}
+          ./gradlew versionAsSpecified -PnewVersion=${{ steps.increment_version.outputs.new-version }}
 
       - name: Add & Commit
         uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
