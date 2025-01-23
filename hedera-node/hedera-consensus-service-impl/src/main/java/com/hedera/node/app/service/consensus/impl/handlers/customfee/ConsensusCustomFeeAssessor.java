@@ -27,11 +27,9 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,39 +114,5 @@ public class ConsensusCustomFeeAssessor {
     public AccountID getTokenTreasury(TokenID tokenId, ReadableTokenStore tokenStore) {
         final var token = getIfUsable(tokenId, tokenStore, REQUIRE_NOT_PAUSED, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
         return token.treasuryAccountIdOrThrow();
-    }
-
-    public List<AssessedCustomFee> assessedCustomFees(AccountID payer, CryptoTransferStreamBuilder streamBuilder) {
-
-        final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
-        final var assessedFeeBuilder = AssessedCustomFee.newBuilder().effectivePayerAccountId(payer);
-        final var body = streamBuilder.transactionBody().cryptoTransferOrThrow();
-
-        // check for hbar transfers
-        if (body.transfers() != null) {
-            for (final var amount : body.transfers().accountAmounts()) {
-                if (amount.amount() > 0) {
-                    assessedFeeBuilder.amount(amount.amount());
-                    assessedFeeBuilder.feeCollectorAccountId(amount.accountID());
-                }
-            }
-        }
-
-        // check for token transfers
-        for (final var tokenTransferList : body.tokenTransfers()) {
-            assessedFeeBuilder.tokenId(tokenTransferList.token());
-            for (final var transfer : tokenTransferList.transfers()) {
-                if (transfer.amount() > 0) {
-                    assessedFeeBuilder.amount(transfer.amount());
-                    assessedFeeBuilder.feeCollectorAccountId(transfer.accountID());
-                }
-            }
-        }
-
-        assessedCustomFees.add(assessedFeeBuilder.build());
-        // check if any nested custom fees are charged during the transfer and add them in to the list
-        assessedCustomFees.addAll(streamBuilder.getAssessedCustomFees());
-
-        return assessedCustomFees;
     }
 }

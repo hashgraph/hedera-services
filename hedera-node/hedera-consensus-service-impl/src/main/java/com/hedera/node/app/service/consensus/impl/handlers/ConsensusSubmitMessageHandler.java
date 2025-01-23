@@ -33,6 +33,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -176,7 +177,6 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
 
             // dispatch transfers to pay the fees, but suppress any child records.
-            // All assessed fees will be externalized in to the top level txn record/stream
             for (final var syntheticBody : syntheticBodies) {
                 final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
@@ -184,13 +184,11 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                                 .cryptoTransfer(syntheticBody)
                                 .build(),
                         CryptoTransferStreamBuilder.class,
-                        SUPPRESSING_TRANSACTION_CUSTOMIZER));
-
+                        SUPPRESSING_TRANSACTION_CUSTOMIZER,
+                        new HandleContext.DispatchMetadata(Map.of(TRANSACTION_FIXED_FEE, true))));
                 validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
-                assessedCustomFees.addAll(
-                        customFeeAssessor.assessedCustomFees(handleContext.payer(), dispatchedStreamBuilder));
+                assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
             }
-
             // externalize all custom fees
             streamBuilder.assessedCustomFees(assessedCustomFees);
         }
