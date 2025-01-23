@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.STATE_SIGNATURE_TRANSACTION;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
@@ -30,16 +29,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -60,6 +60,7 @@ import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,6 +69,7 @@ import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+// TODO fix failing tests
 @DisplayName("IssDetector Tests")
 class IssDetectorTests extends PlatformTest {
 
@@ -82,25 +84,57 @@ class IssDetectorTests extends PlatformTest {
     private static List<EventImpl> generateEventsContainingSignatures(
             @NonNull final Randotron random,
             final long roundNumber,
-            @NonNull final RoundHashValidatorTests.HashGenerationData hashGenerationData) {
+            @NonNull final RoundHashValidatorTests.HashGenerationData hashGenerationData,
+            @NonNull final Map<NodeId, List<StateSignatureTransaction>> stateSignatureTransactions) {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-                    final StateSignatureTransaction signatureTransaction = StateSignatureTransaction.newBuilder()
-                            .round(roundNumber)
-                            .signature(Bytes.EMPTY)
-                            .hash(nodeHashInfo.nodeStateHash().getBytes())
-                            .build();
+                    final StateSignatureTransaction stateSignatureTransaction =
+                            stateSignatureTransactions.get(nodeHashInfo.nodeId()).stream()
+                                    .filter(transaction -> transaction.round() == roundNumber)
+                                    .findFirst()
+                                    .orElseThrow();
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
-                            .setOneOfTransactions(
-                                    List.of(new OneOf<>(STATE_SIGNATURE_TRANSACTION, signatureTransaction)))
+                            .setBirthRound(roundNumber)
+                            .setTransactionBytes(List.of(encodeStateSignatureTransaction(stateSignatureTransaction)))
                             .setSoftwareVersion(SemanticVersion.DEFAULT);
 
                     return EventImplTestUtils.createEventImpl(event, null, null);
                 })
                 .toList();
+    }
+
+    private static Bytes encodeStateSignatureTransaction(final StateSignatureTransaction stateSignatureTransaction) {
+        final var transactionBody = TransactionBody.newBuilder().stateSignatureTransaction(stateSignatureTransaction);
+
+        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
+                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
+                .sigMap(SignatureMap.DEFAULT)
+                .build();
+
+        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
+    }
+
+    private static Map<NodeId, List<StateSignatureTransaction>> generateSystemTransactions(
+            final long roundNumber, @NonNull final RoundHashValidatorTests.HashGenerationData hashGenerationData) {
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMap = new HashMap<>();
+        hashGenerationData.nodeList().forEach(nodeHashInfo -> {
+            List<StateSignatureTransaction> stateSignatureTransactionsForNode =
+                    nodeIdToStateSignatureTransactionsMap.get(nodeHashInfo.nodeId());
+            if (stateSignatureTransactionsForNode == null) {
+                stateSignatureTransactionsForNode = new ArrayList<>();
+            }
+            stateSignatureTransactionsForNode.add(StateSignatureTransaction.newBuilder()
+                    .round(roundNumber)
+                    .signature(Bytes.EMPTY)
+                    .hash(nodeHashInfo.nodeStateHash().getBytes())
+                    .build());
+            nodeIdToStateSignatureTransactionsMap.put(nodeHashInfo.nodeId(), stateSignatureTransactionsForNode);
+        });
+
+        return nodeIdToStateSignatureTransactionsMap;
     }
 
     /**
@@ -119,16 +153,20 @@ class IssDetectorTests extends PlatformTest {
             @NonNull final Randotron random,
             @NonNull final Roster roster,
             final long roundNumber,
-            @NonNull final Hash roundHash) {
+            @NonNull final Hash roundHash,
+            @NonNull final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMap) {
         final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
 
         roster.rosterEntries()
                 .forEach(node -> nodeHashInfos.add(
                         new RoundHashValidatorTests.NodeHashInfo(NodeId.of(node.nodeId()), roundHash, roundNumber)));
 
+        final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash);
+
         // create signature transactions for this round
         return generateEventsContainingSignatures(
-                random, roundNumber, new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash));
+                random, roundNumber, hashGenerationData, nodeIdToStateSignatureTransactionsMap);
     }
 
     /**
@@ -195,18 +233,41 @@ class IssDetectorTests extends PlatformTest {
 
         issDetectorTestHelper.overridingState(mockState(currentRound, randomHash()));
 
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMap = new HashMap<>();
         for (currentRound++; currentRound <= 1_000; currentRound++) {
             final Hash roundHash = randomHash(random);
 
             // create signature transactions for this round
-            signatureEvents.addAll(generateEventsWithConsistentSignatures(random, roster, currentRound, roundHash));
+            final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
+            long finalCurrentRound = currentRound;
+            roster.rosterEntries()
+                    .forEach(node -> nodeHashInfos.add(new RoundHashValidatorTests.NodeHashInfo(
+                            NodeId.of(node.nodeId()), roundHash, finalCurrentRound)));
+            final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                    new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash);
+
+            final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMapForCurrentRound =
+                    generateSystemTransactions(currentRound, hashGenerationData);
+            signatureEvents.addAll(generateEventsWithConsistentSignatures(
+                    random, roster, currentRound, roundHash, nodeIdToStateSignatureTransactionsMap));
+
+            nodeIdToStateSignatureTransactionsMapForCurrentRound.forEach((nodeId, stateSignatureTransactions) -> {
+                final List<StateSignatureTransaction> currentStateSignatureTransactions =
+                        nodeIdToStateSignatureTransactionsMap.get(nodeId);
+
+                final List<StateSignatureTransaction> stateSignatureTransactionsForCurrentRound =
+                        nodeIdToStateSignatureTransactionsMapForCurrentRound.get(nodeId);
+                currentStateSignatureTransactions.addAll(stateSignatureTransactionsForCurrentRound);
+
+                nodeIdToStateSignatureTransactionsMap.put(nodeId, currentStateSignatureTransactions);
+            });
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
             final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
 
-            final var systemTransactions =
-                    SystemTransactionExtractionUtils.extractFromRound(consensusRound, StateSignatureTransaction.class);
+            final var systemTransactions = extractScopedSystemTransactions(
+                    currentRound, eventsToInclude, nodeIdToStateSignatureTransactionsMap);
             issDetectorTestHelper.handleStateAndRound(
                     new StateAndRound(mockState(currentRound, roundHash), consensusRound, systemTransactions));
         }
@@ -214,7 +275,7 @@ class IssDetectorTests extends PlatformTest {
         // Add all remaining unsubmitted signature events
         final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, signatureEvents);
         final var systemTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(consensusRound, StateSignatureTransaction.class);
+                extractScopedSystemTransactions(currentRound, signatureEvents, nodeIdToStateSignatureTransactionsMap);
         issDetectorTestHelper.handleStateAndRound(
                 new StateAndRound(mockState(currentRound, randomHash(random)), consensusRound, systemTransactions));
 
@@ -316,30 +377,54 @@ class IssDetectorTests extends PlatformTest {
 
         // signature events are generated for each round when that round is handled, and then are included randomly
         // in subsequent rounds
-        final List<EventImpl> signatureEvents =
-                new ArrayList<>(generateEventsContainingSignatures(random, 0, roundData.getFirst()));
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMap =
+                generateSystemTransactions(0, roundData.getFirst());
+        final List<EventImpl> signatureEvents = new ArrayList<>(generateEventsContainingSignatures(
+                random, 0, roundData.getFirst(), nodeIdToStateSignatureTransactionsMap));
 
         for (currentRound++; currentRound < roundsNonAncient; currentRound++) {
             // create signature transactions for this round
-            signatureEvents.addAll(
-                    generateEventsContainingSignatures(random, currentRound, roundData.get((int) currentRound)));
+            final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMapForCurrentRound =
+                    generateSystemTransactions(currentRound, roundData.get((int) currentRound));
+
+            nodeIdToStateSignatureTransactionsMapForCurrentRound.forEach((nodeId, stateSignatureTransactions) -> {
+                final List<StateSignatureTransaction> currentStateSignatureTransactions =
+                        nodeIdToStateSignatureTransactionsMap.get(nodeId);
+
+                final List<StateSignatureTransaction> stateSignatureTransactionsForCurrentRound =
+                        nodeIdToStateSignatureTransactionsMapForCurrentRound.get(nodeId);
+                currentStateSignatureTransactions.addAll(stateSignatureTransactionsForCurrentRound);
+
+                nodeIdToStateSignatureTransactionsMap.put(nodeId, currentStateSignatureTransactions);
+            });
+
+            signatureEvents.addAll(generateEventsContainingSignatures(
+                    random,
+                    currentRound,
+                    roundData.get((int) currentRound),
+                    nodeIdToStateSignatureTransactionsMapForCurrentRound));
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
+            final List<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
+                    extractScopedSystemTransactions(
+                            currentRound, eventsToInclude, nodeIdToStateSignatureTransactionsMapForCurrentRound);
 
             final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
-            final var systemTransactions =
-                    SystemTransactionExtractionUtils.extractFromRound(consensusRound, StateSignatureTransaction.class);
             issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                    mockState(currentRound, selfHashes.get((int) currentRound)), consensusRound, systemTransactions));
+                    mockState(currentRound, selfHashes.get((int) currentRound)),
+                    consensusRound,
+                    selectedSystemTransactions));
         }
 
         // Add all remaining signature events
         final ConsensusRound consensusRound = createRoundWithSignatureEvents(roundsNonAncient, signatureEvents);
-        final var systemTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(consensusRound, StateSignatureTransaction.class);
-        issDetectorTestHelper.handleStateAndRound(
-                new StateAndRound(mockState(roundsNonAncient, randomHash(random)), consensusRound, systemTransactions));
+
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
+                extractScopedSystemTransactions(
+                        roundsNonAncient, signatureEvents, nodeIdToStateSignatureTransactionsMap);
+        issDetectorTestHelper.handleStateAndRound(new StateAndRound(
+                mockState(roundsNonAncient, randomHash(random)), consensusRound, remainingSystemTransactions));
 
         assertEquals(
                 expectedSelfIssCount,
@@ -379,6 +464,27 @@ class IssDetectorTests extends PlatformTest {
                         assertMarkerFile(notification.getIssType().toString(), true));
     }
 
+    private List<ScopedSystemTransaction<StateSignatureTransaction>> extractScopedSystemTransactions(
+            final long round,
+            final List<EventImpl> eventsToInclude,
+            final Map<NodeId, List<StateSignatureTransaction>> sourceStateSignatureTransactions) {
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions = new ArrayList<>();
+        eventsToInclude.forEach(event -> {
+            final List<StateSignatureTransaction> stateSignatureTransactions =
+                    sourceStateSignatureTransactions.get(event.getCreatorId());
+            assertNotNull(stateSignatureTransactions, "state signature transaction should not be null");
+
+            stateSignatureTransactions.forEach(transaction -> {
+                if (event.getBirthRound() == transaction.round()) {
+                    selectedSystemTransactions.add(
+                            new ScopedSystemTransaction<>(event.getCreatorId(), SemanticVersion.DEFAULT, transaction));
+                }
+            });
+        });
+
+        return selectedSystemTransactions;
+    }
+
     /**
      * Handles additional rounds after an ISS occurred, but before all signatures have been submitted. Validates that
      * the ISS is detected after enough signatures are submitted, and not before.
@@ -414,26 +520,25 @@ class IssDetectorTests extends PlatformTest {
                 .findFirst()
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
+        final Map<NodeId, List<StateSignatureTransaction>> systemTransactions =
+                generateSystemTransactions(currentRound, catastrophicHashData);
         final List<EventImpl> signaturesOnCatastrophicRound =
-                generateEventsContainingSignatures(random, currentRound, catastrophicHashData);
+                generateEventsContainingSignatures(random, currentRound, catastrophicHashData, systemTransactions);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
+                extractScopedSystemTransactions(currentRound, signaturesOnCatastrophicRound, systemTransactions);
 
         // handle the catastrophic round, but don't submit any signatures yet, so it won't be detected
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, List.of());
-        final var systemTransactionsForCatastrophicRound =
-                SystemTransactionExtractionUtils.extractFromRound(catastrophicRound, StateSignatureTransaction.class);
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                mockState(currentRound, selfHashForCatastrophicRound),
-                catastrophicRound,
-                systemTransactionsForCatastrophicRound));
+                mockState(currentRound, selfHashForCatastrophicRound), catastrophicRound, new ArrayList<>()));
 
         // handle some more rounds on top of the catastrophic round
         for (currentRound++; currentRound < 10; currentRound++) {
             // don't include any signatures
             final var anotherRound = createRoundWithSignatureEvents(currentRound, List.of());
-            final var systemTransactionsForRoundWithoutSignatures =
-                    SystemTransactionExtractionUtils.extractFromRound(anotherRound, StateSignatureTransaction.class);
-            issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                    mockState(currentRound, randomHash()), anotherRound, systemTransactionsForRoundWithoutSignatures));
+
+            issDetectorTestHelper.handleStateAndRound(
+                    new StateAndRound(mockState(currentRound, randomHash()), anotherRound, new ArrayList<>()));
         }
 
         final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
@@ -453,8 +558,8 @@ class IssDetectorTests extends PlatformTest {
         }
 
         final var roundWithMajority = createRoundWithSignatureEvents(currentRound, signaturesToSubmit);
-        final var systemTransactionsForRoundWithMajority =
-                SystemTransactionExtractionUtils.extractFromRound(roundWithMajority, StateSignatureTransaction.class);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForRoundWithMajority =
+                extractScopedSystemTransactions(currentRound, signaturesToSubmit, systemTransactions);
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()), roundWithMajority, systemTransactionsForRoundWithMajority));
         assertEquals(
@@ -466,8 +571,9 @@ class IssDetectorTests extends PlatformTest {
 
         // submit the remaining signatures in the next round
         final var remainingRound = createRoundWithSignatureEvents(currentRound, signaturesOnCatastrophicRound);
-        final var remainingSystemTransactions =
-                SystemTransactionExtractionUtils.extractFromRound(remainingRound, StateSignatureTransaction.class);
+
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
+                extractScopedSystemTransactions(currentRound, signaturesOnCatastrophicRound, systemTransactions);
 
         issDetectorTestHelper.handleStateAndRound(
                 new StateAndRound(mockState(currentRound, randomHash()), remainingRound, remainingSystemTransactions));
@@ -545,8 +651,12 @@ class IssDetectorTests extends PlatformTest {
                 .findFirst()
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
+        final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null);
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdToSystemTransactionsMap =
+                generateSystemTransactions(currentRound, hashGenerationData);
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
+                random, currentRound, hashGenerationData, nodeIdToSystemTransactionsMap);
 
         final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
         long submittedWeight = 0;
@@ -567,8 +677,8 @@ class IssDetectorTests extends PlatformTest {
 
         // handle the catastrophic round, but it won't be decided yet, since there aren't enough signatures
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, signaturesToSubmit);
-        final var systemTransactionsForCatastrophicRound =
-                SystemTransactionExtractionUtils.extractFromRound(catastrophicRound, StateSignatureTransaction.class);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
+                extractScopedSystemTransactions(currentRound, signaturesToSubmit, nodeIdToSystemTransactionsMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, selfHashForCatastrophicRound),
@@ -578,11 +688,9 @@ class IssDetectorTests extends PlatformTest {
         // shift through until the catastrophic round is almost ready to be cleaned up
         for (currentRound++; currentRound < roundsNonAncient; currentRound++) {
             final var round = createRoundWithSignatureEvents(currentRound, List.of());
-            final var systemTransactions =
-                    SystemTransactionExtractionUtils.extractFromRound(round, StateSignatureTransaction.class);
 
             issDetectorTestHelper.handleStateAndRound(
-                    new StateAndRound(mockState(currentRound, randomHash()), round, systemTransactions));
+                    new StateAndRound(mockState(currentRound, randomHash()), round, new ArrayList<>()));
         }
 
         assertEquals(
@@ -593,11 +701,9 @@ class IssDetectorTests extends PlatformTest {
         // Shift the window. Even though we have not added enough data for a decision, we will have added enough to lead
         // to a catastrophic ISS when the timeout is triggered.
         final var remainingRound = createRoundWithSignatureEvents(currentRound, List.of());
-        final var systemTransactionsForRemainingRound =
-                SystemTransactionExtractionUtils.extractFromRound(remainingRound, StateSignatureTransaction.class);
 
-        issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                mockState(currentRound, randomHash()), remainingRound, systemTransactionsForRemainingRound));
+        issDetectorTestHelper.handleStateAndRound(
+                new StateAndRound(mockState(currentRound, randomHash()), remainingRound, new ArrayList<>()));
 
         assertEquals(1, issDetectorTestHelper.getIssNotificationList().size(), "shifting should have caused an ISS");
         assertEquals(
@@ -648,18 +754,19 @@ class IssDetectorTests extends PlatformTest {
                 .findFirst()
                 .map(RoundHashValidatorTests.NodeHashInfo::nodeStateHash)
                 .orElseThrow();
+
+        final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null);
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdStateSignatureTransactionMap =
+                generateSystemTransactions(currentRound, hashGenerationData);
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
+                random, currentRound, hashGenerationData, nodeIdStateSignatureTransactionMap);
 
         // handle the catastrophic round, but don't submit any signatures yet, so it won't be detected
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, List.of());
-        final var systemTransactionsForCatastrophicRound =
-                SystemTransactionExtractionUtils.extractFromRound(catastrophicRound, StateSignatureTransaction.class);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                mockState(currentRound, selfHashForCatastrophicRound),
-                catastrophicRound,
-                systemTransactionsForCatastrophicRound));
+                mockState(currentRound, selfHashForCatastrophicRound), catastrophicRound, new ArrayList<>()));
 
         final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
         long submittedWeight = 0;
@@ -681,8 +788,7 @@ class IssDetectorTests extends PlatformTest {
         // submit the supermajority of signatures
         final var roundWithSupermajority = createRoundWithSignatureEvents(currentRound, signaturesToSubmit);
         final var systemTransactionsForRoundWithSupermajorityOfSignatures =
-                SystemTransactionExtractionUtils.extractFromRound(
-                        roundWithSupermajority, StateSignatureTransaction.class);
+                extractScopedSystemTransactions(currentRound, signaturesToSubmit, nodeIdStateSignatureTransactionMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()),
@@ -731,14 +837,20 @@ class IssDetectorTests extends PlatformTest {
 
         final List<RoundHashValidatorTests.NodeHashInfo> catastrophicData =
                 generateCatastrophicTimeoutIss(random, roster, currentRound);
+
+        final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                new RoundHashValidatorTests.HashGenerationData(catastrophicData, null);
+        final Map<NodeId, List<StateSignatureTransaction>> nodeIdStateSignatureTransactionMap =
+                generateSystemTransactions(currentRound, hashGenerationData);
         final List<EventImpl> signaturesOnCatastrophicRound = generateEventsContainingSignatures(
-                random, currentRound, new RoundHashValidatorTests.HashGenerationData(catastrophicData, null));
+                random, currentRound, hashGenerationData, nodeIdStateSignatureTransactionMap);
 
         // handle the round and all signatures.
         // The round has a catastrophic ISS, but should be ignored
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, signaturesOnCatastrophicRound);
-        final var systemTransactionsForCatastrophicRound =
-                SystemTransactionExtractionUtils.extractFromRound(catastrophicRound, StateSignatureTransaction.class);
+        final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
+                extractScopedSystemTransactions(
+                        currentRound, signaturesOnCatastrophicRound, nodeIdStateSignatureTransactionMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()), catastrophicRound, systemTransactionsForCatastrophicRound));
@@ -746,11 +858,9 @@ class IssDetectorTests extends PlatformTest {
         // shift through some rounds, to make sure nothing unexpected happens
         for (currentRound++; currentRound <= roundsNonAncient; currentRound++) {
             final var anotherRound = createRoundWithSignatureEvents(currentRound, List.of());
-            final var systemTransactionsForAnotherRound =
-                    SystemTransactionExtractionUtils.extractFromRound(anotherRound, StateSignatureTransaction.class);
 
-            issDetectorTestHelper.handleStateAndRound(new StateAndRound(
-                    mockState(currentRound, randomHash()), anotherRound, systemTransactionsForAnotherRound));
+            issDetectorTestHelper.handleStateAndRound(
+                    new StateAndRound(mockState(currentRound, randomHash()), anotherRound, new ArrayList<>()));
         }
 
         assertEquals(0, issDetectorTestHelper.getIssNotificationList().size(), "ISS should have been ignored");
