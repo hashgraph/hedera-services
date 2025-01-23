@@ -78,7 +78,6 @@ public final class TransactionUtils {
      * @param transaction the transaction to check
      * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
      */
-    // TODO: Refactor this method to work properly
     public static boolean isSystemTransaction(final EventTransaction transaction) {
         return transaction == null ? false : isSystemTransaction(transaction.transaction());
     }
