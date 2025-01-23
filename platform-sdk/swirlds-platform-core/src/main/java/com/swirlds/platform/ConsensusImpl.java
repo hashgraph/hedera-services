@@ -239,7 +239,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         super(platformContext);
         this.time = platformContext.getTime();
         this.markerFileWriter = new MarkerFileWriter(platformContext);
-        this.markerFileWriter.writeMarkerFile("test_marker_file");
         this.consensusMetrics = consensusMetrics;
 
         // until we implement roster changes, we will just use the use this roster
