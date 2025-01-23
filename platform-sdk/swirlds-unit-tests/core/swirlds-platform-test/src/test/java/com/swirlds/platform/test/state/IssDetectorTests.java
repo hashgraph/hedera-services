@@ -88,17 +88,16 @@ class IssDetectorTests extends PlatformTest {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-
                     StateSignatureTransaction stateSignatureTransaction;
                     final NodeId nodeId = nodeHashInfo.nodeId();
-                    final List<StateSignatureTransaction> systemTransactions =
-                            stateSignatureTransactions.get(nodeId);
+                    final List<StateSignatureTransaction> systemTransactions = stateSignatureTransactions.get(nodeId);
                     if (systemTransactions == null || systemTransactions.isEmpty()) {
                         stateSignatureTransaction = StateSignatureTransaction.DEFAULT;
                     } else {
                         stateSignatureTransaction = stateSignatureTransactions.get(nodeId).stream()
                                 .filter(transaction -> transaction.round() == roundNumber)
-                                .findFirst().orElse(StateSignatureTransaction.DEFAULT);
+                                .findFirst()
+                                .orElse(StateSignatureTransaction.DEFAULT);
                     }
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
@@ -141,38 +140,6 @@ class IssDetectorTests extends PlatformTest {
         });
 
         return nodeIdToStateSignatureTransactionsMap;
-    }
-
-    /**
-     * Generates a list of events, with each event containing a signature transaction from a node for the given round.
-     * <p>
-     * One event will be created for each node in the address book, and all signatures will be made on a single
-     * consistent hash.
-     *
-     * @param random      a source of randomness
-     * @param roster      the roster to use to generate the signature transactions
-     * @param roundNumber the round that signature transactions will be for
-     * @param roundHash   the hash that all signature transactions will be made on
-     * @return a list of events, each containing a signature transaction from a node for the given round
-     */
-    private static List<EventImpl> generateEventsWithConsistentSignatures(
-            @NonNull final Randotron random,
-            @NonNull final Roster roster,
-            final long roundNumber,
-            @NonNull final Hash roundHash,
-            @NonNull final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMap) {
-        final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
-
-        roster.rosterEntries()
-                .forEach(node -> nodeHashInfos.add(
-                        new RoundHashValidatorTests.NodeHashInfo(NodeId.of(node.nodeId()), roundHash, roundNumber)));
-
-        final RoundHashValidatorTests.HashGenerationData hashGenerationData =
-                new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash);
-
-        // create signature transactions for this round
-        return generateEventsContainingSignatures(
-                random, roundNumber, hashGenerationData, nodeIdToStateSignatureTransactionsMap);
     }
 
     /**
@@ -244,18 +211,13 @@ class IssDetectorTests extends PlatformTest {
             final Hash roundHash = randomHash(random);
 
             // create signature transactions for this round
-            final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
-            long finalCurrentRound = currentRound;
-            roster.rosterEntries()
-                    .forEach(node -> nodeHashInfos.add(new RoundHashValidatorTests.NodeHashInfo(
-                            NodeId.of(node.nodeId()), roundHash, finalCurrentRound)));
-            final RoundHashValidatorTests.HashGenerationData hashGenerationData =
-                    new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash);
 
+            final RoundHashValidatorTests.HashGenerationData hashGenerationData =
+                    constructHashGenerationData(roster, currentRound, roundHash);
             final Map<NodeId, List<StateSignatureTransaction>> nodeIdToStateSignatureTransactionsMapForCurrentRound =
                     generateSystemTransactions(currentRound, hashGenerationData);
-            signatureEvents.addAll(generateEventsWithConsistentSignatures(
-                    random, roster, currentRound, roundHash, nodeIdToStateSignatureTransactionsMap));
+            signatureEvents.addAll(generateEventsContainingSignatures(
+                    random, currentRound, hashGenerationData, nodeIdToStateSignatureTransactionsMap));
 
             nodeIdToStateSignatureTransactionsMapForCurrentRound.forEach((nodeId, stateSignatureTransactions) -> {
                 final List<StateSignatureTransaction> currentStateSignatureTransactions =
@@ -274,8 +236,8 @@ class IssDetectorTests extends PlatformTest {
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
             final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
 
-            final var systemTransactions = extractScopedSystemTransactions(
-                    eventsToInclude, nodeIdToStateSignatureTransactionsMap);
+            final var systemTransactions =
+                    extractScopedSystemTransactions(eventsToInclude, nodeIdToStateSignatureTransactionsMap);
             issDetectorTestHelper.handleStateAndRound(
                     new StateAndRound(mockState(currentRound, roundHash), consensusRound, systemTransactions));
         }
@@ -415,8 +377,7 @@ class IssDetectorTests extends PlatformTest {
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
             final List<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
-                    extractScopedSystemTransactions(
-                            eventsToInclude, nodeIdToStateSignatureTransactionsMap);
+                    extractScopedSystemTransactions(eventsToInclude, nodeIdToStateSignatureTransactionsMap);
 
             final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
             issDetectorTestHelper.handleStateAndRound(new StateAndRound(
@@ -429,8 +390,7 @@ class IssDetectorTests extends PlatformTest {
         final ConsensusRound consensusRound = createRoundWithSignatureEvents(roundsNonAncient, signatureEvents);
 
         final List<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
-                extractScopedSystemTransactions(
-                        signatureEvents, nodeIdToStateSignatureTransactionsMap);
+                extractScopedSystemTransactions(signatureEvents, nodeIdToStateSignatureTransactionsMap);
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(roundsNonAncient, randomHash(random)), consensusRound, remainingSystemTransactions));
 
@@ -857,8 +817,7 @@ class IssDetectorTests extends PlatformTest {
         // The round has a catastrophic ISS, but should be ignored
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, signaturesOnCatastrophicRound);
         final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
-                extractScopedSystemTransactions(
-                        signaturesOnCatastrophicRound, nodeIdStateSignatureTransactionMap);
+                extractScopedSystemTransactions(signaturesOnCatastrophicRound, nodeIdStateSignatureTransactionMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()), catastrophicRound, systemTransactionsForCatastrophicRound));
@@ -888,5 +847,14 @@ class IssDetectorTests extends PlatformTest {
         when(ss.getRound()).thenReturn(round);
         when(s.getHash()).thenReturn(hash);
         return rs;
+    }
+
+    private RoundHashValidatorTests.HashGenerationData constructHashGenerationData(
+            final Roster roster, final long round, final Hash roundHash) {
+        final List<RoundHashValidatorTests.NodeHashInfo> nodeHashInfos = new ArrayList<>();
+        roster.rosterEntries()
+                .forEach(node -> nodeHashInfos.add(
+                        new RoundHashValidatorTests.NodeHashInfo(NodeId.of(node.nodeId()), roundHash, round)));
+        return new RoundHashValidatorTests.HashGenerationData(nodeHashInfos, roundHash);
     }
 }
