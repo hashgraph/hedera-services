@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenUnfreezeAccountHandlerTest {
 
     private static final AccountID ACCOUNT_13257 =
-            AccountID.newBuilder().accountNum(13257L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(13257L).build();
     private TokenUnfreezeAccountHandler subject;
 
     @BeforeEach

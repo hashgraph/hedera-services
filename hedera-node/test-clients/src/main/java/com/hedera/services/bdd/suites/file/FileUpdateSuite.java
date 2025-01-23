@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,7 +188,7 @@ public class FileUpdateSuite {
     @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
     final Stream<DynamicTest> optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
-        final var specialFile = "0.0.159";
+        final var specialFile = "1.2.159";
         final var contents = randomUtf8Bytes(64 * BYTES_4K);
         final var specialFileContents = ByteString.copyFrom(contents);
         final byte[] expectedHash;

@@ -335,10 +335,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var createdAccount =
-                writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
+        final var createdAccount = writableStore.get(
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1000L).build());
         assertThat(createdAccount).isNotNull();
-        final var accountID = AccountID.newBuilder().accountNum(1000L).build();
+        final var accountID =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
@@ -406,10 +407,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertTrue(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
 
         // Validate created account exists and check record builder has created account recorded
-        final var createdAccount =
-                writableStore.get(AccountID.newBuilder().accountNum(1000L).build());
+        final var createdAccount = writableStore.get(
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1000L).build());
         assertThat(createdAccount).isNotNull();
-        final var accountID = AccountID.newBuilder().accountNum(1000L).build();
+        final var accountID =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1000L).build();
         verify(recordBuilder).accountID(accountID);
 
         // validate fields on created account
@@ -514,7 +516,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.networkInfo().nodeInfo(stakeNodeId)).willReturn(nodeInfo);
         given(handleContext.payer()).willReturn(accountID(invalidId.accountNum()));
         txn = new CryptoCreateBuilder()
-                .withPayer(AccountID.newBuilder().accountNum(600L).build())
+                .withPayer(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(600L)
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txn);
         setupConfig();
@@ -559,7 +565,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(
                 Bytes.wrap(evmAddress),
                 writableStore
-                        .get(AccountID.newBuilder().accountNum(1000L).build())
+                        .get(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(1000L)
+                                .build())
                         .alias());
     }
 
@@ -804,8 +814,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 createTxnBody.proxyAccountID(proxyAccountId);
             }
             if (stakedAccountId > 0) {
-                createTxnBody.stakedAccountId(
-                        AccountID.newBuilder().accountNum(stakedAccountId).build());
+                createTxnBody.stakedAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(stakedAccountId)
+                        .build());
             } else {
                 createTxnBody.stakedNodeId(stakeNodeId);
             }
@@ -833,8 +846,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         }
 
         public CryptoCreateBuilder withProxyAccountNum(final long proxyAccountNum) {
-            this.proxyAccountId =
-                    AccountID.newBuilder().accountNum(proxyAccountNum).build();
+            this.proxyAccountId = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(proxyAccountNum)
+                    .build();
             return this;
         }
 

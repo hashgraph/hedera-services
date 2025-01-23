@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,10 +88,12 @@ public class ConsensusTestBase {
             .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
-    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID payerId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
     public static final AccountID anotherPayer =
-            AccountID.newBuilder().accountNum(13257).build();
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(1).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(13257).build();
+    protected final AccountID autoRenewId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build();
     protected final byte[] runningHash = "runningHash".getBytes();
 
     protected final Key adminKey = key;

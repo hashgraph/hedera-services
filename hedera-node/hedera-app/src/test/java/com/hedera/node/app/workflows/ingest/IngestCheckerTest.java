@@ -530,7 +530,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("Check payer with key-list successfully")
         void testKeyListVerificationSucceeds() throws Exception {
             // given
-            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var accountID = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(42)
+                    .build();
             final var key = Key.newBuilder()
                     .keyList(KeyList.newBuilder()
                             .keys(ALICE.account().key(), BOB.account().key()))
@@ -579,7 +583,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("Check payer with key-list fails")
         void testKeyListVerificationFails() throws Exception {
             // given
-            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var accountID = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(42)
+                    .build();
             final var key = Key.newBuilder()
                     .keyList(KeyList.newBuilder()
                             .keys(ALICE.account().key(), BOB.account().key()))
@@ -627,7 +635,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("Check payer with threshold key successfully")
         void testThresholdKeyVerificationSucceeds() throws Exception {
             // given
-            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var accountID = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(42)
+                    .build();
             final var key = Key.newBuilder()
                     .thresholdKey(ThresholdKey.newBuilder()
                             .keys(KeyList.newBuilder()
@@ -678,7 +690,11 @@ class IngestCheckerTest extends AppTestBase {
         @DisplayName("Check payer with threshold key fails")
         void testThresholdKeyVerificationFails() throws Exception {
             // given
-            final var accountID = AccountID.newBuilder().accountNum(42).build();
+            final var accountID = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(42)
+                    .build();
             final var key = Key.newBuilder()
                     .thresholdKey(ThresholdKey.newBuilder()
                             .keys(KeyList.newBuilder()

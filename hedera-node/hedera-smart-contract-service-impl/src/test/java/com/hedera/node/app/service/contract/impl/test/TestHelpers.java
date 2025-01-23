@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,15 +199,15 @@ public class TestHelpers {
     public static final Bytes OTHER_TOPIC = Bytes.wrap(new byte[] {99, 29, 39, 49, 59, 69, 79, 89, 99});
     public static final Bytes MAINNET_CHAIN_ID = Bytes.fromHex("0127");
     public static final AccountID SENDER_ID =
-            AccountID.newBuilder().accountNum(1234).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234).build();
     public static final AccountID RELAYER_ID =
-            AccountID.newBuilder().accountNum(2345).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2345).build();
     public static final ContractID CALLED_CONTRACT_ID =
             ContractID.newBuilder().contractNum(666).build();
     public static final ContractID CHILD_CONTRACT_ID =
             ContractID.newBuilder().contractNum(777).build();
     public static final AccountID CALLED_EOA_ID =
-            AccountID.newBuilder().accountNum(666).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666).build();
     public static final ScheduleID CALLED_SCHEDULE_ID =
             ScheduleID.newBuilder().scheduleNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
@@ -457,16 +457,17 @@ public class TestHelpers {
     public static final ContractID A_NEW_CONTRACT_ID =
             ContractID.newBuilder().contractNum(191919L).build();
     public static final AccountID A_NEW_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(191919L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(191919L).build();
     public static final AccountID B_NEW_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(919191L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(919191L).build();
     public static final AccountID OPERATOR_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(7777777L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(7777777L).build();
 
     public static final Nft TREASURY_OWNED_NFT = Nft.newBuilder()
             .metadata(Bytes.wrap("Unsold"))
             .nftId(NftID.newBuilder().tokenId(NON_FUNGIBLE_TOKEN_ID).serialNumber(NFT_SERIAL_NO))
-            .ownerId(AccountID.newBuilder().accountNum(0).build())
+            .ownerId(
+                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build())
             .build();
 
     public static final Nft CIVILIAN_OWNED_NFT = Nft.newBuilder()
@@ -685,8 +686,11 @@ public class TestHelpers {
     public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY = new ActiveContractVerificationStrategy(
             ContractID.newBuilder().contractNum(1).build(), Bytes.EMPTY, true, UseTopLevelSigs.NO);
     public static final long OWNER_ACCOUNT_NUM = 121212L;
-    public static final AccountID OWNER_ID =
-            AccountID.newBuilder().accountNum(OWNER_ACCOUNT_NUM).build();
+    public static final AccountID OWNER_ID = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(OWNER_ACCOUNT_NUM)
+            .build();
     public static final Account OWNER_ACCOUNT =
             Account.newBuilder().accountId(OWNER_ID).build();
     public static final com.esaulpaugh.headlong.abi.Address OWNER_ACCOUNT_AS_ADDRESS =
@@ -696,22 +700,22 @@ public class TestHelpers {
             asHeadlongAddress(OWNER_ADDRESS.toByteArray());
     public static final Address OWNER_BESU_ADDRESS = pbjToBesuAddress(OWNER_ADDRESS);
     public static final AccountID UNAUTHORIZED_SPENDER_ID =
-            AccountID.newBuilder().accountNum(999999L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(999999L).build();
     public static final Account UNAUTHORIZED_SPENDER_ACCOUNT =
             Account.newBuilder().accountId(UNAUTHORIZED_SPENDER_ID).build();
     public static final AccountID REVOKE_APPROVAL_SPENDER_ID =
-            AccountID.newBuilder().accountNum(0L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0L).build();
     public static final Bytes UNAUTHORIZED_SPENDER_ADDRESS = Bytes.fromHex("b284224b8b83a724438cc3cc7c0d333a2b6b3222");
     public static final com.esaulpaugh.headlong.abi.Address UNAUTHORIZED_SPENDER_HEADLONG_ADDRESS =
             asHeadlongAddress(UNAUTHORIZED_SPENDER_ADDRESS.toByteArray());
     public static final AccountID APPROVED_ID =
-            AccountID.newBuilder().accountNum(8888888L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(8888888L).build();
     public static final Bytes APPROVED_ADDRESS = Bytes.fromHex("aa1e6a49898ea7a44e81599a7c0deeeaa969e990");
     public static final com.esaulpaugh.headlong.abi.Address APPROVED_HEADLONG_ADDRESS =
             asHeadlongAddress(APPROVED_ADDRESS.toByteArray());
 
     public static final AccountID RECEIVER_ID =
-            AccountID.newBuilder().accountNum(7773777L).build(); // 7773777L == 0x769e51
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(7773777L).build(); // 7773777L == 0x769e51
     public static final Bytes RECEIVER_ADDRESS = Bytes.fromHex("3b1ef340808e37344e8150037c0deee33060e123");
     public static final AccountID ALIASED_RECEIVER_ID =
             AccountID.newBuilder().alias(RECEIVER_ADDRESS).build();

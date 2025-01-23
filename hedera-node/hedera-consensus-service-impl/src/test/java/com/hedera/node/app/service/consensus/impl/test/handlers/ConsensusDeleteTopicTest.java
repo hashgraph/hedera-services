@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                AccountID.newBuilder().accountNum(10L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10L).build(),
                 false,
                 Bytes.wrap(runningHash),
                 memo,

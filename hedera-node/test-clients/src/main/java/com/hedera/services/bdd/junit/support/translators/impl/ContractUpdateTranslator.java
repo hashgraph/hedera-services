@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ public class ContractUpdateTranslator implements BlockTransactionPartsTranslator
                         if (account.smartContract()) {
                             iter.remove();
                             final var contractId = ContractID.newBuilder()
+                                    .shardNum(1)
+                                    .realmNum(2)
                                     .contractNum(account.accountIdOrThrow().accountNumOrThrow())
                                     .build();
                             receiptBuilder.contractID(contractId);

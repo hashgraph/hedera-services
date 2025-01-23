@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ public class HollowAccountCompletionsTest {
 
     public static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID payerId =
-            AccountID.newBuilder().accountNum(1_234L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
     private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
             .tokenTransfers(TokenTransferList.newBuilder()
                     .token(TokenID.DEFAULT)
@@ -143,7 +143,11 @@ public class HollowAccountCompletionsTest {
     @Test
     void doesntCompleteHollowAccountsWithNoImmutabilitySentinelKey() {
         final var hollowAccount = Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(1).build())
+                .accountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .key(Key.DEFAULT)
                 .alias(Bytes.wrap(new byte[] {1, 2, 3}))
                 .build();
@@ -164,7 +168,11 @@ public class HollowAccountCompletionsTest {
     @Test
     void completeHollowAccountsWithHollowAccounts() {
         final var hollowAccount = Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(1).build())
+                .accountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .alias(Bytes.wrap(new byte[] {1, 2, 3}))
                 .build();
@@ -180,7 +188,12 @@ public class HollowAccountCompletionsTest {
 
         verify(keyVerifier).verificationFor(Bytes.wrap(new byte[] {1, 2, 3}));
         verify(handleContext).dispatch(any());
-        verify(recordBuilder).accountID(AccountID.newBuilder().accountNum(1).build());
+        verify(recordBuilder)
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build());
     }
 
     @Test
@@ -204,7 +217,8 @@ public class HollowAccountCompletionsTest {
     void completeHollowAccountsWithEthereumTransaction() {
         when(userTxn.functionality()).thenReturn(ETHEREUM_TRANSACTION);
         final var alias = Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
-        final var hollowId = AccountID.newBuilder().accountNum(1234).build();
+        final var hollowId =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234).build();
         final var hollowAccount = Account.newBuilder()
                 .alias(alias)
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -216,7 +230,11 @@ public class HollowAccountCompletionsTest {
         when(accountStore.getAccountById(hollowId)).thenReturn(hollowAccount);
         final var txnBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(1).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(1)
+                                .build())
                         .build())
                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                 .build();
@@ -248,7 +266,11 @@ public class HollowAccountCompletionsTest {
         when(ethereumTransactionHandler.maybeEthTxSigsFor(any(), any(), any())).thenReturn(null);
         final var txnBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(1).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(1)
+                                .build())
                         .build())
                 .ethereumTransaction(EthereumTransactionBody.DEFAULT)
                 .build();

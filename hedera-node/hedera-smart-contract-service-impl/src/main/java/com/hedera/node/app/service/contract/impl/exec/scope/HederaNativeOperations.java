@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,11 @@ public interface HederaNativeOperations {
     @Nullable
     default Account getAccount(final long number) {
         return readableAccountStore()
-                .getAccountById(AccountID.newBuilder().accountNum(number).build());
+                .getAccountById(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(number)
+                        .build());
     }
 
     /**
@@ -160,7 +164,11 @@ public interface HederaNativeOperations {
     default TokenRelation getTokenRelation(final long accountNumber, final long tokenNumber) {
         return readableTokenRelationStore()
                 .get(
-                        AccountID.newBuilder().accountNum(accountNumber).build(),
+                        AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(accountNumber)
+                                .build(),
                         TokenID.newBuilder().tokenNum(tokenNumber).build());
     }
 

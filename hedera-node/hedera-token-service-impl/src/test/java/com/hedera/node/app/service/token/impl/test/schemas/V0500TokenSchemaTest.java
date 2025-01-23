@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ class V0500TokenSchemaTest {
     }
 
     private static AccountID accountIdWith(final long num) {
-        return AccountID.newBuilder().accountNum(num).build();
+        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
     }
 
     private static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {

@@ -228,8 +228,11 @@ public class HandleHederaOperations implements HederaOperations {
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
-        final var coinbaseId =
-                AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
+        final var coinbaseId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(ledgerConfig.fundingAccount())
+                .build();
         tokenServiceApi.transferFromTo(payerId, coinbaseId, amount);
     }
 
@@ -240,8 +243,11 @@ public class HandleHederaOperations implements HederaOperations {
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
         requireNonNull(payerId);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
-        final var coinbaseId =
-                AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
+        final var coinbaseId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(ledgerConfig.fundingAccount())
+                .build();
         tokenServiceApi.transferFromTo(coinbaseId, payerId, amount);
     }
 
@@ -271,15 +277,29 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void createContract(final long number, final long parentNumber, @Nullable final Bytes evmAddress) {
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
-        final var parent = accountStore.getAccountById(
-                AccountID.newBuilder().accountNum(parentNumber).build());
+        final var parent = accountStore.getAccountById(AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(parentNumber)
+                .build());
         final var impliedContractCreation = synthContractCreationFromParent(
-                ContractID.newBuilder().contractNum(number).build(), requireNonNull(parent));
+                ContractID.newBuilder()
+                        .contractNum(number)
+                        .shardNum(1)
+                        .realmNum(2)
+                        .build(),
+                requireNonNull(parent));
         try {
             dispatchAndMarkCreation(
                     number,
                     synthAccountCreationFromHapi(
-                            ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation),
+                            ContractID.newBuilder()
+                                    .shardNum(1)
+                                    .realmNum(2)
+                                    .contractNum(number)
+                                    .build(),
+                            evmAddress,
+                            impliedContractCreation),
                     impliedContractCreation,
                     parent.autoRenewAccountId(),
                     evmAddress,
@@ -301,7 +321,13 @@ public class HandleHederaOperations implements HederaOperations {
         dispatchAndMarkCreation(
                 number,
                 synthAccountCreationFromHapi(
-                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body),
+                        ContractID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .contractNum(number)
+                                .build(),
+                        evmAddress,
+                        body),
                 functionality == HederaFunctionality.ETHEREUM_TRANSACTION
                         ? selfManagedCustomizedCreation(body, number)
                         : null,
@@ -317,8 +343,11 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().evmAddress(evmAddress).build());
+        tokenServiceApi.deleteContract(ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .evmAddress(evmAddress)
+                .build());
     }
 
     /**
@@ -327,8 +356,11 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
-        tokenServiceApi.deleteContract(
-                ContractID.newBuilder().contractNum(number).build());
+        tokenServiceApi.deleteContract(ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .contractNum(number)
+                .build());
     }
 
     /**
@@ -412,7 +444,11 @@ public class HandleHederaOperations implements HederaOperations {
                         ? context.savepointStack().getBaseBuilder(ContractOperationStreamBuilder.class)
                         : streamBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
-        final var contractId = ContractID.newBuilder().contractNum(number).build();
+        final var contractId = ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .contractNum(number)
+                .build();
         pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
         streamBuilder
                 .contractID(contractId)
@@ -422,7 +458,11 @@ public class HandleHederaOperations implements HederaOperations {
                         .build());
         // Mark the created account as a contract with the given auto-renew account id
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
-        final var accountId = AccountID.newBuilder().accountNum(number).build();
+        final var accountId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(number)
+                .build();
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
     }
 
@@ -468,6 +508,8 @@ public class HandleHederaOperations implements HederaOperations {
             if (!op.hasAdminKey()) {
                 newAdminKey = Key.newBuilder()
                         .contractID(ContractID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
                                 .contractNum(createdNumber)
                                 .build())
                         .build();

@@ -140,7 +140,8 @@ public class AddressBookUtils {
                     .append(", 127.0.0.1, ")
                     .append(nextExternalGossipPort + (node.getNodeId() * 2))
                     .append(", ")
-                    .append("0.0.")
+                    // todo made this configurable
+                    .append("1.2.")
                     .append(node.getAccountId().accountNumOrThrow())
                     .append('\n');
             maxNodeId = Math.max(node.getNodeId(), maxNodeId);
@@ -224,7 +225,10 @@ public class AddressBookUtils {
         return new NodeMetadata(
                 nodeId,
                 CLASSIC_NODE_NAMES[nodeId],
+                // todo made this configurable
                 AccountID.newBuilder()
+                        .realmNum(2)
+                        .shardNum(1)
                         .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
                         .build(),
                 host,

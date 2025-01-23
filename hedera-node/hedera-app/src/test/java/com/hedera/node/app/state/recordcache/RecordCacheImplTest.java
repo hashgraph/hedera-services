@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,9 +83,9 @@ final class RecordCacheImplTest extends AppTestBase {
     private static final TransactionReceipt UNHANDLED_RECEIPT =
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID NODE_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(3).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
     private static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(1001).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build();
 
     private DeduplicationCache dedupeCache;
 
@@ -303,7 +303,11 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         private AccountID accountId(final int num) {
-            return AccountID.newBuilder().accountNum(num).build();
+            return AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(num)
+                    .build();
         }
     }
 

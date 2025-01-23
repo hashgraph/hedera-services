@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenUpdateHandler extends BaseTokenHandler implements TransactionHandler {
     private static final AccountID ZERO_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(0L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0L).build();
     private final TokenUpdateValidator tokenUpdateValidator;
 
     /**

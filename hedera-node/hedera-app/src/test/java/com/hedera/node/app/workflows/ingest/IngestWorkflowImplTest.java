@@ -119,7 +119,11 @@ class IngestWorkflowImplTest extends AppTestBase {
         requestBuffer = randomBytes(10);
         transactionBody = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder().accountNum(1001).build())
+                        .accountID(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(1001)
+                                .build())
                         .build())
                 .build();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -60,6 +61,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -75,25 +77,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final AccountID ACCOUNT_1212_ID =
-            AccountID.newBuilder().accountNum(1212).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1212).build();
     private final Account ACCOUNT_1212 =
             givenValidAccountBuilder().accountId(ACCOUNT_1212_ID).build();
     private final AccountID ACCOUNT_3434_ID =
-            AccountID.newBuilder().accountNum(3434).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3434).build();
     private final Account ACCOUNT_3434 = givenValidAccountBuilder()
             .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
     private final AccountID ACCOUNT_5656_ID =
-            AccountID.newBuilder().accountNum(5656).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(5656).build();
     private final Account ACCOUNT_5656 = givenValidAccountBuilder()
             .accountId(ACCOUNT_5656_ID)
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
-    private Token TOKEN_321_FUNGIBLE =
+    private final Token TOKEN_321_FUNGIBLE =
             givenValidFungibleToken().copyBuilder().tokenId(TOKEN_321).build();
-    private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
     private FinalizeContext context;
@@ -110,12 +111,16 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private StakingRewardsHandlerImpl stakingRewardsHandler;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private FinalizeRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new FinalizeRecordHandler(stakingRewardsHandler);
+        when(configProvider.getConfiguration()).thenReturn(versionedConfig);
+        subject = new FinalizeRecordHandler(stakingRewardsHandler, configProvider);
     }
 
     @Test
@@ -769,7 +774,10 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID(AccountID.newBuilder().accountNum(0))
+                                .senderAccountID(AccountID.newBuilder()
+                                        .shardNum(1)
+                                        .realmNum(2)
+                                        .accountNum(0))
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));

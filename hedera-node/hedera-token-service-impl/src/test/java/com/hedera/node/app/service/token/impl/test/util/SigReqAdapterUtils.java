@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,11 @@ public class SigReqAdapterUtils {
                         .totalSupply(100)
                         .symbol("ImmutableToken")
                         .name("ImmutableTokenName")
-                        .treasuryAccountId(AccountID.newBuilder().accountNum(3).build())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(3)
+                                .build())
                         .build());
         destination.put(
                 toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
@@ -201,7 +205,11 @@ public class SigReqAdapterUtils {
                         .symbol("VanillaToken")
                         .name("TOKENNAME")
                         .adminKey(TOKEN_ADMIN_KT.asPbjKey())
-                        .treasuryAccountId(AccountID.newBuilder().accountNum(3).build())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(3)
+                                .build())
                         .build());
         destination.put(
                 toPbj(KNOWN_TOKEN_WITH_PAUSE),
@@ -279,8 +287,11 @@ public class SigReqAdapterUtils {
                         .name("West Wind Art")
                         .feeScheduleKey(TOKEN_FEE_SCHEDULE_KT.asPbjKey())
                         .accountsKycGrantedByDefault(true)
-                        .treasuryAccountId(
-                                AccountID.newBuilder().accountNum(1339).build())
+                        .treasuryAccountId(AccountID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .accountNum(1339)
+                                .build())
                         .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                         .customFees(CustomFee.newBuilder()
                                 .royaltyFee(RoyaltyFee.newBuilder()
@@ -500,7 +511,11 @@ public class SigReqAdapterUtils {
             List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
             List<AccountApprovalForAllAllowance> nftTokenAllowances) {
         return new Account(
-                AccountID.newBuilder().accountNum(number).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(number)
+                        .build(),
                 Bytes.EMPTY,
                 key,
                 10_000L,
@@ -523,7 +538,7 @@ public class SigReqAdapterUtils {
                 3,
                 0,
                 1_234_5678L,
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 76_000L,
                 0,
                 cryptoAllowances,

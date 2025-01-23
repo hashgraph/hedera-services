@@ -104,6 +104,8 @@ public class ConversionUtils {
      */
     public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
         return ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
                 .contractNum(accountId.accountNumOrThrow())
                 .build();
     }
@@ -230,7 +232,11 @@ public class ConversionUtils {
             @NonNull final ContractID contractID, @NonNull final ReadableAccountStore accountStore) {
         final var maybeContract = accountStore.getContractById(contractID);
         if (maybeContract != null && maybeContract.alias().length() == EVM_ADDRESS_LENGTH_AS_LONG) {
-            return ContractID.newBuilder().evmAddress(maybeContract.alias()).build();
+            return ContractID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .evmAddress(maybeContract.alias())
+                    .build();
         }
         return contractID;
     }
@@ -324,7 +330,7 @@ public class ConversionUtils {
             loggedTopics.add(tuweniToPbjBytes(topic));
         }
         return ContractLoginfo.newBuilder()
-                .contractID(ContractID.newBuilder().contractNum(loggerNumber))
+                .contractID(ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(loggerNumber))
                 .data(tuweniToPbjBytes(log.getData()))
                 .topic(loggedTopics)
                 .bloom(bloomFor(log))
@@ -485,7 +491,11 @@ public class ConversionUtils {
      * @return the PBJ {@link ContractID}
      */
     public static ContractID asEvmContractId(@NonNull final Address address) {
-        return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
+        return ContractID.newBuilder()
+                .realmNum(2)
+                .shardNum(1)
+                .evmAddress(tuweniToPbjBytes(address))
+                .build();
     }
 
     /**
@@ -498,7 +508,11 @@ public class ConversionUtils {
         if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
-        return AccountID.newBuilder().accountNum(numberOfLongZero(address)).build();
+        return AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(numberOfLongZero(address))
+                .build();
     }
 
     /**
@@ -511,7 +525,11 @@ public class ConversionUtils {
         if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
-        return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
+        return ContractID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .contractNum(numberOfLongZero(address))
+                .build();
     }
 
     public static com.hederahashgraph.api.proto.java.ScheduleID asScheduleId(
@@ -869,8 +887,11 @@ public class ConversionUtils {
         requireNonNull(op);
         final var builder = op.copyBuilder();
         return builder.adminKey(Key.newBuilder()
-                        .contractID(
-                                ContractID.newBuilder().contractNum(accountNum).build())
+                        .contractID(ContractID.newBuilder()
+                                .shardNum(1)
+                                .realmNum(2)
+                                .contractNum(accountNum)
+                                .build())
                         .build())
                 .build();
     }

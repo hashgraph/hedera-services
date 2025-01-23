@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,9 +157,9 @@ public class ScheduleTestBase {
     protected final ScheduleID testScheduleID = ScheduleID.newBuilder().scheduleNum(1100L).build();
     protected final ScheduleID alternateScheduleID = ScheduleID.newBuilder().scheduleNum(1200L).build();
     protected final ScheduleID badId = ScheduleID.newBuilder().realmNum(-2).shardNum(-1).scheduleNum(-1).build();
-    protected final AccountID admin = AccountID.newBuilder().accountNum(626068L).build();
-    protected final AccountID scheduler = AccountID.newBuilder().accountNum(1001L).build();
-    protected final AccountID payer = AccountID.newBuilder().accountNum(2001L).build();
+    protected final AccountID admin = AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(626068L).build();
+    protected final AccountID scheduler = AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001L).build();
+    protected final AccountID payer = AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2001L).build();
     protected final Account schedulerAccount = Account.newBuilder().accountId(scheduler).key(schedulerKey).build();
     protected final Account payerAccount = Account.newBuilder().accountId(payer).key(payerKey).build();
     protected final Account adminAccount = Account.newBuilder().accountId(admin).key(adminKey).build();

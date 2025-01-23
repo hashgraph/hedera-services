@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,11 @@ class ReadableTokenRelationStoreImplTest {
     private static final TokenID TOKEN_10_ID =
             TokenID.newBuilder().tokenNum(TOKEN_10).build();
     private static final long ACCOUNT_20 = 20L;
-    private static final AccountID ACCOUNT_20_ID =
-            AccountID.newBuilder().accountNum(ACCOUNT_20).build();
+    private static final AccountID ACCOUNT_20_ID = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(ACCOUNT_20)
+            .build();
 
     private static final EntityIDPair KEY = EntityIDPair.newBuilder()
             .accountId(ACCOUNT_20_ID)

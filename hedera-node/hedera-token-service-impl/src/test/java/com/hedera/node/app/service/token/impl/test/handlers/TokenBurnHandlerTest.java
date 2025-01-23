@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -577,7 +577,11 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .balance(10)
                     .build());
             // this owner number isn't the treasury
-            AccountID ownerId = AccountID.newBuilder().accountNum(999).build();
+            AccountID ownerId = AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(999)
+                    .build();
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
                     .nftId(NftID.newBuilder()
                             .tokenId(TOKEN_123)

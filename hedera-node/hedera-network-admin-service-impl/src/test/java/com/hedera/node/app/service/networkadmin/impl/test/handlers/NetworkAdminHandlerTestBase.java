@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,16 +90,18 @@ public class NetworkAdminHandlerTestBase {
 
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {0});
 
-    protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
+    protected final AccountID accountId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+    protected final AccountID autoRenewId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4).build();
     protected final Long accountNum = accountId.accountNum();
     protected final AccountID alias =
             AccountID.newBuilder().alias(Bytes.wrap("testAlias")).build();
 
     protected final AccountID deleteAccountId =
-            AccountID.newBuilder().accountNum(3213).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3213).build();
     protected final AccountID transferAccountId =
-            AccountID.newBuilder().accountNum(32134).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(32134).build();
 
     protected static final long payerBalance = 10_000L;
     protected final TokenID fungibleTokenId = asToken(1L);
@@ -115,7 +117,8 @@ public class NetworkAdminHandlerTestBase {
 
     protected final String tokenName = "test token";
     protected final String tokenSymbol = "TT";
-    protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
+    protected final AccountID treasury =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(100).build();
     protected final long autoRenewSecs = 100L;
     protected final long expirationTime = 1_234_567L;
     protected final String memo = "test memo";
@@ -139,7 +142,7 @@ public class NetworkAdminHandlerTestBase {
     protected TokenRelation nonFungibleTokenRelation;
 
     protected static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().accountNum(1001).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build();
 
     protected TransactionID transactionID;
     protected TransactionID otherNonceOneTransactionID;
@@ -431,7 +434,11 @@ public class NetworkAdminHandlerTestBase {
             @Nullable List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
             @Nullable List<AccountFungibleTokenAllowance> tokenAllowances) {
         account = new Account(
-                AccountID.newBuilder().accountNum(accountNum).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountNum)
+                        .build(),
                 alias.alias(),
                 null, //  key,
                 1_234_567L,
@@ -454,7 +461,7 @@ public class NetworkAdminHandlerTestBase {
                 2,
                 0,
                 1000L,
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 72000,
                 0,
                 cryptoAllowances,

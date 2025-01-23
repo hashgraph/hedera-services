@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,7 +145,8 @@ class ProxyWorldUpdaterTest {
     @Test
     void getsHederaAccountByNumber() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
-        final var numericId = AccountID.newBuilder().accountNum(num).build();
+        final var numericId =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
         given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
         assertSame(proxyEvmContract, subject.getHederaAccount(numericId));
@@ -164,7 +165,8 @@ class ProxyWorldUpdaterTest {
     @Test
     void returnsNullHederaAccountIfMissing() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
-        final var numericId = AccountID.newBuilder().accountNum(num).build();
+        final var numericId =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
         doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
         assertNull(subject.getHederaAccount(numericId));
     }

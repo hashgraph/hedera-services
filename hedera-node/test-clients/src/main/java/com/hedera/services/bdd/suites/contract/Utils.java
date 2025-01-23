@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -301,15 +301,19 @@ public class Utils {
 
     public static Key aliasContractIdKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setContractID(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setContractID(ContractID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 
     public static Key aliasDelegateContractKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setDelegatableContractId(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setDelegatableContractId(ContractID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 

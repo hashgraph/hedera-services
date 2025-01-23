@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,11 @@ public class DefaultVerificationStrategies implements VerificationStrategies {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
         return new ActiveContractVerificationStrategy(
-                ContractID.newBuilder().contractNum(contractNum).build(),
+                ContractID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .contractNum(contractNum)
+                        .build(),
                 tuweniToPbjBytes(sender),
                 requiresDelegatePermission,
                 ActiveContractVerificationStrategy.UseTopLevelSigs.NO);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,13 +49,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BlockStreamBuilderOutputTest {
     private static final Timestamp CONSENSUS_TIME = new Timestamp(1_234_567, 890);
     private static final TransactionID TXN_ID = TransactionID.newBuilder()
-            .accountID(AccountID.newBuilder().accountNum(2L).build())
+            .accountID(AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(2L)
+                    .build())
             .build();
     private static final List<AssessedCustomFee> ASSESSED_CUSTOM_FEES = List.of(new AssessedCustomFee(
             1L,
             TokenID.newBuilder().tokenNum(123).build(),
-            AccountID.newBuilder().accountNum(98L).build(),
-            List.of(AccountID.newBuilder().accountNum(2L).build())));
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(98L).build(),
+            List.of(AccountID.newBuilder()
+                    .shardNum(1)
+                    .realmNum(2)
+                    .accountNum(2L)
+                    .build())));
     private static final ContractFunctionResult FUNCTION_RESULT =
             ContractFunctionResult.newBuilder().amount(666L).build();
     private static final BlockItem EVENT_TRANSACTION = BlockItem.newBuilder()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,11 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
 
         final var topLevelId = TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(2L).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(2L)
+                        .build())
                 .transactionValidStart(
                         Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build())
                 .build();
@@ -177,7 +181,11 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
 
         final var topLevelId = TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(2L).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(2L)
+                        .build())
                 .transactionValidStart(
                         Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build())
                 .build();

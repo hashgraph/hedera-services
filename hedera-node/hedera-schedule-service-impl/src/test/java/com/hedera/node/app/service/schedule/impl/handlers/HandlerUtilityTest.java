@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 
 class HandlerUtilityTest extends ScheduleHandlerTestBase {
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(666L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
     private static final Timestamp VALID_START = new Timestamp(1_234_567L, 890);
 
     @BeforeEach

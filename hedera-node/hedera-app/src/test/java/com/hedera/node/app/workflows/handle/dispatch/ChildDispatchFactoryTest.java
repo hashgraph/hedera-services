@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ class ChildDispatchFactoryTest {
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
-            AccountID.newBuilder().accountNum(1_234L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;

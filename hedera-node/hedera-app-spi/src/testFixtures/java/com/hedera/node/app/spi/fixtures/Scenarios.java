@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,7 +269,8 @@ public interface Scenarios extends TransactionFactory {
                 null)
     };
 
-    final AccountID account3 = AccountID.newBuilder().accountNum(3L).build();
+    final AccountID account3 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3L).build();
     final TestNode NODE_1 = new TestNode(
             0L,
             account3,
@@ -280,7 +281,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[0]);
 
-    final AccountID account4 = AccountID.newBuilder().accountNum(4L).build();
+    final AccountID account4 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4L).build();
     final TestNode NODE_2 = new TestNode(
             0L,
             account4,
@@ -291,15 +293,18 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[0]);
 
-    final AccountID account800 = AccountID.newBuilder().accountNum(800L).build();
+    final AccountID account800 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(800L).build();
     final TestUser STAKING_REWARD_ACCOUNT =
             new TestUser(account800, Account.newBuilder().accountId(account800).build(), null);
 
-    final AccountID account098 = AccountID.newBuilder().accountNum(98L).build();
+    final AccountID account098 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(98L).build();
     final TestUser FUNDING_ACCOUNT =
             new TestUser(account098, Account.newBuilder().accountId(account098).build(), null);
 
-    final AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
+    final AccountID account1002 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1002L).build();
     final TestUser ALICE = new TestUser(
             account1002,
             Account.newBuilder()
@@ -309,7 +314,10 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
 
-    final AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
+    // AccountID.newBuilder().shardNum(1).realmNum(2).accountNum
+    // AccountID.newBuilder().shardNum(1).realmNum(2).accountNum
+    final AccountID account1003 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1003L).build();
     final TestUser BOB = new TestUser(
             account1003,
             Account.newBuilder()
@@ -318,7 +326,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
 
-    final AccountID account1004 = AccountID.newBuilder().accountNum(1004L).build();
+    final AccountID account1004 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1004L).build();
     final TestUser CAROL = new TestUser(
             account1004,
             Account.newBuilder()
@@ -328,7 +337,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);
 
-    final AccountID account1006 = AccountID.newBuilder().accountNum(1006L).build();
+    final AccountID account1006 =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1006L).build();
     final TestUser ERIN = new TestUser(
             account1006,
             Account.newBuilder()
@@ -338,7 +348,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[3]);
 
-    TestUser FRANK = new TestUser(AccountID.newBuilder().accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
+    TestUser FRANK = new TestUser(
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
 
     default Map<AccountID, Account> defaultAccounts() {
         return Map.of(

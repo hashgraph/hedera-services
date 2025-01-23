@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class AppThrottleFactoryTest {
     private static final int SPLIT_FACTOR = 7;
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(123456, 789);
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(666L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
     private static final TransactionInfo TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT,
             TransactionBody.newBuilder()

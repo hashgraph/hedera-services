@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         final var missingTokenTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
-                        .account(AccountID.newBuilder().accountNum(1L))
+                        .account(AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L))
                         .build())
                 .build();
 
@@ -132,7 +132,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                AccountID.newBuilder().accountNum(-1).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(-1).build(),
                 autoRenewSecs,
                 expirationTime,
                 memo,

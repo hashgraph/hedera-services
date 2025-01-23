@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,8 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesIfOwnerExists() {
-        final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
+        final var missingOwner =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,8 +109,10 @@ public class V0540RecordCacheSchemaTest {
     void testMigration() {
         List<TransactionRecordEntry> records = new ArrayList<>();
         final var consensusTimestamp = Instant.ofEpochSecond(123456789L).plusNanos(1000);
-        final var payer = AccountID.newBuilder().accountNum(1001).build();
-        final var nodeAccountId = AccountID.newBuilder().accountNum(3).build();
+        final var payer =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build();
+        final var nodeAccountId =
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
         final var receipt = TransactionReceipt.newBuilder()
                 .accountID(nodeAccountId)
                 .status(ResponseCodeEnum.UNKNOWN)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,8 @@ public class FileTestBase {
     protected static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
     protected static final String UPGRADE_DATA_KEY = "UPGRADE_DATA[%s]";
     protected final Key key = A_COMPLEX_KEY;
-    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
+    protected final AccountID payerId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
     protected final byte[] contents = "contents".getBytes();
     protected final Bytes contentsBytes = Bytes.wrap(contents);
 

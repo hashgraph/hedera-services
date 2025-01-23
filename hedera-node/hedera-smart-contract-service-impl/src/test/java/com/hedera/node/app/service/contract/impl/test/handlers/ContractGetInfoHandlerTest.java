@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,8 @@ class ContractGetInfoHandlerTest {
 
     private final Account smartContractAccount = Account.newBuilder()
             .smartContract(true)
-            .accountId(AccountID.newBuilder().accountNum(1).build())
+            .accountId(
+                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build())
             .key(Key.DEFAULT)
             .build();
 

@@ -473,7 +473,11 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void acceptsMissingAutoRenewAcountInPureChecks() {
         setUpTxnContext();
         txn = new TokenCreateBuilder()
-                .withAutoRenewAccount(AccountID.newBuilder().accountNum(200000L).build())
+                .withAutoRenewAccount(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(200000L)
+                        .build())
                 .build();
         assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
     }
@@ -482,8 +486,11 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void failsOnMissingAutoRenewAcountInHandle() {
         setUpTxnContext();
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        final var invalidAutoRenewId =
-                AccountID.newBuilder().accountNum(200000L).build();
+        final var invalidAutoRenewId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(200000L)
+                .build();
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, invalidAutoRenewId));
         txn = new TokenCreateBuilder().withAutoRenewAccount(invalidAutoRenewId).build();
@@ -632,7 +639,11 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     void failsOnMissingTreasury() {
         setUpTxnContext();
         txn = new TokenCreateBuilder()
-                .withTreasury(AccountID.newBuilder().accountNum(200000L).build())
+                .withTreasury(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(200000L)
+                        .build())
                 .build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))

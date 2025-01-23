@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,11 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
-                .willReturn(AccountID.newBuilder().accountNum(750).build());
+                .willReturn(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(750)
+                        .build());
         assertThatExceptionOfType(HandleException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
                 .withMessage(INVALID_RECEIVING_NODE_ACCOUNT.protoName());

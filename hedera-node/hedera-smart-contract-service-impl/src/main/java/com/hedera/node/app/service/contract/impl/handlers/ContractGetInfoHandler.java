@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         final var builder = ContractInfo.newBuilder()
                 .ledgerId(ledgerConfig.id())
                 .accountID(accountId)
-                .contractID(ContractID.newBuilder().contractNum(accountId.accountNumOrThrow()))
+                .contractID(ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(accountId.accountNumOrThrow()))
                 .deleted(contract.deleted())
                 .memo(contract.memo())
                 .adminKey(contract.keyOrThrow())

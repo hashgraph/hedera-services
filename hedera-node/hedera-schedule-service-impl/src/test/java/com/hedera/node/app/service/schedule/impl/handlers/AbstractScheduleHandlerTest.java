@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AbstractScheduleHandlerTest {
     private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().contractNum(666L).build();
-    private static final AccountID ACCOUNT_CONTRACT_ID =
-            AccountID.newBuilder().accountNum(CONTRACT_ID.contractNumOrThrow()).build();
+    private static final AccountID ACCOUNT_CONTRACT_ID = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .accountNum(CONTRACT_ID.contractNumOrThrow())
+            .build();
     private static final ContractID OTHER_CONTRACT_ID =
             ContractID.newBuilder().contractNum(777L).build();
     private static final ContractID CONTRACT_ALIAS =

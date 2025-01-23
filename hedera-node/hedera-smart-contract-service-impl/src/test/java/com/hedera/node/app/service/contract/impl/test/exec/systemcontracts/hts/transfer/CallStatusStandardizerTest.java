@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,11 +44,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CallStatusStandardizerTest {
     private static final AccountID MISC_ID =
-            AccountID.newBuilder().accountNum(1001L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001L).build();
     private static final AccountID STAKING_FUNDING_ID =
-            AccountID.newBuilder().accountNum(800L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(800L).build();
     private static final AccountID NODE_REWARD_ID =
-            AccountID.newBuilder().accountNum(801L).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(801L).build();
 
     @Mock
     private MessageFrame frame;

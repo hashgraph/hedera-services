@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,12 @@ public class TokenHandlerTestBase {
     protected final Key feeScheduleKey = A_COMPLEX_KEY;
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
-    protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
-    protected final AccountID treasury = AccountID.newBuilder().accountNum(100).build();
-    protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
+    protected final AccountID payerId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+    protected final AccountID treasury =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(100).build();
+    protected final AccountID autoRenewId =
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4).build();
     protected final Bytes metadata = Bytes.wrap(new byte[] {1, 2, 3, 4});
     protected final Key metadataKey = Key.DEFAULT;
     protected final TokenID tokenId = asToken(1L);
@@ -85,7 +88,7 @@ public class TokenHandlerTestBase {
     protected final long autoRenewSecs = 100L;
     protected final Instant consensusTimestamp = Instant.ofEpochSecond(1_234_567L);
     protected final AccountID TEST_DEFAULT_PAYER =
-            AccountID.newBuilder().accountNum(13257).build();
+            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(13257).build();
 
     protected FixedFee fixedFee = FixedFee.newBuilder()
             .amount(1_000L)
@@ -192,7 +195,11 @@ public class TokenHandlerTestBase {
                 tokenSymbol,
                 1000,
                 1000,
-                AccountID.newBuilder().accountNum(treasury.accountNum()).build(),
+                AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(treasury.accountNum())
+                        .build(),
                 adminKey,
                 kycKey,
                 freezeKey,
@@ -227,8 +234,11 @@ public class TokenHandlerTestBase {
                 .wipeKey(wipeKey)
                 .feeScheduleKey(feeScheduleKey)
                 .pauseKey(pauseKey)
-                .treasuryAccountId(
-                        AccountID.newBuilder().accountNum(treasury.accountNum()).build())
+                .treasuryAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(treasury.accountNum())
+                        .build())
                 .name(tokenName)
                 .symbol(tokenSymbol)
                 .totalSupply(1000)
@@ -248,7 +258,7 @@ public class TokenHandlerTestBase {
 
     protected Account newPayerAccount() {
         return new Account(
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 null,
                 payerKey,
                 1_234_567L,
@@ -271,7 +281,7 @@ public class TokenHandlerTestBase {
                 2,
                 0,
                 1000L,
-                AccountID.newBuilder().accountNum(2L).build(),
+                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),
