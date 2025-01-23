@@ -99,6 +99,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdateNfts;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.transactions.util.HapiAtomicBatch;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -109,6 +110,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -769,5 +771,13 @@ public class TxnVerbs {
 
     public static HapiUtilPrng hapiPrng(int range) {
         return new HapiUtilPrng(range);
+    }
+
+    public static HapiAtomicBatch atomicBatch(HapiTxnOp<?>... ops) {
+        return new HapiAtomicBatch(ops);
+    }
+
+    public static HapiAtomicBatch atomicBatch(Transaction... transactions) {
+        return new HapiAtomicBatch(transactions);
     }
 }
