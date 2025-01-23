@@ -217,8 +217,8 @@ public class ClassicCreatesCall extends AbstractCall {
                         baseVerificationStrategy,
                         new ActiveContractVerificationStrategy(
                                 ContractID.newBuilder()
-                                        .shardNum(1)
-                                        .realmNum(2)
+                                        .shardNum(enhancement.operations().getShard())
+                                        .realmNum(enhancement.operations().getRealm())
                                         .contractNum(legacyActivation.contractNum())
                                         .build(),
                                 legacyActivation.pbjAddress(),

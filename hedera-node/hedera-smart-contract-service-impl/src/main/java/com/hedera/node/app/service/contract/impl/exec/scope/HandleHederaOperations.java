@@ -228,8 +228,8 @@ public class HandleHederaOperations implements HederaOperations {
         requireNonNull(payerId);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var coinbaseId = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .accountNum(ledgerConfig.fundingAccount())
                 .build();
         tokenServiceApi.transferFromTo(payerId, coinbaseId, amount);
@@ -243,8 +243,8 @@ public class HandleHederaOperations implements HederaOperations {
         requireNonNull(payerId);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var coinbaseId = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .accountNum(ledgerConfig.fundingAccount())
                 .build();
         tokenServiceApi.transferFromTo(coinbaseId, payerId, amount);
@@ -277,15 +277,15 @@ public class HandleHederaOperations implements HederaOperations {
     public void createContract(final long number, final long parentNumber, @Nullable final Bytes evmAddress) {
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var parent = accountStore.getAccountById(AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .accountNum(parentNumber)
                 .build());
         final var impliedContractCreation = synthContractCreationFromParent(
                 ContractID.newBuilder()
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
                         .contractNum(number)
-                        .shardNum(1)
-                        .realmNum(2)
                         .build(),
                 requireNonNull(parent));
         try {
@@ -293,8 +293,8 @@ public class HandleHederaOperations implements HederaOperations {
                     number,
                     synthAccountCreationFromHapi(
                             ContractID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
+                                    .shardNum(hederaConfig.shard())
+                                    .realmNum(hederaConfig.realm())
                                     .contractNum(number)
                                     .build(),
                             evmAddress,
@@ -321,8 +321,8 @@ public class HandleHederaOperations implements HederaOperations {
                 number,
                 synthAccountCreationFromHapi(
                         ContractID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
+                                .shardNum(hederaConfig.shard())
+                                .realmNum(hederaConfig.realm())
                                 .contractNum(number)
                                 .build(),
                         evmAddress,
@@ -343,8 +343,8 @@ public class HandleHederaOperations implements HederaOperations {
         requireNonNull(evmAddress);
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.deleteContract(ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .evmAddress(evmAddress)
                 .build());
     }
@@ -356,8 +356,8 @@ public class HandleHederaOperations implements HederaOperations {
     public void deleteUnaliasedContract(final long number) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.deleteContract(ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .contractNum(number)
                 .build());
     }
@@ -404,6 +404,16 @@ public class HandleHederaOperations implements HederaOperations {
         return configValidated(contractId, hederaConfig);
     }
 
+    @Override
+    public long getRealm() {
+        return hederaConfig.realm();
+    }
+
+    @Override
+    public long getShard() {
+        return hederaConfig.shard();
+    }
+
     private enum ExternalizeInitcodeOnSuccess {
         YES,
         NO
@@ -444,8 +454,8 @@ public class HandleHederaOperations implements HederaOperations {
                         : streamBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .contractNum(number)
                 .build();
         pendingCreationMetadataRef.set(contractId, pendingCreationMetadata);
@@ -458,8 +468,8 @@ public class HandleHederaOperations implements HederaOperations {
         // Mark the created account as a contract with the given auto-renew account id
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         final var accountId = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .accountNum(number)
                 .build();
         tokenServiceApi.markAsContract(accountId, autoRenewAccountId);
@@ -507,8 +517,8 @@ public class HandleHederaOperations implements HederaOperations {
             if (!op.hasAdminKey()) {
                 newAdminKey = Key.newBuilder()
                         .contractID(ContractID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
+                                .shardNum(hederaConfig.shard())
+                                .realmNum(hederaConfig.realm())
                                 .contractNum(createdNumber)
                                 .build())
                         .build();

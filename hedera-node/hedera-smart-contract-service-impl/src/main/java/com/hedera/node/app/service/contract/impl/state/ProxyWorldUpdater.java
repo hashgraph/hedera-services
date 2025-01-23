@@ -166,8 +166,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             // Also return ids for pending creations
             if (pendingCreation != null && pendingCreation.address().equals(address)) {
                 return ContractID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
+                        .shardNum(enhancement().operations().getShard())
+                        .realmNum(enhancement().operations().getRealm())
                         .contractNum(pendingCreation.number())
                         .build();
             } else {

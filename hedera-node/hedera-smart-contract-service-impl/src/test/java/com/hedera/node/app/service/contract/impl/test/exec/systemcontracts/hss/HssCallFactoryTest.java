@@ -129,7 +129,8 @@ class HssCallFactoryTest extends CallTestBase {
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(SOMEBODY);
         given(schedule.scheduleId()).willReturn(CALLED_SCHEDULE_ID);
         given(idConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(verificationStrategy);
 
         final var input = bytesForRedirectScheduleTxn(
@@ -160,7 +161,8 @@ class HssCallFactoryTest extends CallTestBase {
         given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(SOMEBODY);
         given(schedule.scheduleId()).willReturn(CALLED_SCHEDULE_ID);
         given(idConverter.convertSender(ALTBN128_ADD)).willReturn(A_NEW_ACCOUNT_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(ALTBN128_ADD, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        ALTBN128_ADD, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(verificationStrategy);
 
         final var input = bytesForRedirectScheduleTxn(

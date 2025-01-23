@@ -442,10 +442,14 @@ public class TestHelpers {
             Arrays.stream(NFT_SERIAL_NUMBERS).boxed().toList();
 
     public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
 
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
 
@@ -521,8 +525,11 @@ public class TestHelpers {
             .balance(123L)
             .build();
     public static final Bytes CANONICAL_ALIAS = tuweniToPbjBytes(EIP_1014_ADDRESS);
-    public static final ContractID CALLED_CONTRACT_EVM_ADDRESS =
-            ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build();
+    public static final ContractID CALLED_CONTRACT_EVM_ADDRESS = ContractID.newBuilder()
+            .shardNum(1)
+            .realmNum(2)
+            .evmAddress(CANONICAL_ALIAS)
+            .build();
     public static final List<ContractNonceInfo> NONCES =
             List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, NONCE), new ContractNonceInfo(CHILD_CONTRACT_ID, 1L));
     public static final EntityNumber CALLED_CONTRACT_ENTITY_NUMBER = new EntityNumber(666);

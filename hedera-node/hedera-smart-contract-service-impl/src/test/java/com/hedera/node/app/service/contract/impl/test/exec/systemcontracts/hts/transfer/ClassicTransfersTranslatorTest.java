@@ -86,7 +86,7 @@ class ClassicTransfersTranslatorTest extends CallTestBase {
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         given(addressIdConverter.convertSender(NON_SYSTEM_LONG_ZERO_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         given(verificationStrategies.activatingOnlyContractKeysFor(
-                        NON_SYSTEM_LONG_ZERO_ADDRESS, true, nativeOperations))
+                        NON_SYSTEM_LONG_ZERO_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
 
         subject =
@@ -103,7 +103,7 @@ class ClassicTransfersTranslatorTest extends CallTestBase {
         given(classicTransfersDecoder.checkForFailureStatus(any())).willReturn(null);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(B_NEW_ACCOUNT_ID);
         given(verificationStrategies.activatingOnlyContractKeysFor(
-                        NON_SYSTEM_LONG_ZERO_ADDRESS, true, nativeOperations))
+                        NON_SYSTEM_LONG_ZERO_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
 
         subject =

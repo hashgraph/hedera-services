@@ -52,6 +52,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
 
     @Mock
     private Account account;
+
     @Mock
     private Configuration configuration;
 

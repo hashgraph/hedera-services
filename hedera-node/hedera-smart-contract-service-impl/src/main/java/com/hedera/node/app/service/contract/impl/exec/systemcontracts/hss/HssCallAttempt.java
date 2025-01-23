@@ -203,16 +203,16 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
         if (isOnlyDelegatableContractKeysActive()) {
             return Set.of(Key.newBuilder()
                     .delegatableContractId(ContractID.newBuilder()
-                            .shardNum(1)
-                            .realmNum(2)
+                            .shardNum(enhancement().operations().getShard())
+                            .realmNum(enhancement().operations().getRealm())
                             .contractNum(contractNum)
                             .build())
                     .build());
         } else {
             return Set.of(Key.newBuilder()
                     .contractID(ContractID.newBuilder()
-                            .shardNum(1)
-                            .realmNum(2)
+                            .shardNum(enhancement().operations().getShard())
+                            .realmNum(enhancement().operations().getRealm())
                             .contractNum(contractNum)
                             .build())
                     .build());

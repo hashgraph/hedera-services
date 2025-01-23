@@ -426,8 +426,8 @@ public abstract class AbstractScheduleHandler {
             final var accountId = accountStore.getAccountIDByAlias(contractId.evmAddressOrThrow());
             if (accountId != null) {
                 effectiveId = ContractID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
+                        .shardNum(accountId.shardNum())
+                        .realmNum(accountId.realmNum())
                         .contractNum(accountId.accountNumOrThrow())
                         .build();
             }

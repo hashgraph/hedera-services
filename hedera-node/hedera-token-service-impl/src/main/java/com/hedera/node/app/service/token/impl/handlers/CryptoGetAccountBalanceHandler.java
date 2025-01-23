@@ -76,7 +76,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
      * Default constructor for injection.
      */
     @Inject
-    public CryptoGetAccountBalanceHandler(@NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
+    public CryptoGetAccountBalanceHandler(
+            @NonNull final Metrics metrics, @NonNull final ConfigProvider configProvider) {
         this.balanceSpeedometer = metrics.getOrCreate(BALANCE_SPEEDOMETER_CONFIG);
         this.hederaConfig = requireNonNull(configProvider).getConfiguration().getConfigData(HederaConfig.class);
     }

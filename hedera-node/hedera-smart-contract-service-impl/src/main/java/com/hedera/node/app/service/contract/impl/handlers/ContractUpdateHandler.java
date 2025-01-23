@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -139,6 +140,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var target = op.contractIDOrThrow();
 
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+
         final var toBeUpdated = accountStore.getContractById(target);
         validateSemantics(toBeUpdated, context, op, accountStore);
         final var changed = update(requireNonNull(toBeUpdated), context, op);
@@ -146,8 +149,8 @@ public class ContractUpdateHandler implements TransactionHandler {
         context.savepointStack()
                 .getBaseBuilder(ContractUpdateStreamBuilder.class)
                 .contractID(ContractID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());
     }
