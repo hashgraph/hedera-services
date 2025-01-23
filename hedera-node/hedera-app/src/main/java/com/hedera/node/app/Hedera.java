@@ -1077,32 +1077,16 @@ public final class Hedera
 
     @Override
     public Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction stateSignatureTransaction) {
-        if (stateSignatureTransaction == null) {
-            final var transactionBody =
-                    TransactionBody.newBuilder().stateSignatureTransaction(StateSignatureTransaction.DEFAULT);
-
-            final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
-                    .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
-                    .sigMap(SignatureMap.DEFAULT)
-                    .build();
-
-            return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
-        }
-
-        final var config = appContext.configSupplier().get().getConfigData(HederaConfig.class);
-        final var instant = appContext.instantSource().instant();
         final var nodeAccountID = appContext.selfNodeInfoSupplier().get().accountId();
 
-        final var transactionValidStart =
-                Timestamp.newBuilder().seconds(instant.getEpochSecond()).nanos(instant.getNano());
-        final var transactionValidDuration = Duration.newBuilder().seconds(config.transactionMaxValidDuration());
         final var transactionID = TransactionID.newBuilder()
-                .transactionValidStart(transactionValidStart)
+                .transactionValidStart(Timestamp.DEFAULT)
                 .accountID(nodeAccountID);
+
         final var transactionBody = TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .nodeAccountID(nodeAccountID)
-                .transactionValidDuration(transactionValidDuration)
+                .transactionValidDuration(Duration.DEFAULT)
                 .stateSignatureTransaction(stateSignatureTransaction);
 
         final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
