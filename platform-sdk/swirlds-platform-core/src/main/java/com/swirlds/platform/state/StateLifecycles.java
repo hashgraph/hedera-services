@@ -83,10 +83,8 @@ public interface StateLifecycles<T extends MerkleStateRoot> {
             @Nullable SoftwareVersion previousVersion);
 
     /**
-     * Called when the platform needs to update the weights in the network address book; deprecated since 0.58
-     * because the application now directly decides what weights to put in address book (or, once roster lifecycle
-     * is fully enabled, the roster).
-     *
+     * Called exclusively by platform test apps to update the weight of the address book. Should be removed
+     * as these apps are refactored to stop using {@link com.swirlds.platform.Browser}.
      * @param state the working state of the network
      * @param configAddressBook the address book used to configure the network
      * @param context the current platform context

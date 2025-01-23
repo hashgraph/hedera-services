@@ -68,8 +68,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
     /**
-     * Required until the upgrade that adopts the roster lifecycle; at that upgrade boundary,
-     * we must initialize the active roster from the platform state's legacy address books.
+     * Can be removed after no production states are left without a roster.
      */
     @Deprecated
     private final Supplier<State> stateSupplier;

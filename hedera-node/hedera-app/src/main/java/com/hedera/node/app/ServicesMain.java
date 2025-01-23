@@ -451,9 +451,9 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     }
 
     /**
-     * Loads the legacy address book if it is present. Can be removed once the roster lifecycle is enabled.
-     *
-     * @return the address book.
+     * Loads the legacy address book if it is present. Can be removed once no environment relies on using
+     * legacy <i>config.txt</i> as a startup asset.
+     * @return the address book from a legacy config file, if present
      */
     @Deprecated
     private static Optional<AddressBook> loadLegacyAddressBook() {
