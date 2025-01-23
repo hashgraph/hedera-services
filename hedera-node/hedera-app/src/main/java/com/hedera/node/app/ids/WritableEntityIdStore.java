@@ -108,6 +108,7 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements 
             case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() - 1);
             case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() - 1);
             case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() - 1);
+            case FILE -> newEntityCounts.numFiles(entityCounts.numFiles() - 1);
             default -> throw new IllegalStateException("Entity counts of " + entityType + " cannot be decremented");
         }
         entityCountsState.put(newEntityCounts.build());
