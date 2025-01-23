@@ -164,8 +164,8 @@ public class AddedEventMetrics {
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
             numAppTrans++;
-            appSize += transaction.getBytesSize();
-            avgBytesPerTransaction.update(transaction.getBytesSize());
+            appSize += transaction.getSize();
+            avgBytesPerTransaction.update(transaction.getSize());
         }
         avgTransactionsPerEvent.update(numAppTrans);
         bytesPerSecondTrans.update(appSize);

@@ -60,8 +60,6 @@ public sealed interface Transaction permits ConsensusTransaction {
      */
     int getSize();
 
-    int getBytesSize();
-
     /**
      * Internal use accessor that returns a flag indicating whether this is a system transaction.
      *

@@ -242,7 +242,7 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
         int totalTransactionBytes = 0;
         final Iterator<Transaction> iterator = event.transactionIterator();
         while (iterator.hasNext()) {
-            totalTransactionBytes += iterator.next().getBytesSize();
+            totalTransactionBytes += iterator.next().getSize();
         }
 
         if (totalTransactionBytes > transactionConfig.maxTransactionBytesPerEvent()) {
