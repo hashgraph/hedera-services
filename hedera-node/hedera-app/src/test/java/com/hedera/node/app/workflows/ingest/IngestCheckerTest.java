@@ -419,7 +419,7 @@ class IngestCheckerTest extends AppTestBase {
             final TransactionBody freezeTxBody = TransactionBody.newBuilder()
                     .freeze(FreezeTransactionBody.newBuilder().build())
                     .transactionID(TransactionID.newBuilder()
-                            .accountID(ALICE.accountID())
+                            .accountID(ALICE.accountID())   // a non-privileged account
                             .transactionValidStart(
                                     Timestamp.newBuilder().seconds(Instant.now().getEpochSecond())))
                     .nodeAccountID(nodeSelfAccountId)

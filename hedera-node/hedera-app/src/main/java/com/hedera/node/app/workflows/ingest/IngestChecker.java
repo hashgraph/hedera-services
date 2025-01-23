@@ -281,7 +281,7 @@ public final class IngestChecker {
             }
         }
 
-        long gas =
+        final long gas =
                 switch (txInfo.functionality()) {
                     case CONTRACT_CREATE -> txInfo.txBody()
                             .contractCreateInstanceOrThrow()
