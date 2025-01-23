@@ -97,8 +97,7 @@ public class EndOfStakingPeriodUpdater {
     public @Nullable StreamBuilder updateNodes(
             @NonNull final TokenContext context,
             @NonNull final ExchangeRateSet exchangeRates,
-            @NonNull final BiConsumer<Long, Integer> weightUpdates,
-            final boolean useRosterLifecycle) {
+            @NonNull final BiConsumer<Long, Integer> weightUpdates) {
         requireNonNull(context);
         requireNonNull(exchangeRates);
         final var consensusTime = context.consensusTime();
@@ -190,41 +189,10 @@ public class EndOfStakingPeriodUpdater {
         // Accumulates the node stakes for externalization
         final var nodeStakes = new ArrayList<NodeStake>();
         // Configuration determines the total consensus weight to be distributed among nodes
-        final int totalWeight = stakingConfig.sumOfConsensusWeights();
-        // Final for reference in lambda
-        final long maxStake = newMaxNodeStake;
-        final long totalStake = newTotalStake;
         newNodeInfos.forEach((nodeId, nodeInfo) -> {
-            var newNodeInfo = nodeInfo;
-            // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
-            // represents 0, as per calculation done in reviewElectionsAndRecomputeStakes. Similarly, the total
-            // stake(rewarded + non-rewarded) of the node is greater than maxStake, stakingInfo's stake field is set to
-            // maxStake.So, there is no need to clamp the stake value here. Sum of all stakes can be used to calculate
-            // the weight.
-            if (!useRosterLifecycle) {
-                final int newWeight =
-                        nodeInfo.deleted() ? 0 : scaleStakeToWeight(nodeInfo.stake(), totalStake, totalWeight);
-                log.info("Node{} weight changed from {} to {}", nodeId, nodeInfo.weight(), newWeight);
-                newNodeInfo = nodeInfo.copyBuilder().weight(newWeight).build();
-                weightUpdates.accept(nodeId, newWeight);
-                // We rescale the weight range [0, sumOfConsensusWeights] back to [minStake, maxStake] before
-                // externalizing the node stake metadata to stream consumers like mirror nodes
-                final var rescaledWeight =
-                        rescaleWeight(newWeight, nodeInfo.minStake(), maxStake, totalStake, totalWeight);
-                if (!nodeInfo.deleted()) {
-                    nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(
-                            nodeRewardRates.get(nodeId),
-                            nodeInfo.copyBuilder().stake(rescaledWeight).build()));
-                }
-            } else {
-                // When using the roster lifecycle, the weight is deprecated.
-                // Weight is considered as the stake value of the node
-                if (!nodeInfo.deleted()) {
-                    nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(nodeRewardRates.get(nodeId), nodeInfo));
-                }
+            if (!nodeInfo.deleted()) {
+                nodeStakes.add(EndOfStakingPeriodUtils.fromStakingInfo(nodeRewardRates.get(nodeId), nodeInfo));
             }
-            // Persist the updated staking info
-            stakingInfoStore.put(nodeId, newNodeInfo);
         });
         // Update the staking reward values for the network
         stakingRewardsStore.put(asStakingRewardBuilder(stakingRewardsStore)

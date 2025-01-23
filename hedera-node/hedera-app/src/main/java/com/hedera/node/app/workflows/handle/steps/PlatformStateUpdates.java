@@ -111,8 +111,7 @@ public class PlatformStateUpdates {
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
                     final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
-                    if (addressBookConfig.useRosterLifecycle()
-                            && addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
+                    if (addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
                         logger.info("Creating candidate roster at PREPARE_UPGRADE");
                         final var nodeStore =
                                 new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));

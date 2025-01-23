@@ -209,7 +209,6 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var hedera = ServicesMain.newHedera(metrics);
         this.state = hedera.newMerkleStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
-        hedera.initializeConfigProvider(GENESIS);
         hedera.initializeStatesApi(
                 state, GENESIS, DiskStartupNetworks.fromLegacyAddressBook(addressBook), platformConfig, addressBook);
         final var stateToBeCopied = state;

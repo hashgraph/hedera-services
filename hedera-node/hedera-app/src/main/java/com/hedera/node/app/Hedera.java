@@ -136,7 +136,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -596,17 +595,6 @@ public final class Hedera
     =================================================================================================================*/
 
     /**
-     * Can be collapsed back into {@link #initializeStatesApi(State, InitTrigger, Network, Configuration, AddressBook)}
-     * once the roster lifecycle is adopted. Needed now to ensure {@link #isRosterLifecycleEnabled()} has an initialized
-     * {@link ConfigProvider}.
-     */
-    @Deprecated
-    public void initializeConfigProvider(@NonNull final InitTrigger trigger) {
-        requireNonNull(trigger);
-        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
-    }
-
-    /**
      * Initializes the States API in the given state based on the given startup conditions.
      *
      * @param state the state to initialize
@@ -624,6 +612,7 @@ public final class Hedera
         requireNonNull(state);
         requireNonNull(platformConfig);
         requireNonNull(configProvider);
+        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -1058,13 +1047,6 @@ public final class Hedera
 
     public boolean isBlockStreamEnabled() {
         return streamMode != RECORDS;
-    }
-
-    public boolean isRosterLifecycleEnabled() {
-        return configProvider
-                .getConfiguration()
-                .getConfigData(AddressBookConfig.class)
-                .useRosterLifecycle();
     }
 
     public KVStateChangeListener kvStateChangeListener() {

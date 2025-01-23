@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.service.WritablePlatformStateStore;
@@ -91,20 +90,8 @@ public class V0540PlatformStateSchema extends Schema {
         final var stateSingleton = ctx.newStates().<PlatformState>getSingleton(PLATFORM_STATE_KEY);
         if (ctx.isGenesis()) {
             stateSingleton.put(UNINITIALIZED_PLATFORM_STATE);
-            final var genesisStateSpec = genesisStateSpec(ctx);
             final var platformStateStore = new WritablePlatformStateStore(ctx.newStates());
-            if (ctx.appConfig().getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-                // When using the roster lifecycle at genesis, platform code will never
-                // use the legacy previous/current AddressBook fields, so omit them
-                platformStateStore.bulkUpdate(genesisStateSpec);
-            } else {
-                final var book = addressBook.get();
-                requireNonNull(book);
-                platformStateStore.bulkUpdate(genesisStateSpec.andThen(v -> {
-                    v.setPreviousAddressBook(null);
-                    v.setAddressBook(book.copy());
-                }));
-            }
+            platformStateStore.bulkUpdate(genesisStateSpec(ctx));
         } else {
             // (FUTURE) Delete this code path, it is only reached through the Browser entrypoint
             if (stateSingleton.get() == null) {

@@ -49,7 +49,6 @@ import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
-import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
@@ -103,9 +102,6 @@ class DiskStartupNetworksTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    @Mock
-    private AppContext appContext;
 
     @Mock
     private StartupNetworks startupNetworks;
@@ -229,7 +225,7 @@ class DiskStartupNetworksTest {
         givenConfig();
         putJsonAt(OVERRIDE_NETWORK_JSON, WithTssState.YES);
 
-        final var maybeOverrideNetwork = subject.overrideNetworkFor(ROUND_NO);
+        final var maybeOverrideNetwork = subject.overrideNetworkFor(ROUND_NO, DEFAULT_CONFIG);
         assertThat(maybeOverrideNetwork).isPresent();
         final var overrideNetwork = maybeOverrideNetwork.orElseThrow();
         assertThat(overrideNetwork).isEqualTo(NETWORK);
@@ -240,12 +236,12 @@ class DiskStartupNetworksTest {
         final var scopedOverrideJson = tempDir.resolve(+ROUND_NO + File.separator + OVERRIDE_NETWORK_JSON);
         assertThat(Files.exists(scopedOverrideJson)).isTrue();
 
-        final var maybeRepeatedOverrideNetwork = subject.overrideNetworkFor(ROUND_NO);
+        final var maybeRepeatedOverrideNetwork = subject.overrideNetworkFor(ROUND_NO, DEFAULT_CONFIG);
         assertThat(maybeRepeatedOverrideNetwork).isPresent();
         final var repeatedOverrideNetwork = maybeRepeatedOverrideNetwork.orElseThrow();
         assertThat(repeatedOverrideNetwork).isEqualTo(NETWORK);
 
-        final var maybeOverrideNetworkAfterRound = subject.overrideNetworkFor(ROUND_NO + 1);
+        final var maybeOverrideNetworkAfterRound = subject.overrideNetworkFor(ROUND_NO + 1, DEFAULT_CONFIG);
         assertThat(maybeOverrideNetworkAfterRound).isEmpty();
     }
 

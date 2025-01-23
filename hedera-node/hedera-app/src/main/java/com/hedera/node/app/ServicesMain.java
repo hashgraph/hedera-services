@@ -31,13 +31,11 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
-import static com.swirlds.platform.roster.RosterUtils.buildRosterHistory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSignedState;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
@@ -81,11 +79,9 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -303,11 +299,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 version,
                 () -> {
                     isGenesis.set(true);
-                    hedera.initializeConfigProvider(GENESIS);
                     final var genesisAddressBook = maybeDiskAddressBook.orElse(null);
-                    if (!hedera.isRosterLifecycleEnabled()) {
-                        requireNonNull(genesisAddressBook);
-                    }
                     Network genesisNetwork;
                     try {
                         genesisNetwork = hedera.startupNetworks().genesisNetworkOrThrow(platformConfig);
@@ -326,9 +318,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         final var initialState = reservedState.state();
         final var state = initialState.get().getState();
         if (!isGenesis.get()) {
-            hedera.initializeConfigProvider(RESTART);
-            final var diskAddressBook = hedera.isRosterLifecycleEnabled() ? null : maybeDiskAddressBook.orElseThrow();
-            hedera.initializeStatesApi(state, RESTART, null, platformConfig, diskAddressBook);
+            hedera.initializeStatesApi(state, RESTART, null, platformConfig, null);
         }
         hedera.setInitialStateHash(reservedState.hash());
 
@@ -353,23 +343,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 merkleCryptography);
 
         // --- Now build the platform and start it ---
-        final RosterHistory rosterHistory;
-        if (hedera.isRosterLifecycleEnabled()) {
-            rosterHistory = RosterUtils.createRosterHistory(rosterStore);
-        } else {
-            // This constructor both does extensive validation and has the side effect of
-            // moving unused config.txt files to an archive directory; so keep calling it
-            // here until we enable the roster lifecycle
-            new AddressBookInitializer(
-                    selfId,
-                    version,
-                    detectSoftwareUpgrade(version, initialState.get()),
-                    initialState.get(),
-                    addressBook.copy(),
-                    platformContext,
-                    stateLifecycles);
-            rosterHistory = buildRosterHistory(initialState.get().getState());
-        }
+        final var rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,

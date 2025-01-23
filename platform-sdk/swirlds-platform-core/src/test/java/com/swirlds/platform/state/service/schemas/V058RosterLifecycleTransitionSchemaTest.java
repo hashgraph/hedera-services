@@ -74,11 +74,11 @@ class V058RosterLifecycleTransitionSchemaTest {
     @Mock
     private Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn;
 
-    private V058RosterLifecycleTransitionSchema subject;
+    private V059RosterLifecycleTransitionSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V058RosterLifecycleTransitionSchema(() -> addressBook, appVersionFn, platformStateStoreFn);
+        subject = new V059RosterLifecycleTransitionSchema();
     }
 
     @Test

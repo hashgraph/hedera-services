@@ -37,9 +37,6 @@ import com.swirlds.config.api.ConfigProperty;
  *      AddressBookInitializer will create two new files in the `/data/saved/address_book` directory. The
  *      AddressBookInitializer will delete files by age, oldest first, if the number of files in the directory
  *      exceeds the maximum indicated by this setting.
- * @param useRosterLifecycle
- *      If true, then the platform will use the roster lifecycle. If false, then the
- *      platform will not use the roster lifecycle.
  */
 @ConfigData("addressBook")
 public record AddressBookConfig(

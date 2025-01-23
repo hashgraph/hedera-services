@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V058RosterLifecycleTransitionSchema;
+import com.swirlds.platform.state.service.schemas.V059RosterLifecycleTransitionSchema;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Schema;
@@ -63,10 +63,7 @@ public enum PlatformStateService implements Service {
     private static final Collection<Schema> SCHEMAS = List.of(
             new V0540PlatformStateSchema(DISK_ADDRESS_BOOK::get, config -> requireNonNull(APP_VERSION_FN.get())
                     .apply(config)),
-            new V058RosterLifecycleTransitionSchema(
-                    DISK_ADDRESS_BOOK::get,
-                    config -> requireNonNull(APP_VERSION_FN.get()).apply(config),
-                    WritablePlatformStateStore::new));
+            new V059RosterLifecycleTransitionSchema());
 
     public static final String NAME = "PlatformStateService";
 

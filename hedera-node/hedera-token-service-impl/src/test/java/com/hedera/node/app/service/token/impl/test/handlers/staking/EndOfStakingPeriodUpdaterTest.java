@@ -125,7 +125,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
     }
@@ -227,7 +227,7 @@ public class EndOfStakingPeriodUpdaterTest {
                 .willReturn(nodeStakeUpdateRecordBuilder);
         given(nodeStakeUpdateRecordBuilder.transaction(captor.capture())).willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -279,7 +279,7 @@ public class EndOfStakingPeriodUpdaterTest {
         final var stakingInfoStore = mock(WritableStakingInfoStore.class);
         final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         verifyNoInteractions(stakingInfoStore, stakingRewardsStore);
         assertThat(logCaptor.infoLogs()).contains("Staking not enabled, nothing to do");
@@ -301,7 +301,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -344,7 +344,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, true);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -383,7 +383,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);
@@ -424,7 +424,7 @@ public class EndOfStakingPeriodUpdaterTest {
         given(nodeStakeUpdateRecordBuilder.exchangeRate(ExchangeRateSet.DEFAULT))
                 .willReturn(nodeStakeUpdateRecordBuilder);
 
-        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates, false);
+        subject.updateNodes(context, ExchangeRateSet.DEFAULT, weightUpdates);
 
         assertThat(stakingRewardsStore.totalStakeRewardStart())
                 .isEqualTo(STAKE_TO_REWARD_1 + STAKE_TO_REWARD_2 + STAKE_TO_REWARD_3);

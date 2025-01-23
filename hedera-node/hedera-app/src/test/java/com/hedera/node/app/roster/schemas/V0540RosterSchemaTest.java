@@ -27,7 +27,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -40,7 +39,6 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.RosterStateId;
 import com.swirlds.platform.state.service.PbjConverter;
 import com.swirlds.platform.state.service.PlatformStateService;
-import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.address.AddressBook;
@@ -50,7 +48,6 @@ import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.util.List;
 import java.util.Optional;
@@ -107,16 +104,10 @@ class V0540RosterSchemaTest {
     }
 
     @Mock
-    private ReadablePlatformStateStore platformStateStore;
-
-    @Mock
     private ReadableSingletonState<PlatformState> platformStateSingleton;
 
     @Mock
     private PlatformState platformState;
-
-    @Mock
-    private WritableSingletonState<RosterState> rosterState;
 
     private V0540RosterSchema subject;
 
@@ -136,19 +127,7 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void usesDefaultRosterStateIfLifecycleNotEnabled() {
-        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
-        given(ctx.newStates()).willReturn(writableStates);
-        given(writableStates.<RosterState>getSingleton(ROSTER_STATES_KEY)).willReturn(rosterState);
-
-        subject.migrate(ctx);
-
-        verify(rosterState, times(1)).put(RosterState.DEFAULT);
-    }
-
-    @Test
     void usesGenesisRosterIfLifecycleEnabledAndApropros() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.isGenesis()).willReturn(true);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
@@ -163,7 +142,6 @@ class V0540RosterSchemaTest {
 
     @Test
     void usesAdaptedAddressBookAndMigrationRosterIfLifecycleEnabledIfApropos() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
@@ -196,7 +174,6 @@ class V0540RosterSchemaTest {
 
     @Test
     void noOpIfNotUpgradeAndActiveRosterPresent() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
@@ -210,7 +187,6 @@ class V0540RosterSchemaTest {
 
     @Test
     void doesNotAdoptNullCandidateRoster() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
@@ -226,7 +202,6 @@ class V0540RosterSchemaTest {
 
     @Test
     void doesNotAdoptCandidateRosterIfNotSpecified() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
@@ -244,7 +219,6 @@ class V0540RosterSchemaTest {
 
     @Test
     void adoptsCandidateRosterIfTestPasses() {
-        given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.newStates()).willReturn(writableStates);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
@@ -262,22 +236,14 @@ class V0540RosterSchemaTest {
     }
 
     @Test
-    void restartIsNoOpIfNotUsingLifecycle() {
-        given(ctx.appConfig()).willReturn(DEFAULT_CONFIG);
-
-        subject.restart(ctx);
-
-        verifyNoMoreInteractions(ctx);
-    }
-
-    @Test
     void restartSetsActiveRosterFromOverrideIfPresent() {
         given(ctx.appConfig()).willReturn(WITH_ROSTER_LIFECYCLE);
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.newStates()).willReturn(writableStates);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
-        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
+        given(startupNetworks.overrideNetworkFor(ROUND_NO, DEFAULT_CONFIG)).willReturn(Optional.of(NETWORK));
 
         subject.restart(ctx);
 
@@ -291,11 +257,12 @@ class V0540RosterSchemaTest {
         given(ctx.startupNetworks()).willReturn(startupNetworks);
         given(ctx.roundNumber()).willReturn(ROUND_NO);
         given(ctx.newStates()).willReturn(writableStates);
+        given(ctx.platformConfig()).willReturn(DEFAULT_CONFIG);
         given(rosterStoreFactory.apply(writableStates)).willReturn(rosterStore);
         given(rosterStore.getActiveRoster())
                 .willReturn(new Roster(
                         List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build())));
-        given(startupNetworks.overrideNetworkFor(ROUND_NO)).willReturn(Optional.of(NETWORK));
+        given(startupNetworks.overrideNetworkFor(ROUND_NO, DEFAULT_CONFIG)).willReturn(Optional.of(NETWORK));
         final var adaptedRoster = new Roster(
                 List.of(RosterEntry.newBuilder().nodeId(1L).weight(42L).build()));
 

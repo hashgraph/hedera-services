@@ -203,7 +203,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        hedera.initializeConfigProvider(trigger);
         hedera.initializeStatesApi(state, trigger, network, ServicesMain.buildPlatformConfig(), addressBook);
 
         // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done

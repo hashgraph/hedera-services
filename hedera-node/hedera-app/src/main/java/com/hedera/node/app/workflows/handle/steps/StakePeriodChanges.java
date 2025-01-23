@@ -122,7 +122,7 @@ public class StakePeriodChanges {
                         .weight(weight)
                         .build());
                 final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
-                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates, useRosterLifecycle);
+                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
