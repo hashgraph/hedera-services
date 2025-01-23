@@ -73,7 +73,6 @@ jobs:
           ref: ${{ steps.validate.outputs.BUILD_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-
       - name: Import GPG Key
         uses: step-security/ghaction-import-gpg@6c8fe4d0126a59d57c21f87c9ae5dd3451fa3cca # v6.1.0
         with:
@@ -99,6 +98,8 @@ jobs:
           echo "The temporary branch name is: ${{ steps.branch_name.outputs.BRANCH_NAME }}"
           echo "Temporary Branch Name: ${{ steps.branch_name.outputs.BRANCH_NAME }}" >> ${GITHUB_STEP_SUMMARY}
 
+      # Need to create a temporary branch so we can use the git-semver tool to create a release.
+      # Semantic versioning only works off branches, not tags.
       - name: Create a Temporary Semantic Release Branch
         run: |
           echo "git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}"
@@ -139,7 +140,7 @@ jobs:
           echo "Applied tag v${{ steps.next_version.outputs.next_release }}"
           current_version=$(git-semver latest)
           echo "Version Tag Applied: v${{ steps.next_version.outputs.next_release }}" >> ${GITHUB_STEP_SUMMARY}
-          echo "Current version is: ${current_version}" >> ${GITHUB_STEP_SUMMARY}       
+          echo "Current version is: ${current_version}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Push Release Tag to Remote
         run: |
