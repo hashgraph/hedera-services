@@ -96,13 +96,13 @@ import org.bouncycastle.util.io.pem.PemWriter;
  * <p>
  * This implementation will attempt to load the private key stores in the following order:
  *     <ol>
- *         <li>Enhanced private key store ({@code [type]-private-[alias].pem})</li>
- *         <li>Legacy private key store ({@code private-[alias].pfx})</li>
+ *         <li>Enhanced private key store ({@code [type]-private-[nodeId].pem})</li>
+ *         <li>Legacy private key store ({@code private-[nodeId].pfx})</li>
  *     </ol>
  * <p>
  *     Public key stores are loaded in the following order:
  *     <ol>
- *          <li>Enhanced certificate store ({@code [type]-public-[alias].pem})</li>
+ *          <li>Enhanced certificate store ({@code [type]-public-[nodeId].pem})</li>
  *          <li>Legacy certificate store ({@code public.pfx})</li>
  *     </ol>
  */

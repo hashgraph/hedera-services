@@ -33,15 +33,6 @@ public enum KeyCertPurpose {
     }
 
     /**
-     * @param memberName
-     * 		the name of the required member
-     * @return the name of the key or certificate used in a KeyStore for this member and key type
-     */
-    public String storeName(final String memberName) {
-        return prefix + "-" + memberName;
-    }
-
-    /**
      * @param nodeId the node identifier
      * @return the name of the key or certificate used in a KeyStore for this member and key type
      */
