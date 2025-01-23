@@ -120,11 +120,6 @@ public class HapiUtils {
     }
 
     /** Converts the given {@link Timestamp} into an {@link Instant}. */
-    public static Instant asNullableInstant(@Nullable final Timestamp timestamp) {
-        return timestamp == null ? null : Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
-    }
-
-    /** Converts the given {@link Timestamp} into an {@link Instant}. */
     public static Instant asInstant(@NonNull final Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
     }

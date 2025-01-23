@@ -84,7 +84,7 @@ public interface AppContext {
          * @param consensusNow an estimate of current consensus time
          * @param validDuration the duration for which the transaction is valid
          * @param spec a consumer that will populate the transaction body
-         * @param submissionExecutor the executor to use for submitting the transaction
+         * @param executor the executor to use for submitting the transaction
          * @param timesToTry the number of times to try submitting the transaction
          * @param distinctTxnIdsPerTry the number of distinct transaction ids to try per attempt
          * @param retryDelay the delay between retries
@@ -96,7 +96,7 @@ public interface AppContext {
                 @NonNull final Instant consensusNow,
                 @NonNull final Duration validDuration,
                 @NonNull final Consumer<TransactionBody.Builder> spec,
-                @NonNull final Executor submissionExecutor,
+                @NonNull final Executor executor,
                 final int timesToTry,
                 final int distinctTxnIdsPerTry,
                 @NonNull final Duration retryDelay,
@@ -137,16 +137,18 @@ public interface AppContext {
                                 }
                             } while (txnIdsLeft-- > 1);
                             onFailure.accept(body, failureReason);
-                            try {
-                                MILLISECONDS.sleep(retryDelay.toMillis());
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                throw new IllegalStateException("Interrupted while waiting to retry " + body, e);
+                            if (!fatalFailure) {
+                                try {
+                                    MILLISECONDS.sleep(retryDelay.toMillis());
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    throw new IllegalStateException("Interrupted while waiting to retry " + body, e);
+                                }
                             }
                         } while (!fatalFailure && attemptsLeft.decrementAndGet() > 0);
                         throw new IllegalStateException(failureReason);
                     },
-                    submissionExecutor);
+                    executor);
         }
 
         /**

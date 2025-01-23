@@ -350,7 +350,7 @@ public class ProofControllerImpl implements ProofController {
                             targetMetadata);
                     final var metadataProof = HistoryProof.newBuilder()
                             .sourceAddressBookHash(sourceHash)
-                            .proofKeys(proofKeyListFrom(targetProofKeys))
+                            .targetProofKeys(proofKeyListFrom(targetProofKeys))
                             .targetHistory(new History(targetHash, targetMetadata))
                             .proof(proof)
                             .build();
@@ -406,7 +406,7 @@ public class ProofControllerImpl implements ProofController {
      * @return the proof keys
      */
     private static Map<Long, Bytes> proofKeyMapFrom(@NonNull final HistoryProof proof) {
-        return proof.proofKeys().stream().collect(toMap(ProofKey::nodeId, ProofKey::key));
+        return proof.targetProofKeys().stream().collect(toMap(ProofKey::nodeId, ProofKey::key));
     }
 
     /**
