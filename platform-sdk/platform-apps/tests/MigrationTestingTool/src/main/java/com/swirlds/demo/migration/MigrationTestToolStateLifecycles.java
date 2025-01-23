@@ -88,7 +88,7 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull MigrationTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -111,7 +111,6 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
                 mTrans.applyTo(state);
             }
         }
-        return true;
     }
 
     @Override

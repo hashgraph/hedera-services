@@ -46,7 +46,7 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull TurtleTestingToolState turtleTestingToolState,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -55,7 +55,6 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
                 round.getRoundNum(),
                 round.getConsensusTimestamp().getNano(),
                 round.getConsensusTimestamp().getEpochSecond());
-        return true;
     }
 
     @Override

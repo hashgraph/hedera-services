@@ -748,7 +748,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull PlatformTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -760,7 +760,6 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         updateTransactionCounters(state);
         round.forEachEventTransaction((event, transaction) -> handleConsensusTransaction(
                 event, transaction, round.getRoundNum(), state, stateSignatureTransactionCallback));
-        return true;
     }
 
     /**

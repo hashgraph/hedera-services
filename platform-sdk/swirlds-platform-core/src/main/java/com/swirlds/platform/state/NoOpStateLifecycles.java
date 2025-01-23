@@ -45,12 +45,11 @@ public enum NoOpStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull PlatformMerkleStateRoot state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
-        return true;
     }
 
     @Override

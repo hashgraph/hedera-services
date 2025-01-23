@@ -38,13 +38,12 @@ import java.util.function.Consumer;
 public class HelloSwirldDemoStateLifecycles implements StateLifecycles<HelloSwirldDemoState> {
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull HelloSwirldDemoState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         state.throwIfImmutable();
         round.forEachTransaction(v -> handleTransaction(v, state));
-        return true;
     }
 
     private void handleTransaction(final Transaction transaction, HelloSwirldDemoState state) {

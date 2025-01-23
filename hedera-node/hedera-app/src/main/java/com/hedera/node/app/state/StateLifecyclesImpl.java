@@ -53,12 +53,11 @@ public class StateLifecyclesImpl implements StateLifecycles<PlatformMerkleStateR
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull final Round round,
             @NonNull final PlatformMerkleStateRoot state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         hedera.onHandleConsensusRound(round, state, stateSignatureTxnCallback);
-        return true;
     }
 
     @Override
