@@ -91,6 +91,14 @@ class Ed25519UtilsTest {
                 () -> Ed25519Utils.readKeyFrom(devGenesisPemLoc, notDevGenesisPassphrase));
     }
 
+    @Test
+    void extractsPublicKey() {
+        final var key = Ed25519Utils.readKeyFrom(devGenesisPemLoc, devGenesisPassphrase);
+        final var publicKey = Ed25519Utils.extractEd25519PublicKey(key);
+
+        assertEquals(devPublicKey, hex(publicKey));
+    }
+
     private void assertIsGenesisDevKey(final EdDSAPrivateKey key) {
         assertEquals(devPublicKey, hex(key.getAbyte()));
         assertEquals(devPrivateKey, hex(key.getSeed()));
