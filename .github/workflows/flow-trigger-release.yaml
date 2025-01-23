@@ -42,7 +42,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Process, Validate, and Pad Build Input
+      - name: Build Input Validation
         id: validate
         run: |
           echo "The input is ${{ inputs.build_number }}"
