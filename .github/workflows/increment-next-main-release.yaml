@@ -95,7 +95,7 @@ jobs:
           new_version="${new_version}-SNAPSHOT"
 
           echo "New version: ${new_version}"
-          echo "new_version=${new_version}" >> ${GITHUB_OUTPUT}
+          echo "new-version=${new_version}" >> ${GITHUB_OUTPUT}
           printf "New Version: ${new_version}" >> ${GITHUB_STEP_SUMMARY}
 
       - name: Update version.txt
