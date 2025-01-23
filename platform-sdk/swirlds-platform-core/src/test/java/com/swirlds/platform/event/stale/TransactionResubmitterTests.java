@@ -16,13 +16,10 @@
 
 package com.swirlds.platform.event.stale;
 
-import static com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType.APPLICATION_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -132,17 +129,15 @@ class TransactionResubmitterTests {
         resubmitter.updateEventWindow(eventWindow);
 
         final int transactionCount = randotron.nextInt(1, 100);
-        final List<OneOf<TransactionOneOfType>> transactions = new ArrayList<>();
+        final List<Bytes> transactions = new ArrayList<>();
         for (int i = 0; i < transactionCount; i++) {
             final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.putLong(randotron.nextLong());
-            final OneOf<TransactionOneOfType> transaction =
-                    new OneOf<>(APPLICATION_TRANSACTION, Bytes.wrap(buffer.array()));
-            transactions.add(transaction);
+            transactions.add(Bytes.wrap(buffer.array()));
         }
 
         final PlatformEvent event = new TestingEventBuilder(randotron)
-                .setOneOfTransactions(transactions)
+                .setTransactionBytes(transactions)
                 .build();
 
         final List<EventTransaction> transactionsToResubmit = resubmitter.resubmitStaleTransactions(event);
