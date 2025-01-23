@@ -601,7 +601,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
         writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
@@ -614,7 +614,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
         writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 

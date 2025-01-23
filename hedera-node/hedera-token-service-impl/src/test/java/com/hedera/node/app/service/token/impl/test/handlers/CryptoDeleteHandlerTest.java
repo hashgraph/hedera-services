@@ -425,7 +425,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         readableAccounts = emptyStateBuilder.build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
     }
 
     private void updateWritableStore(Map<Long, Account> accountsToAdd) {

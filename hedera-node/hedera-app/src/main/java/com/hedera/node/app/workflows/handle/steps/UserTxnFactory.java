@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -173,7 +173,7 @@ public class UserTxnFactory {
         requireNonNull(type);
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, config);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
@@ -217,7 +217,7 @@ public class UserTxnFactory {
         requireNonNull(body);
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, config);
         final var functionality = functionOfTxn(body);
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
         final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
@@ -287,7 +287,7 @@ public class UserTxnFactory {
         final var creatorInfo = userTxn.creatorInfo();
         final var tokenContextImpl = userTxn.tokenContextImpl();
 
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, config);
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);

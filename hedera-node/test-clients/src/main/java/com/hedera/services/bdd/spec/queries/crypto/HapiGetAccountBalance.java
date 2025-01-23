@@ -230,9 +230,8 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
 
         // Since we don't support token balances from getAccountBalance query, for internal testing
         // we are using getAccountDetails query to get token balances.
-        if (!expectedTokenBalances.isEmpty() || !tokenBalanceObservers.isEmpty()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(
-                            "0.0." + balanceResponse.getAccountID().getAccountNum())
+        if (!expectedTokenBalances.isEmpty() || tokenBalanceObservers.isPresent()) {
+            final var detailsLookup = QueryVerbs.getAccountDetails(toEntityId(balanceResponse.getAccountID()))
                     .payingWith(GENESIS);
             allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
@@ -352,6 +351,10 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
                 .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment));
         config.accept(query);
         return Query.newBuilder().setCryptogetAccountBalance(query).build();
+    }
+
+    private String toEntityId(AccountID accountID) {
+        return accountID.getShardNum() + "." + accountID.getRealmNum() + "." + accountID.getAccountNum();
     }
 
     @Override

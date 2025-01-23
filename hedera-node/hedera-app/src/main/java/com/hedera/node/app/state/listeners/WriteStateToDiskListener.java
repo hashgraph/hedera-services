@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,8 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                     notification.getRoundNumber(),
                     notification.getSequence());
             try (final var wrappedState = stateAccessor.get()) {
-                final var readableStoreFactory = new ReadableStoreFactory(wrappedState.get());
+                final var readableStoreFactory =
+                        new ReadableStoreFactory(wrappedState.get(), configProvider.getConfiguration());
                 final var readableFreezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
                 final var readableUpgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
                 final var readableNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);

@@ -243,7 +243,7 @@ public class NetworkAdminHandlerTestBase {
     private void givenAccountsInReadableStore() {
         readableAccounts = readableAccountState();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, versionedConfig);
     }
 
     private void givenTokensInReadableStore() {

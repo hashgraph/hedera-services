@@ -216,7 +216,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().build();
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
 
         given(waivers.isNewKeySignatureWaived(any(), any())).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(any(), any())).willReturn(false);
@@ -971,7 +971,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         readableAccounts = emptyStateBuilder.build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
     }
 
     private void updateWritableAccountStore(Map<Long, Account> accountsToAdd) {

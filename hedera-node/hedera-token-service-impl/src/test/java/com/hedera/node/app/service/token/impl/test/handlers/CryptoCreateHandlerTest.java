@@ -85,6 +85,8 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -136,6 +138,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private EntityNumGenerator entityNumGenerator;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private CryptoCreateHandler subject;
 
     private CryptoCreateValidator cryptoCreateValidator;
@@ -143,6 +148,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     private TransactionBody txn;
 
     private Configuration configuration;
+    private VersionedConfigImpl versionedConfig;
     private static final long defaultInitialBalance = 100L;
     private static final long stakeNodeId = 3L;
 
@@ -150,6 +156,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         configuration = HederaTestConfigBuilder.createConfig();
+        versionedConfig = new VersionedConfigImpl(configuration, 1);
         refreshStoresWithCurrentTokenInWritable();
         txn = new CryptoCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -164,7 +171,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
         given(handleContext.networkInfo()).willReturn(networkInfo);
-        subject = new CryptoCreateHandler(cryptoCreateValidator);
+        when(configProvider.getConfiguration()).thenReturn(versionedConfig);
+        subject = new CryptoCreateHandler(cryptoCreateValidator, configProvider);
     }
 
     @Test

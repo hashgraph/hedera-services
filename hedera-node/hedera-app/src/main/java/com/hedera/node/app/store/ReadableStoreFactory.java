@@ -58,6 +58,7 @@ import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
@@ -67,7 +68,6 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,41 +88,67 @@ public class ReadableStoreFactory {
         Map<Class<?>, StoreEntry> newMap = new HashMap<>();
         // Tokens and accounts
         newMap.put(ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new));
-        newMap.put(ReadableAirdropStore.class, new StoreEntry(TokenService.NAME, ReadableAirdropStoreImpl::new));
-        newMap.put(ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new));
         newMap.put(
-                ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new));
-        newMap.put(ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new));
+                ReadableAirdropStore.class,
+                new StoreEntry(TokenService.NAME, (states, config) -> new ReadableAirdropStoreImpl(states)));
+        newMap.put(
+                ReadableNftStore.class,
+                new StoreEntry(TokenService.NAME, (states, config) -> new ReadableNftStoreImpl(states)));
+        newMap.put(
+                ReadableStakingInfoStore.class,
+                new StoreEntry(TokenService.NAME, (states, config) -> new ReadableStakingInfoStoreImpl(states)));
+        newMap.put(
+                ReadableTokenStore.class,
+                new StoreEntry(TokenService.NAME, (states, config) -> new ReadableTokenStoreImpl(states)));
         newMap.put(
                 ReadableTokenRelationStore.class,
-                new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
+                new StoreEntry(TokenService.NAME, (states, config) -> new ReadableTokenRelationStoreImpl(states)));
         newMap.put(
                 ReadableNetworkStakingRewardsStore.class,
-                new StoreEntry(TokenService.NAME, ReadableNetworkStakingRewardsStoreImpl::new));
+                new StoreEntry(
+                        TokenService.NAME, (states, config) -> new ReadableNetworkStakingRewardsStoreImpl(states)));
         // Topics
-        newMap.put(ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new));
+        newMap.put(
+                ReadableTopicStore.class,
+                new StoreEntry(ConsensusService.NAME, (states, config) -> new ReadableTopicStoreImpl(states)));
         // Schedules
-        newMap.put(ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new));
+        newMap.put(
+                ReadableScheduleStore.class,
+                new StoreEntry(ScheduleService.NAME, (states, config) -> new ReadableScheduleStoreImpl(states)));
         // Files
-        newMap.put(ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new));
-        newMap.put(ReadableUpgradeFileStore.class, new StoreEntry(FileService.NAME, ReadableUpgradeFileStoreImpl::new));
+        newMap.put(
+                ReadableFileStore.class,
+                new StoreEntry(FileService.NAME, (states, config) -> new ReadableFileStoreImpl(states)));
+        newMap.put(
+                ReadableUpgradeFileStore.class,
+                new StoreEntry(FileService.NAME, (states, config) -> new ReadableUpgradeFileStoreImpl(states)));
         // Network Admin
-        newMap.put(ReadableFreezeStore.class, new StoreEntry(FreezeService.NAME, ReadableFreezeStoreImpl::new));
+        newMap.put(
+                ReadableFreezeStore.class,
+                new StoreEntry(FreezeService.NAME, (states, config) -> new ReadableFreezeStoreImpl(states)));
         // Contracts
-        newMap.put(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new));
+        newMap.put(
+                ContractStateStore.class,
+                new StoreEntry(ContractService.NAME, (states, config) -> new ReadableContractStateStore(states)));
         // Block Records
         newMap.put(
-                ReadableBlockRecordStore.class, new StoreEntry(BlockRecordService.NAME, ReadableBlockRecordStore::new));
-        newMap.put(ReadableNodeStore.class, new StoreEntry(AddressBookService.NAME, ReadableNodeStoreImpl::new));
+                ReadableBlockRecordStore.class,
+                new StoreEntry(BlockRecordService.NAME, (states, config) -> new ReadableBlockRecordStore(states)));
+        newMap.put(
+                ReadableNodeStore.class,
+                new StoreEntry(AddressBookService.NAME, (states, config) -> new ReadableNodeStoreImpl(states)));
         // Platform
         newMap.put(
                 ReadablePlatformStateStore.class,
-                new StoreEntry(PlatformStateService.NAME, ReadablePlatformStateStore::new));
-        newMap.put(ReadableRosterStore.class, new StoreEntry(RosterService.NAME, ReadableRosterStoreImpl::new));
+                new StoreEntry(PlatformStateService.NAME, (states, config) -> new ReadablePlatformStateStore(states)));
+        newMap.put(
+                ReadableRosterStore.class,
+                new StoreEntry(RosterService.NAME, (states, config) -> new ReadableRosterStoreImpl(states)));
         return Collections.unmodifiableMap(newMap);
     }
 
     private final State state;
+    private final Configuration configuration;
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
     /**
@@ -130,8 +156,9 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link State} to use
      */
-    public ReadableStoreFactory(@NonNull final State state) {
+    public ReadableStoreFactory(@NonNull final State state, @NonNull final Configuration configuration) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
+        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
         if (state instanceof PlatformMerkleStateRoot merkleStateRoot) {
             this.versionFactory = merkleStateRoot.getVersionFactory();
         } else {
@@ -153,8 +180,8 @@ public class ReadableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
-            final var readableStates = state.getReadableStates(entry.name);
-            final var store = entry.createFrom(readableStates);
+            final var states = state.getReadableStates(entry.name());
+            final var store = entry.factory().create(states, configuration);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
@@ -167,16 +194,9 @@ public class ReadableStoreFactory {
         throw new IllegalArgumentException("No store of class " + storeInterface + " is available");
     }
 
-    private record StoreEntry(@NonNull String name, @Nullable Function<ReadableStates, ?> fromStates) {
-        private StoreEntry {
-            requireNonNull(name);
-            requireNonNull(fromStates);
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T> T createFrom(@NonNull final ReadableStates readableStates) {
-            requireNonNull(readableStates);
-            return (T) fromStates.apply(readableStates);
-        }
+    private interface StoreFactory {
+        Object create(@NonNull ReadableStates states, @NonNull Configuration configuration);
     }
+
+    private record StoreEntry(@NonNull String name, @NonNull ReadableStoreFactory.StoreFactory factory) {}
 }

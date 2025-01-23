@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public final class AliasUtils {
      * or based on state as it has been loaded. This detail has not been worked out, and on all networks today shard
      * and realm are 0, so we just let this byte array be all zeros for now.
      */
-    private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[12];
+    private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2};
     /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
     private static final int EVM_ADDRESS_SIZE = 20;
     /** All valid ECDSA protobuf encoded keys have this prefix. */
@@ -111,8 +111,22 @@ public final class AliasUtils {
      * @param alias The alias to check
      * @return True if the alias is an entity num alias
      */
-    public static boolean isEntityNumAlias(final Bytes alias) {
-        return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX);
+    public static boolean isEntityNumAlias(final Bytes alias, final long shard, final long realm) {
+        // Create a 12-byte array for the prefix
+        final byte[] entityNumAliasPrefix = new byte[12];
+
+        // Populate the first 4 bytes with the shard (big-endian order)
+        for (int i = 0; i < 4; i++) {
+            entityNumAliasPrefix[3 - i] = (byte) (shard >> (i * 8));
+        }
+
+        // Populate the last 8 bytes with the realm (big-endian order)
+        for (int i = 0; i < 8; i++) {
+            entityNumAliasPrefix[11 - i] = (byte) (realm >> (i * 8));
+        }
+
+        // Check if alias is of the correct size and matches the prefix
+        return isOfEvmAddressSize(alias) && alias.matchesPrefix(entityNumAliasPrefix);
     }
 
     /**

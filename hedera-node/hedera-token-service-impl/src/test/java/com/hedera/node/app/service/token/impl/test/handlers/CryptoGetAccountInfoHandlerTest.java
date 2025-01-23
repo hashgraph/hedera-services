@@ -74,6 +74,7 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -101,6 +102,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
+    @Mock
+    private Configuration configuration;
     private CryptoOpsUsage cryptoOpsUsage;
     private final InstantSource instantSource = InstantSource.system();
 
@@ -143,7 +146,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     void validatesQueryWhenValidAccount() {
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates,configuration);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         given(context.query()).willReturn(query);
@@ -158,7 +161,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
-        final var store = new ReadableAccountStoreImpl(readableStates);
+        final var store = new ReadableAccountStoreImpl(readableStates,configuration);
 
         final var query = createEmptyCryptoGetInfoQuery();
 
@@ -176,7 +179,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
-        final var store = new ReadableAccountStoreImpl(readableStates);
+        final var store = new ReadableAccountStoreImpl(readableStates,configuration);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -195,7 +198,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .value(deleteAccountId, deleteAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates,configuration);
 
         final var query = createCryptoGetInfoQuery(deleteAccountNum);
         when(context.query()).thenReturn(query);
@@ -440,7 +443,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .value(id, account)
                 .build();
         given(readableStates1.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
+        ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1,configuration);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
     }
 

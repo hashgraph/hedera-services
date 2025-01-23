@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -107,15 +108,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             .build();
 
     private final CryptoCreateValidator cryptoCreateValidator;
+    private final HederaConfig hederaConfig;
 
     /**
      * Constructs a {@link CryptoCreateHandler} with the given {@link CryptoCreateValidator} and {@link StakingValidator}.
      * @param cryptoCreateValidator the validator for the crypto create transaction
      */
     @Inject
-    public CryptoCreateHandler(@NonNull final CryptoCreateValidator cryptoCreateValidator) {
+    public CryptoCreateHandler(
+            @NonNull final CryptoCreateValidator cryptoCreateValidator, @NonNull final ConfigProvider configProvider) {
         this.cryptoCreateValidator =
                 requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
+        this.hederaConfig = requireNonNull(configProvider).getConfiguration().getConfigData(HederaConfig.class);
     }
 
     @Override
@@ -145,7 +149,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         // You can never set the alias to be an "entity num alias" (sometimes called "long-zero").
         final var alias = op.alias();
-        validateFalsePreCheck(isEntityNumAlias(alias), INVALID_ALIAS_KEY);
+        validateFalsePreCheck(isEntityNumAlias(alias, hederaConfig.shard(), hederaConfig.realm()), INVALID_ALIAS_KEY);
         // The alias, if set, must be of EVM address size, or it must be a valid key.
         validateTruePreCheck(alias.length() == 0 || isOfEvmAddressSize(alias) || isKeyAlias(alias), INVALID_ALIAS_KEY);
         // There must be a key provided, and it must not be empty, unless in one very particular case, where the
