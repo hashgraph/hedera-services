@@ -222,11 +222,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         this.state = State.CLOSED;
     }
 
-    @Override
-    public boolean isOpen() {
-        return state == State.OPEN;
-    }
-
     /**
      * @return the current state of the gRPC writer
      */

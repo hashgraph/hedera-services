@@ -64,10 +64,4 @@ public interface BlockItemWriter {
      * Closes the block.
      */
     void closeBlock();
-
-    /**
-     * Checks if the block is open.
-     * @return true if the block is open
-     */
-    boolean isOpen();
 }

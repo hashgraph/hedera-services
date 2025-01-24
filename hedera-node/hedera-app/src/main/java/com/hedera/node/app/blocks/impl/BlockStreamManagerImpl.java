@@ -267,9 +267,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 preUserItems = null;
                 worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
             }
-        } else {
-            // If we're in the middle of a block, we need to update the boundary state change listener
-            boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
         }
         consensusTimeLastRound = round.getConsensusTimestamp();
     }
@@ -398,10 +395,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
             return true;
-        } else if (writer != null && writer.isOpen()) {
-            // Flush all boundary state changes every round
-            worker.addItem(boundaryStateChangeListener.flushChanges());
-            worker.sync();
         }
         return false;
     }

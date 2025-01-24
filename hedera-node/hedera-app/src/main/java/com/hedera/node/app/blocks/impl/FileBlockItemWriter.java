@@ -191,11 +191,6 @@ public class FileBlockItemWriter implements BlockItemWriter {
         }
     }
 
-    @Override
-    public boolean isOpen() {
-        return state == State.OPEN;
-    }
-
     /**
      * Get the path for a block file with the block number.
      *
