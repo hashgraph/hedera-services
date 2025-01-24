@@ -75,8 +75,10 @@ public class AtomicBatchHandler implements TransactionHandler {
         if (batchConfig.isEnabled()) {
             final var transactions = op.transactions();
             for (final var transaction : transactions) {
-                final var body = context.bodyFromTransaction(transaction);
-                if (body == null) {
+                TransactionBody body;
+                try {
+                    body = context.bodyFromTransaction(transaction);
+                } catch (HandleException e) {
                     throw new HandleException(INNER_TRANSACTION_FAILED);
                 }
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();

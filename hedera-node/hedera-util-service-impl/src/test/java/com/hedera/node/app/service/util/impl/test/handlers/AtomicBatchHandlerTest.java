@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.util.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -84,12 +86,14 @@ class AtomicBatchHandlerTest {
     @Test
     void cannotParseInnerTransactionFailed() {
         final var batchKey = SIMPLE_KEY_A;
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, mock(Transaction.class));
+        final var transaction = mock(Transaction.class);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        willThrow(new HandleException(INVALID_TRANSACTION_BODY))
+                .given(handleContext)
+                .bodyFromTransaction(transaction);
 
-        //        subject.handle(handleContext);
-        //        verify(recordBuilder).topicID(topicID);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INNER_TRANSACTION_FAILED, msg.getStatus());
     }
