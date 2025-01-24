@@ -19,9 +19,11 @@ package com.swirlds.platform.state;
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.StateMetrics;
 import java.time.Instant;
@@ -59,6 +61,19 @@ public class TransactionHandler {
     public <T extends PlatformMerkleStateRoot> List<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
             final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions = new ArrayList<>();
+
+        List<PlatformEvent> events = round.getConsensusEvents();
+        for (PlatformEvent event : events) {
+            for (EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+                if (eventTransaction.hasStateSignatureTransaction()) {
+                    scopedSystemTransactions.add(new ScopedSystemTransaction<>(
+                            event.getCreatorId(),
+                            event.getSoftwareVersion(),
+                            eventTransaction.stateSignatureTransaction()));
+                }
+            }
+        }
+
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
