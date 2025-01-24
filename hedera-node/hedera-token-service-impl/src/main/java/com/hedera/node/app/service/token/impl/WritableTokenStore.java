@@ -70,7 +70,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     }
 
     /**
-     * Persists a new {@link Token} into the state, as well as exporting its ID to the transaction
+     * Persists an updated {@link Token} into the state, as well as exporting its ID to the transaction
      * receipt.
      *
      * @param token - the token persisted
@@ -81,6 +81,11 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         tokenState.put(token.tokenId(), Objects.requireNonNull(token));
     }
 
+    /**
+     * Persists a new {@link Token} into the state. It also increments the entity counts for
+     * {@link EntityType#TOKEN}.
+     * @param token
+     */
     public void putNew(@NonNull final Token token) {
         put(token);
         entityCounters.incrementEntityTypeCount(EntityType.TOKEN);
@@ -104,8 +109,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * @return the number of tokens in the state
      */
     public long sizeOfState() {
-        return tokenState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.TOKEN);
     }
 
     /**

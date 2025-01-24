@@ -84,8 +84,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Persists a new {@link Account} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link Account} into the state. If an account with the same ID already exists, it will be overwritten.
      *
      * @param account - the account to be added to modifications in state.
      */
@@ -95,13 +94,13 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         accountState().put(account.accountIdOrThrow(), account);
     }
 
+    /**
+     * Persists a new {@link Account} into the state. Also increments the entity count for {@link EntityType#ACCOUNT}.
+     * @param account - the account to be added in state.
+     */
     public void putNew(@NonNull final Account account) {
         put(account);
-        if (account.smartContract()) {
-            entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_BYTECODE);
-        } else {
-            entityCounters.incrementEntityTypeCount(EntityType.ACCOUNT);
-        }
+        entityCounters.incrementEntityTypeCount(EntityType.ACCOUNT);
     }
 
     /**
@@ -130,6 +129,11 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         aliases().put(new ProtoBytes(alias), accountId);
     }
 
+    /**
+     * Persists a new alias linked to the account persisted to state. Also increments the entity count for {@link EntityType#ALIAS}.
+     * @param alias    - the alias to be added in state.
+     * @param accountId - the account number to be added in state.
+     */
     public void putNewAlias(@NonNull final Bytes alias, final AccountID accountId) {
         putAlias(alias, accountId);
         entityCounters.incrementEntityTypeCount(EntityType.ALIAS);
@@ -193,28 +197,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         // Get the account number based on the account identifier. It may be null.
         final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getOriginalValue(accountId);
-    }
-
-    /**
-     * Returns the number of accounts in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of accounts in the state
-     */
-    public long sizeOfAccountState() {
-        return accountState().size();
-        // FUTURE: Use entityCounters to get size.
-    }
-
-    /**
-     * Returns the number of aliases in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of aliases in the state
-     */
-    public long sizeOfAliasesState() {
-        return aliases().size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**

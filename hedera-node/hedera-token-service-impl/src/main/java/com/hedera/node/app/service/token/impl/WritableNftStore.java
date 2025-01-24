@@ -71,7 +71,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     }
 
     /**
-     * Persists a new {@link Nft} into the state, as well as exporting its ID to the transaction
+     * Persists an updated {@link Nft} into the state, as well as exporting its ID to the transaction
      * receipt.
      *
      * @param nft - the nft to be persisted.
@@ -82,6 +82,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
         nftState.put(nft.nftId(), nft);
     }
 
+    /**
+     * Persists a new {@link Nft} into the state. This also increments the entity counts for
+     * {@link EntityType#NFT}.
+     * @param nft the nft to be persisted
+     */
     public void putNew(@NonNull final Nft nft) {
         put(nft);
         entityCounters.incrementEntityTypeCount(EntityType.NFT);

@@ -68,7 +68,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     }
 
     /**
-     * Persists a new {@link StakingNodeInfo} into state.
+     * Persists an updated {@link StakingNodeInfo} into state.
      *
      * @param nodeId the node's ID
      * @param stakingNodeInfo the staking info to persist
@@ -78,6 +78,11 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         stakingInfoState.put(EntityNumber.newBuilder().number(nodeId).build(), stakingNodeInfo);
     }
 
+    /**
+     * Persists a new {@link StakingNodeInfo} into state and increments the entity counter for staking info.
+     * @param nodeId the node's ID
+     * @param stakingNodeInfo the staking info to persist
+     */
     public void putNew(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
         put(nodeId, stakingNodeInfo);
         entityCounters.incrementEntityTypeCount(EntityType.STAKING_INFO);

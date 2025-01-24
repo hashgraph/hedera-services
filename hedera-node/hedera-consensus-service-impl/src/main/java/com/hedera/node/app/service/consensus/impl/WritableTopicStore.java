@@ -66,8 +66,8 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     }
 
     /**
-     * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link Topic} into the state, as well as exporting its ID to the transaction
+     * receipt. If a topic with the same ID already exists, it will be overwritten.
      *
      * @param topic - the topic to be persisted.
      */
@@ -79,7 +79,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
 
     /**
      * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * receipt. It also increments the entity count for {@link EntityType#TOPIC}.
      *
      * @param topic - the topic to be persisted.
      */
@@ -97,15 +97,6 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     public Topic getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
         return topicState().getForModify(topicID);
-    }
-
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return topicState().size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**

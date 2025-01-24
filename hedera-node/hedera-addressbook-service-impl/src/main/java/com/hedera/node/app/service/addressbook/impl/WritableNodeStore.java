@@ -66,8 +66,9 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     }
 
     /**
-     * Persists a new {@link Node} into the state, as well as exporting its ID to the transaction
+     * Persists an updated {@link Node} into the state, as well as exporting its ID to the transaction
      * receipt.
+     * If a node with the same ID already exists, it will be overwritten.
      *
      * @param node - the node to be mapped onto a new {@link Node}
      */
@@ -76,6 +77,11 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
         nodesState().put(EntityNumber.newBuilder().number(node.nodeId()).build(), node);
     }
 
+    /**
+     * Persists a new {@link Node} into the state, as well as exporting its ID to the transaction. It
+     * will also increment the entity type count for {@link EntityType#NODE}.
+     * @param node - the node to be mapped onto a new {@link Node}
+     */
     public void putNew(@NonNull final Node node) {
         put(node);
         entityCounters.incrementEntityTypeCount(EntityType.NODE);
@@ -89,16 +95,6 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     public Node getForModify(final long nodeId) {
         return nodesState()
                 .getForModify(EntityNumber.newBuilder().number(nodeId).build());
-    }
-
-    /**
-     * Returns the number of nodes in the state.
-     * @return the number of nodes in the state
-     */
-    @Override
-    public long sizeOfState() {
-        return nodesState().size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**

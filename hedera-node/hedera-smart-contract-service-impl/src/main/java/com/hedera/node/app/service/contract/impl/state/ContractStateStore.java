@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.validation.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
@@ -66,7 +67,9 @@ public interface ContractStateStore {
     void putSlot(@NonNull SlotKey key, @NonNull SlotValue value);
 
     /**
-     * Puts new {@link SlotValue} for the given {@link SlotKey}.
+     * Puts new {@link SlotValue} for the given {@link SlotKey}. This method is used to put new
+     * {@link SlotValue} for the given {@link SlotKey} that is not present in the store.
+     * It also increments the entity counts for {@link EntityType#CONTRACT_STORAGE}.
      * @param key the {@link SlotKey} to put the {@link SlotValue} for
      * @param value the {@link SlotValue} to put
      */

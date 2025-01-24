@@ -28,9 +28,11 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -175,8 +177,17 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
 
     @Override
     public long getNumberOfAccounts() {
-        return accountState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.ACCOUNT);
+    }
+
+    /**
+     * Returns the number of aliases in the state. It also includes modifications in the {@link
+     * WritableKVState}.
+     *
+     * @return the number of aliases in the state
+     */
+    public long sizeOfAliasesState() {
+        return entityCounters.getCounterFor(EntityType.ALIAS);
     }
 
     /**
@@ -219,8 +230,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     }
 
     public long sizeOfAccountState() {
-        return accountState().size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.ACCOUNT);
     }
 
     @Override

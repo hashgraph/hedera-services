@@ -52,7 +52,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     Schedule getForModify(@NonNull ScheduleID scheduleId);
 
     /**
-     * Add a schedule to this state.
+     * Add an updated schedule to this state. If the schedule already exists, it will be replaced.
      * If the schedule already exists it will be replaced.
      *
      * @param scheduleToAdd The schedule to add
@@ -60,7 +60,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     void put(@NonNull Schedule scheduleToAdd);
 
     /**
-     * Adds a new schedule to the store.
+     * Adds a new schedule to the store. This will also increment the entity counts for schedules.
      * @param scheduleToAdd The schedule to add to the store
      */
     void putNew(@NonNull Schedule scheduleToAdd);
