@@ -38,6 +38,11 @@ public interface ProofController {
     long constructionId();
 
     /**
+     * Returns if the construction is still in progress.
+     */
+    boolean isStillInProgress();
+
+    /**
      * Acts relative to the given state to let this node help advance the ongoing metadata proof
      * construction toward a deterministic completion.
      *
@@ -65,6 +70,7 @@ public interface ProofController {
      * @param nodeId the node ID
      * @param vote the history proof vote
      * @param historyStore the history store
+     * @return if the vote was added
      */
     boolean addProofVote(long nodeId, @NonNull HistoryProofVote vote, @NonNull WritableHistoryStore historyStore);
 
@@ -73,8 +79,9 @@ public interface ProofController {
      * not already have a signature published by the associated node.
      *
      * @param publication the proof key publication
+     * @return if the signature was added
      */
-    void addSignaturePublication(@NonNull HistorySignaturePublication publication);
+    boolean addSignaturePublication(@NonNull HistorySignaturePublication publication);
 
     /**
      * Cancels any pending work that this controller has scheduled.

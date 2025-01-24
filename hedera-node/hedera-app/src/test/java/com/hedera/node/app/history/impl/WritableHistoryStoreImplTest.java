@@ -47,6 +47,7 @@ import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.ReadableHistoryStore;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -324,7 +325,9 @@ class WritableHistoryStoreImplTest {
             states.<ConstructionNodeId, HistoryProofVote>get(PROOF_VOTES_KEY)
                     .put(new ConstructionNodeId(123L, 0L), DEFAULT_VOTE);
         });
-        subject.addSignature(0L, 123L, DEFAULT_SIGNATURE, CONSENSUS_NOW);
+        final var publication =
+                new ReadableHistoryStore.HistorySignaturePublication(0L, DEFAULT_SIGNATURE, CONSENSUS_NOW);
+        subject.addSignature(123L, publication);
         final var votesBefore = subject.getVotes(123L, Set.of(0L, 1L));
         assertEquals(1, votesBefore.size());
         assertEquals(DEFAULT_VOTE, votesBefore.get(0L));

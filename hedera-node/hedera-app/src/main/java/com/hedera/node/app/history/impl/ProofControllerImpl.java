@@ -158,6 +158,11 @@ public class ProofControllerImpl implements ProofController {
     }
 
     @Override
+    public boolean isStillInProgress() {
+        return !construction.hasTargetProof();
+    }
+
+    @Override
     public void advanceConstruction(
             @NonNull final Instant now,
             @Nullable final Bytes metadata,
@@ -201,13 +206,16 @@ public class ProofControllerImpl implements ProofController {
     }
 
     @Override
-    public void addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
+    public boolean addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
         requireNonNull(publication);
-        if (!construction.hasTargetProof() && targetProofKeys.containsKey(publication.nodeId())) {
+        final long nodeId = publication.nodeId();
+        if (!construction.hasTargetProof() && targetProofKeys.containsKey(nodeId) && !signingNodeIds.contains(nodeId)) {
             verificationFutures.put(
                     publication.at(), verificationFuture(publication.nodeId(), publication.signature()));
             signingNodeIds.add(publication.nodeId());
+            return true;
         }
+        return false;
     }
 
     @Override

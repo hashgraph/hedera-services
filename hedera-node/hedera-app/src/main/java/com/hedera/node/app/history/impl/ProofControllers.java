@@ -26,6 +26,7 @@ import com.hedera.node.app.roster.ActiveRosters;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -91,6 +92,18 @@ public class ProofControllers {
             controller = newControllerFor(activeRosters, construction, historyStore);
         }
         return requireNonNull(controller);
+    }
+
+    /**
+     * Returns the in-progress controller for the hinTS construction with the given ID, if it exists.
+     *
+     * @param constructionId the ID of the hinTS construction
+     * @return the controller, if it exists
+     */
+    public Optional<ProofController> getInProgressById(final long constructionId) {
+        return currentConstructionId() == constructionId
+                ? Optional.ofNullable(controller).filter(ProofController::isStillInProgress)
+                : Optional.empty();
     }
 
     /**

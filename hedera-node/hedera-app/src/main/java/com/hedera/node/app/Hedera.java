@@ -1150,8 +1150,6 @@ public final class Hedera
                 .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
                 .scheduleService(scheduleServiceImpl)
-                .hintsService(hintsService)
-                .historyService(historyService)
                 .initTrigger(trigger)
                 .softwareVersion(version.getPbjSemanticVersion())
                 .self(networkInfo.selfNodeInfo())

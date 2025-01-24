@@ -18,9 +18,9 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.history.handlers.HistoryAssemblySignatureHandler;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.handlers.HistoryProofKeyPublicationHandler;
+import com.hedera.node.app.history.handlers.HistoryProofSignatureHandler;
 import com.hedera.node.app.history.handlers.HistoryProofVoteHandler;
 import com.hedera.node.app.spi.AppContext;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -46,10 +46,10 @@ public interface HistoryModule {
     @Provides
     @Singleton
     static HistoryHandlers provideHistoryHandlers(
-            @NonNull final HistoryAssemblySignatureHandler historyAssemblySignatureHandler,
+            @NonNull final HistoryProofSignatureHandler historyProofSignatureHandler,
             @NonNull final HistoryProofKeyPublicationHandler historyProofKeyPublicationHandler,
             @NonNull final HistoryProofVoteHandler historyProofVoteHandler) {
         return new HistoryHandlers(
-                historyAssemblySignatureHandler, historyProofKeyPublicationHandler, historyProofVoteHandler);
+                historyProofSignatureHandler, historyProofKeyPublicationHandler, historyProofVoteHandler);
     }
 }

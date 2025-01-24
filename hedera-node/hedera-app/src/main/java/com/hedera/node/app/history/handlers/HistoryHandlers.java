@@ -22,16 +22,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Bundles the handlers for the {@link com.hedera.node.app.history.HistoryService}.
- * @param historyAssemblySignatureHandler the handler for assembly signatures
+ * @param historyProofSignatureHandler the handler for assembly signatures
  * @param historyProofKeyPublicationHandler the handler for key publication
  * @param historyProofVoteHandler the handler for proof votes
  */
 public record HistoryHandlers(
-        @NonNull HistoryAssemblySignatureHandler historyAssemblySignatureHandler,
+        @NonNull HistoryProofSignatureHandler historyProofSignatureHandler,
         @NonNull HistoryProofKeyPublicationHandler historyProofKeyPublicationHandler,
         @NonNull HistoryProofVoteHandler historyProofVoteHandler) {
     public HistoryHandlers {
-        requireNonNull(historyAssemblySignatureHandler);
+        requireNonNull(historyProofSignatureHandler);
         requireNonNull(historyProofKeyPublicationHandler);
         requireNonNull(historyProofVoteHandler);
     }

@@ -40,6 +40,11 @@ public class InertProofController implements ProofController {
     }
 
     @Override
+    public boolean isStillInProgress() {
+        return false;
+    }
+
+    @Override
     public void advanceConstruction(
             @NonNull final Instant now,
             @Nullable final Bytes metadata,
@@ -64,9 +69,9 @@ public class InertProofController implements ProofController {
     }
 
     @Override
-    public void addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
+    public boolean addSignaturePublication(@NonNull final HistorySignaturePublication publication) {
         requireNonNull(publication);
-        // No-op
+        return false;
     }
 
     @Override
