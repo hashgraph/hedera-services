@@ -87,10 +87,10 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
             for (final TransactionWrapper transaction : transactions) {
                 if (isNewFormat) {
                     transactionStream.writeBytes(Objects.requireNonNull(transaction.getApplicationTransaction()));
-                    processTransactionHash();
+                    processTransactionHash(transaction);
                 } else {
                     EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
-                    processTransactionHash();
+                    processTransactionHash(transaction);
                 }
             }
         } catch (final IOException e) {
@@ -100,8 +100,9 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
         return new Hash(eventDigest.digest(), DigestType.SHA_384);
     }
 
-    private void processTransactionHash() throws IOException {
+    private void processTransactionHash(final TransactionWrapper transaction) throws IOException {
         byte[] hash = transactionDigest.digest();
+        transaction.setHash(Bytes.wrap(hash));
         eventStream.writeBytes(hash);
     }
 }
