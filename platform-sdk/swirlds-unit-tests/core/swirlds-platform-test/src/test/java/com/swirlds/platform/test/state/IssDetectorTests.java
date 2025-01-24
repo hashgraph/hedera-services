@@ -29,10 +29,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
@@ -111,15 +109,11 @@ class IssDetectorTests extends PlatformTest {
                 .toList();
     }
 
+    // We should keep the test agnostic of the encoding type of the system transaction, because different user
+    // applications of the platform can use their own encoding format, so we can just use a dummy approach of encoding
+    // the hash as bytes. These Bytes are not deserialized later in the tests, so we can encode them in any way we want.
     private static Bytes encodeStateSignatureTransaction(final StateSignatureTransaction stateSignatureTransaction) {
-        final var transactionBody = TransactionBody.newBuilder().stateSignatureTransaction(stateSignatureTransaction);
-
-        final var transaction = com.hedera.hapi.node.base.Transaction.newBuilder()
-                .bodyBytes(TransactionBody.PROTOBUF.toBytes(transactionBody.build()))
-                .sigMap(SignatureMap.DEFAULT)
-                .build();
-
-        return com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(transaction);
+        return Bytes.wrap(stateSignatureTransaction.hash().toByteArray());
     }
 
     private static Map<NodeId, List<StateSignatureTransaction>> generateSystemTransactions(
