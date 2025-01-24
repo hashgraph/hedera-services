@@ -25,7 +25,6 @@ import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -121,7 +120,8 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      */
     @Override
     public long sizeOfState() {
-        return entityCounters.getCounterFor(EntityType.TOKEN);
+        return tokenState.size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     @Override

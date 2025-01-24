@@ -121,8 +121,8 @@ class V0570ScheduleSchemaTest extends ScheduleTestBase {
         setupMigrationContext();
 
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        assertThat(logCaptor.infoLogs()).contains("Migrated 2 schedules from SCHEDULES_BY_EQUALITY_KEY");
-        //        assertThat(writableScheduleIdByEquality.size()).isEqualTo(2L);
+        assertThat(logCaptor.infoLogs()).contains("Migrated schedules from SCHEDULES_BY_EQUALITY_KEY");
+        assertThat(writableScheduleIdByEquality.size()).isEqualTo(2L);
     }
 
     private void setupMigrationContext() {

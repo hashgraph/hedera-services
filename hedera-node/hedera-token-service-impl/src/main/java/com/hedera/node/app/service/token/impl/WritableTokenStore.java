@@ -100,6 +100,15 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
     }
 
     /**
+     * Returns the number of tokens in the state.
+     * @return the number of tokens in the state
+     */
+    public long sizeOfState() {
+        return tokenState.size();
+        // FUTURE: Use entityCounters to get size.
+    }
+
+    /**
      * Returns the set of tokens modified in existing state.
      * @return the set of tokens modified in existing state
      */

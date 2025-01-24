@@ -100,6 +100,15 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     }
 
     /**
+     * Returns the number of topics in the state.
+     * @return the number of topics in the state
+     */
+    public long sizeOfState() {
+        return topicState().size();
+        // FUTURE: Use entityCounters to get size.
+    }
+
+    /**
      * Returns the set of topics modified in existing state.
      * @return the set of topics modified in existing state
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,26 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         @BeforeEach
         void setUp() {
             setupFruitVirtualMap();
+        }
+
+        @Test
+        @DisplayName("The size of the state is the size of the virtual map")
+        void sizeWorks() {
+            final var state = new OnDiskWritableKVState<>(
+                    FRUIT_STATE_KEY,
+                    onDiskKeyClassId(),
+                    STRING_CODEC,
+                    onDiskValueClassId(),
+                    STRING_CODEC,
+                    fruitVirtualMap);
+            assertThat(state.size()).isZero();
+
+            add(A_KEY, APPLE);
+            add(B_KEY, BANANA);
+            add(C_KEY, CHERRY);
+
+            assertThat(state.size()).isEqualTo(fruitVirtualMap.size());
+            assertThat(state.size()).isEqualTo(3);
         }
 
         @Test

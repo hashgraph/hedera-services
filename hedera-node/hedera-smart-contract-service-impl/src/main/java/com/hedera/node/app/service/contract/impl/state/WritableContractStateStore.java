@@ -146,4 +146,19 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
     public @Nullable SlotValue getOriginalSlotValue(@NonNull final SlotKey key) {
         return storage.getOriginalValue(requireNonNull(key));
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getNumSlots() {
+        return storage.size();
+        // FUTURE: Use entityCounters to get size.
+    }
+
+    @Override
+    public long getNumBytecodes() {
+        return bytecode.size();
+        // FUTURE: Use entityCounters to get size.
+    }
 }

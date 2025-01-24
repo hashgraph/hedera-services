@@ -24,7 +24,6 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +62,8 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
      * @return the number of nfts in the state
      */
     public long sizeOfState() {
-        return entityCounters.getCounterFor(EntityType.NFT);
+        return nftState.size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     @Override

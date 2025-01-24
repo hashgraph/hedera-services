@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.service.token.impl.ReadableAirdropStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import java.util.Objects;
@@ -109,7 +108,7 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
         given(readableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(airdrops);
         subject = new ReadableAirdropStoreImpl(readableStates, entityCounters);
-        assertThat(entityCounters.getCounterFor(EntityType.AIRDROP)).isEqualTo(subject.sizeOfState());
+        assertThat(readableStates.get(StateBuilderUtil.AIRDROPS).size()).isEqualTo(subject.sizeOfState());
     }
 
     @Test

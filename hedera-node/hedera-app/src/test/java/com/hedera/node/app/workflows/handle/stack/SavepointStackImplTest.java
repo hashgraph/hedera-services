@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -784,9 +784,9 @@ class SavepointStackImplTest extends StateTestBase {
     private static Predicate<ReadableStates> contentCheck(Map<String, String> expected) {
         return readableStates -> {
             final var actual = readableStates.get(FRUIT_STATE_KEY);
-            //            if (expected.size() != actual.size()) {
-            //                return false;
-            //            }
+            if (expected.size() != actual.size()) {
+                return false;
+            }
             for (final var entry : expected.entrySet()) {
                 if (!Objects.equals(entry.getValue(), actual.get(entry.getKey()))) {
                     return false;

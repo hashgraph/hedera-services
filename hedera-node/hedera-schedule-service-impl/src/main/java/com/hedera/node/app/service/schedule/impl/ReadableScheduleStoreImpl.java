@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import static com.hedera.node.app.service.schedule.impl.ScheduleStoreUtility.calculateBytesHash;
-import static com.hedera.node.app.spi.validation.EntityType.SCHEDULE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ScheduleID;
@@ -99,7 +98,8 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     public long numSchedulesInState() {
-        return entityCounters.getCounterFor(SCHEDULE);
+        return schedulesById.size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     @Override

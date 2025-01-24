@@ -67,7 +67,6 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
 
     /**
      * Purges all schedule state associated with the given order.
-     *
      * @param order The order to purge schedules for.
      * @return whether this was the last scheduled order in its consensus second
      */

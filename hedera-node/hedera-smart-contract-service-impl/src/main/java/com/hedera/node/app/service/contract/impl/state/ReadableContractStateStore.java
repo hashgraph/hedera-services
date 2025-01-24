@@ -24,7 +24,6 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,11 +135,13 @@ public class ReadableContractStateStore implements ContractStateStore {
      */
     @Override
     public long getNumSlots() {
-        return entityCounters.getCounterFor(EntityType.CONTRACT_STORAGE);
+        return storage.size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     @Override
     public long getNumBytecodes() {
-        return entityCounters.getCounterFor(EntityType.CONTRACT_BYTECODE);
+        return bytecode.size();
+        // FUTURE: Use entityCounters to get size.
     }
 }
