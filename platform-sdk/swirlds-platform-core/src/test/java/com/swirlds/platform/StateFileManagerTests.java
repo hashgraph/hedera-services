@@ -76,6 +76,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -322,8 +323,8 @@ class StateFileManagerTests {
                     .build();
             final ReservedSignedState reservedSignedState = signedState.reserve("initialTestReservation");
 
-            controller.markSavedState(
-                    new StateAndRound(reservedSignedState, mock(ConsensusRound.class), mock(ArrayList.class)));
+            controller.markSavedState(new StateAndRound(
+                    reservedSignedState, mock(ConsensusRound.class), mock(ConcurrentLinkedQueue.class)));
             makeImmutable(reservedSignedState.get());
 
             if (signedState.isStateToSave()) {

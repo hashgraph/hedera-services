@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.swirlds.platform.components.transaction.system.ScopedSystemTransactio
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Contains a reserved signed state, and the consensus round which caused the state to be created
@@ -33,7 +33,7 @@ import java.util.List;
 public record StateAndRound(
         @NonNull ReservedSignedState reservedSignedState,
         @NonNull ConsensusRound round,
-        @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions) {
+        @NonNull ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions) {
     /**
      * Make an additional reservation on the reserved signed state
      *
