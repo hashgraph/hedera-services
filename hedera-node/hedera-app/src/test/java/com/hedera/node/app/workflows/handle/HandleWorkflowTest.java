@@ -43,6 +43,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -152,6 +153,9 @@ class HandleWorkflowTest {
     @Mock
     private HistoryService historyService;
 
+    @Mock
+    private CongestionMetrics congestionMetrics;
+
     private HandleWorkflow subject;
 
     @BeforeEach
@@ -232,6 +236,7 @@ class HandleWorkflowTest {
                 boundaryStateChangeListener,
                 scheduleService,
                 hintsService,
-                historyService);
+                historyService,
+                congestionMetrics);
     }
 }

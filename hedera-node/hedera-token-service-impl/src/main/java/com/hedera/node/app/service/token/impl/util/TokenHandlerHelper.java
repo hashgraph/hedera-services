@@ -155,7 +155,7 @@ public class TokenHandlerHelper {
         final var isContract = acct.smartContract();
 
         validateFalse(acct.deleted(), errorOnAccountDeleted);
-        final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
+        final var type = isContract ? EntityType.CONTRACT_BYTECODE : EntityType.ACCOUNT;
 
         final var expiryStatus =
                 expiryValidator.expirationStatus(type, acct.expiredAndPendingRemoval(), acct.tinybarBalance());

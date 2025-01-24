@@ -96,7 +96,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
      * Writes the round and its contents to a log on disk
      */
     @Override
-    public void onHandleConsensusRound(
+    public boolean onHandleConsensusRound(
             @NonNull Round round,
             @NonNull ConsistencyTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -115,6 +115,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
         }
 
         state.processTransactions(round, stateSignatureTransactionCallback);
+        return true;
     }
 
     /**

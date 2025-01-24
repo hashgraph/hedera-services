@@ -89,6 +89,7 @@ import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -164,6 +165,7 @@ public class HandleWorkflow {
     private final ScheduleService scheduleService;
     private final HintsService hintsService;
     private final HistoryService historyService;
+    private final CongestionMetrics congestionMetrics;
 
     // The last second since the epoch at which the metrics were updated; this does not affect transaction handling
     private long lastMetricUpdateSecond;
@@ -197,7 +199,8 @@ public class HandleWorkflow {
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService,
             @NonNull final HintsService hintsService,
-            @NonNull final HistoryService historyService) {
+            @NonNull final HistoryService historyService,
+            @NonNull final CongestionMetrics congestionMetrics) {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
@@ -222,6 +225,7 @@ public class HandleWorkflow {
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
+        this.congestionMetrics = requireNonNull(congestionMetrics);
         this.streamMode = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
@@ -243,6 +247,8 @@ public class HandleWorkflow {
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        reconcileTssState(
+                configProvider.getConfiguration().getConfigData(TssConfig.class), state, round.getConsensusTimestamp());
         if (streamMode != RECORDS) {
             blockStreamManager.startRound(round, state);
             blockStreamManager.writeItem(BlockItem.newBuilder()
@@ -323,7 +329,8 @@ public class HandleWorkflow {
                                 creator,
                                 platformTxn,
                                 event.getSoftwareVersion(),
-                                simplifiedStateSignatureTxnCallback);
+                                simplifiedStateSignatureTxnCallback,
+                                userTransactionsHandled);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -351,10 +358,11 @@ public class HandleWorkflow {
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      *
-     * @param state      the writable {@link State} that this transaction will work on
-     * @param creator    the {@link NodeInfo} of the creator of the transaction
-     * @param txn        the {@link ConsensusTransaction} to be handled
+     * @param state the writable {@link State} that this transaction will work on
+     * @param creator the {@link NodeInfo} of the creator of the transaction
+     * @param txn the {@link ConsensusTransaction} to be handled
      * @param txnVersion the software version for the event containing the transaction
+     * @param userTxnHandled whether a user transaction has been handled in this round
      * @return {@code true} if the transaction was a user transaction, {@code false} if a system transaction
      */
     private boolean handlePlatformTransaction(
@@ -362,7 +370,8 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
             @NonNull final SemanticVersion txnVersion,
-            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback,
+            final boolean userTxnHandled) {
         final var handleStart = System.nanoTime();
 
         // Temporary check until we can deprecate StateSignatureTransaction
@@ -396,9 +405,13 @@ public class HandleWorkflow {
         }
         if (streamMode != RECORDS) {
             handleOutput.blockRecordSourceOrThrow().forEachItem(blockStreamManager::writeItem);
+            if (!userTxnHandled) {
+                blockStreamManager.setRoundFirstUserTransactionTime(handleOutput.firstAssignedConsensusTime());
+            }
         }
 
         opWorkflowMetrics.updateDuration(userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+        congestionMetrics.updateMultiplier(userTxn.txnInfo(), userTxn.readableStoreFactory());
 
         if (streamMode == RECORDS) {
             // We don't support long-term scheduled transactions if only producing records
@@ -639,6 +652,8 @@ public class HandleWorkflow {
                         logger.info("Doing post-upgrade setup @ {}", userTxn.consensusNow());
                         systemSetup.doPostUpgradeSetup(dispatch);
                     }
+                    // Only for 0.59.0 we need to update the entity ID store entity counts
+                    systemSetup.initializeEntityCounts(dispatch);
                     if (streamMode != RECORDS) {
                         blockStreamManager.confirmPendingWorkFinished();
                     }
@@ -793,7 +808,7 @@ public class HandleWorkflow {
                 requireNonNull(userTxn.txnInfo().transactionID()),
                 DueDiligenceFailure.NO,
                 requireNonNull(cacheableRecordSource));
-        return new HandleOutput(blockRecordSource, recordSource);
+        return new HandleOutput(blockRecordSource, recordSource, userTxn.consensusNow());
     }
 
     /**
@@ -904,7 +919,7 @@ public class HandleWorkflow {
                 doStreamingKVChanges(
                         historyWritableStates,
                         now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now));
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
             }
         }
     }
