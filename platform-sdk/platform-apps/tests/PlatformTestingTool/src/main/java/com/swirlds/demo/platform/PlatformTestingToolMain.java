@@ -319,7 +319,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
-    private final PlatformTestingToolStateLifecycles stateLifecycles;
+    final PlatformTestingToolStateLifecycles stateLifecycles;
 
     public PlatformTestingToolMain() {
         // the config needs to be loaded before the init() method
