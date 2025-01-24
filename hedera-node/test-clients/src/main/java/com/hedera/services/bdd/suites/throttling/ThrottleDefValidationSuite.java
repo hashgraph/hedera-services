@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -74,20 +73,17 @@ public class ThrottleDefValidationSuite {
     @HapiTest
     @Order(5)
     final Stream<DynamicTest> throttleDefsRejectUnauthorizedPayers() {
-        return defaultHapiSpec("ThrottleDefsRejectUnauthorizedPayers")
-                .given(
-                        cryptoCreate("civilian"),
-                        cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, FEE_SCHEDULE_CONTROL)))
-                .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .contents("BOOM")
-                                .payingWith("civilian")
-                                .hasPrecheck(AUTHORIZATION_FAILED),
-                        fileUpdate(THROTTLE_DEFS)
-                                .contents("BOOM")
-                                .payingWith(FEE_SCHEDULE_CONTROL)
-                                .hasPrecheck(AUTHORIZATION_FAILED));
+        return hapiTest(
+                cryptoCreate("civilian"),
+                cryptoTransfer(movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, FEE_SCHEDULE_CONTROL)),
+                fileUpdate(THROTTLE_DEFS)
+                        .contents("BOOM")
+                        .payingWith("civilian")
+                        .hasPrecheck(AUTHORIZATION_FAILED),
+                fileUpdate(THROTTLE_DEFS)
+                        .contents("BOOM")
+                        .payingWith(FEE_SCHEDULE_CONTROL)
+                        .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
     @HapiTest

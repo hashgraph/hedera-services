@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -54,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
@@ -104,48 +104,40 @@ public class TokenAssociationSpecs {
         final String alice = "ALICE";
         final String bob = "BOB";
         final String unknownID = "0.0." + Long.MAX_VALUE;
-        return defaultHapiSpec("CanHandleInvalidAssociateTransactions")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(alice),
-                        cryptoCreate(bob),
-                        cryptoDelete(bob),
-                        tokenCreate(VANILLA_TOKEN),
-                        tokenCreate(KNOWABLE_TOKEN),
-                        tokenAssociate(alice, KNOWABLE_TOKEN),
-                        tokenCreate(TBD_TOKEN).adminKey(MULTI_KEY),
-                        tokenDelete(TBD_TOKEN))
-                .when()
-                .then(
-                        tokenAssociate(null, VANILLA_TOKEN)
-                                .fee(DEFAULT_FEE)
-                                .signedBy(DEFAULT_PAYER)
-                                .hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenAssociate(unknownID, VANILLA_TOKEN)
-                                .fee(DEFAULT_FEE)
-                                .signedBy(DEFAULT_PAYER)
-                                .hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenAssociate(bob, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
-                        tokenAssociate(alice, List.of()).hasKnownStatus(SUCCESS),
-                        tokenAssociate(alice, VANILLA_TOKEN, VANILLA_TOKEN)
-                                .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-                        tokenAssociate(alice, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
-                        tokenAssociate(alice, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
-                        tokenAssociate(alice, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(alice),
+                cryptoCreate(bob),
+                cryptoDelete(bob),
+                tokenCreate(VANILLA_TOKEN),
+                tokenCreate(KNOWABLE_TOKEN),
+                tokenAssociate(alice, KNOWABLE_TOKEN),
+                tokenCreate(TBD_TOKEN).adminKey(MULTI_KEY),
+                tokenDelete(TBD_TOKEN),
+                tokenAssociate(null, VANILLA_TOKEN)
+                        .fee(DEFAULT_FEE)
+                        .signedBy(DEFAULT_PAYER)
+                        .hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenAssociate(unknownID, VANILLA_TOKEN)
+                        .fee(DEFAULT_FEE)
+                        .signedBy(DEFAULT_PAYER)
+                        .hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenAssociate(bob, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
+                tokenAssociate(alice, List.of()).hasKnownStatus(SUCCESS),
+                tokenAssociate(alice, VANILLA_TOKEN, VANILLA_TOKEN).hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+                tokenAssociate(alice, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
+                tokenAssociate(alice, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
+                tokenAssociate(alice, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
-        return defaultHapiSpec("idVariantsTreatedAsExpected")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate("a").treasury(TOKEN_TREASURY),
-                        tokenCreate("b").treasury(TOKEN_TREASURY))
-                .when()
-                .then(
-                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")),
-                        submitModified(
-                                withSuccessivelyVariedBodyIds(), () -> tokenDissociate(DEFAULT_PAYER, "a", "b")));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate("a").treasury(TOKEN_TREASURY),
+                tokenCreate("b").treasury(TOKEN_TREASURY),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")),
+                submitModified(withSuccessivelyVariedBodyIds(), () -> tokenDissociate(DEFAULT_PAYER, "a", "b")));
     }
 
     @LeakyHapiTest(overrides = {"tokens.maxPerAccount", "entities.limitTokenAssociations"})
@@ -170,28 +162,25 @@ public class TokenAssociationSpecs {
 
     @HapiTest
     final Stream<DynamicTest> canDeleteNonFungibleTokenTreasuryAfterUpdate() {
-        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryAfterUpdate")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate("replacementTreasury"),
-                        tokenCreate(TBD_TOKEN)
-                                .adminKey(MULTI_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(TBD_TOKEN, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
-                .when(
-                        cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        tokenAssociate("replacementTreasury", TBD_TOKEN),
-                        tokenUpdate(TBD_TOKEN)
-                                .treasury("replacementTreasury")
-                                .signedByPayerAnd(MULTI_KEY, "replacementTreasury"))
-                .then(
-                        // Updating the treasury transfers the 2 NFTs to the new
-                        // treasury; hence the old treasury has numPositiveBalances=0
-                        cryptoDelete(TOKEN_TREASURY));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate("replacementTreasury"),
+                tokenCreate(TBD_TOKEN)
+                        .adminKey(MULTI_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(MULTI_KEY),
+                mintToken(TBD_TOKEN, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
+                cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
+                tokenAssociate("replacementTreasury", TBD_TOKEN),
+                tokenUpdate(TBD_TOKEN)
+                        .treasury("replacementTreasury")
+                        .signedByPayerAnd(MULTI_KEY, "replacementTreasury"),
+                // Updating the treasury transfers the 2 NFTs to the new
+                // treasury; hence the old treasury has numPositiveBalances=0
+                cryptoDelete(TOKEN_TREASURY));
     }
 
     @HapiTest
@@ -200,41 +189,37 @@ public class TokenAssociationSpecs {
         final var secondTbdToken = "secondTbdToken";
         final var treasuryWithoutAllPiecesBurned = "treasuryWithoutAllPiecesBurned";
         final var treasuryWithAllPiecesBurned = "treasuryWithAllPiecesBurned";
-        return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(treasuryWithAllPiecesBurned),
-                        cryptoCreate(treasuryWithoutAllPiecesBurned),
-                        tokenCreate(firstTbdToken)
-                                .adminKey(MULTI_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury(treasuryWithAllPiecesBurned)
-                                .supplyKey(MULTI_KEY),
-                        tokenCreate(secondTbdToken)
-                                .adminKey(MULTI_KEY)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .treasury(treasuryWithoutAllPiecesBurned)
-                                .supplyKey(MULTI_KEY),
-                        mintToken(firstTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
-                        mintToken(secondTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))))
-                .when(
-                        // Delete both tokens, but only burn all serials for
-                        // one of them (so that the other has a treasury that
-                        // will need to explicitly dissociate from the deleted
-                        // token before it can be deleted)
-                        burnToken(firstTbdToken, List.of(1L, 2L)),
-                        tokenDelete(firstTbdToken),
-                        tokenDelete(secondTbdToken),
-                        cryptoDelete(treasuryWithAllPiecesBurned),
-                        // This treasury still has numPositiveBalances=1
-                        cryptoDelete(treasuryWithoutAllPiecesBurned)
-                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES))
-                .then(
-                        // Now dissociate the second treasury so that it can be deleted
-                        tokenDissociate(treasuryWithoutAllPiecesBurned, secondTbdToken),
-                        cryptoDelete(treasuryWithoutAllPiecesBurned));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(treasuryWithAllPiecesBurned),
+                cryptoCreate(treasuryWithoutAllPiecesBurned),
+                tokenCreate(firstTbdToken)
+                        .adminKey(MULTI_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .treasury(treasuryWithAllPiecesBurned)
+                        .supplyKey(MULTI_KEY),
+                tokenCreate(secondTbdToken)
+                        .adminKey(MULTI_KEY)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .treasury(treasuryWithoutAllPiecesBurned)
+                        .supplyKey(MULTI_KEY),
+                mintToken(firstTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
+                mintToken(secondTbdToken, List.of(ByteString.copyFromUtf8("1"), ByteString.copyFromUtf8("2"))),
+                // Delete both tokens, but only burn all serials for
+                // one of them (so that the other has a treasury that
+                // will need to explicitly dissociate from the deleted
+                // token before it can be deleted)
+                burnToken(firstTbdToken, List.of(1L, 2L)),
+                tokenDelete(firstTbdToken),
+                tokenDelete(secondTbdToken),
+                cryptoDelete(treasuryWithAllPiecesBurned),
+                // This treasury still has numPositiveBalances=1
+                cryptoDelete(treasuryWithoutAllPiecesBurned).hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                // Now dissociate the second treasury so that it can be deleted
+                tokenDissociate(treasuryWithoutAllPiecesBurned, secondTbdToken),
+                cryptoDelete(treasuryWithoutAllPiecesBurned));
     }
 
     @HapiTest
@@ -242,33 +227,31 @@ public class TokenAssociationSpecs {
         String misc = "someToken";
         String contract = "defaultContract";
 
-        return defaultHapiSpec("AssociatedContractsMustHaveAdminKeys")
-                .given(tokenCreate(misc))
-                .when(createDefaultContract(contract).omitAdminKey())
-                .then(tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
+        return hapiTest(
+                tokenCreate(misc),
+                createDefaultContract(contract).omitAdminKey(),
+                tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @HapiTest
     final Stream<DynamicTest> contractInfoQueriesAsExpected() {
         final var contract = "contract";
-        return defaultHapiSpec("ContractInfoQueriesAsExpected")
-                .given(
-                        newKeyNamed(SIMPLE),
-                        tokenCreate("a"),
-                        tokenCreate("b"),
-                        tokenCreate("c"),
-                        tokenCreate("tbd").adminKey(SIMPLE),
-                        createDefaultContract(contract))
-                .when(
-                        tokenAssociate(contract, "a", "b", "c", "tbd"),
-                        getContractInfo(contract)
-                                .hasToken(relationshipWith("a"))
-                                .hasToken(relationshipWith("b"))
-                                .hasToken(relationshipWith("c"))
-                                .hasToken(relationshipWith("tbd")),
-                        tokenDissociate(contract, "b"),
-                        tokenDelete("tbd"))
-                .then(getContractInfo(contract)
+        return hapiTest(
+                newKeyNamed(SIMPLE),
+                tokenCreate("a"),
+                tokenCreate("b"),
+                tokenCreate("c"),
+                tokenCreate("tbd").adminKey(SIMPLE),
+                createDefaultContract(contract),
+                tokenAssociate(contract, "a", "b", "c", "tbd"),
+                getContractInfo(contract)
+                        .hasToken(relationshipWith("a"))
+                        .hasToken(relationshipWith("b"))
+                        .hasToken(relationshipWith("c"))
+                        .hasToken(relationshipWith("tbd")),
+                tokenDissociate(contract, "b"),
+                tokenDelete("tbd"),
+                getContractInfo(contract)
                         .hasToken(relationshipWith("a"))
                         .hasNoTokenRelationship("b")
                         .hasToken(relationshipWith("c"))
@@ -279,24 +262,22 @@ public class TokenAssociationSpecs {
     @HapiTest
     final Stream<DynamicTest> accountInfoQueriesAsExpected() {
         final var account = "account";
-        return defaultHapiSpec("accountInfoQueriesAsExpected")
-                .given(
-                        newKeyNamed(SIMPLE),
-                        tokenCreate("a").decimals(1),
-                        tokenCreate("b").decimals(2),
-                        tokenCreate("c").decimals(3),
-                        tokenCreate("tbd").adminKey(SIMPLE).decimals(4),
-                        cryptoCreate(account).balance(0L))
-                .when(
-                        tokenAssociate(account, "a", "b", "c", "tbd"),
-                        getAccountInfo(account)
-                                .hasToken(relationshipWith("a").decimals(1))
-                                .hasToken(relationshipWith("b").decimals(2))
-                                .hasToken(relationshipWith("c").decimals(3))
-                                .hasToken(relationshipWith("tbd").decimals(4)),
-                        tokenDissociate(account, "b"),
-                        tokenDelete("tbd"))
-                .then(getAccountInfo(account)
+        return hapiTest(
+                newKeyNamed(SIMPLE),
+                tokenCreate("a").decimals(1),
+                tokenCreate("b").decimals(2),
+                tokenCreate("c").decimals(3),
+                tokenCreate("tbd").adminKey(SIMPLE).decimals(4),
+                cryptoCreate(account).balance(0L),
+                tokenAssociate(account, "a", "b", "c", "tbd"),
+                getAccountInfo(account)
+                        .hasToken(relationshipWith("a").decimals(1))
+                        .hasToken(relationshipWith("b").decimals(2))
+                        .hasToken(relationshipWith("c").decimals(3))
+                        .hasToken(relationshipWith("tbd").decimals(4)),
+                tokenDissociate(account, "b"),
+                tokenDelete("tbd"),
+                getAccountInfo(account)
                         .hasToken(relationshipWith("a").decimals(1))
                         .hasNoTokenRelationship("b")
                         .hasToken(relationshipWith("c").decimals(3))
@@ -312,40 +293,35 @@ public class TokenAssociationSpecs {
         final long lifetimeSecs = 10;
         final long xfer = 123L;
         AtomicLong now = new AtomicLong();
-        return defaultHapiSpec("ExpiredAndDeletedTokensStillAppearInContractInfo")
-                .given(
-                        newKeyNamed("admin"),
-                        cryptoCreate(treasury),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(600_000).via(CREATION),
-                        withOpContext((spec, opLog) -> {
-                            var subOp = getTxnRecord(CREATION);
-                            allRunFor(spec, subOp);
-                            var record = subOp.getResponseRecord();
-                            now.set(record.getConsensusTimestamp().getSeconds());
-                        }),
-                        sourcing(() -> tokenCreate(expiringToken)
-                                .decimals(666)
-                                .adminKey("admin")
-                                .treasury(treasury)
-                                .expiry(now.get() + lifetimeSecs)))
-                .when(
-                        tokenAssociate(contract, expiringToken),
-                        cryptoTransfer(moving(xfer, expiringToken).between(treasury, contract)))
-                .then(
-                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
-                        getContractInfo(contract)
-                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
-                        sleepFor(lifetimeSecs * 1_000L),
-                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer, 666),
-                        getContractInfo(contract)
-                                .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
-                        tokenDelete(expiringToken),
-                        getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
-                        getContractInfo(contract)
-                                .hasToken(relationshipWith(expiringToken)
-                                        .decimals(666)
-                                        .freeze(FreezeNotApplicable)));
+        return hapiTest(
+                newKeyNamed("admin"),
+                cryptoCreate(treasury),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(600_000).via(CREATION),
+                withOpContext((spec, opLog) -> {
+                    var subOp = getTxnRecord(CREATION);
+                    allRunFor(spec, subOp);
+                    var record = subOp.getResponseRecord();
+                    now.set(record.getConsensusTimestamp().getSeconds());
+                }),
+                sourcing(() -> tokenCreate(expiringToken)
+                        .decimals(666)
+                        .adminKey("admin")
+                        .treasury(treasury)
+                        .expiry(now.get() + lifetimeSecs)),
+                tokenAssociate(contract, expiringToken),
+                cryptoTransfer(moving(xfer, expiringToken).between(treasury, contract)),
+                getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+                getContractInfo(contract)
+                        .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+                sleepFor(lifetimeSecs * 1_000L),
+                getAccountBalance(contract).hasTokenBalance(expiringToken, xfer, 666),
+                getContractInfo(contract)
+                        .hasToken(relationshipWith(expiringToken).freeze(FreezeNotApplicable)),
+                tokenDelete(expiringToken),
+                getAccountBalance(contract).hasTokenBalance(expiringToken, xfer),
+                getContractInfo(contract)
+                        .hasToken(relationshipWith(expiringToken).decimals(666).freeze(FreezeNotApplicable)));
     }
 
     @HapiTest
@@ -358,40 +334,37 @@ public class TokenAssociationSpecs {
         final var aNonTreasuryDissoc = "aNonTreasuryDissoc";
         final var bNonTreasuryDissoc = "bNonTreasuryDissoc";
 
-        return defaultHapiSpec("CanDissociateFromDeletedTokenWithAlreadyDissociatedTreasury")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate(TBD_TOKEN)
-                                .freezeKey(MULTI_KEY)
-                                .freezeDefault(false)
-                                .adminKey(MULTI_KEY)
-                                .initialSupply(initialSupply)
-                                .treasury(TOKEN_TREASURY),
-                        cryptoCreate(aNonTreasuryAcquaintance).balance(0L),
-                        cryptoCreate(bNonTreasuryAcquaintance).maxAutomaticTokenAssociations(1))
-                .when(
-                        tokenAssociate(aNonTreasuryAcquaintance, TBD_TOKEN),
-                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN)
-                                .distributing(TOKEN_TREASURY, aNonTreasuryAcquaintance, bNonTreasuryAcquaintance)),
-                        tokenFreeze(TBD_TOKEN, aNonTreasuryAcquaintance),
-                        tokenDelete(TBD_TOKEN),
-                        tokenDissociate(bNonTreasuryAcquaintance, TBD_TOKEN).via(bNonTreasuryDissoc),
-                        tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
-                        tokenDissociate(aNonTreasuryAcquaintance, TBD_TOKEN).via(aNonTreasuryDissoc))
-                .then(
-                        getTxnRecord(bNonTreasuryDissoc)
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(changingFungibleBalances()
-                                                .including(TBD_TOKEN, bNonTreasuryAcquaintance, -nonZeroXfer / 2))),
-                        getTxnRecord(treasuryDissoc)
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(changingFungibleBalances()
-                                                .including(TBD_TOKEN, TOKEN_TREASURY, nonZeroXfer - initialSupply))),
-                        getTxnRecord(aNonTreasuryDissoc)
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(changingFungibleBalances()
-                                                .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(TBD_TOKEN)
+                        .freezeKey(MULTI_KEY)
+                        .freezeDefault(false)
+                        .adminKey(MULTI_KEY)
+                        .initialSupply(initialSupply)
+                        .treasury(TOKEN_TREASURY),
+                cryptoCreate(aNonTreasuryAcquaintance).balance(0L),
+                cryptoCreate(bNonTreasuryAcquaintance).maxAutomaticTokenAssociations(1),
+                tokenAssociate(aNonTreasuryAcquaintance, TBD_TOKEN),
+                cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN)
+                        .distributing(TOKEN_TREASURY, aNonTreasuryAcquaintance, bNonTreasuryAcquaintance)),
+                tokenFreeze(TBD_TOKEN, aNonTreasuryAcquaintance),
+                tokenDelete(TBD_TOKEN),
+                tokenDissociate(bNonTreasuryAcquaintance, TBD_TOKEN).via(bNonTreasuryDissoc),
+                tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
+                tokenDissociate(aNonTreasuryAcquaintance, TBD_TOKEN).via(aNonTreasuryDissoc),
+                getTxnRecord(bNonTreasuryDissoc)
+                        .hasPriority(recordWith()
+                                .tokenTransfers(changingFungibleBalances()
+                                        .including(TBD_TOKEN, bNonTreasuryAcquaintance, -nonZeroXfer / 2))),
+                getTxnRecord(treasuryDissoc)
+                        .hasPriority(recordWith()
+                                .tokenTransfers(changingFungibleBalances()
+                                        .including(TBD_TOKEN, TOKEN_TREASURY, nonZeroXfer - initialSupply))),
+                getTxnRecord(aNonTreasuryDissoc)
+                        .hasPriority(recordWith()
+                                .tokenTransfers(changingFungibleBalances()
+                                        .including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2))));
     }
 
     @HapiTest
@@ -410,83 +383,78 @@ public class TokenAssociationSpecs {
         final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
         final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
-        return defaultHapiSpec("DissociateHasExpectedSemanticsForDeletedTokens")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate(TBD_TOKEN)
-                                .adminKey(MULTI_KEY)
-                                .initialSupply(initialSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .freezeKey(MULTI_KEY)
-                                .freezeDefault(true),
-                        tokenCreate(tbdUniqToken)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .initialSupply(0),
-                        cryptoCreate(zeroBalanceFrozen).balance(0L),
-                        cryptoCreate(zeroBalanceUnfrozen).balance(0L),
-                        cryptoCreate(nonZeroBalanceFrozen).balance(0L),
-                        cryptoCreate(nonZeroBalanceUnfrozen).balance(0L))
-                .when(
-                        tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
-                        tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
-                        tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
-                        tokenAssociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
-                        mintToken(tbdUniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
-                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
-                        tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
-                        tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
-                        tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
-                        cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
-                        tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
-                        tokenDelete(TBD_TOKEN),
-                        tokenDelete(tbdUniqToken))
-                .then(
-                        tokenDissociate(zeroBalanceFrozen, TBD_TOKEN).via(zeroBalanceDissoc),
-                        tokenDissociate(zeroBalanceUnfrozen, TBD_TOKEN),
-                        tokenDissociate(nonZeroBalanceFrozen, TBD_TOKEN).via(nonZeroBalanceDissoc),
-                        tokenDissociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
-                        tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
-                        getTxnRecord(zeroBalanceDissoc).hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
-                        getTxnRecord(nonZeroBalanceDissoc)
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(changingFungibleBalances()
-                                                .including(TBD_TOKEN, nonZeroBalanceFrozen, -nonZeroXfer))),
-                        getTxnRecord(uniqDissoc)
-                                .hasPriority(recordWith()
-                                        .tokenTransfers(changingFungibleBalances()
-                                                .including(tbdUniqToken, TOKEN_TREASURY, -3))),
-                        getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(TBD_TOKEN)
+                        .adminKey(MULTI_KEY)
+                        .initialSupply(initialSupply)
+                        .treasury(TOKEN_TREASURY)
+                        .freezeKey(MULTI_KEY)
+                        .freezeDefault(true),
+                tokenCreate(tbdUniqToken)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .initialSupply(0),
+                cryptoCreate(zeroBalanceFrozen).balance(0L),
+                cryptoCreate(zeroBalanceUnfrozen).balance(0L),
+                cryptoCreate(nonZeroBalanceFrozen).balance(0L),
+                cryptoCreate(nonZeroBalanceUnfrozen).balance(0L),
+                tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
+                tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
+                tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
+                tokenAssociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
+                mintToken(tbdUniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+                getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(3),
+                tokenUnfreeze(TBD_TOKEN, zeroBalanceUnfrozen),
+                tokenUnfreeze(TBD_TOKEN, nonZeroBalanceUnfrozen),
+                tokenUnfreeze(TBD_TOKEN, nonZeroBalanceFrozen),
+                cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceFrozen)),
+                cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonZeroBalanceUnfrozen)),
+                tokenFreeze(TBD_TOKEN, nonZeroBalanceFrozen),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+                tokenDelete(TBD_TOKEN),
+                tokenDelete(tbdUniqToken),
+                tokenDissociate(zeroBalanceFrozen, TBD_TOKEN).via(zeroBalanceDissoc),
+                tokenDissociate(zeroBalanceUnfrozen, TBD_TOKEN),
+                tokenDissociate(nonZeroBalanceFrozen, TBD_TOKEN).via(nonZeroBalanceDissoc),
+                tokenDissociate(nonZeroBalanceUnfrozen, TBD_TOKEN),
+                tokenDissociate(TOKEN_TREASURY, tbdUniqToken).via(uniqDissoc),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
+                getTxnRecord(zeroBalanceDissoc).hasPriority(recordWith().tokenTransfers(emptyTokenTransfers())),
+                getTxnRecord(nonZeroBalanceDissoc)
+                        .hasPriority(recordWith()
+                                .tokenTransfers(changingFungibleBalances()
+                                        .including(TBD_TOKEN, nonZeroBalanceFrozen, -nonZeroXfer))),
+                getTxnRecord(uniqDissoc)
+                        .hasPriority(recordWith()
+                                .tokenTransfers(
+                                        changingFungibleBalances().including(tbdUniqToken, TOKEN_TREASURY, -3))),
+                getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
     @HapiTest
     final Stream<DynamicTest> dissociateHasExpectedSemantics() {
-        return defaultHapiSpec("DissociateHasExpectedSemantics")
-                .given(basicKeysAndTokens())
-                .when(
-                        tokenCreate("tkn1").treasury(TOKEN_TREASURY),
-                        tokenDissociate(TOKEN_TREASURY, "tkn1").hasKnownStatus(ACCOUNT_IS_TREASURY),
-                        cryptoCreate("misc"),
-                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
-                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
-                        cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between(TOKEN_TREASURY, "misc")),
-                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-                        cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between("misc", TOKEN_TREASURY)),
-                        tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT))
-                .then(getAccountInfo("misc")
+        return hapiTest(flattened(
+                basicKeysAndTokens(),
+                tokenCreate("tkn1").treasury(TOKEN_TREASURY),
+                tokenDissociate(TOKEN_TREASURY, "tkn1").hasKnownStatus(ACCOUNT_IS_TREASURY),
+                cryptoCreate("misc"),
+                tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                tokenAssociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT, KNOWABLE_TOKEN),
+                tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                tokenUnfreeze(FREEZABLE_TOKEN_ON_BY_DEFAULT, "misc"),
+                cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between(TOKEN_TREASURY, "misc")),
+                tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+                cryptoTransfer(moving(1, FREEZABLE_TOKEN_ON_BY_DEFAULT).between("misc", TOKEN_TREASURY)),
+                tokenDissociate("misc", FREEZABLE_TOKEN_ON_BY_DEFAULT),
+                getAccountInfo("misc")
                         .hasToken(relationshipWith(KNOWABLE_TOKEN))
                         .hasNoTokenRelationship(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                        .logged());
+                        .logged()));
     }
 
     @HapiTest
@@ -497,70 +465,63 @@ public class TokenAssociationSpecs {
         final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
         final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
 
-        return defaultHapiSpec("DissociateHasExpectedSemanticsForDissociatedContracts")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(600_000),
-                        tokenCreate(uniqToken)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
-                        getAccountInfo(TOKEN_TREASURY).logged())
-                .when(tokenAssociate(contract, uniqToken), tokenDissociate(contract, uniqToken))
-                .then(cryptoTransfer(TokenMovement.movingUnique(uniqToken, 1L).between(TOKEN_TREASURY, contract))
+        return hapiTest(
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(TOKEN_TREASURY).balance(0L).maxAutomaticTokenAssociations(542),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(600_000),
+                tokenCreate(uniqToken)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY),
+                mintToken(uniqToken, List.of(firstMeta, secondMeta, thirdMeta)),
+                getAccountInfo(TOKEN_TREASURY).logged(),
+                tokenAssociate(contract, uniqToken),
+                tokenDissociate(contract, uniqToken),
+                cryptoTransfer(TokenMovement.movingUnique(uniqToken, 1L).between(TOKEN_TREASURY, contract))
                         .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
     @HapiTest
     final Stream<DynamicTest> treasuryAssociationIsAutomatic() {
-        return defaultHapiSpec("TreasuryAssociationIsAutomatic")
-                .given(basicKeysAndTokens())
-                .when()
-                .then(
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Unfrozen))
-                                .hasToken(relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(Unfrozen))
-                                .hasToken(relationshipWith(KNOWABLE_TOKEN)
-                                        .kyc(Granted)
-                                        .freeze(FreezeNotApplicable))
-                                .hasToken(relationshipWith(VANILLA_TOKEN)
-                                        .kyc(KycNotApplicable)
-                                        .freeze(FreezeNotApplicable))
-                                .logged(),
-                        cryptoCreate("test"),
-                        tokenAssociate("test", KNOWABLE_TOKEN),
-                        tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-                        tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
-                        tokenAssociate("test", VANILLA_TOKEN),
-                        getAccountInfo("test").logged(),
-                        tokenDissociate("test", VANILLA_TOKEN),
-                        getAccountInfo("test").logged(),
-                        tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-                        getAccountInfo("test").logged());
+        return hapiTest(flattened(
+                basicKeysAndTokens(),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(relationshipWith(FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                                .kyc(KycNotApplicable)
+                                .freeze(Unfrozen))
+                        .hasToken(relationshipWith(FREEZABLE_TOKEN_OFF_BY_DEFAULT)
+                                .kyc(KycNotApplicable)
+                                .freeze(Unfrozen))
+                        .hasToken(relationshipWith(KNOWABLE_TOKEN).kyc(Granted).freeze(FreezeNotApplicable))
+                        .hasToken(relationshipWith(VANILLA_TOKEN)
+                                .kyc(KycNotApplicable)
+                                .freeze(FreezeNotApplicable))
+                        .logged(),
+                cryptoCreate("test"),
+                tokenAssociate("test", KNOWABLE_TOKEN),
+                tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+                tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
+                tokenAssociate("test", VANILLA_TOKEN),
+                getAccountInfo("test").logged(),
+                tokenDissociate("test", VANILLA_TOKEN),
+                getAccountInfo("test").logged(),
+                tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
+                getAccountInfo("test").logged()));
     }
 
     @HapiTest
     final Stream<DynamicTest> associateAndDissociateNeedsValidAccountAndToken() {
         final var account = "account";
-        return defaultHapiSpec("dissociationNeedsAccount")
-                .given(
-                        newKeyNamed(SIMPLE),
-                        tokenCreate("a").decimals(1),
-                        cryptoCreate(account).key(SIMPLE).balance(0L))
-                .when(
-                        tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
-                        tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID))
-                .then(
-                        tokenAssociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID),
-                        tokenDissociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
+        return hapiTest(
+                newKeyNamed(SIMPLE),
+                tokenCreate("a").decimals(1),
+                cryptoCreate(account).key(SIMPLE).balance(0L),
+                tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                tokenAssociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID),
+                tokenDissociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     public static HapiSpecOperation[] basicKeysAndTokens() {
