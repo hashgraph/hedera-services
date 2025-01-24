@@ -16,8 +16,8 @@
 
 package com.swirlds.component.framework.schedulers.internal;
 
+import com.swirlds.common.concurrent.AbstractTask;
 import com.swirlds.component.framework.counters.ObjectCounter;
-import com.swirlds.component.framework.tasks.AbstractTask;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;

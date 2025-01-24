@@ -56,8 +56,9 @@ public interface StateLifecycles<T extends MerkleStateRoot> {
      * @param round the round that has just reached consensus
      * @param state the working state of the network
      * @param stateSignatureTransactionCallback a consumer that will be used for callbacks
+     * @return true if the state should be hashed and signed after this round, false otherwise
      */
-    void onHandleConsensusRound(
+    boolean onHandleConsensusRound(
             @NonNull Round round,
             @NonNull T state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback);
