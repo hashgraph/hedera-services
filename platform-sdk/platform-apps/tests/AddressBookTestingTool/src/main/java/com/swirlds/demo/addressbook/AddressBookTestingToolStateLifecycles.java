@@ -130,7 +130,7 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
     }
 
     @Override
-    public void onHandleConsensusRound(
+    public boolean onHandleConsensusRound(
             @NonNull Round round,
             @NonNull AddressBookTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -181,6 +181,7 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
                 logger.error(EXCEPTION.getMarker(), "Test scenario {}: validation failed with errors.", testScenario);
             }
         }
+        return true;
     }
 
     /**
@@ -459,7 +460,7 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = configAddressBook.copy();
-        onUpdateWeight(state, usedAddressBook, context);
+        onUpdateWeight(state, updatedAddressBook, context);
 
         return equalsAsRoster(platformAddressBook, configAddressBook, true)
                 && equalsAsRoster(platformAddressBook, usedAddressBook, true)
