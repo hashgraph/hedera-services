@@ -54,7 +54,7 @@ class TransactionPoolTests {
 
         transactionPool.submitSystemTransaction(signatureBytes);
         assertEquals(1, transactionList.size());
-        //        assertEquals(signatureBytes, transactionList.getFirst());
+        assertEquals(signatureBytes, transactionList.getFirst());
     }
 
     @Test
