@@ -33,10 +33,14 @@ import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.codec.SemanticVersionProtoCodec;
+import com.hedera.hapi.node.state.blockrecords.codec.RunningHashesProtoCodec;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.SidecarMetadata;
+import com.hedera.hapi.streams.codec.HashObjectProtoCodec;
+import com.hedera.hapi.streams.codec.SidecarMetadataProtoCodec;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -313,15 +317,13 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
                     outputStream,
                     HAPI_PROTO_VERSION,
                     hapiProtoVersion,
-                    SemanticVersion.PROTOBUF::write,
-                    SemanticVersion.PROTOBUF::measureRecord);
+                    SemanticVersion.PROTOBUF);
             // [2] - start_object_running_hash
             writeMessage(
                     outputStream,
                     START_OBJECT_RUNNING_HASH,
                     startObjectRunningHash,
-                    HashObject.PROTOBUF::write,
-                    HashObject.PROTOBUF::measureRecord);
+                    HashObject.PROTOBUF);
         } catch (final IOException e) {
             logger.warn("Error writing header to record file {}", recordFilePath, e);
             throw new UncheckedIOException(e);
@@ -340,8 +342,7 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
                     outputStream,
                     END_OBJECT_RUNNING_HASH,
                     endRunningHash,
-                    HashObject.PROTOBUF::write,
-                    HashObject.PROTOBUF::measureRecord);
+                    HashObject.PROTOBUF);
             // [5] - block_number
             writeLong(outputStream, BLOCK_NUMBER, blockNumber);
             // [6] - sidecars
@@ -349,8 +350,7 @@ public final class BlockRecordWriterV6 implements BlockRecordWriter {
                     outputStream,
                     SIDECARS,
                     sidecarMetadata == null ? Collections.emptyList() : sidecarMetadata,
-                    SidecarMetadata.PROTOBUF::write,
-                    SidecarMetadata.PROTOBUF::measureRecord);
+                    SidecarMetadata.PROTOBUF);
         } catch (IOException e) {
             logger.warn("Error writing footer to record file {}", recordFilePath, e);
             throw new UncheckedIOException(e);

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
+import com.hedera.hapi.streams.codec.HashObjectProtoCodec;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -152,8 +153,7 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
                     outputStream,
                     START_OBJECT_RUNNING_HASH,
                     startObjectRunningHash,
-                    com.hedera.hapi.streams.HashObject.PROTOBUF::write,
-                    com.hedera.hapi.streams.HashObject.PROTOBUF::measureRecord);
+                    HashObject.PROTOBUF);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
