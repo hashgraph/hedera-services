@@ -18,6 +18,7 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
@@ -55,6 +56,11 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
             @NonNull final HistoryLibrary library,
             @NonNull final HistoryLibraryCodec codec) {
         component = DaggerHistoryServiceComponent.factory().create(library, codec, appContext, executor, metrics, this);
+    }
+
+    @VisibleForTesting
+    public HistoryServiceImpl(@NonNull final HistoryServiceComponent component) {
+        this.component = requireNonNull(component);
     }
 
     @Override

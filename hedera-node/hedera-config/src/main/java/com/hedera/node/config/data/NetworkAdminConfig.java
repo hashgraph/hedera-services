@@ -56,6 +56,4 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,
         @ConfigProperty(defaultValue = "10") @NetworkProperty int distinctTxnIdsToTry,
-        @ConfigProperty(defaultValue = "60s") @NodeProperty Duration urgentHintsKeysWaitPeriod,
-        @ConfigProperty(defaultValue = "300s") @NodeProperty Duration relaxedHintsKeysWaitPeriod,
         @ConfigProperty(defaultValue = "true") @NodeProperty boolean preserveStateWeightsDuringOverride) {}

@@ -19,6 +19,9 @@ package com.hedera.node.app.history.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.history.ReadableHistoryStore.ProofKeyPublication;
+import com.hedera.node.app.history.WritableHistoryStore;
+import com.hedera.node.app.history.impl.ProofControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -30,9 +33,11 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HistoryProofKeyPublicationHandler implements TransactionHandler {
+    private final ProofControllers controllers;
+
     @Inject
-    public HistoryProofKeyPublicationHandler() {
-        // Dagger2
+    public HistoryProofKeyPublicationHandler(@NonNull final ProofControllers controllers) {
+        this.controllers = requireNonNull(controllers);
     }
 
     @Override
@@ -48,5 +53,14 @@ public class HistoryProofKeyPublicationHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
+        final var op = context.body().historyProofKeyPublicationOrThrow();
+        final var historyStore = context.storeFactory().writableStore(WritableHistoryStore.class);
+        final long nodeId = context.creatorInfo().nodeId();
+        if (historyStore.setProofKey(nodeId, op.proofKey(), context.consensusNow())) {
+            controllers.getAnyInProgress().ifPresent(controller -> {
+                final var publication = new ProofKeyPublication(nodeId, op.proofKey(), context.consensusNow());
+                controller.addProofKeyPublication(publication);
+            });
+        }
     }
 }

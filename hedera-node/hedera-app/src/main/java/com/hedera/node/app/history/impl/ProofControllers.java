@@ -95,15 +95,24 @@ public class ProofControllers {
     }
 
     /**
-     * Returns the in-progress controller for the hinTS construction with the given ID, if it exists.
+     * Returns the in-progress controller for the proof construction with the given ID, if it exists.
      *
-     * @param constructionId the ID of the hinTS construction
+     * @param constructionId the ID of the proof construction
      * @return the controller, if it exists
      */
     public Optional<ProofController> getInProgressById(final long constructionId) {
         return currentConstructionId() == constructionId
                 ? Optional.ofNullable(controller).filter(ProofController::isStillInProgress)
                 : Optional.empty();
+    }
+
+    /**
+     * Returns the in-progress controller for the hinTS construction with the given ID, if it exists.
+     *
+     * @return the controller, if it exists
+     */
+    public Optional<ProofController> getAnyInProgress() {
+        return Optional.ofNullable(controller).filter(ProofController::isStillInProgress);
     }
 
     /**

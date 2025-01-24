@@ -55,8 +55,10 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -96,6 +98,9 @@ class WritableHistoryStoreImplTest {
             .history(History.DEFAULT)
             .signature(Bytes.wrap("X"))
             .build();
+    public static final Configuration WITH_ENABLED_HISTORY = HederaTestConfigBuilder.create()
+            .withValue("tss.historyEnabled", true)
+            .getOrCreateConfig();
 
     @Mock
     private AppContext appContext;
@@ -398,6 +403,7 @@ class WritableHistoryStoreImplTest {
     private State emptyState() {
         final var state = new FakeState();
         final var servicesRegistry = new FakeServicesRegistry();
+        given(appContext.configSupplier()).willReturn(() -> WITH_ENABLED_HISTORY);
         Set.of(
                         new EntityIdService(),
                         new HistoryServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec))
