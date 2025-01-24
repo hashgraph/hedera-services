@@ -71,6 +71,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -93,6 +94,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private final int roundsPerBlock;
+    private final int blockPeriod;
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final BlockHashSigner blockHashSigner;
@@ -120,7 +122,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // The last non-empty (i.e., not skipped) round number that will eventually get a start-of-state hash
     private long lastNonEmptyRoundNumber;
     private Bytes lastBlockHash;
-    private Instant blockTimestamp;
+    private Instant consensusTimeFirstRoundInBlock;
+    private Instant consensusTimeLastRound;
     private BlockItemWriter writer;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
@@ -187,6 +190,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
+        this.blockPeriod = blockStreamConfig.blockPeriod();
         this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
@@ -230,12 +234,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
+        // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
-            blockTimestamp = round.getConsensusTimestamp();
-            boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
-
             final var blockStreamInfo = blockStreamInfoFrom(state);
+            consensusTimeFirstRoundInBlock = round.getConsensusTimestamp();
+            boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
+
             pendingWork = classifyPendingWork(blockStreamInfo, version);
             lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
@@ -263,6 +268,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
             }
         }
+        consensusTimeLastRound = round.getConsensusTimestamp();
     }
 
     @Override
@@ -307,7 +313,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void endRound(@NonNull final State state, final long roundNum) {
+    public boolean endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             // If there were no user transactions in the block, this writes all the accumulated
             // items starting from the header, sacrificing the benefits of concurrency; but
@@ -388,7 +394,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         diskNetworkExport);
                 DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -416,7 +424,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @NonNull Timestamp blockTimestamp() {
-        return new Timestamp(blockTimestamp.getEpochSecond(), blockTimestamp.getNano());
+        return new Timestamp(consensusTimeFirstRoundInBlock.getEpochSecond(), consensusTimeFirstRoundInBlock.getNano());
     }
 
     @Override
@@ -522,7 +530,23 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (!blockHashSigner.isReady()) {
             return false;
         }
-        return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
+
+        // If we're at the freeze round, always close the block
+        if (roundNumber == freezeRoundNumber) {
+            return true;
+        }
+
+        // If blockPeriod is 0, fall back to using roundsPerBlock
+        if (blockPeriod == 0) {
+            return roundNumber % roundsPerBlock == 0;
+        }
+
+        // Check if enough consensus time has elapsed since last block
+        final var elapsedSeconds = Duration.between(consensusTimeFirstRoundInBlock, consensusTimeLastRound)
+                .getSeconds();
+
+        // If we've exceeded the block period, close the block at this round boundary
+        return elapsedSeconds >= blockPeriod;
     }
 
     private boolean isFreezeRound(@NonNull final PlatformState platformState, @NonNull final Round round) {
