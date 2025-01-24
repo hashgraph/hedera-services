@@ -397,7 +397,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         diskNetworkExport);
                 DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
-        } else {
+        } else if (writer != null && writer.isOpen()) {
             // Flush all boundary state changes every round
             worker.addItem(boundaryStateChangeListener.flushChanges());
             worker.sync();
