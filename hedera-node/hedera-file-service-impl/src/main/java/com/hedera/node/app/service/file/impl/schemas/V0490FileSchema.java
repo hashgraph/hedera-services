@@ -51,6 +51,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
@@ -63,6 +64,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
@@ -163,9 +166,9 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the Address Book into state
 
-    public void createGenesisAddressBookAndNodeDetails(
-            @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
+    public void createGenesisAddressBookAndNodeDetails(@NonNull final SystemContext systemContext) {
         requireNonNull(systemContext);
+        final var networkInfo = systemContext.networkInfo();
         final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
         final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
 
@@ -181,7 +184,7 @@ public class V0490FileSchema extends Schema {
         systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(nodeStoreAddressBook(nodeStore))
+                                .contents(genesisAddressBook(networkInfo))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
@@ -192,12 +195,42 @@ public class V0490FileSchema extends Schema {
         systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(nodeStoreNodeDetails(nodeStore))
+                                .contents(genesisNodeDetails(networkInfo))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(systemContext))
                                 .build())
                         .build(),
                 nodeInfoFileNum);
+    }
+
+    public Bytes genesisAddressBook(@NonNull final NetworkInfo networkInfo) {
+        final var nodeAddresses = networkInfo.addressBook().stream()
+                .sorted(Comparator.comparingLong(NodeInfo::nodeId))
+                .map(nodeInfo -> NodeAddress.newBuilder()
+                        .nodeId(nodeInfo.nodeId())
+                        .nodeAccountId(nodeInfo.accountId())
+                        .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                        .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
+                        .build())
+                .toList();
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build());
+    }
+
+    public Bytes genesisNodeDetails(@NonNull final NetworkInfo networkInfo) {
+        final var nodeDetails = networkInfo.addressBook().stream()
+                .sorted(Comparator.comparingLong(NodeInfo::nodeId))
+                .map(nodeInfo -> NodeAddress.newBuilder()
+                        .stake(nodeInfo.weight())
+                        .nodeAccountId(nodeInfo.accountId())
+                        .nodeId(nodeInfo.nodeId())
+                        .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                        .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
+                        .build())
+                .toList();
+
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
     public void updateAddressBookAndNodeDetailsAfterFreeze(
@@ -229,7 +262,7 @@ public class V0490FileSchema extends Schema {
                 .build()));
     }
 
-    public Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
+    private Bytes nodeStoreNodeDetails(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeDetails = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
@@ -255,7 +288,7 @@ public class V0490FileSchema extends Schema {
         return Bytes.wrap(Normalizer.normalize(hexString, Normalizer.Form.NFD).getBytes(UTF_8));
     }
 
-    public Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
+    private Bytes nodeStoreAddressBook(@NonNull final ReadableNodeStore nodeStore) {
         final var nodeAddresses = new ArrayList<NodeAddress>();
         StreamSupport.stream(Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)

@@ -6,12 +6,13 @@ module com.hedera.node.app.service.file.impl {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.state.api;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive java.compiler; // javax.annotation.processing.Generated
+    requires transitive static java.compiler; // javax.annotation.processing.Generated
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.addressbook.impl;
     requires com.swirlds.common;
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;
