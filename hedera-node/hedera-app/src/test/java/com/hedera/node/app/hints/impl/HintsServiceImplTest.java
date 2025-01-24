@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.impl.WritableHintsStoreImplTest.WITH_ENABLED_HINTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
@@ -76,6 +78,7 @@ class HintsServiceImplTest {
 
     @Test
     void nothingSupportedExceptRegisteringSchemas() {
+        given(appContext.configSupplier()).willReturn(() -> WITH_ENABLED_HINTS);
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));

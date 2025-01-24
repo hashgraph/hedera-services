@@ -18,10 +18,12 @@ package com.hedera.node.app.history.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
@@ -56,6 +58,16 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
         component = DaggerHistoryServiceComponent.factory().create(library, codec, appContext, executor, metrics, this);
     }
 
+    @VisibleForTesting
+    public HistoryServiceImpl(@NonNull final HistoryServiceComponent component) {
+        this.component = requireNonNull(component);
+    }
+
+    @Override
+    public HistoryHandlers handlers() {
+        return component.handlers();
+    }
+
     @Override
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
@@ -67,7 +79,22 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
         requireNonNull(historyStore);
         requireNonNull(now);
         requireNonNull(tssConfig);
-        throw new UnsupportedOperationException();
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = historyStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasTargetProof()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, historyStore);
+                    controller.advanceConstruction(now, metadata, historyStore);
+                }
+            }
+            case HANDOFF -> {
+                if (historyStore.purgeStateAfterHandoff(activeRosters)) {
+                    final var construction = requireNonNull(historyStore.getConstructionFor(activeRosters));
+                    this.accept(construction.targetProofOrThrow());
+                }
+            }
+        }
     }
 
     @Override
@@ -95,6 +122,9 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HistorySchema(this));
+        final var tssConfig = component.configSupplier().get().getConfigData(TssConfig.class);
+        if (tssConfig.historyEnabled()) {
+            registry.register(new V059HistorySchema(this));
+        }
     }
 }
