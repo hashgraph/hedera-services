@@ -54,7 +54,7 @@
 ###############################
 ##### Hedera Cryptography #####
 ###############################
-/hedera-cryptography/                               @hashgraph/platform-cryptography
+/hedera-cryptography/                               @hashgraph/tools-and-libraries @rsinha
 
 #########################
 ##### Platform SDK ######
