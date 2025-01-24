@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.maxCustomFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.maxHtsCustomFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -55,9 +56,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED;
@@ -65,18 +65,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CUSTOM_FEE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_VALID_MAX_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -157,48 +156,12 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     // create 9 denomination tokens and transfer them to the submitter
                     createMultipleTokensWith2LayerFees(SUBMITTER, 9),
                     // create 9 collectors and associate them with tokens
-                    associateAllTokensToCollectors(),
+                    associateAllTokensToCollectors(9),
                     // create topic with 10 multilayer fees - 9 HTS + 1 HBAR
                     createTopicWith10Different2layerFees(),
                     submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
                     // assert topic fee collector balance
-                    assertAllCollectorsBalances()));
-        }
-
-        // TOPIC_FEE_108
-        private SpecOperation[] associateAllTokensToCollectors() {
-            final var collectorName = "collector_";
-            final var associateTokensToCollectors = new ArrayList<SpecOperation>();
-            for (int i = 0; i < 9; i++) {
-                associateTokensToCollectors.add(cryptoCreate(collectorName + i).balance(0L));
-                associateTokensToCollectors.add(tokenAssociate(collectorName + i, TOKEN_PREFIX + i));
-            }
-            return associateTokensToCollectors.toArray(SpecOperation[]::new);
-        }
-
-        // TOPIC_FEE_108
-        private SpecOperation createTopicWith10Different2layerFees() {
-            final var collectorName = "collector_";
-            final var topicCreateOp = createTopic(TOPIC);
-            for (int i = 0; i < 9; i++) {
-                topicCreateOp.withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN_PREFIX + i, collectorName + i));
-            }
-            // add one hbar custom fee
-            topicCreateOp.withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collectorName + 0));
-            return topicCreateOp;
-        }
-
-        // TOPIC_FEE_108
-        private SpecOperation[] assertAllCollectorsBalances() {
-            final var collectorName = "collector_";
-            final var assertBalances = new ArrayList<SpecOperation>();
-            // assert token balances
-            for (int i = 0; i < 9; i++) {
-                assertBalances.add(getAccountBalance(collectorName + i).hasTokenBalance(TOKEN_PREFIX + i, 1));
-            }
-            // add assert for hbar
-            assertBalances.add(getAccountBalance(collectorName + 0).hasTinyBars(ONE_HBAR));
-            return assertBalances.toArray(SpecOperation[]::new);
+                    assertAllCollectorsBalances(9)));
         }
 
         @HapiTest
@@ -677,7 +640,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(secondFeeLimit)
                             .message("TEST")
                             .payingWith("treasuryA")
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
                     getAccountBalance(collector).hasTokenBalance(ftA, 0),
                     getAccountBalance(collector).hasTokenBalance(ftB, 0));
         }
@@ -1209,7 +1172,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith(submitterWithLowBalance)
-                            .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE));
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
         }
 
         @HapiTest
@@ -1231,7 +1194,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith(submitterWithLowBalance)
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
         }
 
         @HapiTest
@@ -1359,7 +1322,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                             .maxCustomFee(feeLimit)
                             .message("TEST")
                             .payingWith("submitter")
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
         }
 
         @HapiTest
@@ -1452,28 +1415,32 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         final Stream<DynamicTest> submitToTopicMultipleFeesNotEnoughBalance() {
             final var collector = "collector";
             final var tokenFee = fixedConsensusHtsFee(2, BASE_TOKEN, collector);
-            final var hbarFee = fixedConsensusHbarFee(2, collector);
+            final var hbarFee = fixedConsensusHbarFee(ONE_HBAR, collector);
             return hapiTest(
                     cryptoCreate(collector).balance(ONE_HBAR),
                     tokenAssociate(collector, BASE_TOKEN),
-                    cryptoCreate("sender").balance(ONE_HBAR),
+                    cryptoCreate("sender").balance(ONE_HUNDRED_HBARS),
                     tokenAssociate("sender", BASE_TOKEN),
-                    cryptoCreate("poorSender").balance(0L),
+                    cryptoCreate("poorSender").balance(ONE_HBAR / 2),
                     tokenAssociate("poorSender", BASE_TOKEN),
+                    cryptoCreate("zeroBalanceSender").balance(0L),
                     cryptoTransfer(moving(5, BASE_TOKEN).between(TOKEN_TREASURY, "poorSender")),
                     createTopic(TOPIC).withConsensusCustomFee(hbarFee).withConsensusCustomFee(tokenFee),
                     createTopic("hbarTopic").withConsensusCustomFee(hbarFee),
+                    // sender can't pay the hts fees
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith("sender")
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+                    // poor sender can't pay the hbar fees
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith("poorSender")
-                            .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE),
+                    // zero balance sender can't pay the txn fees
                     submitMessageTo("hbarTopic")
                             .message("TEST")
-                            .payingWith("poorSender")
+                            .payingWith("zeroBalanceSender")
                             .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
         }
 
@@ -1657,7 +1624,7 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     submitMessageTo(TOPIC)
                             .message("TEST")
                             .payingWith(alice)
-                            .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
+                            .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
         }
 
         @HapiTest
@@ -1777,6 +1744,132 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
                     createTopic(TOPIC).submitKeyName(SUBMITTER).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC).message("TEST").signedBy(SUBMITTER).payingWith(collector),
                     getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 0L));
+        }
+    }
+
+    @Nested
+    @DisplayName("Assessed custom fees")
+    class SubmitMessagesAssessedCustomFees {
+
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+            lifecycle.doAdhoc(associateFeeTokensAndSubmitter());
+        }
+
+        @HapiTest
+        @DisplayName("Submit ot topic with fee should have 0 child records")
+        final Stream<DynamicTest> submitToTopicWithFee() {
+            return hapiTest(flattened(
+                    cryptoCreate("collector").balance(0L),
+                    // create topic with hbar fees
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHbarFee(10, "collector")),
+                    // submit message
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    // validate 0 child records and 1 assessed custom fees
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("submit")
+                                .andAllChildRecords()
+                                .hasAssessedCustomFeesSize(1)
+                                .logged();
+                        allRunFor(spec, record);
+                        assertEquals(0, record.getChildRecords().size());
+                    }),
+                    // assert topic fee collector balance
+                    getAccountBalance("collector").hasTinyBars(10)));
+        }
+
+        @HapiTest
+        @DisplayName("Submit ot topic with 2 layers fee should have 0 child records")
+        final Stream<DynamicTest> submitToTopicWith2layersFee() {
+            return hapiTest(flattened(
+                    cryptoCreate("collector").balance(0L),
+                    cryptoCreate("treasury"),
+                    // create token with custom fee
+                    tokenCreate("token").treasury("treasury").withCustom(fixedHbarFee(10, "collector")),
+                    // associate token to collector and submitter
+                    tokenAssociate("collector", "token"),
+                    tokenAssociate(SUBMITTER, "token"),
+                    cryptoTransfer(moving(2, "token").between("treasury", SUBMITTER)),
+
+                    // create topic with 2 layer fees
+                    createTopic(TOPIC).withConsensusCustomFee(fixedConsensusHtsFee(1, "token", "collector")),
+                    // submit message
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    // validate 0 child records and 2 assessed custom fees
+                    withOpContext((spec, log) -> {
+                        final var record = getTxnRecord("submit")
+                                .andAllChildRecords()
+                                .hasAssessedCustomFeesSize(2)
+                                .logged();
+                        allRunFor(spec, record);
+                        assertEquals(0, record.getChildRecords().size());
+                    }),
+                    // assert topic fee collector balance
+                    getAccountBalance("collector").hasTinyBars(10).hasTokenBalance("token", 1)));
+        }
+
+        @HapiTest
+        @DisplayName("Submit ot topic with 3 layers fee should have 0 child records")
+        final Stream<DynamicTest> submitToTopicWith3layersFee() {
+            final var tokenName = TOKEN_PREFIX + 0;
+            final var denomToken = DENOM_TOKEN_PREFIX + tokenName;
+            final var collector = COLLECTOR_PREFIX + 0;
+            final var denomCollector = COLLECTOR_PREFIX + tokenName;
+            final var fixedFee = fixedConsensusHtsFee(1, tokenName, collector);
+            return hapiTest(flattened(
+                    // create 2 layer fee token and transfer to the submitter
+                    createMultipleTokensWith2LayerFees(SUBMITTER, 1),
+                    // create collector
+                    associateAllTokensToCollectors(1),
+                    // create topic with 3 layer fee
+                    createTopic(TOPIC).withConsensusCustomFee(fixedFee),
+                    // submit message
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+                    // validate 0 child records and 3 assessed custom fees
+                    withOpContext((spec, log) -> {
+                        final var submitTxnRecord = getTxnRecord("submit")
+                                .andAllChildRecords()
+                                .hasAssessedCustomFeesSize(3)
+                                .logged();
+                        allRunFor(spec, submitTxnRecord);
+                        final var transactionRecordSize =
+                                submitTxnRecord.getChildRecords().size();
+                        assertEquals(0, transactionRecordSize);
+                    }),
+                    // assert topic fee collector balance
+                    getAccountBalance(collector).hasTokenBalance(tokenName, 1),
+                    // assert token fee collector balance
+                    getAccountBalance(denomCollector)
+                            .hasTokenBalance(denomToken, 1)
+                            .hasTinyBars(ONE_HBAR)));
+        }
+
+        @HapiTest
+        @DisplayName("Submit ot topic with multiple 3 layers fee should have 0 child records")
+        final Stream<DynamicTest> submitToTopicWithMultiple3layersFee() {
+            return hapiTest(flattened(
+                    // create 9 denomination tokens and transfer them to the submitter
+                    createMultipleTokensWith2LayerFees(SUBMITTER, 9),
+                    // create 9 collectors and associate them with tokens
+                    associateAllTokensToCollectors(9),
+                    // create topic with 10 multilayer fees : 9 HTS + 1 HBAR
+                    createTopicWith10Different2layerFees(),
+                    submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER).via("submit"),
+
+                    // validate 0 child records
+                    withOpContext((spec, log) -> {
+                        final var submitTxnRecord = getTxnRecord("submit")
+                                .andAllChildRecords()
+                                // 9 HTS fees * 3 layers + 1 HBAR fee
+                                .hasAssessedCustomFeesSize(28)
+                                .logged();
+                        allRunFor(spec, submitTxnRecord);
+                        final var transactionRecordSize =
+                                submitTxnRecord.getChildRecords().size();
+                        assertEquals(0, transactionRecordSize);
+                    }),
+                    // assert topic fee collector balance
+                    assertAllCollectorsBalances(9)));
         }
     }
 }

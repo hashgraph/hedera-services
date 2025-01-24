@@ -16,10 +16,14 @@
 
 package com.hedera.services.bdd.suites.hip991;
 
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedConsensusHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -122,6 +126,42 @@ public class TopicCustomFeeBase {
             specOperations.addAll(createTokenWith2LayerFee(owner, tokenName, false));
         }
         return specOperations.toArray(new SpecOperation[0]);
+    }
+
+    // TOPIC_FEE_108
+    protected SpecOperation[] associateAllTokensToCollectors(int numberOfTokens) {
+        final var collectorName = "collector_";
+        final var associateTokensToCollectors = new ArrayList<SpecOperation>();
+        for (int i = 0; i < numberOfTokens; i++) {
+            associateTokensToCollectors.add(cryptoCreate(collectorName + i).balance(0L));
+            associateTokensToCollectors.add(tokenAssociate(collectorName + i, TOKEN_PREFIX + i));
+        }
+        return associateTokensToCollectors.toArray(SpecOperation[]::new);
+    }
+
+    // TOPIC_FEE_108
+    protected SpecOperation createTopicWith10Different2layerFees() {
+        final var collectorName = "collector_";
+        final var topicCreateOp = createTopic(TOPIC);
+        for (int i = 0; i < 9; i++) {
+            topicCreateOp.withConsensusCustomFee(fixedConsensusHtsFee(1, TOKEN_PREFIX + i, collectorName + i));
+        }
+        // add one hbar custom fee
+        topicCreateOp.withConsensusCustomFee(fixedConsensusHbarFee(ONE_HBAR, collectorName + 0));
+        return topicCreateOp;
+    }
+
+    // TOPIC_FEE_108
+    protected SpecOperation[] assertAllCollectorsBalances(int numberOfCollectors) {
+        final var collectorName = "collector_";
+        final var assertBalances = new ArrayList<SpecOperation>();
+        // assert token balances
+        for (int i = 0; i < numberOfCollectors; i++) {
+            assertBalances.add(getAccountBalance(collectorName + i).hasTokenBalance(TOKEN_PREFIX + i, 1));
+        }
+        // add assert for hbar
+        assertBalances.add(getAccountBalance(collectorName + 0).hasTinyBars(ONE_HBAR));
+        return assertBalances.toArray(SpecOperation[]::new);
     }
 
     /**

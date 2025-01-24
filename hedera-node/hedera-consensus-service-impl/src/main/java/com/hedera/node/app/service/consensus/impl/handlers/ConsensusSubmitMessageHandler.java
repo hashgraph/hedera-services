@@ -33,10 +33,11 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -48,6 +49,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -77,6 +79,7 @@ import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -156,6 +159,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
+        final var streamBuilder =
+                handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
+
         /* handle custom fees */
         if (!topic.customFees().isEmpty() && !isFeeExempted(topic.feeExemptKeyList(), handleContext.keyVerifier())) {
             // filter fee list
@@ -168,16 +174,23 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
             // create synthetic body and dispatch crypto transfer
             final var syntheticBodies = customFeeAssessor.assessCustomFee(feesToBeCharged, handleContext.payer());
+            final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
+
+            // dispatch transfers to pay the fees, but suppress any child records.
             for (final var syntheticBody : syntheticBodies) {
-                final var record = handleContext.dispatch(stepDispatch(
+                final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
                         TransactionBody.newBuilder()
                                 .cryptoTransfer(syntheticBody)
                                 .build(),
                         CryptoTransferStreamBuilder.class,
-                        NOOP_TRANSACTION_CUSTOMIZER));
-                validateTrue(record.status().equals(SUCCESS), record.status());
+                        SUPPRESSING_TRANSACTION_CUSTOMIZER,
+                        new HandleContext.DispatchMetadata(Map.of(TRANSACTION_FIXED_FEE, true))));
+                validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
+                assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
             }
+            // externalize all custom fees
+            streamBuilder.assessedCustomFees(assessedCustomFees);
         }
 
         try {
@@ -187,9 +200,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            final var recordBuilder =
-                    handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
-            recordBuilder
+            streamBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
                     .topicRunningHashVersion(RUNNING_HASH_VERSION);
