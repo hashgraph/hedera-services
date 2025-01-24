@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,6 @@ import java.util.function.Supplier;
  * Not exposed outside `hedera-app`.
  */
 public class RosterService implements Service {
-    /**
-     * During migration to the roster lifecycle, the platform state service may need
-     * to set its legacy address books based on the current roster. To do this, we
-     * need to ensure the roster service is migrated before the platform state service.
-     */
     public static final int MIGRATION_ORDER = PLATFORM_STATE_SERVICE.migrationOrder() - 1;
 
     public static final String NAME = "RosterService";

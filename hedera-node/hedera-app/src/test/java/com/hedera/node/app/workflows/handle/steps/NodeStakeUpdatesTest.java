@@ -49,7 +49,6 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.function.BiConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,8 +117,7 @@ public class NodeStakeUpdatesTest {
 
         subject.process(dispatch, stack, context, RECORDS, true, Instant.EPOCH);
 
-        verify(stakingPeriodCalculator)
-                .updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class), eq(false));
+        verify(stakingPeriodCalculator).updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -167,9 +165,7 @@ public class NodeStakeUpdatesTest {
         verify(stakingPeriodCalculator)
                 .updateNodes(
                         argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
-                        eq(ExchangeRateSet.DEFAULT),
-                        any(BiConsumer.class),
-                        eq(false));
+                        eq(ExchangeRateSet.DEFAULT));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -194,9 +190,7 @@ public class NodeStakeUpdatesTest {
         verify(stakingPeriodCalculator)
                 .updateNodes(
                         argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())),
-                        eq(ExchangeRateSet.DEFAULT),
-                        any(BiConsumer.class),
-                        eq(false));
+                        eq(ExchangeRateSet.DEFAULT));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
@@ -206,7 +200,7 @@ public class NodeStakeUpdatesTest {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
-                .updateNodes(any(), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class), eq(false));
+                .updateNodes(any(), eq(ExchangeRateSet.DEFAULT));
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
@@ -218,8 +212,7 @@ public class NodeStakeUpdatesTest {
 
         Assertions.assertThatNoException()
                 .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
-        verify(stakingPeriodCalculator)
-                .updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT), any(BiConsumer.class), eq(false));
+        verify(stakingPeriodCalculator).updateNodes(eq(context), eq(ExchangeRateSet.DEFAULT));
         verify(exchangeRateManager).updateMidnightRates(stack);
     }
 
