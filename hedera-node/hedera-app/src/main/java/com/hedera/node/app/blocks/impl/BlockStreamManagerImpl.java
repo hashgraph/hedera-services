@@ -316,7 +316,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void endRound(@NonNull final State state, final long roundNum) {
+    public boolean endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             // If there were no user transactions in the block, this writes all the accumulated
             // items starting from the header, sacrificing the benefits of concurrency; but
@@ -397,11 +397,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         diskNetworkExport);
                 DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
+            return true;
         } else if (writer != null && writer.isOpen()) {
             // Flush all boundary state changes every round
             worker.addItem(boundaryStateChangeListener.flushChanges());
             worker.sync();
         }
+        return false;
     }
 
     @Override
