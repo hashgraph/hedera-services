@@ -292,6 +292,17 @@ class StressTestingToolStateTest {
         assertThat(consumedSystemTransactions.size()).isZero();
     }
 
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given (empty)
+
+        // When
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
     private void givenRoundAndEvent() {
         when(event.getCreatorId()).thenReturn(new NodeId());
         when(event.getSoftwareVersion()).thenReturn(new SemanticVersion(1, 1, 1, "", ""));

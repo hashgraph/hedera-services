@@ -150,10 +150,10 @@ public class SwirldStateManager implements FreezePeriodChecker {
      * Seals the platform's state changes for the given round.
      * @param round the round to seal
      */
-    public void sealConsensusRound(@NonNull final Round round) {
+    public boolean sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
         final PlatformMerkleStateRoot state = stateRef.get();
-        stateLifecycles.onSealConsensusRound(round, state);
+        return stateLifecycles.onSealConsensusRound(round, state);
     }
 
     /**

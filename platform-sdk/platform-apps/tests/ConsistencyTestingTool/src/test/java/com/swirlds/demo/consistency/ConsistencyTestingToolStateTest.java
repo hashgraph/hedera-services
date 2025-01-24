@@ -275,4 +275,11 @@ public class ConsistencyTestingToolStateTest {
 
         assertThat(consumedTransactions).isEmpty();
     }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        final boolean result = stateLifecycle.onSealConsensusRound(round, state);
+
+        assertThat(result).isTrue();
+    }
 }

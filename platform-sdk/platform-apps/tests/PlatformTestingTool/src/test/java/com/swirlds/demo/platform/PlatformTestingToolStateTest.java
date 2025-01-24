@@ -365,6 +365,19 @@ class PlatformTestingToolStateTest {
         assertThat(consumedSystemTransactions).isEmpty();
     }
 
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given
+        givenInitState(DEFAULT_CONFIG);
+        givenRoundAndEvent();
+
+        // When
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
     private void givenRoundAndEvent() {
         when(platformEvent.transactionIterator())
                 .thenReturn(Collections.singletonList(transaction).iterator());

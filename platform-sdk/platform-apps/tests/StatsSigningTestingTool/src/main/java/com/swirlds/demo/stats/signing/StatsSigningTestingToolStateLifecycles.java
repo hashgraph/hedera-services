@@ -112,7 +112,7 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull StatsSigningTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -137,7 +137,6 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
                 handleTransaction(transaction, state);
             }
         });
-        return true;
     }
 
     private void handleTransaction(final ConsensusTransaction trans, final StatsSigningTestingToolState state) {
@@ -233,7 +232,10 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {}
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {
+        // No-op
+        return true;
+    }
 
     @Override
     public void onUpdateWeight(

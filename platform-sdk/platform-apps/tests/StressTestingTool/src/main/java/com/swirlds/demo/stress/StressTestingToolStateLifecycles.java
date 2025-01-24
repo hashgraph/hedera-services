@@ -90,7 +90,7 @@ public class StressTestingToolStateLifecycles implements StateLifecycles<StressT
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull StressTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -115,7 +115,6 @@ public class StressTestingToolStateLifecycles implements StateLifecycles<StressT
                 }
             });
         }
-        return true;
     }
 
     private void handleTransaction(@NonNull final ConsensusTransaction trans, StressTestingToolState state) {
@@ -129,8 +128,9 @@ public class StressTestingToolStateLifecycles implements StateLifecycles<StressT
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull StressTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull StressTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

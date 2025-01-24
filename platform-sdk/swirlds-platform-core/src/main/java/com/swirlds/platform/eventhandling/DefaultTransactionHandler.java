@@ -279,7 +279,10 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
-        swirldStateManager.sealConsensusRound(consensusRound);
+        final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
+        if (isBoundary) {
+            // This logic to be completed in https://github.com/hashgraph/hedera-services/issues/17480
+        }
 
         handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
         final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
