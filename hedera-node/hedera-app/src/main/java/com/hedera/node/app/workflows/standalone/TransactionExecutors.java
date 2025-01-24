@@ -235,13 +235,14 @@ public enum TransactionExecutors {
             @NonNull final Map<String, String> properties,
             @NonNull final TracerBinding tracerBinding,
             @NonNull final Set<Operation> customOps) {
-        final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         final AtomicReference<ExecutorComponent> componentRef = new AtomicReference<>();
+        final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var bootstrapConfig = bootstrapConfigProvider.configuration();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
-                        bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
+                        bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
@@ -253,8 +254,8 @@ public enum TransactionExecutors {
                         () -> state,
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        final var hintsService =
-                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl());
+        final var hintsService = new HintsServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl(), bootstrapConfig);
         final var contractService = new ContractServiceImpl(
                 appContext, NO_OP_METRICS, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
         final var fileService = new FileServiceImpl();

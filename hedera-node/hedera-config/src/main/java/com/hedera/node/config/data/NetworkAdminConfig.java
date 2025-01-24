@@ -51,7 +51,7 @@ public record NetworkAdminConfig(
                 HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
         @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
-        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateRoster,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean exportCandidateRoster,
         @ConfigProperty(defaultValue = "candidate-roster.json") @NodeProperty String candidateRosterExportFile,
         @ConfigProperty(defaultValue = "50") @NetworkProperty int timesToTrySubmission,
         @ConfigProperty(defaultValue = "5s") @NetworkProperty Duration retryDelay,

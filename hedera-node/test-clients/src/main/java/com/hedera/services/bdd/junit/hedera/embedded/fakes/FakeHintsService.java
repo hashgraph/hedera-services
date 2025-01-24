@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -38,8 +39,9 @@ public class FakeHintsService implements HintsService {
     private final FakeHintsLibrary operations = new FakeHintsLibrary();
     private final Queue<Runnable> pendingHintsSubmissions = new ArrayDeque<>();
 
-    public FakeHintsService(@NonNull final AppContext appContext) {
-        delegate = new HintsServiceImpl(new NoOpMetrics(), pendingHintsSubmissions::offer, appContext, operations);
+    public FakeHintsService(@NonNull final AppContext appContext, @NonNull final Configuration bootstrapConfig) {
+        delegate = new HintsServiceImpl(
+                new NoOpMetrics(), pendingHintsSubmissions::offer, appContext, operations, bootstrapConfig);
     }
 
     @Override

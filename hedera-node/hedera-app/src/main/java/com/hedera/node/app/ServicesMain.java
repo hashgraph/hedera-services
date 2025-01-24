@@ -31,13 +31,11 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
-import static com.swirlds.platform.roster.RosterUtils.buildRosterHistory;
 import static com.swirlds.platform.state.signed.StartupStateUtils.copyInitialSignedState;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
-import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
@@ -81,11 +79,9 @@ import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
-import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -290,24 +286,19 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         logger.info("Starting node {} with version {}", selfId, version);
 
         // --- Build required infrastructure to load the initial state, then initialize the States API ---
-        final var maybeDiskAddressBook = loadLegacyAddressBook();
         BootstrapUtils.setupConstructableRegistryWithConfiguration(platformConfig);
         final var time = Time.getCurrent();
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
         StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = hedera.newStateLifecycles();
+        final var maybeDiskAddressBook = loadLegacyAddressBook();
         final var reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
                 version,
                 () -> {
                     isGenesis.set(true);
-                    hedera.initializeConfigProvider(GENESIS);
-                    final var genesisAddressBook = maybeDiskAddressBook.orElse(null);
-                    if (!hedera.isRosterLifecycleEnabled()) {
-                        requireNonNull(genesisAddressBook);
-                    }
                     Network genesisNetwork;
                     try {
                         genesisNetwork = hedera.startupNetworks().genesisNetworkOrThrow(platformConfig);
@@ -316,8 +307,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(maybeDiskAddressBook.orElseThrow());
                     }
                     final var genesisState = hedera.newMerkleStateRoot();
-                    hedera.initializeStatesApi(
-                            genesisState, GENESIS, genesisNetwork, platformConfig, genesisAddressBook);
+                    hedera.initializeStatesApi(genesisState, GENESIS, genesisNetwork, platformConfig);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
@@ -326,9 +316,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         final var initialState = reservedState.state();
         final var state = initialState.get().getState();
         if (!isGenesis.get()) {
-            hedera.initializeConfigProvider(RESTART);
-            final var diskAddressBook = hedera.isRosterLifecycleEnabled() ? null : maybeDiskAddressBook.orElseThrow();
-            hedera.initializeStatesApi(state, RESTART, null, platformConfig, diskAddressBook);
+            hedera.initializeStatesApi(state, RESTART, null, platformConfig);
         }
         hedera.setInitialStateHash(reservedState.hash());
 
@@ -353,23 +341,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 merkleCryptography);
 
         // --- Now build the platform and start it ---
-        final RosterHistory rosterHistory;
-        if (hedera.isRosterLifecycleEnabled()) {
-            rosterHistory = RosterUtils.createRosterHistory(rosterStore);
-        } else {
-            // This constructor both does extensive validation and has the side effect of
-            // moving unused config.txt files to an archive directory; so keep calling it
-            // here until we enable the roster lifecycle
-            new AddressBookInitializer(
-                    selfId,
-                    version,
-                    detectSoftwareUpgrade(version, initialState.get()),
-                    initialState.get(),
-                    addressBook.copy(),
-                    platformContext,
-                    stateLifecycles);
-            rosterHistory = buildRosterHistory(initialState.get().getState());
-        }
+        final var rosterHistory = RosterUtils.createRosterHistory(rosterStore);
         final var platformBuilder = PlatformBuilder.create(
                         Hedera.APP_NAME,
                         Hedera.SWIRLD_NAME,
@@ -415,14 +387,15 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 DiskStartupNetworks::new,
-                appContext ->
-                        new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl()),
-                appContext -> new HistoryServiceImpl(
+                (appContext, bootstrapConfig) -> new HintsServiceImpl(
+                        metrics, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl(), bootstrapConfig),
+                (appContext, bootstrapConfig) -> new HistoryServiceImpl(
                         metrics,
                         ForkJoinPool.commonPool(),
                         appContext,
                         new HistoryLibraryImpl(),
-                        HISTORY_LIBRARY_CODEC),
+                        HISTORY_LIBRARY_CODEC,
+                        bootstrapConfig),
                 TssBlockHashSigner::new,
                 metrics);
     }
@@ -479,9 +452,9 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     }
 
     /**
-     * Loads the legacy address book if it is present. Can be removed once the roster lifecycle is enabled.
-     *
-     * @return the address book.
+     * Loads the legacy address book if it is present. Can be removed once no environment relies on using
+     * legacy <i>config.txt</i> as a startup asset.
+     * @return the address book from a legacy config file, if present
      */
     @Deprecated
     private static Optional<AddressBook> loadLegacyAddressBook() {

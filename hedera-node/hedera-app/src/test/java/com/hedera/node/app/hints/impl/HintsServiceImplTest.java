@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hints.HintsLibrary;
@@ -62,7 +63,7 @@ class HintsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library);
+        subject = new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, DEFAULT_CONFIG);
     }
 
     @Test

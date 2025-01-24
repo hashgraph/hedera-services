@@ -28,6 +28,7 @@ import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,21 +44,28 @@ import org.apache.logging.log4j.Logger;
 public class HintsServiceImpl implements HintsService {
     private static final Logger logger = LogManager.getLogger(HintsServiceImpl.class);
 
+    @Deprecated
+    private final Configuration bootstrapConfig;
+
     private final HintsServiceComponent component;
 
     public HintsServiceImpl(
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsLibrary library) {
+            @NonNull final HintsLibrary library,
+            @NonNull final Configuration bootstrapConfig) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         // Fully qualified for benefit of javadoc
         this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
                 .create(library, appContext, executor, metrics);
     }
 
     @VisibleForTesting
-    public HintsServiceImpl(@NonNull final HintsServiceComponent component) {
+    public HintsServiceImpl(
+            @NonNull final HintsServiceComponent component, @NonNull final Configuration bootstrapConfig) {
         this.component = requireNonNull(component);
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
     }
 
     @Override
@@ -96,7 +104,7 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        final var tssConfig = component.configSupplier().get().getConfigData(TssConfig.class);
+        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
         if (tssConfig.hintsEnabled()) {
             registry.register(new V059HintsSchema(component.signingContext()));
         }

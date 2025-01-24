@@ -29,6 +29,7 @@ import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -41,6 +42,9 @@ import java.util.function.Consumer;
  * Default implementation of the {@link HistoryService}.
  */
 public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof> {
+    @Deprecated
+    private final Configuration bootstrapConfig;
+
     private final HistoryServiceComponent component;
 
     /**
@@ -54,13 +58,18 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
             @NonNull final HistoryLibrary library,
-            @NonNull final HistoryLibraryCodec codec) {
-        component = DaggerHistoryServiceComponent.factory().create(library, codec, appContext, executor, metrics, this);
+            @NonNull final HistoryLibraryCodec codec,
+            @NonNull final Configuration bootstrapConfig) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.component =
+                DaggerHistoryServiceComponent.factory().create(library, codec, appContext, executor, metrics, this);
     }
 
     @VisibleForTesting
-    public HistoryServiceImpl(@NonNull final HistoryServiceComponent component) {
+    public HistoryServiceImpl(
+            @NonNull final HistoryServiceComponent component, @NonNull final Configuration bootstrapConfig) {
         this.component = requireNonNull(component);
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
     }
 
     @Override
@@ -122,7 +131,7 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        final var tssConfig = component.configSupplier().get().getConfigData(TssConfig.class);
+        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
         if (tssConfig.historyEnabled()) {
             registry.register(new V059HistorySchema(this));
         }

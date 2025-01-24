@@ -121,10 +121,15 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
-        final var hintsService =
-                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl());
+        final var hintsService = new HintsServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl(), configuration);
         final var historyService = new HistoryServiceImpl(
-                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HistoryLibraryImpl(), HISTORY_LIBRARY_CODEC);
+                NO_OP_METRICS,
+                ForkJoinPool.commonPool(),
+                appContext,
+                new HistoryLibraryImpl(),
+                HISTORY_LIBRARY_CODEC,
+                configuration);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())

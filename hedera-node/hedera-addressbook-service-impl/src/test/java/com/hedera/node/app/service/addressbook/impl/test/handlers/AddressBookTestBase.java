@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,9 +96,6 @@ public class AddressBookTestBase {
                                     A_COMPLEX_KEY)))
             .build();
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
-    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
-            .withValue("addressBook.useRosterLifecycle", true)
-            .getOrCreateConfig();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
