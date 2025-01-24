@@ -1295,6 +1295,6 @@ public class EthereumSuite {
                         .maxGasAllowance(FIVE_HBARS)
                         .gasLimit(2_000_000L * -1)
                         .via(PAY_TXN)
-                        .hasPrecheck(ResponseCodeEnum.INSUFFICIENT_GAS));
+                        .hasPrecheck(INVALID_ETHEREUM_TRANSACTION));
     }
 }

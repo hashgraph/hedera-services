@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -506,7 +506,7 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> rejectsNegativeGas() {
         return hapiTest(
                 uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                cryptoCreate(PAYER),    // need to use a payer that is not throttle_exempt
+                cryptoCreate(PAYER), // need to use a payer that is not throttle_exempt
                 // refuse eth conversion because ethereum transaction fails in IngestChecker with precheck status
                 // INSUFFICIENT_GAS
                 contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
