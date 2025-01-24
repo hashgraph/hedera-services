@@ -1183,6 +1183,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
 
         this.platform = platform;
+        state.setSelfId(platform.getSelfId());
         UnsafeMutablePTTStateAccessor.getInstance().setMutableState(platform.getSelfId(), state);
 
         initialized.set(true);
