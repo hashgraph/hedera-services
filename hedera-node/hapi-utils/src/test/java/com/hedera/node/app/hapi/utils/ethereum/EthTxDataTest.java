@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.swirlds.common.utility.CommonUtils;
@@ -355,6 +356,7 @@ class EthTxDataTest {
     @Test
     void parsingErrors() {
         final var wrongData = Hex.encode(ByteString.copyFromUtf8("wrong").toByteArray());
+        final var negativeInteger = Integers.toBytes(Long.MIN_VALUE);
 
         // invalid nonce
         var normalData = normalRlpData();
@@ -363,12 +365,19 @@ class EthTxDataTest {
 
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, invalidNonceData)));
 
-        // invalid gasLimit
+        // invalid gasLimit: too large
         normalData = normalRlpData();
         normalData[4] = wrongData;
         final var invalidGasLimitData = Arrays.asList(normalData);
 
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, invalidGasLimitData)));
+
+        // invalid gaslimit: negative
+        normalData = normalRlpData();
+        normalData[4] = negativeInteger;
+        final var invalidGasDataNegative = Arrays.asList(normalData);
+
+        assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, invalidGasDataNegative)));
 
         // invalid recId
         normalData = normalRlpData();
