@@ -41,17 +41,12 @@ import org.apache.logging.log4j.Logger;
 public class HistorySubmissions extends TssSubmissions {
     private static final Logger logger = LogManager.getLogger(HistorySubmissions.class);
 
-    private final ProofKeysAccessor keyAccessor;
     private final BiConsumer<TransactionBody, String> onFailure =
             (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason);
 
     @Inject
-    public HistorySubmissions(
-            @NonNull final Executor executor,
-            @NonNull final AppContext appContext,
-            @NonNull final ProofKeysAccessor keyAccessor) {
+    public HistorySubmissions(@NonNull final Executor executor, @NonNull final AppContext appContext) {
         super(executor, appContext);
-        this.keyAccessor = requireNonNull(keyAccessor);
     }
 
     /**
