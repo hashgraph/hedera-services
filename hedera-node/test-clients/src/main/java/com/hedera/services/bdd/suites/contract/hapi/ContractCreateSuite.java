@@ -503,6 +503,20 @@ public class ContractCreateSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> rejectsNegativeGas() {
+        return hapiTest(
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                cryptoCreate(PAYER),    // need to use a payer that is not throttle_exempt
+                // refuse eth conversion because ethereum transaction fails in IngestChecker with precheck status
+                // INSUFFICIENT_GAS
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                        .gas(-50L)
+                        .payingWith(PAYER)
+                        .hasPrecheck(INSUFFICIENT_GAS)
+                        .refusingEthConversion());
+    }
+
+    @HapiTest
     final Stream<DynamicTest> rejectsInvalidMemo() {
         return hapiTest(
                 uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
