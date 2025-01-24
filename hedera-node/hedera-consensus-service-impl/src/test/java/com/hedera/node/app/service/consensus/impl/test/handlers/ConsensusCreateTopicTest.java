@@ -496,7 +496,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var op = txnBody.consensusCreateTopic();
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))

@@ -101,6 +101,7 @@ import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
 
+import "custom_fees.proto";
 import "event/state_signature_transaction.proto";
 
 /**
