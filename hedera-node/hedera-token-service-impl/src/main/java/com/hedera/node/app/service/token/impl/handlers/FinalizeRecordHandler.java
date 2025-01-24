@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,10 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
-        if (stakingConfig.isEnabled() && explicitRewardReceivers != null && prePaidRewards != null) {
+        if (stakingConfig.isEnabled()
+                && explicitRewardReceivers != null
+                && explicitRewardReceivers.size() != 0
+                && prePaidRewards != null) {
             // staking rewards are triggered for any balance changes to account's that are staked to
             // a node. They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here, before assessing

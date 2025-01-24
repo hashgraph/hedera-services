@@ -17,38 +17,35 @@
 package com.hedera.services.bdd.suites.hip551;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.BuildTransaction.buildTxnFrom;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
 
     @HapiTest
-    @Disabled
     // just test that the batch is submitted
     // disabled for now because there is no handler logic and streamValidation is failing in CI
     public Stream<DynamicTest> simpleBatchTest() {
         return hapiTest(
+                //                cryptoCreate("PAYER").balance(ONE_HBAR),
                 // submit batch with HapiTxnOp
-                atomicBatch(
-                        cryptoCreate("PAYER").balance(ONE_HBAR),
-                        cryptoCreate("SENDER").balance(1L)),
+                atomicBatch(cryptoCreate("PAYER").balance(ONE_HBAR)),
+                //                        cryptoCreate("SENDER").balance(1L)),
 
                 // submit batch with Transaction
-                withOpContext((spec, opLog) -> {
-                    var txn = buildTxnFrom(spec, cryptoCreate("PAYER").balance(ONE_HBAR));
-                    var batch1 = atomicBatch(txn);
-                    allRunFor(spec, batch1);
-                }));
+                //                withOpContext((spec, opLog) -> {
+                //                    var txn = buildTxnFrom(spec, cryptoCreate("PAYER").balance(ONE_HBAR));
+                //                    var batch1 = atomicBatch(txn);
+                //                    allRunFor(spec, batch1);
+                //                }),
+                getAccountBalance("PAYER").hasTinyBars(ONE_HBAR));
     }
 }

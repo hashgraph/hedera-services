@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1182,5 +1182,40 @@ public class RecordStreamBuilder
     @Override
     public ScheduleID scheduleID() {
         return scheduleID;
+    }
+
+    @Override
+    public String toString() {
+        return "RecordStreamBuilder{" + "transaction="
+                + transaction + ", transactionBytes="
+                + transactionBytes + ", consensusNow="
+                + consensusNow + ", parentConsensus="
+                + parentConsensus + ", transactionID="
+                + transactionID + ", tokenTransferLists="
+                + tokenTransferLists + ", assessedCustomFees="
+                + assessedCustomFees + ", pendingAirdropRecords="
+                + pendingAirdropRecords + ", automaticTokenAssociations="
+                + automaticTokenAssociations + ", paidStakingRewards="
+                + paidStakingRewards + ", transactionRecordBuilder="
+                + transactionRecordBuilder + ", transferList="
+                + transferList + ", status="
+                + status + ", exchangeRate="
+                + exchangeRate + ", serialNumbers="
+                + serialNumbers + ", newTotalSupply="
+                + newTotalSupply + ", transactionReceiptBuilder="
+                + transactionReceiptBuilder + ", contractStateChanges="
+                + contractStateChanges + ", contractActions="
+                + contractActions + ", contractBytecodes="
+                + contractBytecodes + ", deletedAccountBeneficiaries="
+                + deletedAccountBeneficiaries + ", explicitRewardReceiverIds="
+                + explicitRewardReceiverIds + ", transactionFee="
+                + transactionFee + ", contractFunctionResult="
+                + contractFunctionResult + ", reversingBehavior="
+                + reversingBehavior + ", category="
+                + category + ", customizer="
+                + customizer + ", tokenID="
+                + tokenID + ", scheduleID="
+                + scheduleID + ", tokenType="
+                + tokenType + '}';
     }
 }

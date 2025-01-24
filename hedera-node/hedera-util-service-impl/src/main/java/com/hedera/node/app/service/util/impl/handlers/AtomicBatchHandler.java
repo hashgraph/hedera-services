@@ -16,17 +16,19 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.util.records.AtomicBatchStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -74,9 +76,16 @@ public class AtomicBatchHandler implements TransactionHandler {
             final var transactions = op.transactions();
             for (final var transaction : transactions) {
                 final var body = context.bodyFromTransaction(transaction);
+                if (body == null) {
+                    throw new HandleException(INNER_TRANSACTION_FAILED);
+                }
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
-                final var dispatchOptions = atomicBatchDispatch(payerId, body, AtomicBatchStreamBuilder.class);
-                context.dispatch(dispatchOptions);
+                // all the inner transactions' keys are verified in PreHandleWorkflow
+                final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
+                final var streamBuilder = context.dispatch(dispatchOptions);
+                if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
+                    throw new HandleException(INNER_TRANSACTION_FAILED);
+                }
             }
         }
     }

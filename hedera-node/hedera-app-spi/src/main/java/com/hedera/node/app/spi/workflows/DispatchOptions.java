@@ -293,7 +293,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 TransactionCategory.CHILD,
                 ConsensusThrottling.ON,
                 streamBuilderType,
-                ReversingBehavior.IRREVERSIBLE,
+                ReversingBehavior.REVERSIBLE,
                 NOOP_TRANSACTION_CUSTOMIZER);
     }
 }
