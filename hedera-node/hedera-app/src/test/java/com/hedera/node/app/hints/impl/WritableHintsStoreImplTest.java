@@ -240,9 +240,10 @@ class WritableHintsStoreImplTest {
 
     @Test
     void canSetPreprocessingStartTimeIfConstructionIdExists() {
-        setConstructions(
-                HintsConstruction.newBuilder().constructionId(123L).build(),
-                HintsConstruction.newBuilder().constructionId(456L).build());
+        final var nextConstruction =
+                HintsConstruction.newBuilder().constructionId(456L).build();
+        setConstructions(HintsConstruction.newBuilder().constructionId(123L).build(), nextConstruction);
+        assertSame(nextConstruction, subject.getNextConstruction());
 
         assertThrows(IllegalArgumentException.class, () -> subject.setPreprocessingStartTime(0L, CONSENSUS_NOW));
         subject.setPreprocessingStartTime(123L, CONSENSUS_NOW);

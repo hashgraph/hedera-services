@@ -61,11 +61,11 @@ public class InertProofController implements ProofController {
     }
 
     @Override
-    public boolean addProofVote(
+    public void addProofVote(
             final long nodeId, @NonNull final HistoryProofVote vote, @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
         requireNonNull(historyStore);
-        return false;
+        // No-op
     }
 
     @Override

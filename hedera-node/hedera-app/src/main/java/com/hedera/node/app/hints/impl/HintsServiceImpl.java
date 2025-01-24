@@ -96,7 +96,10 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HintsSchema(component.signingContext()));
+        final var tssConfig = component.configSupplier().get().getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            registry.register(new V059HintsSchema(component.signingContext()));
+        }
     }
 
     @Override

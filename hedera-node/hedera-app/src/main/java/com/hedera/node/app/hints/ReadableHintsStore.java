@@ -56,6 +56,22 @@ public interface ReadableHintsStore {
     HintsConstruction getActiveConstruction();
 
     /**
+     * Returns the next construction.
+     */
+    @NonNull
+    HintsConstruction getNextConstruction();
+
+    /**
+     * Returns whether the give roster hash is ready to be adopted.
+     * @param rosterHash the roster hash
+     * @return whether the give roster hash is ready to be adopted
+     */
+    default boolean isReadyToAdopt(@NonNull final Bytes rosterHash) {
+        final var construction = getNextConstruction();
+        return construction.hasHintsScheme() && construction.targetRosterHash().equals(rosterHash);
+    }
+
+    /**
      * Returns the verification key for the current roster, if known.
      *
      * @return the verification key, or null if not yet known

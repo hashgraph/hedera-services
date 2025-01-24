@@ -249,9 +249,11 @@ class WritableHistoryStoreImplTest {
 
     @Test
     void canSetAssemblyStartTimeIfConstructionIdExists() {
+        final var nextConstruction =
+                HistoryProofConstruction.newBuilder().constructionId(456L).build();
         setConstructions(
-                HistoryProofConstruction.newBuilder().constructionId(123L).build(),
-                HistoryProofConstruction.newBuilder().constructionId(456L).build());
+                HistoryProofConstruction.newBuilder().constructionId(123L).build(), nextConstruction);
+        assertSame(nextConstruction, subject.getNextConstruction());
 
         assertThrows(IllegalArgumentException.class, () -> subject.setAssemblyTime(0L, CONSENSUS_NOW));
         subject.setAssemblyTime(123L, CONSENSUS_NOW);

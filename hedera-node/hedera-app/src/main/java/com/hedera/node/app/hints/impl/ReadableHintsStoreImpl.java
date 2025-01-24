@@ -74,6 +74,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     }
 
     @Override
+    public @NonNull HintsConstruction getNextConstruction() {
+        return requireNonNull(nextConstruction.get());
+    }
+
+    @Override
     public @Nullable HintsConstruction getConstructionFor(@NonNull final ActiveRosters activeRosters) {
         requireNonNull(activeRosters);
         return switch (activeRosters.phase()) {

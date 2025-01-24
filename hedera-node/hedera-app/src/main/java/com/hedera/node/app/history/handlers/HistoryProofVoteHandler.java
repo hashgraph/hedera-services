@@ -18,7 +18,10 @@ package com.hedera.node.app.history.handlers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.history.WritableHistoryStore;
+import com.hedera.node.app.history.impl.ProofControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -30,9 +33,11 @@ import javax.inject.Singleton;
 
 @Singleton
 public class HistoryProofVoteHandler implements TransactionHandler {
+    private final ProofControllers controllers;
+
     @Inject
-    public HistoryProofVoteHandler() {
-        // Dagger2
+    public HistoryProofVoteHandler(@NonNull final ProofControllers controllers) {
+        this.controllers = requireNonNull(controllers);
     }
 
     @Override
@@ -48,5 +53,13 @@ public class HistoryProofVoteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
+        requireNonNull(context);
+        final var op = context.body().historyProofVoteOrThrow();
+        final long constructionId = op.constructionId();
+        controllers.getInProgressById(constructionId).ifPresent(controller -> {
+            final long nodeId = context.creatorInfo().nodeId();
+            final var historyStore = context.storeFactory().writableStore(WritableHistoryStore.class);
+            controller.addProofVote(nodeId, op.voteOrElse(HistoryProofVote.DEFAULT), historyStore);
+        });
     }
 }

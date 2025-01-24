@@ -77,7 +77,9 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.impl.ReadableHintsStoreImpl;
 import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.impl.ReadableHistoryStoreImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -120,6 +122,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.node.internal.network.Network;
@@ -142,6 +145,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -329,12 +333,9 @@ public final class Hedera
     private HederaInjectionComponent daggerApp;
 
     /**
-     * When applying and migrating schemas to a target state, it is set here to support
-     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
-     * before the roster lifecycle is adopted.
+     * When initializing the State API, the state being initialized.
      */
     @Nullable
-    @Deprecated
     private State initState;
 
     /**
@@ -500,8 +501,6 @@ public final class Hedera
                         hintsService,
                         historyService,
                         new TssBaseServiceImpl(),
-                        hintsService,
-                        historyService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
                         new TokenServiceImpl(),
@@ -513,10 +512,21 @@ public final class Hedera
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        // FUTURE: a lambda that tests if a ReadableTssStore
-                        // constructed from the migration state returns a
-                        // RosterKeys with the ledger id for the given roster
-                        new RosterService(roster -> true, () -> requireNonNull(initState)),
+                        new RosterService(
+                                roster -> {
+                                    requireNonNull(initState);
+                                    final var rosterHash =
+                                            RosterUtils.hash(roster).getBytes();
+                                    final var hintsStore =
+                                            new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME));
+                                    final var historyStore = new ReadableHistoryStoreImpl(
+                                            initState.getReadableStates(HistoryService.NAME));
+                                    final var tssConfig =
+                                            configProvider.getConfiguration().getConfigData(TssConfig.class);
+                                    return (!tssConfig.hintsEnabled() || hintsStore.isReadyToAdopt(rosterHash))
+                                            && (!tssConfig.historyEnabled() || historyStore.isReadyToAdopt(rosterHash));
+                                },
+                                () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {

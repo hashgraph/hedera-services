@@ -116,6 +116,9 @@ public class HistoryServiceImpl implements HistoryService, Consumer<HistoryProof
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HistorySchema(this));
+        final var tssConfig = component.configSupplier().get().getConfigData(TssConfig.class);
+        if (tssConfig.historyEnabled()) {
+            registry.register(new V059HistorySchema(this));
+        }
     }
 }

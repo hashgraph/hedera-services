@@ -67,12 +67,12 @@ public interface ProofController {
      * <p>
      * <b>Important:</b> If this vote results in an output having at least 1/3 of consensus weight, also updates
      * <i>network</i> state in the given writable store with the winning proof.
+     *
      * @param nodeId the node ID
      * @param vote the history proof vote
      * @param historyStore the history store
-     * @return if the vote was added
      */
-    boolean addProofVote(long nodeId, @NonNull HistoryProofVote vote, @NonNull WritableHistoryStore historyStore);
+    void addProofVote(long nodeId, @NonNull HistoryProofVote vote, @NonNull WritableHistoryStore historyStore);
 
     /**
      * Incorporates the given history signature, if this construction still needs a proof, and does

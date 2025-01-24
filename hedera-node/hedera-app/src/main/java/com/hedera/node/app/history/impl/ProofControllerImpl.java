@@ -219,40 +219,41 @@ public class ProofControllerImpl implements ProofController {
     }
 
     @Override
-    public boolean addProofVote(
+    public void addProofVote(
             final long nodeId, @NonNull final HistoryProofVote vote, @NonNull final WritableHistoryStore historyStore) {
         requireNonNull(vote);
         requireNonNull(historyStore);
-        if (!construction.hasTargetProof() && !votes.containsKey(nodeId)) {
-            if (vote.hasProof()) {
-                votes.put(nodeId, vote);
-            } else if (vote.hasCongruentNodeId()) {
-                final var congruentVote = votes.get(vote.congruentNodeIdOrThrow());
-                if (congruentVote != null && congruentVote.hasProof()) {
-                    votes.put(nodeId, congruentVote);
+        if (construction.hasTargetProof() || votes.containsKey(nodeId)) {
+            return;
+        }
+        if (vote.hasProof()) {
+            votes.put(nodeId, vote);
+        } else if (vote.hasCongruentNodeId()) {
+            final var congruentVote = votes.get(vote.congruentNodeIdOrThrow());
+            if (congruentVote != null && congruentVote.hasProof()) {
+                votes.put(nodeId, congruentVote);
+            }
+        }
+        historyStore.addProofVote(nodeId, construction.constructionId(), vote);
+        final var proofWeights = votes.entrySet().stream()
+                .collect(groupingBy(
+                        entry -> entry.getValue().proofOrThrow(),
+                        summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
+        final var maybeWinningProof = proofWeights.entrySet().stream()
+                .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
+                .map(Map.Entry::getKey)
+                .findFirst();
+        maybeWinningProof.ifPresent(proof -> {
+            construction = historyStore.completeProof(construction.constructionId(), proof);
+            if (historyStore.getActiveConstruction().constructionId() == construction.constructionId()) {
+                proofConsumer.accept(proof);
+                if (ledgerId == null) {
+                    requireNonNull(targetMetadata);
+                    final var encodedId = codec.encodeLedgerId(proof.sourceAddressBookHash(), targetMetadata);
+                    historyStore.setLedgerId(encodedId);
                 }
             }
-            final var proofWeights = votes.entrySet().stream()
-                    .collect(groupingBy(
-                            entry -> entry.getValue().proofOrThrow(),
-                            summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
-            final var maybeWinningProof = proofWeights.entrySet().stream()
-                    .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
-                    .map(Map.Entry::getKey)
-                    .findFirst();
-            maybeWinningProof.ifPresent(proof -> {
-                construction = historyStore.completeProof(construction.constructionId(), proof);
-                if (historyStore.getActiveConstruction().constructionId() == construction.constructionId()) {
-                    proofConsumer.accept(proof);
-                    if (ledgerId == null) {
-                        requireNonNull(targetMetadata);
-                        historyStore.setLedgerId(codec.encodeLedgerId(proof.sourceAddressBookHash(), targetMetadata));
-                    }
-                }
-            });
-            return true;
-        }
-        return false;
+        });
     }
 
     @Override
