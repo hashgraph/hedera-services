@@ -32,6 +32,7 @@ Functions supported under a new system contract address for the same system cont
 The packages at top level for a system contract will contain the base implementation which will be used if no override implementation of the function is available.
 
 For example, the HTS system contract will have the following packages where a new address for the HTS system contract at address `0x16c` is introduced and overrides the `create` function:
+
 ```
 ...
    |--- hts
@@ -48,18 +49,18 @@ For example, the HTS system contract will have the following packages where a ne
 
 ## Testing
 
-As with the `Package Organization` discussed above, bdd tests will also need to be organized in order to test variant 
-expectations for overridden functions in the system contract.  
+As with the `Package Organization` discussed above, bdd tests will also need to be organized in order to test variant
+expectations for overridden functions in the system contract.
 
 The path for looking up contract bin files uploading contract initcode will be augmented with an optional system contract address
 to differentiate contracts using different system contract addresses.
-Currently, the path used to locate contracts is `hedera-node/test-clients/src/test/resources/contracts`.  
-The path for the new system contract address will be `hedera-node/test-clients/src/test/resources/contracts_<system_contract_address>` if the optional 
+Currently, the path used to locate contracts is `hedera-node/test-clients/src/test/resources/contracts`.
+The path for the new system contract address will be `hedera-node/test-clients/src/test/resources/contracts_<system_contract_address>` if the optional
 system contract address is given to the argument to the `uploadInitCode` utility function.
 Similarly, an attribute will be added to the @Contract annotation to denote the system contract address for the contract.
 
 New tests that that cover the new system contract address' behavior will be added:
-1. into new class files 
+1. into new class files
 2. into existing class files using the @Nested annotation to group the tests together.
 3. into existing tests using the @ParameterizedTest annotation to test the same function with different system contract addresses.
 as appropriate in order to increase test readability and maintainability.
@@ -67,7 +68,7 @@ as appropriate in order to increase test readability and maintainability.
 ## Scope for System Contract Version Releases
 
 In order to ensure that the system contract are immutable from a user standpoint,
-each new version of a system contract needs to be scope in terms of expected behavior.  A master feature flag for the 
+each new version of a system contract needs to be scope in terms of expected behavior.  A master feature flag for the
 version will be used to control release of the new system contract version to gate access
 as user deployed contract that are written to partially implemented system contract will break once behavior is altered.
 
