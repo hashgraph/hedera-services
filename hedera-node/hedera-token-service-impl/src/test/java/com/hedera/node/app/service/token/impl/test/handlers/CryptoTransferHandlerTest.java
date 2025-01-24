@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -368,6 +369,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             .build());
                     return cryptoCreateRecordBuilder;
                 });
+
+        when(handleContext.dispatchMetadata()).thenReturn(mock(DispatchMetadata.class));
 
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
