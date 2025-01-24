@@ -86,7 +86,7 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
             EventCore.PROTOBUF.write(eventCore, eventStream);
             for (final TransactionWrapper transaction : transactions) {
                 if (isNewFormat) {
-                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getTransactionBytes()));
+                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getApplicationTransaction()));
                     processTransactionHash();
                 } else {
                     EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);

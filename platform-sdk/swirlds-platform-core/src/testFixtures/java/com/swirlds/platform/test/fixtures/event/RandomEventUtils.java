@@ -94,7 +94,9 @@ public class RandomEventUtils {
 
         final List<Bytes> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
-            Stream.of(transactions).map(TransactionWrapper::getTransactionBytes).forEach(convertedTransactions::add);
+            Stream.of(transactions)
+                    .map(TransactionWrapper::getApplicationTransaction)
+                    .forEach(convertedTransactions::add);
         }
         final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 new BasicSoftwareVersion(1),
