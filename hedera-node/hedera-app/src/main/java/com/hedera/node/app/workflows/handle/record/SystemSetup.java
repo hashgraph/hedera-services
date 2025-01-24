@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
@@ -45,6 +46,7 @@ import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transaction
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.addressbook.NodeCreateTransactionBody;
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.CurrentAndNextFeeSchedule;
@@ -53,6 +55,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
@@ -62,11 +65,13 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.networkadmin.impl.schemas.SyntheticNodeCreator;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
@@ -126,16 +131,19 @@ public class SystemSetup {
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
     private static final Comparator<Account> ACCOUNT_COMPARATOR =
             Comparator.comparing(Account::accountId, ACCOUNT_ID_COMPARATOR);
+    public static final Comparator<Node> NODE_COMPARATOR = Comparator.comparing(Node::nodeId, Long::compare);
 
     private SortedSet<Account> systemAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> stakingAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+    private SortedSet<Node> genesisNodes = new TreeSet<>(NODE_COMPARATOR);
 
     private final AtomicInteger nextDispatchNonce = new AtomicInteger(1);
     private final FileServiceImpl fileService;
     private final SyntheticAccountCreator syntheticAccountCreator;
+    private final SyntheticNodeCreator syntheticNodeCreator;
 
     /**
      * Constructs a new {@link SystemSetup}.
@@ -143,9 +151,11 @@ public class SystemSetup {
     @Inject
     public SystemSetup(
             @NonNull final FileServiceImpl fileService,
-            @NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+            @NonNull final SyntheticAccountCreator syntheticAccountCreator,
+            @NonNull final SyntheticNodeCreator syntheticNodeCreator) {
         this.fileService = requireNonNull(fileService);
         this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
+        this.syntheticNodeCreator = requireNonNull(syntheticNodeCreator);
     }
 
     /**
@@ -456,6 +466,8 @@ public class SystemSetup {
                 this::miscAccounts,
                 this::blocklistAccounts);
 
+        syntheticNodeCreator.generateSyntheticNodes(context.readableStore(ReadableNodeStore.class), this::nodes);
+
         if (!systemAccounts.isEmpty()) {
             createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO, exchangeRateSet);
             log.info(" - Queued {} system account records", systemAccounts.size());
@@ -487,6 +499,12 @@ public class SystemSetup {
             log.info("Queued {} blocklist account records", blocklistAccounts.size());
             blocklistAccounts = null;
         }
+
+        if (!genesisNodes.isEmpty()) {
+            createNodeRecordBuilders(genesisNodes, context, exchangeRateSet);
+            log.info(" - Queued {} node create records", genesisNodes.size());
+            genesisNodes = null;
+        }
     }
 
     private void systemAccounts(@NonNull final SortedSet<Account> accounts) {
@@ -509,12 +527,35 @@ public class SystemSetup {
         requireNonNull(blocklistAccounts, "Genesis records already exported").addAll(requireNonNull(accounts));
     }
 
+    private void nodes(@NonNull final SortedSet<Node> nodes) {
+        requireNonNull(genesisNodes, "Genesis records already exported").addAll(requireNonNull(nodes));
+    }
+
     private void createAccountRecordBuilders(
             @NonNull final SortedSet<Account> map,
             @NonNull final TokenContext context,
             @Nullable final String recordMemo,
             @NonNull final ExchangeRateSet exchangeRateSet) {
         createAccountRecordBuilders(map, context, recordMemo, null, exchangeRateSet);
+    }
+
+    private void createNodeRecordBuilders(
+            SortedSet<Node> nodes,
+            @NonNull final TokenContext context,
+            @NonNull final ExchangeRateSet exchangeRateSet) {
+        for (final Node node : nodes) {
+            final var recordBuilder =
+                    context.addPrecedingChildRecordBuilder(NodeCreateStreamBuilder.class, NODE_CREATE);
+            recordBuilder.nodeID(node.nodeId()).exchangeRate(exchangeRateSet);
+
+            final var op = newNodeCreate(node);
+            final var bodyBuilder = TransactionBody.newBuilder().nodeCreate(op);
+            final var body = bodyBuilder.build();
+            recordBuilder.transaction(transactionWith(body));
+            recordBuilder.status(SUCCESS);
+
+            log.debug("Queued synthetic NodeCreate for node {}", node);
+        }
     }
 
     private void createAccountRecordBuilders(
@@ -573,6 +614,17 @@ public class SystemSetup {
                         .build())
                 .initialBalance(account.tinybarBalance())
                 .alias(account.alias());
+    }
+
+    private static NodeCreateTransactionBody.Builder newNodeCreate(Node node) {
+        return NodeCreateTransactionBody.newBuilder()
+                .accountId(node.accountId())
+                .description(node.description())
+                .gossipEndpoint(node.gossipEndpoint())
+                .serviceEndpoint(node.serviceEndpoint())
+                .gossipCaCertificate(node.gossipCaCertificate())
+                .grpcCertificateHash(node.grpcCertificateHash())
+                .adminKey(node.adminKey());
     }
 
     private static Bytes parseFeeSchedules(@NonNull final InputStream in) {
