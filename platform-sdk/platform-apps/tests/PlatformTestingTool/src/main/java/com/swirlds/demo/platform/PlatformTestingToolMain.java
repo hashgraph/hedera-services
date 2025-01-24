@@ -319,10 +319,12 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
+    final PlatformTestingToolStateLifecycles stateLifecycles;
+
     public PlatformTestingToolMain() {
-        super();
         // the config needs to be loaded before the init() method
         config = PlatformConfig.getDefault();
+        stateLifecycles = new PlatformTestingToolStateLifecycles();
     }
 
     /**
@@ -579,7 +581,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
                 UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
             final PlatformTestingToolState state = wrapper.get();
 
-            state.initControlStructures(this::handleMessageQuorum);
+            stateLifecycles.initControlStructures(this::handleMessageQuorum);
 
             // FUTURE WORK implement mirrorNode
             final String myName =
@@ -631,7 +633,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
                     progressCfg.setProgressMarker(pConfig.getProgressMarker());
 
                     payloadConfig.display();
-                    state.setPayloadConfig(currentConfig.getFcmConfig());
+                    state.setPayloadConfig(currentConfig.getFcmConfig(), platform.getRoster());
                     if (currentConfig.getFcmConfig().getFcmQueryConfig() != null) {
                         this.queryController = new FCMQueryController(
                                 currentConfig.getFcmConfig().getFcmQueryConfig(), platform);
@@ -641,7 +643,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
                     submitConfig = currentConfig.getSubmitConfig();
 
-                    submitter = new TransactionSubmitter(submitConfig, state.getControlQuorum());
+                    submitter = new TransactionSubmitter(submitConfig, stateLifecycles.getControlQuorum());
 
                     if (currentConfig.getFcmConfig() != null) {
                         state.initChildren();
@@ -759,7 +761,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
         final SuperConfig clientConfig = objectMapper.readValue(new File(jsonFileName), SuperConfig.class);
         final String selfName = RosterUtils.formatNodeName(selfId.id());
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
-            appClient[k] = new AppClient(this.platform, this.selfId, clientConfig, selfName);
+            appClient[k] = new AppClient(this.platform, this.selfId, clientConfig, selfName, stateLifecycles);
             appClient[k].start();
         }
     }
@@ -885,7 +887,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
     @Override
     @NonNull
     public StateLifecycles<PlatformTestingToolState> newStateLifecycles() {
-        return new PlatformTestingToolStateLifecycles();
+        return stateLifecycles;
     }
 
     private void platformStatusChange(final PlatformStatusChangeNotification notification) {
@@ -1002,7 +1004,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
             try (final AutoCloseableWrapper<PlatformTestingToolState> wrapper =
                     UnsafeMutablePTTStateAccessor.getInstance().getUnsafeMutableState(platform.getSelfId())) {
                 final PlatformTestingToolState state = wrapper.get();
-                state.initControlStructures(this::handleMessageQuorum);
+                stateLifecycles.initControlStructures(this::handleMessageQuorum);
                 SyntheticBottleneckConfig.getActiveConfig()
                         .registerReconnect(platform.getSelfId().id());
             }
