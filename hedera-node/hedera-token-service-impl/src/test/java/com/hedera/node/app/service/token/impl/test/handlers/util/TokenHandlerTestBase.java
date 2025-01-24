@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -116,6 +118,12 @@ public class TokenHandlerTestBase {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
+
     protected MapReadableKVState<TokenID, Token> readableTokenState;
     protected MapWritableKVState<TokenID, Token> writableTokenState;
 
@@ -136,9 +144,10 @@ public class TokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableTokenStore = new WritableTokenStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -146,9 +155,10 @@ public class TokenHandlerTestBase {
         writableTokenState = writableTokenStateWithOneKey();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableTokenStore = new WritableTokenStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
     }
 
     @NonNull

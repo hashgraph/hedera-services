@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -528,7 +529,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     new MapWritableStates(
                             Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                     configuration,
-                    mock(StoreMetricsService.class));
+                    mock(StoreMetricsService.class),
+                    mock(WritableEntityCounters.class));
 
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
             final var context = mockContext(txn);

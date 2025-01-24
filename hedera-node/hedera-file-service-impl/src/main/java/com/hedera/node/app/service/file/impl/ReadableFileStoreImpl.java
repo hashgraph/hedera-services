@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package com.hedera.node.app.service.file.impl;
 
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -38,13 +39,17 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
     /** The underlying data storage class that holds the file data. */
     private final ReadableKVState<FileID, File> fileState;
 
+    private final ReadableEntityCounters entityCounters;
+
     /**
      * Create a new {@link ReadableFileStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableFileStoreImpl(@NonNull final ReadableStates states) {
-        this.fileState = Objects.requireNonNull(states.get(BLOBS_KEY));
+    public ReadableFileStoreImpl(
+            @NonNull final ReadableStates states, @NonNull final ReadableEntityCounters entityCounters) {
+        this.fileState = requireNonNull(states.get(BLOBS_KEY));
+        this.entityCounters = requireNonNull(entityCounters);
     }
 
     /**
@@ -76,5 +81,6 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      */
     public long sizeOfState() {
         return fileState.size();
+        // FUTURE: Use entityCounters to get size.
     }
 }

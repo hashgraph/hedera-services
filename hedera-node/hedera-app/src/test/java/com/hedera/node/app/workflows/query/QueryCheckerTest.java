@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -221,6 +222,9 @@ class QueryCheckerTest extends AppTestBase {
     class ValidateAccountBalanceTests {
 
         private ReadableAccountStore store;
+
+        @Mock
+        private ReadableEntityCounters entityCounters;
 
         @BeforeEach
         void setup() {

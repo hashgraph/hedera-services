@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         testConfig = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -219,7 +219,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -237,7 +237,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new ReadableTopicStoreImpl(readableStates);
+        subject = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
     }
 
     @Test
@@ -68,8 +68,8 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         givenValidTopic(accountId);
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
-        subject = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
+        subject = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         final var topic = subject.getTopic(topicId);
 
@@ -91,25 +91,25 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
         readableTopicState.reset();
         final var state = MapReadableKVState.<Long, Topic>builder(TOPICS_KEY).build();
         given(readableStates.<Long, Topic>get(TOPICS_KEY)).willReturn(state);
-        subject = new ReadableTopicStoreImpl(readableStates);
+        subject = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         assertThat(subject.getTopic(topicId)).isNull();
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new ReadableTopicStoreImpl(readableStates);
+        final var store = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         assertNotNull(store);
     }
 
     @Test
     void nullArgsFail() {
-        assertThrows(NullPointerException.class, () -> new ReadableTopicStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new ReadableTopicStoreImpl(null, null));
     }
 
     @Test
     void getSizeOfState() {
-        final var store = new ReadableTopicStoreImpl(readableStates);
+        final var store = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         assertEquals(readableStates.get(TOPICS_KEY).size(), store.sizeOfState());
     }
 }

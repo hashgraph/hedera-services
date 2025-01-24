@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .value(spenderId, spenderAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
     }
 
     @Test
@@ -130,7 +130,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .value(deleteAccountId, deleteAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         assertThatThrownBy(
                         () -> getEffectiveOwner(deleteAccountId, deleteAccount, readableAccountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)

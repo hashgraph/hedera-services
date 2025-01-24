@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -187,6 +189,12 @@ public class CryptoHandlerTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
+
     /**
      * Set up the test environment.
      */
@@ -221,9 +229,10 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore =
+                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentTokenOnlyInReadable() {
@@ -235,9 +244,10 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore =
+                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -249,9 +259,10 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore =
+                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     @NonNull

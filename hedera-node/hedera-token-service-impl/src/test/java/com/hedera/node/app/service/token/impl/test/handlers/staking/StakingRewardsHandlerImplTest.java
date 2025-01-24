@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1076,11 +1076,12 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccounts = writableBuilder.build();
 
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableAccountStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableAccountStore = new WritableAccountStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
         given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 

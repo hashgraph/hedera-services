@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,8 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -494,7 +496,9 @@ public class ThrottleAccumulator {
                                     .seconds()
                             + ledgerConfig.scheduleTxExpiryTimeSecs();
                 }
-                final var scheduleStore = new ReadableScheduleStoreImpl(state.getReadableStates(ScheduleService.NAME));
+                final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+                final var scheduleStore =
+                        new ReadableScheduleStoreImpl(state.getReadableStates(ScheduleService.NAME), entityIdStore);
                 final var numScheduled = scheduleStore.numTransactionsScheduledAt(expiry);
                 return numScheduled >= schedulingConfig.maxTxnPerSec();
             }

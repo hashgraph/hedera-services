@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -231,6 +232,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private WritableSingletonState<EntityNumber> entityNumberState;
+
+    @Mock
+    private WritableSingletonState<EntityCounts> entityCountsState;
 
     @Mock
     private ExchangeRateInfo exchangeRateInfo;
@@ -796,10 +800,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         .state(MapWritableKVState.builder("ALIASES").build())
                         .build());
         lenient().when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
+        lenient().when(writableStates.<EntityCounts>getSingleton(anyString())).thenReturn(entityCountsState);
         lenient().when(stack.getWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
         lenient().when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
         lenient().when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
         given(baseState.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         given(baseState.getReadableStates(TokenService.NAME)).willReturn(defaultTokenReadableStates());
+        given(baseState.getReadableStates(EntityIdService.NAME)).willReturn(writableStates);
     }
 }

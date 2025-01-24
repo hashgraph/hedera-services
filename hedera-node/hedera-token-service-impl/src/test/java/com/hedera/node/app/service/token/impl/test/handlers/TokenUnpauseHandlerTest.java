@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -209,7 +209,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
                 .value(tokenId, copy)
                 .build();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
 
         subject.preHandle(preHandleContext);

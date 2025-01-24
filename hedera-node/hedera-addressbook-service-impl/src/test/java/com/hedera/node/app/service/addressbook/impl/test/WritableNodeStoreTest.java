@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,16 +45,22 @@ class WritableNodeStoreTest extends AddressBookTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableNodeStore(null, CONFIGURATION, storeMetricsService));
         assertThrows(
-                NullPointerException.class, () -> new WritableNodeStore(writableStates, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, CONFIGURATION, null));
+                NullPointerException.class,
+                () -> new WritableNodeStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableNodeStore(writableStates, null, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableNodeStore(writableStates, CONFIGURATION, null, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesNodeState() {
-        final var store = new WritableNodeStore(writableStates, CONFIGURATION, storeMetricsService);
+        final var store =
+                new WritableNodeStore(writableStates, CONFIGURATION, storeMetricsService, writableEntityCounters);
         assertNotNull(store);
     }
 

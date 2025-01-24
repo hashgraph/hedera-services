@@ -85,4 +85,43 @@ class WritableEntityIdStoreTest {
         assertEquals(12, subject.incrementAndGet(EntityType.STAKING_INFO));
         assertEquals(1, entityCountsState.get().numStakingInfos());
     }
+
+    @Test
+    void decrementsAsExpected() {
+        subject.incrementAndGet(EntityType.ALIAS);
+        subject.incrementAndGet(EntityType.TOKEN_ASSOCIATION);
+        subject.incrementAndGet(EntityType.NFT);
+        subject.incrementAndGet(EntityType.AIRDROP);
+        subject.incrementAndGet(EntityType.SCHEDULE);
+        subject.incrementAndGet(EntityType.CONTRACT_STORAGE);
+
+        assertEquals(1, entityCountsState.get().numAliases());
+        subject.decrementEntityTypeCounter(EntityType.ALIAS);
+        assertEquals(0, entityCountsState.get().numAliases());
+
+        assertEquals(1, entityCountsState.get().numTokenRelations());
+        subject.decrementEntityTypeCounter(EntityType.TOKEN_ASSOCIATION);
+        assertEquals(0, entityCountsState.get().numTokenRelations());
+
+        assertEquals(1, entityCountsState.get().numNfts());
+        subject.decrementEntityTypeCounter(EntityType.NFT);
+        assertEquals(0, entityCountsState.get().numNfts());
+
+        assertEquals(1, entityCountsState.get().numSchedules());
+        subject.decrementEntityTypeCounter(EntityType.SCHEDULE);
+        assertEquals(0, entityCountsState.get().numSchedules());
+
+        assertEquals(1, entityCountsState.get().numContractStorageSlots());
+        subject.decrementEntityTypeCounter(EntityType.CONTRACT_STORAGE);
+        assertEquals(0, entityCountsState.get().numContractStorageSlots());
+    }
+
+    @Test
+    void cannotDecrementSomeEntityTypes() {
+        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.ACCOUNT));
+        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.TOKEN));
+        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.STAKING_INFO));
+        assertThrows(
+                IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.CONTRACT_BYTECODE));
+    }
 }

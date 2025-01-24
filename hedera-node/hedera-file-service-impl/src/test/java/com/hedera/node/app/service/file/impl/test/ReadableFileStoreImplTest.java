@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class ReadableFileStoreImplTest extends FileTestBase {
 
     @BeforeEach
     void setUp() {
-        subject = new ReadableFileStoreImpl(readableStates);
+        subject = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
     }
 
     @Test
@@ -56,25 +56,25 @@ class ReadableFileStoreImplTest extends FileTestBase {
         readableFileState.reset();
         final var state = MapReadableKVState.<Long, File>builder(FILES).build();
         given(readableStates.<Long, File>get(FILES)).willReturn(state);
-        subject = new ReadableFileStoreImpl(readableStates);
+        subject = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
 
         assertThat(subject.getFileMetadata(WELL_KNOWN_FILE_ID)).isNull();
     }
 
     @Test
     void constructorCreatesFileState() {
-        final var store = new ReadableFileStoreImpl(readableStates);
+        final var store = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         assertNotNull(store);
     }
 
     @Test
     void nullArgsFail() {
-        assertThrows(NullPointerException.class, () -> new ReadableFileStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new ReadableFileStoreImpl(null, readableEntityCounters));
     }
 
     @Test
     void returnSizeOfState() {
-        final var store = new ReadableFileStoreImpl(readableStates);
+        final var store = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         assertEquals(readableStates.get(BLOBS_KEY).size(), store.sizeOfState());
     }
 }

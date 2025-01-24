@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -60,6 +61,8 @@ import java.util.Map;
  */
 public final class TestStoreFactory {
 
+    private static final WritableEntityCounters entityCounters = mock(WritableEntityCounters.class);
+
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     private TestStoreFactory() {
@@ -73,7 +76,7 @@ public final class TestStoreFactory {
      */
     public static ReadableTokenStore newReadableStoreWithTokens(Token... tokens) {
         final var wrappedState = newTokenStateFromTokens(tokens);
-        return new ReadableTokenStoreImpl(new MapReadableStates(Map.of(TOKENS_KEY, wrappedState)));
+        return new ReadableTokenStoreImpl(new MapReadableStates(Map.of(TOKENS_KEY, wrappedState)), entityCounters);
     }
 
     /**
@@ -86,7 +89,8 @@ public final class TestStoreFactory {
         return new WritableTokenStore(
                 new MapWritableStates(Map.of(TOKENS_KEY, wrappedState)),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                entityCounters);
     }
 
     /**
@@ -95,7 +99,7 @@ public final class TestStoreFactory {
      * @return the new store
      */
     public static ReadableAccountStore newReadableStoreWithAccounts(Account... accounts) {
-        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)));
+        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)), entityCounters);
     }
 
     private static Map<String, MapWritableKVState<?, ?>> writableAccountStates(final Account... accounts) {
@@ -119,7 +123,10 @@ public final class TestStoreFactory {
      */
     public static WritableAccountStore newWritableStoreWithAccounts(Account... accounts) {
         return new WritableAccountStore(
-                new MapWritableStates(writableAccountStates(accounts)), CONFIGURATION, mock(StoreMetricsService.class));
+                new MapWritableStates(writableAccountStates(accounts)),
+                CONFIGURATION,
+                mock(StoreMetricsService.class),
+                entityCounters);
     }
 
     /**
@@ -130,7 +137,7 @@ public final class TestStoreFactory {
     public static ReadableTokenRelationStore newReadableStoreWithTokenRels(final TokenRelation... tokenRels) {
         final var wrappedState = newTokenRelStateFromTokenRels(tokenRels);
         return new ReadableTokenRelationStoreImpl(
-                new MapReadableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappedState)));
+                new MapReadableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappedState)), entityCounters);
     }
 
     private static MapWritableKVState<EntityIDPair, TokenRelation> newTokenRelStateFromTokenRels(
@@ -158,7 +165,8 @@ public final class TestStoreFactory {
         return new WritableTokenRelationStore(
                 new MapWritableStates(Map.of(V0490TokenSchema.TOKEN_RELS_KEY, wrappingState)),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                entityCounters);
     }
 
     /**
@@ -168,7 +176,8 @@ public final class TestStoreFactory {
      */
     public static ReadableNftStore newReadableStoreWithNfts(Nft... nfts) {
         final var wrappingState = newNftStateFromNfts(nfts);
-        return new ReadableNftStoreImpl(new MapReadableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)));
+        return new ReadableNftStoreImpl(
+                new MapReadableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)), entityCounters);
     }
 
     /**
@@ -181,7 +190,8 @@ public final class TestStoreFactory {
         return new WritableNftStore(
                 new MapWritableStates(Map.of(V0490TokenSchema.NFTS_KEY, wrappingState)),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                entityCounters);
     }
 
     private static MapWritableKVState<TokenID, Token> newTokenStateFromTokens(Token... tokens) {
@@ -206,7 +216,8 @@ public final class TestStoreFactory {
         return new WritableAirdropStore(
                 new MapWritableStates(Map.of(AIRDROPS, newAirdropStateFromAirdrops(airdrops))),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                entityCounters);
     }
 
     private static MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> newAirdropStateFromAirdrops(

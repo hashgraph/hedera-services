@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(fungibleTokenId, tokenWithoutFeeScheduleKey)
                 .build();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
+        writableTokenStore =
+                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))
@@ -208,7 +209,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     void rejectsInvalidTokenId() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
+        writableTokenStore =
+                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,10 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -48,6 +50,7 @@ import java.util.Set;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
@@ -58,8 +61,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public WritableAccountStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
@@ -127,6 +132,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         // FUTURE: It might be worth adding a log statement here if we see an empty alias, but maybe not.
         if (alias.length() > 0) {
             aliases().remove(new ProtoBytes(alias));
+            entityCounters.decrementEntityTypeCounter(EntityType.ALIAS);
         }
     }
 
@@ -174,15 +180,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Removes the {@link Account} with the given {@link AccountID} from the state.
-     * This will add value of the accountId to num in the modifications in state.
-     * @param accountID - the account id of the account to be removed.
-     */
-    public void remove(@NonNull final AccountID accountID) {
-        accountState().remove(accountID);
-    }
-
-    /**
      * Returns the number of accounts in the state. It also includes modifications in the {@link
      * WritableKVState}.
      *
@@ -190,6 +187,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public long sizeOfAccountState() {
         return accountState().size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     /**
@@ -200,6 +198,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public long sizeOfAliasesState() {
         return aliases().size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     /**

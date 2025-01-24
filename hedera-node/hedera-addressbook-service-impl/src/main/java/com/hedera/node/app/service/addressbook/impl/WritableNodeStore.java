@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.NodesConfig;
@@ -37,6 +38,7 @@ import java.util.Set;
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableNodeStore extends ReadableNodeStoreImpl {
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableNodeStore} instance.
      *
@@ -47,12 +49,14 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     public WritableNodeStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
 
         final long maxCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.NODE, maxCapacity);
         nodesState().setMetrics(storeMetrics);
+        this.entityCounters = entityCounters;
     }
 
     @Override
@@ -88,6 +92,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     @Override
     public long sizeOfState() {
         return nodesState().size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     /**

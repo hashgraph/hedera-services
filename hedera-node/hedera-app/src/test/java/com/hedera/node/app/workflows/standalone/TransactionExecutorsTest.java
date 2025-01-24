@@ -51,6 +51,7 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -395,7 +396,8 @@ public class TransactionExecutorsTest {
                 startupNetworks);
         final var writableStates = state.getWritableStates(FileService.NAME);
         final var readableStates = state.getReadableStates(AddressBookService.NAME);
-        final var nodeStore = new ReadableNodeStoreImpl(readableStates);
+        final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+        final var nodeStore = new ReadableNodeStoreImpl(readableStates, entityIdStore);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
         genesisContentProviders(nodeStore, config).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, config);
