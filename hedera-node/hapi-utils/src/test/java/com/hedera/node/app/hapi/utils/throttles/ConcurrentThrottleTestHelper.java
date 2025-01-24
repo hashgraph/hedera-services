@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.hapi.utils.throttles;
 
 import java.time.Instant;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -91,6 +92,7 @@ public class ConcurrentThrottleTestHelper {
                             }
                         }
                     }
+                    TimeUnit.MILLISECONDS.sleep(new Random().nextInt(1000));
                 } catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
