@@ -19,6 +19,7 @@ package com.swirlds.platform.eventhandling;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -95,6 +96,15 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
         final List<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
                 Collections.synchronizedList(new ArrayList<>());
         final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
+
+        for (EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+            if (eventTransaction.hasStateSignatureTransaction()) {
+                scopedSystemTransactions.add(new ScopedSystemTransaction<>(
+                        event.getCreatorId(),
+                        event.getSoftwareVersion(),
+                        eventTransaction.stateSignatureTransaction()));
+            }
+        }
 
         ReservedSignedState latestImmutableState = null;
         try {
