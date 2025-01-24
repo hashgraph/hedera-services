@@ -1902,6 +1902,14 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * Validates that fee charged for a transaction is within the allowedPercentDiff of expected fee (taken
+     * from pricing calculator) without the charge for gas.
+     * @param txn txn to be validated
+     * @param expectedUsd expected fee in usd
+     * @param allowedPercentDiff allowed percentage difference
+     * @return
+     */
     public static CustomSpecAssert validateChargedUsdWithoutGas(
             String txn, double expectedUsd, double allowedPercentDiff) {
         return assertionsHold((spec, assertLog) -> {
@@ -1917,6 +1925,13 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * Validates that the gas charge for a transaction is within the allowedPercentDiff of expected gas in USD.
+     * @param txn txn to be validated
+     * @param expectedUsdForGas expected gas charge in usd
+     * @param allowedPercentDiff allowed percentage difference
+     * @return
+     */
     public static CustomSpecAssert validateChargedUsdForGasOnly(
             String txn, double expectedUsdForGas, double allowedPercentDiff) {
         return assertionsHold((spec, assertLog) -> {
@@ -2480,6 +2495,13 @@ public class UtilVerbs {
                 / 100;
     }
 
+    /**
+     * Returns the charged gas for a transaction in USD.
+     * The multiplier 71 is used to convert gas to tinybars.
+     * @param spec the spec
+     * @param txn the transaction
+     * @return
+     */
     private static double getChargedGas(@NonNull final HapiSpec spec, @NonNull final String txn) {
         requireNonNull(spec);
         requireNonNull(txn);
