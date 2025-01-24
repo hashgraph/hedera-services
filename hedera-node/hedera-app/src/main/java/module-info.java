@@ -18,6 +18,8 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    requires transitive com.hedera.cryptography.bls;
+    requires transitive com.hedera.cryptography.pairings.api;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
@@ -71,7 +73,7 @@ module com.hedera.node.app {
     requires org.apache.commons.lang3;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static java.compiler;
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;
@@ -117,6 +119,8 @@ module com.hedera.node.app {
     exports com.hedera.node.app.blocks.impl;
     exports com.hedera.node.app.workflows.handle.metric;
     exports com.hedera.node.app.roster;
+    exports com.hedera.node.app.hints.handlers;
+    exports com.hedera.node.app.history.handlers;
     exports com.hedera.node.app.tss;
     exports com.hedera.node.app.statedumpers;
     exports com.hedera.node.app.workflows.handle.stack;

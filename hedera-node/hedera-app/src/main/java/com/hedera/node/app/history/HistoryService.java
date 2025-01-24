@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.history;
 
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.config.data.TssConfig;
@@ -51,6 +52,11 @@ public interface HistoryService extends Service {
     default int migrationOrder() {
         return MIGRATION_ORDER;
     }
+
+    /**
+     * Returns the handlers for the {@link HistoryService}.
+     */
+    HistoryHandlers handlers();
 
     /**
      * Whether this service is ready to provide metadata-enriched proofs.

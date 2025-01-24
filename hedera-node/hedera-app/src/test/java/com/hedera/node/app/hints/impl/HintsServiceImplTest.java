@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
@@ -26,7 +25,6 @@ import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
@@ -65,23 +63,12 @@ class HintsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library);
+        subject = new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, DEFAULT_CONFIG);
     }
 
     @Test
     void metadataAsExpected() {
         assertEquals(HintsService.NAME, subject.getServiceName());
         assertEquals(HintsService.MIGRATION_ORDER, subject.migrationOrder());
-    }
-
-    @Test
-    void nothingSupportedExceptRegisteringSchemas() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));
-        assertThrows(UnsupportedOperationException.class, subject::isReady);
-        assertThrows(UnsupportedOperationException.class, subject::activeVerificationKeyOrThrow);
-        assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));
-        assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
     }
 }

@@ -122,12 +122,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * Non-final because a "saved state" may be provided via {@link EmbeddedHedera#restart(FakeState)}.
      */
     protected FakeState state;
-    /**
-     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
-     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
-     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
-     */
-    protected LapsingBlockHashSigner blockHashSigner;
+
     /**
      * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
      * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
@@ -141,6 +136,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      * instance's {@link com.hedera.node.app.spi.AppContext}).
      */
     protected FakeHistoryService historyService;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
+     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
+     */
+    protected LapsingBlockHashSigner blockHashSigner;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -172,10 +173,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                (hintsService, historyService, configProvider) ->
-                        this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
-                appContext -> this.hintsService = new FakeHintsService(appContext),
-                appContext -> this.historyService = new FakeHistoryService(),
+                (appContext, bootstrapConfig) -> this.hintsService = new FakeHintsService(appContext, bootstrapConfig),
+                (appContext, bootstrapConfig) -> this.historyService = new FakeHistoryService(),
+                (hints, history, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider),
                 metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();

@@ -35,11 +35,11 @@ import java.util.Set;
 public interface ReadableHintsStore {
     /**
      * The full record of a hinTS key publication, including the key, the time it was adopted, the submitting node id,
-     * and (importantly) the party id for that node id in this construction.
+     * and the party id the node claimed to have for the construction. (For validating its submission.)
      *
-     * @param nodeId the node ID submitting the key
+     * @param nodeId the id of the node submitting the key
      * @param hintsKey the hinTS key itself
-     * @param partyId the party ID for the node in this construction
+     * @param partyId the party id the node claimed to have for the construction
      * @param adoptionTime the time at which the key was adopted
      */
     record HintsKeyPublication(long nodeId, @NonNull Bytes hintsKey, int partyId, @NonNull Instant adoptionTime) {
@@ -50,26 +50,44 @@ public interface ReadableHintsStore {
     }
 
     /**
-     * Returns the id of the active construction.
+     * Returns the active construction.
      */
+    @NonNull
     HintsConstruction getActiveConstruction();
 
     /**
-     * Returns the verification key for the given roster hash, if it exists.
+     * Returns the next construction.
+     */
+    @NonNull
+    HintsConstruction getNextConstruction();
+
+    /**
+     * Returns whether the give roster hash is ready to be adopted.
+     * @param rosterHash the roster hash
+     * @return whether the give roster hash is ready to be adopted
+     */
+    default boolean isReadyToAdopt(@NonNull final Bytes rosterHash) {
+        final var construction = getNextConstruction();
+        return construction.hasHintsScheme() && construction.targetRosterHash().equals(rosterHash);
+    }
+
+    /**
+     * Returns the verification key for the current roster, if known.
      *
-     * @return the verification key, or null if it does not exist
+     * @return the verification key, or null if not yet known
      */
     @Nullable
     Bytes getActiveVerificationKey();
 
     /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
+     * @param activeRosters the active rosters
      */
     @Nullable
     HintsConstruction getConstructionFor(@NonNull ActiveRosters activeRosters);
 
     /**
-     * Returns the preprocessed keys and votes for the given construction id, if they exist.
+     * Returns all known preprocessing output votes from the given nodes for the given construction id.
      * @param constructionId the construction id
      * @param nodeIds the node ids
      * @return the preprocessed keys and votes, or null

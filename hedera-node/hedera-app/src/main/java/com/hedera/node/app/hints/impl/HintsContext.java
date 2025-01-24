@@ -102,7 +102,7 @@ public class HintsContext {
     }
 
     /**
-     * Creates a new signing process for the given block hash.
+     * Creates a new asynchronous signing process for the given block hash.
      * @param blockHash the block hash
      * @return the signing process
      */
@@ -193,9 +193,6 @@ public class HintsContext {
                 if (publicKey != null && library.verifyBls(signature, message, publicKey)) {
                     signatures.put(partyId, signature);
                     final var weight = codec.extractWeight(aggregationKey, partyId);
-                    System.out.println("Weight for node" + nodeId + ": " + weight);
-                    System.out.println("Weight of signatures: " + weightOfSignatures);
-                    System.out.println("Threshold weight: " + thresholdWeight);
                     if (weightOfSignatures.addAndGet(weight) >= thresholdWeight) {
                         future.complete(library.aggregateSignatures(aggregationKey, verificationKey, signatures));
                     }

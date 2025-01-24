@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,10 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
+import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
@@ -262,6 +266,15 @@ class HandleWorkflowModuleTest {
     @Mock
     private UtilPrngHandler utilPrngHandler;
 
+    @Mock
+    private HintsKeyPublicationHandler keyPublicationHandler;
+
+    @Mock
+    private HintsAggregationVoteHandler aggregationVoteHandler;
+
+    @Mock
+    private HintsPartialSignatureHandler partialSignatureHandler;
+
     @TempDir
     java.nio.file.Path tempDir;
 
@@ -336,7 +349,8 @@ class HandleWorkflowModuleTest {
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers,
-                addressBookHandlers);
+                addressBookHandlers,
+                new HintsHandlers(keyPublicationHandler, aggregationVoteHandler, partialSignatureHandler));
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
 }

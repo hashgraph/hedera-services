@@ -18,6 +18,7 @@ package com.hedera.node.app.history.impl;
 
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.node.app.history.HistoryLibrary;
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.spi.AppContext;
 import com.swirlds.metrics.api.Metrics;
 import dagger.BindsInstance;
@@ -39,4 +40,8 @@ public interface HistoryServiceComponent {
                 @BindsInstance Metrics metrics,
                 @BindsInstance Consumer<HistoryProof> proofConsumer);
     }
+
+    HistoryHandlers handlers();
+
+    ProofControllers controllers();
 }

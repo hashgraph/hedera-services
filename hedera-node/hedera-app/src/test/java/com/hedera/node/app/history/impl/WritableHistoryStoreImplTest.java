@@ -47,6 +47,7 @@ import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.ReadableHistoryStore;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -54,8 +55,10 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -95,6 +98,9 @@ class WritableHistoryStoreImplTest {
             .history(History.DEFAULT)
             .signature(Bytes.wrap("X"))
             .build();
+    public static final Configuration WITH_ENABLED_HISTORY = HederaTestConfigBuilder.create()
+            .withValue("tss.historyEnabled", true)
+            .getOrCreateConfig();
 
     @Mock
     private AppContext appContext;
@@ -248,9 +254,11 @@ class WritableHistoryStoreImplTest {
 
     @Test
     void canSetAssemblyStartTimeIfConstructionIdExists() {
+        final var nextConstruction =
+                HistoryProofConstruction.newBuilder().constructionId(456L).build();
         setConstructions(
-                HistoryProofConstruction.newBuilder().constructionId(123L).build(),
-                HistoryProofConstruction.newBuilder().constructionId(456L).build());
+                HistoryProofConstruction.newBuilder().constructionId(123L).build(), nextConstruction);
+        assertSame(nextConstruction, subject.getNextConstruction());
 
         assertThrows(IllegalArgumentException.class, () -> subject.setAssemblyTime(0L, CONSENSUS_NOW));
         subject.setAssemblyTime(123L, CONSENSUS_NOW);
@@ -324,7 +332,9 @@ class WritableHistoryStoreImplTest {
             states.<ConstructionNodeId, HistoryProofVote>get(PROOF_VOTES_KEY)
                     .put(new ConstructionNodeId(123L, 0L), DEFAULT_VOTE);
         });
-        subject.addSignature(0L, 123L, DEFAULT_SIGNATURE, CONSENSUS_NOW);
+        final var publication =
+                new ReadableHistoryStore.HistorySignaturePublication(0L, DEFAULT_SIGNATURE, CONSENSUS_NOW);
+        subject.addSignature(123L, publication);
         final var votesBefore = subject.getVotes(123L, Set.of(0L, 1L));
         assertEquals(1, votesBefore.size());
         assertEquals(DEFAULT_VOTE, votesBefore.get(0L));
@@ -395,7 +405,13 @@ class WritableHistoryStoreImplTest {
         final var servicesRegistry = new FakeServicesRegistry();
         Set.of(
                         new EntityIdService(),
-                        new HistoryServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec))
+                        new HistoryServiceImpl(
+                                NO_OP_METRICS,
+                                ForkJoinPool.commonPool(),
+                                appContext,
+                                library,
+                                codec,
+                                WITH_ENABLED_HISTORY))
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();

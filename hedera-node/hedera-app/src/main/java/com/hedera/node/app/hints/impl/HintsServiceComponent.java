@@ -17,6 +17,7 @@
 package com.hedera.node.app.hints.impl;
 
 import com.hedera.node.app.hints.HintsLibrary;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Metrics;
@@ -38,7 +39,13 @@ public interface HintsServiceComponent {
                 @BindsInstance Metrics metrics);
     }
 
+    HintsHandlers handlers();
+
+    HintsSubmissions submissions();
+
     HintsContext signingContext();
+
+    HintsControllers controllers();
 
     ConcurrentMap<Bytes, HintsContext.Signing> signings();
 }

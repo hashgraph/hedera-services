@@ -18,10 +18,16 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hints.HintsKeyAccessor;
+import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
+import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
+import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
+import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,5 +54,18 @@ public interface HintsModule {
     @Singleton
     static ConcurrentMap<Bytes, HintsContext.Signing> providePendingSignatures() {
         return new ConcurrentHashMap<>();
+    }
+
+    @Binds
+    @Singleton
+    HintsKeyAccessor bindHintsKeyAccessor(@NonNull HintsKeyAccessorImpl hintsKeyAccessorImpl);
+
+    @Provides
+    @Singleton
+    static HintsHandlers provideHintsHandlers(
+            @NonNull final HintsKeyPublicationHandler keyPublicationHandler,
+            @NonNull final HintsAggregationVoteHandler aggregationVoteHandler,
+            @NonNull final HintsPartialSignatureHandler partialSignatureHandler) {
+        return new HintsHandlers(keyPublicationHandler, aggregationVoteHandler, partialSignatureHandler);
     }
 }
