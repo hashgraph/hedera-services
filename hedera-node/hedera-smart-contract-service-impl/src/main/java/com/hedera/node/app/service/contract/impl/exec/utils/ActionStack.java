@@ -39,6 +39,7 @@ import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.hapi.streams.ContractActions;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -154,8 +155,10 @@ public class ActionStack {
             @NonNull final MessageFrame frame,
             @NonNull final ContractActionType type,
             @NonNull final Validation validation) {
+        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
+        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
         internalFinalize(validation, frame, action -> action.copyBuilder()
-                .recipientContract(asNumberedContractId(frame.getContractAddress()))
+                .recipientContract(asNumberedContractId(shard, realm, frame.getContractAddress()))
                 .callType(type)
                 .build());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,8 +97,8 @@ class ConversionUtilsTest {
 
     @Test
     void numberedIdsRequireLongZeroAddress() {
-        assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(EIP_1014_ADDRESS));
-        assertThrows(IllegalArgumentException.class, () -> asNumberedAccountId(EIP_1014_ADDRESS));
+        assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(0, 0, EIP_1014_ADDRESS));
+        assertThrows(IllegalArgumentException.class, () -> asNumberedAccountId(0, 0, EIP_1014_ADDRESS));
     }
 
     @Test

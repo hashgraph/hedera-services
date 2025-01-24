@@ -495,7 +495,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull final Address address) {
-        if (isLongZero(address)) {
+        final var shard = nativeOperations.getShardNum();
+        final var realm = nativeOperations.getRealmNum();
+        if (isLongZero(shard, realm, address)) {
             return Optional.of(INVALID_ALIAS_KEY);
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);

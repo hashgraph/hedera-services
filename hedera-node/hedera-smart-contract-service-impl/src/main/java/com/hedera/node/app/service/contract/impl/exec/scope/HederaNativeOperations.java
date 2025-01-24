@@ -286,4 +286,16 @@ public interface HederaNativeOperations {
      * @return the transaction ID
      */
     TransactionID getTransactionID();
+
+    /**
+     * Returns the number of the shard from HederaConfig.
+     * @return the shard number
+     */
+    long getShardNum();
+
+    /**
+     * Returns the number of the realm from HederaConfig.
+     * @return the realm number
+     */
+    long getRealmNum();
 }

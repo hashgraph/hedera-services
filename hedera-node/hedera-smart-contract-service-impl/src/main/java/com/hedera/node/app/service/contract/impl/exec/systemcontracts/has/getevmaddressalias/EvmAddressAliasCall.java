@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,10 @@ public class EvmAddressAliasCall extends AbstractCall {
     public @NonNull PricedResult execute() {
         final var explicitAddress = explicitFromHeadlong(address);
 
+        final var shard = enhancement.nativeOperations().getShardNum();
+        final var realm = enhancement.nativeOperations().getRealmNum();
         // If the address is not a long zero then return fail
-        if (!isLongZeroAddress(explicitAddress)) {
+        if (!isLongZeroAddress(shard, realm, explicitAddress)) {
             return gasOnly(fullResultsFor(INVALID_ACCOUNT_ID, ZERO_ADDRESS), INVALID_ACCOUNT_ID, true);
         }
 

@@ -2399,8 +2399,10 @@ public class UtilVerbs {
     }
 
     private static Object swapLongZeroToEVMAddresses(HapiSpec spec, Object arg, Address address) {
+        final var shard = spec.setup().defaultShard();
+        final var realm = spec.setup().defaultRealm();
         var explicitFromHeadlong = explicitFromHeadlong(address);
-        if (isLongZeroAddress(explicitFromHeadlong)) {
+        if (isLongZeroAddress(shard.getShardNum(), realm.getRealmNum(), explicitFromHeadlong)) {
             var contractNum = numberOfLongZero(explicitFromHeadlong(address));
             if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
                 return HapiParserUtil.asHeadlongAddress(spec.registry().getEVMAddress(String.valueOf(contractNum)));

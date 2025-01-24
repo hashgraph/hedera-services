@@ -87,7 +87,8 @@ public class SyntheticIds {
         final var accountNum = accountNumberForEvmReference(address, nativeOperations);
         if (accountNum == MISSING_ENTITY_NUMBER) {
             final var explicit = explicitFromHeadlong(address);
-            if (isLongZeroAddress(explicit)) {
+
+            if (isLongZeroAddress(nativeOperations.getShardNum(), nativeOperations.getRealmNum(), explicit)) {
                 // References to missing long-zero addresses are synthesized as aliases for
                 // credits and numeric ids for debits
                 return isCredit ? aliasIdWith(explicit) : numericIdWith(numberOfLongZero(explicit));

@@ -164,7 +164,9 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
      */
     public @Nullable Schedule linkedSchedule(@NonNull final byte[] evmAddress) {
         requireNonNull(evmAddress);
-        if (isLongZeroAddress(evmAddress)) {
+        final var shard = enhancement.nativeOperations().getShardNum();
+        final var realm = enhancement.nativeOperations().getRealmNum();
+        if (isLongZeroAddress(shard, realm, evmAddress)) {
             return enhancement.nativeOperations().getSchedule(numberOfLongZero(evmAddress));
         }
         return null;

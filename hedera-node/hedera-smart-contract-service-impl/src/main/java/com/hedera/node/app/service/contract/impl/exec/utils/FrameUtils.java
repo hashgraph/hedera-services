@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
@@ -318,9 +319,12 @@ public class FrameUtils {
         requireNonNull(featureFlags);
 
         Long maybeGrandfatheredNumber = null;
-        if (isLongZero(address)) {
+        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
+        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
+        if (isLongZero(shard, realm, address)) {
             try {
-                maybeGrandfatheredNumber = asNumberedContractId(address).contractNum();
+                maybeGrandfatheredNumber =
+                        asNumberedContractId(shard, realm, address).contractNum();
             } catch (final ArithmeticException ignore) {
                 // Not a valid numbered contract id
             }
@@ -367,7 +371,9 @@ public class FrameUtils {
     }
 
     private static boolean isQualifiedDelegate(@NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        return isLongZero(recipient)
+        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
+        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
+        return isLongZero(shard, realm, recipient)
                 && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
 }

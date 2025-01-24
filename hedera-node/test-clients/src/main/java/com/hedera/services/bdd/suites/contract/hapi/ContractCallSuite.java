@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -301,7 +301,7 @@ public class ContractCallSuite {
     final Stream<DynamicTest> lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
-        final var account = "0.0.1";
+        final var account = "1.2.1";
         return hapiTest(
                 uploadInitCode(TEST_CONTRACT),
                 contractCreate(

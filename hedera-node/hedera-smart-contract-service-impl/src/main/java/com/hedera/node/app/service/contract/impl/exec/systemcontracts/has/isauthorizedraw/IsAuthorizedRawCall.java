@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -271,7 +271,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // If the signature is for an ecdsa key, the HIP states that the account must have an evm address rather than a
         // long zero address
         if (signatureType == SignatureType.EC) {
-            return !isLongZeroAddress(explicitFromHeadlong(address));
+            final var shard = enhancement.nativeOperations().getShardNum();
+            final var realm = enhancement.nativeOperations().getRealmNum();
+            return !isLongZeroAddress(shard, realm, explicitFromHeadlong(address));
         }
 
         return true;
