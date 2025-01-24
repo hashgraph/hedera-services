@@ -372,8 +372,9 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

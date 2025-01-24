@@ -842,8 +842,9 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull AddressBookTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull AddressBookTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override
