@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.blocks;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * Interface for components that need to be notified when block files are closed.
  */
-public enum BlockStreamWriterMode {
+public interface BlockFileClosedListener {
     /**
-     * Write block streams to a gRPC stream.
+     * Called when a block file is closed.
+     *
+     * @param blockPath The path to the closed block file
      */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+    void onBlockClosed(@NonNull Path blockPath);
 }

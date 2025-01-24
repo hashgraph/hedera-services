@@ -63,6 +63,22 @@ public class FileBlockItemWriterTest {
     private FileSystem fileSystem;
 
     @Test
+    public void testFileBlockItemWriterConstructor() {
+        when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
+        when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
+        when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
+        when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
+        when(fileSystem.getPath(anyString())).thenReturn(tempDir);
+
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
+
+        // Assertion to check if the directory is created
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
+        assertThat(Files.exists(expectedDirectory)).isTrue();
+    }
+
+    @Test
     public void testOpenBlock() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
@@ -70,12 +86,15 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
         fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
+
+        fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the block file is created
         Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
@@ -90,12 +109,15 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
         fileBlockItemWriter.openBlock(1);
 
         // Assertion to check if the directory is created
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
         assertThat(Files.exists(expectedDirectory)).isTrue();
+
+        fileBlockItemWriter.openBlock(1);
 
         assertThatThrownBy(() -> fileBlockItemWriter.openBlock(1), "Cannot initialize a FileBlockItemWriter twice")
                 .isInstanceOf(IllegalStateException.class);
@@ -109,7 +131,12 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
+
+        // Assertion to check if the directory is created
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
+        assertThat(Files.exists(expectedDirectory)).isTrue();
 
         assertThatThrownBy(() -> fileBlockItemWriter.openBlock(-1), "Block number must be non-negative")
                 .isInstanceOf(IllegalArgumentException.class);
@@ -123,7 +150,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);
@@ -157,7 +185,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
 
         // Create a Bytes object and write it
         final var bytes = new byte[] {1, 2, 3, 4, 5};
@@ -174,7 +203,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);
@@ -196,7 +226,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
 
         assertThatThrownBy(fileBlockItemWriter::closeBlock, "Cannot close a FileBlockItemWriter that is not open")
                 .isInstanceOf(IllegalStateException.class);
@@ -210,7 +241,8 @@ public class FileBlockItemWriterTest {
         when(blockStreamConfig.blockFileDir()).thenReturn("N/A");
         when(fileSystem.getPath(anyString())).thenReturn(tempDir);
 
-        FileBlockItemWriter fileBlockItemWriter = new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+        FileBlockItemWriter fileBlockItemWriter =
+                new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
 
         // Open a block
         fileBlockItemWriter.openBlock(1);

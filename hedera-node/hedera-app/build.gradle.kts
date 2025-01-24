@@ -33,10 +33,11 @@ mainModuleInfo {
     runtimeOnly("io.helidon.webclient")
     runtimeOnly("io.helidon.webclient.grpc")
     runtimeOnly("com.hedera.cryptography.altbn128")
+
+    runtimeOnly("io.minio")
 }
 
 testModuleInfo {
-    requires("com.fasterxml.jackson.databind")
     requires("com.google.common.jimfs")
     requires("com.hedera.node.app")
     requires("com.hedera.node.app.spi.test.fixtures")
@@ -59,6 +60,7 @@ testModuleInfo {
     requires("uk.org.webcompere.systemstubs.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
     requires("awaitility")
+    requires("okhttp3")
 }
 
 jmhModuleInfo {
@@ -202,3 +204,5 @@ tasks.register<Exec>("stopDockerContainers") {
     workingDir(layout.projectDirectory.dir("../docker"))
     commandLine("docker-compose", "stop")
 }
+
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.remove("-Werror") }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
+import com.hedera.node.app.blocks.impl.BucketUploadManager;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
@@ -41,13 +42,14 @@ public interface BlockStreamModule {
     static Supplier<BlockItemWriter> bindBlockItemWriterSupplier(
             @NonNull final ConfigProvider configProvider,
             @NonNull final NodeInfo selfNodeInfo,
-            @NonNull final FileSystem fileSystem) {
+            @NonNull final FileSystem fileSystem,
+            @NonNull final BucketUploadManager bucketUploadManager) {
         final var config = configProvider.getConfiguration();
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
-            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
+            case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, null);
             case GRPC -> () -> new GrpcBlockItemWriter(blockStreamConfig);
+            case BUCKET -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem, bucketUploadManager);
         };
     }
-    ;
 }

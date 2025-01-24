@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.uploader;
+
+import com.hedera.node.app.uploader.configs.CompleteBucketConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * Interface for components that need to be notified when bucket configurations are loaded or updated.
  */
-public enum BlockStreamWriterMode {
+public interface BucketConfigurationListener {
     /**
-     * Write block streams to a gRPC stream.
+     * Called when bucket configurations are loaded or updated.
+     *
+     * @param configs The complete list of bucket configurations
      */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+    void onBucketConfigurationsUpdated(@NonNull List<CompleteBucketConfig> configs);
 }

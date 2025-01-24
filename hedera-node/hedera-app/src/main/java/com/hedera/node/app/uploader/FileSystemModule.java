@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.blocks.cloud.uploader;
+
+import dagger.Module;
+import dagger.Provides;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import javax.inject.Singleton;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * Module for providing the FileSystem instance.
  */
-public enum BlockStreamWriterMode {
+@Module
+public class FileSystemModule {
+
     /**
-     * Write block streams to a gRPC stream.
+     * Provides the default FileSystem instance.
+     *
+     * @return The default FileSystem instance
      */
-    GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE,
-    /**
-     * Write block streams to files and upload them to cloud buckets.
-     */
-    BUCKET
+    @Provides
+    @Singleton
+    static FileSystem provideFileSystem() {
+        return FileSystems.getDefault();
+    }
 }
