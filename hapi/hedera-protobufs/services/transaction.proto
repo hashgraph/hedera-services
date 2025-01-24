@@ -618,5 +618,5 @@ message TransactionBody {
      * If left empty, the users are accepting to pay any custom fee.<br/>
      * If used with a transaction type that does not support custom fee limits, the transaction will fail.
      */
-    repeated CustomFeeLimit maxCustomFees = 1001;
+    repeated CustomFeeLimit max_custom_fees = 1001;
 }
