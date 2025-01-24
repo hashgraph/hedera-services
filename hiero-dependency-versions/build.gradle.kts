@@ -104,7 +104,7 @@ dependencies.constraints {
     api("org.apache.commons:commons-collections4:4.4") {
         because("org.apache.commons.collections4")
     }
-    api("commons-io:commons-io:2.15.1") { because("org.apache.commons.io") }
+    api("commons-io:commons-io:2.18.0") { because("org.apache.commons.io") }
     api("org.apache.commons:commons-lang3:3.17.0") { because("org.apache.commons.lang3") }
     api("org.apache.commons:commons-compress:1.26.0") { because("org.apache.commons.compress") }
     api("org.apache.logging.log4j:log4j-api:$log4j") { because("org.apache.logging.log4j") }
