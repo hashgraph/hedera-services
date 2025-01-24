@@ -76,6 +76,11 @@ public class WritableFileStore extends ReadableFileStoreImpl {
         filesState.put(requireNonNull(file).fileId(), file);
     }
 
+    public void putNew(@NonNull final File file) {
+        put(file);
+        entityCounters.incrementEntityTypeCount(EntityType.FILE);
+    }
+
     /**
      * Returns the {@link File} with the given number. If no such file exists, returns {@code
      * Optional.empty()}

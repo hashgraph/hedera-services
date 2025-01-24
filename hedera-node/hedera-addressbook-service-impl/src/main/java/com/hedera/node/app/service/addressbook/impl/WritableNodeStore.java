@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.NodesConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -73,6 +74,11 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
     public void put(@NonNull final Node node) {
         requireNonNull(node);
         nodesState().put(EntityNumber.newBuilder().number(node.nodeId()).build(), node);
+    }
+
+    public void putNew(@NonNull final Node node) {
+        put(node);
+        entityCounters.incrementEntityTypeCount(EntityType.NODE);
     }
 
     /**

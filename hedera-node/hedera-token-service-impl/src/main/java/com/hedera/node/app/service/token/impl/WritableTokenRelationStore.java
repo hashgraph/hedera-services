@@ -88,6 +88,11 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
                 Objects.requireNonNull(tokenRelation));
     }
 
+    public void putNew(@NonNull final TokenRelation tokenRelation) {
+        put(tokenRelation);
+        entityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
+    }
+
     /**
      * Removes a {@link TokenRelation} from the state.
      *

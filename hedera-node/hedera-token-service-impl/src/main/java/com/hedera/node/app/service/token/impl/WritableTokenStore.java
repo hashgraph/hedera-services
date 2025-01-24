@@ -24,6 +24,7 @@ import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -78,6 +79,11 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         Objects.requireNonNull(token);
         requireNotDefault(token.tokenId());
         tokenState.put(token.tokenId(), Objects.requireNonNull(token));
+    }
+
+    public void putNew(@NonNull final Token token) {
+        put(token);
+        entityCounters.incrementEntityTypeCount(EntityType.TOKEN);
     }
 
     /**

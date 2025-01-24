@@ -92,6 +92,11 @@ public class ReadableContractStateStore implements ContractStateStore {
         throw new UnsupportedOperationException("Cannot put slots in a read-only store");
     }
 
+    @Override
+    public void putNewSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+        throw new UnsupportedOperationException("Cannot put slots in a read-only store");
+    }
+
     /**
      * Returns an empty set of modified slot keys.
      *

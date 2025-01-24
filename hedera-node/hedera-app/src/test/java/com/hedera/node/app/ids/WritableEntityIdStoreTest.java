@@ -52,37 +52,37 @@ class WritableEntityIdStoreTest {
     @Test
     void peeksAndIncrementsAsExpected() {
         assertEquals(1, subject.peekAtNextNumber());
-        assertEquals(1, subject.incrementAndGet(EntityType.ACCOUNT));
+        subject.incrementEntityTypeCount(EntityType.ACCOUNT);
         assertEquals(2, subject.peekAtNextNumber());
-        assertEquals(2, subject.incrementAndGet(EntityType.ACCOUNT));
+        subject.incrementEntityTypeCount(EntityType.ACCOUNT);
         assertEquals(12, entityCountsState.get().numAccounts());
     }
 
     @Test
     void incrementsAsExpected() {
-        assertEquals(1, subject.incrementAndGet(EntityType.TOKEN));
+        subject.incrementEntityTypeCount(EntityType.TOKEN);
         assertEquals(1, entityCountsState.get().numTokens());
-        assertEquals(2, subject.incrementAndGet(EntityType.TOKEN_ASSOCIATION));
+        subject.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
         assertEquals(1, entityCountsState.get().numTokenRelations());
-        assertEquals(3, subject.incrementAndGet(EntityType.NFT));
+        subject.incrementEntityTypeCount(EntityType.NFT);
         assertEquals(1, entityCountsState.get().numNfts());
-        assertEquals(4, subject.incrementAndGet(EntityType.ALIAS));
+        subject.incrementEntityTypeCount(EntityType.ALIAS);
         assertEquals(1, entityCountsState.get().numAliases());
-        assertEquals(5, subject.incrementAndGet(EntityType.NODE));
+        subject.incrementEntityTypeCount(EntityType.NODE);
         assertEquals(1, entityCountsState.get().numNodes());
-        assertEquals(6, subject.incrementAndGet(EntityType.SCHEDULE));
+        subject.incrementEntityTypeCount(EntityType.SCHEDULE);
         assertEquals(1, entityCountsState.get().numSchedules());
-        assertEquals(7, subject.incrementAndGet(EntityType.CONTRACT_BYTECODE));
+        subject.incrementEntityTypeCount(EntityType.CONTRACT_BYTECODE);
         assertEquals(1, entityCountsState.get().numContractBytecodes());
-        assertEquals(8, subject.incrementAndGet(EntityType.CONTRACT_STORAGE));
+        subject.incrementEntityTypeCount(EntityType.CONTRACT_STORAGE);
         assertEquals(1, entityCountsState.get().numContractStorageSlots());
-        assertEquals(9, subject.incrementAndGet(EntityType.TOPIC));
+        subject.incrementEntityTypeCount(EntityType.TOPIC);
         assertEquals(1, entityCountsState.get().numTopics());
-        assertEquals(10, subject.incrementAndGet(EntityType.FILE));
+        subject.incrementEntityTypeCount(EntityType.FILE);
         assertEquals(1, entityCountsState.get().numFiles());
-        assertEquals(11, subject.incrementAndGet(EntityType.AIRDROP));
+        subject.incrementEntityTypeCount(EntityType.AIRDROP);
         assertEquals(1, entityCountsState.get().numAirdrops());
-        assertEquals(12, subject.incrementAndGet(EntityType.STAKING_INFO));
+        subject.incrementEntityTypeCount(EntityType.STAKING_INFO);
         assertEquals(1, entityCountsState.get().numStakingInfos());
     }
 }

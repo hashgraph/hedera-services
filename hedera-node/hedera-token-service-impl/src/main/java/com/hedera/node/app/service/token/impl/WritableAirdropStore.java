@@ -78,6 +78,11 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
         airdropState.put(airdropId, accountAirdrop);
     }
 
+    public void putNew(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
+        put(airdropId, accountAirdrop);
+        entityCounters.incrementEntityTypeCount(EntityType.AIRDROP);
+    }
+
     /**
      * Removes a {@link PendingAirdropId} from the state.
      *

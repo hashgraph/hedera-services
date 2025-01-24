@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.TopicsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -74,6 +75,17 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
         requireNonNull(topic);
         requireNonNull(topic.topicId());
         topicState().put(topic.topicId(), topic);
+    }
+
+    /**
+     * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
+     * receipt.
+     *
+     * @param topic - the topic to be persisted.
+     */
+    public void putNew(@NonNull final Topic topic) {
+        put(topic);
+        entityCounters.incrementEntityTypeCount(EntityType.TOPIC);
     }
 
     /**

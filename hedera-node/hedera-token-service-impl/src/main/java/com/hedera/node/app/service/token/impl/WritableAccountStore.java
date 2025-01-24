@@ -51,11 +51,12 @@ import java.util.Set;
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
     private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
-     * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
+     * @param states              The state to use.
+     * @param configuration       The configuration used to read the maximum capacity.
      * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableAccountStore(
@@ -94,10 +95,19 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         accountState().put(account.accountIdOrThrow(), account);
     }
 
+    public void putNew(@NonNull final Account account) {
+        put(account);
+        if (account.smartContract()) {
+            entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_BYTECODE);
+        } else {
+            entityCounters.incrementEntityTypeCount(EntityType.ACCOUNT);
+        }
+    }
+
     /**
      * Persists a new alias linked to the account persisted to state.
      *
-     * @param alias - the alias to be added to modifications in state.
+     * @param alias     - the alias to be added to modifications in state.
      * @param accountId - the account number to be added to modifications in state.
      */
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
@@ -120,8 +130,14 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         aliases().put(new ProtoBytes(alias), accountId);
     }
 
+    public void putNewAlias(@NonNull final Bytes alias, final AccountID accountId) {
+        putAlias(alias, accountId);
+        entityCounters.incrementEntityTypeCount(EntityType.ALIAS);
+    }
+
     /**
      * Removes an alias from the cache. This should only ever happen as the result of a delete operation.
+     *
      * @param alias The alias of the account to remove.
      */
     public void removeAlias(@NonNull final Bytes alias) {
@@ -232,6 +248,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
 
     /**
      * Checks if the given accountId is not the default accountId. If it is, throws an {@link IllegalArgumentException}.
+     *
      * @param accountId The accountId to check.
      */
     public static void requireNotDefault(@NonNull final AccountID accountId) {

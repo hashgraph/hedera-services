@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,13 @@ public interface ContractStateStore {
      * @param value the {@link SlotValue} to put
      */
     void putSlot(@NonNull SlotKey key, @NonNull SlotValue value);
+
+    /**
+     * Puts new {@link SlotValue} for the given {@link SlotKey}.
+     * @param key the {@link SlotKey} to put the {@link SlotValue} for
+     * @param value the {@link SlotValue} to put
+     */
+    void putNewSlot(@NonNull SlotKey key, @NonNull SlotValue value);
 
     /**
      * Returns the {@link Set} of {@link SlotKey}s that have been modified.

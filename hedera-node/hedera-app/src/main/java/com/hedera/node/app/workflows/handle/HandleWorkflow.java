@@ -612,11 +612,13 @@ public class HandleWorkflow {
                     // we need to update that stake metadata from any node additions or deletions that
                     // just took effect; it would be nice to unify the FAB and stake metadata in the future
                     final var writableTokenStates = userTxn.stack().getWritableStates(TokenService.NAME);
+                    final var writableEntityIdStates = userTxn.stack().getWritableStates(EntityIdService.NAME);
                     final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
                             userTxn.config(),
-                            new WritableStakingInfoStore(writableTokenStates),
+                            new WritableStakingInfoStore(
+                                    writableTokenStates, new WritableEntityIdStore(writableEntityIdStates)),
                             new WritableNetworkStakingRewardsStore(writableTokenStates));
 
                     // (FUTURE) Verify we can remove this deprecated node metadata sync now that DAB is active;

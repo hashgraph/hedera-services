@@ -60,6 +60,12 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     void put(@NonNull Schedule scheduleToAdd);
 
     /**
+     * Adds a new schedule to the store.
+     * @param scheduleToAdd The schedule to add to the store
+     */
+    void putNew(@NonNull Schedule scheduleToAdd);
+
+    /**
      * Purges all schedule state associated with the given order.
      *
      * @param order The order to purge schedules for.

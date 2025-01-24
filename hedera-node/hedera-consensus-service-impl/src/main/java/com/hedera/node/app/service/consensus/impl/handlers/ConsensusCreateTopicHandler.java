@@ -40,7 +40,6 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -153,7 +152,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Add topic id to topic builder --- */
             builder.topicId(TopicID.newBuilder()
-                    .topicNum(handleContext.entityNumGenerator().newEntityNum(EntityType.TOPIC))
+                    .topicNum(handleContext.entityNumGenerator().newEntityNum())
                     .build());
 
             builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
@@ -161,7 +160,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             /* --- Put the final topic. It will be in underlying state's modifications map.
             It will not be committed to state until commit is called on the state.--- */
             final var topic = builder.build();
-            topicStore.put(topic);
+            topicStore.putNew(topic);
 
             /* --- Build the record with newly created topic --- */
             final var recordBuilder =

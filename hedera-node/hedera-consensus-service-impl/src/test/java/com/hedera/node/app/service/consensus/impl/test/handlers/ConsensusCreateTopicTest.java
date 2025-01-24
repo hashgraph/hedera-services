@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -265,7 +264,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -301,7 +300,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,16 +39,20 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     /** The underlying data storage class that holds the staking data. */
     private final WritableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
 
+    private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableStakingInfoStore} instance.
      *
-     * @param states The state to use
+     * @param states         The state to use
+     * @param entityCounters
      */
-    public WritableStakingInfoStore(@NonNull final WritableStates states) {
+    public WritableStakingInfoStore(@NonNull final WritableStates states, final WritableEntityCounters entityCounters) {
         super(states);
         requireNonNull(states);
 
         this.stakingInfoState = states.get(V0490TokenSchema.STAKING_INFO_KEY);
+        this.entityCounters = requireNonNull(entityCounters);
     }
 
     /**
@@ -70,6 +76,11 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
     public void put(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
         requireNonNull(stakingNodeInfo);
         stakingInfoState.put(EntityNumber.newBuilder().number(nodeId).build(), stakingNodeInfo);
+    }
+
+    public void putNew(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
+        put(nodeId, stakingNodeInfo);
+        entityCounters.incrementEntityTypeCount(EntityType.STAKING_INFO);
     }
 
     /**

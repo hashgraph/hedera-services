@@ -144,6 +144,12 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     }
 
     @Override
+    public void putNew(@NonNull final Schedule schedule) {
+        put(schedule);
+        entityCounters.incrementEntityTypeCount(EntityType.SCHEDULE);
+    }
+
+    @Override
     public boolean purgeByOrder(@NonNull final ScheduledOrder order) {
         requireNonNull(order);
         final var scheduleId = getByOrder(order);

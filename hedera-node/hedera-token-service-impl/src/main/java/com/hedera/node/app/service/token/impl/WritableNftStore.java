@@ -82,6 +82,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
         nftState.put(nft.nftId(), nft);
     }
 
+    public void putNew(@NonNull final Nft nft) {
+        put(nft);
+        entityCounters.incrementEntityTypeCount(EntityType.NFT);
+    }
+
     /**
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}

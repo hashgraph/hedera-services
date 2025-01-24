@@ -86,6 +86,7 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
     @Override
     public void putBytecode(@NonNull final ContractID contractID, @NonNull final Bytecode code) {
         bytecode.put(requireNonNull(contractID), requireNonNull(code));
+        entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_BYTECODE);
     }
 
     /**
@@ -103,6 +104,15 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
     @Override
     public void putSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
         storage.put(requireNonNull(key), requireNonNull(value));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void putNewSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+        putSlot(key, value);
+        entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_STORAGE);
     }
 
     /**

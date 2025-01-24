@@ -66,15 +66,14 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements 
      *
      * @return the next new entity number
      */
-    public long incrementAndGet(final EntityType entityType) {
+    public long incrementAndGet() {
         final var newEntityNum = peekAtNextNumber();
         entityIdState.put(new EntityNumber(newEntityNum));
-        entityCountsState.put(incrementEntityTypeCount(entityType));
         return newEntityNum;
     }
 
     @Override
-    public EntityCounts incrementEntityTypeCount(final EntityType entityType) {
+    public void incrementEntityTypeCount(final EntityType entityType) {
         final var entityCounts = requireNonNull(entityCountsState.get());
         final var newEntityCounts = entityCounts.copyBuilder();
         switch (entityType) {
@@ -93,7 +92,7 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements 
             case NODE -> newEntityCounts.numNodes(entityCounts.numNodes() + 1);
             case STAKING_INFO -> newEntityCounts.numStakingInfos(entityCounts.numStakingInfos() + 1);
         }
-        return newEntityCounts.build();
+        entityCountsState.put(newEntityCounts.build());
     }
 
     @Override

@@ -59,7 +59,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -221,7 +220,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var scheduleId = ScheduleID.newBuilder()
                 .shardNum(schedulerId.shardNum())
                 .realmNum(schedulerId.realmNum())
-                .scheduleNum(context.entityNumGenerator().newEntityNum(EntityType.SCHEDULE))
+                .scheduleNum(context.entityNumGenerator().newEntityNum())
                 .build();
         var schedule = provisionalSchedule
                 .copyBuilder()
@@ -232,7 +231,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
             schedule = markedExecuted(schedule, consensusNow);
         }
-        scheduleStore.put(schedule);
+        scheduleStore.putNew(schedule);
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)
                 .scheduleID(schedule.scheduleId())

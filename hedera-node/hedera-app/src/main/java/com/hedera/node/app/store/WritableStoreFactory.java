@@ -88,7 +88,8 @@ public class WritableStoreFactory {
                 WritableStakingInfoStore.class,
                 new StoreEntry(
                         TokenService.NAME,
-                        (states, config, metrics, entityCounters) -> new WritableStakingInfoStore(states)));
+                        (states, config, metrics, entityCounters) ->
+                                new WritableStakingInfoStore(states, entityCounters)));
         // FreezeService
         newMap.put(
                 WritableFreezeStore.class,

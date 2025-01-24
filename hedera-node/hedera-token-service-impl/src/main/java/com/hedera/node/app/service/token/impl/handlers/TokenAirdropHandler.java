@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -464,7 +464,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                             .previousAirdrop(pendingId)
                             .build();
                     // since we already validated the headAirdropId exists, we can safely update the store
-                    pendingStore.put(currentHeadAirdropId, updatedHeadAirdrop);
+                    pendingStore.putNew(currentHeadAirdropId, updatedHeadAirdrop);
                     // Create new account airdrop with next airdrop ID the previous head airdrop
                     newHeadAirdrop = createAccountPendingAirdrop(pendingValue, currentHeadAirdropId);
                 }
@@ -479,7 +479,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                     .numberPendingAirdrops(numPendingAirdrops + 1)
                     .build();
             accountStore.put(updatedSenderAccount);
-            pendingStore.put(pendingId, newHeadAirdrop);
+            pendingStore.putNew(pendingId, newHeadAirdrop);
         }
     }
 
