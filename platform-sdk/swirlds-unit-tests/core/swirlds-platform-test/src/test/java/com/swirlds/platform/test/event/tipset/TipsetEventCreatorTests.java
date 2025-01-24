@@ -215,7 +215,7 @@ class TipsetEventCreatorTests {
         }
 
         final List<Bytes> convertedTransactions = newEvent.getTransactions().stream()
-                .map(TransactionWrapper::getTransactionBytes)
+                .map(TransactionWrapper::getApplicationTransaction)
                 .toList();
         // We should see the expected transactions
         IntStream.range(0, expectedTransactions.size()).forEach(i -> {

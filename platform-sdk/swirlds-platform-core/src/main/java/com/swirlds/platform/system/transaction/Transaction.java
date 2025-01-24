@@ -29,12 +29,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 public sealed interface Transaction permits ConsensusTransaction {
 
     /**
-     * Returns the transaction
-     * @return the transaction
-     */
-    Bytes getTransactionBytes();
-
-    /**
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
      *

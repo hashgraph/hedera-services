@@ -116,16 +116,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
         return payload;
     }
 
-    @Override
-    public Bytes getTransactionBytes() {
-        return transaction;
-    }
-
     @NonNull
     @Override
     public Bytes getApplicationTransaction() {
         return !isSystem()
-                ? (getTransaction() != null ? getTransaction().transaction().as() : getTransactionBytes())
+                ? (getTransaction() != null ? getTransaction().transaction().as() : transaction)
                 : Bytes.EMPTY;
     }
 
