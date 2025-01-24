@@ -98,7 +98,6 @@ class PlatformTestingToolStateTest {
     private static final String DEFAULT_CONFIG = "configs/FCM1KForTest.json";
     private static final String CONFIG_WITHOUT_APPEND_SIG = "configs/FCM1KForTestWithoutAppendSig.json";
     private static final byte[] EMPTY_ARRAY = new byte[] {};
-    private static PlatformTestingToolStateLifecycles stateLifecycles;
     private static PlatformTestingToolState state;
     private static MockedStatic<ParameterProvider> parameterProvider;
     private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
@@ -121,8 +120,6 @@ class PlatformTestingToolStateTest {
 
         final ExpectedFCMFamily expectedFCMFamily = mock(ExpectedFCMFamily.class);
         when(state.getStateExpectedMap()).thenReturn(expectedFCMFamily);
-
-        stateLifecycles = new PlatformTestingToolStateLifecycles();
     }
 
     @BeforeEach
@@ -172,7 +169,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(testTransactionWrapper.toByteArray()));
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -188,7 +185,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -204,7 +201,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -244,7 +241,7 @@ class PlatformTestingToolStateTest {
                 Instant.now());
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(3);
@@ -263,7 +260,7 @@ class PlatformTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -286,7 +283,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -308,7 +305,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -337,7 +334,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(3);
@@ -362,7 +359,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -419,7 +416,7 @@ class PlatformTestingToolStateTest {
         when(parameterProviderInstance.getParameters()).thenReturn(new String[] {config});
 
         state.initChildren();
-        stateLifecycles.onStateInitialized(state, platform, initTrigger, new BasicSoftwareVersion(1));
+        main.stateLifecycles.onStateInitialized(state, platform, initTrigger, new BasicSoftwareVersion(1));
         main.init(platform, nodeId);
     }
 
