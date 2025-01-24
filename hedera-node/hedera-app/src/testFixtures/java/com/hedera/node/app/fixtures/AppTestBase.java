@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,9 +100,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
-    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
-            .withValue("addressBook.useRosterLifecycle", true)
-            .getOrCreateConfig();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
