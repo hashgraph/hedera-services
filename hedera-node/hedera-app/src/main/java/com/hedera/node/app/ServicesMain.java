@@ -415,7 +415,6 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 DiskStartupNetworks::new,
-                TssBlockHashSigner::new,
                 appContext ->
                         new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary()),
                 appContext -> new HistoryServiceImpl(
@@ -424,6 +423,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         appContext,
                         new HistoryLibraryImpl(),
                         HISTORY_LIBRARY_CODEC),
+                TssBlockHashSigner::new,
                 metrics);
     }
 

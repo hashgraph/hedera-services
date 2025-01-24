@@ -77,7 +77,9 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.impl.ReadableHintsStoreImpl;
 import com.hedera.node.app.history.HistoryService;
+import com.hedera.node.app.history.impl.ReadableHistoryStoreImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
@@ -120,6 +122,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.node.internal.network.Network;
@@ -142,6 +145,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -263,18 +267,6 @@ public final class Hedera
     private final ScheduleServiceImpl scheduleServiceImpl;
 
     /**
-     * The file service singleton, kept as a field here to avoid constructing twice
-     * (once in constructor to register schemas, again inside Dagger component).
-     */
-    private final FileServiceImpl fileServiceImpl;
-
-    /**
-     * The block stream service singleton, kept as a field here to reuse information learned
-     * during the state migration phase in the later initialization phase.
-     */
-    private final BlockStreamService blockStreamService;
-
-    /**
      * The hinTS service singleton, kept as a field here to avoid constructing twice
      * (once in constructor to register schemas, again inside Dagger component).
      */
@@ -285,6 +277,18 @@ public final class Hedera
      * (once in constructor to register schemas, again inside Dagger component).
      */
     private final HistoryService historyService;
+
+    /**
+     * The file service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final FileServiceImpl fileServiceImpl;
+
+    /**
+     * The block stream service singleton, kept as a field here to reuse information learned
+     * during the state migration phase in the later initialization phase.
+     */
+    private final BlockStreamService blockStreamService;
 
     /**
      * The block hash signer factory.
@@ -329,12 +333,9 @@ public final class Hedera
     private HederaInjectionComponent daggerApp;
 
     /**
-     * When applying and migrating schemas to a target state, it is set here to support
-     * giving the {@link RosterService} schemas access to a {@link ReadablePlatformStateStore}
-     * before the roster lifecycle is adopted.
+     * When initializing the State API, the state being initialized.
      */
     @Nullable
-    @Deprecated
     private State initState;
 
     /**
@@ -424,9 +425,9 @@ public final class Hedera
      * @param registryFactory the factory to use for creating the services registry
      * @param migrator the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
-     * @param blockHashSignerFactory the factory for the block hash signer
-     * @param hintsServiceFactory the factory for the hints service
+     * @param hintsServiceFactory the factory for the hinTS service
      * @param historyServiceFactory the factory for the history service
+     * @param blockHashSignerFactory the factory for the block hash signer
      * @param metrics the metrics object to use for reporting
      */
     public Hedera(
@@ -435,12 +436,15 @@ public final class Hedera
             @NonNull final ServiceMigrator migrator,
             @NonNull final InstantSource instantSource,
             @NonNull final StartupNetworksFactory startupNetworksFactory,
-            @NonNull final BlockHashSignerFactory blockHashSignerFactory,
             @NonNull final HintsServiceFactory hintsServiceFactory,
             @NonNull final HistoryServiceFactory historyServiceFactory,
+            @NonNull final BlockHashSignerFactory blockHashSignerFactory,
             @NonNull final Metrics metrics) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
+        requireNonNull(hintsServiceFactory);
+        requireNonNull(historyServiceFactory);
+        requireNonNull(blockHashSignerFactory);
         this.metrics = requireNonNull(metrics);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
@@ -494,9 +498,9 @@ public final class Hedera
                         new ConsensusServiceImpl(),
                         contractServiceImpl,
                         fileServiceImpl,
-                        new TssBaseServiceImpl(),
                         hintsService,
                         historyService,
+                        new TssBaseServiceImpl(),
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
                         new TokenServiceImpl(),
@@ -508,10 +512,21 @@ public final class Hedera
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        // FUTURE: a lambda that tests if a ReadableTssStore
-                        // constructed from the migration state returns a
-                        // RosterKeys with the ledger id for the given roster
-                        new RosterService(roster -> true, () -> requireNonNull(initState)),
+                        new RosterService(
+                                roster -> {
+                                    requireNonNull(initState);
+                                    final var rosterHash =
+                                            RosterUtils.hash(roster).getBytes();
+                                    final var hintsStore =
+                                            new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME));
+                                    final var historyStore = new ReadableHistoryStoreImpl(
+                                            initState.getReadableStates(HistoryService.NAME));
+                                    final var tssConfig =
+                                            configProvider.getConfiguration().getConfigData(TssConfig.class);
+                                    return (!tssConfig.hintsEnabled() || hintsStore.isReadyToAdopt(rosterHash))
+                                            && (!tssConfig.historyEnabled() || historyStore.isReadyToAdopt(rosterHash));
+                                },
+                                () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
