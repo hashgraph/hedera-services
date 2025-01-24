@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,9 @@ public record TransactionParts(
     }
 
     private static Bytes bodyBytesOf(final Transaction txn) throws ParseException {
-        if (txn.signedTransactionBytes().length() > 0) {
+        if (txn.hasBody()) {
+            return TransactionBody.PROTOBUF.toBytes(txn.body());
+        } else if (txn.signedTransactionBytes().length() > 0) {
             final var signedTxn = SignedTransaction.PROTOBUF.parse(txn.signedTransactionBytes());
             return signedTxn.bodyBytes();
         } else {

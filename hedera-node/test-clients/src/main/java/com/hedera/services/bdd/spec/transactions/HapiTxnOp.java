@@ -244,7 +244,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
             }
 
             /* Used by superclass to perform standard housekeeping. */
-            txnSubmitted = txn;
+            txnSubmitted = TxnUtils.normalizeTransaction(txn);
 
             actualPrecheck = response.getNodeTransactionPrecheckCode();
             if (retryPrechecks.isPresent()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -717,15 +717,21 @@ class PrivilegesVerifierTest {
     private TestCase testCaseFrom(final byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
         final Transaction signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
 
-        final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
-        final byte[] txnBytes;
-        if (signedTxnBytes.isEmpty()) {
-            txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
+        final TransactionBody protoTxnBody;
+        if (signedTxnWrapper.hasBody()) {
+            protoTxnBody = signedTxnWrapper.getBody();
         } else {
-            final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
-            txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
+            final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
+            final byte[] txnBytes;
+            if (signedTxnBytes.isEmpty()) {
+                txnBytes = unwrapUnsafelyIfPossible(signedTxnWrapper.getBodyBytes());
+            } else {
+                final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
+                txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
+            }
+            protoTxnBody = TransactionBody.parseFrom(txnBytes);
         }
-        final var protoTxnBody = TransactionBody.parseFrom(txnBytes);
+
         final var txn = toPbj(protoTxnBody);
         final var payerId = txn.transactionIDOrThrow().accountIDOrThrow();
         try {
