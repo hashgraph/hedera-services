@@ -1646,4 +1646,9 @@ enum ResponseCodeEnum {
      * side effect of finishing the network's TSS construction.
      */
     WAITING_FOR_LEDGER_ID = 375;
+
+    /**
+     * A lambda execution was throttled due to high network gas utilization.
+     */
+    LAMBDA_EXECUTION_THROTTLED = 376;
 }

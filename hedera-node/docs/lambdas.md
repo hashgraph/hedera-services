@@ -22,20 +22,20 @@ integrity. Once installed to an entity $E$, any transaction interacting with $E$
 custom behavior.
 
 The **type** of a lambda determines where it can be installed, which transactions can reference it, and exactly how the
-protocol applies its logic. For example, a `PRE_FUNGIBLE_CREDIT` lambda can be installed on an account, referenced by a
-`CryptoTransfer` transaction; and the protocol will execute it to decide whether a fungible Hedera Token Service (HTS)
-asset may be credited to the account. Lambdas use EVM **application binary interfaces (ABI)**, ensuring a clear
-contract between the protocol and user-defined logic.
+protocol applies its logic. For example, an allowance lambda can be installed on an account, referenced by a
+`CryptoTransfer` transaction; and the protocol will execute it to decide the transfer can happen. All types of lambdas
+will use EVM **application binary interfaces (ABI)** to ensure a clear contract between the protocol and user-defined
+logic.
 
 Unlike standard smart contracts, which must encapsulate their own trust guarantees for multiple parties, Hiero
 lambdas belong to a single owner who can directly update their storage via a native `LambdaSStore` transaction.
 This streamlined design enables fast, low-cost adjustments to a lambda’s logic and state without the overhead of
 contract calls.
 
-As a first application, we introduce a family of **allowance** lambdas installable on Hiero accounts and
-referenceable by `CryptoTransfer`. These lambdas allow customizations such as requiring receiver signatures
+As a first application, we introduce a `TRANSFER_ALLOWANCE` lambda type that is installable on Hiero accounts and
+referenceable by `CryptoTransfer` transactions. It allows customizations such as requiring receiver signatures
 only for HTS (Hedera Token Service) tokens, or creating one-time credit allowances gated by a shared secret that
-must be set in the `memo` field.
+must be set in the `memo` field of the `CryptoTransfer`.
 
 ## Motivation
 
@@ -86,7 +86,7 @@ transaction referencing the lambda.
 We propose that lambdas be subject to the same gas throttle as top-level contract calls. Specifically, when a lambda
 executes, its initial EVM sender address is the payer of the referencing transaction. If this payer is a system account,
 no throttles are applied. Otherwise, if the network is at capacity for gas usage, lambda execution can be throttled on
-that basis and the referencing transaction will roll back with final status of `LAMBDA_GAS_EXHAUSTED`.
+that basis and the referencing transaction will roll back with final status of `LAMBDA_EXECUTION_THROTTLED`.
 
 ### Lambda execution environment
 
@@ -106,6 +106,8 @@ Below is the proposed `IHieroTransactionEnv` interface.
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.4.9 <0.9.0;
 pragma experimental ABIEncoderV2;
+
+import {IHederaTokenService} from "./IHederaTokenService.sol";
 
 /// Provides context about the Hiero transaction initiating the EVM transaction.
 interface IHieroTransactionEnv {
@@ -130,8 +132,8 @@ interface IHieroTransactionEnv {
     function assetTransfers()
     external
     returns (
-        TransferList memory hbarTransfers,
-        TokenTransferList[] memory tokenTransfers
+        IHederaTokenService.TransferList memory hbarTransfers,
+        IHederaTokenService.TokenTransferList[] memory tokenTransfers
     );
 }
 ```
@@ -139,3 +141,131 @@ interface IHieroTransactionEnv {
 In summary, the system contract address and interface means lambdas can access key transaction context---such as
 signers, memos, and proposed asset transfers---while remaining isolated from external contract calls unless explicitly
 referenced by a native Hiero transaction.
+
+### Core lambda protobufs
+
+The type of a lambda is one of an enumeration that initially includes just the allowance lambdas,
+
+```protobuf
+/***
+ * The types of Hiero lambdas.
+ */
+enum LambdaType {
+    /**
+     * Customizes an account's authorization strategy for the CryptoTransfer transaction.
+     */
+    TRANSFER_ALLOWANCE = 0;
+}
+```
+
+The charging patterns are as above,
+
+```protobuf
+/**
+ * The charging patterns for Hiero lambdas.
+ */
+enum LambdaChargingPattern {
+    /**
+     * The payer of the transaction that references the lambda is charged
+     * for all used gas. They receive the normal refund for unused gas.
+     */
+    CALLER_PAYS = 0;
+    /**
+     * The referencing transaction's payer is initially charged, but receives
+     * a _full refund_ if the lambda does not revert. In that successful scenario,
+     * a designated account that authorized the lambda's installation pays for the
+     * gas actually consumed.
+     */
+    CALLER_PAYS_ON_REVERT = 1;
+}
+```
+
+A lambda installation is specified by type, bytecode source, charging pattern, and
+default gas limit. The bytecode source can either be given as initcode (which is
+then executed via an EVM contract creation transaction to initialize the bytecode);
+or as pre-initialized bytecode.
+
+```protobuf
+/**
+ * The initcode source for a lambda that wants to initialize its
+ * bytecode via a EVM contract creation transaction.
+ */
+message LambdaInitcode {
+  oneof source {
+    /**
+     * The ID of the file that contains the lambda's initcode.
+     */
+    FileID file_id = 1;
+
+    /**
+     * The lambda's initcode, inline.
+     */
+    bytes code = 2;
+  }
+
+  /**
+   * The parameters to pass to the lambda's constructor.
+   */
+  bytes constructor_parameters = 3;
+}
+
+/**
+ * Specifies the installation of a lambda.
+ */
+message LambdaInstallation {
+  LambdaType type = 1;
+
+  oneof bytecode_source {
+    /**
+     * If the lambda should be initialized via a EVM contract
+     * creation transaction, the initcode to execute.
+     */
+    LambdaInitcode initcode = 2;
+
+    /**
+     * The ID of a file that contains the lambda's
+     * pre-initialized bytecode.
+     */
+    FileID bytecode_file_id = 3;
+
+    /**
+     * The lambda's bytecode, inline.
+     */
+    bytes bytecode = 4;
+  }
+
+  /**
+   * The charging pattern to use with the lambda.
+   */
+  LambdaChargingPattern charging_pattern = 5;
+
+  /**
+   * If present, the default gas limit to use when
+   * executing the lambda.
+   */
+  google.protobuf.UInt32Value default_gas_limit = 6;
+}
+```
+
+Once a lambda is installed, it receives an id,
+
+```protobuf
+/**
+ * Once a lambda is installed, its id.
+ */
+message LambdaID {
+  oneof owner_id {
+    /**
+     * The account owning the lambda.
+     */
+    AccountID account_id = 1;
+  }
+  /**
+   * A unique identifier for the lambda relative to its owner.
+   */
+  uint64 index = 2;
+}
+```
+
+where of course the `owner_id` choices will expand to other types
+of ids as lambdas are added to more entity types.
