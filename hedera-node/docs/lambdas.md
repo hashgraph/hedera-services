@@ -19,7 +19,8 @@ updated: 2025-01-25
 We propose Hiero **lambdas**, lightweight EVM functions that users can **install** to extend and customize the native
 protocol. Each lambda is owned by a single entity, making updates fast and cheap without compromising protocol
 integrity. Once installed to an entity $E$, any transaction interacting with $E$ may reference its lambdas to apply
-custom behavior.
+custom behavior. A lambda does not, however, have a `ContractID` or EVM address; it cannot be called via the Hedera API 
+(HAPI); and it cannot hold HBAR or Hedera Token Service (HTS) assets.
 
 The **type** of a lambda determines where it can be installed, which transactions can reference it, and exactly how the
 protocol applies its logic. For example, an allowance lambda can be installed on an account, referenced by a
@@ -34,8 +35,8 @@ contract calls.
 
 As a first application, we introduce a `TRANSFER_ALLOWANCE` lambda type that is installable on Hiero accounts and
 referenceable by `CryptoTransfer` transactions. It allows customizations such as requiring receiver signatures
-only for HTS (Hedera Token Service) tokens, or creating one-time credit allowances gated by a shared secret that
-must be set in the `memo` field of the `CryptoTransfer`.
+only for HTS tokens, or creating one-time credit allowances gated by a shared secret that must be set in the `memo` 
+field of the `CryptoTransfer`.
 
 ## Motivation
 
@@ -90,9 +91,8 @@ that basis and the referencing transaction will roll back with final status of `
 
 ### Lambda execution environment
 
-Although a lambda does exists in the network state with its own bytecode and storage, it does **not** have a directly
-callable EVM address. You cannot invoke it through the Hedera API (HAPI) or reference it from other smart contracts by
-address.
+Although a lambda exists in the network state with  bytecode and storage, it does **not** have a directly callable 
+EVM address. You cannot invoke it through the HAPI or reference it from other smart contracts by EVM address.
 
 Instead, when a lambda is executed, both the EVM receiver and contract address in the initial frame are set to a new
 system contract address, `0x16c`. This system contract implements a new `IHieroTransactionEnv` interface that exposes
@@ -142,7 +142,7 @@ In summary, the system contract address and interface means lambdas can access k
 signers, memos, and proposed asset transfers---while remaining isolated from external contract calls unless explicitly
 referenced by a native Hiero transaction.
 
-### Core lambda protobufs
+### Core HAPI protobufs
 
 The type of a lambda is one of an enumeration that initially includes just the allowance lambdas,
 
@@ -180,10 +180,9 @@ enum LambdaChargingPattern {
 }
 ```
 
-A lambda installation is specified by type, bytecode source, charging pattern, and
-default gas limit. The bytecode source can either be given as initcode (which is
-then executed via an EVM contract creation transaction to initialize the bytecode);
-or as pre-initialized bytecode.
+To install a lambda, users specify its type, bytecode source, charging pattern, and default gas limit. The bytecode 
+source can either be given as initcode (to be then executed via an EVM contract creation) or as pre-initialized 
+bytecode (no constructor call needed).
 
 ```protobuf
 /**
@@ -210,7 +209,7 @@ message LambdaInitcode {
 }
 
 /**
- * Specifies the installation of a lambda.
+ * Defines how to install a lambda.
  */
 message LambdaInstallation {
   LambdaType type = 1;
@@ -235,7 +234,7 @@ message LambdaInstallation {
   }
 
   /**
-   * The charging pattern to use with the lambda.
+   * The charging pattern to apply for gas usage.
    */
   LambdaChargingPattern charging_pattern = 5;
 
@@ -247,8 +246,7 @@ message LambdaInstallation {
 }
 ```
 
-Once a lambda is installed, it receives an id,
-
+Once a lambda is installed, it receives an id combining its owner's id and a unique index,
 ```protobuf
 /**
  * Once a lambda is installed, its id.
@@ -266,24 +264,78 @@ message LambdaID {
   uint64 index = 2;
 }
 ```
-
 where the `owner_id` choices will expand to other types of ids as lambdas are added to more entity types.
-The id of a newly installed lambda appears in the `TransactionReceipt`,
-
+The indexes of newly installed lambdas will appear in the legacy `TransactionReceipt` if records streams are enabled,
 ```protobuf
 
 message TransactionReceipt {
   // ...
 
   /**
-   * In the receipt of a create or update transaction for an entity that supports lambdas,
-   * the ids of any newly installed lambdas.
+   * In the receipt of a successful create or update transaction for an entity that supports lambdas,
+   * the indexes of any newly installed lambdas.
    */
-  repeated LambdaID installed_lambda_ids = 15;
+  repeated uint64 installed_lambda_indexes = 16;
 }
 ```
 
-### Allowance lambda protobufs
+Once a lambda exists, a transaction can reference it by specifying call details,
+```protobuf
+/**
+ * Defines how to call a lambda.
+ */
+message LambdaCall {
+  /**
+   * The ID of the lambda to call.
+   */
+  LambdaID lambda_id = 1;
+
+  /**
+   * If not empty, extra call data to pass to the lambda.
+   */
+  bytes call_data = 2;
+
+  /**
+   * If present, an explicit gas limit to use.
+   */
+  google.protobuf.UInt64Value gas_limit = 3;
+}
+```
+
+### Allowance lambda HAPI protobufs
 
 The `TRANSFER_ALLOWANCE` lambda type is the first and only lambda type in this proposal. It is installed on an account
 via either a `CryptoCreate` or `CryptoUpdate` transaction. That is, we extend the `CryptoCreateTransactionBody`
+with a `lambda_installations` field, and the `CryptoUpdateTransactionBody` with both `lambda_installations` and
+`lambda_indexes_to_uninstall` fields.
+
+```protobuf
+message CryptoCreateTransactionBody {
+  // ...
+  
+  /**
+   * The lambdas to install immediately after creating this account.
+   */
+  repeated LambdaInstallation lambda_installations = 19;
+}
+
+message CryptoUpdateTransactionBody {
+  // ...
+
+  /**
+   * The lambdas to install on the account.
+   */
+  repeated LambdaInstallation lambda_installations = 19;
+
+  /**
+   * The indexes of the lambdas to uninstall from the account.
+   */
+  repeated uint64 lambda_indexes_to_uninstall = 20;
+}
+```
+
+For a successful such `CryptoCreate` or `CryptoUpdate`, the indexes of the newly installed lambdas will appear in the
+legacy record `TransactionReceipt` if record streams are still enabled. For each lambda installed by executing its 
+initcode, the network will externalize---in order---a preceding synthetic `ContractCreate` whose sidecars include the 
+lambda's bytecode. **However**, these contract creations will only result in `ContractID`s or EVM addresses being 
+allocated if the lambda's constructor itself creates contracts. A lambda has no EVM address or `ContractID` of its own.

@@ -86,7 +86,7 @@ message LambdaInitcode {
 }
 
 /**
- * Specifies the installation of a lambda.
+ * Defines how to install a lambda.
  */
 message LambdaInstallation {
   LambdaType type = 1;
@@ -111,7 +111,7 @@ message LambdaInstallation {
   }
 
   /**
-   * The charging pattern to use with the lambda.
+   * The charging pattern to apply for gas usage.
    */
   LambdaChargingPattern charging_pattern = 5;
 
@@ -120,4 +120,24 @@ message LambdaInstallation {
    * executing the lambda.
    */
   google.protobuf.UInt64Value default_gas_limit = 7;
+}
+
+/**
+ * Defines how to call a lambda.
+ */
+message LambdaCall {
+  /**
+   * The ID of the lambda to call.
+   */
+  LambdaID lambda_id = 1;
+
+  /**
+   * If not empty, extra call data to pass to the lambda.
+   */
+  bytes call_data = 2;
+
+  /**
+   * If present, an explicit gas limit to use.
+   */
+  google.protobuf.UInt64Value gas_limit = 3;
 }

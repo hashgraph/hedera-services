@@ -37,6 +37,7 @@ import "basic_types.proto";
 import "duration.proto";
 import "timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "lambda.proto";
 
 /**
  * Modify the current state of an account.
@@ -231,4 +232,13 @@ message CryptoUpdateTransactionBody {
      */
     google.protobuf.BoolValue decline_reward = 18;
 
+    /**
+     * The lambdas to install on the account.
+     */
+    repeated LambdaInstallation lambda_installations = 19;
+
+    /**
+     * The indexes of the lambdas to uninstall from the account.
+     */
+    repeated uint64 lambdas_to_uninstall = 20;
 }
