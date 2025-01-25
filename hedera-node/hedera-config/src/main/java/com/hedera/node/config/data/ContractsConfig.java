@@ -76,6 +76,8 @@ public record ContractsConfig(
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileHrcFacadeAssociateEnabled,
+        @ConfigProperty(value = "precompile.disabled", defaultValue = "") @NetworkProperty
+                Set<Integer> disabledPrecompiles,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
         @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "true") @NetworkProperty
