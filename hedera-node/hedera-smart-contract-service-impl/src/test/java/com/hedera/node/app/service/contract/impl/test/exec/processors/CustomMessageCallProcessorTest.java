@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -164,6 +166,8 @@ class CustomMessageCallProcessorTest {
 
         given(addressChecks.isSystemAccount(NON_EVM_PRECOMPILE_SYSTEM_ADDRESS)).willReturn(true);
         when(frame.getValue()).thenReturn(Wei.ZERO);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
 
         subject.start(frame, operationTracer);
         verify(frame).setOutputData(NOOP_OUTPUT_DATA);
@@ -173,11 +177,14 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void valueCannotBeTransferredToSystemContracts() {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
         final var isHalted = new AtomicBoolean();
         givenHaltableFrame(isHalted);
         givenCallWithCode(ADDRESS_6);
         given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
         given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
 
         subject.start(frame, operationTracer);
 
@@ -312,9 +319,12 @@ class CustomMessageCallProcessorTest {
     }
 
     private void givenEvmPrecompileCall() {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
         given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
         given(frame.getContractAddress()).willReturn(ADDRESS_6);
         given(frame.getInputData()).willReturn(INPUT_DATA);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
     }
 
     private void givenPrngCall(long gasRequirement) {
@@ -344,5 +354,6 @@ class CustomMessageCallProcessorTest {
         stack.push(frame);
         stack.push(frame);
         given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
     }
 }
