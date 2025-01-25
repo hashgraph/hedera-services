@@ -48,6 +48,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
@@ -265,7 +268,10 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofKeyPublication,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyAssemblySignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofVote) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -344,6 +350,9 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
         permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
+        permissionKeys.put(HISTORY_PROOF_KEY_PUBLICATION, c -> c.historyProofKeyPublication);
+        permissionKeys.put(HISTORY_ASSEMBLY_SIGNATURE, c -> c.historyAssemblySignature);
+        permissionKeys.put(HISTORY_PROOF_VOTE, c -> c.historyProofVote);
     }
 
     /**

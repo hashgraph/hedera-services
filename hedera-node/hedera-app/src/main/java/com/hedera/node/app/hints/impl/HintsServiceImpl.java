@@ -26,6 +26,7 @@ import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,13 +38,18 @@ import java.util.concurrent.Executor;
  * Placeholder implementation of the {@link HintsService}.
  */
 public class HintsServiceImpl implements HintsService {
+    @Deprecated
+    private final Configuration bootstrapConfig;
+
     private final HintsServiceComponent component;
 
     public HintsServiceImpl(
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsLibrary library) {
+            @NonNull final HintsLibrary library,
+            @NonNull final Configuration bootstrapConfig) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         // Fully qualified for benefit of javadoc
         this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
                 .create(library, appContext, executor, metrics);
@@ -70,7 +76,10 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HintsSchema(component.signingContext()));
+        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            registry.register(new V059HintsSchema(component.signingContext()));
+        }
     }
 
     @Override

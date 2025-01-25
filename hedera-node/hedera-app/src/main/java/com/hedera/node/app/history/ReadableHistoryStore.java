@@ -76,6 +76,22 @@ public interface ReadableHistoryStore {
     HistoryProofConstruction getActiveConstruction();
 
     /**
+     * Returns the next construction.
+     */
+    @NonNull
+    HistoryProofConstruction getNextConstruction();
+
+    /**
+     * Returns whether the give roster hash is ready to be adopted.
+     * @param rosterHash the roster hash
+     * @return whether the give roster hash is ready to be adopted
+     */
+    default boolean isReadyToAdopt(@NonNull final Bytes rosterHash) {
+        final var construction = getNextConstruction();
+        return construction.hasTargetProof() && construction.targetRosterHash().equals(rosterHash);
+    }
+
+    /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
      */
     @Nullable

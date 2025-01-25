@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
+import com.hedera.node.app.history.handlers.HistoryHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -63,5 +64,10 @@ public class FakeHistoryService implements HistoryService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
+    }
+
+    @Override
+    public HistoryHandlers handlers() {
+        throw new AssertionError("Not implemented");
     }
 }

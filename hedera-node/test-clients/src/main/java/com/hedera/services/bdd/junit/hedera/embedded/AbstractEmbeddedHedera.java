@@ -172,10 +172,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                (hintsService, historyService, configProvider) ->
-                        this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
-                appContext -> this.hintsService = new FakeHintsService(appContext),
-                appContext -> this.historyService = new FakeHistoryService(),
+                (appContext, bootstrapConfig) -> this.hintsService = new FakeHintsService(appContext, bootstrapConfig),
+                (appContext, bootstrapConfig) -> this.historyService = new FakeHistoryService(),
+                (hints, history, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider),
                 metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();

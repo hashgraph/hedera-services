@@ -233,6 +233,9 @@ public class HapiUtils {
             case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case STATE_SIGNATURE_TRANSACTION -> HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
+            case HISTORY_PROOF_SIGNATURE -> HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
+            case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
+            case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

@@ -91,6 +91,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.hints;
     exports com.hedera.node.app.hints.impl;
     exports com.hedera.node.app.history;
+    exports com.hedera.node.app.history.handlers;
     exports com.hedera.node.app.history.impl;
     exports com.hedera.node.app.metrics;
     exports com.hedera.node.app.authorization;

@@ -31,7 +31,6 @@ import com.hedera.hapi.node.state.history.ConstructionNodeId;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
-import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.hapi.node.state.history.ProofKeySet;
 import com.hedera.hapi.node.state.history.RecordedHistorySignature;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -125,16 +124,11 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
     }
 
     @Override
-    public void addSignature(
-            final long nodeId,
-            final long constructionId,
-            @NonNull final HistorySignature signature,
-            @NonNull final Instant now) {
-        requireNonNull(signature);
-        requireNonNull(now);
+    public void addSignature(final long constructionId, @NonNull final HistorySignaturePublication publication) {
+        requireNonNull(publication);
         signatures.put(
-                new ConstructionNodeId(constructionId, nodeId),
-                new RecordedHistorySignature(asTimestamp(now), signature));
+                new ConstructionNodeId(constructionId, publication.nodeId()),
+                new RecordedHistorySignature(asTimestamp(publication.at()), publication.signature()));
     }
 
     @Override
