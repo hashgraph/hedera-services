@@ -403,10 +403,15 @@ class WritableHistoryStoreImplTest {
     private State emptyState() {
         final var state = new FakeState();
         final var servicesRegistry = new FakeServicesRegistry();
-        given(appContext.configSupplier()).willReturn(() -> WITH_ENABLED_HISTORY);
         Set.of(
                         new EntityIdService(),
-                        new HistoryServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec))
+                        new HistoryServiceImpl(
+                                NO_OP_METRICS,
+                                ForkJoinPool.commonPool(),
+                                appContext,
+                                library,
+                                codec,
+                                WITH_ENABLED_HISTORY))
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();

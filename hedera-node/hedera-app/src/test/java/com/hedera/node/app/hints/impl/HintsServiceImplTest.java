@@ -20,7 +20,6 @@ import static com.hedera.node.app.hints.impl.WritableHintsStoreImplTest.WITH_ENA
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
@@ -67,7 +66,8 @@ class HintsServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library);
+        subject =
+                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, WITH_ENABLED_HINTS);
     }
 
     @Test
@@ -78,7 +78,6 @@ class HintsServiceImplTest {
 
     @Test
     void nothingSupportedExceptRegisteringSchemas() {
-        given(appContext.configSupplier()).willReturn(() -> WITH_ENABLED_HINTS);
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));

@@ -393,10 +393,10 @@ class WritableHintsStoreImplTest {
     private State emptyState() {
         final var state = new FakeState();
         final var servicesRegistry = new FakeServicesRegistry();
-        given(appContext.configSupplier()).willReturn(() -> WITH_ENABLED_HINTS);
         Set.of(
                         new EntityIdService(),
-                        new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library))
+                        new HintsServiceImpl(
+                                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, WITH_ENABLED_HINTS))
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();

@@ -139,7 +139,6 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -155,7 +154,6 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.AsyncFatalIssListener;
 import com.swirlds.platform.system.state.notifications.StateHashedListener;
@@ -390,13 +388,13 @@ public final class Hedera
     @FunctionalInterface
     public interface HintsServiceFactory {
         @NonNull
-        HintsService apply(@NonNull AppContext appContext);
+        HintsService apply(@NonNull AppContext appContext, @NonNull Configuration bootstrapConfig);
     }
 
     @FunctionalInterface
     public interface HistoryServiceFactory {
         @NonNull
-        HistoryService apply(@NonNull AppContext appContext);
+        HistoryService apply(@NonNull AppContext appContext, @NonNull Configuration bootstrapConfig);
     }
 
     @FunctionalInterface
@@ -487,8 +485,8 @@ public final class Hedera
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        hintsService = hintsServiceFactory.apply(appContext);
-        historyService = historyServiceFactory.apply(appContext);
+        hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
+        historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);
         scheduleServiceImpl = new ScheduleServiceImpl();
         blockStreamService = new BlockStreamService();
@@ -611,34 +609,21 @@ public final class Hedera
     =================================================================================================================*/
 
     /**
-     * Can be collapsed back into {@link #initializeStatesApi(State, InitTrigger, Network, Configuration, AddressBook)}
-     * once the roster lifecycle is adopted. Needed now to ensure {@link #isRosterLifecycleEnabled()} has an initialized
-     * {@link ConfigProvider}.
-     */
-    @Deprecated
-    public void initializeConfigProvider(@NonNull final InitTrigger trigger) {
-        requireNonNull(trigger);
-        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
-    }
-
-    /**
      * Initializes the States API in the given state based on the given startup conditions.
      *
      * @param state the state to initialize
      * @param trigger the trigger that is calling migration
      * @param genesisNetwork the genesis network, if applicable
      * @param platformConfig the platform configuration
-     * @param diskAddressBook the address book from disk, if the roster lifecycle is not enabled
      */
     public void initializeStatesApi(
             @NonNull final State state,
             @NonNull final InitTrigger trigger,
             @Nullable final Network genesisNetwork,
-            @NonNull final Configuration platformConfig,
-            @Deprecated @Nullable final AddressBook diskAddressBook) {
+            @NonNull final Configuration platformConfig) {
         requireNonNull(state);
         requireNonNull(platformConfig);
-        requireNonNull(configProvider);
+        this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         final var deserializedVersion = serviceMigrator.creationVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -662,7 +647,7 @@ public final class Hedera
             throw new IllegalStateException("Cannot downgrade from " + savedStateVersion + " to " + version);
         }
         try {
-            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisNetwork, platformConfig, diskAddressBook);
+            migrateSchemas(state, savedStateVersion, trigger, metrics, genesisNetwork, platformConfig);
             logConfiguration();
         } catch (final Throwable t) {
             logger.fatal("Critical failure during schema migration", t);
@@ -691,7 +676,7 @@ public final class Hedera
         }
         this.platform = requireNonNull(platform);
         if (state.getReadableStates(PlatformStateService.NAME).isEmpty()) {
-            initializeStatesApi(state, trigger, null, platform.getContext().getConfiguration(), null);
+            initializeStatesApi(state, trigger, null, platform.getContext().getConfiguration());
         }
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger);
@@ -718,7 +703,6 @@ public final class Hedera
      * @param trigger trigger that is calling migration
      * @param genesisNetwork the genesis address book, if applicable
      * @param platformConfig platform configuration
-     * @param diskAddressBook before enabling the roster lifecycle, the address book from disk
      */
     private void migrateSchemas(
             @NonNull final State state,
@@ -726,8 +710,7 @@ public final class Hedera
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics,
             @Nullable final Network genesisNetwork,
-            @NonNull final Configuration platformConfig,
-            @Deprecated @Nullable final AddressBook diskAddressBook) {
+            @NonNull final Configuration platformConfig) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
         final var isUpgrade = version.compareTo(deserializedVersion) > 0;
         logger.info(
@@ -749,11 +732,6 @@ public final class Hedera
         blockStreamService.resetMigratedLastBlockHash();
         startupNetworks = startupNetworksFactory.apply(configProvider);
         PLATFORM_STATE_SERVICE.setAppVersionFn(ServicesSoftwareVersion::from);
-        // If the client code did not provide a disk address book, we are reconnecting; and
-        // PlatformState schemas must not try to update the current address book anyway
-        if (diskAddressBook != null) {
-            PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
-        }
         this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
@@ -768,7 +746,6 @@ public final class Hedera
                 metrics,
                 startupNetworks);
         this.initState = null;
-        PLATFORM_STATE_SERVICE.clearDiskAddressBook();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();
@@ -1073,13 +1050,6 @@ public final class Hedera
 
     public boolean isBlockStreamEnabled() {
         return streamMode != RECORDS;
-    }
-
-    public boolean isRosterLifecycleEnabled() {
-        return configProvider
-                .getConfiguration()
-                .getConfigData(AddressBookConfig.class)
-                .useRosterLifecycle();
     }
 
     public KVStateChangeListener kvStateChangeListener() {

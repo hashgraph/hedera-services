@@ -281,11 +281,8 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            final var useRosterLifecycle = addressBookConfig.useRosterLifecycle();
-            if (nodes != null
-                    && nodesConfig.enableDAB()
-                    && (!useRosterLifecycle || networkAdminConfig.exportCandidateRoster())) {
-                generateConfigPem(artifactsLoc, keysLoc, nodes, useRosterLifecycle);
+            if (nodes != null && nodesConfig.enableDAB() && networkAdminConfig.exportCandidateRoster()) {
+                generateConfigPem(artifactsLoc, keysLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
@@ -301,8 +298,7 @@ public class ReadableFreezeUpgradeActions {
     private void generateConfigPem(
             @NonNull final Path artifactsLoc,
             @NonNull final Path keysLoc,
-            @NonNull final List<ActiveNode> activeNodes,
-            final boolean useRosterLifecycle) {
+            @NonNull final List<ActiveNode> activeNodes) {
         requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
         requireNonNull(keysLoc, "Cannot generate pem files without a valid keys location");
         requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
@@ -315,7 +311,7 @@ public class ReadableFreezeUpgradeActions {
 
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
-            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, keysLoc, useRosterLifecycle));
+            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, keysLoc));
             bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
@@ -323,10 +319,7 @@ public class ReadableFreezeUpgradeActions {
     }
 
     private void writeConfigLineAndPem(
-            @NonNull final ActiveNode activeNode,
-            @NonNull final BufferedWriter bw,
-            @NonNull final Path keysLoc,
-            final boolean useRosterLifecycle) {
+            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path keysLoc) {
         requireNonNull(activeNode);
         requireNonNull(bw);
         requireNonNull(keysLoc);
@@ -342,11 +335,7 @@ public class ReadableFreezeUpgradeActions {
 
         final var stakingNodeInfo = activeNode.stakingInfo();
         if (stakingNodeInfo != null) {
-            if (useRosterLifecycle) {
-                weight = stakingNodeInfo.stake();
-            } else {
-                weight = stakingNodeInfo.weight();
-            }
+            weight = stakingNodeInfo.stake();
         }
 
         final var gossipEndpoints = node.gossipEndpoint();

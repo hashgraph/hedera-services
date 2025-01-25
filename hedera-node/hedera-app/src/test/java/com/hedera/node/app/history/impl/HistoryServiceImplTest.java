@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.history.impl;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.TRANSITION;
@@ -180,10 +181,11 @@ class HistoryServiceImplTest {
     }
 
     private void withLiveSubject() {
-        subject = new HistoryServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec);
+        subject = new HistoryServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, codec, DEFAULT_CONFIG);
     }
 
     private void withMockSubject() {
-        subject = new HistoryServiceImpl(component);
+        subject = new HistoryServiceImpl(component, DEFAULT_CONFIG);
     }
 }
