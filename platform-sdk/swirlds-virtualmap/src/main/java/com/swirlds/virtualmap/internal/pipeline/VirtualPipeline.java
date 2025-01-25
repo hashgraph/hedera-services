@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -451,6 +451,21 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
     }
 
     /**
+     * Compacts a copy, if needed. Usually a copy should be compacted, if its estimated size exceeds
+     * flush threshold. Compaction may remove duplicate mutations from copy's node cache, which may
+     * affect the estimated size, and the copy may no longer be flushable.
+     */
+    private void compact(final VirtualRoot<K, V> copy) {
+        if (copy.isFlushed() || copy.isMerged()) {
+            throw new IllegalStateException("Copy is already flushed or merged");
+        }
+        if (!copy.isHashed()) {
+            hashCopy(copy);
+        }
+        copy.garbageCollectIfNeeded();
+    }
+
+    /**
      * Check if this copy should be flushed.
      */
     private boolean shouldBeFlushed(final VirtualRoot<K, V> copy) {
@@ -477,20 +492,19 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
     }
 
     /**
-     * Try to flush a copy. Hash it if necessary. If the copy is not flushed, it
+     * Flush a copy. Hash it if necessary. If the copy is not flushed, it
      * will be eligible to merge.
      *
      * @param copy the copy to flush
-     * @return if the copy was flushed
      */
-    private boolean tryFlush(final VirtualRoot<K, V> copy) {
+    private void flush(final VirtualRoot<K, V> copy) {
         if (copy.isFlushed()) {
             throw new IllegalStateException("copy is already flushed");
         }
         if (!copy.isHashed()) {
             hashCopy(copy);
         }
-        return copy.flush();
+        copy.flush();
     }
 
     /**
@@ -544,16 +558,13 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
             if (!copy.isImmutable()) {
                 break;
             }
-            boolean flushed = false;
+            compact(copy);
             if ((next == copies.getFirst()) && shouldBeFlushed(copy)) {
-                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Try to flush {}", copy.getFastCopyVersion());
-                flushed = tryFlush(copy);
-                if (flushed) {
-                    logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {}", copy.getFastCopyVersion());
-                    copies.remove(next);
-                }
-            }
-            if (!flushed && (canBeMerged(next))) {
+                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush {}", copy.getFastCopyVersion());
+                flush(copy);
+                logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {}", copy.getFastCopyVersion());
+                copies.remove(next);
+            } else if (canBeMerged(next)) {
                 assert !copy.isMerged();
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Merge {}", copy.getFastCopyVersion());
                 merge(next);

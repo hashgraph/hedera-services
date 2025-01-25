@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -376,14 +376,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
         // At this point, we have built the tree successfully. Verify one more time that each version of
         // the cache still sees things the same way it did at the time the copy was made.
         final VirtualNodeCache<TestKey, TestValue> cache4 = cache;
-        validateTree(
-                cache0,
-                asList(
-                        rootInternal0,
-                        leftInternal0,
-                        null, // became internal in version 1
-                        null, // became internal in version 1
-                        null)); // became internal in version 2
+        validateTree(cache0, asList(rootInternal0, leftInternal0, bananaLeaf0, appleLeaf0, cherryLeaf0));
         validateTree(
                 cache1,
                 asList(
@@ -391,10 +384,10 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                         leftInternal1,
                         rightInternal1,
                         leftLeftInternal1,
-                        null, // became internal in version 1
-                        null, // became internal in version 1
-                        null, // became internal in version 2
-                        null, // became internal in version 2, then updated in version 3
+                        cherryLeaf0,
+                        bananaLeaf1,
+                        dateLeaf1,
+                        appleLeaf1,
                         eggplantLeaf1));
         validateTree(
                 cache2,
@@ -405,13 +398,13 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                         leftLeftInternal1,
                         leftRightInternal2,
                         rightLeftInternal2,
-                        null, // updated in version 3
-                        null, // updated in version 3
+                        dateLeaf1,
+                        appleLeaf1,
                         eggplantLeaf1,
                         cherryLeaf2,
-                        null, // updated in version 3
-                        null, // updated in version 3
-                        null)); // updated in version 3
+                        figLeaf2,
+                        bananaLeaf2,
+                        grapeLeaf2));
         validateTree(
                 cache3,
                 asList(
@@ -457,9 +450,9 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                                     rightInternal1,
                                     leftLeftInternal1,
                                     null,
-                                    null,
-                                    null,
-                                    null,
+                                    bananaLeaf1,
+                                    dateLeaf1,
+                                    appleLeaf1,
                                     eggplantLeaf1));
                 },
                 Duration.ofSeconds(1),
@@ -475,13 +468,13 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                                     leftLeftInternal1,
                                     leftRightInternal2,
                                     rightLeftInternal2,
-                                    null,
-                                    null,
+                                    dateLeaf1,
+                                    appleLeaf1,
                                     eggplantLeaf1,
                                     cherryLeaf2,
-                                    null,
-                                    null,
-                                    null));
+                                    figLeaf2,
+                                    bananaLeaf2,
+                                    grapeLeaf2));
                 },
                 Duration.ofSeconds(1),
                 "expected cache2 to eventually become clean");
@@ -545,9 +538,9 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                                     null,
                                     null,
                                     cherryLeaf2,
-                                    null,
-                                    null,
-                                    null));
+                                    figLeaf2,
+                                    bananaLeaf2,
+                                    grapeLeaf2));
                 },
                 Duration.ofSeconds(1),
                 "expected cache2 to eventually become clean");
@@ -564,7 +557,7 @@ class VirtualNodeCacheTest extends VirtualTestBase {
                                     rightLeftInternal3,
                                     dogLeaf3,
                                     grapeLeaf3,
-                                    null, // E hasn't changed since version 1
+                                    null,
                                     cherryLeaf2,
                                     foxLeaf3,
                                     bananaLeaf3,
