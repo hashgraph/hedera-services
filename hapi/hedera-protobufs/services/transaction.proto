@@ -107,6 +107,8 @@ import "auxiliary/history/history_proof_signature.proto";
 import "auxiliary/history/history_proof_key_publication.proto";
 import "auxiliary/history/history_proof_vote.proto";
 
+import "lambda_sstore.proto";
+
 /**
  * A wrapper around signed transaction bytes.<br/>
  * This was originally a transaction with body, signatures, and/or bytes,

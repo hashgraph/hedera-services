@@ -31,7 +31,7 @@ import "basic_types.proto";
 /**
  * A slot in the storage of a lambda.
  */
-message StorageSlot {
+message LambdaSlot {
   /**
    * The key of the slot, left-padded with zeros to be a 32-byte value.
    */
@@ -54,5 +54,5 @@ message LambdaSStoreTransactionBody {
   /**
    * The updates to the storage of the lambda.
    */
-  repeated StorageSlot slot_updates = 2;
+  repeated LambdaSlot slot_updates = 2;
 }

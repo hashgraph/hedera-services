@@ -451,6 +451,22 @@ message TransactionID {
 }
 
 /**
+ * Once a lambda is installed, its id.
+ */
+message LambdaID {
+    oneof owner {
+        /**
+         * The account owning the lambda.
+         */
+        AccountID account_id = 1;
+    }
+    /**
+     * A unique identifier for the lambda relative to its owner.
+     */
+    uint64 index = 2;
+}
+
+/**
  * An account, and the amount that it sends or receives during a token transfer.
  *
  * This message is only relevant to fungible/common token transfers.
@@ -1667,6 +1683,11 @@ enum HederaFunctionality {
      * Vote for a particular history proof.
      */
     HistoryProofVote = 106;
+
+    /**
+     * Update one or more storage slots in a lambda.
+     */
+    LambdaSStore = 107;
 }
 
 /**
