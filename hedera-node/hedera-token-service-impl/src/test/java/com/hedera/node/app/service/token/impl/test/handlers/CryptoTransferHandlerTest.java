@@ -546,7 +546,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
@@ -554,7 +554,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     writableTokenRelStore.put(fungibleTokenRelation
                             .copyBuilder()

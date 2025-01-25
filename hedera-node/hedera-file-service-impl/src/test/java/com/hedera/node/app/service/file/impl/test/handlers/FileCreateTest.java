@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -315,6 +316,7 @@ class FileCreateTest extends FileTestBase {
         final var writableState = writableFileStateWithOneKey();
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
+        given(writableEntityCounters.getCounterFor(EntityType.FILE)).willReturn(2L);
         final var fileStore =
                 new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(fileStore);

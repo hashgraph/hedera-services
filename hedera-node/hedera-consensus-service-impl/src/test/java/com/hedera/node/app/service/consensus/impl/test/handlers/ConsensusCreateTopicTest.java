@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -400,6 +401,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(entityCounters.getCounterFor(EntityType.TOPIC)).willReturn(1L);
         final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService, entityCounters);
         assertEquals(1, topicStore.sizeOfState());
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
@@ -428,6 +430,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
+        given(entityCounters.getCounterFor(EntityType.TOPIC)).willReturn(1L);
         final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService, entityCounters);
         assertEquals(1, topicStore.sizeOfState());
 
