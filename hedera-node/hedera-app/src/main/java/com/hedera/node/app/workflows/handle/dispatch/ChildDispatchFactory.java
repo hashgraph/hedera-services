@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,6 +207,7 @@ public class ChildDispatchFactory {
                 preHandleResult,
                 childVerifier,
                 consensusNow,
+                options.dispatchMetadata(),
                 creatorInfo,
                 config,
                 topLevelFunction,
@@ -233,6 +234,7 @@ public class ChildDispatchFactory {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
+            @NonNull final HandleContext.DispatchMetadata dispatchMetadata,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
@@ -283,7 +285,8 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                childFeeAccumulator);
+                childFeeAccumulator,
+                dispatchMetadata);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(

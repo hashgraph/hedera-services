@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,8 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
                         new ReadableTokenRelationStoreImpl(writableStates),
                         configuration,
                         new ReadableAccountStoreImpl(writableStates),
-                        AccountID::hasAlias);
+                        AccountID::hasAlias,
+                        false);
                 return !result.assessedCustomFees().isEmpty();
             } catch (Exception ignore) {
                 return false;

@@ -726,6 +726,12 @@ enum SubType {
      * containing a ContractCall.
      */
     SCHEDULE_CREATE_CONTRACT_CALL = 5;
+
+    /**
+     * The resource cost for the transaction type includes a TopicCreate
+     * with custom fees.
+     */
+    TOPIC_CREATE_WITH_CUSTOM_FEES = 6;
 }
 
 /**
