@@ -547,7 +547,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.putNew(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAccountStore.putNewAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 })
@@ -555,7 +555,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.putNew(copy);
-                    writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    writableAccountStore.putNewAlias(edKeyAlias.value(), asAccount(tokenReceiver));
                     writableTokenRelStore.put(fungibleTokenRelation
                             .copyBuilder()
                             .kycGranted(true)

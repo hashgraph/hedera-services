@@ -192,7 +192,7 @@ public class FileTestBase {
     }
 
     protected void refreshStoresWithCurrentFileOnlyInReadable() {
-        givenEntityCounters();
+        givenEntityCounters(1);
         readableFileState = readableFileState();
         writableFileState = emptyWritableFileState();
         readableUpgradeStates = readableUpgradeDataState();
@@ -219,23 +219,28 @@ public class FileTestBase {
         given(storeFactory.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
-    protected void givenEntityCounters() {
+    protected void givenEntityCounters(int numFiles) {
         given(writableStates.getSingleton(ENTITY_ID_STATE_KEY))
                 .willReturn(new WritableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
         given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT, c -> {}));
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numFiles(numFiles).build(),
+                        c -> {}));
         given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
                 .willReturn(new ReadableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
         given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new ReadableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT));
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numFiles(numFiles).build()));
         readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
         writableEntityCounters = new WritableEntityIdStore(writableStates);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
-        givenEntityCounters();
+        givenEntityCounters(1);
         readableFileState = readableFileState();
         writableFileState = writableFileStateWithOneKey();
         readableUpgradeStates = readableUpgradeDataState();

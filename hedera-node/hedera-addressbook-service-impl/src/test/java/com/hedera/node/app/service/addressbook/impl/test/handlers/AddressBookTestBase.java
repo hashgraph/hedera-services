@@ -44,6 +44,7 @@ import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchem
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -184,7 +185,7 @@ public class AddressBookTestBase {
     }
 
     protected void refreshStoresWithCurrentNodeInReadable() {
-        givenEntityCounters();
+        givenEntityCountersWithOneNodeInWritable();
         readableNodeState = readableNodeState();
         writableNodeState = emptyWritableNodeState();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
@@ -209,8 +210,28 @@ public class AddressBookTestBase {
         writableEntityCounters = new WritableEntityIdStore(writableStates);
     }
 
+    protected void givenEntityCountersWithOneNodeInWritable() {
+        given(writableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
+        given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numNodes(1).build(),
+                        c -> {}));
+        given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
+        given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numNodes(1).build()));
+        readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
+        writableEntityCounters = new WritableEntityIdStore(writableStates);
+    }
+
     protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {
-        givenEntityCounters();
+        givenEntityCountersWithOneNodeInWritable();
         readableNodeState = readableNodeState();
         writableNodeState = writableNodeStateWithOneKey();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
@@ -222,7 +243,8 @@ public class AddressBookTestBase {
     }
 
     protected void refreshStoresWithCurrentNodeInWritable() {
-        givenEntityCounters();
+        givenEntityCountersWithOneNodeInWritable();
+        writableEntityCounters.incrementEntityTypeCount(EntityType.NODE);
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         final var configuration = HederaTestConfigBuilder.createConfig();
