@@ -515,14 +515,16 @@ public final class Hedera
                                     requireNonNull(initState);
                                     final var rosterHash =
                                             RosterUtils.hash(roster).getBytes();
-                                    final var hintsStore =
-                                            new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME));
-                                    final var historyStore = new ReadableHistoryStoreImpl(
-                                            initState.getReadableStates(HistoryService.NAME));
                                     final var tssConfig =
                                             configProvider.getConfiguration().getConfigData(TssConfig.class);
-                                    return (!tssConfig.hintsEnabled() || hintsStore.isReadyToAdopt(rosterHash))
-                                            && (!tssConfig.historyEnabled() || historyStore.isReadyToAdopt(rosterHash));
+                                    return (!tssConfig.hintsEnabled()
+                                                    || new ReadableHintsStoreImpl(
+                                                                    initState.getReadableStates(HintsService.NAME))
+                                                            .isReadyToAdopt(rosterHash))
+                                            && (!tssConfig.historyEnabled()
+                                                    || new ReadableHistoryStoreImpl(
+                                                                    initState.getReadableStates(HistoryService.NAME))
+                                                            .isReadyToAdopt(rosterHash));
                                 },
                                 () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
