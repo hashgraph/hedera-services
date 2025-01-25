@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,18 +59,6 @@ class InMemoryWritableStateTest extends MerkleTestBase {
         void stateKey() {
             final var state = createState();
             assertThat(state.getStateKey()).isEqualTo(FRUIT_STATE_KEY);
-        }
-
-        @Test
-        @DisplayName("The size of the state is the size of the merkle map")
-        void sizeWorks() {
-            final var state = createState();
-            assertThat(state.size()).isZero();
-
-            add(A_KEY, APPLE);
-            add(B_KEY, BANANA);
-            add(C_KEY, CHERRY);
-            assertThat(state.sizeOfDataSource()).isEqualTo(fruitMerkleMap.size());
         }
     }
 

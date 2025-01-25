@@ -224,7 +224,11 @@ public class EndOfStakingPeriodUpdater {
                 }
             }
             // Persist the updated staking info
-            stakingInfoStore.put(nodeId, newNodeInfo);
+            if (stakingInfoStore.get(nodeId) != null) {
+                stakingInfoStore.put(nodeId, newNodeInfo);
+            } else {
+                stakingInfoStore.putNew(nodeId, newNodeInfo);
+            }
         });
         // Update the staking reward values for the network
         stakingRewardsStore.put(asStakingRewardBuilder(stakingRewardsStore)

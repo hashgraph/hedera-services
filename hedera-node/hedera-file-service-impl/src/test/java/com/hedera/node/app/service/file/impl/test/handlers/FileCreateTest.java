@@ -55,7 +55,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -216,7 +215,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
-        given(entityNumGenerator.newEntityNum(EntityType.FILE)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(CreateFileStreamBuilder.class)).willReturn(recordBuilder);
 
@@ -250,7 +249,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
-        given(entityNumGenerator.newEntityNum(EntityType.FILE)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(CreateFileStreamBuilder.class)).willReturn(recordBuilder);
 
@@ -314,6 +313,7 @@ class FileCreateTest extends FileTestBase {
         final var txBody = newCreateTxn(keys, expirationTime);
         given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
+        givenEntityCounters(2);
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
         final var fileStore =

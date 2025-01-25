@@ -80,13 +80,15 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
-import com.hedera.node.app.spi.ids.ReadableEntityCounters;
-import com.hedera.node.app.spi.ids.WritableEntityCounters;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -180,10 +182,10 @@ public class ScheduleTestBase {
     protected ReadableStoreFactory mockStoreFactory;
 
     @Mock
-    protected ReadableEntityCounters readableEntityCounters;
+    protected ReadableEntityIdStoreImpl readableEntityCounters;
 
     @Mock
-    protected WritableEntityCounters writableEntityCounters;
+    protected WritableEntityIdStore writableEntityCounters;
 
     // This schedule is not in whitelist, but exercises most code paths
     // 6d850a46e97dd8a4eafd3d7c114d0d151349e4f8531301b22c5fe508f712b6e4
@@ -249,6 +251,8 @@ public class ScheduleTestBase {
         setUpStates();
         given(mockStoreFactory.getStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
         given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(mockStoreFactory.getStore(ReadableEntityIdStore.class)).willReturn(readableEntityCounters);
+        given(mockStoreFactory.getStore(WritableEntityIdStore.class)).willReturn(writableEntityCounters);
     }
 
     protected void commitScheduleStores() {
@@ -498,6 +502,7 @@ public class ScheduleTestBase {
         accountsMapById.put(admin, adminAccount);
         writableSchedules.put(scheduleInState);
         writableSchedules.put(otherScheduleInState);
+        given(readableEntityCounters.getCounterFor(EntityType.SCHEDULE)).willReturn(2L);
         commitScheduleStores();
     }
 

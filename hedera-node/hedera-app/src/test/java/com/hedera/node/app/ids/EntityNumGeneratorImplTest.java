@@ -17,12 +17,10 @@
 package com.hedera.node.app.ids;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.spi.validation.EntityType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,11 +42,11 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testNewEntityNumWithInitialState() {
-        when(entityIdStore.incrementAndGet(EntityType.ACCOUNT)).thenReturn(1L);
-        final var actual = subject.newEntityNum(EntityType.ACCOUNT);
+        when(entityIdStore.incrementAndGet()).thenReturn(1L);
+        final var actual = subject.newEntityNum();
 
         assertThat(actual).isEqualTo(1L);
-        verify(entityIdStore).incrementAndGet(EntityType.ACCOUNT);
+        verify(entityIdStore).incrementAndGet();
     }
 
     @Test
@@ -63,12 +61,12 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testNewEntityNum() {
-        when(entityIdStore.incrementAndGet(EntityType.ACCOUNT)).thenReturn(43L);
+        when(entityIdStore.incrementAndGet()).thenReturn(43L);
 
-        final var actual = subject.newEntityNum(EntityType.ACCOUNT);
+        final var actual = subject.newEntityNum();
 
         assertThat(actual).isEqualTo(43L);
-        verify(entityIdStore).incrementAndGet(EntityType.ACCOUNT);
+        verify(entityIdStore).incrementAndGet();
         verify(entityIdStore, never()).peekAtNextNumber();
     }
 
@@ -80,6 +78,6 @@ class EntityNumGeneratorImplTest {
 
         assertThat(actual).isEqualTo(43L);
         verify(entityIdStore).peekAtNextNumber();
-        verify(entityIdStore, never()).incrementAndGet(any());
+        verify(entityIdStore, never()).incrementAndGet();
     }
 }

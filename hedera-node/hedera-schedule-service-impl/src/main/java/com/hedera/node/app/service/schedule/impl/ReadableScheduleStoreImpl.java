@@ -30,6 +30,7 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,8 +99,7 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
 
     @Override
     public long numSchedulesInState() {
-        return schedulesById.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.SCHEDULE);
     }
 
     @Override
