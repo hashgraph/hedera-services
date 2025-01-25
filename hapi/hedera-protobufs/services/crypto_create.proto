@@ -35,6 +35,7 @@ option java_multiple_files = true;
 
 import "basic_types.proto";
 import "duration.proto";
+import "lambda.proto";
 
 /*
  * Create a new account.
@@ -213,4 +214,9 @@ message CryptoCreateTransactionBody {
      * Once set, an account alias is immutable and MUST NOT be changed.
      */
     bytes alias = 18;
+
+    /**
+     * The lambdas to install immediately after creating this account.
+     */
+    repeated LambdaInstallation lambda_installations = 19;
 }

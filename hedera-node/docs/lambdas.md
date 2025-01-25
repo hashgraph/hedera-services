@@ -248,7 +248,6 @@ message LambdaInstallation {
 ```
 
 Once a lambda is installed, it receives an id,
-
 ```protobuf
 /**
  * Once a lambda is installed, its id.
@@ -266,6 +265,24 @@ message LambdaID {
   uint64 index = 2;
 }
 ```
+where the `owner_id` choices will expand to other types of ids as lambdas are added to more entity types. 
+The id of a newly installed lambda appears in the `TransactionReceipt`,
+```protobuf
 
-where of course the `owner_id` choices will expand to other types
-of ids as lambdas are added to more entity types.
+message TransactionReceipt {
+  // ...
+  
+  /**
+   * In the receipt of a create or update transaction for an entity that supports lambdas,
+   * the ids of any newly installed lambdas.
+   */
+  repeated LambdaID installed_lambda_ids = 15;
+}
+```
+
+### Allowance lambda protobufs
+
+The `TRANSFER_ALLOWANCE` lambda type is the first and only lambda type in this proposal. It is installed on an account
+via either a `CryptoCreate` or `CryptoUpdate` transaction. That is, we extend the `CryptoCreateTransactionBody`
+
+

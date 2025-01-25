@@ -627,5 +627,10 @@ message TransactionBody {
          * A transaction body for voting on a metadata proof descending from the ledger id.
          */
         com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
+
+        /**
+         * A transaction body for updating the storage of a lambda.
+         */
+        LambdaSStoreTransactionBody lambda_sstore = 72;
     }
 }

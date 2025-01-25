@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.lambda">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+import "basic_types.proto";
+
+/**
+ * A slot in the storage of a lambda.
+ */
+message StorageSlot {
+  /**
+   * The key of the slot, left-padded with zeros to be a 32-byte value.
+   */
+  bytes key = 1;
+  /**
+   * If the slot is present, the value of the slot; setting to empty bytes removes the slot.
+   */
+  bytes value = 2;
+}
+
+/**
+ * Adds or removes key/value pairs in the storage of a lambda. The lambda's owning key must sign the transaction.
+ */
+message LambdaSStoreTransactionBody {
+  /**
+   * The id of the lambda whose storage is being updated.
+   */
+  LambdaID lambda_id = 1;
+
+  /**
+   * The updates to the storage of the lambda.
+   */
+  repeated StorageSlot slot_updates = 2;
+}
