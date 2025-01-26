@@ -36,6 +36,7 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterRetriever;
@@ -102,7 +103,7 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public Optional<Network> overrideNetworkFor(final long roundNumber) {
+    public Optional<Network> overrideNetworkFor(final long roundNumber, @NonNull final Configuration platformConfig) {
         if (roundNumber == 0) {
             return Optional.empty();
         }
@@ -111,7 +112,13 @@ public class DiskStartupNetworks implements StartupNetworks {
         if (unscopedNetwork.isPresent()) {
             return unscopedNetwork;
         }
-        return loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
+        final var scopedNetwork = loadNetwork(AssetUse.OVERRIDE, config, "" + roundNumber, OVERRIDE_NETWORK_JSON);
+        if (scopedNetwork.isPresent()) {
+            return scopedNetwork;
+        }
+        return platformConfig.getConfigData(AddressBookConfig.class).forceUseOfConfigAddressBook()
+                ? networkFromConfigTxt(platformConfig)
+                : Optional.empty();
     }
 
     @Override
@@ -165,7 +172,8 @@ public class DiskStartupNetworks implements StartupNetworks {
     }
 
     @Override
-    public Network migrationNetworkOrThrow(final Configuration platformConfig) {
+    public Network migrationNetworkOrThrow(@NonNull final Configuration platformConfig) {
+        requireNonNull(platformConfig);
         return loadNetwork(AssetUse.MIGRATION, configProvider.getConfiguration(), OVERRIDE_NETWORK_JSON)
                 .or(() -> networkFromConfigTxt(platformConfig))
                 .orElseThrow(() -> new IllegalStateException("Transplant network not found"));
