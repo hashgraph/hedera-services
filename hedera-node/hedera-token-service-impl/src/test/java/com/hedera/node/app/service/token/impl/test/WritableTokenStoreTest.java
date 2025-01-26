@@ -21,11 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.util.Collections;
@@ -109,6 +111,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         assertEquals(0, writableTokenStore.sizeOfState());
         assertEquals(Collections.EMPTY_SET, writableTokenStore.modifiedTokens());
         writableTokenStore.putNew(token);
+        given(writableEntityCounters.getCounterFor(EntityType.TOKEN)).willReturn(1L);
 
         assertEquals(1, writableTokenStore.sizeOfState());
         assertEquals(Set.of(tokenId), writableTokenStore.modifiedTokens());

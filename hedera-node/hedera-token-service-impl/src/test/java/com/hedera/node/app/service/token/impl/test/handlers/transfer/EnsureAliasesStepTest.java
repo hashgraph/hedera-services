@@ -76,16 +76,18 @@ class EnsureAliasesStepTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAccountStore.putNewAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    writableAccountStore.putNewAlias(edKeyAlias.value(), asAccount(tokenReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 });
@@ -147,8 +149,9 @@ class EnsureAliasesStepTest extends StepsBase {
                             .accountId(hbarReceiverId)
                             .alias(evmAddressAlias1.value())
                             .build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(evmAddressAlias1, asAccount(hbarReceiver));
+                    writableAccountStore.putNewAlias(evmAddressAlias1.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 })
@@ -157,8 +160,9 @@ class EnsureAliasesStepTest extends StepsBase {
                             .accountId(tokenReceiverId)
                             .alias(evmAddressAlias2.value())
                             .build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(evmAddressAlias2, asAccount(tokenReceiver));
+                    writableAccountStore.putNewAlias(evmAddressAlias2.value(), asAccount(tokenReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 })
@@ -167,8 +171,9 @@ class EnsureAliasesStepTest extends StepsBase {
                             .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
                             .alias(evmAddressAlias3.value())
                             .build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
+                    writableAccountStore.putNewAlias(evmAddressAlias3.value(), asAccount(hbarReceiver + 2));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 });

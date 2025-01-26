@@ -80,7 +80,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
+                    writableAccountStore.putNewAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
@@ -145,8 +146,9 @@ class AutoAccountCreatorTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.put(copy);
+                    writableAccountStore.putNew(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
+                    writableAccountStore.putNewAlias(address.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 });

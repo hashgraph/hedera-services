@@ -32,7 +32,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVStateBase;
@@ -165,13 +164,7 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void testSizeOfState() {
-        writableEntityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
-        writableEntityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
-        writableEntityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
-
-        final var expectedSize = 3L;
-        final var result = subject.sizeOfState();
-        Assertions.assertThat(result).isEqualTo(expectedSize);
+        Assertions.assertThat(readableEntityCounters.numTokenRelations()).isEqualTo(subject.sizeOfState());
     }
 
     @Test

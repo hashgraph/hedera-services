@@ -464,7 +464,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                             .previousAirdrop(pendingId)
                             .build();
                     // since we already validated the headAirdropId exists, we can safely update the store
-                    pendingStore.putNew(currentHeadAirdropId, updatedHeadAirdrop);
+                    pendingStore.put(currentHeadAirdropId, updatedHeadAirdrop);
                     // Create new account airdrop with next airdrop ID the previous head airdrop
                     newHeadAirdrop = createAccountPendingAirdrop(pendingValue, currentHeadAirdropId);
                 }

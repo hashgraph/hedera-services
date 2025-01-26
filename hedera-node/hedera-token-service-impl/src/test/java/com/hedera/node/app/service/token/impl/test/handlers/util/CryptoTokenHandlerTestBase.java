@@ -594,21 +594,24 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenEntityCounters() {
+        final var entityCounts = EntityCounts.newBuilder()
+                .numAliases(aliasesMap.size())
+                .numAccounts(accountsMap.size())
+                .numTokens(tokensMap.size())
+                .numTokenRelations(tokenRelsMap.size())
+                .numNfts(2)
+                .numAirdrops(pendingAirdropMap.size())
+                .build();
         given(writableStates.getSingleton(ENTITY_ID_STATE_KEY))
                 .willReturn(new WritableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
         given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new WritableSingletonStateBase<>(
-                        ENTITY_COUNTS_KEY,
-                        () -> EntityCounts.newBuilder().numAliases(2).build(),
-                        c -> {}));
+                .willReturn(new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> entityCounts, c -> {}));
         given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
                 .willReturn(new ReadableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
         given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new ReadableSingletonStateBase<>(
-                        ENTITY_COUNTS_KEY,
-                        () -> EntityCounts.newBuilder().numAliases(2).build()));
+                .willReturn(new ReadableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> entityCounts));
         readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
         writableEntityCounters = new WritableEntityIdStore(writableStates);
     }
