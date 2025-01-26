@@ -240,5 +240,5 @@ message CryptoUpdateTransactionBody {
     /**
      * The indexes of the lambdas to uninstall from the account.
      */
-    repeated uint64 lambdas_to_uninstall = 20;
+    repeated uint64 lambda_indexes_to_uninstall = 20;
 }

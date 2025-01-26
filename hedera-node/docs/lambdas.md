@@ -17,9 +17,8 @@ updated: 2025-01-25
 ## Abstract
 
 We propose Hiero **lambdas**, lightweight EVM functions that users can **install** on their entities to extend and
-customize the native protocol. Each lambda has a single owner, making updates fast and cheap without compromising
-protocol integrity. Once a lambda is installed to an entity, transactions reference it by index to apply its custom
-behavior.
+customize the native protocol. After a lambda is installed to an entity, relevant transactions reference it by id to
+apply its custom logic.
 
 A lambda does not have a `ContractID` or EVM address; it cannot be called via the Hedera API (HAPI); and it cannot hold
 HBAR or Hedera Token Service (HTS) assets. To further encourage lightweight usage, lambdas default to an execution mode
@@ -32,14 +31,15 @@ protocol applies its logic. For example, an allowance lambda can be installed on
 lambdas use EVM **application binary interfaces (ABI)** to ensure a clear contract between the protocol and user-defined
 logic.
 
-Unlike standard smart contracts, which must encapsulate trust guarantees for multiple parties, Hiero lambdas belong to
-a single owner who can directly update their storage via a `LambdaSStore` transaction. This streamlined design enables
-fast, low-cost adjustments to a lambda’s logic and state without the overhead of contract calls.
+Unlike smart contracts, which must encapsulate trust guarantees for multiple parties, Hiero lambdas belong to a single
+owner who can directly update their storage via a `LambdaSStore` transaction. This streamlined design enables
+fast, low-cost adjustments to a lambda with less overhead than a typical `ConsensusSubmitMessage`; and far less
+than a `ContractCall`.
 
-As a first application, we introduce a **transfer allowance** lambda type that is installable on Hiero accounts and
-referenceable by `CryptoTransfer` transactions. It allows customizations such creating one-time credit allowances
-gated by a shared secret that must be sent to the lambda, and only permitting HTS token credits that do not incur
-custom fees.
+As an application, we also introduce a **transfer allowance** lambda type that is installable on Hiero accounts and
+referenceable by `CryptoTransfer` transactions. We give two simple examples of transfer allowances. The first creates
+a one-time use passcode allowance; the second refines the native `receiver_sig_required` flag to permit just HTS token
+credits that do not incur custom fees.
 
 ## Motivation
 
@@ -506,10 +506,10 @@ message CryptoUpdateTransactionBody {
    */
   repeated LambdaInstallation lambda_installations = 19;
 
-  /**
-   * The indexes of the lambdas to uninstall from the account.
-   */
-  repeated uint64 lambda_indexes_to_uninstall = 20;
+   /**
+    * The indexes of the lambdas to uninstall from the account.
+    */
+   repeated uint64 lambda_indexes_to_uninstall = 20;
 }
 ```
 

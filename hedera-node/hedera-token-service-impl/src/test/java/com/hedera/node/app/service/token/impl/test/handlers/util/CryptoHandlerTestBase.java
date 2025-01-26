@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtil
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-// FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
