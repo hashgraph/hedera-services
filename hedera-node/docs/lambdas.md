@@ -56,14 +56,14 @@ In principle, these sorts of enhancements could be written as smart contracts, _
 or undertake the slow, complex process of designing, drafting, and building consensus around a new HIP.
 
 We believe lambdas fill this gap by providing carefully chosen extension points within the native protocol. With
-lambdas, the use cases motivating HIP-18, HIP-904, and HIP-991---along with many other past and future enhancements---
-could be realized at the protocol layer with less complexity and a broader feature set. By avoiding new protocol-level
+lambdas, the use cases motivating HIP-18, HIP-904, and HIP-991 (and many other past and future enhancements) could be
+realized at the protocol layer with less complexity and a broader feature set. By avoiding new protocol-level
 changes for every customization, lambdas can greatly streamline innovation while maintaining the performance and
 integrity of Hedera’s native services.
 
 ## Specification
 
-Next we outline how lambdas interact with a Hiero network in terms of charging, throttling, and execution environment.
+First we sketch how lambdas interact with a Hiero network in terms of charging, throttling, and execution environment.
 The detailed lambda protobuf API follows.
 
 ### Charging
@@ -748,8 +748,9 @@ they do not introduce any new denial of service vector.
 The main security concerns with transfer allowances are the same as with smart contracts. That is,
 - A lambda author could code a bug allowing an attacker to exploit the lambda.
 - A malicious dApp could trick a user into installing a lambda with a backdoor for the dApp author to exploit.
+
 Lambda authors must mitigate the risk of bugs by rigorous testing and code review. Users must remain vigilant about
-signing transactions presented by dApps of questionable integrity.
+signing transactions from dApps of questionable integrity.
 
 ## Reference Implementation
 
