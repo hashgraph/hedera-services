@@ -86,18 +86,26 @@ message LambdaInitcode {
 }
 
 /**
- * Defines how to install a lambda.
+ * A slot in the storage of a lambda.
  */
-message LambdaInstallation {
-  LambdaType type = 1;
+message LambdaStorageSlot {
+  /**
+   * The 32-byte key of the slot; leading zeros may be omitted.
+   */
+  bytes key = 1;
+  /**
+   * If the slot is present, the 32-byte value of the slot;
+   * leaving this field empty in an update removes the slot.
+   */
+  bytes value = 2;
+}
 
+/**
+ * Specifies the bytecode and initial storage slots for a lambda
+ * that wants to initialize itself explicitly.
+ */
+message LambdaExplicitInit {
   oneof bytecode_source {
-    /**
-     * If the lambda should be initialized via a EVM contract
-     * creation transaction, the initcode to execute.
-     */
-    LambdaInitcode initcode = 2;
-
     /**
      * The ID of a file that contains the lambda's
      * pre-initialized bytecode.
@@ -111,6 +119,35 @@ message LambdaInstallation {
   }
 
   /**
+   * The initial storage of the lambda.
+   */
+  repeated LambdaStorageSlot storage_slots = 5;
+}
+
+/**
+ * Defines how to install a lambda.
+ */
+message LambdaInstallation {
+  /**
+   * The type of lambda to install.
+   */
+  LambdaType type = 1;
+
+  oneof init_method {
+    /**
+     * If the lambda should be initialized via a EVM contract
+     * creation transaction, the initcode to execute.
+     */
+    LambdaInitcode initcode = 2;
+
+    /**
+     * If the lambda should be initialized explicitly, the
+     * bytecode and initial storage slots to use.
+     */
+    LambdaExplicitInit explicit_init = 3;
+  }
+
+  /**
    * The charging pattern to apply for gas usage.
    */
   LambdaChargingPattern charging_pattern = 5;
@@ -119,25 +156,11 @@ message LambdaInstallation {
    * If present, the default gas limit to use when
    * executing the lambda.
    */
-  google.protobuf.UInt64Value default_gas_limit = 7;
-}
-
-/**
- * Defines how to call a lambda.
- */
-message LambdaCall {
-  /**
-   * The ID of the lambda to call.
-   */
-  LambdaID lambda_id = 1;
+  google.protobuf.UInt64Value default_gas_limit = 6;
 
   /**
-   * If not empty, extra call data to pass to the lambda.
+   * If present, a specific lambda index to attempt
+   * to install this lambda at.
    */
-  bytes call_data = 2;
-
-  /**
-   * If present, an explicit gas limit to use.
-   */
-  google.protobuf.UInt64Value gas_limit = 3;
+  google.protobuf.UInt64Value index = 7;
 }

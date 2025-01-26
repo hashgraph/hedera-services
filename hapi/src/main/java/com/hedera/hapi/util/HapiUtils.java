@@ -237,6 +237,7 @@ public class HapiUtils {
             case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
             case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
             case LAMBDA_SSTORE -> HederaFunctionality.LAMBDA_S_STORE;
+            case LAMBDA_DISPATCH -> null;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

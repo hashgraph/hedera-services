@@ -30,16 +30,55 @@ import "basic_types.proto";
 import "lambda.proto";
 
 /**
- * Adds or removes key/value pairs in the storage of a lambda. The lambda's owning key must sign the transaction.
+ * Specifies the creation of a new lambda at a specific id; the
+ * id must not exist.
  */
-message LambdaSStoreTransactionBody {
+message LambdaCreation {
   /**
-   * The id of the lambda whose storage is being updated.
+   * The id of the lambda.
    */
   LambdaID lambda_id = 1;
 
   /**
-   * The updates to the storage of the lambda.
+   * The installation details.
    */
-  repeated LambdaStorageSlot storage_slots = 2;
+  LambdaInstallation installation = 2;
+}
+
+/**
+ * Specifies the execution of a lambda by its owner id and
+ * the details of the call.
+ */
+message LambdaExecution {
+  /**
+   * The id of the lambda's owner.
+   */
+  LambdaOwnerID owner_id = 1;
+
+  /**
+   * The call details.
+   */
+  LambdaCall call = 2;
+}
+
+/**
+ * Dispatches a lambda action to the ContractService.
+ */
+message LambdaDispatchTransactionBody {
+  oneof action {
+    /**
+     * The id of the lambda to delete.
+     */
+    LambdaID lambda_id_to_delete = 1;
+
+    /**
+     * The creation of a new lambda.
+     */
+    LambdaCreation creation = 2;
+
+    /**
+     * A call to an existing lambda.
+     */
+    LambdaExecution execution = 3;
+  }
 }

@@ -1651,4 +1651,15 @@ enum ResponseCodeEnum {
      * A lambda execution was throttled due to high network gas utilization.
      */
     LAMBDA_EXECUTION_THROTTLED = 376;
+
+    /**
+     * A user attempted to install a lambda at an index already in use.
+     */
+    LAMBDA_INDEX_IN_USE = 377;
+
+    /**
+     * A transaction tried to call a lambda that requires externalization
+     * without specifying that call option.
+     */
+    LAMBDA_REQUIRES_EXTERNALIZATION = 378;
 }

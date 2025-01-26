@@ -451,19 +451,62 @@ message TransactionID {
 }
 
 /**
- * Once a lambda is installed, its id.
+ * The id of an entity that owns a lambda.
  */
-message LambdaID {
-    oneof owner {
+message LambdaOwnerID {
+    oneof owner_id {
         /**
          * The account owning the lambda.
          */
         AccountID account_id = 1;
     }
+}
+
+/**
+ * Once a lambda is installed, its id.
+ */
+message LambdaID {
+    /**
+     * The id of the lambda's owner.
+     */
+    LambdaOwnerID owner_id = 1;
+
     /**
      * A unique identifier for the lambda relative to its owner.
      */
     uint64 index = 2;
+}
+
+/**
+ * Defines how to call a lambda from within a transaction where
+ * the lambda owner is implied by the point of use. (For example,
+ * it would never make sense to try to use a transfer allowance
+ * for account 0.0.X inside an AccountAmount that debits account
+ * 0.0.Y; we only need to give the index of which lambda owned
+ * by 0.0.Y that we want to use.)
+ */
+message LambdaCall {
+    /**
+     * The index of the lambda to call.
+     */
+    uint64 index = 1;
+
+    /**
+     * If not empty, extra call data to pass to the lambda.
+     */
+    bytes call_data = 2;
+
+    /**
+     * If present, an explicit gas limit to use.
+     */
+    google.protobuf.UInt64Value gas_limit = 3;
+
+    /**
+     * If true, enables full execution mode at a higher price
+     * and externalizes the lambda's call trace as a child
+     * transaction.
+     */
+    bool requires_externalization = 4;
 }
 
 /**
@@ -498,6 +541,12 @@ message AccountAmount {
      * The default value SHALL be false (unset).
      */
     bool is_approval = 3;
+
+    /**
+     * If set, a call to a lambda of type `TRANSFER_ALLOWANCE` installed on
+     * accountID that must succeed for the transaction to occur.
+     */
+    LambdaCall transfer_allowance_lambda_call = 4;
 }
 
 /**
@@ -556,6 +605,18 @@ message NftTransfer {
      * The default value SHALL be false (unset).
      */
     bool is_approval = 4;
+
+    /**
+     * If set, a call to a lambda of type `TRANSFER_ALLOWANCE` installed on
+     * senderAccountID that must succeed for the transaction to occur.
+     */
+    LambdaCall sender_transfer_allowance_lambda_call = 5;
+
+    /**
+     * If set, a call to a lambda of type `TRANSFER_ALLOWANCE` installed on
+     * receiverAccountID that must succeed for the transaction to occur.
+     */
+    LambdaCall receiver_transfer_allowance_lambda_call = 6;
 }
 
 /**
@@ -1688,6 +1749,11 @@ enum HederaFunctionality {
      * Update one or more storage slots in a lambda.
      */
     LambdaSStore = 107;
+
+    /**
+     * (Internal-only) Dispatch a lambda action.
+     */
+    LambdaDispatch = 108;
 }
 
 /**
