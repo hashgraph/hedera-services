@@ -3,15 +3,15 @@
 hip: <HIP number (assigned by the HIP editor)>
 title: Hiero lambdas and an application to allowances
 author: Michael Tinker <@tinker-michaelj>
-working-group: Atul Mahamuni <atul@hashgraph.com>, Richard Bair <@rbair23>, Jasper Potts <@jasperpotts>, Matthew DeLorenzo <@littletarzan>
-requested-by: Anonymous
+working-group: Atul Mahamuni <atul@hashgraph.com>, Richard Bair <@rbair23>, Jasper Potts <@jasperpotts>, Steven Sheehy <@steven-sheehy>, Matthew DeLorenzo <@littletarzan>
+requested-by: Hashgraph
 type: Standards Track
 category: Service
 needs-council-approval: Yes
 status: Draft
 created: 2025-01-25
 discussions-to: <TODO>
-updated: 2025-01-25
+updated: 2025-01-26
 -------------------
 
 ## Abstract
