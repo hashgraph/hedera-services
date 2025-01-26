@@ -48,6 +48,6 @@ public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "NONE") @NetworkProperty HederaFunctionalitySet nodeTransactionsAllowList,
         @ConfigProperty(defaultValue = "network.json") @NodeProperty String diskNetworkExportFile,
         @ConfigProperty(defaultValue = "NEVER") DiskNetworkExport diskNetworkExport,
-        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportCandidateRoster,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean exportCandidateRoster,
         @ConfigProperty(defaultValue = "candidate-roster.json") @NodeProperty String candidateRosterExportFile,
         @ConfigProperty(defaultValue = "true") @NodeProperty boolean preserveStateWeightsDuringOverride) {}
