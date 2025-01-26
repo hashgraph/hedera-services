@@ -94,9 +94,6 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
      */
     private void handleTransaction(
             @NonNull final ISSTestingToolState state, @NonNull final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
-            return;
-        }
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         state.incrementRunningSum(delta);
