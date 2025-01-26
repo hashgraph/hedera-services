@@ -18,14 +18,17 @@ updated: 2025-01-25
 
 We propose Hiero **lambdas**, lightweight EVM functions that users can **install** to extend and customize the native
 protocol. Each lambda is owned by a single entity, making updates fast and cheap without compromising protocol
-integrity. Once installed to an entity $E$, any transaction interacting with $E$ may reference its lambdas to apply
-custom behavior. A lambda does not, however, have a `ContractID` or EVM address; it cannot be called via the Hedera API 
-(HAPI); and it cannot hold HBAR or Hedera Token Service (HTS) assets.
+integrity. Once a lambda is installed to an entity, transactions may reference it to apply custom behavior. 
+
+A lambda does not, however, have a `ContractID` or EVM address; it cannot be called via the Hedera API 
+(HAPI); and it cannot hold HBAR or Hedera Token Service (HTS) assets. To further encourage lightweight usage, lambdas 
+default to an execution mode that reverts on any opcode usage that would require the network to externalize a call 
+trace. (Users can pay a higher fee to enable full execution mode and externalize the call trace for a lambda.)
 
 The **type** of a lambda determines where it can be installed, which transactions can reference it, and exactly how the
 protocol applies its logic. For example, an allowance lambda can be installed on an account, referenced by a
 `CryptoTransfer` transaction; and the protocol will execute it to decide the transfer can happen. All types of lambdas
-will use EVM **application binary interfaces (ABI)** to ensure a clear contract between the protocol and user-defined
+use EVM **application binary interfaces (ABI)** to ensure a clear contract between the protocol and user-defined
 logic.
 
 Unlike standard smart contracts, which must encapsulate their own trust guarantees for multiple parties, Hiero
