@@ -135,7 +135,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         assertEquals(0, writableNftStore.sizeOfState());
         assertEquals(Collections.EMPTY_SET, writableNftStore.modifiedNfts());
-        writableNftStore.put(nft);
+        writableNftStore.putNew(nft);
 
         assertEquals(1, writableNftStore.sizeOfState());
         assertEquals(Set.of(id), writableNftStore.modifiedNfts());

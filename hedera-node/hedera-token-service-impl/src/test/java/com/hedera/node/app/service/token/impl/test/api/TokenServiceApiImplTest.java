@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.test.api;
 
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +35,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -42,7 +47,6 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -52,6 +56,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
@@ -101,6 +106,11 @@ class TokenServiceApiImplTest {
     private final WritableStates writableStates = new MapWritableStates(Map.of(
             V0490TokenSchema.ACCOUNTS_KEY, accountState,
             V0490TokenSchema.ALIASES_KEY, aliasesState));
+    private final WritableStates entityWritableStates = new MapWritableStates(Map.of(
+            ENTITY_ID_STATE_KEY,
+            new WritableSingletonStateBase<>(ENTITY_ID_STATE_KEY, () -> EntityNumber.DEFAULT, c -> {}),
+            ENTITY_COUNTS_KEY,
+            new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT, c -> {})));
     private WritableAccountStore accountStore;
 
     @Mock
@@ -112,16 +122,13 @@ class TokenServiceApiImplTest {
     @Mock
     private StoreMetricsService storeMetricsService;
 
-    @Mock
-    private EntityNumGenerator entityNumGenerator;
-
-    @Mock
     private WritableEntityCounters entityCounters;
 
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
+        entityCounters = new WritableEntityIdStore(entityWritableStates);
         accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService, entityCounters);
         subject = new TokenServiceApiImpl(
                 DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest, entityCounters);
@@ -203,7 +210,7 @@ class TokenServiceApiImplTest {
     @Test
     void finalizesHollowAccountAsContractAsExpected() {
         final var numAssociations = 3;
-        accountStore.put(Account.newBuilder()
+        accountStore.putNew(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .numberAssociations(numAssociations)
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -232,7 +239,7 @@ class TokenServiceApiImplTest {
 
     @Test
     void createsExpectedContractWithAliasIfSet() {
-        accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
+        accountStore.putNew(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
         assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
         subject.markAsContract(CONTRACT_ACCOUNT_ID, null);
@@ -243,7 +250,7 @@ class TokenServiceApiImplTest {
 
     @Test
     void marksDeletedByNumberIfSet() {
-        accountStore.put(Account.newBuilder()
+        accountStore.putNew(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
                 .build());
@@ -257,12 +264,12 @@ class TokenServiceApiImplTest {
 
     @Test
     void removesByAliasIfSet() {
-        accountStore.put(Account.newBuilder()
+        accountStore.putNew(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(EVM_ADDRESS)
                 .smartContract(true)
                 .build());
-        accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putNewAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
         subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
@@ -277,13 +284,13 @@ class TokenServiceApiImplTest {
         // This scenario with two aliases referencing the same selfdestruct-ed contract is currently
         // impossible (since only auto-created accounts with ECDSA keys can have two aliases), but if
         // it somehow occurs, we might as well clean up both aliases
-        accountStore.put(Account.newBuilder()
+        accountStore.putNew(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(OTHER_EVM_ADDRESS)
                 .smartContract(true)
                 .build());
-        accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
-        accountStore.putAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putNewAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putNewAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
         subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 

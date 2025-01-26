@@ -598,12 +598,17 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .willReturn(new WritableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
         given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT, c -> {}));
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numAliases(2).build(),
+                        c -> {}));
         given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
                 .willReturn(new ReadableSingletonStateBase<>(
                         ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
         given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
-                .willReturn(new ReadableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT));
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numAliases(2).build()));
         readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
         writableEntityCounters = new WritableEntityIdStore(writableStates);
     }

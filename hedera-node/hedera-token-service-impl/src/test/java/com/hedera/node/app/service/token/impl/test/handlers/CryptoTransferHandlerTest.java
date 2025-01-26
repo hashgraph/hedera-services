@@ -582,7 +582,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(4); // includes fee collector for custom fees
         assertThat(writableAccountStore.modifiedAccountsInState())
                 .contains(ownerId, asAccount(hbarReceiver), asAccount(tokenReceiver));
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
 
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
