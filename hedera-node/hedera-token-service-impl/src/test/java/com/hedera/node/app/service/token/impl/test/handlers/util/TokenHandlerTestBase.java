@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHa
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+// FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -56,7 +57,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-// FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
 /**
  * Base class for token handler tests.
@@ -281,6 +281,8 @@ public class TokenHandlerTestBase {
                 false,
                 null,
                 null,
+                0,
+                0,
                 0);
     }
 }
