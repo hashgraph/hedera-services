@@ -160,8 +160,10 @@ class MerkleRehashTests {
     @DisplayName("Failed Rehash Behavior")
     public void failedRehash() {
 
-        DummyMerkleNode root = spy(generateRandomTree(0, 2, 1, 1, 0, 3, 1, 0.25));
-        when(root.getHash()).then(new Answer<Hash>() {
+        DummyMerkleNode root = generateRandomTree(0, 2, 1, 1, 0, 3, 1, 0.25);
+        MerkleNode child = spy(root.asInternal().getChild(0).copy());
+        root.asInternal().setChild(0, child);
+        when(child.getHash()).then(new Answer<Hash>() {
             private int count = 0;
 
             @Override
