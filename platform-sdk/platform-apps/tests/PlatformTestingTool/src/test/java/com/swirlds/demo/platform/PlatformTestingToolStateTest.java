@@ -372,7 +372,7 @@ class PlatformTestingToolStateTest {
         givenRoundAndEvent();
 
         // When
-        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+        final boolean result = main.stateLifecycles.onSealConsensusRound(round, state);
 
         // Then
         assertThat(result).isTrue();
