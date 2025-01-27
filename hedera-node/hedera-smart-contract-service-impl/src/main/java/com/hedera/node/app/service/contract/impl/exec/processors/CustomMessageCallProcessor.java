@@ -141,7 +141,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
-        final var evmPrecompile = isPrecompileEnabled(codeAddress, frame) ? precompiles.get(codeAddress) : null;
+        var evmPrecompile = precompiles.get(codeAddress);
+        if (evmPrecompile != null && !isPrecompileEnabled(codeAddress, frame)) {
+            // disable precompile if so configured.
+            evmPrecompile = null;
+        }
 
         // Check to see if the code address is a system account and possibly halt
         if (addressChecks.isSystemAccount(codeAddress)) {
