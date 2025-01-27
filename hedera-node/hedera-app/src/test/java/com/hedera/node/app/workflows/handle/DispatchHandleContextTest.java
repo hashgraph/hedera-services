@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -393,7 +394,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             childDispatchFactory,
             dispatchProcessor,
             throttleAdviser,
-            feeAccumulator
+            feeAccumulator,
+            EMPTY_METADATA
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -780,7 +782,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                feeAccumulator,
+                EMPTY_METADATA);
     }
 
     private void mockNeeded() {
