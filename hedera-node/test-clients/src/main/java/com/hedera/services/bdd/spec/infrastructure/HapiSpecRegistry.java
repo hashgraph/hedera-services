@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public class HapiSpecRegistry {
     public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
         this.setup = setup;
 
-        final var key = setup.payerKey();
+        final var key = setup.payerKeyAsEd25519();
         final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
 
         saveAccountId(setup.genesisAccountName(), setup.genesisAccount());

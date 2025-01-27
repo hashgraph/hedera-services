@@ -83,7 +83,7 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
      * @param nodeId the node's ID
      * @param stakingNodeInfo the staking info to persist
      */
-    public void putNew(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
+    public void putAndIncrementCount(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
         put(nodeId, stakingNodeInfo);
         entityCounters.incrementEntityTypeCount(EntityType.STAKING_INFO);
     }

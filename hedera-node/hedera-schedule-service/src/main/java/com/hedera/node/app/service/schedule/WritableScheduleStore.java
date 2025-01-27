@@ -63,7 +63,7 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
      * Adds a new schedule to the store. This will also increment the entity counts for schedules.
      * @param scheduleToAdd The schedule to add to the store
      */
-    void putNew(@NonNull Schedule scheduleToAdd);
+    void putAndIncrementCount(@NonNull Schedule scheduleToAdd);
 
     /**
      * Purges all schedule state associated with the given order.

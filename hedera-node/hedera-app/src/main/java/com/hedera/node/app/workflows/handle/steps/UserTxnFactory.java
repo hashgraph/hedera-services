@@ -327,7 +327,8 @@ public class UserTxnFactory {
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
-                feeAccumulator);
+                feeAccumulator,
+                HandleContext.DispatchMetadata.EMPTY_METADATA);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(

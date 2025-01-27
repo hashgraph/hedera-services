@@ -69,7 +69,7 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
      * will also increment the entity type count for {@link EntityType#NODE}.
      * @param node - the node to be mapped onto a new {@link Node}
      */
-    public void putNew(@NonNull final Node node) {
+    public void putAndIncrementCount(@NonNull final Node node) {
         put(node);
         entityCounters.incrementEntityTypeCount(EntityType.NODE);
     }

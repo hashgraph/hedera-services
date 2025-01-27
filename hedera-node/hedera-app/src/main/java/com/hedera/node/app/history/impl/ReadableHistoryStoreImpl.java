@@ -79,6 +79,11 @@ public class ReadableHistoryStoreImpl implements ReadableHistoryStore {
     }
 
     @Override
+    public @NonNull HistoryProofConstruction getNextConstruction() {
+        return requireNonNull(nextConstruction.get());
+    }
+
+    @Override
     public @Nullable HistoryProofConstruction getConstructionFor(@NonNull final ActiveRosters activeRosters) {
         requireNonNull(activeRosters);
         return switch (activeRosters.phase()) {

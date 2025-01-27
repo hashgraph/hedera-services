@@ -61,6 +61,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.TokensConfig;
@@ -322,6 +323,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         given(handleContext.savepointStack()).willReturn(stack);
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         given(stack.getBaseBuilder(TokenAirdropStreamBuilder.class)).willReturn(tokenAirdropRecordBuilder);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
@@ -329,8 +331,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .copyBuilder()
                 .customFees(Collections.emptyList())
                 .build();
-        writableTokenStore.putNew(tokenWithNoCustomFees);
-        writableTokenStore.putNew(nftWithNoCustomFees);
+        writableTokenStore.putAndIncrementCount(tokenWithNoCustomFees);
+        writableTokenStore.putAndIncrementCount(nftWithNoCustomFees);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         givenAirdropTxn();
@@ -415,7 +417,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         refreshReadableStores();
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
-
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         // mock record builder
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
         var tokenWithNoCustomFees =

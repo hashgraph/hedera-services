@@ -356,7 +356,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         rosterHistory)
                 .withPlatformContext(platformContext)
                 .withConfiguration(platformConfig)
-                .withKeysAndCerts(keysAndCerts);
+                .withKeysAndCerts(keysAndCerts)
+                .withSystemTransactionEncoderCallback(hedera::encodeSystemTransaction);
         final var platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
@@ -392,15 +393,16 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                 new OrderedServiceMigrator(),
                 InstantSource.system(),
                 DiskStartupNetworks::new,
-                TssBlockHashSigner::new,
-                appContext ->
-                        new HintsServiceImpl(metrics, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary()),
-                appContext -> new HistoryServiceImpl(
+                (appContext, bootstrapConfig) -> new HintsServiceImpl(
+                        metrics, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary(), bootstrapConfig),
+                (appContext, bootstrapConfig) -> new HistoryServiceImpl(
                         metrics,
                         ForkJoinPool.commonPool(),
                         appContext,
                         new HistoryLibraryImpl(),
-                        HISTORY_LIBRARY_CODEC),
+                        HISTORY_LIBRARY_CODEC,
+                        bootstrapConfig),
+                TssBlockHashSigner::new,
                 metrics,
                 new StoreMetricsServiceImpl(metrics));
     }

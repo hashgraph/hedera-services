@@ -348,7 +348,7 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
          */
         @Test
         @DisplayName("Put a key that does not already exist in the backing store")
-        void putNew() {
+        void putAndIncrementCount() {
             assertThat(state.readKeys()).isEmpty();
             assertThat(state.modifiedKeys()).isEmpty();
 

@@ -154,7 +154,7 @@ public class FileCreateHandler implements TransactionHandler {
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
-            fileStore.putNew(file);
+            fileStore.putAndIncrementCount(file);
 
             handleContext
                     .savepointStack()

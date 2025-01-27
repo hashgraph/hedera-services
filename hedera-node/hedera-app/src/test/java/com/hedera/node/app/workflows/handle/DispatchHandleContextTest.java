@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -397,7 +398,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             childDispatchFactory,
             dispatchProcessor,
             throttleAdviser,
-            feeAccumulator
+            feeAccumulator,
+            EMPTY_METADATA
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -784,7 +786,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdviser,
-                feeAccumulator);
+                feeAccumulator,
+                EMPTY_METADATA);
     }
 
     private void mockNeeded() {
