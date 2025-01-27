@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.ids;
 
-import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.hapi.utils.EntityType;
 
 /**
  * Provides a way to update entity number counts.
