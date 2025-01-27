@@ -93,7 +93,7 @@ public class ReadableContractStateStore implements ContractStateStore {
     }
 
     @Override
-    public void putNewSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+    public void putAndIncrementCountSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
         throw new UnsupportedOperationException("Cannot put slots in a read-only store");
     }
 

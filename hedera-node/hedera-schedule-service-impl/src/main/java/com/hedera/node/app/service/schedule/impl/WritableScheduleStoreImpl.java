@@ -144,7 +144,7 @@ public class WritableScheduleStoreImpl extends ReadableScheduleStoreImpl impleme
     }
 
     @Override
-    public void putNew(@NonNull final Schedule schedule) {
+    public void putAndIncrementCount(@NonNull final Schedule schedule) {
         put(schedule);
         entityCounters.incrementEntityTypeCount(EntityType.SCHEDULE);
     }

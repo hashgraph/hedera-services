@@ -140,7 +140,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @Test
     void canRemoveAlias() {
-        writableStore.putNewAlias(alias.aliasOrThrow(), id);
+        writableStore.putAndIncrementCountAlias(alias.aliasOrThrow(), id);
         assertEquals(1, writableStore.sizeOfAliasesState());
         writableStore.removeAlias(alias.aliasOrThrow());
         assertEquals(0, writableStore.sizeOfAliasesState());
@@ -150,8 +150,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getForModifyDoesntLookForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.putNew(account);
-        writableStore.putNewAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getForModify(alias);
 
@@ -164,8 +164,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getWithAliasedIdLooksForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.putNew(account);
-        writableStore.putNewAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getAliasedAccountById(alias);
 
@@ -202,7 +202,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(writableStore.sizeOfAliasesState()).isZero();
         assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
 
-        writableStore.putNew(account);
+        writableStore.putAndIncrementCount(account);
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
         assertThat(writableStore.modifiedAccountsInState())
                 .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));

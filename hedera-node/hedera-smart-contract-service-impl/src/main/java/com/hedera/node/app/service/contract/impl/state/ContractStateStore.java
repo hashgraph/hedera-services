@@ -73,7 +73,7 @@ public interface ContractStateStore {
      * @param key the {@link SlotKey} to put the {@link SlotValue} for
      * @param value the {@link SlotValue} to put
      */
-    void putNewSlot(@NonNull SlotKey key, @NonNull SlotValue value);
+    void putAndIncrementCountSlot(@NonNull SlotKey key, @NonNull SlotValue value);
 
     /**
      * Returns the {@link Set} of {@link SlotKey}s that have been modified.

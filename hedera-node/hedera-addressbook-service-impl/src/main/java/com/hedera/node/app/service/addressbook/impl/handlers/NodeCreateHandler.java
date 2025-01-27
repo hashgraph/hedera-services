@@ -119,7 +119,7 @@ public class NodeCreateHandler implements TransactionHandler {
                 .adminKey(op.adminKey());
         final var node = nodeBuilder.nodeId(getNextNodeID(nodeStore)).build();
 
-        nodeStore.putNew(node);
+        nodeStore.putAndIncrementCount(node);
 
         final var recordBuilder = handleContext.savepointStack().getBaseBuilder(NodeCreateStreamBuilder.class);
 

@@ -147,7 +147,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFees(), context.expiryValidator());
         // Put token into modifications map
-        tokenStore.putNew(newToken);
+        tokenStore.putAndIncrementCount(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
         associateAccounts(

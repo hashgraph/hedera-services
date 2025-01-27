@@ -86,7 +86,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * {@link EntityType#TOKEN}.
      * @param token
      */
-    public void putNew(@NonNull final Token token) {
+    public void putAndIncrementCount(@NonNull final Token token) {
         put(token);
         entityCounters.incrementEntityTypeCount(EntityType.TOKEN);
     }

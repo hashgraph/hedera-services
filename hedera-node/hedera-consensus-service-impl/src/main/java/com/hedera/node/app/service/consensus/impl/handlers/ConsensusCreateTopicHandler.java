@@ -169,7 +169,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             /* --- Put the final topic. It will be in underlying state's modifications map.
             It will not be committed to state until commit is called on the state.--- */
             final var topic = builder.build();
-            topicStore.putNew(topic);
+            topicStore.putAndIncrementCount(topic);
 
             /* --- Build the record with newly created topic --- */
             final var recordBuilder =

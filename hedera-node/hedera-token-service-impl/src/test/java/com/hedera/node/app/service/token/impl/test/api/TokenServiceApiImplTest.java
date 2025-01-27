@@ -210,7 +210,7 @@ class TokenServiceApiImplTest {
     @Test
     void finalizesHollowAccountAsContractAsExpected() {
         final var numAssociations = 3;
-        accountStore.putNew(Account.newBuilder()
+        accountStore.putAndIncrementCount(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .numberAssociations(numAssociations)
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -239,7 +239,8 @@ class TokenServiceApiImplTest {
 
     @Test
     void createsExpectedContractWithAliasIfSet() {
-        accountStore.putNew(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
+        accountStore.putAndIncrementCount(
+                Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
         assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
         subject.markAsContract(CONTRACT_ACCOUNT_ID, null);
@@ -250,7 +251,7 @@ class TokenServiceApiImplTest {
 
     @Test
     void marksDeletedByNumberIfSet() {
-        accountStore.putNew(Account.newBuilder()
+        accountStore.putAndIncrementCount(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
                 .build());
@@ -264,12 +265,12 @@ class TokenServiceApiImplTest {
 
     @Test
     void removesByAliasIfSet() {
-        accountStore.putNew(Account.newBuilder()
+        accountStore.putAndIncrementCount(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(EVM_ADDRESS)
                 .smartContract(true)
                 .build());
-        accountStore.putNewAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putAndIncrementCountAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
         subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 
@@ -284,13 +285,13 @@ class TokenServiceApiImplTest {
         // This scenario with two aliases referencing the same selfdestruct-ed contract is currently
         // impossible (since only auto-created accounts with ECDSA keys can have two aliases), but if
         // it somehow occurs, we might as well clean up both aliases
-        accountStore.putNew(Account.newBuilder()
+        accountStore.putAndIncrementCount(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(OTHER_EVM_ADDRESS)
                 .smartContract(true)
                 .build());
-        accountStore.putNewAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
-        accountStore.putNewAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putAndIncrementCountAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putAndIncrementCountAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
 
         subject.deleteContract(CONTRACT_ID_BY_ALIAS);
 

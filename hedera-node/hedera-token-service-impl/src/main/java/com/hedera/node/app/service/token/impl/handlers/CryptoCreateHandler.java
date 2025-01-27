@@ -263,7 +263,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // Build the new account to be persisted based on the transaction body and save the newly created account
         // number in the record builder
         final var accountCreated = buildAccount(op, context);
-        accountStore.putNew(accountCreated);
+        accountStore.putAndIncrementCount(accountCreated);
 
         final var createdAccountID = accountCreated.accountIdOrThrow();
         final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoCreateStreamBuilder.class);
@@ -274,7 +274,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         if (alias.length() > 0) {
             // If we have been given an EVM address, then we can just put it into the store
             if (isOfEvmAddressSize(alias)) {
-                accountStore.putNewAlias(alias, createdAccountID);
+                accountStore.putAndIncrementCountAlias(alias, createdAccountID);
             } else {
                 // The only other kind of alias it could be is a key-alias. And in that case, it could be an ED25519
                 // protobuf-encoded key, or it could be an ECDSA_SECP256K1 protobuf-encoded key. In this latter case,
@@ -286,10 +286,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 validateTrue(isValid(key), INVALID_ALIAS_KEY); // In case the protobuf encoded key is BOGUS!
                 final var evmAddress = extractEvmAddress(key);
                 if (evmAddress != null) {
-                    accountStore.putNewAlias(evmAddress, createdAccountID);
+                    accountStore.putAndIncrementCountAlias(evmAddress, createdAccountID);
                     recordBuilder.evmAddress(evmAddress);
                 }
-                accountStore.putNewAlias(alias, createdAccountID);
+                accountStore.putAndIncrementCountAlias(alias, createdAccountID);
             }
         }
     }

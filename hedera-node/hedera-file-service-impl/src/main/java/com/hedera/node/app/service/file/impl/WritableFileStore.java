@@ -81,7 +81,7 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      * Also increments the entity counter for the file.
      * @param file - the file to be persisted.
      */
-    public void putNew(@NonNull final File file) {
+    public void putAndIncrementCount(@NonNull final File file) {
         put(file);
         entityCounters.incrementEntityTypeCount(EntityType.FILE);
     }

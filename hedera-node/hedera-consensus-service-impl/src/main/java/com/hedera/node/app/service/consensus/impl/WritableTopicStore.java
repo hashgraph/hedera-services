@@ -83,7 +83,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      *
      * @param topic - the topic to be persisted.
      */
-    public void putNew(@NonNull final Topic topic) {
+    public void putAndIncrementCount(@NonNull final Topic topic) {
         put(topic);
         entityCounters.incrementEntityTypeCount(EntityType.TOPIC);
     }

@@ -87,7 +87,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * {@link EntityType#NFT}.
      * @param nft the nft to be persisted
      */
-    public void putNew(@NonNull final Nft nft) {
+    public void putAndIncrementCount(@NonNull final Nft nft) {
         put(nft);
         entityCounters.incrementEntityTypeCount(EntityType.NFT);
     }

@@ -98,7 +98,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * Persists a new {@link Account} into the state. Also increments the entity count for {@link EntityType#ACCOUNT}.
      * @param account - the account to be added in state.
      */
-    public void putNew(@NonNull final Account account) {
+    public void putAndIncrementCount(@NonNull final Account account) {
         put(account);
         entityCounters.incrementEntityTypeCount(EntityType.ACCOUNT);
     }
@@ -134,7 +134,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @param alias    - the alias to be added in state.
      * @param accountId - the account number to be added in state.
      */
-    public void putNewAlias(@NonNull final Bytes alias, final AccountID accountId) {
+    public void putAndIncrementCountAlias(@NonNull final Bytes alias, final AccountID accountId) {
         putAlias(alias, accountId);
         entityCounters.incrementEntityTypeCount(EntityType.ALIAS);
     }

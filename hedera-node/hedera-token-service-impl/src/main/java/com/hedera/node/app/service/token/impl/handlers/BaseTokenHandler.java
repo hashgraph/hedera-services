@@ -222,7 +222,7 @@ public class BaseTokenHandler {
 
             // Save the results
             accountStore.put(updatedAcct);
-            newTokenRels.forEach(tokenRelStore::putNew);
+            newTokenRels.forEach(tokenRelStore::putAndIncrementCount);
         }
     }
 
@@ -389,7 +389,7 @@ public class BaseTokenHandler {
             }
         }
         accountStore.put(copyAccount);
-        tokenRelStore.putNew(newTokenRel);
+        tokenRelStore.putAndIncrementCount(newTokenRel);
         return newTokenRel;
     }
 

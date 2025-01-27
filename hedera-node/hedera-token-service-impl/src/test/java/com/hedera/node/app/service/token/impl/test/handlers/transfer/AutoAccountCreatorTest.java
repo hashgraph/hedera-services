@@ -80,8 +80,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.putNew(copy);
-                    writableAccountStore.putNewAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
+                    writableAccountStore.putAndIncrementCount(copy);
+                    writableAccountStore.putAndIncrementCountAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
@@ -113,8 +113,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.putNew(copy);
-                    writableAccountStore.putNewAlias(edKeyAlias.value(), asAccount(hbarReceiver));
+                    writableAccountStore.putAndIncrementCount(copy);
+                    writableAccountStore.putAndIncrementCountAlias(edKeyAlias.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 });
@@ -146,9 +146,9 @@ class AutoAccountCreatorTest extends StepsBase {
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.putNew(copy);
+                    writableAccountStore.putAndIncrementCount(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
-                    writableAccountStore.putNewAlias(address.value(), asAccount(hbarReceiver));
+                    writableAccountStore.putAndIncrementCountAlias(address.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 });

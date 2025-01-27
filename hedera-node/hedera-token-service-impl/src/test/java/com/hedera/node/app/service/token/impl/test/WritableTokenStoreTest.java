@@ -110,7 +110,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         token = createToken();
         assertEquals(0, writableTokenStore.sizeOfState());
         assertEquals(Collections.EMPTY_SET, writableTokenStore.modifiedTokens());
-        writableTokenStore.putNew(token);
+        writableTokenStore.putAndIncrementCount(token);
         given(writableEntityCounters.getCounterFor(EntityType.TOKEN)).willReturn(1L);
 
         assertEquals(1, writableTokenStore.sizeOfState());

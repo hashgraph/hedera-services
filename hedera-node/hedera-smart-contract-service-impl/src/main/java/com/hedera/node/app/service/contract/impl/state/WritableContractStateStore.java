@@ -110,7 +110,7 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
      * {@inheritDoc}
      */
     @Override
-    public void putNewSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+    public void putAndIncrementCountSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
         putSlot(key, value);
         entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_STORAGE);
     }

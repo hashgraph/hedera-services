@@ -92,7 +92,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * Persists a new {@link TokenRelation} into the state and increments the entity counter for token relations.
      * @param tokenRelation the token relation to be persisted
      */
-    public void putNew(@NonNull final TokenRelation tokenRelation) {
+    public void putAndIncrementCount(@NonNull final TokenRelation tokenRelation) {
         put(tokenRelation);
         entityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
     }
