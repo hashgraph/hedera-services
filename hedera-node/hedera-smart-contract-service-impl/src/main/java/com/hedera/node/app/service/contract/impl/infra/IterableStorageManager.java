@@ -206,7 +206,7 @@ public class IterableStorageManager {
                     contractID,
                     irreparable);
         }
-        store.putAndIncrementCountSlot(
+        store.putSlotAndIncrementCount(
                 new SlotKey(contractID, newKey), new SlotValue(newValue, Bytes.EMPTY, firstContractKey));
         return newKey;
     }

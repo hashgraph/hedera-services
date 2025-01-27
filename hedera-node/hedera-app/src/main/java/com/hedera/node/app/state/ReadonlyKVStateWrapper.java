@@ -44,30 +44,45 @@ public class ReadonlyKVStateWrapper<K, V> implements ReadableKVState<K, V> {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public String getStateKey() {
         return delegate.getStateKey();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public V get(@NonNull K key) {
         return delegate.get(key);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public Iterator<K> keys() {
         return delegate.keys();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public Set<K> readKeys() {
         return delegate.readKeys();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Deprecated
     public long size() {

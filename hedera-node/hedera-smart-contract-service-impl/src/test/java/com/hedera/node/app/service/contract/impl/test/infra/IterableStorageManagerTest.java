@@ -247,7 +247,7 @@ class IterableStorageManagerTest {
 
         // Model deleting the second contract storage
         verify(store)
-                .putAndIncrementCountSlot(
+                .putSlotAndIncrementCount(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, Bytes.EMPTY));
 
@@ -281,7 +281,7 @@ class IterableStorageManagerTest {
 
         // The first insert (BYTES_2)
         verify(store)
-                .putAndIncrementCountSlot(
+                .putSlotAndIncrementCount(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
         verify(store)
@@ -290,7 +290,7 @@ class IterableStorageManagerTest {
                         new SlotValue(tuweniToPbjBytes(UInt256.ONE), BYTES_2, Bytes.EMPTY));
         // The second insert (BYTES_3)
         verify(store)
-                .putAndIncrementCountSlot(
+                .putSlotAndIncrementCount(
                         new SlotKey(CONTRACT_1, BYTES_3),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_2));
         verify(store)
@@ -322,7 +322,7 @@ class IterableStorageManagerTest {
         subject.persistChanges(enhancement, accesses, sizeChanges, store);
 
         verify(store)
-                .putAndIncrementCountSlot(
+                .putSlotAndIncrementCount(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
         verify(store)
@@ -355,7 +355,7 @@ class IterableStorageManagerTest {
 
         // Model deleting the second contract storage
         verify(store)
-                .putAndIncrementCountSlot(
+                .putSlotAndIncrementCount(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
 
