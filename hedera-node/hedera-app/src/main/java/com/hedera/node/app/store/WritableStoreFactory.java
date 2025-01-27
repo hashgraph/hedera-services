@@ -68,17 +68,51 @@ public class WritableStoreFactory {
     private static Map<Class<?>, StoreEntry> createFactoryMap() {
         final Map<Class<?>, StoreEntry> newMap = new HashMap<>();
         // AddressBookService
-        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
+        newMap.put(
+                WritableNodeStore.class,
+                new StoreEntry(
+                        AddressBookService.NAME,
+                        (states1, configuration1, storeMetricsService1, entityCounters1) ->
+                                new WritableNodeStore(states1, entityCounters1)));
 
         // ConsensusService
-        newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
-        // TokenService
-        newMap.put(WritableAccountStore.class, new StoreEntry(TokenService.NAME, WritableAccountStore::new));
-        newMap.put(WritableAirdropStore.class, new StoreEntry(TokenService.NAME, WritableAirdropStore::new));
-        newMap.put(WritableNftStore.class, new StoreEntry(TokenService.NAME, WritableNftStore::new));
-        newMap.put(WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new));
         newMap.put(
-                WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
+                WritableTopicStore.class,
+                new StoreEntry(
+                        ConsensusService.NAME,
+                        (states1, configuration1, storeMetricsService1, entityCounters1) ->
+                                new WritableTopicStore(states1, entityCounters1)));
+        // TokenService
+        newMap.put(
+                WritableAccountStore.class,
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states3, configuration3, storeMetricsService3, entityCounters3) ->
+                                new WritableAccountStore(states3, entityCounters3)));
+        newMap.put(
+                WritableAirdropStore.class,
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states3, configuration3, storeMetricsService3, entityCounters3) ->
+                                new WritableAirdropStore(states3, entityCounters3)));
+        newMap.put(
+                WritableNftStore.class,
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states3, configuration3, storeMetricsService3, entityCounters3) ->
+                                new WritableNftStore(states3, entityCounters3)));
+        newMap.put(
+                WritableTokenStore.class,
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states4, configuration4, storeMetricsService4, entityCounters4) ->
+                                new WritableTokenStore(states4, entityCounters4)));
+        newMap.put(
+                WritableTokenRelationStore.class,
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states3, configuration3, storeMetricsService3, entityCounters3) ->
+                                new WritableTokenRelationStore(states3, entityCounters3)));
         newMap.put(
                 WritableNetworkStakingRewardsStore.class,
                 new StoreEntry(
@@ -97,7 +131,12 @@ public class WritableStoreFactory {
                         FreezeService.NAME,
                         (states, config, metrics, entityCounters) -> new WritableFreezeStore(states)));
         // FileService
-        newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
+        newMap.put(
+                WritableFileStore.class,
+                new StoreEntry(
+                        FileService.NAME,
+                        (states2, configuration2, storeMetricsService2, entityCounters2) ->
+                                new WritableFileStore(states2, entityCounters2)));
         newMap.put(
                 WritableUpgradeFileStore.class,
                 new StoreEntry(
@@ -106,7 +145,10 @@ public class WritableStoreFactory {
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,
-                new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
+                new StoreEntry(
+                        ContractService.NAME,
+                        (states1, configuration1, storeMetricsService1, entityCounters1) ->
+                                new WritableContractStateStore(states1, entityCounters1)));
         // EntityIdService
         newMap.put(
                 WritableEntityIdStore.class,
@@ -114,7 +156,12 @@ public class WritableStoreFactory {
                         EntityIdService.NAME,
                         (states, config, metrics, entityCounters) -> new WritableEntityIdStore(states)));
         // Schedule Service
-        newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
+        newMap.put(
+                WritableScheduleStore.class,
+                new StoreEntry(
+                        ScheduleService.NAME,
+                        (states1, configuration1, storeMetricsService1, entityCounters1) ->
+                                new WritableScheduleStoreImpl(states1, entityCounters1)));
         // Roster Service
         newMap.put(
                 WritableRosterStore.class,

@@ -159,8 +159,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void royaltyFeeFailsWithMissingTokenOnFeeScheduleUpdate() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore =
-                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         feeWithRoyalty.add(
@@ -583,8 +582,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void royaltyFeeFailsWithMissingTokenOnTokenCreate() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore =
-                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         feeWithRoyalty.add(

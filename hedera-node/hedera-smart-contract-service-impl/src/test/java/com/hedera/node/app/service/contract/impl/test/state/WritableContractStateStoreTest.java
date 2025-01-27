@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BYTECOD
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -31,7 +30,6 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -72,7 +70,7 @@ class WritableContractStateStoreTest {
 
         final var config = HederaTestConfigBuilder.createConfig();
 
-        subject = new WritableContractStateStore(states, config, mock(StoreMetricsService.class), entityCounters);
+        subject = new WritableContractStateStore(states, entityCounters);
     }
 
     @Test

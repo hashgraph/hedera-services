@@ -142,7 +142,7 @@ class IngestComponentTest {
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
                 .kvStateChangeListener(new KVStateChangeListener())
-                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener(app.storeMetricsService(), configProvider))
                 .migrationStateChanges(List.of())
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))

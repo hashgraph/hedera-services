@@ -71,7 +71,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         writableAirdropState = emptyWritableAirdropStateBuilder().build();
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        subject = new WritableAirdropStore(writableStates, writableEntityCounters);
     }
 
     @Test
@@ -101,7 +101,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
                         .build());
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        subject = new WritableAirdropStore(writableStates, writableEntityCounters);
 
         assertThat(writableAirdropState.contains(nftId)).isTrue();
 
@@ -131,7 +131,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
 
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        subject = new WritableAirdropStore(writableStates, writableEntityCounters);
 
         assertThat(subject.exists(fungibleAirdropToRemove)).isTrue();
         assertThat(subject.exists(nftToRemove)).isTrue();
@@ -180,8 +180,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorCallWithNull() {
-        assertThatThrownBy(() -> subject =
-                        new WritableAirdropStore(null, configuration, storeMetricsService, writableEntityCounters))
+        assertThatThrownBy(() -> subject = new WritableAirdropStore(null, writableEntityCounters))
                 .isInstanceOf(NullPointerException.class);
     }
 

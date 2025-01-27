@@ -82,6 +82,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -344,7 +345,7 @@ public final class Hedera
      * current system, these are the singleton and queue updates. Every {@link MerkleStateRoot} will have this
      * listener registered.
      */
-    private final BoundaryStateChangeListener boundaryStateChangeListener = new BoundaryStateChangeListener();
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     /**
      * A {@link StateChangeListener} that accumulates state changes that must be immediately reported as they occur,
@@ -374,6 +375,9 @@ public final class Hedera
 
     @Nullable
     private StartupNetworks startupNetworks;
+
+    @NonNull
+    private StoreMetricsServiceImpl storeMetricsService;
 
     private boolean onceOnlyServiceInitializationPostDaggerHasHappened = false;
 
@@ -435,7 +439,8 @@ public final class Hedera
             @NonNull final BlockHashSignerFactory blockHashSignerFactory,
             @NonNull final HintsServiceFactory hintsServiceFactory,
             @NonNull final HistoryServiceFactory historyServiceFactory,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @NonNull final StoreMetricsServiceImpl storeMetricsService) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.metrics = requireNonNull(metrics);
@@ -480,6 +485,7 @@ public final class Hedera
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
+        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configProvider);
         hintsService = hintsServiceFactory.apply(appContext);
         historyService = historyServiceFactory.apply(appContext);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);
@@ -728,7 +734,9 @@ public final class Hedera
                 platformConfig,
                 genesisNetworkInfo,
                 metrics,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         this.initState = null;
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.stack;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -123,10 +122,5 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     @Deprecated
     public long size() {
         return getCurrent().size();
-    }
-
-    @Override
-    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
-        getCurrent().setMetrics(storeMetrics);
     }
 }

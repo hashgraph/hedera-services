@@ -24,11 +24,7 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.TokensConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,21 +49,12 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      * Create a new {@link WritableNftStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum allowed mints.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableNftStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
         this.entityCounters = entityCounters;
-
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
-        final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);
-        nftState.setMetrics(storeMetrics);
     }
 
     /**

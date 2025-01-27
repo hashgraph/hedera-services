@@ -49,23 +49,16 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenStore(writableStates, CONFIGURATION, null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenStore(writableStates, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
     }
 
     @Test
     void constructorCreatesTokenState() {
-        final var store =
-                new WritableTokenStore(writableStates, CONFIGURATION, storeMetricsService, writableEntityCounters);
+        final var store = new WritableTokenStore(writableStates, writableEntityCounters);
         assertNotNull(store);
     }
 

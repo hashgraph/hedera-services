@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -60,16 +62,18 @@ public class OrderedServiceMigrator implements ServiceMigrator {
     /**
      * Migrates the services registered with the {@link ServicesRegistry}
      *
-     * @param state The state to migrate
-     * @param servicesRegistry The services registry to use for the migrations
-     * @param previousVersion The previous version of the state
-     * @param currentVersion The current version of the state
-     * @param appConfig The system configuration to use at the time of migration
-     * @param platformConfig The platform configuration to use for subsequent object initializations
-     * @param genesisNetworkInfo The network information to use for the migrations.
-     * This is only used in genesis case
-     * @param metrics The metrics to use for the migrations
-     * @param startupNetworks The startup networks to use for the migrations
+     * @param state               The state to migrate
+     * @param servicesRegistry    The services registry to use for the migrations
+     * @param previousVersion     The previous version of the state
+     * @param currentVersion      The current version of the state
+     * @param appConfig           The system configuration to use at the time of migration
+     * @param platformConfig      The platform configuration to use for subsequent object initializations
+     * @param genesisNetworkInfo  The network information to use for the migrations.
+     *                            This is only used in genesis case
+     * @param metrics             The metrics to use for the migrations
+     * @param startupNetworks     The startup networks to use for the migrations
+     * @param storeMetricsService The store metrics service to use for the migrations
+     * @param configProvider
      * @return The list of state changes that occurred during the migrations
      */
     @Override
@@ -82,7 +86,9 @@ public class OrderedServiceMigrator implements ServiceMigrator {
             @NonNull final Configuration platformConfig,
             @Nullable final NetworkInfo genesisNetworkInfo,
             @NonNull final Metrics metrics,
-            @NonNull final StartupNetworks startupNetworks) {
+            @NonNull final StartupNetworks startupNetworks,
+            @NonNull final StoreMetricsServiceImpl storeMetricsService,
+            @NonNull final ConfigProviderImpl configProvider) {
         requireNonNull(state);
         requireNonNull(currentVersion);
         requireNonNull(appConfig);
@@ -90,7 +96,8 @@ public class OrderedServiceMigrator implements ServiceMigrator {
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
-        final var migrationStateChanges = new MigrationStateChanges(state, appConfig);
+        final var migrationStateChanges =
+                new MigrationStateChanges(state, appConfig, storeMetricsService, configProvider);
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))

@@ -17,6 +17,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
@@ -44,7 +45,18 @@ import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.NodesConfig;
+import com.hedera.node.config.data.SchedulingConfig;
+import com.hedera.node.config.data.TokensConfig;
+import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.OneOf;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.StateChangeListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -73,8 +85,26 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     @Nullable
     private Timestamp boundaryTimestamp;
 
+    @NonNull
+    private final StoreMetricsService storeMetricsService;
+
+    @NonNull
+    private final Configuration configuration;
+
+    /**
+     * Constructor for the {@link BoundaryStateChangeListener} class.
+     * @param storeMetricsService the store metrics service
+     * @param configProvider the configuration provider
+     */
+    public BoundaryStateChangeListener(
+            @NonNull final StoreMetricsService storeMetricsService, @NonNull final ConfigProvider configProvider) {
+        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.configuration = requireNonNull(configProvider.getConfiguration());
+    }
+
     /**
      * Returns the boundary timestamp.
+     *
      * @return the boundary timestamp
      */
     public @NonNull Timestamp boundaryTimestampOrThrow() {
@@ -172,6 +202,65 @@ public class BoundaryStateChangeListener implements StateChangeListener {
                 .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value)))
                 .build();
         singletonUpdates.put(stateId, stateChange);
+        if (stateId == BlockImplUtils.stateIdFor(EntityIdService.NAME, ENTITY_COUNTS_KEY)) {
+            updateEntityCountsMetrics((EntityCounts) value);
+        }
+    }
+
+    private void updateEntityCountsMetrics(final EntityCounts entityCounts) {
+        final long nodeCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();
+        final var nodeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.NODE, nodeCapacity);
+        nodeMetrics.updateCount(entityCounts.numNodes());
+
+        final long topicCapacity =
+                configuration.getConfigData(TopicsConfig.class).maxNumber();
+        final var topicMetrics = storeMetricsService.get(StoreMetricsService.StoreType.TOPIC, topicCapacity);
+        topicMetrics.updateCount(entityCounts.numTopics());
+
+        final ContractsConfig contractsConfig = configuration.getConfigData(ContractsConfig.class);
+
+        final long maxSlotStorageCapacity = contractsConfig.maxKvPairsAggregate();
+        final var storageSlotsMetrics =
+                storeMetricsService.get(StoreMetricsService.StoreType.SLOT_STORAGE, maxSlotStorageCapacity);
+        storageSlotsMetrics.updateCount(entityCounts.numContractStorageSlots());
+
+        final long maxContractsCapacity = contractsConfig.maxNumber();
+        final var contractStoreMetrics =
+                storeMetricsService.get(StoreMetricsService.StoreType.CONTRACT, maxContractsCapacity);
+        contractStoreMetrics.updateCount(entityCounts.numContractBytecodes());
+
+        final long fileCapacity = configuration.getConfigData(FilesConfig.class).maxNumber();
+        final var fileMetrics = storeMetricsService.get(StoreMetricsService.StoreType.FILE, fileCapacity);
+        fileMetrics.updateCount(entityCounts.numFiles());
+
+        final long scheduleCapacity =
+                configuration.getConfigData(SchedulingConfig.class).maxNumber();
+        final var scheduleMetrics = storeMetricsService.get(StoreMetricsService.StoreType.SCHEDULE, scheduleCapacity);
+        scheduleMetrics.updateCount(entityCounts.numSchedules());
+
+        final long accountsCapacity =
+                configuration.getConfigData(AccountsConfig.class).maxNumber();
+        final var accountMetrics = storeMetricsService.get(StoreMetricsService.StoreType.ACCOUNT, accountsCapacity);
+        accountMetrics.updateCount(entityCounts.numAccounts());
+
+        final long airdropCapacity =
+                configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
+        final var airdropMetrics = storeMetricsService.get(StoreMetricsService.StoreType.AIRDROP, airdropCapacity);
+        airdropMetrics.updateCount(entityCounts.numAirdrops());
+
+        final long nftsCapacity =
+                configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
+        final var nftsMetrics = storeMetricsService.get(StoreMetricsService.StoreType.NFT, nftsCapacity);
+        nftsMetrics.updateCount(entityCounts.numNfts());
+
+        final long maxRels = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
+        final var tokenRelsMetrics = storeMetricsService.get(StoreMetricsService.StoreType.TOKEN_RELATION, maxRels);
+        tokenRelsMetrics.updateCount(entityCounts.numTokenRelations());
+
+        final long tokenCapacity =
+                configuration.getConfigData(TokensConfig.class).maxNumber();
+        final var tokenMetrics = storeMetricsService.get(StoreMetricsService.StoreType.TOKEN, tokenCapacity);
+        tokenMetrics.updateCount(entityCounts.numTokens());
     }
 
     private static <V> OneOf<QueuePushChange.ValueOneOfType> queuePushChangeValueFor(@NonNull final V value) {

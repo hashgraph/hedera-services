@@ -45,22 +45,15 @@ class WritableFileStoreTest extends FileTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableFileStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableFileStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableFileStore(writableStates, CONFIGURATION, null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableFileStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableFileStore(writableStates, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesFileState() {
-        final var store =
-                new WritableFileStore(writableStates, CONFIGURATION, storeMetricsService, writableEntityCounters);
+        final var store = new WritableFileStore(writableStates, writableEntityCounters);
         assertNotNull(store);
     }
 

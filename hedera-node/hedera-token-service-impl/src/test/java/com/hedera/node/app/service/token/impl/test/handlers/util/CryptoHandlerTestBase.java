@@ -237,8 +237,7 @@ public class CryptoHandlerTestBase {
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableAccountStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentTokenOnlyInReadable() {
@@ -254,8 +253,7 @@ public class CryptoHandlerTestBase {
 
         readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableAccountStore(writableStates, writableEntityCounters);
     }
 
     private void givenEntityCounters() {
@@ -284,8 +282,7 @@ public class CryptoHandlerTestBase {
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
         readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableAccountStore(writableStates, writableEntityCounters);
     }
 
     @NonNull

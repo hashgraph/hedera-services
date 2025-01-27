@@ -45,22 +45,15 @@ class WritableNodeStoreTest extends AddressBookTestBase {
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNodeStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNodeStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNodeStore(writableStates, CONFIGURATION, null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNodeStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesNodeState() {
-        final var store =
-                new WritableNodeStore(writableStates, CONFIGURATION, storeMetricsService, writableEntityCounters);
+        final var store = new WritableNodeStore(writableStates, writableEntityCounters);
         assertNotNull(store);
     }
 

@@ -39,6 +39,7 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -176,7 +177,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                         this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
                 appContext -> this.hintsService = new FakeHintsService(appContext),
                 appContext -> this.historyService = new FakeHistoryService(),
-                metrics);
+                metrics,
+                new StoreMetricsServiceImpl(metrics));
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));

@@ -209,8 +209,7 @@ public class FileTestBase {
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableFileStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableFileStore(writableStates, writableEntityCounters);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
@@ -257,8 +256,7 @@ public class FileTestBase {
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableFileStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableFileStore(writableStates, writableEntityCounters);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 

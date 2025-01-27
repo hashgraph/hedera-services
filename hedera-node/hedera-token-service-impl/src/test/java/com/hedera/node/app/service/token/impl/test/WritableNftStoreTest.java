@@ -53,21 +53,14 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         super.setUp();
         writableNftState = emptyWritableNftStateBuilder().build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore =
-                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableNftStore = new WritableNftStore(writableStates, writableEntityCounters);
     }
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNftStore(null, configuration, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNftStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableNftStore(writableStates, configuration, null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableNftStore.put(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null, 0));
@@ -75,8 +68,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void constructorCreatesTokenState() {
-        final var store =
-                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        final var store = new WritableNftStore(writableStates, writableEntityCounters);
         assertNotNull(store);
     }
 
@@ -155,8 +147,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore =
-                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableNftStore = new WritableNftStore(writableStates, writableEntityCounters);
         assertNotNull(writableNftStore.get(nftToRemove));
 
         writableNftStore.remove(nftToRemove);
@@ -179,8 +170,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore =
-                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableNftStore = new WritableNftStore(writableStates, writableEntityCounters);
         assertNotNull(writableNftStore.get(nftToRemove));
 
         writableNftStore.remove(nftToRemove.tokenId(), nftToRemove.serialNumber());
@@ -192,8 +182,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     @Test
     void warmWarmsUnderlyingState(@Mock WritableKVState<NftID, Nft> nfts) {
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(nfts);
-        final var nftStore =
-                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        final var nftStore = new WritableNftStore(writableStates, writableEntityCounters);
         final var id =
                 NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         nftStore.warm(id);

@@ -101,15 +101,11 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     @Test
     void throwsIfNullValuesAsArgs(@Mock StoreMetricsService storeMetricsService) {
         final var configuration = HederaTestConfigBuilder.createConfig();
+        assertThrows(NullPointerException.class, () -> new WritableAccountStore(null, writableEntityCounters));
         assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(null, configuration, storeMetricsService, writableEntityCounters));
+                NullPointerException.class, () -> new WritableAccountStore(writableStates, writableEntityCounters));
         assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(writableStates, configuration, null, writableEntityCounters));
+                NullPointerException.class, () -> new WritableAccountStore(writableStates, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }

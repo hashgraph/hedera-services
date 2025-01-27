@@ -24,11 +24,7 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -47,28 +43,13 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
      * Create a new {@link WritableContractStateStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableContractStateStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         requireNonNull(states);
         this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
         this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
-
-        final ContractsConfig contractsConfig = configuration.getConfigData(ContractsConfig.class);
-
-        final long maxSlotStorageCapacity = contractsConfig.maxKvPairsAggregate();
-        final var storageSlotsMetrics = storeMetricsService.get(StoreType.SLOT_STORAGE, maxSlotStorageCapacity);
-        storage.setMetrics(storageSlotsMetrics);
-
-        final long maxContractsCapacity = contractsConfig.maxNumber();
-        final var contractStoreMetrics = storeMetricsService.get(StoreType.CONTRACT, maxContractsCapacity);
-        bytecode.setMetrics(contractStoreMetrics);
         this.entityCounters = requireNonNull(entityCounters);
     }
 

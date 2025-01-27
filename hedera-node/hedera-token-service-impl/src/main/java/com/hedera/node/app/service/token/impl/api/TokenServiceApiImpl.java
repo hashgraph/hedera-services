@@ -91,7 +91,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull final WritableEntityCounters entityCounters) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService, entityCounters);
+        this.accountStore = new WritableAccountStore(writableStates, entityCounters);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);

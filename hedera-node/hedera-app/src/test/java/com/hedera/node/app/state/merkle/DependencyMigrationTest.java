@@ -27,7 +27,9 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -73,6 +75,12 @@ class DependencyMigrationTest extends MerkleTestBase {
     @Mock
     private StartupNetworks startupNetworks;
 
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
+
+    @Mock
+    private ConfigProviderImpl configProvider;
+
     private MerkleStateRoot<?> merkleTree;
 
     @BeforeEach
@@ -100,7 +108,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                             VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class),
-                            startupNetworks))
+                            startupNetworks,
+                            storeMetricsService,
+                            configProvider))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -116,7 +126,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                             VERSIONED_CONFIG,
                             networkInfo,
                             mock(Metrics.class),
-                            startupNetworks))
+                            startupNetworks,
+                            storeMetricsService,
+                            configProvider))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -132,7 +144,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             networkInfo,
                             mock(Metrics.class),
-                            startupNetworks))
+                            startupNetworks,
+                            storeMetricsService,
+                            configProvider))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -148,7 +162,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                             VERSIONED_CONFIG,
                             networkInfo,
                             null,
-                            startupNetworks))
+                            startupNetworks,
+                            storeMetricsService,
+                            configProvider))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -194,7 +210,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class),
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
 
         // Then: we verify the migrations had the desired effects on both entity ID state and DependentService state
         // First check that the entity ID service has an updated entity ID, despite its schema migration not doing
@@ -304,7 +322,9 @@ class DependencyMigrationTest extends MerkleTestBase {
                 VERSIONED_CONFIG,
                 networkInfo,
                 mock(Metrics.class),
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
 
         // Then: we verify the migrations were run in the expected order
         Assertions.assertThat(orderedInvocations)

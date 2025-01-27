@@ -575,8 +575,7 @@ public class HandleWorkflow {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             final var entityCounters = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
             doStreamingKVChanges(writableStates, now, () -> {
-                final var scheduleStore = new WritableScheduleStoreImpl(
-                        writableStates, configProvider.getConfiguration(), storeMetricsService, entityCounters);
+                final var scheduleStore = new WritableScheduleStoreImpl(writableStates, entityCounters);
                 scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
             });
         }
@@ -631,8 +630,6 @@ public class HandleWorkflow {
                     // those changes already being visible in the FAB
                     final var writableNodeStore = new WritableNodeStore(
                             userTxn.stack().getWritableStates(AddressBookService.NAME),
-                            userTxn.config(),
-                            storeMetricsService,
                             new WritableEntityIdStore(userTxn.stack().getWritableStates(EntityIdService.NAME)));
                     addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), writableNodeStore);
 

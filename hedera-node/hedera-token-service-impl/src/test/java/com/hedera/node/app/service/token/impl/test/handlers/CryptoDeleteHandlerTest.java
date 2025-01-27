@@ -439,7 +439,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
+        writableStore = new WritableAccountStore(writableStates, entityCounters);
     }
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {

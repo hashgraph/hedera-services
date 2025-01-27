@@ -49,6 +49,7 @@ import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.schemas.V059HistorySchema;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -113,6 +114,12 @@ class WritableHistoryStoreImplTest {
 
     @Mock
     private StartupNetworks startupNetworks;
+
+    @Mock
+    private ConfigProviderImpl configProvider;
+
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
 
     private State state;
 
@@ -409,7 +416,9 @@ class WritableHistoryStoreImplTest {
                 DEFAULT_CONFIG,
                 networkInfo,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         return state;
     }
 }

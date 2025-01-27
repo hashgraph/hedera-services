@@ -188,8 +188,7 @@ public class AddressBookTestBase {
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
-        writableStore =
-                new WritableNodeStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     protected void givenEntityCounters() {
@@ -235,8 +234,7 @@ public class AddressBookTestBase {
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         readableStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableNodeStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentNodeInWritable() {
@@ -245,8 +243,7 @@ public class AddressBookTestBase {
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableNodeStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithMoreNodeInWritable() {
@@ -254,8 +251,7 @@ public class AddressBookTestBase {
         writableNodeState = writableNodeStateWithMoreKeys();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore =
-                new WritableNodeStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     @NonNull

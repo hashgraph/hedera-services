@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSch
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_USAGES_KEY;
 import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULE_ID_BY_EQUALITY_KEY;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -87,7 +86,6 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -495,8 +493,7 @@ public class ScheduleTestBase {
         accountStore = new ReadableAccountStoreImpl(states, readableEntityCounters);
         scheduleStore = new ReadableScheduleStoreImpl(states, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableSchedules = new WritableScheduleStoreImpl(
-                scheduleStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
+        writableSchedules = new WritableScheduleStoreImpl(scheduleStates, writableEntityCounters);
         accountsMapById.put(scheduler, schedulerAccount);
         accountsMapById.put(payer, payerAccount);
         accountsMapById.put(admin, adminAccount);

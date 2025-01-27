@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,15 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class BoundaryStateChangeListenerTest {
     private static final int STATE_ID = 1;
@@ -46,9 +49,15 @@ class BoundaryStateChangeListenerTest {
 
     private BoundaryStateChangeListener listener;
 
+    @Mock
+    private ConfigProviderImpl configProvider;
+
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
+
     @BeforeEach
     void setUp() {
-        listener = new BoundaryStateChangeListener();
+        listener = new BoundaryStateChangeListener(storeMetricsService, configProvider);
     }
 
     @Test

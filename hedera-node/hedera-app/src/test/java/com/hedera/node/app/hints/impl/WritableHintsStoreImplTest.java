@@ -46,6 +46,7 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -101,6 +102,12 @@ class WritableHintsStoreImplTest {
 
     @Mock
     private StartupNetworks startupNetworks;
+
+    @Mock
+    private ConfigProviderImpl configProvider;
+
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
 
     private State state;
 
@@ -403,7 +410,9 @@ class WritableHintsStoreImplTest {
                 DEFAULT_CONFIG,
                 networkInfo,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         return state;
     }
 }

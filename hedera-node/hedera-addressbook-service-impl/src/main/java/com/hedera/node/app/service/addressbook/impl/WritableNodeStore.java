@@ -21,11 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.NodesConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,19 +40,10 @@ public class WritableNodeStore extends ReadableNodeStoreImpl {
      * Create a new {@link WritableNodeStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableNodeStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
-
-        final long maxCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.NODE, maxCapacity);
-        nodesState().setMetrics(storeMetrics);
         this.entityCounters = entityCounters;
     }
 

@@ -71,21 +71,15 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
         given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new WritableTokenRelationStore(states, CONFIGURATION, storeMetricsService, writableEntityCounters);
+        subject = new WritableTokenRelationStore(states, writableEntityCounters);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testNullConstructorArgs() {
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenRelationStore(states, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableTokenRelationStore(states, CONFIGURATION, null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, writableEntityCounters));
     }
 
     @Test

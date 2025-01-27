@@ -26,11 +26,7 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.TokensConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,21 +51,12 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * Create a new {@link WritableTokenRelationStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableTokenRelationStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         this.tokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
         this.entityCounters = entityCounters;
-
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
-        final var storeMetrics = storeMetricsService.get(StoreType.TOKEN_RELATION, maxCapacity);
-        tokenRelState.setMetrics(storeMetrics);
     }
 
     /**

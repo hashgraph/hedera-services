@@ -153,7 +153,7 @@ public class ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates, entityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService, entityCounters);
+        writableStore = new WritableTopicStore(writableStates, entityCounters);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
@@ -165,7 +165,7 @@ public class ConsensusTestBase {
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates, entityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableTopicStore(writableStates, configuration, storeMetricsService, entityCounters);
+        writableStore = new WritableTopicStore(writableStates, entityCounters);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
     }
 
