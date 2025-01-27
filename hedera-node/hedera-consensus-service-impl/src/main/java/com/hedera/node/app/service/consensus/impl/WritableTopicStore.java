@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TopicsConfig;
@@ -37,6 +38,7 @@ import java.util.Set;
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableTopicStore extends ReadableTopicStoreImpl {
+    private final WritableEntityCounters entityCounters;
     /**
      * Create a new {@link WritableTopicStore} instance.
      *
@@ -47,8 +49,10 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     public WritableTopicStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.TOPIC, maxCapacity);
@@ -89,6 +93,7 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      */
     public long sizeOfState() {
         return topicState().size();
+        // FUTURE: Use entityCounters to get size.
     }
 
     /**

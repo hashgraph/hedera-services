@@ -23,6 +23,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -108,9 +110,11 @@ public class PlatformStateUpdates {
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
                     final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
+                    final var entityIdStore =
+                            new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
                     if (addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
-                        final var nodeStore =
-                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                        final var nodeStore = new ReadableNodeStoreImpl(
+                                state.getReadableStates(AddressBookService.NAME), entityIdStore);
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
                         final var stakingInfoStore =
                                 new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));

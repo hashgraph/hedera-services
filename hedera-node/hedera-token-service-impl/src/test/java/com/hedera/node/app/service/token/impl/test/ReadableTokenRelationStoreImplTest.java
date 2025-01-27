@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import org.assertj.core.api.Assertions;
@@ -56,6 +57,9 @@ class ReadableTokenRelationStoreImplTest {
     @Mock
     private ReadableKVState<EntityIDPair, TokenRelation> tokenRelState;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
     private ReadableTokenRelationStoreImpl subject;
 
     @BeforeEach
@@ -63,13 +67,14 @@ class ReadableTokenRelationStoreImplTest {
         given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new ReadableTokenRelationStoreImpl(states);
+        subject = new ReadableTokenRelationStoreImpl(states, readableEntityCounters);
     }
 
     @Test
     void testNullConstructorArgs() {
         //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> new ReadableTokenRelationStoreImpl(null));
+        assertThrows(
+                NullPointerException.class, () -> new ReadableTokenRelationStoreImpl(null, readableEntityCounters));
     }
 
     @Test
@@ -106,7 +111,7 @@ class ReadableTokenRelationStoreImplTest {
     void warmWarmsUnderlyingState(@Mock ReadableKVState<EntityIDPair, TokenRelation> tokenRelations) {
         given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelations);
-        final var tokenRelationStore = new ReadableTokenRelationStoreImpl(states);
+        final var tokenRelationStore = new ReadableTokenRelationStoreImpl(states, readableEntityCounters);
         tokenRelationStore.warm(ACCOUNT_20_ID, TOKEN_10_ID);
         verify(tokenRelations).warm(KEY);
     }
