@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
-import static com.hedera.hapi.streams.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
@@ -66,23 +64,6 @@ public class FrameUtils {
 
     public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
         return configOf(frame).getConfigData(ContractsConfig.class);
-    }
-
-    public static boolean hasBytecodeSidecarsEnabled(@NonNull final MessageFrame frame) {
-        return contractsConfigOf(frame).sidecars().contains(CONTRACT_BYTECODE);
-    }
-
-    public static boolean hasActionSidecarsEnabled(@NonNull final MessageFrame frame) {
-        return contractsConfigOf(frame).sidecars().contains(CONTRACT_ACTION);
-    }
-
-    public static boolean hasActionValidationEnabled(@NonNull final MessageFrame frame) {
-        return contractsConfigOf(frame).sidecarValidationEnabled();
-    }
-
-    public static boolean hasValidatedActionSidecarsEnabled(@NonNull final MessageFrame frame) {
-        final var contractsConfig = contractsConfigOf(frame);
-        return contractsConfig.sidecars().contains(CONTRACT_ACTION) && contractsConfig.sidecarValidationEnabled();
     }
 
     public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {
@@ -285,7 +266,8 @@ public class FrameUtils {
         return validateParentCallType(frame, viableType);
     }
 
-    private static CallType validateParentCallType(@NonNull MessageFrame frame, @NonNull CallType viableType) {
+    private static CallType validateParentCallType(
+            @NonNull final MessageFrame frame, @NonNull final CallType viableType) {
         requireNonNull(frame);
         requireNonNull(viableType);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.tracers;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasValidatedActionSidecarsEnabled;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
@@ -55,17 +52,13 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
     @Override
     public void traceOriginAction(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        if (hasActionSidecarsEnabled(frame)) {
-            actionStack.pushActionOfTopLevel(frame);
-        }
+        actionStack.pushActionOfTopLevel(frame);
     }
 
     @Override
     public void sanitizeTracedActions(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        if (hasValidatedActionSidecarsEnabled(frame)) {
-            actionStack.sanitizeFinalActionsAndLogAnomalies(frame, log, Level.WARN);
-        }
+        actionStack.sanitizeFinalActionsAndLogAnomalies(frame, log, Level.WARN);
     }
 
     @Override
@@ -73,14 +66,11 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
             @NonNull final MessageFrame frame, @NonNull final Operation.OperationResult operationResult) {
         requireNonNull(frame);
         requireNonNull(operationResult);
-        if (!hasActionSidecarsEnabled(frame)) {
-            return;
-        }
         final var state = frame.getState();
         if (state == CODE_SUSPENDED) {
             actionStack.pushActionOfIntermediate(frame);
         } else if (state != CODE_EXECUTING) {
-            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
+            actionStack.finalizeLastAction(frame, ActionStack.Validation.ON);
         }
     }
 
@@ -88,9 +78,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
     public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
-        if (hasActionSidecarsEnabled(frame)) {
-            actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
-        }
+        actionStack.finalizeLastStackActionAsPrecompile(frame, type, ActionStack.Validation.ON);
     }
 
     @Override
@@ -111,13 +99,8 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         // reason is present, since that means creation failed before executing the frame's
         // code, and tracePostExecution() will never be called; so this is our only chance
         // to keep the action stack in sync with the message frame stack.
-        if (hasActionSidecarsEnabled(frame) && haltReason.isPresent()) {
-            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
+        if (haltReason.isPresent()) {
+            actionStack.finalizeLastAction(frame, ActionStack.Validation.ON);
         }
-    }
-
-    private ActionStack.Validation stackValidationChoice(@NonNull final MessageFrame frame) {
-        requireNonNull(frame);
-        return hasActionValidationEnabled(frame) ? ActionStack.Validation.ON : ActionStack.Validation.OFF;
     }
 }
