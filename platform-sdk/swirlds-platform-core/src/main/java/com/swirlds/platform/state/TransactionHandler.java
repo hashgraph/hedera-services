@@ -64,9 +64,9 @@ public class TransactionHandler {
         final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
                 new ConcurrentLinkedQueue<>();
 
-        List<PlatformEvent> events = round.getConsensusEvents();
-        for (PlatformEvent event : events) {
-            for (EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+        final List<PlatformEvent> events = round.getConsensusEvents();
+        for (final PlatformEvent event : events) {
+            for (final EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
                 if (eventTransaction.hasStateSignatureTransaction()) {
                     scopedSystemTransactions.add(new ScopedSystemTransaction<>(
                             event.getCreatorId(),

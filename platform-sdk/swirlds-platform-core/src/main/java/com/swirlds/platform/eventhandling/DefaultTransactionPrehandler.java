@@ -95,7 +95,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
                 new ConcurrentLinkedQueue<>();
         final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
 
-        for (EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+        for (final EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
             if (eventTransaction.hasStateSignatureTransaction()) {
                 scopedSystemTransactions.add(new ScopedSystemTransaction<>(
                         event.getCreatorId(),
