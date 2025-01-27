@@ -21,15 +21,17 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
@@ -37,6 +39,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.PlatformStatusAction;
+import com.swirlds.state.State;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,7 +52,9 @@ public class TransactionHandlerTester {
     private final DefaultTransactionHandler defaultTransactionHandler;
     private final List<PlatformStatusAction> submittedActions = new ArrayList<>();
     private final List<Round> handledRounds = new ArrayList<>();
-    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
+    private final StateLifecycles<State> stateLifecycles;
+    private final PlatformStateFacade platformStateFacade;
+    private final State consensusState;
 
     /**
      * Constructs a new {@link TransactionHandlerTester} with the given {@link AddressBook}.
@@ -61,12 +66,14 @@ public class TransactionHandlerTester {
                 TestPlatformContextBuilder.create().build();
         platformState = new PlatformStateValueAccumulator();
 
-        final PlatformMerkleStateRoot consensusState = mock(PlatformMerkleStateRoot.class);
+        consensusState = mock(State.class, withSettings().extraInterfaces(Reservable.class));
+        platformStateFacade = mock(PlatformStateFacade.class);
+
         stateLifecycles = mock(StateLifecycles.class);
-        ;
         when(consensusState.copy()).thenReturn(consensusState);
-        when(consensusState.getReadablePlatformState()).thenReturn(platformState);
-        when(consensusState.getWritablePlatformState()).thenReturn(platformState);
+        when(consensusState.cast()).thenReturn(consensusState);
+        when(platformStateFacade.getReadablePlatformStateOf(consensusState)).thenReturn(platformState);
+        when(platformStateFacade.getWritablePlatformStateOf(consensusState)).thenReturn(platformState);
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;
@@ -80,10 +87,15 @@ public class TransactionHandlerTester {
                 NodeId.FIRST_NODE_ID,
                 statusActionSubmitter,
                 new BasicSoftwareVersion(1),
-                stateLifecycles);
+                stateLifecycles,
+                platformStateFacade);
         swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
-                platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));
+                platformContext,
+                swirldStateManager,
+                statusActionSubmitter,
+                mock(SoftwareVersion.class),
+                platformStateFacade);
     }
 
     /**
@@ -108,7 +120,7 @@ public class TransactionHandlerTester {
     }
 
     /**
-     * @return a list of all {@link Round}s that have been provided to the {@link PlatformMerkleStateRoot} for handling
+     * @return a list of all {@link Round}s that have been provided to the {@link State} for handling
      */
     public List<Round> getHandledRounds() {
         return handledRounds;
@@ -124,7 +136,15 @@ public class TransactionHandlerTester {
     /**
      * @return the {@link StateLifecycles} used by this tester
      */
-    public StateLifecycles<PlatformMerkleStateRoot> getStateLifecycles() {
+    public StateLifecycles<State> getStateLifecycles() {
         return stateLifecycles;
+    }
+
+    public PlatformStateFacade getPlatformStateFacade() {
+        return platformStateFacade;
+    }
+
+    public State getConsensusState() {
+        return consensusState;
     }
 }

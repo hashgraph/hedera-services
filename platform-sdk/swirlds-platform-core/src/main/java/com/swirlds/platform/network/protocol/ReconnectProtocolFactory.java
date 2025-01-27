@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectProtocol;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -56,6 +57,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
     private final Configuration configuration;
 
     private final Time time;
+    private final PlatformStateFacade platformStateFacade;
     private final PlatformContext platformContext;
 
     public ReconnectProtocolFactory(
@@ -69,7 +71,8 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
             @NonNull final SignedStateValidator validator,
             @NonNull final FallenBehindManager fallenBehindManager,
             final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -83,6 +86,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
         this.time = Objects.requireNonNull(platformContext.getTime());
+        this.platformStateFacade = platformStateFacade;
     }
 
     /**
@@ -104,6 +108,7 @@ public class ReconnectProtocolFactory implements ProtocolFactory {
                 fallenBehindManager,
                 platformStatusSupplier,
                 configuration,
-                time);
+                time,
+                platformStateFacade);
     }
 }

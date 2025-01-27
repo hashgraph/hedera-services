@@ -77,6 +77,7 @@ import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -171,7 +172,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final IntakeEventCounter intakeEventCounter) {
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         shadowgraph = new Shadowgraph(platformContext, roster.rosterEntries().size(), intakeEventCounter);
 
@@ -272,8 +274,14 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                     syncManager.resetFallenBehind();
                 },
                 new ReconnectLearnerFactory(
-                        platformContext, threadManager, roster, reconnectConfig.asyncStreamTimeout(), reconnectMetrics),
-                stateConfig);
+                        platformContext,
+                        threadManager,
+                        roster,
+                        reconnectConfig.asyncStreamTimeout(),
+                        reconnectMetrics,
+                        platformStateFacade),
+                stateConfig,
+                platformStateFacade);
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -316,7 +324,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 currentPlatformStatus::get,
                 hangingThreadDuration,
                 protocolConfig,
-                reconnectConfig);
+                reconnectConfig,
+                platformStateFacade);
 
         thingsToStart.add(() -> syncProtocolThreads.forEach(StoppableThread::start));
     }
@@ -331,7 +340,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
             final Supplier<PlatformStatus> platformStatusSupplier,
             final Duration hangingThreadDuration,
             final ProtocolConfig protocolConfig,
-            final ReconnectConfig reconnectConfig) {
+            final ReconnectConfig reconnectConfig,
+            final PlatformStateFacade platformStateFacade) {
 
         final ProtocolFactory syncProtocolFactory = new SyncProtocolFactory(
                 platformContext,
@@ -352,10 +362,11 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                 reconnectConfig.asyncStreamTimeout(),
                 reconnectMetrics,
                 reconnectController,
-                new DefaultSignedStateValidator(platformContext),
+                new DefaultSignedStateValidator(platformContext, platformStateFacade),
                 fallenBehindManager,
                 platformStatusSupplier,
-                platformContext.getConfiguration());
+                platformContext.getConfiguration(),
+                platformStateFacade);
 
         final ProtocolFactory heartbeatProtocolFactory = new HeartbeatProtocolFactory(
                 Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, platformContext.getTime());

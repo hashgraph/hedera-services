@@ -17,6 +17,7 @@
 package com.swirlds.platform.cli;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.platform.state.service.PlatformStateFacade.DEFAULT_PLATFORM_STATE_FACADE;
 
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
@@ -136,12 +137,12 @@ public final class CompareStatesCommand extends AbstractCommand {
         logger.info(LogMarker.CLI.getMarker(), "Loading state from {}", statePath);
 
         final ReservedSignedState signedState = SignedStateFileReader.readStateFile(
-                        platformContext.getConfiguration(), statePath)
+                        platformContext.getConfiguration(), statePath, DEFAULT_PLATFORM_STATE_FACADE)
                 .reservedSignedState();
         logger.info(LogMarker.CLI.getMarker(), "Hashing state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.get().getState())
+                    .digestTreeAsync(signedState.get().getState().cast())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException("unable to hash state", e);
@@ -167,7 +168,9 @@ public final class CompareStatesCommand extends AbstractCommand {
             try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {
                 SignedStateComparison.printMismatchedNodes(
                         SignedStateComparison.mismatchedNodeIterator(
-                                stateA.get().getState(), stateB.get().getState(), deepComparison),
+                                stateA.get().getState().cast(),
+                                stateB.get().getState().cast(),
+                                deepComparison),
                         nodeLimit);
             }
         }

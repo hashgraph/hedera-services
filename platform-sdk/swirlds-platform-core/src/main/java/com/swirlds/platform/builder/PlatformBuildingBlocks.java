@@ -33,6 +33,7 @@ import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -124,7 +125,8 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Consumer<SignedState>> loadReconnectStateReference,
         @NonNull AtomicReference<Runnable> clearAllPipelinesForReconnectReference,
         boolean firstPlatform,
-        @NonNull StateLifecycles stateLifecycles) {
+        @NonNull StateLifecycles stateLifecycles,
+        @NonNull PlatformStateFacade platformStateFacade) {
 
     public PlatformBuildingBlocks {
         requireNonNull(platformContext);

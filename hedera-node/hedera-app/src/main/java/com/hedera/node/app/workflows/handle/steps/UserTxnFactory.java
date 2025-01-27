@@ -229,7 +229,8 @@ public class UserTxnFactory {
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
         final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
         final var tokenContext =
-                new TokenContextImpl(config, stack, consensusNow, entityIdStore, softwareVersionFactory);
+                new TokenContextImpl(
+                config, stack, consensusNow, entityIdStore, softwareVersionFactory);
         return new UserTxn(
                 type,
                 functionality,

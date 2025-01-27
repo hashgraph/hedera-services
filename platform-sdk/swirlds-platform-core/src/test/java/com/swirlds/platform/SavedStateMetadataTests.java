@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SavedStateMetadata;
@@ -52,6 +52,7 @@ import com.swirlds.platform.state.snapshot.SavedStateMetadataField;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.roster.RosterServiceStateMock;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -206,7 +207,8 @@ class SavedStateMetadataTests {
 
         final SignedState signedState = mock(SignedState.class);
         final SigSet sigSet = mock(SigSet.class);
-        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
+        final State state = mock(State.class);
+        final PlatformStateFacade platformStateFacade = mock(PlatformStateFacade.class);
         when(state.getHash()).thenReturn(randomHash(random));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
         when(platformState.getLegacyRunningEventHash()).thenReturn(randomHash(random));
@@ -216,12 +218,13 @@ class SavedStateMetadataTests {
         RosterServiceStateMock.setup(state, roster);
 
         when(signedState.getState()).thenReturn(state);
-        when(state.getReadablePlatformState()).thenReturn(platformState);
+        when(platformStateFacade.getReadablePlatformStateOf(state)).thenReturn(platformState);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
                 .thenReturn(new ArrayList<>(List.of(NodeId.of(3L), NodeId.of(1L), NodeId.of(2L))));
 
-        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, NodeId.of(1234), Instant.now());
+        final SavedStateMetadata metadata =
+                SavedStateMetadata.create(signedState, NodeId.of(1234), Instant.now(), platformStateFacade);
 
         assertEquals(List.of(NodeId.of(1L), NodeId.of(2L), NodeId.of(3L)), metadata.signingNodes());
     }

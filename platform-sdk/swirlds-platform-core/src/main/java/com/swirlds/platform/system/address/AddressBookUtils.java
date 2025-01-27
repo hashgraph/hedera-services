@@ -28,6 +28,7 @@ import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.address.AddressBookInitializer;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
@@ -248,8 +249,9 @@ public class AddressBookUtils {
             @NonNull final ReservedSignedState initialState,
             @NonNull final AddressBook bootstrapAddressBook,
             @NonNull final PlatformContext platformContext,
-            @NonNull final StateLifecycles<?> stateLifecycles) {
-        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get());
+            @NonNull final StateLifecycles<?> stateLifecycles,
+            @NonNull final PlatformStateFacade platformStateFacade) {
+        final boolean softwareUpgrade = detectSoftwareUpgrade(version, initialState.get(), platformStateFacade);
         // Initialize the address book from the configuration and platform saved state.
         final AddressBookInitializer addressBookInitializer = new AddressBookInitializer(
                 selfId,

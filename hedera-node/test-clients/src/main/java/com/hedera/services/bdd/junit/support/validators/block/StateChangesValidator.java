@@ -61,6 +61,7 @@ import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
@@ -68,14 +69,16 @@ import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -126,7 +129,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
     private final Map<String, Set<Object>> entityChanges = new LinkedHashMap<>();
 
-    private PlatformMerkleStateRoot state;
+    private State state;
 
     public static void main(String[] args) {
         final var node0Dir = Paths.get("hedera-node/test-clients")
@@ -215,15 +218,15 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var servicesVersion = versionConfig.servicesVersion();
         final var addressBook = loadLegacyBookWithGeneratedCerts(pathToAddressBook);
         final var metrics = new NoOpMetrics();
-        final var hedera = ServicesMain.newHedera(metrics);
-        this.state = hedera.newMerkleStateRoot();
+        final var hedera = ServicesMain.newHedera(metrics, new PlatformStateFacade(ServicesSoftwareVersion::new));
+        this.state = hedera.newStateRoot();
         final var platformConfig = ServicesMain.buildPlatformConfig();
         hedera.initializeStatesApi(
                 state, GENESIS, DiskStartupNetworks.fromLegacyAddressBook(addressBook), platformConfig);
         final var stateToBeCopied = state;
         state = state.copy();
         // get the state hash before applying the state changes from current block
-        this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied);
+        this.genesisStateHash = CRYPTO.digestTreeSync(stateToBeCopied.cast());
 
         logger.info("Registered all Service and migrated state definitions to version {}", servicesVersion);
     }
@@ -241,7 +244,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             if (i != 0 && shouldVerifyProof) {
                 final var stateToBeCopied = state;
                 this.state = stateToBeCopied.copy();
-                startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied).getBytes();
+                startOfStateHash = CRYPTO.digestTreeSync(stateToBeCopied.cast()).getBytes();
             }
             final StreamingTreeHasher inputTreeHasher = new NaiveStreamingTreeHasher();
             final StreamingTreeHasher outputTreeHasher = new NaiveStreamingTreeHasher();
@@ -299,14 +302,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                 state.getWritableStates(EntityIdService.NAME).<EntityCounts>getSingleton(ENTITY_COUNTS_KEY);
         assertEntityCountsMatch(entityCounts);
 
-        CRYPTO.digestTreeSync(state);
+        CRYPTO.digestTreeSync(state.cast());
         final var rootHash = requireNonNull(state.getHash()).getBytes();
         if (!expectedRootHash.equals(rootHash)) {
             final var expectedHashes = getMaybeLastHashMnemonics(pathToNode0SwirldsLog);
             if (expectedHashes == null) {
                 throw new AssertionError("No expected hashes found in " + pathToNode0SwirldsLog);
             }
-            final var actualHashes = hashesFor(state);
+            final var actualHashes = hashesFor(state.cast());
             final var errorMsg = new StringBuilder("Hashes did not match for the following states,");
             expectedHashes.forEach((stateName, expectedHash) -> {
                 final var actualHash = actualHashes.get(stateName);
@@ -418,7 +421,7 @@ public class StateChangesValidator implements BlockStreamValidator {
         assertEquals(expectedSignature, proof.blockSignature(), "Signature mismatch for " + proof);
     }
 
-    private Map<String, String> hashesFor(@NonNull final MerkleStateRoot state) {
+    private Map<String, String> hashesFor(@NonNull final MerkleNode state) {
         final var sb = new StringBuilder();
         new MerkleTreeVisualizer(state).setDepth(VISUALIZATION_HASH_DEPTH).render(sb);
         logger.info("Replayed hashes:\n{}", sb);

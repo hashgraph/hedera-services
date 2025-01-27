@@ -180,7 +180,7 @@ class DefaultTransactionHandlerTests {
                 tester.getSubmittedActions().getFirst().getClass());
         assertEquals(1, tester.getHandledRounds().size(), "a round should have been handled");
         assertSame(consensusRound, tester.getHandledRounds().getFirst(), "it should be the round we provided");
-        assertNotNull(tester.getPlatformState().getLastFrozenTime(), "freeze time should have been set");
+        verify(tester.getPlatformStateFacade()).updateLastFrozenTime(tester.getConsensusState());
 
         final ConsensusRound postFreezeConsensusRound = newConsensusRound(false);
         final StateAndRound postFreezeOutput =

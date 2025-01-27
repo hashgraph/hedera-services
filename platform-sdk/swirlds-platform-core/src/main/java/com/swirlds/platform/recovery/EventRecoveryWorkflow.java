@@ -52,10 +52,9 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -68,6 +67,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -118,7 +118,8 @@ public final class EventRecoveryWorkflow {
             @NonNull final Long finalRound,
             @NonNull final Path resultingStateDirectory,
             @NonNull final NodeId selfId,
-            final boolean loadSigningKeys)
+            final boolean loadSigningKeys,
+            @NonNull final PlatformStateFacade platformStateFacade)
             throws IOException {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(signedStateFile, "signedStateFile must not be null");
@@ -151,7 +152,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext.getConfiguration(), signedStateFile)
+                        platformContext.getConfiguration(), signedStateFile, platformStateFacade)
                 .reservedSignedState()) {
             logger.info(
                     STARTUP.getMarker(),
@@ -174,7 +175,8 @@ public final class EventRecoveryWorkflow {
                     roundIterator,
                     finalRound,
                     selfId,
-                    loadSigningKeys);
+                    loadSigningKeys,
+                    platformStateFacade);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -182,14 +184,15 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final PlatformMerkleStateRoot mutableStateCopy =
+            final State mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
                     platformContext,
                     selfId,
                     resultingStateDirectory,
-                    recoveredState.state().get());
+                    recoveredState.state().get(),
+                    platformStateFacade);
             final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
             updateEmergencyRecoveryFile(
                     stateConfig, resultingStateDirectory, initialState.get().getConsensusTimestamp());
@@ -288,7 +291,8 @@ public final class EventRecoveryWorkflow {
             @NonNull final IOIterator<StreamedRound> roundIterator,
             final long finalRound,
             @NonNull final NodeId selfId,
-            final boolean loadSigningKeys)
+            final boolean loadSigningKeys,
+            @NonNull final PlatformStateFacade platformStateFacade)
             throws IOException {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
@@ -308,7 +312,7 @@ public final class EventRecoveryWorkflow {
 
         StateLifecycles stateLifecycles = appMain.newStateLifecycles();
         SoftwareVersion softwareVersion =
-                initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion();
+                platformStateFacade.creationSoftwareVersionOf(initialState.get().getState());
         initialState.get().init(platformContext);
         final var notificationEngine = platform.getNotificationEngine();
         notificationEngine.register(
@@ -337,7 +341,8 @@ public final class EventRecoveryWorkflow {
                     platformContext,
                     signedState,
                     round,
-                    configuration.getConfigData(ConsensusConfig.class));
+                    configuration.getConfigData(ConsensusConfig.class),
+                    platformStateFacade);
             platform.setLatestState(signedState.get());
             lastEvent = getLastEvent(round);
         }
@@ -345,7 +350,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Hashing resulting signed state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.get().getState())
+                    .digestTreeAsync(signedState.get().getState().cast())
                     .get();
         } catch (final InterruptedException e) {
             throw new RuntimeException("interrupted while attempting to hash the state", e);
@@ -366,7 +371,7 @@ public final class EventRecoveryWorkflow {
      * Apply a single round and generate a new state. The previous state is released.
      *
      * @param platformContext the current context
-     * @param previousState   the previous round's signed state
+     * @param previousSignedState   the previous round's signed state
      * @param round           the next round
      * @param config          the consensus configuration
      * @return the resulting signed state
@@ -374,39 +379,38 @@ public final class EventRecoveryWorkflow {
     private static ReservedSignedState handleNextRound(
             @NonNull final StateLifecycles stateLifecycles,
             @NonNull final PlatformContext platformContext,
-            @NonNull final ReservedSignedState previousState,
+            @NonNull final ReservedSignedState previousSignedState,
             @NonNull final StreamedRound round,
-            @NonNull final ConsensusConfig config) {
+            @NonNull final ConsensusConfig config,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
-        previousState.get().getState().throwIfImmutable();
-        final PlatformMerkleStateRoot newState = previousState.get().getState().copy();
+        final SignedState previousState = previousSignedState.get();
+        previousState.getState().throwIfImmutable();
+        final State newState = previousState.getState().copy();
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
-        final PlatformStateAccessor newReadablePlatformState = newState.getReadablePlatformState();
-        final PlatformStateModifier newWritablePlatformState = newState.getWritablePlatformState();
-        final PlatformStateAccessor previousReadablePlatformState =
-                previousState.get().getState().getReadablePlatformState();
+        final PlatformStateModifier newWritablePlatformState = platformStateFacade.getWritablePlatformStateOf(newState);
 
         newWritablePlatformState.bulkUpdate(v -> {
             v.setRound(round.getRoundNum());
             v.setLegacyRunningEventHash(
-                    getHashEventsCons(previousReadablePlatformState.getLegacyRunningEventHash(), round));
+                    getHashEventsCons(platformStateFacade.legacyRunningEventHashOf(newState), round));
             v.setConsensusTimestamp(currentRoundTimestamp);
             v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                     round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
-            v.setCreationSoftwareVersion(previousReadablePlatformState.getCreationSoftwareVersion());
+            v.setCreationSoftwareVersion(platformStateFacade.creationSoftwareVersionOf(previousState.getState()));
         });
 
-        applyTransactions(stateLifecycles, previousState.get().getState(), newState.cast(), round);
+        applyTransactions(stateLifecycles, previousState.getState(), newState.cast(), round);
 
         final boolean isFreezeState = isFreezeState(
-                previousState.get().getConsensusTimestamp(),
+                previousState.getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newReadablePlatformState.getFreezeTime());
+                platformStateFacade.freezeTimeOf(newState));
         if (isFreezeState) {
-            newWritablePlatformState.setLastFrozenTime(newReadablePlatformState.getFreezeTime());
+            newWritablePlatformState.setLastFrozenTime(platformStateFacade.freezeTimeOf(newState));
         }
 
         final ReservedSignedState signedState = new SignedState(
@@ -416,9 +420,10 @@ public final class EventRecoveryWorkflow {
                         "EventRecoveryWorkflow.handleNextRound()",
                         isFreezeState,
                         false,
-                        false)
+                        false,
+                        platformStateFacade)
                 .reserve("recovery");
-        previousState.close();
+        previousSignedState.close();
 
         return signedState;
     }
@@ -476,9 +481,9 @@ public final class EventRecoveryWorkflow {
      * @param round          the current round
      */
     static void applyTransactions(
-            final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles,
-            final PlatformMerkleStateRoot immutableState,
-            final PlatformMerkleStateRoot mutableState,
+            final StateLifecycles<State> stateLifecycles,
+            final State immutableState,
+            final State mutableState,
             final Round round) {
 
         mutableState.throwIfImmutable();

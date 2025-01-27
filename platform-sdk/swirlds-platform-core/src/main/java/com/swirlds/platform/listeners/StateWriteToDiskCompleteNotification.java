@@ -17,7 +17,7 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.state.State;
 import java.nio.file.Path;
 import java.time.Instant;
 
@@ -61,7 +61,7 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
      * @deprecated used by PTT for an obsolete feature
      */
     @Deprecated(forRemoval = true)
-    public PlatformMerkleStateRoot getState() {
+    public State getState() {
         return null;
     }
 

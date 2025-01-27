@@ -18,9 +18,9 @@ package com.swirlds.platform.state;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.formatting.TextTable;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -41,7 +41,7 @@ public class MerkleStateUtils {
             int hashDepth,
             @NonNull final PlatformStateAccessor platformState,
             @NonNull final Hash rootHash,
-            @NonNull final MerkleNode state) {
+            @NonNull final State state) {
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
@@ -66,7 +66,7 @@ public class MerkleStateUtils {
                 .render(sb);
 
         sb.append("\n");
-        new MerkleTreeVisualizer(state).setDepth(hashDepth).render(sb);
+        new MerkleTreeVisualizer(state.cast()).setDepth(hashDepth).render(sb);
         return sb.toString();
     }
 }

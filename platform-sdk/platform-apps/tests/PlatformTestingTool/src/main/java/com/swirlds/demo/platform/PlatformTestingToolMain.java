@@ -92,6 +92,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -324,7 +325,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
     public PlatformTestingToolMain() {
         // the config needs to be loaded before the init() method
         config = PlatformConfig.getDefault();
-        stateLifecycles = new PlatformTestingToolStateLifecycles();
+        stateLifecycles = new PlatformTestingToolStateLifecycles(new PlatformStateFacade(v -> softwareVersion));
     }
 
     /**
@@ -718,7 +719,7 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
         platform.getNotificationEngine().register(NewSignedStateListener.class, notification -> {
             if (timeToCheckBalances(notification.getConsensusTimestamp())) {
-                checkBalances(notification.getStateRoot());
+                checkBalances(notification.getState());
             }
         });
     }
@@ -874,9 +875,8 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
      */
     @Override
     @NonNull
-    public PlatformTestingToolState newMerkleStateRoot() {
-        final PlatformTestingToolState state =
-                new PlatformTestingToolState(version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
+    public PlatformTestingToolState newStateRoot() {
+        final PlatformTestingToolState state = new PlatformTestingToolState();
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }

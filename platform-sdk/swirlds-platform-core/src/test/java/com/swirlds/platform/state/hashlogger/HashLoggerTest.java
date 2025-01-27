@@ -30,13 +30,14 @@ import static org.mockito.Mockito.withSettings;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.interfaces.HasMerkleRoute;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig_;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
@@ -51,6 +52,7 @@ public class HashLoggerTest {
     private Logger mockLogger;
     private HashLogger hashLogger;
     private List<String> logged;
+    private PlatformStateFacade platformStateFacade;
 
     /**
      * Get a regex that will match a log message containing the given round number
@@ -65,11 +67,12 @@ public class HashLoggerTest {
     @BeforeEach
     public void setUp() {
         mockLogger = mock(Logger.class);
+        platformStateFacade = mock(PlatformStateFacade.class);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        hashLogger = new DefaultHashLogger(platformContext, mockLogger);
+        hashLogger = new DefaultHashLogger(platformContext, mockLogger, platformStateFacade);
         logged = new ArrayList<>();
 
         doAnswer(invocation -> {
@@ -129,7 +132,7 @@ public class HashLoggerTest {
                 .withConfiguration(configuration)
                 .build();
 
-        hashLogger = new DefaultHashLogger(platformContext, mockLogger);
+        hashLogger = new DefaultHashLogger(platformContext, mockLogger, platformStateFacade);
         hashLogger.logHashes(createSignedState(1));
         assertThat(logged).isEmpty();
     }
@@ -138,9 +141,10 @@ public class HashLoggerTest {
     public void loggerWithDefaultConstructorWorks() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
+        final PlatformStateFacade platformStateFacade = mock(PlatformStateFacade.class);
 
         assertDoesNotThrow(() -> {
-            hashLogger = new DefaultHashLogger(platformContext);
+            hashLogger = new DefaultHashLogger(platformContext, platformStateFacade);
             hashLogger.logHashes(createSignedState(1));
         });
     }
@@ -149,14 +153,12 @@ public class HashLoggerTest {
         final MerkleNode merkleNode = MerkleTestUtils.buildLessSimpleTree();
         MerkleCryptoFactory.getInstance().digestTreeSync(merkleNode);
         final SignedState signedState = mock(SignedState.class);
-        final PlatformMerkleStateRoot state =
-                mock(PlatformMerkleStateRoot.class, withSettings().extraInterfaces(State.class));
+        final State state = mock(State.class, withSettings().extraInterfaces(HasMerkleRoute.class));
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-
+        when(platformStateFacade.getReadablePlatformStateOf(state)).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(round);
-
-        when(state.getReadablePlatformState()).thenReturn(platformState);
-        when(state.getRoute()).thenReturn(merkleNode.getRoute());
+        final HasMerkleRoute stateWithRoute = (HasMerkleRoute) state;
+        when(stateWithRoute.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());
 
         when(signedState.getState()).thenReturn(state);
