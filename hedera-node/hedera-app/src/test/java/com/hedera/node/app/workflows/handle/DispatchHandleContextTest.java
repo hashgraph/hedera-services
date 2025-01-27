@@ -107,6 +107,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -298,7 +299,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-        readableStoreFactory = new ReadableStoreFactory(baseState);
+        readableStoreFactory = new ReadableStoreFactory(baseState, ServicesSoftwareVersion::new);
         apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);
