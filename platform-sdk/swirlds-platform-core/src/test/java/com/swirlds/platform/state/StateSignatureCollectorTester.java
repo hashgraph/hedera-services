@@ -33,6 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -85,13 +86,13 @@ public class StateSignatureCollectorTester extends DefaultStateSignatureCollecto
 
     @Override
     public List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return processStates(super.handlePreconsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
-        ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions =
                 new ConcurrentLinkedQueue<>();
         systemTransactions.add(new ScopedSystemTransaction<>(signerId, null, signatureTransaction));
         handlePreconsensusSignatures(systemTransactions);
@@ -99,13 +100,13 @@ public class StateSignatureCollectorTester extends DefaultStateSignatureCollecto
 
     @Override
     public List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         return processStates(super.handlePostconsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
             @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
-        ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions =
                 new ConcurrentLinkedQueue<>();
         systemTransactions.add(new ScopedSystemTransaction<>(signerId, null, transaction));
         handlePostconsensusSignatures(systemTransactions);

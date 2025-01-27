@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -133,7 +133,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      */
     @Override
     public @Nullable List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePreconsensusSignature)
@@ -169,7 +169,7 @@ public class DefaultStateSignatureCollector implements StateSignatureCollector {
      */
     @Override
     public @Nullable List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
         Objects.requireNonNull(transactions, "transactions");
         return transactions.stream()
                 .map(this::handlePostconsensusSignature)

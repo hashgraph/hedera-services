@@ -31,6 +31,7 @@ import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -88,10 +89,10 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
+    public Queue<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
             @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
                 new ConcurrentLinkedQueue<>();
         final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
 

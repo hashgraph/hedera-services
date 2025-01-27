@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.jupiter.api.DisplayName;
@@ -371,7 +372,7 @@ class IssDetectorTests extends PlatformTest {
 
             // randomly select half of unsubmitted signature events to include in this round
             final List<EventImpl> eventsToInclude = selectRandomEvents(random, signatureEvents);
-            final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
+            final Queue<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
                     extractScopedSystemTransactions(eventsToInclude, nodeIdToStateSignatureTransactionsMap);
 
             final ConsensusRound consensusRound = createRoundWithSignatureEvents(currentRound, eventsToInclude);
@@ -384,7 +385,7 @@ class IssDetectorTests extends PlatformTest {
         // Add all remaining signature events
         final ConsensusRound consensusRound = createRoundWithSignatureEvents(roundsNonAncient, signatureEvents);
 
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
                 extractScopedSystemTransactions(signatureEvents, nodeIdToStateSignatureTransactionsMap);
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(roundsNonAncient, randomHash(random)), consensusRound, remainingSystemTransactions));
@@ -427,10 +428,10 @@ class IssDetectorTests extends PlatformTest {
                         assertMarkerFile(notification.getIssType().toString(), true));
     }
 
-    private ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> extractScopedSystemTransactions(
+    private Queue<ScopedSystemTransaction<StateSignatureTransaction>> extractScopedSystemTransactions(
             final List<EventImpl> eventsToInclude,
             final Map<NodeId, List<StateSignatureTransaction>> sourceStateSignatureTransactions) {
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> selectedSystemTransactions =
                 new ConcurrentLinkedQueue<>();
         eventsToInclude.forEach(event -> {
             final NodeId creatorId = event.getCreatorId();
@@ -524,9 +525,8 @@ class IssDetectorTests extends PlatformTest {
         }
 
         final var roundWithMajority = createRoundWithSignatureEvents(currentRound, signaturesToSubmit);
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>>
-                systemTransactionsForRoundWithMajority =
-                        extractScopedSystemTransactions(signaturesToSubmit, systemTransactions);
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForRoundWithMajority =
+                extractScopedSystemTransactions(signaturesToSubmit, systemTransactions);
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()), roundWithMajority, systemTransactionsForRoundWithMajority));
         assertEquals(
@@ -539,7 +539,7 @@ class IssDetectorTests extends PlatformTest {
         // submit the remaining signatures in the next round
         final var remainingRound = createRoundWithSignatureEvents(currentRound, signaturesOnCatastrophicRound);
 
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> remainingSystemTransactions =
                 extractScopedSystemTransactions(signaturesOnCatastrophicRound, systemTransactions);
 
         issDetectorTestHelper.handleStateAndRound(
@@ -644,9 +644,8 @@ class IssDetectorTests extends PlatformTest {
 
         // handle the catastrophic round, but it won't be decided yet, since there aren't enough signatures
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, signaturesToSubmit);
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>>
-                systemTransactionsForCatastrophicRound =
-                        extractScopedSystemTransactions(signaturesToSubmit, nodeIdToSystemTransactionsMap);
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
+                extractScopedSystemTransactions(signaturesToSubmit, nodeIdToSystemTransactionsMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, selfHashForCatastrophicRound),
@@ -818,9 +817,8 @@ class IssDetectorTests extends PlatformTest {
         // handle the round and all signatures.
         // The round has a catastrophic ISS, but should be ignored
         final var catastrophicRound = createRoundWithSignatureEvents(currentRound, signaturesOnCatastrophicRound);
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>>
-                systemTransactionsForCatastrophicRound = extractScopedSystemTransactions(
-                        signaturesOnCatastrophicRound, nodeIdStateSignatureTransactionMap);
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactionsForCatastrophicRound =
+                extractScopedSystemTransactions(signaturesOnCatastrophicRound, nodeIdStateSignatureTransactionMap);
 
         issDetectorTestHelper.handleStateAndRound(new StateAndRound(
                 mockState(currentRound, randomHash()), catastrophicRound, systemTransactionsForCatastrophicRound));

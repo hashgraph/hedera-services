@@ -35,7 +35,7 @@ import com.swirlds.platform.uptime.UptimeTracker;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -134,8 +134,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param round the round to handle
      */
-    public ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(
-            final ConsensusRound round) {
+    public Queue<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
         final PlatformMerkleStateRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);

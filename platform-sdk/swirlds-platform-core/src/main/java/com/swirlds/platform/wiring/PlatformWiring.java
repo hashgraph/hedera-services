@@ -108,7 +108,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import java.util.function.Function;
 import org.hiero.event.creator.impl.EventCreationConfig;
 
@@ -138,8 +138,7 @@ public class PlatformWiring {
     private final ComponentWiring<InlinePcesWriter, PlatformEvent> pcesInlineWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
     private final ComponentWiring<PcesSequencer, PlatformEvent> pcesSequencerWiring;
-    private final ComponentWiring<
-                    TransactionPrehandler, ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>>>
+    private final ComponentWiring<TransactionPrehandler, Queue<ScopedSystemTransaction<StateSignatureTransaction>>>
             applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final GossipWiring gossipWiring;

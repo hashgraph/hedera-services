@@ -21,7 +21,7 @@ import com.swirlds.platform.components.transaction.system.ScopedSystemTransactio
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 /**
  * Contains a reserved signed state, and the consensus round which caused the state to be created
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public record StateAndRound(
         @NonNull ReservedSignedState reservedSignedState,
         @NonNull ConsensusRound round,
-        @NonNull ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions) {
+        @NonNull Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions) {
     /**
      * Make an additional reservation on the reserved signed state
      *

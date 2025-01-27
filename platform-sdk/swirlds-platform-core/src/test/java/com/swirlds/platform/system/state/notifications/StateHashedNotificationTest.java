@@ -27,7 +27,7 @@ import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.wiring.components.StateAndRound;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -51,7 +51,7 @@ class StateHashedNotificationTest {
     private ReservedSignedState reservedSignedState;
 
     @Mock
-    private ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions;
+    private Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions;
 
     @Test
     void factoryWorksAsExpected() {

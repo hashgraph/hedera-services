@@ -29,6 +29,7 @@ import com.swirlds.platform.metrics.StateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,10 +59,9 @@ public class TransactionHandler {
      * 		the stateLifecycles to apply {@code round} to
      * @param stateRoot the state root to apply {@code round} to
      */
-    public <T extends PlatformMerkleStateRoot>
-            ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
-                    final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
-        final ConcurrentLinkedQueue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
+    public <T extends PlatformMerkleStateRoot> Queue<ScopedSystemTransaction<StateSignatureTransaction>> handleRound(
+            final ConsensusRound round, final StateLifecycles<T> stateLifecycles, final T stateRoot) {
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
                 new ConcurrentLinkedQueue<>();
 
         final List<PlatformEvent> events = round.getConsensusEvents();
