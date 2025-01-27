@@ -66,7 +66,8 @@ public class TransactionHandler {
 
         final List<PlatformEvent> events = round.getConsensusEvents();
         for (final PlatformEvent event : events) {
-            for (final EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+            for (final EventTransaction eventTransaction :
+                    event.getGossipEvent().eventTransaction()) {
                 if (eventTransaction.hasStateSignatureTransaction()) {
                     scopedSystemTransactions.add(new ScopedSystemTransaction<>(
                             event.getCreatorId(),
