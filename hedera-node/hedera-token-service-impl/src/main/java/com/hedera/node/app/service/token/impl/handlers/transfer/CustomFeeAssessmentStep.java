@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -105,7 +107,7 @@ public class CustomFeeAssessmentStep {
         final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
         final var readableStore = feeContext.readableStore(ReadableAccountStore.class);
         final var config = feeContext.configuration();
-        final var result = assessFees(tokenStore, tokenRelStore, config, readableStore, AccountID::hasAlias);
+        final var result = assessFees(tokenStore, tokenRelStore, config, readableStore, AccountID::hasAlias, false);
         return result.assessedCustomFees();
     }
 
@@ -134,7 +136,11 @@ public class CustomFeeAssessmentStep {
         } else {
             autoCreationTest = accountId -> false;
         }
-        final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreationTest);
+        // check dispatchMetadata, if this is a dispatch for paying transaction fixed fee or a regular token custom fee
+        // assessing
+        final var isTnxFixedFee =
+                transferContext.getHandleContext().dispatchMetadata().getMetadata(TRANSACTION_FIXED_FEE) != null;
+        final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreationTest, isTnxFixedFee);
 
         result.assessedCustomFees().forEach(transferContext::addToAssessedCustomFee);
         customFeeAssessor.resetInitialNftChanges();
@@ -154,6 +160,7 @@ public class CustomFeeAssessmentStep {
      * @param config - configuration
      * @param accountStore - account store
      * @param autoCreationTest - predicate to test if account id is being auto created
+     * @param isTxnFixedFee - is assessing transaction fixed fees or token custom fees
      * @return - transaction body with assessed custom fees
      */
     public CustomFeeAssessmentResult assessFees(
@@ -161,7 +168,8 @@ public class CustomFeeAssessmentStep {
             @NonNull final ReadableTokenRelationStore tokenRelStore,
             @NonNull final Configuration config,
             @NonNull final ReadableAccountStore accountStore,
-            @NonNull final Predicate<AccountID> autoCreationTest) {
+            @NonNull final Predicate<AccountID> autoCreationTest,
+            boolean isTxnFixedFee) {
         final var tokensConfig = config.getConfigData(TokensConfig.class);
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
 
@@ -216,6 +224,15 @@ public class CustomFeeAssessmentStep {
                     numUniqueAdjustmentsIn(assessedTxns) <= maxBalanceChanges,
                     CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
         }
+
+        // if this was a dispatch for paying transaction fixed fee,
+        // we need to convert the toplevel transfer in to assessed fees too.
+        if (isTxnFixedFee) {
+            final var assessmentResult = new AssessmentResult(emptyList(), emptyList());
+            customFeeAssessor.convertTransferToFixedFee(op, assessmentResult);
+            customFeesAssessed.addAll(assessmentResult.getAssessedCustomFees());
+        }
+
         return new CustomFeeAssessmentResult(assessedTxns, customFeesAssessed);
     }
 

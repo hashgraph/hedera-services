@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.standalone.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.initializeBuilderInfo;
@@ -29,7 +30,6 @@ import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -194,7 +194,8 @@ public class StandaloneDispatchFactory {
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
-                feeAccumulator);
+                feeAccumulator,
+                EMPTY_METADATA);
         final var fees = transactionDispatcher.dispatchComputeFees(dispatchHandleContext);
         return new RecordDispatch(
                 baseBuilder,
@@ -228,9 +229,7 @@ public class StandaloneDispatchFactory {
                 .signedTransactionBytes(SignedTransaction.PROTOBUF.toBytes(signedTransaction))
                 .build();
         final var transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
-        final var consensusTransaction = new TransactionWrapper(EventTransaction.newBuilder()
-                .applicationTransaction(transactionBytes)
-                .build());
+        final var consensusTransaction = new TransactionWrapper(transactionBytes);
         consensusTransaction.setMetadata(temporaryPreHandleResult());
         return consensusTransaction;
     }

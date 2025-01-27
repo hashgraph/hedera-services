@@ -353,7 +353,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         rosterHistory)
                 .withPlatformContext(platformContext)
                 .withConfiguration(platformConfig)
-                .withKeysAndCerts(keysAndCerts);
+                .withKeysAndCerts(keysAndCerts)
+                .withSystemTransactionEncoderCallback(hedera::encodeSystemTransaction);
         final var platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
