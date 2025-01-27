@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -506,47 +506,37 @@ class PcesFileReaderTests {
         long lowerBound = random.nextLong(0, 1000);
         long upperBound = random.nextLong(lowerBound, lowerBound + maxDelta);
         Instant timestamp = Instant.now();
-
-        final long discontinuitySequenceNumber =
-                random.nextLong(firstSequenceNumber + 1, firstSequenceNumber + fileCount - 1);
-
         final long startingOrigin = random.nextLong(1, 1000);
-        long origin = startingOrigin;
+        final long discontinuity = startingOrigin + random.nextLong(1, 1000);
+        final int n = random.nextInt(2, fileCount); // The index of the fileCount where the
+        // discontinuity will be placed
 
-        for (long sequenceNumber = firstSequenceNumber;
-                sequenceNumber < firstSequenceNumber + fileCount;
-                sequenceNumber++) {
-
-            if (sequenceNumber == discontinuitySequenceNumber) {
-                origin = random.nextLong(origin + 1, origin + 1000);
-            }
-
-            final PcesFile file =
-                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, origin, fileDirectory);
-
-            lowerBound = random.nextLong(lowerBound, upperBound + 1);
-            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
-            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
-
-            files.add(file);
-            if (sequenceNumber < discontinuitySequenceNumber) {
+        for (int index = 0; index < fileCount; index++) {
+            final long sequenceNumber = firstSequenceNumber + index;
+            final var isPreDiscontinuity = index < n;
+            final var org = isPreDiscontinuity ? startingOrigin : discontinuity;
+            final var file =
+                    PcesFile.of(ancientMode, timestamp, sequenceNumber, lowerBound, upperBound, org, fileDirectory);
+            createDummyFile(file);
+            if (isPreDiscontinuity) {
                 filesBeforeDiscontinuity.add(file);
             } else {
                 filesAfterDiscontinuity.add(file);
             }
-            createDummyFile(file);
+            lowerBound = random.nextLong(lowerBound, upperBound + 1);
+            upperBound = max(upperBound, random.nextLong(lowerBound, lowerBound + maxDelta));
+            timestamp = timestamp.plusMillis(random.nextInt(1, 100_000));
         }
 
         final PlatformContext platformContext = buildContext(false, ancientMode, recycleBinPath);
         // Scenario 1: choose an origin that lands on the discontinuity exactly.
-        final long startingRound1 = origin;
         final PcesFileTracker fileTracker1 =
-                PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, startingRound1, false, ancientMode);
+                PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, discontinuity, false, ancientMode);
         assertIteratorEquality(
-                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(NO_LOWER_BOUND, startingRound1));
+                filesAfterDiscontinuity.iterator(), fileTracker1.getFileIterator(NO_LOWER_BOUND, discontinuity));
 
         // Scenario 2: choose an origin that lands after the discontinuity.
-        final long startingRound2 = random.nextLong(origin + 1, origin + 1000);
+        final long startingRound2 = random.nextLong(discontinuity + 1, discontinuity + 1000);
         final PcesFileTracker fileTracker2 =
                 PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, startingRound2, false, ancientMode);
         assertIteratorEquality(
@@ -554,7 +544,7 @@ class PcesFileReaderTests {
 
         // Scenario 3: choose an origin that comes before the discontinuity. This will cause the files
         // after the discontinuity to be deleted.
-        final long startingRound3 = random.nextLong(startingOrigin, origin - 1);
+        final long startingRound3 = random.nextLong(startingOrigin, discontinuity);
         final PcesFileTracker fileTracker3 =
                 PcesFileReader.readFilesFromDisk(platformContext, fileDirectory, startingRound3, false, ancientMode);
 
