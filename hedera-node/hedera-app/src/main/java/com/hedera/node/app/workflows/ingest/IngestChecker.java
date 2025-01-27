@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
@@ -46,7 +45,6 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.hapi.utils.EthSigsUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -75,7 +73,6 @@ import java.time.InstantSource;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
@@ -279,25 +276,6 @@ public final class IngestChecker {
             if (payerNum >= hederaConfig.firstUserEntity()) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
-        }
-
-        final long gas =
-                switch (txInfo.functionality()) {
-                    case CONTRACT_CREATE -> txInfo.txBody()
-                            .contractCreateInstanceOrThrow()
-                            .gas();
-                    case CONTRACT_CALL -> txInfo.txBody().contractCallOrThrow().gas();
-                    case ETHEREUM_TRANSACTION -> Optional.of(txInfo.txBody()
-                                    .ethereumTransactionOrThrow()
-                                    .ethereumData()
-                                    .toByteArray())
-                            .map(EthTxData::populateEthTxData)
-                            .map(EthTxData::gasLimit)
-                            .orElse(0L);
-                    default -> 0L;
-                };
-        if (gas < 0) {
-            throw new PreCheckException(INSUFFICIENT_GAS);
         }
     }
 
