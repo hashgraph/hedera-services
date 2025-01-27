@@ -307,6 +307,8 @@ public class Browser {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);
             }
+            builder.withSystemTransactionEncoderCallback(appMain::encodeSystemTransaction);
+
             // Build platform using the Inversion of Control pattern by injecting all needed
             // dependencies into the PlatformBuilder.
             final SwirldsPlatform platform = (SwirldsPlatform) builder.withConfiguration(configuration)

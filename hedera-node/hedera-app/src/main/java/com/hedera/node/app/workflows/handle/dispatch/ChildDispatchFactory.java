@@ -207,6 +207,7 @@ public class ChildDispatchFactory {
                 preHandleResult,
                 childVerifier,
                 consensusNow,
+                options.dispatchMetadata(),
                 creatorInfo,
                 config,
                 topLevelFunction,
@@ -233,6 +234,7 @@ public class ChildDispatchFactory {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
+            @NonNull final HandleContext.DispatchMetadata dispatchMetadata,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
@@ -286,7 +288,8 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 throttleAdviser,
-                childFeeAccumulator);
+                childFeeAccumulator,
+                dispatchMetadata);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
