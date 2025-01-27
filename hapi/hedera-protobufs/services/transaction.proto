@@ -104,6 +104,10 @@ import "node_delete.proto";
 import "custom_fees.proto";
 import "event/state_signature_transaction.proto";
 
+import "auxiliary/history/history_proof_signature.proto";
+import "auxiliary/history/history_proof_key_publication.proto";
+import "auxiliary/history/history_proof_vote.proto";
+
 /**
  * A wrapper around signed transaction bytes.<br/>
  * This was originally a transaction with body, signatures, and/or bytes,
@@ -168,7 +172,7 @@ message Transaction {
  */
 message TransactionBody {
     // <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
-    reserved 30, 61, 62, 63, 64;
+    reserved 30, 61, 62, 63, 64, 66, 67, 68;
 
     reserved "tssMessage", "tssVote", "tssShareSignature", "tssEncryptionKey";
 
@@ -609,6 +613,21 @@ message TransactionBody {
          * A transaction body for signature of a state root hash gossiped to other nodes
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
+
+        /**
+         * A transaction body for contributed a signature with a node's proof key to a history proof.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody history_proof_signature = 69;
+
+        /**
+         * A transaction body for publishing a node's metadata proof key.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody history_proof_key_publication = 70;
+
+        /**
+         * A transaction body for voting on a metadata proof descending from the ledger id.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
     }
 
     /**
