@@ -77,7 +77,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
             return false;
         }
         TransactionWrapper that = (TransactionWrapper) o;
-        return Objects.equals(getTransaction(), that.getTransaction());
+        return Objects.equals(getTransaction(), that.getTransaction())
+                && Objects.equals(getApplicationTransaction(), that.getApplicationTransaction());
     }
 
     /**
@@ -85,7 +86,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getTransaction());
+        return Objects.hash(getTransaction(), getApplicationTransaction());
     }
 
     /**
