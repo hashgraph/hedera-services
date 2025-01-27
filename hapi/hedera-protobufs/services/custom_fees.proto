@@ -416,7 +416,7 @@ message CustomFeeLimit {
     AccountID account_id = 1;
 
     /**
-     * A custom fee amount limit.
+     * The maximum fees that the user is willing to pay for the message.
      */
-    FixedFee amount_limit = 2;
+    repeated FixedFee fees = 2;
 }

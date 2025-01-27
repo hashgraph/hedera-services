@@ -479,14 +479,15 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
                 // fungible token limit
                 CustomFeeLimit.newBuilder()
                         .accountId(payerId)
-                        .amountLimit(FixedFee.newBuilder()
+                        .fees(List.of(FixedFee.newBuilder()
                                 .denominatingTokenId(fungibleTokenId)
-                                .amount(1))
+                                .amount(1)
+                                .build()))
                         .build(),
                 // hbar limit
                 CustomFeeLimit.newBuilder()
                         .accountId(payerId)
-                        .amountLimit(FixedFee.newBuilder().amount(1))
+                        .fees(List.of(FixedFee.newBuilder().amount(1).build()))
                         .build());
         final var submitMessageBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .topicID(TopicID.newBuilder().topicNum(topicEntityNum).build())

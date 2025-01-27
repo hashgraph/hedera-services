@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.consensus.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
@@ -52,6 +53,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
@@ -386,36 +388,39 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
      * Validate that each topic custom fee has equal or lower value than the payer's limit
      *
      * @param topicCustomFees The topic's custom fee list
-     * @param payerCustomFeeLimits List with limits of fees that the payer is willing to pay
+     * @param allCustomFeeLimits List with limits of fees that the payer is willing to pay
      */
     private void validateFeeLimits(
             @NonNull final AccountID payer,
             @NonNull final List<FixedCustomFee> topicCustomFees,
-            @NonNull final List<CustomFeeLimit> payerCustomFeeLimits) {
+            @NonNull final List<CustomFeeLimit> allCustomFeeLimits) {
         // Extract the token fees and hbar fees from the topic custom fees
         Map<TokenID, Long> tokenFees = new HashMap<>();
         AtomicReference<Long> hbarFee = new AtomicReference<>(0L);
         totalAmountToBeCharged(topicCustomFees, hbarFee, tokenFees);
+        final var payerLimits = allCustomFeeLimits.stream()
+                .filter(maxCustomFee -> payer.equals(maxCustomFee.accountId()))
+                .map(CustomFeeLimit::fees)
+                .flatMap(List::stream)
+                .toList();
+
         // Validate payer token limits
         tokenFees.forEach((token, feeAmount) -> {
-            final boolean isValid = payerCustomFeeLimits.stream()
-                    .filter(maxCustomFee ->
-                            token.equals(maxCustomFee.amountLimit().denominatingTokenId()))
-                    .filter(maxCustomFee -> payer.equals(maxCustomFee.accountId()))
+            final boolean isValid = payerLimits.stream()
+                    .filter(maxCustomFee -> token.equals(maxCustomFee.denominatingTokenId()))
                     .anyMatch(maxCustomFee -> {
-                        validateTrue(maxCustomFee.amountLimit().amount() >= feeAmount, MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+                        validateTrue(maxCustomFee.amount() >= feeAmount, MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
                         return true;
                     });
             validateTrue(isValid, NO_VALID_MAX_CUSTOM_FEE);
         });
         // Validate payer HBAR limit
         if (hbarFee.get() > 0) {
-            final var payerHbarLimit = payerCustomFeeLimits.stream()
-                    .filter(maxCustomFee -> !maxCustomFee.amountLimit().hasDenominatingTokenId())
-                    .filter(maxCustomFee -> payer.equals(maxCustomFee.accountId()))
+            final var payerHbarLimit = payerLimits.stream()
+                    .filter(maxCustomFee -> !maxCustomFee.hasDenominatingTokenId())
                     .findFirst()
                     .orElseThrow(() -> new HandleException(NO_VALID_MAX_CUSTOM_FEE));
-            validateTrue(payerHbarLimit.amountLimit().amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
+            validateTrue(payerHbarLimit.amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
         }
     }
 
@@ -469,24 +474,31 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
-    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> payerCustomFeeLimits)
+    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> allCustomFeeLimits)
             throws PreCheckException {
-        final var htsCustomFeeLimits = payerCustomFeeLimits.stream()
-                .filter(maxCustomFee -> maxCustomFee.amountLimit().hasDenominatingTokenId())
-                .toList();
-        final var hbarCustomFeeLimits = payerCustomFeeLimits.stream()
-                .filter(maxCustomFee -> !maxCustomFee.amountLimit().hasDenominatingTokenId())
-                .toList();
-
-        final var htsLimitHasDuplicate = htsCustomFeeLimits.stream()
-                        .map(maxCustomFee -> maxCustomFee.amountLimit().denominatingTokenId())
-                        .collect(Collectors.toSet())
-                        .size()
-                != htsCustomFeeLimits.size();
-        final var hbarLimitsHasDuplicate = new HashSet<>(hbarCustomFeeLimits).size() != hbarCustomFeeLimits.size();
-
+        // Validate that there are no duplicated account ids in the max custom fee list
+        final var accounts =
+                allCustomFeeLimits.stream().map(CustomFeeLimit::accountId).toList();
         validateTruePreCheck(
-                !htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
+                accounts.size() == new HashSet<>(accounts).size(), DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST);
+        // Validate that there are no duplicated denominating token ids in the max custom fee list
+        for (final var customFeeLimit : allCustomFeeLimits) {
+            final var htsCustomFeeLimits = customFeeLimit.fees().stream()
+                    .filter(FixedFee::hasDenominatingTokenId)
+                    .toList();
+            final var hbarCustomFeeLimits = customFeeLimit.fees().stream()
+                    .filter(maxCustomFee -> !maxCustomFee.hasDenominatingTokenId())
+                    .toList();
+
+            final var htsLimitHasDuplicate = htsCustomFeeLimits.stream()
+                            .map(FixedFee::denominatingTokenId)
+                            .collect(Collectors.toSet())
+                            .size()
+                    != htsCustomFeeLimits.size();
+            final var hbarLimitsHasDuplicate = new HashSet<>(hbarCustomFeeLimits).size() != hbarCustomFeeLimits.size();
+            validateTruePreCheck(
+                    !htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
+        }
     }
 
     @NonNull

@@ -1702,7 +1702,13 @@ enum ResponseCodeEnum {
     DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 385;
 
     /**
+     * The provided max custom fee list contains fees with
+     * duplicate account id.
+     */
+    DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST = 386;
+
+    /**
      * Max custom fees list is not supported for this operation.
      */
-    MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 386;
+    MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 387;
 }

@@ -444,10 +444,13 @@ public class TransactionChecker {
 
         // check required fields
         for (var maxCustomFee : maxCustomFeeList) {
-            if (maxCustomFee.accountId() == null
-                    || maxCustomFee.amountLimit() == null
-                    || maxCustomFee.amountLimit().amount() < 0) {
+            if (maxCustomFee.accountId() == null || maxCustomFee.fees().isEmpty()) {
                 throw new PreCheckException(ResponseCodeEnum.INVALID_MAX_CUSTOM_FEES);
+            }
+            for (final var fee : maxCustomFee.fees()) {
+                if (fee.amount() < 0) {
+                    throw new PreCheckException(ResponseCodeEnum.INVALID_MAX_CUSTOM_FEES);
+                }
             }
         }
     }

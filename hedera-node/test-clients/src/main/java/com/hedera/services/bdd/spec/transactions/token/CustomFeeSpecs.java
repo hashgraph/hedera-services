@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import java.util.Arrays;
 import java.util.OptionalLong;
 import java.util.function.Function;
 
@@ -273,20 +274,24 @@ public class CustomFeeSpecs {
         return builder.build();
     }
 
-    public static Function<HapiSpec, CustomFeeLimit> maxCustomFee(String account, long amount) {
-        return spec -> CustomFeeLimit.newBuilder()
-                .setAccountId(asId(account, spec))
-                .setAmountLimit(FixedFee.newBuilder().setAmount(amount).build())
+    public static Function<HapiSpec, FixedFee> hbarLimit(long amount) {
+        return spec -> FixedFee.newBuilder().setAmount(amount).build();
+    }
+
+    public static Function<HapiSpec, FixedFee> htsLimit(String token, long amount) {
+        return spec -> FixedFee.newBuilder()
+                .setDenominatingTokenId(asTokenId(token, spec))
+                .setAmount(amount)
                 .build();
     }
 
-    public static Function<HapiSpec, CustomFeeLimit> maxHtsCustomFee(String account, String token, long amount) {
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public static Function<HapiSpec, CustomFeeLimit> maxCustomFee(
+            String account, Function<HapiSpec, FixedFee>... fees) {
         return spec -> CustomFeeLimit.newBuilder()
                 .setAccountId(asId(account, spec))
-                .setAmountLimit(FixedFee.newBuilder()
-                        .setAmount(amount)
-                        .setDenominatingTokenId(asTokenId(token, spec))
-                        .build())
+                .addAllFees(Arrays.stream(fees).map(fee -> fee.apply(spec)).toList())
                 .build();
     }
 }
