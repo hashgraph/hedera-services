@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -369,6 +370,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     return cryptoCreateRecordBuilder;
                 });
 
+        when(handleContext.dispatchMetadata()).thenReturn(mock(DispatchMetadata.class));
+
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
@@ -504,7 +507,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         givenTxn();
-
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
@@ -539,7 +542,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
         givenTxn();
-
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))

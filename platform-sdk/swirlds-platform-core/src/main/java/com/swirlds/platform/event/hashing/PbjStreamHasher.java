@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,9 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        final List<Bytes> transactions = event.getGossipEvent().transactions();
+        final boolean isNewFormat = !transactions.isEmpty();
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), isNewFormat);
         event.setHash(hash);
         return event;
     }
@@ -64,32 +66,43 @@ public class PbjStreamHasher implements EventHasher, UnsignedEventHasher {
      * @param event the event to hash
      */
     public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
-        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions());
+        final Hash hash = hashEvent(event.getEventCore(), event.getTransactions(), true);
         event.setHash(hash);
     }
 
     /**
      * Hashes the given event and returns the hash.
      *
-     * @param eventCore the event to hash
-     * @param transactions the transactions to hash
-     *
+     * @param eventCore         the event to hash
+     * @param transactions      the transactions to hash
      * @return the hash of the event
      */
     @NonNull
-    private Hash hashEvent(@NonNull final EventCore eventCore, @NonNull final List<TransactionWrapper> transactions) {
+    private Hash hashEvent(
+            @NonNull final EventCore eventCore,
+            @NonNull final List<TransactionWrapper> transactions,
+            final boolean isNewFormat) {
         try {
             EventCore.PROTOBUF.write(eventCore, eventStream);
             for (final TransactionWrapper transaction : transactions) {
-                EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
-                byte[] hash = transactionDigest.digest();
-                transaction.setHash(Bytes.wrap(hash));
-                eventStream.writeBytes(hash);
+                if (isNewFormat) {
+                    transactionStream.writeBytes(Objects.requireNonNull(transaction.getApplicationTransaction()));
+                } else {
+                    EventTransaction.PROTOBUF.write(transaction.getTransaction(), transactionStream);
+                }
+
+                processTransactionHash(transaction);
             }
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }
 
         return new Hash(eventDigest.digest(), DigestType.SHA_384);
+    }
+
+    private void processTransactionHash(final TransactionWrapper transaction) {
+        final byte[] hash = transactionDigest.digest();
+        transaction.setHash(Bytes.wrap(hash));
+        eventStream.writeBytes(hash);
     }
 }

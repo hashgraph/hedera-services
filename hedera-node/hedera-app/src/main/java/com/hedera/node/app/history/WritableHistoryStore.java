@@ -19,7 +19,6 @@ package com.hedera.node.app.history;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.history.HistoryProofVote;
-import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -63,7 +62,7 @@ public interface WritableHistoryStore extends ReadableHistoryStore {
     /**
      * Adds a node's signature on a particular assembled history proof for the given construction.
      */
-    void addSignature(long nodeId, long constructionId, @NonNull HistorySignature signature, @NonNull Instant now);
+    void addSignature(long constructionId, @NonNull HistorySignaturePublication publication);
 
     /**
      * Adds a history proof vote for the given node and construction.
