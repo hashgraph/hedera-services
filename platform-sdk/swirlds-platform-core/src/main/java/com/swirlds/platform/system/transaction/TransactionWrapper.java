@@ -132,7 +132,9 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int getSize() {
-        return TransactionUtils.getLegacyTransactionSize(transaction);
+        return transaction == null
+                ? TransactionUtils.getLegacyTransactionSize(payload)
+                : TransactionUtils.getLegacyTransactionSize(transaction);
     }
 
     @Override
