@@ -773,7 +773,7 @@ class BlockStreamManagerImplTest {
 
     private void givenEndOfRoundSetup(@Nullable final AtomicReference<BlockHeader> headerRef) {
         lenient().when(boundaryStateChangeListener.flushChanges()).thenReturn(FAKE_STATE_CHANGES);
-        doAnswer(invocationOnMock -> {
+        lenient().doAnswer(invocationOnMock -> {
                     lastAItem.set(invocationOnMock.getArgument(0));
                     if (headerRef != null) {
                         final var item = BlockItem.PROTOBUF.parse(lastAItem.get());
