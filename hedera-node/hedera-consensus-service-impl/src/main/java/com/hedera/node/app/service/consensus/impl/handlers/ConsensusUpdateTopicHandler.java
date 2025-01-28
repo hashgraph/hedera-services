@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -318,11 +318,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
     }
 
     private boolean designatesAccountRemoval(AccountID id) {
-        return id.shardNum() == 0
-                && id.realmNum() == 0
-                && id.hasAccountNum()
-                && id.accountNum() == 0
-                && id.alias() == null;
+        return id.hasAccountNum() && id.accountNum() == 0 && id.alias() == null;
     }
 
     private FeeData usageGivenExplicit(

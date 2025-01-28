@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -173,7 +173,8 @@ public class HapiTopicUpdate extends HapiTxnOp<HapiTopicUpdate> {
             }
         });
         newAutoRenewAccount.ifPresent(id -> {
-            if (!id.equalsIgnoreCase("0.0.0")) {
+            var accountNum = id.split("\\.").length == 3 ? id.split("\\.")[2] : null;
+            if (!"0".equals(accountNum)) {
                 signers.add(spec -> spec.registry().getKey(id));
             }
         });
