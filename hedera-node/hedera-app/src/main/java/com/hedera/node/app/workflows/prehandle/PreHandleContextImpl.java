@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,10 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -489,8 +487,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId)
             throws PreCheckException {
         // Throws PreCheckException if the transaction body is structurally invalid
-        final var pureChecksContext = new PureChecksContextImpl(
-                body, configuration, dispatcher, transactionChecker);
+        final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(pureChecksContext);
         // Throws PreCheckException if the payer account does not exist
         final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher);

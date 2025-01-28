@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -44,7 +43,9 @@ public class ContractSystemDeleteHandler implements TransactionHandler {
      * Default constructor for injection.
      */
     @Inject
-    public ContractSystemDeleteHandler() {}
+    public ContractSystemDeleteHandler() {
+        // Exists for injection
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

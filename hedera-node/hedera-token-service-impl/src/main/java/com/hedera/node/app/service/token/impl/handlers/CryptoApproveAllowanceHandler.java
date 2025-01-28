@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -550,9 +549,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             return accountStore.getAccountById(payerId);
         } else {
             // If owner is in modifications get the modified account from state
-            final var ownerAccount =
-                    TokenHandlerHelper.getIfUsable(owner, accountStore, expiryValidator, INVALID_ALLOWANCE_OWNER_ID);
-            return ownerAccount;
+            return TokenHandlerHelper.getIfUsable(owner, accountStore, expiryValidator, INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -93,7 +92,6 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
 
         final var op = context.body().tokenFeeScheduleUpdateOrThrow();
         final var tokenId = op.tokenIdOrElse(TokenID.DEFAULT);
@@ -146,8 +144,8 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         // add token to the modifications map
         tokenStore.put(copy.build());
 
-        final var record = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
-        record.tokenType(token.tokenType());
+        final var tokenBaseStreamBuilder = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
+        tokenBaseStreamBuilder.tokenType(token.tokenType());
     }
 
     /**

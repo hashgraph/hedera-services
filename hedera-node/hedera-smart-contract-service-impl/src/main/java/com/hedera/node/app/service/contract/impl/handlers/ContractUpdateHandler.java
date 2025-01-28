@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.contract.ContractUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateStreamBuilder;
@@ -85,7 +84,9 @@ public class ContractUpdateHandler implements TransactionHandler {
      * Default constructor for injection.
      */
     @Inject
-    public ContractUpdateHandler() {}
+    public ContractUpdateHandler() {
+        // Exists for injection
+    }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {

@@ -1,20 +1,29 @@
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.purechecks;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,9 +38,9 @@ public class PureChecksContextImpl implements PureChecksContext {
      * Configuration to be used during pre-handle
      */
     private final Configuration configuration;
+
     private final TransactionDispatcher dispatcher;
     private final TransactionChecker transactionChecker;
-
 
     /**
      * Create a new instance of {@link PureChecksContextImpl}.
@@ -49,7 +58,6 @@ public class PureChecksContextImpl implements PureChecksContext {
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null!");
     }
 
-
     @NonNull
     @Override
     public TransactionBody body() {
@@ -65,8 +73,7 @@ public class PureChecksContextImpl implements PureChecksContext {
     @NonNull
     @Override
     public void pureChecks(@NonNull TransactionBody body) throws PreCheckException {
-        final var pureChecksContext = new PureChecksContextImpl(
-                body, configuration, dispatcher, transactionChecker);
+        final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(pureChecksContext);
     }
 

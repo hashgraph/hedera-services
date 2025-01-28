@@ -360,8 +360,7 @@ public class ChildDispatchFactory {
             @NonNull final Configuration config,
             @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
-            final var pureChecksContext = new PureChecksContextImpl(
-                    txBody, config, dispatcher, transactionChecker);
+            final var pureChecksContext = new PureChecksContextImpl(txBody, config, dispatcher, transactionChecker);
             dispatcher.dispatchPureChecks(pureChecksContext);
             final var preHandleContext =
                     new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher);
