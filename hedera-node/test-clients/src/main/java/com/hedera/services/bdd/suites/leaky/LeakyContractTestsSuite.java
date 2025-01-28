@@ -744,7 +744,7 @@ public class LeakyContractTestsSuite {
                     final var parentNum = spec.registry().getContractId(contract);
 
                     final var expectedParentContractAddress = asHeadlongAddress(
-                                    asEvmAddress(parentNum.getContractNum()))
+                                    asEvmAddress(parentNum.getShardNum(), parentNum.getRealmNum(), parentNum.getContractNum()))
                             .toString()
                             .toLowerCase()
                             .substring(2);

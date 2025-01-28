@@ -90,7 +90,8 @@ public class Utils {
     }
 
     public static ByteString parsedToByteString(long shard, long realm, long n) {
-        var hexString = Bytes.wrap(asSolidityAddress((int) shard, realm, n)).toHexString();
+        final var hexString =
+                Bytes.wrap(asSolidityAddress((int) shard, realm, n)).toHexString();
         return ByteString.copyFrom(Bytes32.fromHexStringLenient(hexString).toArray());
     }
 

@@ -1822,8 +1822,9 @@ public class UtilVerbs {
             final var createdIds = creationResult.getCreatedContractIDsList().stream()
                     .sorted(Comparator.comparing(ContractID::getContractNum))
                     .toList();
+            final var createdId = createdIds.get(creationNum);
             final var accDetails = getContractInfo(CommonUtils.hex(
-                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                            asEvmAddress(createdId.getShardNum(), createdId.getRealmNum(), createdId.getContractNum())))
                     .has(contractWith().maxAutoAssociations(maxAutoAssociations))
                     .logged();
             allRunFor(spec, accDetails);

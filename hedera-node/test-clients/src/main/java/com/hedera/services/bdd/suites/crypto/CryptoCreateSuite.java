@@ -481,7 +481,6 @@ public class CryptoCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> createAnAccountWithECKeyAndNoAlias() {
-
         final var mirrorAddress = new AtomicReference<Address>();
         return hapiTest(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE), withOpContext((spec, opLog) -> {
             final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);

@@ -74,10 +74,11 @@ public interface AccountSummariesApi {
      */
     static String hexedEvmAddressOf(@NonNull final Account account) {
         requireNonNull(account);
+        final var accountId = account.accountIdOrThrow();
         final var arbitraryEvmAddress = extractEvmAddress(account.alias());
         final var evmAddress = arbitraryEvmAddress != null
                 ? arbitraryEvmAddress.toByteArray()
-                : asEvmAddress(account.accountIdOrThrow().accountNumOrThrow());
+                : asEvmAddress(accountId.shardNum(), accountId.realmNum(), accountId.accountNumOrThrow());
         return hex(evmAddress);
     }
 
