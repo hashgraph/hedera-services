@@ -17,11 +17,11 @@
 package com.hedera.services.bdd.suites.hip551;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.BuildTransaction.buildTxnFrom;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -38,17 +38,22 @@ public class AtomicBatchTest {
     // just test that the batch is submitted
     // disabled for now because there is no handler logic and streamValidation is failing in CI
     public Stream<DynamicTest> simpleBatchTest() {
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId = "innerId";
         return hapiTest(
-                // submit batch with HapiTxnOp
-                atomicBatch(
-                        cryptoCreate("PAYER").balance(ONE_HBAR),
-                        cryptoCreate("SENDER").balance(1L)),
-
-                // submit batch with Transaction
-                withOpContext((spec, opLog) -> {
-                    var txn = buildTxnFrom(spec, cryptoCreate("PAYER").balance(ONE_HBAR));
-                    var batch1 = atomicBatch(txn);
-                    allRunFor(spec, batch1);
-                }));
+                // create another payer for the inner txn
+                cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
+                // use custom txn id so we can get the record
+                usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
+                // create a batch txn
+                atomicBatch(cryptoCreate("foo")
+                                .txnId(innerTxnId)
+                                .balance(ONE_HBAR)
+                                .payingWith(innerTnxPayer))
+                        .via("batchTxn"),
+                // get and log inner txn record
+                getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
+                // validate the batch txn result
+                getAccountBalance("foo").hasTinyBars(ONE_HBAR));
     }
 }
