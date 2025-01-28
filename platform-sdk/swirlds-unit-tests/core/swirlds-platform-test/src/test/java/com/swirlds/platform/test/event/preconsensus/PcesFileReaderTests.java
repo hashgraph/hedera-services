@@ -485,8 +485,18 @@ class PcesFileReaderTests {
     }
 
     /**
-     * In this test, a discontinuity is placed in the middle of the stream. We begin iterating at the first file in the
-     * stream.
+     *  Given that allowing gaps or discontinuities in the origin block of the PcesFile is likely to either lead to ISSes or, more likely, cause
+     *  events to be added to the hashgraph without their parents being added,
+     * the aim of the test is asserting that readFilesFromDisk is able to detect gaps or discontinuities exist in the existing PcesFiles.
+     * </br>
+     * This test, generates a list of files PcesFiles and places a discontinuity in the origin block randomly in the list.
+     * The sequence numbers are intentionally picked close to wrapping around the 3 digit to 4 digit, to cause the files not to line up
+     * alphabetically, and test the code support for that.
+     * The scenarios under test are:
+     *  * readFilesFromDisk is asked to read at the discontinuity origin block
+     *  * readFilesFromDisk is asked to read after the discontinuity origin block
+     *  * readFilesFromDisk is asked to read before the discontinuity origin block
+     *  * readFilesFromDisk is asked to read a non-existent origin block
      */
     @ParameterizedTest
     @MethodSource("buildArguments")
