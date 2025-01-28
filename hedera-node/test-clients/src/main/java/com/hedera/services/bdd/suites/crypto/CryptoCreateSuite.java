@@ -100,7 +100,7 @@ public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
-    public static final String ACCOUNT_ID = "0.0.10";
+    public static final String ACCOUNT_ID = "1.2.10";
     public static final String CIVILIAN = "civilian";
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";

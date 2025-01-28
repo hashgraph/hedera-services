@@ -1561,7 +1561,7 @@ public class CryptoTransferSuite {
     @HapiTest
     final Stream<DynamicTest> specialAccountsBalanceCheck() {
         return hapiTest(IntStream.concat(IntStream.range(1, 101), IntStream.range(900, 1001))
-                .mapToObj(i -> getAccountBalance("0.0." + i).logged())
+                .mapToObj(i -> getAccountBalance("1.2." + i).logged())
                 .toArray(HapiSpecOperation[]::new));
     }
 
@@ -1569,7 +1569,7 @@ public class CryptoTransferSuite {
     final Stream<DynamicTest> transferWithMissingAccountGetsInvalidAccountId() {
         return hapiTest(
                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
-                cryptoTransfer(tinyBarsFromTo("1.2.3", PAYEE_SIG_REQ, 1_000L))
+                cryptoTransfer(tinyBarsFromTo("5.5.3", PAYEE_SIG_REQ, 1_000L))
                         .signedBy(DEFAULT_PAYER, PAYEE_SIG_REQ)
                         .hasKnownStatus(INVALID_ACCOUNT_ID));
     }

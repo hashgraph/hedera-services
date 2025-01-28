@@ -145,9 +145,9 @@ public class CryptoUpdateSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return hapiTest(
-                cryptoCreate("user").stakedAccountId("0.0.20").declinedReward(true),
+                cryptoCreate("user").stakedAccountId("1.2.20").declinedReward(true),
                 submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
-                        .newStakedAccountId("0.0.21")));
+                        .newStakedAccountId("1.2.21")));
     }
 
     private static final UnaryOperator<String> ROTATION_TXN = account -> account + "KeyRotation";
@@ -253,10 +253,10 @@ public class CryptoUpdateSuite {
     final Stream<DynamicTest> updateStakingFieldsWorks() {
         return hapiTest(
                 newKeyNamed(ADMIN_KEY),
-                cryptoCreate("user").key(ADMIN_KEY).stakedAccountId("0.0.20").declinedReward(true),
+                cryptoCreate("user").key(ADMIN_KEY).stakedAccountId("1.2.20").declinedReward(true),
                 getAccountInfo("user")
                         .has(accountWith()
-                                .stakedAccountId("0.0.20")
+                                .stakedAccountId("1.2.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true)),
                 cryptoUpdate("user").newStakedNodeId(0L).newDeclinedReward(false),
@@ -266,14 +266,14 @@ public class CryptoUpdateSuite {
                 cryptoUpdate("user").newStakedNodeId(-25L).hasKnownStatus(INVALID_STAKING_ID),
                 getAccountInfo("user")
                         .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(false)),
-                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.20").newDeclinedReward(true),
+                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("1.2.20").newDeclinedReward(true),
                 getAccountInfo("user")
                         .has(accountWith()
-                                .stakedAccountId("0.0.20")
+                                .stakedAccountId("1.2.20")
                                 .noStakingNodeId()
                                 .isDeclinedReward(true))
                         .logged(),
-                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("0.0.0"),
+                cryptoUpdate("user").key(ADMIN_KEY).newStakedAccountId("1.2.0"),
                 getAccountInfo("user")
                         .has(accountWith().noStakedAccountId().noStakingNodeId().isDeclinedReward(true))
                         .logged(),
@@ -384,7 +384,7 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-        String sysAccount = "0.0.99";
+        String sysAccount = "1.2.99";
         String randomAccount = "randomAccount";
         String firstKey = "firstKey";
         String secondKey = "secondKey";

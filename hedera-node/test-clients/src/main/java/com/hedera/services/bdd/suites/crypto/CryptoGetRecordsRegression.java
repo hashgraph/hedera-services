@@ -72,8 +72,8 @@ public class CryptoGetRecordsRegression {
     @HapiTest
     final Stream<DynamicTest> failsForMissingAccount() {
         return hapiTest(
-                getAccountRecords("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
-                getAccountRecords("1.2.3").nodePayment(123L).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
+                getAccountRecords("5.5.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                getAccountRecords("5.5.3").nodePayment(123L).hasAnswerOnlyPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest

@@ -176,7 +176,7 @@ public class CryptoGetInfoRegression {
                 cryptoCreate("targetWithStakedAccountId")
                         .key("misc")
                         .balance(balance)
-                        .stakedAccountId("0.0.20"),
+                        .stakedAccountId("1.2.20"),
                 getAccountInfo("noStakingTarget")
                         .has(accountWith()
                                 .accountId("noStakingTarget")
@@ -196,7 +196,7 @@ public class CryptoGetInfoRegression {
                 getAccountInfo("targetWithStakedAccountId")
                         .has(accountWith()
                                 .accountId("targetWithStakedAccountId")
-                                .stakedAccountId("0.0.20")
+                                .stakedAccountId("1.2.20")
                                 .key("misc")
                                 .balance(balance))
                         .logged());
@@ -204,7 +204,7 @@ public class CryptoGetInfoRegression {
 
     @HapiTest
     final Stream<DynamicTest> failsForMissingAccount() {
-        return hapiTest(getAccountInfo("1.2.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
+        return hapiTest(getAccountInfo("5.5.3").hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
     @HapiTest
