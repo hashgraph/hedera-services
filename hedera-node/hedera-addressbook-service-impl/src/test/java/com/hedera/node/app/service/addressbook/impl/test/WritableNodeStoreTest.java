@@ -25,29 +25,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableNodeStoreTest extends AddressBookTestBase {
-
-    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
-
     private Node node;
 
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableNodeStore(null, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNodeStore(writableStates, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 

@@ -47,7 +47,6 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -94,12 +93,12 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     /**
      * Constructor for the {@link BoundaryStateChangeListener} class.
      * @param storeMetricsService the store metrics service
-     * @param configProvider the configuration provider
+     * @param configuration the configuration
      */
     public BoundaryStateChangeListener(
-            @NonNull final StoreMetricsService storeMetricsService, @NonNull final ConfigProvider configProvider) {
+            @NonNull final StoreMetricsService storeMetricsService, @NonNull final Configuration configuration) {
         this.storeMetricsService = requireNonNull(storeMetricsService);
-        this.configuration = requireNonNull(configProvider.getConfiguration());
+        this.configuration = requireNonNull(configuration);
     }
 
     /**

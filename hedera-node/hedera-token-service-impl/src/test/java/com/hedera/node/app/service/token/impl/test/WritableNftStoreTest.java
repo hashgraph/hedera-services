@@ -32,7 +32,6 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.state.spi.WritableKVState;
 import java.util.Collections;
 import java.util.Set;
@@ -44,10 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
-
     @BeforeEach
     public void setUp() {
         super.setUp();
@@ -59,8 +54,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(NullPointerException.class, () -> new WritableNftStore(null, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, null));
         assertThrows(NullPointerException.class, () -> writableNftStore.put(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null, 0));

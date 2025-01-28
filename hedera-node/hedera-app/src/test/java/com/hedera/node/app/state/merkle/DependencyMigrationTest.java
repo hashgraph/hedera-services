@@ -36,6 +36,7 @@ import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -75,10 +76,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     @Mock
     private StartupNetworks startupNetworks;
 
-    @Mock
     private StoreMetricsServiceImpl storeMetricsService;
 
-    @Mock
     private ConfigProviderImpl configProvider;
 
     private MerkleStateRoot<?> merkleTree;
@@ -87,6 +86,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     void setUp() {
         registry = mock(ConstructableRegistry.class);
         merkleTree = new TestMerkleStateRoot();
+        configProvider = new ConfigProviderImpl();
+        storeMetricsService = new StoreMetricsServiceImpl(new NoOpMetrics());
     }
 
     @Nested

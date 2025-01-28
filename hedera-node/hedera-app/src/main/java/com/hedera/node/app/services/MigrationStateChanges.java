@@ -25,7 +25,6 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
@@ -52,11 +51,10 @@ public class MigrationStateChanges {
     public MigrationStateChanges(
             @NonNull final State state,
             final Configuration config,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         requireNonNull(config);
         this.state = requireNonNull(state);
-        roundStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configProvider);
+        roundStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, config);
         if (config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS) {
             state.registerCommitListener(kvStateChangeListener);
             state.registerCommitListener(roundStateChangeListener);

@@ -31,9 +31,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.util.Set;
@@ -53,16 +50,11 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
     private static final AccountID ACCOUNT_20_ID =
             AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
-    private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
-
     @Mock
     private WritableStates states;
 
     @Mock
     private WritableKVStateBase<EntityIDPair, TokenRelation> tokenRelState;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     private WritableTokenRelationStore subject;
 
@@ -78,8 +70,7 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
     @Test
     void testNullConstructorArgs() {
         assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(null, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, null));
     }
 
     @Test

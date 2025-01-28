@@ -490,7 +490,7 @@ public final class Hedera
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configProvider);
+        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, bootstrapConfig);
         hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
         historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);

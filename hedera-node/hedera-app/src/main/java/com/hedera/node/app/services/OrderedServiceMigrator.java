@@ -96,8 +96,7 @@ public class OrderedServiceMigrator implements ServiceMigrator {
         requireNonNull(metrics);
 
         final Map<String, Object> sharedValues = new HashMap<>();
-        final var migrationStateChanges =
-                new MigrationStateChanges(state, appConfig, storeMetricsService, configProvider);
+        final var migrationStateChanges = new MigrationStateChanges(state, appConfig, storeMetricsService);
         logger.info("Migrating Entity ID Service as pre-requisite for other services");
         final var entityIdRegistration = servicesRegistry.registrations().stream()
                 .filter(service -> EntityIdService.NAME.equals(service.service().getServiceName()))
