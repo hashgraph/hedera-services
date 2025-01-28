@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.ids;
 
-public interface ReadableEntityIdStore {
+public interface ReadableEntityIdStore extends ReadableEntityCounters {
     /**
      * Returns the next entity number that will be used.
      *

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -58,6 +59,9 @@ class WritableContractStateStoreTest {
     @Mock
     private WritableStates states;
 
+    @Mock
+    private WritableEntityCounters entityCounters;
+
     private WritableContractStateStore subject;
 
     @BeforeEach
@@ -67,7 +71,7 @@ class WritableContractStateStoreTest {
 
         final var config = HederaTestConfigBuilder.createConfig();
 
-        subject = new WritableContractStateStore(states, config, mock(StoreMetricsService.class));
+        subject = new WritableContractStateStore(states, config, mock(StoreMetricsService.class), entityCounters);
     }
 
     @Test

@@ -19,8 +19,8 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.TRANSITION;
@@ -51,8 +51,10 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
@@ -86,6 +88,8 @@ class WritableHintsStoreImplTest {
     private static final Bytes C_ROSTER_HASH = Bytes.wrap("C");
     private static final TssConfig TSS_CONFIG = DEFAULT_CONFIG.getConfigData(TssConfig.class);
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+    public static final Configuration WITH_ENABLED_HINTS =
+            HederaTestConfigBuilder.create().withValue("tss.hintsEnabled", true).getOrCreateConfig();
 
     @Mock
     private AppContext appContext;
@@ -174,7 +178,7 @@ class WritableHintsStoreImplTest {
         assertEquals(A_ROSTER_HASH, construction.targetRosterHash());
 
         final var activeConstruction = state.getWritableStates(HintsService.NAME)
-                .<HintsConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
+                .<HintsConstruction>getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY)
                 .get();
         requireNonNull(activeConstruction);
         assertSame(construction, activeConstruction);
@@ -213,7 +217,7 @@ class WritableHintsStoreImplTest {
         assertEquals(C_ROSTER_HASH, construction.targetRosterHash());
 
         final var nextConstruction = state.getWritableStates(HintsService.NAME)
-                .<HintsConstruction>getSingleton(NEXT_CONSTRUCTION_KEY)
+                .<HintsConstruction>getSingleton(NEXT_HINT_CONSTRUCTION_KEY)
                 .get();
         requireNonNull(nextConstruction);
         assertSame(construction, nextConstruction);
@@ -240,25 +244,27 @@ class WritableHintsStoreImplTest {
 
     @Test
     void canSetPreprocessingStartTimeIfConstructionIdExists() {
-        setConstructions(
-                HintsConstruction.newBuilder().constructionId(123L).build(),
-                HintsConstruction.newBuilder().constructionId(456L).build());
+        final var nextConstruction =
+                HintsConstruction.newBuilder().constructionId(456L).build();
+        setConstructions(HintsConstruction.newBuilder().constructionId(123L).build(), nextConstruction);
+        assertSame(nextConstruction, subject.getNextConstruction());
 
         assertThrows(IllegalArgumentException.class, () -> subject.setPreprocessingStartTime(0L, CONSENSUS_NOW));
         subject.setPreprocessingStartTime(123L, CONSENSUS_NOW);
         assertEquals(
                 asTimestamp(CONSENSUS_NOW),
-                constructionNow(ACTIVE_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
-        assertFalse(constructionNow(NEXT_CONSTRUCTION_KEY).hasPreprocessingStartTime());
+                constructionNow(ACTIVE_HINT_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+        assertFalse(constructionNow(NEXT_HINT_CONSTRUCTION_KEY).hasPreprocessingStartTime());
 
         subject.setPreprocessingStartTime(123L, CONSENSUS_NOW);
         assertEquals(
                 asTimestamp(CONSENSUS_NOW),
-                constructionNow(ACTIVE_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+                constructionNow(ACTIVE_HINT_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
 
         final var then = CONSENSUS_NOW.plusSeconds(1L);
         subject.setPreprocessingStartTime(456L, then);
-        assertEquals(asTimestamp(then), constructionNow(NEXT_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
+        assertEquals(
+                asTimestamp(then), constructionNow(NEXT_HINT_CONSTRUCTION_KEY).preprocessingStartTimeOrThrow());
     }
 
     @Test
@@ -273,7 +279,7 @@ class WritableHintsStoreImplTest {
 
         subject.setHintsScheme(456L, keys, nodePartyIds);
 
-        final var construction = constructionNow(NEXT_CONSTRUCTION_KEY);
+        final var construction = constructionNow(NEXT_HINT_CONSTRUCTION_KEY);
         assertEquals(keys, construction.hintsSchemeOrThrow().preprocessedKeysOrThrow());
         assertEquals(
                 List.of(new NodePartyId(1L, 2), new NodePartyId(3L, 6)),
@@ -322,7 +328,7 @@ class WritableHintsStoreImplTest {
 
         subject.purgeStateAfterHandoff(activeRosters);
 
-        assertSame(nextConstruction, constructionNow(ACTIVE_CONSTRUCTION_KEY));
+        assertSame(nextConstruction, constructionNow(ACTIVE_HINT_CONSTRUCTION_KEY));
 
         assertEquals(0L, votesNow().size());
         assertEquals(0L, keySetsNow().size());
@@ -346,10 +352,10 @@ class WritableHintsStoreImplTest {
     private void setConstructions(@NonNull final HintsConstruction active, @NonNull final HintsConstruction next) {
         final var writableStates = state.getWritableStates(HintsService.NAME);
         state.getWritableStates(HintsService.NAME)
-                .<HintsConstruction>getSingleton(ACTIVE_CONSTRUCTION_KEY)
+                .<HintsConstruction>getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY)
                 .put(active);
         state.getWritableStates(HintsService.NAME)
-                .<HintsConstruction>getSingleton(V059HintsSchema.NEXT_CONSTRUCTION_KEY)
+                .<HintsConstruction>getSingleton(V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY)
                 .put(next);
         ((CommittableWritableStates) writableStates).commit();
     }
@@ -389,7 +395,8 @@ class WritableHintsStoreImplTest {
         final var servicesRegistry = new FakeServicesRegistry();
         Set.of(
                         new EntityIdService(),
-                        new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library))
+                        new HintsServiceImpl(
+                                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, WITH_ENABLED_HINTS))
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
