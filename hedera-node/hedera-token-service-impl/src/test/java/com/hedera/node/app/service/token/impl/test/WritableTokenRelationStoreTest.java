@@ -164,11 +164,7 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void testSizeOfState() {
-        final var expectedSize = 3L;
-        given(tokenRelState.size()).willReturn(expectedSize);
-
-        final var result = subject.sizeOfState();
-        Assertions.assertThat(result).isEqualTo(expectedSize);
+        Assertions.assertThat(readableEntityCounters.numTokenRelations()).isEqualTo(subject.sizeOfState());
     }
 
     @Test

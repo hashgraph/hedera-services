@@ -133,11 +133,11 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                 NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var nft = givenNft(id);
 
-        assertEquals(0, writableNftStore.sizeOfState());
+        assertEquals(2, writableNftStore.sizeOfState());
         assertEquals(Collections.EMPTY_SET, writableNftStore.modifiedNfts());
-        writableNftStore.put(nft);
+        writableNftStore.putAndIncrementCount(nft);
 
-        assertEquals(1, writableNftStore.sizeOfState());
+        assertEquals(3, writableNftStore.sizeOfState());
         assertEquals(Set.of(id), writableNftStore.modifiedNfts());
     }
 

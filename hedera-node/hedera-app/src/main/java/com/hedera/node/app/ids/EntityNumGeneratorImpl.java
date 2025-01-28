@@ -19,7 +19,6 @@ package com.hedera.node.app.ids;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.validation.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
@@ -36,8 +35,8 @@ public class EntityNumGeneratorImpl implements EntityNumGenerator {
     }
 
     @Override
-    public long newEntityNum(EntityType entityType) {
-        return entityIdStore.incrementAndGet(entityType);
+    public long newEntityNum() {
+        return entityIdStore.incrementAndGet();
     }
 
     @Override

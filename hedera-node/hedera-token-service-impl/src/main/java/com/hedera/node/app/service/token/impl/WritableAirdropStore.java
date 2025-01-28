@@ -79,6 +79,18 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
+     * It also increments the entity counts for {@link EntityType#AIRDROP}.
+     * @param airdropId the airdropId to be persisted
+     * @param accountAirdrop the account airdrop mapping for the given airdropId to be persisted
+     */
+    public void putAndIncrementCount(
+            @NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
+        put(airdropId, accountAirdrop);
+        entityCounters.incrementEntityTypeCount(EntityType.AIRDROP);
+    }
+
+    /**
      * Removes a {@link PendingAirdropId} from the state.
      *
      * @param airdropId the {@code PendingAirdropId} to be removed
