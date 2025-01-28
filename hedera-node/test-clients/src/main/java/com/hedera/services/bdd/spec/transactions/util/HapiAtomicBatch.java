@@ -50,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
+    private static final String DEFAULT_NODE_ID = "0.0.0";
     private List<HapiTxnOp<?>> operationsToBatch;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
 
@@ -90,9 +91,16 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
                         AtomicBatchTransactionBody.class, b -> {
                             for (HapiTxnOp<?> op : operationsToBatch) {
                                 try {
+                                    // set node id to 0.0.0 if not set
+                                    if (op.getNode().isEmpty()) {
+                                        op.setNode(DEFAULT_NODE_ID);
+                                    }
+                                    // create a transaction for each operation
                                     final var transaction = op.signedTxnFor(spec);
+                                    // save transaction id
                                     final var txnId = extractTxnId(transaction);
                                     operationsMap.put(txnId, op);
+                                    // add the transaction to the batch
                                     b.addTransactions(transaction);
                                 } catch (Throwable e) {
                                     throw new RuntimeException(e);

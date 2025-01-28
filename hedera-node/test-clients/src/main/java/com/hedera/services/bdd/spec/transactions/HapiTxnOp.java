@@ -877,4 +877,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         batchKey = Optional.of(spec -> spec.registry().getKey(key));
         return self();
     }
+
+    public Optional<AccountID> getNode() {
+        return node;
+    }
 }
