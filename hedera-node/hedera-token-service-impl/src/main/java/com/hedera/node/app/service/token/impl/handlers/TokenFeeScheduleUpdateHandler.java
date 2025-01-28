@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,6 +74,17 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
     public TokenFeeScheduleUpdateHandler(@NonNull final CustomFeesValidator customFeesValidator) {
         requireNonNull(customFeesValidator);
         this.customFeesValidator = customFeesValidator;
+    }
+
+    @Override
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
+        requireNonNull(txn);
+        final var op = txn.tokenFeeScheduleUpdateOrThrow();
+        if (!op.hasTokenId()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
     }
 
     /**
@@ -154,14 +166,6 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         validateTrue(token.hasFeeScheduleKey(), TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
         validateTrue(op.customFees().size() <= config.maxCustomFeesAllowed(), CUSTOM_FEES_LIST_TOO_LONG);
         return token;
-    }
-
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.tokenFeeScheduleUpdateOrThrow();
-        if (!op.hasTokenId()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
-        }
     }
 
     @NonNull

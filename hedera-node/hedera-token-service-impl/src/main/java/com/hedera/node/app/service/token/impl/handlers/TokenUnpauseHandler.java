@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -51,6 +52,17 @@ public class TokenUnpauseHandler implements TransactionHandler {
     @Inject
     public TokenUnpauseHandler() {
         // Exists for injection
+    }
+
+    @Override
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
+        requireNonNull(txn);
+        final var op = txn.tokenUnpauseOrThrow();
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
     }
 
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
@@ -88,14 +100,6 @@ public class TokenUnpauseHandler implements TransactionHandler {
         tokenStore.put(copyBuilder.build());
         final var recordBuilder = context.savepointStack().getBaseBuilder(TokenBaseStreamBuilder.class);
         recordBuilder.tokenType(token.tokenType());
-    }
-
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.tokenUnpauseOrThrow();
-        if (!op.hasToken()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
-        }
     }
 
     @NonNull

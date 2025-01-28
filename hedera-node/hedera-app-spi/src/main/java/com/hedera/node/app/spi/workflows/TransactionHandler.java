@@ -44,11 +44,11 @@ public interface TransactionHandler {
      * The result of these checks is cached in the {@link PreHandleContext} for use
      * in handle workflow.
      *
-     * @param txn the transaction body
+     * @param context the {@link PureChecksContext} which collects all information
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
-    void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException;
+    void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException;
 
     /**
      * This method can be used to perform any warm up, e.g. loading data into memory that is needed

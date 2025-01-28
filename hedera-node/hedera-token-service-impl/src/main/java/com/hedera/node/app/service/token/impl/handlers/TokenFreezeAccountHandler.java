@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -58,6 +59,24 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     @Inject
     public TokenFreezeAccountHandler() {
         // Exists for injection
+    }
+
+    /**
+     * Performs checks independent of state or context.
+     */
+    @Override
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
+        requireNonNull(txn);
+        final var op = txn.tokenFreeze();
+        if (!op.hasToken()) {
+            throw new PreCheckException(INVALID_TOKEN_ID);
+        }
+
+        if (!op.hasAccount()) {
+            throw new PreCheckException(INVALID_ACCOUNT_ID);
+        }
     }
 
     @Override
@@ -92,21 +111,6 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         final var copyBuilder = tokenRel.copyBuilder();
         copyBuilder.frozen(true);
         tokenRelStore.put(copyBuilder.build());
-    }
-
-    /**
-     * Performs checks independent of state or context.
-     */
-    @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final var op = txn.tokenFreeze();
-        if (!op.hasToken()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
-        }
-
-        if (!op.hasAccount()) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
     }
 
     /**

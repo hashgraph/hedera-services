@@ -46,6 +46,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -68,7 +69,9 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var body = context.body();
         requireNonNull(body);
         validateTruePreCheck(body.hasScheduleDelete(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleDeleteOrThrow();

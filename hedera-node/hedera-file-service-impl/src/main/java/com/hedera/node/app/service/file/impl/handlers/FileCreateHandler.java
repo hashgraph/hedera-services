@@ -44,6 +44,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -71,11 +72,11 @@ public class FileCreateHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context.
      *
-     * @param txn the transaction to check
+     * @param context the {@link PureChecksContext} which collects all information
      */
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final FileCreateTransactionBody transactionBody = txn.fileCreateOrThrow();
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        final FileCreateTransactionBody transactionBody = context.body().fileCreateOrThrow();
 
         if (!transactionBody.hasExpirationTime()) {
             throw new PreCheckException(INVALID_EXPIRATION_TIME);
@@ -93,7 +94,6 @@ public class FileCreateHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
         final var transactionBody = context.body().fileCreateOrThrow();
 
         validateAndAddRequiredKeys(null, transactionBody.keys(), context);

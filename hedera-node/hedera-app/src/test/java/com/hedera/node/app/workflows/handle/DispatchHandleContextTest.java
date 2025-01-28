@@ -106,6 +106,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -178,6 +179,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private FeeAccumulator feeAccumulator;
+
+    @Mock
+    private TransactionChecker transactionChecker;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -628,7 +632,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
                     .when(dispatcher)
-                    .dispatchPureChecks(txBody);
+                    .dispatchPureChecks(any());
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
 
             contextDispatcher.accept(context);
@@ -783,7 +787,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                transactionChecker);
     }
 
     private void mockNeeded() {

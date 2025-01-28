@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +64,7 @@ public abstract class AbstractContractTransactionHandler implements TransactionH
     public abstract void preHandle(@NonNull PreHandleContext context) throws PreCheckException;
 
     @Override
-    public abstract void pureChecks(@NonNull TransactionBody txn) throws PreCheckException;
+    public abstract void pureChecks(@NonNull PureChecksContext context) throws PreCheckException;
 
     /**
      * Handle common metrics for transactions that fail `pureChecks`.

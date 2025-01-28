@@ -66,6 +66,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.base.utility.Pair;
@@ -97,11 +98,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
     /**
      * Validates the transaction body for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
-     * @param txn the transaction body
+     * @param context the pure checks context
      * @throws PreCheckException if the transaction is invalid for any reason
      */
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
         requireNonNull(txn);
         final var op = txn.cryptoApproveAllowanceOrThrow();
 

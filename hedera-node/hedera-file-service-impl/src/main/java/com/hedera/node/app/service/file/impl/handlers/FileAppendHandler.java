@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -74,11 +75,13 @@ public class FileAppendHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context.
      *
-     * @param txn the transaction to check
+     * @param context the {@link PureChecksContext} which collects all information
      */
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final FileAppendTransactionBody transactionBody = txn.fileAppendOrThrow();
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        var body = context.body();
+        final FileAppendTransactionBody transactionBody = body.fileAppendOrThrow();
 
         if (transactionBody.fileID() == null) {
             throw new PreCheckException(INVALID_FILE_ID);
