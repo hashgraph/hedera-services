@@ -58,6 +58,9 @@ import java.util.stream.Stream;
 public interface HapiPropertySource {
 
     String ENTITY_STRING = "%d.%d.%d";
+    // Default shard and realm for static ID building (ideally should be the same as test-client's config)
+    int shard = 1;
+    int realm = 2;
 
     static byte[] explicitBytesOf(@NonNull final Address address) {
         var asBytes = address.value().toByteArray();
@@ -395,8 +398,8 @@ public interface HapiPropertySource {
 
     static ContractID asContractIdWithEvmAddress(ByteString address) {
         return ContractID.newBuilder()
-                .setShardNum(1)
-                .setRealmNum(2)
+                .setShardNum(shard)
+                .setRealmNum(realm)
                 .setEvmAddress(address)
                 .build();
     }
@@ -519,5 +522,9 @@ public interface HapiPropertySource {
                 .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 4, 12)))
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build());
+    }
+
+    static String asEntityString(final long num) {
+        return String.format(ENTITY_STRING, shard, realm, num);
     }
 }
