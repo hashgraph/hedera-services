@@ -85,7 +85,7 @@ public class FungibleTokenInfoCall extends AbstractNonRevertibleTokenViewCall {
             return revertResult(status, gasRequirement);
         }
 
-        return function.getName().equals(FUNGIBLE_TOKEN_INFO.getName())
+        return function.getName().equals(FUNGIBLE_TOKEN_INFO.methodName())
                 ? successResult(
                         FUNGIBLE_TOKEN_INFO
                                 .getOutputs()

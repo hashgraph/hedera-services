@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -153,6 +155,12 @@ public class FileTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
+
     protected MapReadableKVState<FileID, File> readableFileState;
     protected MapWritableKVState<FileID, File> writableFileState;
 
@@ -190,9 +198,10 @@ public class FileTestBase {
                 .willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
-        readableStore = new ReadableFileStoreImpl(readableStates);
+        readableStore = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, configuration, storeMetricsService);
+        writableStore =
+                new WritableFileStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
@@ -216,9 +225,10 @@ public class FileTestBase {
                 .willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
-        readableStore = new ReadableFileStoreImpl(readableStates);
+        readableStore = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, configuration, storeMetricsService);
+        writableStore =
+                new WritableFileStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
         readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 

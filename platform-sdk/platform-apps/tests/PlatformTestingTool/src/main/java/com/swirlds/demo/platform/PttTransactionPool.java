@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,13 +211,13 @@ public class PttTransactionPool implements FastCopyable {
     /**
      * generates a random integer in a range between min (inclusive) and max (inclusive).
      */
-    private static int getRandomNumberInRange(int min, int max) {
+    private static int getRandomNumberInRange(final int min, final int max) {
 
         if (min >= max) {
             throw new IllegalArgumentException("max must be greater than min");
         }
 
-        Random r = new Random();
+        final Random r = new Random();
         return r.nextInt((max - min) + 1) + min;
     }
 
@@ -251,7 +251,7 @@ public class PttTransactionPool implements FastCopyable {
         if (this.needToSubmitFreezeTx) {
             this.needToSubmitFreezeTx = false;
             logger.info(FREEZE.getMarker(), "Node {} submits a Freeze Transaction", platform.getSelfId());
-            byte[] freezeLoad = createFreezeTranBytes(freezeConfig);
+            final byte[] freezeLoad = createFreezeTranBytes(freezeConfig);
             return Triple.of(freezeLoad, PAYLOAD_TYPE.TYPE_TEST_SYNC, null);
         }
 
@@ -278,9 +278,9 @@ public class PttTransactionPool implements FastCopyable {
         PAYLOAD_TYPE generateType = PAYLOAD_TYPE.TYPE_RANDOM_BYTES;
         int bufferSize = config.getPayloadByteSize();
 
-        PayloadDistribution distribution = config.getPayloadDistribution();
+        final PayloadDistribution distribution = config.getPayloadDistribution();
         if (distribution != null) {
-            PayloadProperty property = distribution.getPayloadProperty(random.nextInt(10000) / 100.0f);
+            final PayloadProperty property = distribution.getPayloadProperty(random.nextInt(10000) / 100.0f);
             generateType = property.getType();
             bufferSize = property.getSize();
         } else {
@@ -292,21 +292,21 @@ public class PttTransactionPool implements FastCopyable {
                 bufferSize = getRandomNumberInRange(config.getPayloadByteSize(), config.getMaxByteSize());
             }
 
-            byte[] ramdomBytesPayload = new byte[bufferSize];
+            final byte[] ramdomBytesPayload = new byte[bufferSize];
             random.nextBytes(ramdomBytesPayload); // fill random bytes
 
             if (config.isInsertSeq()) { // add sequence if required
-                byte[] seq = Utilities.toBytes(nextSeq);
+                final byte[] seq = Utilities.toBytes(nextSeq);
                 System.arraycopy(seq, 0, ramdomBytesPayload, 0, seq.length);
                 nextSeq++;
             }
 
-            RandomBytesTransaction bytesTransaction = RandomBytesTransaction.newBuilder()
+            final RandomBytesTransaction bytesTransaction = RandomBytesTransaction.newBuilder()
                     .setIsInserSeq(config.isInsertSeq())
                     .setData(ByteString.copyFrom(ramdomBytesPayload))
                     .build();
 
-            TestTransaction testTransaction = TestTransaction.newBuilder()
+            final TestTransaction testTransaction = TestTransaction.newBuilder()
                     .setBytesTransaction(bytesTransaction)
                     .build();
 
@@ -369,34 +369,35 @@ public class PttTransactionPool implements FastCopyable {
         return payload;
     }
 
-    public byte[] createControlTranBytes(ControlType type) {
-        ControlTransaction msg = ControlTransaction.newBuilder().setType(type).build();
-        TestTransaction testTransaction =
+    public byte[] createControlTranBytes(final ControlType type) {
+        final ControlTransaction msg =
+                ControlTransaction.newBuilder().setType(type).build();
+        final TestTransaction testTransaction =
                 TestTransaction.newBuilder().setControlTransaction(msg).build();
 
-        byte[] data = testTransaction.toByteArray();
+        final byte[] data = testTransaction.toByteArray();
 
         return appendSignature(data, false);
     }
 
     public byte[] createFreezeTranBytes(final FreezeConfig freezeConfig) {
-        Instant startFreezeTime = this.initTime.plus(freezeConfig.getStartFreezeAfterMin(), ChronoUnit.MINUTES);
+        final Instant startFreezeTime = this.initTime.plus(freezeConfig.getStartFreezeAfterMin(), ChronoUnit.MINUTES);
         return createFreezeTranByte(startFreezeTime);
     }
 
-    public byte[] createFreezeTranByte(Instant startFreezeTime) {
-        FreezeTransaction msg = FreezeTransaction.newBuilder()
+    public byte[] createFreezeTranByte(final Instant startFreezeTime) {
+        final FreezeTransaction msg = FreezeTransaction.newBuilder()
                 .setStartTimeEpochSecond(startFreezeTime.getEpochSecond())
                 .build();
-        TestTransaction testTransaction =
+        final TestTransaction testTransaction =
                 TestTransaction.newBuilder().setFreezeTransaction(msg).build();
 
-        byte[] data = testTransaction.toByteArray();
+        final byte[] data = testTransaction.toByteArray();
 
         return appendSignature(data, false);
     }
 
-    public void setNextFileDirSeq(long newValue) {
+    public void setNextFileDirSeq(final long newValue) {
         nextFileDirSeq = newValue;
         logger.info(DEMO_INFO.getMarker(), "Set nextFileDirSeq {} ", nextFileDirSeq);
     }
@@ -411,7 +412,7 @@ public class PttTransactionPool implements FastCopyable {
      * 		whether to generate invalid signature
      */
     byte[] signAndConcatenatePubKeySignature(
-            final byte[] data, final boolean invalid, AppTransactionSignatureType signatureType) {
+            final byte[] data, final boolean invalid, final AppTransactionSignatureType signatureType) {
         try {
             final SigningProvider signingProvider = signingProviderMap.get(signatureType);
             final byte[] sig = signingProvider.sign(data);
@@ -419,7 +420,7 @@ public class PttTransactionPool implements FastCopyable {
             // modify the first byte of valid signature, for generating invalid signature
             if (invalid) {
                 final byte firstByte = sig[0];
-                byte modified = (byte) ~firstByte;
+                final byte modified = (byte) ~firstByte;
                 sig[0] = modified;
             }
 
@@ -445,7 +446,7 @@ public class PttTransactionPool implements FastCopyable {
                     .build();
 
             return testTransactionWrapper.toByteArray();
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             logger.error(EXCEPTION.getMarker(), "Failed to sign transaction", ex);
             return null;
         }
@@ -459,10 +460,10 @@ public class PttTransactionPool implements FastCopyable {
      * @return a hex encoded string representation of the bytes
      */
     private String hex(final byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        final StringBuilder sb = new StringBuilder(bytes.length * 2);
         sb.append("0x");
 
-        for (byte b : bytes) {
+        for (final byte b : bytes) {
             sb.append(String.format("%02X", b));
         }
 

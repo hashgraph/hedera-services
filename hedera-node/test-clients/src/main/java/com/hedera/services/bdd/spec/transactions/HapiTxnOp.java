@@ -56,6 +56,7 @@ import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hedera.services.bdd.spec.verification.Condition;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -632,6 +633,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T feeUsd(double price) {
         usdFee = OptionalDouble.of(price);
+        return self();
+    }
+
+    public T maxCustomFee(Function<HapiSpec, CustomFeeLimit> f) {
+        maxCustomFeeList.add(f);
         return self();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.system.state.notifications;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.system.SwirldState;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import java.time.Instant;
 
 /**
@@ -28,32 +28,30 @@ import java.time.Instant;
  */
 public class NewRecoveredStateNotification extends AbstractNotification {
 
-    private final SwirldState swirldState;
+    private final PlatformMerkleStateRoot state;
     private final long round;
     private final Instant consensusTimestamp;
 
     /**
      * Create a notification for a state created as a result of event recovery.
      *
-     * @param swirldState        the swirld state from the recovered state
+     * @param state        the swirld state from the recovered state
      * @param round              the round of the recovered state
      * @param consensusTimestamp the consensus timestamp of the recovered state round
      */
     public NewRecoveredStateNotification(
-            final SwirldState swirldState, final long round, final Instant consensusTimestamp) {
-
-        this.swirldState = swirldState;
+            final PlatformMerkleStateRoot state, final long round, final Instant consensusTimestamp) {
+        this.state = state;
         this.round = round;
         this.consensusTimestamp = consensusTimestamp;
     }
 
     /**
-     * Get the swirld state from the recovered state. Guaranteed to hold a reservation in the scope of this
+     * Get the state from the recovered state. Guaranteed to hold a reservation in the scope of this
      * notification.
      */
-    @SuppressWarnings("unchecked")
-    public <T extends SwirldState> T getSwirldState() {
-        return (T) swirldState;
+    public PlatformMerkleStateRoot getState() {
+        return state;
     }
 
     /**

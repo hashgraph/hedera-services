@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,8 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -176,6 +178,12 @@ public class ScheduleTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected ReadableStoreFactory mockStoreFactory;
+
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
 
     // This schedule is not in whitelist, but exercises most code paths
     // 6d850a46e97dd8a4eafd3d7c114d0d151349e4f8531301b22c5fe508f712b6e4
@@ -480,11 +488,11 @@ public class ScheduleTestBase {
         writableStatesMap.put(ACCOUNT_ALIAS_STATE_KEY, accountAliases);
         scheduleStates = new MapWritableStates(writableStatesMap);
         states = new MapReadableStates(writableStatesMap);
-        accountStore = new ReadableAccountStoreImpl(states);
-        scheduleStore = new ReadableScheduleStoreImpl(states);
+        accountStore = new ReadableAccountStoreImpl(states, readableEntityCounters);
+        scheduleStore = new ReadableScheduleStoreImpl(states, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableSchedules =
-                new WritableScheduleStoreImpl(scheduleStates, configuration, mock(StoreMetricsService.class));
+        writableSchedules = new WritableScheduleStoreImpl(
+                scheduleStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
         accountsMapById.put(scheduler, schedulerAccount);
         accountsMapById.put(payer, payerAccount);
         accountsMapById.put(admin, adminAccount);

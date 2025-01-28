@@ -44,7 +44,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.PlatformStateModifier;
-import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -72,6 +71,7 @@ class StressTestingToolStateTest {
     private static final byte[] EMPTY_ARRAY = new byte[] {};
     private StressTestingToolState state;
     private StressTestingToolMain main;
+    private StressTestingToolStateLifecycles stateLifecycles;
     private PlatformStateModifier platformStateModifier;
     private Round round;
     private ConsensusEvent event;
@@ -82,7 +82,8 @@ class StressTestingToolStateTest {
 
     @BeforeEach
     void setUp() throws NoSuchAlgorithmException, KeyStoreException, KeyGeneratingException, NoSuchProviderException {
-        state = new StressTestingToolState(mock(StateLifecycles.class), mock(Function.class));
+        state = new StressTestingToolState(mock(Function.class));
+        stateLifecycles = new StressTestingToolStateLifecycles();
         main = new StressTestingToolMain();
         platformStateModifier = mock(PlatformStateModifier.class);
         event = mock(PlatformEvent.class);
@@ -123,7 +124,7 @@ class StressTestingToolStateTest {
         when(platformContext.getMetrics()).thenReturn(metrics);
         when(platformContext.getMerkleCryptography()).thenReturn(cryptography);
 
-        state.init(platform, initTrigger, softwareVersion);
+        stateLifecycles.onStateInitialized(state, platform, initTrigger, softwareVersion);
     }
 
     @ParameterizedTest
@@ -137,7 +138,7 @@ class StressTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(pool.transaction()));
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isZero();
@@ -152,7 +153,7 @@ class StressTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isEqualTo(1);
@@ -178,7 +179,7 @@ class StressTestingToolStateTest {
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isEqualTo(3);
@@ -193,7 +194,7 @@ class StressTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isZero();
@@ -215,7 +216,7 @@ class StressTestingToolStateTest {
         event = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isZero();
@@ -235,7 +236,7 @@ class StressTestingToolStateTest {
         event = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isEqualTo(1);
@@ -264,7 +265,7 @@ class StressTestingToolStateTest {
         event = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isEqualTo(3);
@@ -285,10 +286,21 @@ class StressTestingToolStateTest {
         event = new PlatformEvent(gossipEvent);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions.size()).isZero();
+    }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given (empty)
+
+        // When
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
     }
 
     private void givenRoundAndEvent() {

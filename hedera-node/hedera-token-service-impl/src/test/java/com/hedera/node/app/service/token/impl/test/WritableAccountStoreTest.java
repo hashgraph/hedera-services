@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,10 +102,14 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void throwsIfNullValuesAsArgs(@Mock StoreMetricsService storeMetricsService) {
         final var configuration = HederaTestConfigBuilder.createConfig();
         assertThrows(
-                NullPointerException.class, () -> new WritableAccountStore(null, configuration, storeMetricsService));
+                NullPointerException.class,
+                () -> new WritableAccountStore(null, configuration, storeMetricsService, writableEntityCounters));
         assertThrows(
-                NullPointerException.class, () -> new WritableAccountStore(writableStates, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableAccountStore(writableStates, configuration, null));
+                NullPointerException.class,
+                () -> new WritableAccountStore(writableStates, null, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableAccountStore(writableStates, configuration, null, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }

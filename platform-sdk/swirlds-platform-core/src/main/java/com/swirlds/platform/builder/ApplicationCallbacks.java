@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,13 @@
 
 package com.swirlds.platform.builder;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A collection of callbacks that the application can provide to the platform to be notified of certain events.
@@ -32,4 +35,5 @@ import java.util.function.Consumer;
 public record ApplicationCallbacks(
         @Nullable Consumer<PlatformEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-        @Nullable Consumer<PlatformEvent> staleEventConsumer) {}
+        @Nullable Consumer<PlatformEvent> staleEventConsumer,
+        @Nullable Function<StateSignatureTransaction, Bytes> systemTransactionEncoder) {}

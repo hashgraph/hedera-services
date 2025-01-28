@@ -23,9 +23,23 @@ import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
+import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.BYTECODE_KEY;
+import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.STORAGE_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.dispatchSynthFileUpdate;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.parseConfigList;
+import static com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema.SCHEDULED_COUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ALIASES_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.NFTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema.AIRDROPS_KEY;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.transactionWith;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
@@ -40,15 +54,21 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -62,10 +82,12 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -198,6 +220,94 @@ public class SystemSetup {
     }
 
     /**
+     * Initialize the entity counts in entityId service from the post-upgrade and genesis state.
+     * This should only be done as part of 0.59.0 post upgrade step.
+     * This code is deprecated and should be removed
+     * after 0.59.0 release.
+     *
+     * @param dispatch the transaction dispatch
+     */
+    @Deprecated
+    public void initializeEntityCounts(@NonNull final Dispatch dispatch) {
+        final var stack = dispatch.stack();
+        final var entityCountsState =
+                stack.getWritableStates(EntityIdService.NAME).getSingleton(ENTITY_COUNTS_KEY);
+        final var builder = EntityCounts.newBuilder();
+
+        final var tokenService = stack.getReadableStates(TokenService.NAME);
+        final var numAccounts = tokenService.get(ACCOUNTS_KEY).size();
+        final var numAliases = tokenService.get(ALIASES_KEY).size();
+        final var numTokens = tokenService.get(TOKENS_KEY).size();
+        final var numTokenRelations = tokenService.get(TOKEN_RELS_KEY).size();
+        final var numNfts = tokenService.get(NFTS_KEY).size();
+        final var numAirdrops = tokenService.get(AIRDROPS_KEY).size();
+        final var numStakingInfos = tokenService.get(STAKING_INFO_KEY).size();
+
+        final var numTopics =
+                stack.getReadableStates(ConsensusService.NAME).get(TOPICS_KEY).size();
+        final var numFiles =
+                stack.getReadableStates(FileServiceImpl.NAME).get(BLOBS_KEY).size();
+        final var numNodes =
+                stack.getReadableStates(AddressBookService.NAME).get(NODES_KEY).size();
+        final var numSchedules = stack.getReadableStates(ScheduleService.NAME)
+                .get(SCHEDULED_COUNTS_KEY)
+                .size();
+
+        final var contractService = stack.getReadableStates(ContractService.NAME);
+        final var numContractBytecodes = contractService.get(BYTECODE_KEY).size();
+        final var numContractStorageSlots = contractService.get(STORAGE_KEY).size();
+
+        log.info(
+                """
+                         Entity size from state:
+                         Accounts: {},\s
+                         Aliases: {},\s
+                         Tokens: {},\s
+                         TokenRelations: {},\s
+                         NFTs: {},\s
+                         Airdrops: {},\s
+                         StakingInfos: {},\s
+                         Topics: {},\s
+                         Files: {},\s
+                         Nodes: {},\s
+                         Schedules: {},\s
+                         ContractBytecodes: {},\s
+                         ContractStorageSlots: {}
+                        \s""",
+                numAccounts,
+                numAliases,
+                numTokens,
+                numTokenRelations,
+                numNfts,
+                numAirdrops,
+                numStakingInfos,
+                numTopics,
+                numFiles,
+                numNodes,
+                numSchedules,
+                numContractBytecodes,
+                numContractStorageSlots);
+
+        final var entityCountsUpdated = builder.numAccounts(numAccounts)
+                .numAliases(numAliases)
+                .numTokens(numTokens)
+                .numTokenRelations(numTokenRelations)
+                .numNfts(numNfts)
+                .numAirdrops(numAirdrops)
+                .numStakingInfos(numStakingInfos)
+                .numTopics(numTopics)
+                .numFiles(numFiles)
+                .numNodes(numNodes)
+                .numSchedules(numSchedules)
+                .numContractBytecodes(numContractBytecodes)
+                .numContractStorageSlots(numContractStorageSlots)
+                .build();
+
+        entityCountsState.put(entityCountsUpdated);
+        log.info("Initialized entity counts for post-upgrade state to {}", entityCountsUpdated);
+    }
+
+    /**
      * Defines an update based on a new representation of one or more system entities within a context.
      *
      * @param <T> the type of the update representation
@@ -213,8 +323,8 @@ public class SystemSetup {
      * using the given {@link AutoUpdate} function.
      *
      * @param updateFileName the name of the upgrade file
-     * @param updateParser the function to parse the upgrade file
-     * @param <T> the type of the update representation
+     * @param updateParser   the function to parse the upgrade file
+     * @param <T>            the type of the update representation
      */
     private record AutoEntityUpdate<T>(
             @NonNull AutoUpdate<T> autoUpdate,
@@ -223,6 +333,7 @@ public class SystemSetup {
         /**
          * Attempts to update the system file using the given system context if the corresponding upgrade file is
          * present at the given location and can be parsed with this update's parser.
+         *
          * @return whether a synthetic update was dispatched
          */
         boolean tryIfPresent(@NonNull final String postUpgradeLoc, @NonNull final SystemContext systemContext) {
@@ -324,7 +435,7 @@ public class SystemSetup {
     /**
      * Called only once, before handling the first transaction in network history. Externalizes
      * side effects of genesis setup done in
-     * {@link com.swirlds.platform.system.SwirldState#init(Platform, InitTrigger, SoftwareVersion)}.
+     * {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}.
      *
      * @throws NullPointerException if called more than once
      */

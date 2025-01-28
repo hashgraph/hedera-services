@@ -33,6 +33,8 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
@@ -151,6 +153,12 @@ public interface HederaInjectionComponent {
 
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder hintsService(HintsService hintsService);
+
+        @BindsInstance
+        Builder historyService(HistoryService historyService);
+
         @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 

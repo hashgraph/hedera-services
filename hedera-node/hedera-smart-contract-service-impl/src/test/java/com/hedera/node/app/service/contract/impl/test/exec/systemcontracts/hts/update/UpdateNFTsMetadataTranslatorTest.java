@@ -19,22 +19,24 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateNFTsMetadataTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,29 +62,30 @@ class UpdateNFTsMetadataTranslatorTest {
     @Mock
     private VerificationStrategy verificationStrategy;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
     private UpdateNFTsMetadataTranslator subject;
 
     private final UpdateDecoder decoder = new UpdateDecoder();
 
     @BeforeEach
     void setUp() {
-        subject = new UpdateNFTsMetadataTranslator(decoder);
+        subject = new UpdateNFTsMetadataTranslator(decoder, new SystemContractMethodRegistry(), contractMetrics);
     }
 
     @Test
     void matchesUpdateNFTsMetadataTest() {
         given(attempt.configuration()).willReturn(getTestConfiguration(true));
-        given(attempt.isSelector(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA))
-                .willReturn(true);
-        final var matches = subject.matches(attempt);
-        assertThat(matches).isTrue();
+        given(attempt.isMethod(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA))
+                .willReturn(Optional.of(UpdateNFTsMetadataTranslator.UPDATE_NFTs_METADATA));
+        assertThat(subject.identifyMethod(attempt)).isPresent();
     }
 
     @Test
     void doesNotMatchUpdateNFTsMetadataWhenDisabled() {
         given(attempt.configuration()).willReturn(getTestConfiguration(false));
-        var matches = subject.matches(attempt);
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test

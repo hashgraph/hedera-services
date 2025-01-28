@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallAddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Synthe
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof.BalanceOfTranslator;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.util.ArrayDeque;
@@ -76,12 +78,21 @@ class HtsCallFactoryTest extends CallTestBase {
     @Mock
     private ProxyWorldUpdater updater;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
     private HtsCallFactory subject;
+
+    private SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
 
     @BeforeEach
     void setUp() {
         subject = new HtsCallFactory(
-                syntheticIds, addressChecks, verificationStrategies, List.of(new BalanceOfTranslator()));
+                syntheticIds,
+                addressChecks,
+                verificationStrategies,
+                List.of(new BalanceOfTranslator(systemContractMethodRegistry, contractMetrics)),
+                systemContractMethodRegistry);
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,8 +222,7 @@ public class V053AddressBookSchema extends Schema {
         try {
             final var json = Files.readString(path);
             return parseEd25519NodeAdminKeys(json);
-        } catch (IOException e) {
-            log.warn("Unable to read override keys from {}", path.toAbsolutePath(), e);
+        } catch (IOException ignore) {
             return emptyMap();
         }
     }

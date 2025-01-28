@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -592,7 +592,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             blockRecordSource = new BlockRecordSource(outputs);
         }
         final var recordSource = streamMode != BLOCKS ? new LegacyListRecordSource(records, receipts) : null;
-        return new HandleOutput(blockRecordSource, recordSource);
+        final var firstAssignedConsensusTime =
+                indexOfTopLevelRecord == 0 ? consensusTime : consensusTime.minusNanos(indexOfTopLevelRecord);
+        return new HandleOutput(blockRecordSource, recordSource, firstAssignedConsensusTime);
     }
 
     private void setupFirstSavepoint(@NonNull final TransactionCategory category) {

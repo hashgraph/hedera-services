@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,17 +48,22 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     @Test
     void throwsIfNullValuesAsArgs() {
         assertThrows(
-                NullPointerException.class, () -> new WritableTokenStore(null, CONFIGURATION, storeMetricsService));
+                NullPointerException.class,
+                () -> new WritableTokenStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
         assertThrows(
-                NullPointerException.class, () -> new WritableTokenStore(writableStates, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTokenStore(writableStates, CONFIGURATION, null));
+                NullPointerException.class,
+                () -> new WritableTokenStore(writableStates, null, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableTokenStore(writableStates, CONFIGURATION, null, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
     }
 
     @Test
     void constructorCreatesTokenState() {
-        final var store = new WritableTokenStore(writableStates, CONFIGURATION, storeMetricsService);
+        final var store =
+                new WritableTokenStore(writableStates, CONFIGURATION, storeMetricsService, writableEntityCounters);
         assertNotNull(store);
     }
 
