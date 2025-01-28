@@ -375,7 +375,7 @@ class EthTxDataTest {
         normalData[4] = negativeInteger;
         final var invalidGasDataNegative = Arrays.asList(normalData);
 
-        assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, invalidGasDataNegative)));
+        assertNull(EthTxData.populateEthTxData(RLPEncoder.sequence(new byte[] {2}, invalidGasDataNegative)));
 
         // invalid recId
         normalData = normalRlpData();
