@@ -19,9 +19,7 @@ package com.swirlds.config.api;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
-import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -29,11 +27,6 @@ import java.util.stream.Stream;
  * accessed.
  */
 public interface Configuration {
-
-    /**
-     * A constant that can be used to define an empty list.
-     */
-    String EMPTY_LIST = "[]";
 
     /**
      * Returns a {@link Stream} of all available property names.
@@ -59,25 +52,20 @@ public interface Configuration {
     boolean isListValue(@NonNull String propertyName);
 
     /**
-     * Returns the {@link String} value of the property with the given name.
+     * Returns a {@link ConfigValue} object that encapsulates the value of the property with the given name and type.
+     * This method provides a way to access configuration properties with additional metadata.
      *
      * @param propertyName the name of the property
-     * @return the value of the property
-     * @throws NoSuchElementException if the property does not exist.
-     */
-    @Nullable
-    String getValue(@NonNull String propertyName) throws NoSuchElementException;
-
-    /**
-     * Returns the {@link String} value of the property with the given name or the given default value if the property
-     * does not exist.
+     * @param typeRef      the type reference of the property
+     * @param <T>          the generic type of the property
      *
-     * @param propertyName the name of the property
-     * @param defaultValue the default value that will be used if the property does not exist.
-     * @return the value of the property or the given default value if the property does not exist
+     * @return a {@link ConfigValue} object containing the value of the property
+     *
+     * @throws NoSuchElementException   if the property does not exist
+     * @throws IllegalArgumentException if the raw {@code String} value of the property cannot be converted to the given type
      */
-    @Nullable
-    String getValue(@NonNull String propertyName, @Nullable String defaultValue);
+    @NonNull
+    <T> ConfigValue<T> getConfigValue(@NonNull String propertyName, @NonNull TypeReference<T> typeRef) throws NoSuchElementException, IllegalArgumentException;
 
     /**
      * Returns the value of the property with the given name.
@@ -110,112 +98,21 @@ public interface Configuration {
             throws IllegalArgumentException;
 
     /**
-     * Returns a {@link List} of string elements of the property with the given name.
+     * Returns a collection of elements of the specified type for the property with the given name.
+     * This method is used to retrieve a collection of configuration values.
      *
      * @param propertyName the name of the property
-     * @return a {@link List} of elements of the property with the given name
+     * @param elementType  the type of the elements in the collection
+     * @param <T>          the generic type of the elements in the collection
+     *
+     * @return a collection of elements of the specified type
+     *
      * @throws NoSuchElementException   if the property does not exist
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
+     * @throws IllegalArgumentException if the raw {@code String} values of the property cannot be converted to the given type
      */
-    @Nullable
-    List<String> getValues(@NonNull String propertyName);
-
-    /**
-     * Returns a {@link List} of string elements of the property with the given name or the given default {@link List}.
-     *
-     * @param propertyName the name of the property
-     * @param defaultValue the default {@link List}
-     * @return a {@link List} of elements of the property with the given name
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
-     */
-    @Nullable
-    List<String> getValues(@NonNull String propertyName, @Nullable List<String> defaultValue);
-
-    /**
-     * Returns a {@link List} of elements of the property with the given name.
-     *
-     * @param propertyName the name of the property
-     * @param propertyType the type of the elements
-     * @param <T>          the generic type of the elements
-     * @return a {@link List} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
-     */
-    @Nullable
-    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType)
+    @NonNull
+    <T> Collection<T> getCollection(@NonNull String propertyName, @NonNull Class<T> elementType)
             throws NoSuchElementException, IllegalArgumentException;
-
-    /**
-     * Returns a {@link List} of elements of the property with the given name or the given default {@link List}.
-     *
-     * @param propertyName the name of the property
-     * @param propertyType the type of the elements
-     * @param defaultValue the default {@link List}
-     * @param <T>          the generic type of the elements
-     * @return a {@link List} of elements of the property with the given name or the given default list
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a list
-     *                                  or the given type
-     */
-    @Nullable
-    <T> List<T> getValues(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable List<T> defaultValue)
-            throws IllegalArgumentException;
-
-    /**
-     * Returns a {@link Set} of string elements of the property with the given name.
-     *
-     * @param propertyName the name of the property
-     * @return a {@link Set} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
-     *                                  the given type
-     */
-    @Nullable
-    Set<String> getValueSet(@NonNull String propertyName);
-
-    /**
-     * Returns a {@link Set} of string elements of the property with the given name or the given default {@link Set}.
-     *
-     * @param propertyName the name of the property
-     * @param defaultValue the default {@link Set}
-     * @return a {@link Set} of elements of the property with the given name
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
-     *                                  the given type
-     */
-    @Nullable
-    Set<String> getValueSet(@NonNull String propertyName, @Nullable Set<String> defaultValue);
-
-    /**
-     * Returns a {@link Set} of elements of the property with the given name.
-     *
-     * @param propertyName the name of the property
-     * @param propertyType the type of the elements
-     * @param <T>          the generic type of the elements
-     * @return a {@link Set} of elements of the property with the given name
-     * @throws NoSuchElementException   if the property does not exist.
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
-     *                                  the given type
-     */
-    @Nullable
-    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType)
-            throws NoSuchElementException, IllegalArgumentException;
-
-    /**
-     * Returns a {@link Set} of elements of the property with the given name or the given default {@link Set}.
-     *
-     * @param propertyName the name of the property
-     * @param propertyType the type of the elements
-     * @param defaultValue the default {@link Set}
-     * @param <T>          the generic type of the elements
-     * @return a {@link Set} of elements of the property with the given name or the given default set
-     * @throws IllegalArgumentException if the raw {@link String} value of the property can not be converted to a set or
-     *                                  the given type
-     */
-    @Nullable
-    <T> Set<T> getValueSet(@NonNull String propertyName, @NonNull Class<T> propertyType, @Nullable Set<T> defaultValue)
-            throws IllegalArgumentException;
 
     /**
      * Returns a config data object of the given type. This is used to provide an object-oriented construct for

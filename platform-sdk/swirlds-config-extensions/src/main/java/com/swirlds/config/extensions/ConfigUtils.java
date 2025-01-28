@@ -18,9 +18,7 @@ package com.swirlds.config.extensions;
 
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Utility class for configuration operations.
@@ -46,10 +44,25 @@ public class ConfigUtils {
             @NonNull final Configuration config1, @NonNull final Configuration config2) {
         Objects.requireNonNull(config1, "config1 must not be null");
         Objects.requireNonNull(config2, "config2 must not be null");
-        final Map<String, String> properties1 =
-                config1.getPropertyNames().collect(Collectors.toMap(s -> s, s -> config1.getValue(s)));
-        final Map<String, String> properties2 =
-                config2.getPropertyNames().collect(Collectors.toMap(s -> s, s -> config2.getValue(s)));
-        return Objects.equals(properties1, properties2);
+
+        try {
+            config1.getPropertyNames().forEach(propertyName -> {
+                if (!config2.exists(propertyName)) {
+                    throw new IllegalArgumentException("Property " + propertyName + " is missing in the second configuration");
+                }
+
+                final Object value1 = config1.getValue(propertyName, Object.class);
+                final Object value2 = config2.getValue(propertyName, Object.class);
+
+                if (!Objects.equals(value1, value2)) {
+                    throw new IllegalArgumentException(
+                            "Property " + propertyName + " has different values in the two configurations: "
+                                    + value1 + " != " + value2);
+                }
+            });
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

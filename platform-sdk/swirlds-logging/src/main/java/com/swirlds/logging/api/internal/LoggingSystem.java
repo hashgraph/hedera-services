@@ -279,7 +279,7 @@ public class LoggingSystem implements LogEventConsumer {
         final List<LogHandler> handlers = handlerNames.stream()
                 .map(handlerName -> {
                     final String handlerType =
-                            configuration.getValue(LOGGING_HANDLER_TYPE.formatted(handlerName), (String) null);
+                            configuration.getValue(LOGGING_HANDLER_TYPE.formatted(handlerName), null);
                     if (handlerType != null) {
                         final LogHandlerFactory handlerFactory = servicesMap.get(handlerType);
                         if (handlerFactory != null) {

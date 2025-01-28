@@ -69,7 +69,7 @@ public final class ConfigExport {
         configuration
                 .getPropertyNames()
                 .filter(name -> !recordProperties.containsKey(name))
-                .forEach(name -> nonRecordProperties.put(name, configuration.getValue(name)));
+                .forEach(name -> nonRecordProperties.put(name, configuration.getValue(name, Object.class).toString()));
 
         final Set<Object> allConfigValues = combine(recordProperties.values(), nonRecordProperties.values());
         final int maxValueLength = getMaxPropertyLength(allConfigValues);

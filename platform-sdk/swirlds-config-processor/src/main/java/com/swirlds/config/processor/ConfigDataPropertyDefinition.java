@@ -16,6 +16,7 @@
 
 package com.swirlds.config.processor;
 
+import com.swirlds.config.api.DefaultMarker;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -32,4 +33,5 @@ public record ConfigDataPropertyDefinition(
         @NonNull String name,
         @NonNull String type,
         @Nullable String defaultValue,
-        @Nullable String description) {}
+        @Nullable String description,
+        @NonNull DefaultMarker marker) {}

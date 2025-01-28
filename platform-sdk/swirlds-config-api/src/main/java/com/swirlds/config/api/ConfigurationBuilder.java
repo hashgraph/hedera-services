@@ -17,6 +17,7 @@
 package com.swirlds.config.api;
 
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.api.converter.TypeHandler;
 import com.swirlds.config.api.intern.ConfigurationProvider;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
@@ -57,6 +58,21 @@ public interface ConfigurationBuilder {
      */
     @NonNull
     ConfigurationBuilder withSources(@NonNull ConfigSource... configSources) throws IllegalStateException;
+
+    /**
+     * Adds a type handler (see {@link TypeHandler}) for the specified type. If this method is called after the config has
+     * been created (see {@link #build()}), a {@link IllegalStateException} will be thrown.
+     *
+     * @param type    the class of the type to handle
+     * @param handler the type handler that should be used for the specified type
+     * @param <T>     the generic type of the handler
+     *
+     * @return the builder instance (useful for fluent API)
+     *
+     * @throws IllegalStateException if this method is called after the config has been created
+     */
+    @NonNull
+    <T> ConfigurationBuilder withTypeHandler(@NonNull Class<T> type, @NonNull TypeHandler<T> handler) throws IllegalStateException;
 
     /**
      * Adds a converter (see {@link ConfigConverter}). If this method is called after the config has been created (see

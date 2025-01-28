@@ -66,7 +66,7 @@ final class ConstraintValidator implements ConfigValidator {
         if (configuration.exists(propertyName)) {
             final ConfigConverter<T> converter = converterService.getConverterForType(valueType);
             return new PropertyMetadataImpl<>(
-                    propertyName, configuration.getValue(propertyName), valueType, true, converter);
+                    propertyName, null, valueType, true, converter);//FIXME
         } else {
             final ConfigConverter<T> converter = converterService.getConverterForType(valueType);
             return new PropertyMetadataImpl<>(propertyName, null, valueType, false, converter);

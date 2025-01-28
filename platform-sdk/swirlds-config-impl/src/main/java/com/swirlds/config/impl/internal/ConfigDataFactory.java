@@ -94,28 +94,29 @@ class ConfigDataFactory {
         if (hasDefaultValue(component)) {
             if (Objects.equals(List.class, component.getType())) {
                 final Class<?> genericType = getGenericListType(component);
-                return configuration.getValues(name, genericType, getDefaultValues(component));
+//                return configuration.getValues(name, genericType, getDefaultValues(component));
             }
             if (Objects.equals(Set.class, component.getType())) {
                 final Class<?> genericType = getGenericSetType(component);
-                return configuration.getValueSet(name, genericType, getDefaultValueSet(component));
+//                return configuration.getValueSet(name, genericType, getDefaultValueSet(component));
             }
             return configuration.getValue(name, valueType, getDefaultValue(component));
         } else {
             if (Objects.equals(List.class, component.getType())) {
                 final Class<?> genericType = getGenericListType(component);
-                return configuration.getValues(name, genericType);
+//                return configuration.getValues(name, genericType);
             }
             if (Objects.equals(Set.class, component.getType())) {
                 final Class<?> genericType = getGenericSetType(component);
-                return configuration.getValueSet(name, genericType);
+//                return configuration.getValueSet(name, genericType);
             }
             if (configuration.isListValue(name)) {
-                return configuration.getValues(name, valueType);
+//                return configuration.getValues(name, valueType);
             } else {
                 return configuration.getValue(name, valueType);
             }
         }
+        return null;
     }
 
     private static boolean isGenericType(@NonNull final RecordComponent component, @NonNull final Class<?> type) {
@@ -153,7 +154,7 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
         final Class<?> type = getGenericSetType(component);
         final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
+        if (Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, rawValue)) {//FIXME
             return null;
         }
         return (Set<T>) ConfigListUtils.createList(rawValue).stream()
@@ -167,7 +168,7 @@ class ConfigDataFactory {
         Objects.requireNonNull(component, "component must not be null");
         final Class<?> type = getGenericListType(component);
         final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
+        if (Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, rawValue)) {//FIXME
             return null;
         }
         return (List<T>) ConfigListUtils.createList(rawValue).stream()
@@ -197,7 +198,7 @@ class ConfigDataFactory {
     private <T> T getDefaultValue(@NonNull final RecordComponent component) {
         Objects.requireNonNull(component, "component must not be null");
         final String rawValue = getRawValue(component);
-        if (Objects.equals(ConfigProperty.NULL_DEFAULT_VALUE, rawValue)) {
+        if (Objects.equals(ConfigProperty.UNDEFINED_DEFAULT_VALUE, rawValue)) {//FIXME
             return null;
         }
         return (T) converterService.convert(rawValue, component.getType());

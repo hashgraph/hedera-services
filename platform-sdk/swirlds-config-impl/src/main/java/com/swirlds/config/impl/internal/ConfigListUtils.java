@@ -16,11 +16,9 @@
 
 package com.swirlds.config.impl.internal;
 
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Class that contains functionality for the general parsing of list properties.
@@ -40,7 +38,7 @@ final class ConfigListUtils {
         if (rawValue == null) {
             return null;
         }
-        if (Objects.equals(Configuration.EMPTY_LIST, rawValue) || rawValue.isBlank()) {
+        if (rawValue.isBlank()) {//FIXME
             return List.of();
         }
         return Arrays.stream(rawValue.split(",")).toList();

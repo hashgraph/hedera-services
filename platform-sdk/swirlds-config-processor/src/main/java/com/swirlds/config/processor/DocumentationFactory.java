@@ -20,6 +20,7 @@ import static com.swirlds.config.processor.MarkdownSyntax.NEWLINE;
 import static com.swirlds.config.processor.MarkdownSyntax.asCode;
 
 import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.DefaultMarker.Null;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class DocumentationFactory {
                     writer.write(MarkdownSyntax.TYPE + asCode(propertyDefinition.type()) + NEWLINE);
                     if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
                         writer.write(MarkdownSyntax.NO_DEFAULT_VALUE + NEWLINE);
-                    } else if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.NULL_DEFAULT_VALUE)) {
+                    } else if (Objects.equals(propertyDefinition.marker(), Null.INSTANCE)) {
                         writer.write(MarkdownSyntax.DEFAULT_VALUE_IS_NULL + NEWLINE);
                     } else {
                         writer.write(

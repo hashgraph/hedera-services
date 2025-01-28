@@ -21,6 +21,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.config.api.ConfigurationExtension.ConverterPair;
 import com.swirlds.config.api.converter.ConfigConverter;
+import com.swirlds.config.api.converter.TypeHandler;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
@@ -156,6 +157,13 @@ final class ConfigurationBuilderImpl implements ConfigurationBuilder {
     public ConfigurationBuilder withSources(@NonNull final ConfigSource... configSources) {
         Arrays.stream(configSources).forEach(this::addConfigSource);
         return this;
+    }
+
+    @NonNull
+    @Override
+    public <T> ConfigurationBuilder withTypeHandler(@NonNull final Class<T> type, @NonNull final TypeHandler<T> handler)
+            throws IllegalStateException {
+        return null;
     }
 
     private void addConfigSource(@NonNull final ConfigSource configSource) {

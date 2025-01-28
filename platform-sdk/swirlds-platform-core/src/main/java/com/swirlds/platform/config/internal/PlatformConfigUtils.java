@@ -156,12 +156,12 @@ public class PlatformConfigUtils {
         for (final String propertyName : propertyNames) {
             if (configuration.isListValue(propertyName)) {
                 final String value =
-                        Objects.requireNonNullElse(configuration.getValues(propertyName), List.of()).stream()
+                        List.of().stream()//FIXME
                                 .map(Object::toString)
                                 .collect(Collectors.joining(", "));
                 stringBuilder.append(String.format("%s, %s%n", propertyName, value));
             } else {
-                stringBuilder.append(String.format("%s, %s%n", propertyName, configuration.getValue(propertyName)));
+                stringBuilder.append(String.format("%s, %s%n", propertyName, configuration.getValue(propertyName, String.class)));
             }
         }
     }

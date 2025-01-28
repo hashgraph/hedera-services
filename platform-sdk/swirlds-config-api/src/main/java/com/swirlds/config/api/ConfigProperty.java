@@ -16,10 +16,9 @@
 
 package com.swirlds.config.api;
 
-import static java.lang.annotation.ElementType.RECORD_COMPONENT;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -33,14 +32,14 @@ import java.lang.annotation.Target;
  *                             &#64;ConfigProperty("serverName") String server) {
  * }
  * </pre>
- * In this example the {@code port} and {@code server} values can easily be accessed by calling the record instance
- * (see {@link Configuration#getConfigData(Class)} for more infos). The property name of the {@code port} property will
- * be {@code "network.port"} and the property name of the {@code server} property will be {@code "network.serverName"}.
- * For the {@code port} the default value {@code "8080"} is defined and will be used if no value is specified by the
+ * In this example, the {@code port} and {@code server} values can easily be accessed by calling the record instance
+ * (see {@link Configuration#getConfigData(Class)} for more information). The property name of the {@code port} property
+ * will be {@code "network.port"} and the property name of the {@code server} property will be {@code "network.serverName"}.
+ * For the {@code port}, the default value {@code "8080"} is defined and will be used if no value is specified by the
  * config.
  */
-@Retention(RUNTIME)
-@Target(RECORD_COMPONENT)
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.RECORD_COMPONENT})
 public @interface ConfigProperty {
 
     /**
@@ -70,4 +69,13 @@ public @interface ConfigProperty {
      * @return the default value or {@link ConfigProperty#UNDEFINED_DEFAULT_VALUE}
      */
     String defaultValue() default UNDEFINED_DEFAULT_VALUE;
+
+    /**
+     * Specifies a marker class that provides a default value for the property if the {@link #defaultValue()} is set to
+     * {@link ConfigProperty#UNDEFINED_DEFAULT_VALUE}. This allows for more complex default value logic than a simple
+     * string-based default.
+     *
+     * @return the marker class that provides the default value
+     */
+    Class<? extends DefaultMarker> marker() default DefaultMarker.Undefined.class;
 }

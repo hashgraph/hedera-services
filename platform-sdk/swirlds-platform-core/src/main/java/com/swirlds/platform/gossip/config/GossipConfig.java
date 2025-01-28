@@ -18,7 +18,6 @@ package com.swirlds.platform.gossip.config;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
 import java.util.List;
@@ -43,8 +42,8 @@ import java.util.Optional;
  */
 @ConfigData("gossip")
 public record GossipConfig(
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> interfaceBindings,
-        @ConfigProperty(defaultValue = Configuration.EMPTY_LIST) List<NetworkEndpoint> endpointOverrides) {
+        @ConfigProperty List<NetworkEndpoint> interfaceBindings,
+        @ConfigProperty List<NetworkEndpoint> endpointOverrides) {
 
     /**
      * Returns the interface binding for the given node ID.

@@ -125,7 +125,7 @@ public final class AntlrConfigRecordParser {
             final String description =
                     Optional.ofNullable(javadocParams.get(componentName)).orElse("");
 
-            return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
+            return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description, null);//FIXME
         } catch (Exception e) {
             throw new IllegalArgumentException(ConfigProperty.class.getTypeName() + " is not correctly defined for "
                     + componentName + " property");

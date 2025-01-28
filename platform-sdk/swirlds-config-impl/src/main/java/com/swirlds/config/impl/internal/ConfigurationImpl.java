@@ -17,7 +17,9 @@
 package com.swirlds.config.impl.internal;
 
 import com.swirlds.base.ArgumentUtils;
+import com.swirlds.config.api.ConfigValue;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.TypeReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
@@ -66,6 +68,14 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return propertiesService.isListProperty(propertyName);
     }
 
+    @NonNull
+    @Override
+    public <T> ConfigValue<T> getConfigValue(@NonNull final String propertyName,
+            @NonNull final TypeReference<T> typeRef)
+            throws NoSuchElementException, IllegalArgumentException {
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -91,8 +101,14 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return getValue(propertyName, propertyType);
     }
 
-    @Nullable
+    @NonNull
     @Override
+    public <T> Collection<T> getCollection(@NonNull final String propertyName, @NonNull final Class<T> elementType)
+            throws NoSuchElementException, IllegalArgumentException {
+        return List.of();
+    }
+
+    @Nullable
     public String getValue(@NonNull final String propertyName) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (propertiesService.isListProperty(propertyName)) {
@@ -105,7 +121,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Nullable
-    @Override
     public String getValue(@NonNull final String propertyName, @Nullable final String defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (propertiesService.isListProperty(propertyName)) {
@@ -118,7 +133,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Nullable
-    @Override
     public List<String> getValues(@NonNull final String propertyName) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!propertiesService.isListProperty(propertyName)) {
@@ -131,7 +145,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Nullable
-    @Override
     public List<String> getValues(@NonNull final String propertyName, @Nullable final List<String> defaultValue) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!propertiesService.isListProperty(propertyName)) {
@@ -144,7 +157,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Nullable
-    @Override
     public <T> List<T> getValues(@NonNull final String propertyName, @NonNull final Class<T> propertyType) {
         ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         Objects.requireNonNull(propertyType, "propertyType must not be null");
@@ -164,7 +176,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
     }
 
     @Nullable
-    @Override
     public <T> List<T> getValues(
             @NonNull final String propertyName,
             @NonNull final Class<T> propertyType,
@@ -177,7 +188,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return getValues(propertyName, propertyType);
     }
 
-    @Override
     @Nullable
     public Set<String> getValueSet(@NonNull final String propertyName) {
         final List<String> values = getValues(propertyName);
@@ -187,7 +197,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return Set.copyOf(values);
     }
 
-    @Override
     @Nullable
     public Set<String> getValueSet(@NonNull final String propertyName, @Nullable final Set<String> defaultValue) {
         if (!exists(propertyName)) {
@@ -196,7 +205,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return getValueSet(propertyName);
     }
 
-    @Override
     @Nullable
     public <T> Set<T> getValueSet(@NonNull final String propertyName, @NonNull final Class<T> propertyType)
             throws NoSuchElementException, IllegalArgumentException {
@@ -207,7 +215,6 @@ class ConfigurationImpl implements Configuration, ConfigLifecycle {
         return Set.copyOf(values);
     }
 
-    @Override
     @Nullable
     public <T> Set<T> getValueSet(
             @NonNull final String propertyName,
