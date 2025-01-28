@@ -38,19 +38,29 @@ public class AtomicBatchTest {
     // just test that the batch is submitted
     // disabled for now because there is no handler logic and streamValidation is failing in CI
     public Stream<DynamicTest> simpleBatchTest() {
+        final var batchOperator = "batchOperator";
         final var innerTnxPayer = "innerPayer";
         final var innerTxnId = "innerId";
+
+        // create inner txn with:
+        // - custom txn id -> for getting the record
+        // - batch key -> for batch operator to sign
+        // - payer -> for paying the fee
+        final var innerTxn = cryptoCreate("foo")
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+
         return hapiTest(
+                // create batch operator
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
                 // create another payer for the inner txn
                 cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
                 // use custom txn id so we can get the record
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
                 // create a batch txn
-                atomicBatch(cryptoCreate("foo")
-                                .txnId(innerTxnId)
-                                .balance(ONE_HBAR)
-                                .payingWith(innerTnxPayer))
-                        .via("batchTxn"),
+                atomicBatch(innerTxn).payingWith(batchOperator),
                 // get and log inner txn record
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result
