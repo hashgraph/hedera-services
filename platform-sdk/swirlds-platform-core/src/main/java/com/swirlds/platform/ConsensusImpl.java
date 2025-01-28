@@ -31,6 +31,7 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
+import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusRounds;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -40,7 +41,6 @@ import com.swirlds.platform.consensus.CountingVote;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
-import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
@@ -149,7 +149,7 @@ import org.apache.logging.log4j.Logger;
  * adds up to more than 2/3 of the total stake", and "witnesses created by members whose stake is
  * more than 2/3 of the total".
  */
-public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus {
+public class ConsensusImpl implements Consensus {
 
     public static final String COIN_ROUND_MARKER_FILE = "consensus-coin-round";
     public static final String NO_SUPER_MAJORITY_MARKER_FILE = "consensus-no-super-majority";
@@ -158,6 +158,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
 
+    private final ConsensusConfig config;
     /** wall clock time */
     private final Time time;
     /** the only roster currently, until roster changes are implemented */
@@ -224,7 +225,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final PlatformContext platformContext,
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final Roster roster) {
-        super(platformContext);
+        this.config = platformContext.getConfiguration().getConfigData(ConsensusConfig.class);
         this.time = platformContext.getTime();
         this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
@@ -234,7 +235,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.rosterTotalWeight = RosterUtils.computeTotalWeight(roster);
         this.rosterIndicesMap = RosterUtils.toIndicesMap(roster);
 
-        this.rounds = new ConsensusRounds(config, getStorage(), roster);
+        this.rounds = new ConsensusRounds(config, roster);
         this.ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
@@ -253,7 +254,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         reset();
         initJudges = new InitJudges(snapshot.round(), new HashSet<>(snapshot.judgeHashes()));
         rounds.loadFromMinimumJudge(snapshot.getMinimumJudgeInfoList());
-        updateRoundGenerations(rounds.getFameDecidedBelow());
         numConsensus = snapshot.nextConsensusNumber();
         lastConsensusTime = snapshot.consensusTimestamp();
     }
@@ -265,7 +265,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         numConsensus = 0;
         lastConsensusTime = null;
         initJudges = null;
-        updateRoundGenerations(rounds.getFameDecidedBelow());
     }
 
     /**
@@ -360,7 +359,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                 continue;
             }
 
-            if (insertedEvent.isConsensus() || isAncient(insertedEvent.getBaseEvent())) {
+            if (insertedEvent.isConsensus() || rounds.isAncient(insertedEvent)) {
                 insertedEvent.clearMetadata();
 
                 // all events that are consensus or ancient have a round of -infinity
@@ -715,9 +714,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         // update the round and generation values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
-        // this updates the thread-safe values
-        this.updateRoundGenerations(rounds.getFameDecidedBelow());
-
         // all events that reach consensus during this method call, in consensus order
         final List<PlatformEvent> consensusEvents =
                 findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges)).stream()
@@ -747,11 +743,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
 
         final long nonAncientThreshold = ancientMode.selectIndicator(
-                getMinGenerationNonAncient(),
+                rounds.getMinGenerationNonAncient(),
                 Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
-                getMinRoundGeneration(),
+                rounds.getMinRoundGeneration(),
                 Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
 
         return new ConsensusRound(
@@ -880,7 +876,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     }
 
     private boolean nonConsensusNonAncient(@NonNull final EventImpl e) {
-        return !e.isConsensus() && !isAncient(e.getBaseEvent());
+        return !e.isConsensus() && !rounds.isAncient(e);
     }
 
     private @Nullable EventImpl timedStronglySeeP(@Nullable final EventImpl x, final long m) {
@@ -940,7 +936,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      * @return true if the event is ancient
      */
     private boolean ancient(@Nullable final EventImpl x) {
-        return x == null || x.getGeneration() < getMinGenerationNonAncient();
+        return x == null || x.getGeneration() < rounds.getMinGenerationNonAncient();
     }
 
     /**
@@ -1305,5 +1301,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             return false;
         }
         return rosterIndicesMap.get(e.getCreatorId().id()) == index;
+    }
+
+    @Override
+    public long getMaxRound() {
+        return rounds.getMaxRound();
+    }
+
+    @Override
+    public long getFameDecidedBelow() {
+        return rounds.getFameDecidedBelow();
     }
 }

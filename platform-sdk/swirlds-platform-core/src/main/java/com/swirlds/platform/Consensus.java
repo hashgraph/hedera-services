@@ -16,15 +16,15 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.RoundNumberProvider;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /** An interface for classes that calculate consensus of events */
-public interface Consensus extends RoundNumberProvider {
+public interface Consensus {
 
     /**
      * Set the flag to signal whether we are currently replaying the PCES (preconsensus event stream) or not.
@@ -50,4 +50,26 @@ public interface Consensus extends RoundNumberProvider {
      * events are provided. This method is called at restart and reconnect boundaries.
      */
     void loadSnapshot(@NonNull ConsensusSnapshot snapshot);
+
+    /**
+     * Return the max round number for which we have an event. If there are none yet, return {@link
+     * ConsensusConstants#ROUND_UNDEFINED}.
+     *
+     * @return the max round number, or {@link ConsensusConstants#ROUND_UNDEFINED} if none.
+     */
+    long getMaxRound();
+
+    /**
+     * return the round number below which the fame of all witnesses has been decided for all earlier rounds.
+     *
+     * @return the round number
+     */
+    long getFameDecidedBelow();
+
+    /**
+     * @return the latest round for which fame has been decided
+     */
+    default long getLastRoundDecided() {
+        return getFameDecidedBelow() - 1;
+    }
 }
