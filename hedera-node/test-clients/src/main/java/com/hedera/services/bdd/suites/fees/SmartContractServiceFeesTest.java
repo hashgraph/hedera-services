@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.fees;
 
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -38,7 +39,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -115,7 +117,7 @@ public class SmartContractServiceFeesTest {
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                         .via("autoAccount"),
                 ethereumCall(contract.name(), "contractCall1Byte", new byte[] {0})
-                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
                         .payingWith(relayer.name())
                         .nonce(0)
@@ -126,7 +128,7 @@ public class SmartContractServiceFeesTest {
                 validateChargedUsdWithoutGas(ethCall, 0.0001, 1));
     }
 
-    @HapiTest
+    @EmbeddedHapiTest(value = NEEDS_STATE_ACCESS)
     @DisplayName("Call a local smart contract local and assure proper fee charged")
     @Order(3)
     final Stream<DynamicTest> contractLocalCallBaseUSDFee() {
