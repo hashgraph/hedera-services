@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,19 @@ public class VerifyAddLiveHashNotSupported extends UtilOp {
         final var validStart = getUniqueTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
         final var txnId = TransactionID.newBuilder()
                 .setTransactionValidStart(validStart)
-                .setAccountID(
-                        AccountID.newBuilder().setAccountNum(USER_PAYER_NUM).build())
+                .setAccountID(AccountID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setAccountNum(USER_PAYER_NUM)
+                        .build())
                 .build();
         final var body = TransactionBody.newBuilder()
                 .setTransactionID(txnId)
-                .setNodeAccountID(AccountID.newBuilder().setAccountNum(3).build())
+                .setNodeAccountID(AccountID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setAccountNum(3)
+                        .build())
                 .setTransactionValidDuration(
                         Duration.newBuilder().setSeconds(120).build())
                 .setCryptoAddLiveHash(CryptoAddLiveHashTransactionBody.getDefaultInstance())
