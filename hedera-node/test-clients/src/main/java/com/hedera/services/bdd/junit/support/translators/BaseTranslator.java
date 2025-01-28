@@ -86,7 +86,8 @@ public class BaseTranslator {
      */
     private long highestKnownEntityNum = 0L;
 
-    private long highestKnownNodeId;
+    private long highestKnownNodeId =
+            -1L; // Default to negative value so that we allow for nodeId with 0 value to be created
 
     private ExchangeRateSet activeRates;
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
@@ -118,11 +119,10 @@ public class BaseTranslator {
     }
 
     /**
-     * Constructs a translator with the given highest known node ID.
-     * @param highestKnownNodeId the highest known node ID
+     * Constructs a base translator.
      */
-    public BaseTranslator(final long highestKnownNodeId) {
-        this.highestKnownNodeId = highestKnownNodeId;
+    public BaseTranslator() {
+        // Using default field values
     }
 
     /**
