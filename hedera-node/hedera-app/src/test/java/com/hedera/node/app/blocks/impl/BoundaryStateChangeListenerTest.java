@@ -81,7 +81,7 @@ class BoundaryStateChangeListenerTest {
 
     @BeforeEach
     void setUp() {
-        listener = new BoundaryStateChangeListener(storeMetricsService, configuration);
+        listener = new BoundaryStateChangeListener(storeMetricsService, () -> configuration);
     }
 
     @Test

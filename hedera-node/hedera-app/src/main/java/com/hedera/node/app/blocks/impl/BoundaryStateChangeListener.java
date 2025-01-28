@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary; either
@@ -88,17 +89,18 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     private final StoreMetricsService storeMetricsService;
 
     @NonNull
-    private final Configuration configuration;
+    private final Supplier<Configuration> configurationSupplier;
 
     /**
      * Constructor for the {@link BoundaryStateChangeListener} class.
      * @param storeMetricsService the store metrics service
-     * @param configuration the configuration
+     * @param configurationSupplier the configuration
      */
     public BoundaryStateChangeListener(
-            @NonNull final StoreMetricsService storeMetricsService, @NonNull final Configuration configuration) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final Supplier<Configuration> configurationSupplier) {
         this.storeMetricsService = requireNonNull(storeMetricsService);
-        this.configuration = requireNonNull(configuration);
+        this.configurationSupplier = requireNonNull(configurationSupplier);
     }
 
     /**
@@ -207,6 +209,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     private void updateEntityCountsMetrics(final EntityCounts entityCounts) {
+        final var configuration = this.configurationSupplier.get();
         final long nodeCapacity = configuration.getConfigData(NodesConfig.class).maxNumber();
         final var nodeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.NODE, nodeCapacity);
         nodeMetrics.updateCount(entityCounts.numNodes());

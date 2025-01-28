@@ -147,7 +147,7 @@ public class StandaloneDispatchFactory {
                 state,
                 consensusConfig.handleMaxPrecedingRecords(),
                 consensusConfig.handleMaxFollowingRecords(),
-                new BoundaryStateChangeListener(storeMetricsService, config),
+                new BoundaryStateChangeListener(storeMetricsService, () -> config),
                 new KVStateChangeListener(),
                 blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);

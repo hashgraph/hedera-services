@@ -149,7 +149,7 @@ class IngestComponentTest {
                 .metrics(metrics)
                 .kvStateChangeListener(new KVStateChangeListener())
                 .boundaryStateChangeListener(new BoundaryStateChangeListener(
-                        new StoreMetricsServiceImpl(metrics), configProvider.getConfiguration()))
+                        new StoreMetricsServiceImpl(metrics), () -> configProvider.getConfiguration()))
                 .migrationStateChanges(List.of())
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))

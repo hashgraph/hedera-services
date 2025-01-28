@@ -452,6 +452,7 @@ public final class Hedera
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
         logger.info(
                 """
 
@@ -490,7 +491,7 @@ public final class Hedera
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, bootstrapConfig);
+        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configSupplier);
         hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
         historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);

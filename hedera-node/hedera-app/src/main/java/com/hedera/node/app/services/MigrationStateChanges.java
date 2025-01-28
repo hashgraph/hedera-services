@@ -50,11 +50,13 @@ public class MigrationStateChanges {
      */
     public MigrationStateChanges(
             @NonNull final State state,
-            final Configuration config,
+            @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService) {
         requireNonNull(config);
+        requireNonNull(storeMetricsService);
+
         this.state = requireNonNull(state);
-        roundStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, config);
+        this.roundStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, () -> config);
         if (config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS) {
             state.registerCommitListener(kvStateChangeListener);
             state.registerCommitListener(roundStateChangeListener);
