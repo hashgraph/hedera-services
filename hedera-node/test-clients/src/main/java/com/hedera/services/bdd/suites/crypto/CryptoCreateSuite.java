@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class CryptoCreateSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return hapiTest(submitModified(
-                withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account").stakedAccountId("0.0.3")));
+                withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account").stakedAccountId("1.2.3")));
     }
 
     @HapiTest
@@ -481,6 +481,7 @@ public class CryptoCreateSuite {
 
     @HapiTest
     final Stream<DynamicTest> createAnAccountWithECKeyAndNoAlias() {
+
         final var mirrorAddress = new AtomicReference<Address>();
         return hapiTest(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE), withOpContext((spec, opLog) -> {
             final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
