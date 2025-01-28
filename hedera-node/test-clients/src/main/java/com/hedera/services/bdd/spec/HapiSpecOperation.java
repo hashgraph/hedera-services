@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,6 +127,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
     protected Optional<ControlForKey[]> controlOverrides = Optional.empty();
     protected Map<Key, SigControl> overrides = Collections.EMPTY_MAP;
 
+    protected Optional<Function<HapiSpec, Key>> batchKey = Optional.empty();
     protected Optional<Long> fee = Optional.empty();
     protected Optional<Long> validDurationSecs = Optional.empty();
     protected Optional<String> customTxnId = Optional.empty();
@@ -289,6 +290,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
                     Duration.newBuilder().setSeconds(s).build()));
             genRecord.ifPresent(builder::setGenerateRecord);
             memo.ifPresent(builder::setMemo);
+            batchKey.ifPresent(k -> builder.setBatchKey(k.apply(spec)));
         };
     }
 
