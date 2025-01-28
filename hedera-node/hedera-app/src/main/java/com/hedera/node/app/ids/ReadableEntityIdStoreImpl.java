@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -114,6 +115,26 @@ public class ReadableEntityIdStoreImpl implements ReadableEntityIdStore {
     @Override
     public long numAirdrops() {
         return requireNonNull(entityCountsState.get()).numAirdrops();
+    }
+
+    @Override
+    public long getCounterFor(final EntityType entityType) {
+        final var entityState = requireNonNull(entityCountsState.get());
+        return switch (entityType) {
+            case ACCOUNT -> entityState.numAccounts();
+            case TOKEN -> entityState.numTokens();
+            case NODE -> entityState.numNodes();
+            case FILE -> entityState.numFiles();
+            case TOPIC -> entityState.numTopics();
+            case CONTRACT_BYTECODE -> entityState.numContractBytecodes();
+            case CONTRACT_STORAGE -> entityState.numContractStorageSlots();
+            case NFT -> entityState.numNfts();
+            case TOKEN_ASSOCIATION -> entityState.numTokenRelations();
+            case ALIAS -> entityState.numAliases();
+            case SCHEDULE -> entityState.numSchedules();
+            case AIRDROP -> entityState.numAirdrops();
+            case STAKING_INFO -> entityState.numStakingInfos();
+        };
     }
 
     @Override

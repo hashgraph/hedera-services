@@ -1182,6 +1182,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
         }
 
         this.platform = platform;
+        state.setSelfId(platform.getSelfId());
         UnsafeMutablePTTStateAccessor.getInstance().setMutableState(platform.getSelfId(), state);
 
         initialized.set(true);
@@ -1228,8 +1229,9 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull PlatformTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull PlatformTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

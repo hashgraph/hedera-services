@@ -459,7 +459,7 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
         final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = configAddressBook.copy();
-        onUpdateWeight(state, usedAddressBook, context);
+        onUpdateWeight(state, updatedAddressBook, context);
 
         return equalsAsRoster(platformAddressBook, configAddressBook, true)
                 && equalsAsRoster(platformAddressBook, usedAddressBook, true)
@@ -842,8 +842,9 @@ public class AddressBookTestingToolStateLifecycles implements StateLifecycles<Ad
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull AddressBookTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull AddressBookTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

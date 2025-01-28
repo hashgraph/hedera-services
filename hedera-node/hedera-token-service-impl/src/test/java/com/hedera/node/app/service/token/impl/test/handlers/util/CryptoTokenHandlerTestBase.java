@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,8 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -418,6 +420,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     @Mock(strictness = Strictness.LENIENT)
     protected StoreFactory storeFactory;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
+
     protected Configuration configuration;
     protected VersionedConfigImpl versionedConfig;
     /**
@@ -590,8 +598,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
+        writableAccountStore =
+                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenAccountsInWritableStore() {
@@ -603,8 +612,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
-        writableAccountStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
+        writableAccountStore =
+                new WritableAccountStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenTokensInReadableStore() {
@@ -612,8 +622,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         writableTokenState = emptyWritableTokenState();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
+        writableTokenStore =
+                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenTokensInWritableStore() {
@@ -621,8 +632,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         writableTokenState = writableTokenState();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, storeMetricsService);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
+        writableTokenStore =
+                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenReadableStakingInfoStore() {
@@ -663,13 +675,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenReadableTokenRelsStore() {
         readableTokenRelState = readableTokenRelState();
         given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
-        readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
+        readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates, readableEntityCounters);
     }
 
     private void givenWritableTokenRelsStore() {
         writableTokenRelState = writableTokenRelState();
         given(writableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(writableTokenRelState);
-        writableTokenRelStore = new WritableTokenRelationStore(writableStates, configuration, storeMetricsService);
+        writableTokenRelStore = new WritableTokenRelationStore(
+                writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenReadableNftStore() {
@@ -678,7 +691,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(nftIdSl2, nftSl2)
                 .build();
         given(readableStates.<NftID, Nft>get(NFTS)).willReturn(readableNftState);
-        readableNftStore = new ReadableNftStoreImpl(readableStates);
+        readableNftStore = new ReadableNftStoreImpl(readableStates, readableEntityCounters);
     }
 
     private void givenWritableNftStore() {
@@ -687,20 +700,22 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .value(nftIdSl2, nftSl2)
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
+        writableNftStore =
+                new WritableNftStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     private void givenReadableAirdropStore() {
         readableAirdropState = readableAirdropState();
         doReturn(readableAirdropState).when(readableStates).<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS);
-        readableAirdropStore = new ReadableAirdropStoreImpl(readableStates);
+        readableAirdropStore = new ReadableAirdropStoreImpl(readableStates, readableEntityCounters);
     }
 
     private void givenWritableAirdropStore() {
         writableAirdropState = writableAirdropState();
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        writableAirdropStore =
+                new WritableAirdropStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
     }
 
     @NonNull

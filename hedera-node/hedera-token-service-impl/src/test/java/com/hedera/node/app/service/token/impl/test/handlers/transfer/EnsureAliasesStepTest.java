@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -350,7 +350,8 @@ class EnsureAliasesStepTest extends StepsBase {
         writableAliases = writableBuilder.build();
 
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableAccountStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableAccountStore = new WritableAccountStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
 
         writableAccountStore.put(account.copyBuilder()
                 .accountId(hbarReceiverId)

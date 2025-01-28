@@ -20,8 +20,6 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
-import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -33,7 +31,6 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
@@ -67,14 +64,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -178,10 +172,10 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 new FakeServiceMigrator(),
                 this::now,
                 DiskStartupNetworks::new,
-                (hintsService, historyService, configProvider) ->
-                        this.blockHashSigner = new LapsingBlockHashSigner(hintsService, historyService, configProvider),
-                appContext -> this.hintsService = new FakeHintsService(appContext),
-                appContext -> this.historyService = new FakeHistoryService(),
+                (appContext, bootstrapConfig) -> this.hintsService = new FakeHintsService(appContext, bootstrapConfig),
+                (appContext, bootstrapConfig) -> this.historyService = new FakeHistoryService(),
+                (hints, history, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider),
                 metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
@@ -203,20 +197,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        hedera.initializeConfigProvider(trigger);
-        hedera.initializeStatesApi(state, trigger, network, ServicesMain.buildPlatformConfig(), addressBook);
-
-        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
-        // and we are running all CI tests with the Roster lifecycle enabled
-        final var writableStates = state.getWritableStates(PlatformStateService.NAME);
-        final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
-        final var currentState = requireNonNull(platformState.get());
-        platformState.put(currentState
-                .copyBuilder()
-                .addressBook(toPbjAddressBook(addressBook))
-                .build());
-        ((CommittableWritableStates) writableStates).commit();
-        // --- end of temporary code block ---
+        hedera.initializeStatesApi(state, trigger, network, ServicesMain.buildPlatformConfig());
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
