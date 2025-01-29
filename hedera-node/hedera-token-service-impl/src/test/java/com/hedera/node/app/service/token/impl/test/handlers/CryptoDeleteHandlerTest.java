@@ -245,10 +245,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     @Test
     void pureChecksFailWhenTargetSameAsBeneficiary() throws PreCheckException {
         final var txn = deleteAccountTransaction(deleteAccountId, deleteAccountId);
+        given(pureChecksContext.body()).willReturn(txn);
 
-        final var context = new FakePreHandleContext(readableStore, txn);
-
-        assertThatThrownBy(() -> subject.preHandle(context))
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT));
     }
@@ -383,20 +382,20 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     @Test
     void failsIfEitherDeleteOrTransferAccountDoesntExist() throws PreCheckException {
         var txn = deleteAccountTransaction(null, transferAccountId);
-        final var context = new FakePreHandleContext(readableStore, txn);
-        assertThatThrownBy(() -> subject.preHandle(context))
+        given(pureChecksContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
 
         txn = deleteAccountTransaction(deleteAccountId, null);
-        final var context1 = new FakePreHandleContext(readableStore, txn);
-        assertThatThrownBy(() -> subject.preHandle(context1))
+        given(pureChecksContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
 
         txn = deleteAccountTransaction(null, null);
-        final var context2 = new FakePreHandleContext(readableStore, txn);
-        assertThatThrownBy(() -> subject.preHandle(context2))
+        given(pureChecksContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
     }
