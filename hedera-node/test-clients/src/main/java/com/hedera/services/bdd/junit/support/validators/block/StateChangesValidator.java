@@ -16,9 +16,11 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FILES;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
@@ -26,6 +28,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.STATE_METADATA_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.workingDirFor;
+import static com.hedera.services.bdd.junit.support.validators.block.BlockStreamUtils.stateNameOf;
 import static com.hedera.services.bdd.junit.support.validators.block.ChildHashUtils.hashesByName;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
@@ -42,10 +45,12 @@ import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateIdentifier;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -54,6 +59,7 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.blocks.impl.NaiveStreamingTreeHasher;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -73,6 +79,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -82,6 +89,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,6 +124,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Bytes expectedRootHash;
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
+    private final Map<String, Set<Object>> entityChanges = new LinkedHashMap<>();
 
     private PlatformMerkleStateRoot state;
 
@@ -307,6 +316,86 @@ public class StateChangesValidator implements BlockStreamValidator {
             });
             Assertions.fail(errorMsg.toString());
         }
+        final var entityCounts =
+                state.getWritableStates(EntityIdService.NAME).<EntityCounts>getSingleton(ENTITY_COUNTS_KEY);
+        assertEntityCountsMatch(entityCounts);
+    }
+
+    private void assertEntityCountsMatch(final WritableSingletonState<EntityCounts> entityCounts) {
+        final var actualCounts = requireNonNull(entityCounts.get());
+        final var expectedNumAirdrops =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_PENDING_AIRDROPS.protoOrdinal()));
+        final var expectedNumStakingInfos =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_STAKING_INFO.protoOrdinal()));
+        final var expectedNumContractStorageSlots =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_CONTRACT_STORAGE.protoOrdinal()));
+        final var expectedNumTokenRelations =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOKEN_RELATIONS.protoOrdinal()));
+        final var expectedNumAccounts =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_ACCOUNTS.protoOrdinal()));
+        final var expectedNumAliases = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_ALIASES.protoOrdinal()));
+        final var expectedNumContractBytecodes =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_CONTRACT_BYTECODE.protoOrdinal()));
+        final var expectedNumFiles = entityChanges.get(stateNameOf(STATE_ID_FILES.protoOrdinal()));
+        final var expectedNumNfts = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_NFTS.protoOrdinal()));
+        final var expectedNumNodes = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_NODES.protoOrdinal()));
+        final var expectedNumSchedules =
+                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_SCHEDULES_BY_ID.protoOrdinal()));
+        final var expectedNumTokens = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOKENS.protoOrdinal()));
+        final var expectedNumTopics = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOPICS.protoOrdinal()));
+
+        logger.info("Actual Entity counts:\n{}", actualCounts);
+        logger.info(
+                "Expected Entity counts:\n"
+                        + "    * Airdrops: {}\n"
+                        + "    * StakingInfos: {}\n"
+                        + "    * ContractStorageSlots: {}\n"
+                        + "    * TokenRelations: {}\n"
+                        + "    * Accounts: {}\n"
+                        + "    * Aliases: {}\n"
+                        + "    * ContractBytecodes: {}\n"
+                        + "    * Files: {}\n"
+                        + "    * Nfts: {}\n"
+                        + "    * Nodes: {}\n"
+                        + "    * Schedules: {}\n"
+                        + "    * Tokens: {}"
+                        + "    * Topics: {}",
+                expectedNumAirdrops.size(),
+                expectedNumStakingInfos.size(),
+                expectedNumContractStorageSlots.size(),
+                expectedNumTokenRelations.size(),
+                expectedNumAccounts.size(),
+                expectedNumAliases.size(),
+                expectedNumContractBytecodes.size(),
+                expectedNumFiles.size(),
+                expectedNumNfts.size(),
+                expectedNumNodes.size(),
+                expectedNumSchedules.size(),
+                expectedNumTokens.size(),
+                expectedNumTopics.size());
+
+        assertEquals(actualCounts.numAirdrops(), expectedNumAirdrops.size(), "Airdrop counts mismatch");
+        assertEquals(actualCounts.numTokens(), expectedNumTokens.size(), "Token counts mismatch");
+        assertEquals(
+                actualCounts.numTokenRelations(), expectedNumTokenRelations.size(), "Token relation counts mismatch");
+        assertEquals(actualCounts.numAccounts(), expectedNumAccounts.size(), "Account counts mismatch");
+        assertEquals(actualCounts.numAliases(), expectedNumAliases.size(), "Alias counts mismatch");
+        assertEquals(actualCounts.numStakingInfos(), expectedNumStakingInfos.size(), "Staking info counts mismatch");
+        assertEquals(actualCounts.numNfts(), expectedNumNfts.size(), "Nft counts mismatch");
+
+        assertEquals(
+                actualCounts.numContractStorageSlots(),
+                expectedNumContractStorageSlots.size(),
+                "Contract storage slot counts mismatch");
+        assertEquals(
+                actualCounts.numContractBytecodes(),
+                expectedNumContractBytecodes.size(),
+                "Contract bytecode counts mismatch");
+
+        assertEquals(actualCounts.numFiles(), expectedNumFiles.size(), "File counts mismatch");
+        assertEquals(actualCounts.numNodes(), expectedNumNodes.size(), "Node counts mismatch");
+        assertEquals(actualCounts.numSchedules(), expectedNumSchedules.size(), "Schedule counts mismatch");
+        assertEquals(actualCounts.numTopics(), expectedNumTopics.size(), "Topic counts mismatch");
     }
 
     private void hashInputOutputTree(
@@ -361,7 +450,7 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {
         for (final var stateChange : stateChanges.stateChanges()) {
-            final var stateName = BlockStreamUtils.stateNameOf(stateChange.stateId());
+            final var stateName = stateNameOf(stateChange.stateId());
             final var delimIndex = stateName.indexOf('.');
             if (delimIndex == -1) {
                 Assertions.fail("State name '" + stateName + "' is not in the correct format");
@@ -385,11 +474,17 @@ public class StateChangesValidator implements BlockStreamValidator {
                     mapState.put(
                             mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()),
                             mapValueFor(stateChange.mapUpdateOrThrow().valueOrThrow()));
+                    entityChanges
+                            .computeIfAbsent(stateKey, k -> new HashSet<>())
+                            .add(mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()));
                     stateChangesSummary.countMapUpdate(serviceName, stateKey);
                 }
                 case MAP_DELETE -> {
                     final var mapState = writableStates.get(stateKey);
                     mapState.remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
+                    entityChanges
+                            .get(stateName)
+                            .remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
                     stateChangesSummary.countMapDelete(serviceName, stateKey);
                 }
                 case QUEUE_PUSH -> {
@@ -408,9 +503,10 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     /**
      * If the given path does not contain the genesis network JSON, recovers it from the archive directory.
+     *
      * @param path the path to the network directory
      * @throws IllegalStateException if the genesis network JSON cannot be found
-     * @throws UncheckedIOException if an I/O error occurs
+     * @throws UncheckedIOException  if an I/O error occurs
      */
     private void unarchiveGenesisNetworkJson(@NonNull final Path path) {
         final var desiredPath = path.resolve(DiskStartupNetworks.GENESIS_NETWORK_JSON);
@@ -687,6 +783,7 @@ public class StateChangesValidator implements BlockStreamValidator {
     /**
      * Load the address book from the given path, using {@link CryptoStatic#generateKeysAndCerts(AddressBook)}
      * to set its gossip certificates to the same certificates used by nodes in a test network.
+     *
      * @param path the path to the address book file
      * @return the loaded address book
      */
