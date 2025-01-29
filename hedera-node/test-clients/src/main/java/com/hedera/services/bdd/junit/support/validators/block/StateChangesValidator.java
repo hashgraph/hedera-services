@@ -294,6 +294,11 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
+
+        final var entityCounts =
+                state.getWritableStates(EntityIdService.NAME).<EntityCounts>getSingleton(ENTITY_COUNTS_KEY);
+        assertEntityCountsMatch(entityCounts);
+
         CRYPTO.digestTreeSync(state);
         final var rootHash = requireNonNull(state.getHash()).getBytes();
         if (!expectedRootHash.equals(rootHash)) {
@@ -316,63 +321,65 @@ public class StateChangesValidator implements BlockStreamValidator {
             });
             Assertions.fail(errorMsg.toString());
         }
-        final var entityCounts =
-                state.getWritableStates(EntityIdService.NAME).<EntityCounts>getSingleton(ENTITY_COUNTS_KEY);
-        assertEntityCountsMatch(entityCounts);
     }
 
     private void assertEntityCountsMatch(final WritableSingletonState<EntityCounts> entityCounts) {
         final var actualCounts = requireNonNull(entityCounts.get());
-        final var expectedNumAirdrops =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_PENDING_AIRDROPS.protoOrdinal()));
+        final var expectedNumAirdrops = entityChanges.getOrDefault(
+                stateNameOf(StateIdentifier.STATE_ID_PENDING_AIRDROPS.protoOrdinal()), Set.of());
         final var expectedNumStakingInfos =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_STAKING_INFO.protoOrdinal()));
-        final var expectedNumContractStorageSlots =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_CONTRACT_STORAGE.protoOrdinal()));
-        final var expectedNumTokenRelations =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOKEN_RELATIONS.protoOrdinal()));
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_STAKING_INFO.protoOrdinal()), Set.of());
+        final var expectedNumContractStorageSlots = entityChanges.getOrDefault(
+                stateNameOf(StateIdentifier.STATE_ID_CONTRACT_STORAGE.protoOrdinal()), Set.of());
+        final var expectedNumTokenRelations = entityChanges.getOrDefault(
+                stateNameOf(StateIdentifier.STATE_ID_TOKEN_RELATIONS.protoOrdinal()), Set.of());
         final var expectedNumAccounts =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_ACCOUNTS.protoOrdinal()));
-        final var expectedNumAliases = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_ALIASES.protoOrdinal()));
-        final var expectedNumContractBytecodes =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_CONTRACT_BYTECODE.protoOrdinal()));
-        final var expectedNumFiles = entityChanges.get(stateNameOf(STATE_ID_FILES.protoOrdinal()));
-        final var expectedNumNfts = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_NFTS.protoOrdinal()));
-        final var expectedNumNodes = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_NODES.protoOrdinal()));
-        final var expectedNumSchedules =
-                entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_SCHEDULES_BY_ID.protoOrdinal()));
-        final var expectedNumTokens = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOKENS.protoOrdinal()));
-        final var expectedNumTopics = entityChanges.get(stateNameOf(StateIdentifier.STATE_ID_TOPICS.protoOrdinal()));
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_ACCOUNTS.protoOrdinal()), Set.of());
+        final var expectedNumAliases =
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_ALIASES.protoOrdinal()), Set.of());
+        final var expectedNumContractBytecodes = entityChanges.getOrDefault(
+                stateNameOf(StateIdentifier.STATE_ID_CONTRACT_BYTECODE.protoOrdinal()), Set.of());
+        final var expectedNumFiles = entityChanges.getOrDefault(stateNameOf(STATE_ID_FILES.protoOrdinal()), Set.of());
+        final var expectedNumNfts =
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_NFTS.protoOrdinal()), Set.of());
+        final var expectedNumNodes =
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_NODES.protoOrdinal()), Set.of());
+        final var expectedNumSchedules = entityChanges.getOrDefault(
+                stateNameOf(StateIdentifier.STATE_ID_SCHEDULES_BY_ID.protoOrdinal()), Set.of());
+        final var expectedNumTokens =
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_TOKENS.protoOrdinal()), Set.of());
+        final var expectedNumTopics =
+                entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_TOPICS.protoOrdinal()), Set.of());
 
         logger.info("Actual Entity counts:\n{}", actualCounts);
         logger.info(
                 "Expected Entity counts:\n"
-                        + "    * Airdrops: {}\n"
-                        + "    * StakingInfos: {}\n"
-                        + "    * ContractStorageSlots: {}\n"
-                        + "    * TokenRelations: {}\n"
                         + "    * Accounts: {}\n"
                         + "    * Aliases: {}\n"
-                        + "    * ContractBytecodes: {}\n"
-                        + "    * Files: {}\n"
+                        + "    * Tokens: {}\n"
+                        + "    * TokenRelations: {}\n"
                         + "    * Nfts: {}\n"
+                        + "    * Airdrops: {}\n"
+                        + "    * StakingInfos: {}\n"
+                        + "    * Topics: {}\n"
+                        + "    * Files: {}\n"
                         + "    * Nodes: {}\n"
                         + "    * Schedules: {}\n"
-                        + "    * Tokens: {}"
-                        + "    * Topics: {}",
-                expectedNumAirdrops.size(),
-                expectedNumStakingInfos.size(),
-                expectedNumContractStorageSlots.size(),
-                expectedNumTokenRelations.size(),
+                        + "    * ContractStorageSlots: {}\n"
+                        + "    * ContractBytecodes: {}",
                 expectedNumAccounts.size(),
                 expectedNumAliases.size(),
-                expectedNumContractBytecodes.size(),
-                expectedNumFiles.size(),
+                expectedNumTokens.size(),
+                expectedNumTokenRelations.size(),
                 expectedNumNfts.size(),
+                expectedNumAirdrops.size(),
+                expectedNumStakingInfos.size(),
+                expectedNumTopics.size(),
+                expectedNumFiles.size(),
                 expectedNumNodes.size(),
                 expectedNumSchedules.size(),
-                expectedNumTokens.size(),
-                expectedNumTopics.size());
+                expectedNumContractStorageSlots.size(),
+                expectedNumContractBytecodes.size());
 
         assertEquals(actualCounts.numAirdrops(), expectedNumAirdrops.size(), "Airdrop counts mismatch");
         assertEquals(actualCounts.numTokens(), expectedNumTokens.size(), "Token counts mismatch");
