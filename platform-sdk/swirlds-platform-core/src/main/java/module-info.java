@@ -108,6 +108,7 @@ module com.swirlds.platform.core {
             com.swirlds.common,
             com.hedera.node.test.clients;
     exports com.swirlds.platform.gossip.sync.config to
+            com.swirlds.platform.core.test.fixtures,
             com.swirlds.config.impl,
             com.swirlds.common,
             com.hedera.node.test.clients;
