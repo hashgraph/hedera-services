@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
@@ -39,12 +40,10 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -106,7 +105,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final MerkleRoot state;
+    private final PlatformMerkleStateRoot state;
 
     /**
      * The timestamp of when this object was created.
@@ -188,16 +187,15 @@ public class SignedState implements SignedStateInfo {
     public SignedState(
             @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final MerkleRoot state,
+            @NonNull final PlatformMerkleStateRoot state,
             @NonNull final String reason,
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
             final boolean pcesRound) {
-
         state.reserve();
 
         this.signatureVerifier = requireNonNull(signatureVerifier);
-        this.state = state;
+        this.state = requireNonNull(state);
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
@@ -213,6 +211,10 @@ public class SignedState implements SignedStateInfo {
         this.freezeState = freezeState;
         this.deleteOnBackgroundThread = deleteOnBackgroundThread;
         this.pcesRound = pcesRound;
+    }
+
+    public void init(@NonNull PlatformContext platformContext) {
+        state.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
     }
 
     /**
@@ -270,8 +272,7 @@ public class SignedState implements SignedStateInfo {
         Ideally the roster would be captured in the constructor but due to the mutable underlying state, the roster
         can change from underneath us. Therefore, the roster must be regenerated on each access.
          */
-        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(
-                (MerkleStateRoot) getState().getSwirldState());
+        final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
         return requireNonNull(roster, "Roster stored in signed state is null (this should never happen)");
     }
 
@@ -281,7 +282,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull MerkleRoot getState() {
+    public @NonNull PlatformMerkleStateRoot getState() {
         return state;
     }
 
@@ -476,15 +477,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull Instant getCreationTimestamp() {
         return creationTimestamp;
-    }
-
-    /**
-     * Get the root node of the application's state
-     *
-     * @return the root node of the application's state.
-     */
-    public @NonNull SwirldState getSwirldState() {
-        return state.getSwirldState();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,10 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateReference;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -78,7 +79,8 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
         this.addressBook = RosterUtils.buildAddressBook(this.roster);
 
         if (loadSigningKeys) {
-            keysAndCerts = initNodeSecurity(addressBook, configuration).get(selfId);
+            keysAndCerts = initNodeSecurity(addressBook, configuration, Collections.singleton(selfId))
+                    .get(selfId);
         } else {
             keysAndCerts = null;
         }
@@ -153,13 +155,12 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
     @SuppressWarnings("unchecked")
     @Override
     @NonNull
-    public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
-            @NonNull final String reason) {
+    public <T extends MerkleStateRoot> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String reason) {
         final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);
         return new AutoCloseableWrapper<>(
                 reservedSignedState.isNull()
                         ? null
-                        : (T) reservedSignedState.get().getSwirldState(),
+                        : (T) reservedSignedState.get().getState(),
                 reservedSignedState::close);
     }
 

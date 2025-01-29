@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.crypto.CryptoConstants.PUBLIC_KEYS_FILE;
 import static com.swirlds.platform.crypto.KeyCertPurpose.SIGNING;
 
-import com.hedera.cryptography.bls.BlsKeyPair;
-import com.hedera.cryptography.bls.GroupAssignment;
-import com.hedera.cryptography.bls.SignatureSchema;
-import com.hedera.cryptography.pairings.api.Curve;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
@@ -40,7 +36,6 @@ import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.PathsConfig;
 import com.swirlds.platform.network.PeerInfo;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.Address;
@@ -78,6 +73,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -97,14 +93,13 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
  * A collection of various static crypto methods
  */
 public final class CryptoStatic {
-    public static final SignatureSchema SIGNATURE_SCHEMA =
-            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.SHORT_SIGNATURES);
     private static final Logger logger = LogManager.getLogger(CryptoStatic.class);
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final int MASTER_KEY_MULTIPLIER = 157;
     private static final int SWIRLD_ID_MULTIPLIER = 163;
     private static final int BITS_IN_BYTE = 8;
     private static final String ADDRESS_BOOK_MUST_NOT_BE_NULL = "addressBook must not be null";
+    private static final String LOCAL_NODES_MUST_NOT_BE_NULL = "the local nodes must not be null";
 
     static {
         // used to generate certificates
@@ -343,6 +338,7 @@ public final class CryptoStatic {
      * @param keysDirPath the key directory, such as /user/test/sdk/data/key/
      * @param password    the password used to protect the PKCS12 key stores containing the node RSA public/private key
      *                    pairs
+     * @param localNodes the nodes that need private keys loaded.
      * @return map of key stores
      * @throws KeyStoreException   if there is no provider that supports {@link CryptoConstants#KEYSTORE_TYPE}
      * @throws KeyLoadingException in an issue occurs while loading keys and certificates
@@ -351,12 +347,16 @@ public final class CryptoStatic {
     @NonNull
     @Deprecated(since = "0.47.0", forRemoval = false)
     static Map<NodeId, KeysAndCerts> loadKeysAndCerts(
-            @NonNull final AddressBook addressBook, @NonNull final Path keysDirPath, @NonNull final char[] password)
+            @NonNull final AddressBook addressBook,
+            @NonNull final Path keysDirPath,
+            @NonNull final char[] password,
+            @NonNull final Set<NodeId> localNodes)
             throws KeyStoreException, KeyLoadingException, UnrecoverableKeyException, NoSuchAlgorithmException,
                     KeyGeneratingException, NoSuchProviderException {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(keysDirPath, "keysDirPath must not be null");
         Objects.requireNonNull(password, "password must not be null");
+        Objects.requireNonNull(localNodes, LOCAL_NODES_MUST_NOT_BE_NULL);
         final int n = addressBook.getSize();
 
         final List<String> names = new ArrayList<>();
@@ -376,9 +376,9 @@ public final class CryptoStatic {
         for (int i = 0; i < n; i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
-            if (!AddressBookNetworkUtils.isLocal(address)) {
+            if (!localNodes.contains(address.getNodeId())) {
                 // in case we are not creating keys but loading them from disk, we do not need to create
-                // a KeysAndCerts object for every node, just the local ones
+                // a KeysAndCerts object for every node, just the ones that are started.
                 continue;
             }
             final String name = nameToAlias(addressBook.getAddress(nodeId).getSelfName());
@@ -532,12 +532,16 @@ public final class CryptoStatic {
      *
      * @param addressBook   the current address book
      * @param configuration the current configuration
+     * @param localNodes  the local nodes that need private keys loaded
      * @return a map of KeysAndCerts objects, one for each node
      */
     public static Map<NodeId, KeysAndCerts> initNodeSecurity(
-            @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
+            @NonNull final AddressBook addressBook,
+            @NonNull final Configuration configuration,
+            @NonNull final Set<NodeId> localNodes) {
         Objects.requireNonNull(addressBook, ADDRESS_BOOK_MUST_NOT_BE_NULL);
         Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(localNodes, LOCAL_NODES_MUST_NOT_BE_NULL);
 
         final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
         final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
@@ -556,7 +560,7 @@ public final class CryptoStatic {
                 logger.debug(STARTUP.getMarker(), "About to start loading keys");
                 if (cryptoConfig.enableNewKeyStoreModel()) {
                     logger.debug(STARTUP.getMarker(), "Reading keys using the enhanced key loader");
-                    keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration)
+                    keysAndCerts = EnhancedKeyStoreLoader.using(addressBook, configuration, localNodes)
                             .migrate()
                             .scan()
                             .generate()
@@ -568,7 +572,8 @@ public final class CryptoStatic {
                     keysAndCerts = loadKeysAndCerts(
                             addressBook,
                             pathsConfig.getKeysDirPath(),
-                            cryptoConfig.keystorePassword().toCharArray());
+                            cryptoConfig.keystorePassword().toCharArray(),
+                            localNodes);
                 }
                 logger.debug(STARTUP.getMarker(), "Done loading keys");
             } else {
@@ -630,22 +635,6 @@ public final class CryptoStatic {
             store.setCertificateEntry(SIGNING.storeName(name), sigCert);
         }
         return store;
-    }
-
-    /**
-     * Generate a {@link BlsKeyPair} using a {@link SignatureSchema} and a {@link SecureRandom} instance
-     * @param secureRandom the secure random number generator to use
-     * @return a new {@link BlsKeyPair}
-     * @throws NoSuchAlgorithmException the algorithm is not supported
-     */
-    public static BlsKeyPair generateBlsKeyPair(@Nullable final SecureRandom secureRandom)
-            throws NoSuchAlgorithmException {
-        if (secureRandom == null) {
-            logger.debug("Generating a new BLS key pair using a default secure random number generator");
-            return BlsKeyPair.generate(SIGNATURE_SCHEMA);
-        }
-        logger.debug("Generating a new BLS key pair using a custom secure random number generator");
-        return BlsKeyPair.generate(SIGNATURE_SCHEMA, secureRandom);
     }
 
     /**

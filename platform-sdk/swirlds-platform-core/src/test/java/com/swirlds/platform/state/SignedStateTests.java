@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -32,10 +32,11 @@ import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -73,14 +74,14 @@ class SignedStateTests {
      * @param reserveCallback this method is called when the State is reserved
      * @param releaseCallback this method is called when the State is released
      */
-    private PlatformMerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
-        final var real = new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(real);
+    private PlatformMerkleStateRoot buildMockState(
+            final Random random, final Runnable reserveCallback, final Runnable releaseCallback) {
+        final var real = new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(real);
+        RosterUtils.setActiveRoster(real, RandomRosterBuilder.create(random).build(), 0L);
         final PlatformMerkleStateRoot state = spy(real);
 
         final PlatformStateModifier platformState = new PlatformState();
-        platformState.setAddressBook(mock(AddressBook.class));
         when(state.getWritablePlatformState()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
@@ -112,6 +113,7 @@ class SignedStateTests {
         final AtomicBoolean released = new AtomicBoolean(false);
 
         final PlatformMerkleStateRoot state = buildMockState(
+                random,
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -173,6 +175,7 @@ class SignedStateTests {
         final Thread mainThread = Thread.currentThread();
 
         final PlatformMerkleStateRoot state = buildMockState(
+                random,
                 () -> {
                     assertFalse(reserved.get(), "should only be reserved once");
                     reserved.set(true);
@@ -221,8 +224,8 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final PlatformMerkleStateRoot state = spy(new PlatformMerkleStateRoot(
-                FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major())));
+        final PlatformMerkleStateRoot state =
+                spy(new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major())));
         final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
         when(state.getReadablePlatformState()).thenReturn(platformState);

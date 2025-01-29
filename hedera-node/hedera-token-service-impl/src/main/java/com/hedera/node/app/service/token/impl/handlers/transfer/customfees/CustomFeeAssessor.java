@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,18 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             royaltyFeeAssessor.assessRoyaltyFees(token, sender, receiver, result);
         }
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
+    }
+
+    /**
+     * Converts the transfer body to a fixed fee.
+     * If the transfers in the body contain more than one sender and one receiver, an exception is thrown.
+     *
+     * @param body simple transfer body representing the custom fixed fee
+     * @param result assessment result
+     */
+    public void convertTransferToFixedFee(
+            @NonNull final CryptoTransferTransactionBody body, @NonNull final AssessmentResult result) {
+        fixedFeeAssessor.convertTransferToFixedFee(body, result);
     }
 
     /**

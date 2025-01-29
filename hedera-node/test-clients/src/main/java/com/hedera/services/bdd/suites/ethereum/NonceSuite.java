@@ -333,17 +333,16 @@ public class NonceSuite {
 
     @HapiTest
     final Stream<DynamicTest> nonceNotUpdatedForNonEthereumTransaction() {
-        return defaultHapiSpec("nonceNotUpdatedForNonEthereumTransaction")
-                .given(
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(INTERNAL_CALLEE_CONTRACT),
-                        contractCreate(INTERNAL_CALLEE_CONTRACT))
-                .when(contractCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
+        return hapiTest(
+                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                uploadInitCode(INTERNAL_CALLEE_CONTRACT),
+                contractCreate(INTERNAL_CALLEE_CONTRACT),
+                contractCall(INTERNAL_CALLEE_CONTRACT, EXTERNAL_FUNCTION)
                         .gas(ENOUGH_GAS_LIMIT)
                         .payingWith(RELAYER)
                         .signingWith(RELAYER)
-                        .via(TX))
-                .then(getAccountInfo(RELAYER).has(accountWith().nonce(0L)));
+                        .via(TX),
+                getAccountInfo(RELAYER).has(accountWith().nonce(0L)));
     }
 
     @HapiTest
@@ -832,13 +831,12 @@ public class NonceSuite {
     // depends on https://github.com/hashgraph/hedera-services/pull/11359
     @HapiTest
     final Stream<DynamicTest> nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate() {
-        return defaultHapiSpec("nonceUpdatedAfterEvmReversionDueSendingValueToHederaPrecompileEthContractCreate")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
-                        uploadInitCode(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT))
-                .when(ethereumContractCreate(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT)
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS)),
+                uploadInitCode(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT),
+                ethereumContractCreate(REVERTER_CONSTRUCTOR_CALL_WITH_VALUE_TO_HEDERA_PRECOMPILE_CONTRACT)
                         .balance(1L)
                         .type(EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -846,14 +844,12 @@ public class NonceSuite {
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
                         .hasKnownStatus(INVALID_CONTRACT_ID)
-                        .via(TX))
-                .then(
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(1L)),
-                        getTxnRecord(TX)
-                                .hasPriority(recordWith()
-                                        .status(INVALID_CONTRACT_ID)
-                                        .contractCreateResult(resultWith().signerNonce(1L))));
+                        .via(TX),
+                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)),
+                getTxnRecord(TX)
+                        .hasPriority(recordWith()
+                                .status(INVALID_CONTRACT_ID)
+                                .contractCreateResult(resultWith().signerNonce(1L))));
     }
 
     @HapiTest
@@ -879,14 +875,13 @@ public class NonceSuite {
     @HapiTest
     final Stream<DynamicTest> revertsWhenSenderDoesNotExist() {
         AtomicReference<AccountID> receiverId = new AtomicReference<>();
-        return defaultHapiSpec("revertsWhenSenderDoesNotExist")
-                .given(
-                        cryptoCreate(RECEIVER).balance(0L).exposingCreatedIdTo(receiverId::set),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        uploadInitCode(INTERNAL_CALLER_CONTRACT),
-                        contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR))
-                .when(withOpContext((spec, op) -> allRunFor(
+        return hapiTest(
+                cryptoCreate(RECEIVER).balance(0L).exposingCreatedIdTo(receiverId::set),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                uploadInitCode(INTERNAL_CALLER_CONTRACT),
+                contractCreate(INTERNAL_CALLER_CONTRACT).balance(ONE_HBAR),
+                withOpContext((spec, op) -> allRunFor(
                         spec,
                         ethereumCall(
                                         INTERNAL_CALLER_CONTRACT,
@@ -898,8 +893,8 @@ public class NonceSuite {
                                 .nonce(0)
                                 .gasLimit(ENOUGH_GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID)
-                                .via(TX))))
-                .then(getTxnRecord(TX)
+                                .via(TX))),
+                getTxnRecord(TX)
                         .hasPriority(
                                 recordWith().contractCallResult(resultWith().signerNonce(0L))));
     }

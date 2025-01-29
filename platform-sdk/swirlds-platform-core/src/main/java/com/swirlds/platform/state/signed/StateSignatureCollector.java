@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@
 package com.swirlds.platform.state.signed;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.swirlds.common.wiring.component.InputWireLabel;
+import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * Collects signatures for signed states. This class ensures that all the non-ancient states that are not fully signed
@@ -53,7 +54,7 @@ public interface StateSignatureCollector {
     @InputWireLabel("preconsensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
+            @NonNull Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
 
     /**
      * Handle postconsensus state signatures.
@@ -64,7 +65,7 @@ public interface StateSignatureCollector {
     @InputWireLabel("post consensus state signatures")
     @Nullable
     List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull List<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
+            @NonNull Queue<ScopedSystemTransaction<StateSignatureTransaction>> transactions);
 
     /**
      * Clear the internal state of this collector.

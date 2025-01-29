@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.wiring.components;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
+import static com.swirlds.component.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerType.DIRECT;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.input.InputWire;
+import com.swirlds.component.framework.wires.output.OutputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;
@@ -52,11 +52,10 @@ public record PcesReplayerWiring(
      */
     @NonNull
     public static PcesReplayerWiring create(@NonNull final WiringModel model) {
-        final TaskScheduler<NoInput> taskScheduler = model.schedulerBuilder("pcesReplayer")
+        final TaskScheduler<NoInput> taskScheduler = model.<NoInput>schedulerBuilder("pcesReplayer")
                 .withType(DIRECT)
                 .withHyperlink(platformCoreHyperlink(PcesReplayer.class))
-                .build()
-                .cast();
+                .build();
 
         return new PcesReplayerWiring(
                 taskScheduler.buildInputWire("event files to replay"),

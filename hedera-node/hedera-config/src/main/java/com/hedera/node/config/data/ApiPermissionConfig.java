@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
@@ -86,10 +89,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UPDATE_NFTS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECEIPT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECORD;
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_ENCRYPTION_KEY;
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_MESSAGE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_SHARE_SIGNATURE;
-import static com.hedera.hapi.node.base.HederaFunctionality.TSS_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -269,7 +268,10 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssEncryptionKey,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofKeyPublication,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyAssemblySignature,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofVote) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -347,11 +349,10 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_CREATE, c -> c.createNode);
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
-        permissionKeys.put(TSS_MESSAGE, c -> c.tssMessage);
-        permissionKeys.put(TSS_VOTE, c -> c.tssVote);
-        permissionKeys.put(TSS_SHARE_SIGNATURE, c -> c.tssShareSignature);
-        permissionKeys.put(TSS_ENCRYPTION_KEY, c -> c.tssEncryptionKey);
         permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
+        permissionKeys.put(HISTORY_PROOF_KEY_PUBLICATION, c -> c.historyProofKeyPublication);
+        permissionKeys.put(HISTORY_ASSEMBLY_SIGNATURE, c -> c.historyAssemblySignature);
+        permissionKeys.put(HISTORY_PROOF_VOTE, c -> c.historyProofVote);
     }
 
     /**

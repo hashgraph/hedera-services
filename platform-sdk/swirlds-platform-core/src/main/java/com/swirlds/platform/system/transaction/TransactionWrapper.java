@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventTransaction;
-import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.util.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,6 +28,7 @@ import java.util.Objects;
  * A transaction that may or may not reach consensus.
  */
 public non-sealed class TransactionWrapper implements ConsensusTransaction {
+
     /**
      * The consensus timestamp of this transaction, or null if consensus has not yet been reached.
      * NOT serialized and not part of object equality or hash code
@@ -38,21 +37,11 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
     /** An optional metadata object set by the application */
     private Object metadata;
     /** The protobuf data stored */
-    private final EventTransaction payload;
+    private EventTransaction payload;
     /** The hash of the transaction */
     private Bytes hash;
-
-    /**
-     * Constructs a new transaction wrapper
-     *
-     * @param transaction the hapi transaction
-     *
-     * @throws NullPointerException if transaction is null
-     */
-    public TransactionWrapper(@NonNull final OneOf<TransactionOneOfType> transaction) {
-        Objects.requireNonNull(transaction, "transaction should not be null");
-        this.payload = new EventTransaction(transaction);
-    }
+    /** The bytes of the transaction */
+    private Bytes transaction;
 
     /**
      * Constructs a new transaction wrapper
@@ -63,6 +52,17 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     public TransactionWrapper(@NonNull final EventTransaction transaction) {
         this.payload = Objects.requireNonNull(transaction, "transaction should not be null");
+    }
+
+    /**
+     * Constructs a new transaction wrapper
+     *
+     * @param payloadBytes the serialized bytes of the transaction
+     *
+     * @throws NullPointerException if payloadBytes is null
+     */
+    public TransactionWrapper(@NonNull final Bytes payloadBytes) {
+        this.transaction = payloadBytes;
     }
 
     /**
@@ -77,7 +77,8 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
             return false;
         }
         TransactionWrapper that = (TransactionWrapper) o;
-        return Objects.equals(getTransaction(), that.getTransaction());
+        return Objects.equals(getTransaction(), that.getTransaction())
+                && Objects.equals(getApplicationTransaction(), that.getApplicationTransaction());
     }
 
     /**
@@ -85,7 +86,7 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(getTransaction());
+        return Objects.hash(getTransaction(), getApplicationTransaction());
     }
 
     /**
@@ -112,9 +113,16 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      * @return the payload
      */
     @NonNull
-    @Override
     public EventTransaction getTransaction() {
         return payload;
+    }
+
+    @NonNull
+    @Override
+    public Bytes getApplicationTransaction() {
+        return !isSystem()
+                ? (getTransaction() != null ? getTransaction().transaction().as() : transaction)
+                : Bytes.EMPTY;
     }
 
     /**
@@ -125,7 +133,14 @@ public non-sealed class TransactionWrapper implements ConsensusTransaction {
      */
     @Override
     public int getSize() {
-        return TransactionUtils.getLegacyTransactionSize(payload);
+        return transaction == null
+                ? TransactionUtils.getLegacyTransactionSize(payload)
+                : TransactionUtils.getLegacyTransactionSize(transaction);
+    }
+
+    @Override
+    public boolean isSystem() {
+        return TransactionUtils.isSystemTransaction(getTransaction());
     }
 
     /**

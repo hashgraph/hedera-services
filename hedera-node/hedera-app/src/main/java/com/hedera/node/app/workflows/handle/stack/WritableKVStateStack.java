@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
      * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}
      *
      * @param writableStatesStack the {@link WritableStatesStack}
-     * @param stateKey the state key
+     * @param stateKey            the state key
      * @throws NullPointerException if any of the arguments is {@code null}
      */
     public WritableKVStateStack(
@@ -66,12 +66,18 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return writableStatesStack.getCurrent().get(stateKey);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public String getStateKey() {
         return stateKey;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public V get(@NonNull final K key) {
@@ -84,6 +90,9 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return getCurrent().getForModify(key);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -91,39 +100,61 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
         return (V) writableStatesStack.getRoot().get(stateKey).get(key);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void put(@NonNull final K key, @NonNull final V value) {
         getCurrent().put(key, value);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void remove(@NonNull final K key) {
         getCurrent().remove(key);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public Iterator<K> keys() {
         return getCurrent().keys();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public Set<K> modifiedKeys() {
         return getCurrent().modifiedKeys();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @NonNull
     public Set<K> readKeys() {
         return getCurrent().readKeys();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
+    @Deprecated
     public long size() {
         return getCurrent().size();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setMetrics(@NonNull StoreMetrics storeMetrics) {
         getCurrent().setMetrics(storeMetrics);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,10 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
-import com.swirlds.common.wiring.WiringConfig;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
+import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.platform.NodeIdConverter;
+import com.swirlds.component.framework.WiringConfig;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.ConfigurationExtension;
 import com.swirlds.logging.api.internal.configuration.InternalLoggingConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
@@ -34,6 +36,9 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.ProtocolConfig;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.config.NetworkEndpoint;
+import com.swirlds.platform.gossip.config.NetworkEndpointConverter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
@@ -91,12 +96,16 @@ public class PlatformConfigurationExtension implements ConfigurationExtension {
                 VirtualMapConfig.class,
                 WiringConfig.class,
                 InternalLoggingConfig.class,
-                ComponentWiringConfig.class);
+                ComponentWiringConfig.class,
+                GossipConfig.class);
     }
 
     @NonNull
     @Override
     public Set<ConverterPair<?>> getConverters() {
-        return Set.of(new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse));
+        return Set.of(
+                new ConverterPair<>(TaskSchedulerConfiguration.class, TaskSchedulerConfiguration::parse),
+                new ConverterPair<>(NetworkEndpoint.class, new NetworkEndpointConverter()),
+                new ConverterPair<>(NodeId.class, new NodeIdConverter()));
     }
 }

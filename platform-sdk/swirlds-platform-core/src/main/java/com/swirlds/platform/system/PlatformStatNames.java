@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package com.swirlds.platform.system;
  * A class that holds all the user readable names
  */
 public abstract class PlatformStatNames {
-    /** number of consensus transactions per second handled by SwirldState.handleConsensusRound() */
+    /** number of consensus transactions per second handled by StateLifecycles.onHandleConsensusRound() */
     public static final String TRANSACTIONS_HANDLED_PER_SECOND = "transH_per_sec";
     /** number of consensus events in queue waiting to be handled */
     public static final String CONSENSUS_QUEUE_SIZE = "consEvents";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.cache;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.CLASS_ID;
 import static java.util.Objects.requireNonNull;
 
@@ -493,18 +494,16 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Fire off the cleaning threads to go and clear out data in the indexes that doesn't need
         // to be there anymore.
-        getCleaningPool(virtualMapConfig).execute(() -> {
-            purge(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
-            purge(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
-            purge(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
+        purge(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
+        purge(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
+        purge(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
 
-            dirtyLeaves = null;
-            dirtyLeafPaths = null;
-            dirtyHashes = null;
-        });
+        dirtyLeaves = null;
+        dirtyLeafPaths = null;
+        dirtyHashes = null;
 
         if (logger.isTraceEnabled()) {
-            logger.trace("Released {}", fastCopyVersion);
+            logger.trace(VIRTUAL_MERKLE_STATS.getMarker(), "Released {}", fastCopyVersion);
         }
 
         return true;
@@ -553,6 +552,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
             if (logger.isTraceEnabled()) {
                 logger.trace(
+                        VIRTUAL_MERKLE_STATS.getMarker(),
                         "Merged version {}, {} dirty leaves, {} dirty internals",
                         fastCopyVersion,
                         dirtyLeaves.size(),
@@ -1434,11 +1434,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void purge(
+    private static <K, V> StandardFuture<Void> purge(
             final ConcurrentArray<Mutation<K, V>> array,
             final Map<K, Mutation<K, V>> index,
             @NonNull final VirtualMapConfig virtualMapConfig) {
-        array.parallelTraverse(getCleaningPool(virtualMapConfig), element -> {
+        return array.parallelTraverse(getCleaningPool(virtualMapConfig), element -> {
             if (element.isFiltered()) {
                 return;
             }
@@ -1491,54 +1491,65 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         final Consumer<Mutation<K, V>> action = mutation -> {
             // local variable is required because mutation.next can be changed by another thread to null
             // see https://github.com/hashgraph/hedera-services/issues/7046 for the context
-            Mutation<K, V> nextMutation = mutation.next;
+            final Mutation<K, V> nextMutation = mutation.next;
+            if (nextMutation == null) {
+                return;
+            }
             mutation.next = null;
-            if (nextMutation != null) {
-                assert !nextMutation.isFiltered();
-                // There may be older mutations being purged in parallel, they should not contribute
-                // to the "filtered" counter
-                if (!nextMutation.isFiltered() && (nextMutation.version > lastReleasedVersion)) {
-                    nextMutation.setFiltered();
+            assert !nextMutation.isFiltered();
+            // There may be older mutations being purged in parallel, they should not contribute
+            // to the "filtered" counter
+            if (!nextMutation.isFiltered() && (nextMutation.version > lastReleasedVersion)) {
+                nextMutation.setFiltered();
+                filteredCounter.incrementAndGet();
+            }
+            if (!nextMutation.isNew()) {
+                return;
+            }
+            // nextMutation is to put a new element into a virtual map. The element doesn't
+            // exist in the data source. If this mutation is filtered, there must be a newer
+            // mutation for the same key. If that newer mutation has the "deleted" flag, the
+            // element should never be flushed to disk
+            final Mutation<K, V> latestMutation = index.get(mutation.key);
+            // If latestMutation is null, lookup() can handle it just fine
+            final Mutation<K, V> latestMutationUpToVersion = lookup(latestMutation, newestVersion);
+            if (latestMutationUpToVersion == null) {
+                // Mutations are processed on many threads, see array.parallelTraverse() call
+                // below. The key may be removed from the index or the latest mutation up to
+                // newestVersion may be removed in parallel on a different thread
+                return;
+            }
+            assert !latestMutationUpToVersion.isFiltered();
+            if (latestMutationUpToVersion.isDeleted()) {
+                if (!latestMutationUpToVersion.isFiltered()) {
+                    latestMutationUpToVersion.setFiltered();
                     filteredCounter.incrementAndGet();
                 }
-                if (nextMutation.isNew()) {
-                    // nextMutation is to put a new element into a virtual map. The element doesn't
-                    // exist in the data source. If this mutation is filtered, there must be a newer
-                    // mutation for the same key. If that newer mutation has the "deleted" flag, the
-                    // element should never be flushed to disk
-                    final Mutation<K, V> latestMutation = index.get(mutation.key);
-                    assert latestMutation != null;
-                    final Mutation<K, V> latestMutationUpToVersion = lookup(latestMutation, newestVersion);
-                    assert latestMutationUpToVersion != null;
-                    assert !latestMutationUpToVersion.isFiltered();
-                    if (latestMutationUpToVersion.isDeleted()) {
-                        if (!latestMutationUpToVersion.isFiltered()) {
-                            latestMutationUpToVersion.setFiltered();
-                            filteredCounter.incrementAndGet();
-                        }
-                        // If the latest mutation up to newestVersion is "deleted", and there are no
-                        // newer mutations, the whole entry for the key can be removed from the index.
-                        // It's safe to do so here, as there are no references to copies older than
-                        // newestVersion and there are no mutations in versions newer than newestVersion
-                        index.compute(mutation.key, (k, v) -> {
-                            assert v != null;
-                            if (v == latestMutationUpToVersion) {
-                                return null;
-                            }
-                            Mutation<K, V> m = v;
-                            while (m.next != latestMutationUpToVersion) {
-                                m = m.next;
-                            }
-                            assert !m.isFiltered();
-                            assert m.version > newestVersion;
-                            m.next = null;
-                            return v;
-                        });
-                    } else {
-                        // Propagate the "new" flag to the newer mutation
-                        latestMutationUpToVersion.setNew();
+                // If the latest mutation up to newestVersion is "deleted", and there are no
+                // newer mutations, the whole entry for the key can be removed from the index.
+                // It's safe to do so here, as there are no references to copies older than
+                // newestVersion and there are no mutations in versions newer than newestVersion
+                index.compute(mutation.key, (k, v) -> {
+                    assert v != null;
+                    if (v == latestMutationUpToVersion) {
+                        return null;
                     }
-                }
+                    Mutation<K, V> m = v;
+                    while ((m != null) && (m.next != latestMutationUpToVersion)) {
+                        m = m.next;
+                    }
+                    // m may be null, if latestMutationUpToVersion was removed from the list of
+                    // mutations in a parallel thread
+                    if (m != null) {
+                        assert !m.isFiltered();
+                        assert m.version > newestVersion;
+                        m.next = null;
+                    }
+                    return v;
+                });
+            } else {
+                // Propagate the "new" flag to the newer mutation
+                latestMutationUpToVersion.setNew();
             }
         };
         try {

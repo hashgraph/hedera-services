@@ -1,14 +1,29 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.swirlds.platform.builder;
 
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getGlobalMetrics;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.roster.RosterUtils.buildAddressBook;
 import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -102,7 +117,7 @@ import java.util.Objects;
  *     <li>A component must not communicate with other components except through the wiring framework
  *         (with a very small number of exceptions due to tech debt that has not yet been paid off).</li>
  *     <li>A component should have an interface and at default implementation.</li>
- *     <li>A component should use {@link com.swirlds.common.wiring.component.ComponentWiring ComponentWiring} to define
+ *     <li>A component should use {@link ComponentWiring ComponentWiring} to define
  *         wiring API.</li>
  *     <li>The order in which components are constructed should not matter.</li>
  *     <li>A component must not be a static singleton or use static stateful variables in any way.</li>
@@ -726,7 +741,8 @@ public class PlatformComponentBuilder {
         if (transactionPrehandler == null) {
             transactionPrehandler = new DefaultTransactionPrehandler(
                     blocks.platformContext(),
-                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"));
+                    () -> blocks.latestImmutableStateProviderReference().get().apply("transaction prehandle"),
+                    blocks.stateLifecycles());
         }
         return transactionPrehandler;
     }
@@ -876,7 +892,7 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    buildAddressBook(blocks.rosterHistory().getCurrentRoster()),
+                    blocks.rosterHistory().getCurrentRoster(),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

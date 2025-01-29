@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.hedera.node.app.store;
 import static com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider.TOKEN_SERVICE_API_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -52,7 +54,8 @@ public class ServiceApiFactory {
         final var provider = API_PROVIDER.get(apiInterface);
         if (provider != null) {
             final var writableStates = state.getWritableStates(provider.serviceName());
-            final var api = provider.newInstance(configuration, storeMetricsService, writableStates);
+            final var entityCounters = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
+            final var api = provider.newInstance(configuration, storeMetricsService, writableStates, entityCounters);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);
         }

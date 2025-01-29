@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import com.swirlds.logging.legacy.payload.ReconnectDataUsagePayload;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -57,10 +57,11 @@ public class ReconnectLearner {
 
     private final Connection connection;
     private final Roster roster;
-    private final MerkleRoot currentState;
+    private final PlatformMerkleStateRoot currentState;
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
+
     private SigSet sigSet;
     private final PlatformContext platformContext;
     /**
@@ -89,7 +90,7 @@ public class ReconnectLearner {
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
             @NonNull final Roster roster,
-            @NonNull final MerkleRoot currentState,
+            @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
 
@@ -204,7 +205,7 @@ public class ReconnectLearner {
                 platformContext.getMetrics());
         synchronizer.synchronize();
 
-        final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();
+        final PlatformMerkleStateRoot state = (PlatformMerkleStateRoot) synchronizer.getRoot();
         final SignedState newSignedState = new SignedState(
                 platformContext.getConfiguration(),
                 CryptoStatic::verifySignature,

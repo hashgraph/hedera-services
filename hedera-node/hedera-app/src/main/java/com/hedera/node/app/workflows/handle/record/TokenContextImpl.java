@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -47,14 +48,15 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final Instant consensusTime) {
+            @NonNull final Instant consensusTime,
+            @NonNull final WritableEntityCounters entityCounters) {
         this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
-                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
+                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService, entityCounters);
         this.consensusTime = requireNonNull(consensusTime, "consensusTime must not be null");
     }
 

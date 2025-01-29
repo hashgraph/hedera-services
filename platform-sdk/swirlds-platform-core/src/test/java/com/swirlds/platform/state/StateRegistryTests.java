@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.swirlds.platform.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.nextInt;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -83,10 +83,10 @@ class StateRegistryTests {
                 RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
                 "no states have been created yet");
 
-        final List<MerkleRoot> states = new LinkedList<>();
+        final List<PlatformMerkleStateRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
-            states.add(new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier));
+            states.add(new PlatformMerkleStateRoot(softwareVersionSupplier));
             assertEquals(
                     states.size(),
                     RuntimeObjectRegistry.getActiveObjectsCount(PlatformMerkleStateRoot.class),
@@ -94,10 +94,9 @@ class StateRegistryTests {
         }
 
         // Fast copy a state
-        final MerkleRoot stateToCopy =
-                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final PlatformMerkleStateRoot stateToCopy = new PlatformMerkleStateRoot(softwareVersionSupplier);
         states.add(stateToCopy);
-        final MerkleRoot copyOfStateToCopy = stateToCopy.copy();
+        final PlatformMerkleStateRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
@@ -107,8 +106,7 @@ class StateRegistryTests {
         final Path dir = testDirectory;
 
         // Deserialize a state
-        final PlatformMerkleStateRoot stateToSerialize =
-                new PlatformMerkleStateRoot(FAKE_MERKLE_STATE_LIFECYCLES, softwareVersionSupplier);
+        final PlatformMerkleStateRoot stateToSerialize = new PlatformMerkleStateRoot(softwareVersionSupplier);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateToSerialize);
         final var platformState = stateToSerialize.getWritablePlatformState();
         platformState.bulkUpdate(v -> {
@@ -120,7 +118,7 @@ class StateRegistryTests {
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final MerkleRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final PlatformMerkleStateRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),

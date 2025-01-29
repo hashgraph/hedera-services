@@ -28,11 +28,13 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.co
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
+import com.hedera.node.app.service.contract.impl.exec.utils.SchedulingUtility;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -224,5 +226,14 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
             recordBuilder.status(status);
         }
         return completionWith(gasRequirement, recordBuilder, outputFn.apply(recordBuilder));
+    }
+
+    @NonNull
+    @Override
+    public SchedulableTransactionBody asSchedulableDispatchIn() {
+        if (syntheticBody == null) {
+            return super.asSchedulableDispatchIn();
+        }
+        return SchedulingUtility.ordinaryChildAsSchedulable(syntheticBody);
     }
 }

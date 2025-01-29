@@ -726,6 +726,12 @@ enum SubType {
      * containing a ContractCall.
      */
     SCHEDULE_CREATE_CONTRACT_CALL = 5;
+
+    /**
+     * The resource cost for the transaction type includes a TopicCreate
+     * with custom fees.
+     */
+    TOPIC_CREATE_WITH_CUSTOM_FEES = 6;
 }
 
 /**
@@ -1193,6 +1199,10 @@ message SignatureMap {
  * The transactions and queries supported by Hedera Hashgraph.
  */
 enum HederaFunctionality {
+    // FUTURE - Uncomment when https://github.com/hashgraph/pbj/issues/339 is fixed;
+    // currently the PBJ-generated unit tests fail when using reserved ordinals
+    // reserved 96, 97, 98, 99;
+
     /**
      * Unused - The first value is unused because this default value is
      * ambiguous with an "unset" value and therefore should not be used.
@@ -1645,29 +1655,24 @@ enum HederaFunctionality {
     TokenClaimAirdrop = 95;
 
     /**
-     * A message produced as part of Threshold Signature Scheme (TSS) processing.
-     */
-    TssMessage = 96;
-
-    /**
-     * Submit a vote as part of the Threshold Signature Scheme (TSS) processing.
-     */
-    TssVote = 97;
-
-    /**
-     * Submit a node signature as part of the Threshold Signature Scheme (TSS) processing.
-     */
-    TssShareSignature = 98;
-
-    /**
-     * Submit a node public tss encryption key as part of the Threshold Signature Scheme (TSS).
-     */
-    TssEncryptionKey = 99;
-
-    /**
      * Submit a signature of a state root hash gossiped to other nodes
      */
     StateSignatureTransaction = 100;
+
+    /**
+     * Sign a particular history assembly.
+     */
+    HistoryAssemblySignature = 104;
+
+    /**
+     * Publish a roster history proof key to the network.
+     */
+    HistoryProofKeyPublication = 105;
+
+    /**
+     * Vote for a particular history proof.
+     */
+    HistoryProofVote = 106;
 }
 
 /**

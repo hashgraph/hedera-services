@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package com.swirlds.platform.turtle.runner;
-
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -105,8 +103,7 @@ public class Turtle {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(
                             MerkleStateRoot.class,
-                            () -> new PlatformMerkleStateRoot(
-                                    FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1))));
+                            () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(1))));
         } catch (final ConstructableRegistryException e) {
             throw new RuntimeException(e);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package com.swirlds.platform.test.fixtures.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -39,7 +39,6 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
@@ -77,7 +76,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private MerkleRoot state;
+    private PlatformMerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
     private Roster roster;
@@ -138,16 +137,15 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
-        final MerkleRoot stateInstance;
+        final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
-                stateInstance = new BlockingSwirldState();
+                stateInstance = new BlockingState();
             } else {
-                stateInstance = new PlatformMerkleStateRoot(
-                        FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
+                stateInstance = new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
+            stateInstance.setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }
@@ -200,7 +198,7 @@ public class RandomSignedStateGenerator {
         } else {
             consensusSnapshotInstance = consensusSnapshot;
         }
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState((MerkleStateRoot) stateInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateInstance);
         final PlatformStateModifier platformState = stateInstance.getWritablePlatformState();
 
         platformState.bulkUpdate(v -> {
@@ -211,7 +209,7 @@ public class RandomSignedStateGenerator {
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
 
-        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(stateInstance);
         RosterUtils.setActiveRoster((State) stateInstance, rosterInstance, roundInstance);
 
         if (signatureVerifier == null) {
@@ -457,10 +455,10 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set if this state should use a {@link BlockingSwirldState} instead of a {@link MerkleStateRoot}.
+     * Set if this state should use a {@link BlockingState} instead of a {@link MerkleStateRoot}.
      * This flag is fasle by default.
      *
-     * @param useBlockingState true if this state should use {@link BlockingSwirldState}
+     * @param useBlockingState true if this state should use {@link BlockingState}
      * @return this object
      */
     public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {

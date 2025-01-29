@@ -1,5 +1,18 @@
-import com.swirlds.config.api.ConfigurationExtension;
-import com.swirlds.platform.config.PlatformConfigurationExtension;
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 /**
  * The Swirlds public API module used by platform applications.
@@ -58,6 +71,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
     exports com.swirlds.platform.util;
+    exports com.swirlds.platform.gossip.config;
 
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
@@ -129,29 +143,29 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.roster;
 
     requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.component.framework;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.state.impl;
-    requires transitive com.fasterxml.jackson.annotation;
-    requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.cryptography.bls;
-    requires transitive com.hedera.pbj.runtime;
-    requires transitive info.picocli;
-    requires transitive org.apache.logging.log4j;
     requires transitive org.hiero.consensus.gossip;
     requires transitive org.hiero.event.creator;
+    requires transitive com.fasterxml.jackson.annotation;
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive info.picocli;
+    requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
+    requires org.hiero.event.creator.impl;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires com.github.spotbugs.annotations;
-    requires com.hedera.cryptography.pairings.api;
     requires java.desktop;
     requires java.management;
     requires java.scripting;
@@ -159,8 +173,7 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires org.hiero.event.creator.impl;
 
-    provides ConfigurationExtension with
-            PlatformConfigurationExtension;
+    provides com.swirlds.config.api.ConfigurationExtension with
+            com.swirlds.platform.config.PlatformConfigurationExtension;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -63,7 +63,7 @@ public class ReconnectLearnerFactory {
      * @param workingState the state to use to perform a delta based reconnect
      * @return a new instance
      */
-    public ReconnectLearner create(final Connection conn, final MerkleRoot workingState) {
+    public ReconnectLearner create(final Connection conn, final PlatformMerkleStateRoot workingState) {
         return new ReconnectLearner(
                 platformContext, threadManager, conn, roster, workingState, reconnectSocketTimeout, statistics);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,8 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.stores.WritableTssStore;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.WritableRosterStore;
 import com.swirlds.state.State;
@@ -84,19 +83,26 @@ public class WritableStoreFactory {
                 WritableNetworkStakingRewardsStore.class,
                 new StoreEntry(
                         TokenService.NAME,
-                        (states, config, metrics) -> new WritableNetworkStakingRewardsStore(states)));
+                        (states, config, metrics, entityCounters) -> new WritableNetworkStakingRewardsStore(states)));
         newMap.put(
                 WritableStakingInfoStore.class,
-                new StoreEntry(TokenService.NAME, (states, config, metrics) -> new WritableStakingInfoStore(states)));
+                new StoreEntry(
+                        TokenService.NAME,
+                        (states, config, metrics, entityCounters) ->
+                                new WritableStakingInfoStore(states, entityCounters)));
         // FreezeService
         newMap.put(
                 WritableFreezeStore.class,
-                new StoreEntry(FreezeService.NAME, (states, config, metrics) -> new WritableFreezeStore(states)));
+                new StoreEntry(
+                        FreezeService.NAME,
+                        (states, config, metrics, entityCounters) -> new WritableFreezeStore(states)));
         // FileService
         newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
         newMap.put(
                 WritableUpgradeFileStore.class,
-                new StoreEntry(FileService.NAME, (states, config, metrics) -> new WritableUpgradeFileStore(states)));
+                new StoreEntry(
+                        FileService.NAME,
+                        (states, config, metrics, entityCounters) -> new WritableUpgradeFileStore(states)));
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,
@@ -104,17 +110,17 @@ public class WritableStoreFactory {
         // EntityIdService
         newMap.put(
                 WritableEntityIdStore.class,
-                new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
+                new StoreEntry(
+                        EntityIdService.NAME,
+                        (states, config, metrics, entityCounters) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
         // Roster Service
         newMap.put(
                 WritableRosterStore.class,
-                new StoreEntry(RosterService.NAME, (states, config, metrics) -> new WritableRosterStore(states)));
-        // TSSBase Service
-        newMap.put(
-                WritableTssStore.class,
-                new StoreEntry(TssBaseService.NAME, (states, config, metrics) -> new WritableTssStore(states)));
+                new StoreEntry(
+                        RosterService.NAME,
+                        (states, config, metrics, entityCounters) -> new WritableRosterStore(states)));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -122,6 +128,7 @@ public class WritableStoreFactory {
     private final WritableStates states;
     private final Configuration configuration;
     private final StoreMetricsService storeMetricsService;
+    private final WritableEntityCounters entityCounters;
 
     /**
      * Constructor of {@code WritableStoreFactory}
@@ -137,13 +144,15 @@ public class WritableStoreFactory {
             @NonNull final State state,
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
         requireNonNull(state);
         this.serviceName = requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =
                 requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
         this.states = state.getWritableStates(serviceName);
+        this.entityCounters = requireNonNull(entityCounters);
     }
 
     /**
@@ -160,7 +169,7 @@ public class WritableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
-            final var store = entry.factory().create(states, configuration, storeMetricsService);
+            final var store = entry.factory().create(states, configuration, storeMetricsService, entityCounters);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered
@@ -183,7 +192,8 @@ public class WritableStoreFactory {
         Object create(
                 @NonNull WritableStates states,
                 @NonNull Configuration configuration,
-                @NonNull StoreMetricsService storeMetricsService);
+                @NonNull StoreMetricsService storeMetricsService,
+                @NonNull WritableEntityCounters entityCounters);
     }
 
     private record StoreEntry(@NonNull String name, @NonNull StoreFactory factory) {}

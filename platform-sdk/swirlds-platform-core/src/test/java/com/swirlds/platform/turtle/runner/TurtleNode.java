@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupGlobalMetrics;
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
+import static com.swirlds.platform.turtle.runner.TurtleStateLifecycles.TURTLE_STATE_LIFECYCLES;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -28,16 +29,16 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.DeterministicWiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.component.framework.model.DeterministicWiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
@@ -46,9 +47,7 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Supplier;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -103,26 +102,32 @@ public class TurtleNode {
         model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
-        final Supplier<MerkleRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
-
+        MerkleDb.resetDefaultInstancePath();
         final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, nodeId);
 
         final var reservedState = getInitialState(
-                configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
+                configuration,
+                recycleBin,
+                version,
+                TurtleTestingToolState::getStateRootNode,
+                "foo",
+                "bar",
+                nodeId,
+                addressBook);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo",
                         "bar",
                         new BasicSoftwareVersion(1),
                         initialState,
+                        TURTLE_STATE_LIFECYCLES,
                         nodeId,
                         AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                        RosterUtils.buildRosterHistory(
-                                (State) initialState.get().getState()))
+                        RosterUtils.buildRosterHistory(initialState.get().getState()))
                 .withModel(model)
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withKeysAndCerts(privateKeys)

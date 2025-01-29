@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
-import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.metrics.StateMetrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -34,16 +34,16 @@ public final class SwirldStateManagerUtils {
     private SwirldStateManagerUtils() {}
 
     /**
-     * Performs a fast copy on a {@link MerkleRoot}. The {@code state} must not be modified during execution of this method.
+     * Performs a fast copy on a {@link PlatformMerkleStateRoot}. The {@code state} must not be modified during execution of this method.
      *
      * @param state           the state object to fast copy
      * @param stats           object to record stats in
      * @param softwareVersion the current software version
      * @return the newly created state copy
      */
-    public static MerkleRoot fastCopy(
-            @NonNull final MerkleRoot state,
-            @NonNull final SwirldStateMetrics stats,
+    public static PlatformMerkleStateRoot fastCopy(
+            @NonNull final PlatformMerkleStateRoot state,
+            @NonNull final StateMetrics stats,
             @NonNull final SoftwareVersion softwareVersion) {
 
         Objects.requireNonNull(softwareVersion);
@@ -51,7 +51,7 @@ public final class SwirldStateManagerUtils {
         final long copyStart = System.nanoTime();
 
         // Create a fast copy
-        final MerkleRoot copy = state.copy();
+        final PlatformMerkleStateRoot copy = state.copy();
         final var platformState = copy.getWritablePlatformState();
         platformState.setCreationSoftwareVersion(softwareVersion);
 
