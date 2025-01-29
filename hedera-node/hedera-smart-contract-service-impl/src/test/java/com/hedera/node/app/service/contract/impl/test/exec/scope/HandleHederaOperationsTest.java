@@ -317,11 +317,7 @@ class HandleHederaOperationsTest {
     void createContractWithNonSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123L)
-                        .build())
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
@@ -356,24 +352,14 @@ class HandleHederaOperationsTest {
         assertEquals(synthTxn, dispatchOptions.body());
         assertInternalFinisherAsExpected(dispatchOptions.transactionCustomizer(), synthContractCreation);
         verify(tokenServiceApi)
-                .markAsContract(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(666L)
-                                .build(),
-                        NON_SYSTEM_ACCOUNT_ID);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test
     void translatesCreateContractHandleException() {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(124L)))
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123L)
-                        .build())
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
@@ -399,11 +385,7 @@ class HandleHederaOperationsTest {
     void createContractWithSelfAdminParentDispatchesAsExpectedThenMarksCreated() throws ParseException {
         final var parent = Account.newBuilder()
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123L)
-                        .build())
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
                 .declineReward(true)
@@ -442,13 +424,7 @@ class HandleHederaOperationsTest {
         assertInternalFinisherAsExpected(dispatchOptions.transactionCustomizer(), synthContractCreation);
         assertEquals(synthTxn, dispatchOptions.body());
         verify(tokenServiceApi)
-                .markAsContract(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(666L)
-                                .build(),
-                        NON_SYSTEM_ACCOUNT_ID);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     private void assertInternalFinisherAsExpected(
@@ -521,13 +497,7 @@ class HandleHederaOperationsTest {
             assertEquals(ContractCreateStreamBuilder.class, options.streamBuilderType());
         }));
         verify(tokenServiceApi)
-                .markAsContract(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(666L)
-                                .build(),
-                        NON_SYSTEM_ACCOUNT_ID);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test
@@ -564,13 +534,7 @@ class HandleHederaOperationsTest {
         verify(context).dispatch(captor.capture());
         assertNotSame(SUPPRESSING_TRANSACTION_CUSTOMIZER, captor.getValue().transactionCustomizer());
         verify(tokenServiceApi)
-                .markAsContract(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(666L)
-                                .build(),
-                        NON_SYSTEM_ACCOUNT_ID);
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build(), NON_SYSTEM_ACCOUNT_ID);
     }
 
     @Test

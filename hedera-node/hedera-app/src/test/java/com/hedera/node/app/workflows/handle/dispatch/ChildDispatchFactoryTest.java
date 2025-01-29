@@ -138,7 +138,7 @@ class ChildDispatchFactoryTest {
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
+            AccountID.newBuilder().accountNum(1_234L).build();
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
     private final Predicate<Key> callback = key -> true;

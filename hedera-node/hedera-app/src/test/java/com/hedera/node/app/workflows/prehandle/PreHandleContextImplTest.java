@@ -59,8 +59,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextImplTest implements Scenarios {
 
-    private static final AccountID PAYER =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3L).build();
+    private static final AccountID PAYER = AccountID.newBuilder().accountNum(3L).build();
 
     private static final Key payerKey = A_COMPLEX_KEY;
 

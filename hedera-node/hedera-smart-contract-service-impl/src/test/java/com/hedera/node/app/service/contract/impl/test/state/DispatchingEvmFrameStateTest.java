@@ -127,16 +127,10 @@ class DispatchingEvmFrameStateTest {
             ContractID.newBuilder().contractNum(1L).build();
     private static final ContractID C_CONTRACT_ID =
             ContractID.newBuilder().contractNum(2L).build();
-    private static final AccountID A_ACCOUNT_ID = AccountID.newBuilder()
-            .shardNum(1)
-            .realmNum(2)
-            .accountNum(ACCOUNT_NUM)
-            .build();
-    private static final AccountID B_ACCOUNT_ID = AccountID.newBuilder()
-            .shardNum(1)
-            .realmNum(2)
-            .accountNum(BENEFICIARY_NUM)
-            .build();
+    private static final AccountID A_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_NUM).build();
+    private static final AccountID B_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(BENEFICIARY_NUM).build();
 
     @Mock
     private HederaNativeOperations nativeOperations;

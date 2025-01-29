@@ -178,8 +178,7 @@ final class PreHandleResultTest implements Scenarios {
         @DisplayName(
                 "Node Diligence Failures only set the status and response code and the payer to be the node and the tx info")
         void nodeDiligenceFailure(@Mock TransactionInfo txInfo) {
-            final var nodeAccountId =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            final var nodeAccountId = AccountID.newBuilder().accountNum(3).build();
             final var status = INVALID_PAYER_ACCOUNT_ID;
             final var result =
                     PreHandleResult.nodeDueDiligenceFailure(nodeAccountId, status, txInfo, DEFAULT_CONFIG_VERSION);
@@ -196,11 +195,8 @@ final class PreHandleResultTest implements Scenarios {
         @Test
         @DisplayName("Pre-Handle Failures set the payer, status, responseCode, and txInfo")
         void preHandleFailure(@Mock TransactionInfo txInfo) {
-            final var payer = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(1001)
-                    .build();
+            final var payer = AccountID.newBuilder().accountNum(1001).build();
+
             final var responseCode = INVALID_PAYER_ACCOUNT_ID;
             final var result =
                     PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null, null, null, null);

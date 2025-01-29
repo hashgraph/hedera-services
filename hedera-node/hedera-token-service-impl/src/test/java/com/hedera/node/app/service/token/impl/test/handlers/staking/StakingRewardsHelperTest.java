@@ -62,10 +62,8 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void onlyNonZeroRewardsIncludedInAccountAmounts() {
-        final var zeroRewardId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
-        final var nonZeroRewardId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4321L).build();
+        final var zeroRewardId = AccountID.newBuilder().accountNum(1234L).build();
+        final var nonZeroRewardId = AccountID.newBuilder().accountNum(4321L).build();
         final var someRewards = Map.of(zeroRewardId, 0L, nonZeroRewardId, 1L);
         final var paidStakingRewards = StakingRewardsHelper.asAccountAmounts(someRewards);
         assertThat(paidStakingRewards)
@@ -82,17 +80,14 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void onlyZeroRewardPaidDoesNotNeedExternalizing() {
-        final var zeroRewardId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
+        final var zeroRewardId = AccountID.newBuilder().accountNum(1234L).build();
         assertThat(requiresExternalization(Map.of(zeroRewardId, 0L))).isFalse();
     }
 
     @Test
     void nonZeroRewardsPaidNeedsExternalizing() {
-        final var zeroRewardId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
-        final var nonZeroRewardId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4321L).build();
+        final var zeroRewardId = AccountID.newBuilder().accountNum(1234L).build();
+        final var nonZeroRewardId = AccountID.newBuilder().accountNum(4321L).build();
         final var someRewards = Map.of(zeroRewardId, 0L, nonZeroRewardId, 1L);
         assertThat(requiresExternalization(someRewards)).isTrue();
     }
@@ -102,11 +97,8 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
         final var stakeToMeRewardReceiver = AccountID.newBuilder()
                 .accountNum(account.accountId().accountNum())
                 .build();
-        final var explicitRewardReceiver = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(1234567L)
-                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
 
         final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
         final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
@@ -121,11 +113,8 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
         final var stakeToMeRewardReceiver = AccountID.newBuilder()
                 .accountNum(account.accountId().accountNum())
                 .build();
-        final var explicitRewardReceiver = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(1234567L)
-                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
 
         final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
         final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
@@ -140,11 +129,8 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
         final var stakeToMeRewardReceiver = AccountID.newBuilder()
                 .accountNum(account.accountId().accountNum())
                 .build();
-        final var explicitRewardReceiver = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(1234567L)
-                .build();
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
 
         final var stakeToMeRewardReceivers = Set.of(stakeToMeRewardReceiver);
         final var explicitRewardReceivers = Set.of(explicitRewardReceiver);
@@ -155,16 +141,11 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getsAllRewardReceiversIfExplicitlyStakedToNode() {
-        final var alreadyStakedToNodeRewardReceiver = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(payerId.accountNum())
-                .build();
-        final var explicitRewardReceiver = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(1234567L)
-                .build();
+        final var alreadyStakedToNodeRewardReceiver =
+                AccountID.newBuilder().accountNum(payerId.accountNum()).build();
+
+        final var explicitRewardReceiver =
+                AccountID.newBuilder().accountNum(1234567L).build();
 
         final var stakeToMeRewardReceivers = Set.of(alreadyStakedToNodeRewardReceiver);
         final var explicitRewardReceivers = Set.of(explicitRewardReceiver);

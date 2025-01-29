@@ -101,8 +101,7 @@ class DeleteAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesIfOwnerExists() {
-        final var missingOwner =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10000).build();
+        final var missingOwner = AccountID.newBuilder().accountNum(10000).build();
         final var txn = cryptoDeleteAllowanceTransaction(payerId, missingOwner, nonFungibleTokenId, List.of(1L, 2L));
         given(handleContext.configuration()).willReturn(configuration);
         final var nftAllowances = txn.cryptoDeleteAllowance().nftAllowances();

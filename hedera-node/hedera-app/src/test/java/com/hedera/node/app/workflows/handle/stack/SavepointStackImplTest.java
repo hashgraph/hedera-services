@@ -62,7 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SavepointStackImplTest extends StateTestBase {
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
+            AccountID.newBuilder().accountNum(666L).build();
     private static final Timestamp VALID_START = new Timestamp(1_234_567L, 890);
 
     private final Map<String, String> BASE_DATA = Map.of(

@@ -98,11 +98,7 @@ class ActionsHelperTest {
         assertTrue(subject.isValid(CALL_ACTION
                 .copyBuilder()
                 .recipientContract((ContractID) null)
-                .recipientAccount(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123)
-                        .build())
+                .recipientAccount(AccountID.newBuilder().accountNum(123).build())
                 .build()));
         assertTrue(subject.isValid(CALL_ACTION
                 .copyBuilder()

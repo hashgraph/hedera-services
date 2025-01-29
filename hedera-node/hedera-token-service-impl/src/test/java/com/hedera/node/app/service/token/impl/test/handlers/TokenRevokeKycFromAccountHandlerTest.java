@@ -69,10 +69,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenRevokeKycFromAccountHandlerTest {
 
     private static final AccountID PBJ_PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            AccountID.newBuilder().accountNum(3).build();
     private static final TokenID TOKEN_10 = TokenID.newBuilder().tokenNum(10).build();
     private static final AccountID ACCOUNT_100 =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(100).build();
+            AccountID.newBuilder().accountNum(100).build();
 
     private ReadableAccountStore accountStore;
     private TokenRevokeKycFromAccountHandler subject;
@@ -92,10 +92,7 @@ class TokenRevokeKycFromAccountHandlerTest {
                     .transactionID(TransactionID.newBuilder().accountID(PBJ_PAYER_ID))
                     .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
                             .token((TokenID) null)
-                            .account(AccountID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
-                                    .accountNum(MISC_ACCOUNT.getAccountNum()))
+                            .account(AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()))
                             .build())
                     .build();
 

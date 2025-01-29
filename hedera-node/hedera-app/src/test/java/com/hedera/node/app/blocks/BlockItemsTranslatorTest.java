@@ -101,51 +101,32 @@ class BlockItemsTranslatorTest {
     private static final List<AssessedCustomFee> ASSESSED_CUSTOM_FEES = List.of(new AssessedCustomFee(
             1L,
             TokenID.newBuilder().tokenNum(123).build(),
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(98L).build(),
-            List.of(AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(2L)
-                    .build())));
+            AccountID.newBuilder().accountNum(98L).build(),
+            List.of(AccountID.newBuilder().accountNum(2L).build())));
+
     private static final TransferList TRANSFER_LIST = TransferList.newBuilder()
             .accountAmounts(
                     AccountAmount.newBuilder()
                             .amount(-1)
-                            .accountID(AccountID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
-                                    .accountNum(2L)
-                                    .build())
+                            .accountID(AccountID.newBuilder().accountNum(2L).build())
                             .build(),
                     AccountAmount.newBuilder()
                             .amount(+1)
-                            .accountID(AccountID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
-                                    .accountNum(98L)
-                                    .build())
+                            .accountID(AccountID.newBuilder().accountNum(98L).build())
                             .build())
             .build();
     private static final List<AccountAmount> PAID_STAKING_REWARDS = List.of(
             AccountAmount.newBuilder()
                     .amount(-1)
-                    .accountID(AccountID.newBuilder()
-                            .shardNum(1)
-                            .realmNum(2)
-                            .accountNum(800L)
-                            .build())
+                    .accountID(AccountID.newBuilder().accountNum(800L).build())
                     .build(),
             AccountAmount.newBuilder()
                     .amount(+1)
-                    .accountID(AccountID.newBuilder()
-                            .shardNum(1)
-                            .realmNum(2)
-                            .accountNum(2L)
-                            .build())
+                    .accountID(AccountID.newBuilder().accountNum(2L).build())
                     .build());
     private static final List<TokenAssociation> AUTO_TOKEN_ASSOCIATIONS = List.of(new TokenAssociation(
             TokenID.newBuilder().tokenNum(123).build(),
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(98L).build()));
+            AccountID.newBuilder().accountNum(98L).build()));
     private static final List<PendingAirdropRecord> PENDING_AIRDROP_RECORDS = List.of(new PendingAirdropRecord(
             PendingAirdropId.newBuilder()
                     .nonFungibleToken(
@@ -155,11 +136,7 @@ class BlockItemsTranslatorTest {
     private static final List<TokenTransferList> TOKEN_TRANSFER_LISTS = List.of(new TokenTransferList(
             TokenID.newBuilder().tokenNum(123).build(), TRANSFER_LIST.accountAmounts(), List.of(), 0));
     private static final TransactionID TXN_ID = TransactionID.newBuilder()
-            .accountID(AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(2L)
-                    .build())
+            .accountID(AccountID.newBuilder().accountNum(2L).build())
             .build();
     private static final ExchangeRateSet RATES = ExchangeRateSet.newBuilder()
             .currentRate(new ExchangeRate(1, 2, TimestampSeconds.DEFAULT))
@@ -200,7 +177,7 @@ class BlockItemsTranslatorTest {
     private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().contractNum(666L).build();
     private static final AccountID ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
+            AccountID.newBuilder().accountNum(666L).build();
     private static final TokenID TOKEN_ID = TokenID.newBuilder().tokenNum(666L).build();
     private static final TopicID TOPIC_ID = TopicID.newBuilder().topicNum(666L).build();
     private static final FileID FILE_ID = FileID.newBuilder().fileNum(666L).build();

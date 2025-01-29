@@ -84,9 +84,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ValidationReporterTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234).build();
+            AccountID.newBuilder().accountNum(1_234).build();
     private static final AccountID CREATOR_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            AccountID.newBuilder().accountNum(3).build();
     private static final NodeId CREATOR_NODE_ID = NodeId.of(0L);
 
     @Mock

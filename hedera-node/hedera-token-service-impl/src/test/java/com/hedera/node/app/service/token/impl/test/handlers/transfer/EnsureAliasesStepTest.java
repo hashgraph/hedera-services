@@ -164,10 +164,7 @@ class EnsureAliasesStepTest extends StepsBase {
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountId(AccountID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
-                                    .accountNum(hbarReceiver + 2))
+                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
                             .alias(evmAddressAlias3.value())
                             .build();
                     writableAccountStore.put(copy);

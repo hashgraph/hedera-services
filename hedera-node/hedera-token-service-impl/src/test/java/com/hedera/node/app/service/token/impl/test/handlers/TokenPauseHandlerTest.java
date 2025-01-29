@@ -90,11 +90,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException {
-        given(accountStore.getAccountById(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(3L)
-                        .build()))
+        given(accountStore.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
                 .willReturn(account);
         given(account.key()).willReturn(payerKey);
 

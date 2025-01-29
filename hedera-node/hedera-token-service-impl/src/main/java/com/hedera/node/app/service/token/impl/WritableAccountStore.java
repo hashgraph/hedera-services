@@ -228,8 +228,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         || !oldAccount.smartContract()
                         || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
                     final var contractId = ContractID.newBuilder()
-                            .shardNum(1)
-                            .realmNum(2)
                             .contractNum(accountId.accountNumOrThrow())
                             .build();
                     // exclude nonce info if contract was destructed

@@ -109,8 +109,6 @@ public class DslUtils {
     public static Key contractIdKeyFor(@NonNull final Account contract) {
         return Key.newBuilder()
                 .contractID(ContractID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
                         .contractNum(contract.accountIdOrThrow().accountNumOrThrow())
                         .build())
                 .build();

@@ -82,8 +82,7 @@ public class BaseCryptoHandlerTest {
     @Test
     @DisplayName("hasAccountNumOrAlias Account with number is valid")
     void hasAccountNumOrAlias_returnsTrue_whenAccountHasNumber() {
-        AccountID accountID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build();
+        AccountID accountID = AccountID.newBuilder().accountNum(1L).build();
         assertTrue(BaseCryptoHandler.hasAccountNumOrAlias(accountID));
     }
 

@@ -153,11 +153,8 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(750)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(750).build());
+
         assertThatExceptionOfType(HandleException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
                 .withMessage(INVALID_RECEIVING_NODE_ACCOUNT.protoName());

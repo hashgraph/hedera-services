@@ -61,7 +61,7 @@ class ExpiryValidatorImplTest {
     private static final long A_PERIOD = 666_666L;
     private static final long B_PERIOD = 777_777L;
     private static final AccountID AN_AUTO_RENEW_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(888).build();
+            AccountID.newBuilder().accountNum(888).build();
 
     @Mock
     private AttributeValidator attributeValidator;

@@ -108,8 +108,6 @@ public class ConversionUtils {
      */
     public static ContractID asNumericContractId(@NonNull final AccountID accountId) {
         return ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
                 .contractNum(accountId.accountNumOrThrow())
                 .build();
     }
@@ -236,11 +234,7 @@ public class ConversionUtils {
             @NonNull final ContractID contractID, @NonNull final ReadableAccountStore accountStore) {
         final var maybeContract = accountStore.getContractById(contractID);
         if (maybeContract != null && maybeContract.alias().length() == EVM_ADDRESS_LENGTH_AS_LONG) {
-            return ContractID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .evmAddress(maybeContract.alias())
-                    .build();
+            return ContractID.newBuilder().evmAddress(maybeContract.alias()).build();
         }
         return contractID;
     }
@@ -334,7 +328,7 @@ public class ConversionUtils {
             loggedTopics.add(tuweniToPbjBytes(topic));
         }
         return ContractLoginfo.newBuilder()
-                .contractID(ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(loggerNumber))
+                .contractID(ContractID.newBuilder().contractNum(loggerNumber))
                 .data(tuweniToPbjBytes(log.getData()))
                 .topic(loggedTopics)
                 .bloom(bloomFor(log))
@@ -915,11 +909,8 @@ public class ConversionUtils {
         requireNonNull(op);
         final var builder = op.copyBuilder();
         return builder.adminKey(Key.newBuilder()
-                        .contractID(ContractID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .contractNum(accountNum)
-                                .build())
+                        .contractID(
+                                ContractID.newBuilder().contractNum(accountNum).build())
                         .build())
                 .build();
     }

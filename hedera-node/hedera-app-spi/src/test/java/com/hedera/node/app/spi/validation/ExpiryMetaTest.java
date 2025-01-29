@@ -34,20 +34,16 @@ class ExpiryMetaTest {
     @Test
     void detectsRenewPeriod() {
         final var withRenewPeriod = new ExpiryMeta(NA, 1L, null);
-        final var withoutRenewPeriod = new ExpiryMeta(
-                2L,
-                NA,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build());
+        final var withoutRenewPeriod =
+                new ExpiryMeta(2L, NA, AccountID.newBuilder().accountNum(1L).build());
         assertTrue(withRenewPeriod.hasAutoRenewPeriod());
         assertFalse(withoutRenewPeriod.hasAutoRenewPeriod());
     }
 
     @Test
     void detectsRenewNum() {
-        final var withRenewNum = new ExpiryMeta(
-                NA,
-                1L,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build());
+        final var withRenewNum =
+                new ExpiryMeta(NA, 1L, AccountID.newBuilder().accountNum(1L).build());
         final var withoutRenewNum = new ExpiryMeta(2L, NA, null);
         assertTrue(withRenewNum.hasAutoRenewAccountId());
         assertFalse(withoutRenewNum.hasAutoRenewAccountId());
@@ -55,14 +51,10 @@ class ExpiryMetaTest {
 
     @Test
     void detectsFullAutoRenewSpec() {
-        final var withFullSpec = new ExpiryMeta(
-                NA,
-                1L,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build());
-        final var withoutFullSpec = new ExpiryMeta(
-                2L,
-                NA,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build());
+        final var withFullSpec =
+                new ExpiryMeta(NA, 1L, AccountID.newBuilder().accountNum(1L).build());
+        final var withoutFullSpec =
+                new ExpiryMeta(2L, NA, AccountID.newBuilder().accountNum(1L).build());
         assertTrue(withFullSpec.hasFullAutoRenewSpec());
         assertFalse(withoutFullSpec.hasFullAutoRenewSpec());
     }

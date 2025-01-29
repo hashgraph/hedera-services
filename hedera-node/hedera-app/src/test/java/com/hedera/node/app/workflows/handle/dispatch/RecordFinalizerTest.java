@@ -79,24 +79,18 @@ public class RecordFinalizerTest {
     private HandleContext handleContext;
 
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
+            AccountID.newBuilder().accountNum(1_234L).build();
     private static final CryptoTransferTransactionBody TRANSFER_BODY = CryptoTransferTransactionBody.newBuilder()
             .transfers(TransferList.newBuilder()
                     .accountAmounts(
                             AccountAmount.newBuilder()
-                                    .accountID(AccountID.newBuilder()
-                                            .shardNum(1)
-                                            .realmNum(2)
-                                            .accountNum(1)
-                                            .build())
+                                    .accountID(
+                                            AccountID.newBuilder().accountNum(1).build())
                                     .amount(0)
                                     .build(),
                             AccountAmount.newBuilder()
-                                    .accountID(AccountID.newBuilder()
-                                            .shardNum(1)
-                                            .realmNum(2)
-                                            .accountNum(2)
-                                            .build())
+                                    .accountID(
+                                            AccountID.newBuilder().accountNum(2).build())
                                     .amount(10)
                                     .build()))
             .build();
@@ -153,7 +147,7 @@ public class RecordFinalizerTest {
 
         assertEquals(1, extraRewardReceivers.size());
         assertTrue(extraRewardReceivers.contains(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build()));
+                AccountID.newBuilder().accountNum(1).build()));
     }
 
     @Test
@@ -198,26 +192,17 @@ public class RecordFinalizerTest {
     public void testZeroAdjustIdsFrom() {
         List<AccountAmount> accountAmounts = List.of(
                 AccountAmount.newBuilder()
-                        .accountID(AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(1)
-                                .build())
+                        .accountID(AccountID.newBuilder().accountNum(1).build())
                         .amount(0)
                         .build(),
                 AccountAmount.newBuilder()
-                        .accountID(AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(2)
-                                .build())
+                        .accountID(AccountID.newBuilder().accountNum(2).build())
                         .amount(10)
                         .build());
 
         Set<AccountID> zeroAdjustIds = subject.zeroAdjustIdsFrom(accountAmounts);
 
         assertEquals(1, zeroAdjustIds.size());
-        assertTrue(zeroAdjustIds.contains(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build()));
+        assertTrue(zeroAdjustIds.contains(AccountID.newBuilder().accountNum(1).build()));
     }
 }

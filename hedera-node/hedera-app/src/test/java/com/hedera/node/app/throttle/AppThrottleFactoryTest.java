@@ -56,7 +56,7 @@ class AppThrottleFactoryTest {
     private static final int SPLIT_FACTOR = 7;
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(123456, 789);
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
+            AccountID.newBuilder().accountNum(666L).build();
     private static final TransactionInfo TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT,
             TransactionBody.newBuilder()

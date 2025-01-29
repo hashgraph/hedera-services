@@ -196,7 +196,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10L).build(),
+                AccountID.newBuilder().accountNum(10L).build(),
                 false,
                 Bytes.wrap(runningHash),
                 memo,

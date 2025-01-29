@@ -102,8 +102,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("No admin key to update memo fails")
     void rejectsNonExpiryMutationOfImmutableTopic() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false, false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false, false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var txBody = TransactionBody.newBuilder()
@@ -118,8 +117,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("Invalid new admin key update fails")
     void validatesNewAdminKey() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var txBody = TransactionBody.newBuilder()
@@ -136,8 +134,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("Update admin key as expected")
     void appliesNewAdminKey() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var txBody = TransactionBody.newBuilder()
@@ -217,8 +214,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("Invalid new submit key update fails")
     void validatesNewSubmitKey() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).submitKey(key).build();
@@ -234,8 +230,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("Update submit key as expected")
     void appliesNewSubmitKey() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).submitKey(anotherKey).build();
@@ -252,8 +247,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("Too long memo update fails")
     void validatesNewMemo() {
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).memo("Please mind the vase").build();
@@ -272,8 +266,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     @DisplayName("Update memo as expected")
     void appliesNewMemo() {
         final var newMemo = "Please mind the vase";
-        givenValidTopic(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build(), false);
+        givenValidTopic(AccountID.newBuilder().accountNum(0).build(), false);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
         final var op = OP_BUILDER.topicID(topicId).memo(newMemo).build();
@@ -394,8 +387,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     void appliesNewAutoRenewNumViaMeta() {
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
-        final var autoRenewAccount =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666).build();
+        final var autoRenewAccount = AccountID.newBuilder().accountNum(666).build();
         final var op =
                 OP_BUILDER.topicID(topicId).autoRenewAccount(autoRenewAccount).build();
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();

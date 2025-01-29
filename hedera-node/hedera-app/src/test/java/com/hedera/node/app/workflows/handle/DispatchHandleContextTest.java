@@ -155,9 +155,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private static final Fees FEES = new Fees(1L, 2L, 3L);
     public static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234).build();
+            AccountID.newBuilder().accountNum(1_234).build();
     private static final AccountID NODE_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            AccountID.newBuilder().accountNum(3).build();
     private static final SignatureVerification FAILED_VERIFICATION =
             new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, false);
     private static final TransactionBody MISSING_FUNCTION_TXN_BODY = TransactionBody.newBuilder()
@@ -285,7 +285,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
 
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
+            AccountID.newBuilder().accountNum(1_234L).build();
     private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
             .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
             .build();

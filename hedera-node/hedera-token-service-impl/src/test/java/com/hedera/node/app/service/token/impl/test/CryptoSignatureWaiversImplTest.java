@@ -44,11 +44,9 @@ class CryptoSignatureWaiversImplTest {
 
     Authorizer authorizer;
     private final AccountID somePayer =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234L).build();
-    private final AccountID treasury =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build();
-    private final AccountID systemAdmin =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(50L).build();
+            AccountID.newBuilder().accountNum(1_234L).build();
+    private final AccountID treasury = AccountID.newBuilder().accountNum(2L).build();
+    private final AccountID systemAdmin = AccountID.newBuilder().accountNum(50L).build();
 
     private CryptoSignatureWaiversImpl subject;
 

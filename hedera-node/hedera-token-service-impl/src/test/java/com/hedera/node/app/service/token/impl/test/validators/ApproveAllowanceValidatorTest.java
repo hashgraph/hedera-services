@@ -369,11 +369,8 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesMissingOwnerAccount() {
-        final var missingOwner = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(1_234L)
-                .build();
+        final var missingOwner = AccountID.newBuilder().accountNum(1_234L).build();
+
         final var missingCryptoAllowance = CryptoAllowance.newBuilder()
                 .owner(missingOwner)
                 .spender(spenderId)

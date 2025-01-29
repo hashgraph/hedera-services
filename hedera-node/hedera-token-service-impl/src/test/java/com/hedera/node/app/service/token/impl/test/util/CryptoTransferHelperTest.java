@@ -30,9 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CryptoTransferHelperTest {
     private static final TokenID tokenId = TokenID.newBuilder().tokenNum(1).build();
     private static final AccountID fromAccount =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build();
+            AccountID.newBuilder().accountNum(1001).build();
     private static final AccountID toAccount =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1002).build();
+            AccountID.newBuilder().accountNum(1002).build();
 
     @Test
     void testCreateFungibleTransfer() {

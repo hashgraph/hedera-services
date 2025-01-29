@@ -637,11 +637,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(feeCtx.body()).willReturn(txn);
         given(feeCtx.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(feeCtx.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(Long.MAX_VALUE)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(Long.MAX_VALUE).build());
 
         final var feeCalcFactory = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);

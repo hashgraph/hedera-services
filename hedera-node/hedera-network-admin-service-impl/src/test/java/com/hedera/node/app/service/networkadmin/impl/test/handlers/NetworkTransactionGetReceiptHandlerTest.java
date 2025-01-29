@@ -130,11 +130,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
 
         final var topLevelId = TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(2L)
-                        .build())
+                .accountID(AccountID.newBuilder().accountNum(2L).build())
                 .transactionValidStart(
                         Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build())
                 .build();
@@ -181,11 +177,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
 
         final var topLevelId = TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(2L)
-                        .build())
+                .accountID(AccountID.newBuilder().accountNum(2L).build())
                 .transactionValidStart(
                         Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build())
                 .build();

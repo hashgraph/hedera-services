@@ -173,7 +173,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .build();
 
         final var query = createGetAccountDetailsQuery(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(567L).build());
+                AccountID.newBuilder().accountNum(567L).build());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
@@ -276,17 +276,17 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     void getsResponseIfOkResponseWhenAllowancesListAsExpected() {
         List<AccountCryptoAllowance> cryptoAllowancesList = new ArrayList<>();
         AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(123L).build(), 456L);
+                AccountID.newBuilder().accountNum(123L).build(), 456L);
         cryptoAllowancesList.add(cryptoAllowance);
         List<AccountApprovalForAllAllowance> accountApprovalForAllAllowanceList = new ArrayList<>();
         AccountApprovalForAllAllowance accountApprovalForAllAllowance = new AccountApprovalForAllAllowance(
                 TokenID.newBuilder().tokenNum(456L).build(),
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(567L).build());
+                AccountID.newBuilder().accountNum(567L).build());
         accountApprovalForAllAllowanceList.add(accountApprovalForAllAllowance);
         List<AccountFungibleTokenAllowance> accountFungibleTokenAllowanceList = new ArrayList<>();
         AccountFungibleTokenAllowance accountFungibleTokenAllowance = new AccountFungibleTokenAllowance(
                 TokenID.newBuilder().tokenNum(789L).build(),
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(890L).build(),
+                AccountID.newBuilder().accountNum(890L).build(),
                 901L);
         accountFungibleTokenAllowanceList.add(accountFungibleTokenAllowance);
         givenValidAccount(
@@ -298,17 +298,17 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
 
         List<GrantedCryptoAllowance> grantedCryptoAllowancesList = new ArrayList<>();
         GrantedCryptoAllowance grantedCryptoAllowance = new GrantedCryptoAllowance(
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(123L).build(), 456L);
+                AccountID.newBuilder().accountNum(123L).build(), 456L);
         grantedCryptoAllowancesList.add(grantedCryptoAllowance);
         List<GrantedNftAllowance> grantedNftAllowancesList = new ArrayList<>();
         GrantedNftAllowance grantedNftAllowance = new GrantedNftAllowance(
                 TokenID.newBuilder().tokenNum(456L).build(),
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(567L).build());
+                AccountID.newBuilder().accountNum(567L).build());
         grantedNftAllowancesList.add(grantedNftAllowance);
         List<GrantedTokenAllowance> grantedTokenAllowancesList = new ArrayList<>();
         GrantedTokenAllowance grantedTokenAllowance = new GrantedTokenAllowance(
                 TokenID.newBuilder().tokenNum(789L).build(),
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(890L).build(),
+                AccountID.newBuilder().accountNum(890L).build(),
                 901L);
         grantedTokenAllowancesList.add(grantedTokenAllowance);
         final var expectedInfo = getExpectedInfo(
@@ -337,16 +337,9 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
             List<GrantedTokenAllowance> grantedTokenAllowances,
             List<TokenRelationship> tokenRelationships) {
         return AccountDetails.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(accountNum)
-                        .build())
-                .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(accountNum)
-                        .build()))
+                .accountId(AccountID.newBuilder().accountNum(accountNum).build())
+                .contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(
+                        AccountID.newBuilder().accountNum(accountNum).build()))
                 .deleted(deleted)
                 .balance(payerBalance)
                 .receiverSigRequired(true)

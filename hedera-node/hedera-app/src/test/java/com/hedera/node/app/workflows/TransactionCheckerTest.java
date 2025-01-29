@@ -681,11 +681,8 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName("A transaction ID with an impossible account number fails")
             void testCheckTransactionBodyWithZeroAccountNumFails(long account) {
                 // Given a transaction ID with an account number that is not valid (0 is not a valid number)
-                final var payerId = AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(account)
-                        .build();
+                final var payerId = AccountID.newBuilder().accountNum(account).build();
+
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 

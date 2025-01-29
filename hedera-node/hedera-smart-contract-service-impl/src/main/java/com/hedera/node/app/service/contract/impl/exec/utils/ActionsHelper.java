@@ -112,7 +112,7 @@ public class ActionsHelper {
     }
 
     private ContractID contractIdWith(final long num) {
-        return ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(num).build();
+        return ContractID.newBuilder().contractNum(num).build();
     }
 
     private static int countNonNulls(@NonNull final Object... objs) {

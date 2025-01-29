@@ -119,7 +119,7 @@ class V0500TokenSchemaTest {
     }
 
     private static AccountID accountIdWith(final long num) {
-        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
+        return AccountID.newBuilder().accountNum(num).build();
     }
 
     private static byte[] copyToLeftPaddedByteArray(long value, final byte[] dest) {

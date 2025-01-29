@@ -147,30 +147,15 @@ class UtilizationScaledThrottleMultiplierTest {
                         Map.of(
                                 "ACCOUNTS",
                                 Map.of(
-                                        AccountID.newBuilder()
-                                                        .shardNum(1)
-                                                        .realmNum(2)
-                                                        .accountNum(1L),
+                                        AccountID.newBuilder().accountNum(1L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder()
-                                                        .shardNum(1)
-                                                        .realmNum(2)
-                                                        .accountNum(2L),
+                                        AccountID.newBuilder().accountNum(2L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder()
-                                                        .shardNum(1)
-                                                        .realmNum(2)
-                                                        .accountNum(3L),
+                                        AccountID.newBuilder().accountNum(3L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder()
-                                                        .shardNum(1)
-                                                        .realmNum(2)
-                                                        .accountNum(4L),
+                                        AccountID.newBuilder().accountNum(4L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT,
-                                        AccountID.newBuilder()
-                                                        .shardNum(1)
-                                                        .realmNum(2)
-                                                        .accountNum(5L),
+                                        AccountID.newBuilder().accountNum(5L),
                                                 com.hedera.hapi.node.state.token.Account.DEFAULT),
                                 "ALIASES",
                                 new HashMap<>()))

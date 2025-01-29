@@ -212,11 +212,7 @@ class FileUpdateTest extends FileTestBase {
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -302,11 +298,7 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -327,11 +319,7 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
@@ -348,11 +336,8 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
+
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:
@@ -373,11 +358,8 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(50L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(50L).build());
+
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:
@@ -398,11 +380,7 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -448,11 +426,7 @@ class FileUpdateTest extends FileTestBase {
         when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -478,11 +452,7 @@ class FileUpdateTest extends FileTestBase {
         when(stack.getBaseBuilder(StreamBuilder.class)).thenReturn(recordBuilder);
         when(recordBuilder.category()).thenReturn(HandleContext.TransactionCategory.USER);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 
@@ -499,11 +469,7 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.payer())
-                .willReturn(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1001L)
-                        .build());
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
 
         subject.handle(handleContext);
 

@@ -34,13 +34,9 @@ import org.junit.jupiter.api.Test;
 
 public class ValidationResultTest {
     private static final AccountID CREATOR_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10L).build();
+            AccountID.newBuilder().accountNum(10L).build();
     private static final Account PAYER_ACCOUNT_ID = Account.newBuilder()
-            .accountId(AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(200L)
-                    .build())
+            .accountId(AccountID.newBuilder().accountNum(200L).build())
             .build();
 
     @Test

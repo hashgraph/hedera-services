@@ -102,11 +102,7 @@ public interface HederaNativeOperations {
     @Nullable
     default Account getAccount(final long number) {
         return readableAccountStore()
-                .getAccountById(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(number)
-                        .build());
+                .getAccountById(AccountID.newBuilder().accountNum(number).build());
     }
 
     /**
@@ -164,11 +160,7 @@ public interface HederaNativeOperations {
     default TokenRelation getTokenRelation(final long accountNumber, final long tokenNumber) {
         return readableTokenRelationStore()
                 .get(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(accountNumber)
-                                .build(),
+                        AccountID.newBuilder().accountNum(accountNumber).build(),
                         TokenID.newBuilder().tokenNum(tokenNumber).build());
     }
 

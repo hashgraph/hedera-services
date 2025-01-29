@@ -81,7 +81,7 @@ class TokenServiceApiImplTest {
     public static final ContractID CONTRACT_ID_BY_ALIAS =
             ContractID.newBuilder().evmAddress(EVM_ADDRESS).build();
     public static final AccountID EOA_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(888).build();
+            AccountID.newBuilder().accountNum(888).build();
     public static final AccountID CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow())
             .build();
@@ -235,10 +235,7 @@ class TokenServiceApiImplTest {
     @Test
     void marksDeletedByNumberIfSet() {
         accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
+                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
                 .build());
 
@@ -252,10 +249,7 @@ class TokenServiceApiImplTest {
     @Test
     void removesByAliasIfSet() {
         accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
+                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(EVM_ADDRESS)
                 .smartContract(true)
                 .build());
@@ -275,10 +269,7 @@ class TokenServiceApiImplTest {
         // impossible (since only auto-created accounts with ECDSA keys can have two aliases), but if
         // it somehow occurs, we might as well clean up both aliases
         accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
+                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(OTHER_EVM_ADDRESS)
                 .smartContract(true)
                 .build());
@@ -438,13 +429,13 @@ class TokenServiceApiImplTest {
         private static final long PAYER_BALANCE_AFTER_ALL_FEES = ORIGINAL_PAYER_BALANCE - ALL_FEES;
 
         private static final AccountID NODE_ACCOUNT_ID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666).build();
+                AccountID.newBuilder().accountNum(666).build();
         private static final AccountID FUNDING_ACCOUNT_ID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(12).build();
+                AccountID.newBuilder().accountNum(12).build();
         private static final AccountID STAKING_REWARD_ACCOUNT_ID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(13).build();
+                AccountID.newBuilder().accountNum(13).build();
         private static final AccountID NODE_REWARD_ACCOUNT_ID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(14).build();
+                AccountID.newBuilder().accountNum(14).build();
 
         private Fees fees;
         private TestConfigBuilder configBuilder;
@@ -541,11 +532,9 @@ class TokenServiceApiImplTest {
         @Test
         void missingPayerAccount() {
             // When we try to charge a payer account that DOES NOT EXIST, then we get an IllegalStateException.
-            final var unknownAccountId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(12345678L)
-                    .build();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+
             assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Payer account %s does not exist", unknownAccountId);
@@ -554,11 +543,9 @@ class TokenServiceApiImplTest {
         @Test
         void missingFundingAccount() {
             // Given a configuration that refers to a funding account that DOES NOT EXIST
-            final var unknownAccountId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(12345678L)
-                    .build();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+
             final var config = configBuilder
                     .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
@@ -574,11 +561,9 @@ class TokenServiceApiImplTest {
         @Test
         void missingStakingRewardAccount() {
             // Given a configuration that refers to a staking reward account that DOES NOT EXIST
-            final var unknownAccountId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(12345678L)
-                    .build();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+
             final var config = configBuilder
                     .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
@@ -594,11 +579,9 @@ class TokenServiceApiImplTest {
         @Test
         void missingNodeRewardAccount() {
             // Given a configuration that refers to a node reward account that DOES NOT EXIST
-            final var unknownAccountId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(12345678L)
-                    .build();
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+
             final var config = configBuilder
                     .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();

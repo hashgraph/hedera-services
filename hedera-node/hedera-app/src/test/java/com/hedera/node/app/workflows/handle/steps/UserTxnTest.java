@@ -87,7 +87,7 @@ class UserTxnTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final ConsensusTransaction PLATFORM_TXN = new TransactionWrapper(EventTransaction.DEFAULT);
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234).build();
+            AccountID.newBuilder().accountNum(1234).build();
     private static final Key AN_ED25519_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
             .build();

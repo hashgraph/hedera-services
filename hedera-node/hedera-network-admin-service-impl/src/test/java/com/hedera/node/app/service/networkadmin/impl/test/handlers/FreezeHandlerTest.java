@@ -108,7 +108,7 @@ class FreezeHandlerTest {
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
     private final AccountID nonAdminAccount =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(9999L).build();
+            AccountID.newBuilder().accountNum(9999L).build();
     private final FreezeHandler subject = new FreezeHandler(new ForkJoinPool(
             1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
 

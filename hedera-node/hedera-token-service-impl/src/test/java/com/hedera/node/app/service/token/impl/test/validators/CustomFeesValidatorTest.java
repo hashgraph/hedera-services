@@ -94,8 +94,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("throws if fee collector doesn't exist on fee schedule update")
     void validateMissingFeeCollectorOnFeeScheduleUpdate() {
         final var missingFeeCollectorFee = setFeeCollector(
-                customFees,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(100).build());
+                customFees, AccountID.newBuilder().accountNum(100).build());
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         fungibleToken,
                         readableAccountStore,
@@ -449,10 +448,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableTokenRelStore,
                         writableTokenStore,
                         List.of(CustomFee.newBuilder()
-                                .feeCollectorAccountId(AccountID.newBuilder()
-                                        .shardNum(1)
-                                        .realmNum(2)
-                                        .accountNum(accountNum.longValue()))
+                                .feeCollectorAccountId(AccountID.newBuilder().accountNum(accountNum.longValue()))
                                 .build())))
                 .isInstanceOf(HandleException.class)
                 .hasMessage("CUSTOM_FEE_NOT_FULLY_SPECIFIED");
@@ -508,8 +504,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("throws if fee collector doesn't exist on token create")
     void validateMissingFeeCollectorOnTokenCreate() {
         final var missingFeeCollectorFee = setFeeCollector(
-                customFees,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(100).build());
+                customFees, AccountID.newBuilder().accountNum(100).build());
         assertThatThrownBy(() -> subject.validateForCreation(
                         fungibleToken,
                         readableAccountStore,
@@ -762,10 +757,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableTokenRelStore,
                         writableTokenStore,
                         List.of(CustomFee.newBuilder()
-                                .feeCollectorAccountId(AccountID.newBuilder()
-                                        .shardNum(1)
-                                        .realmNum(2)
-                                        .accountNum(accountNum.longValue()))
+                                .feeCollectorAccountId(AccountID.newBuilder().accountNum(accountNum.longValue()))
                                 .build()),
                         expiryValidator))
                 .isInstanceOf(HandleException.class)

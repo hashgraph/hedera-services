@@ -108,11 +108,9 @@ public class AddressBookTestBase {
     final Key invalidKey = Key.newBuilder()
             .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
             .build();
-    protected final AccountID accountId =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+    protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
-    protected final AccountID payerId =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2).build();
+    protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
     protected final byte[] grpcCertificateHash = "grpcCertificateHash".getBytes();
     protected final byte[] gossipCaCertificate = "gossipCaCertificate".getBytes();
     protected final long WELL_KNOWN_NODE_ID = 1L;

@@ -63,8 +63,7 @@ public interface AccountSummariesApi {
     /**
      * The sentinel account id to represent stakedAccountId is absent on account.
      */
-    AccountID SENTINEL_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0).build();
+    AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**
      * Returns the hexed EVM address of the given account.
