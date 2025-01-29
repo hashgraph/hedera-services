@@ -180,7 +180,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build());
         given(pureChecksContext.body()).willReturn(txn);
 
-        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -276,7 +277,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build());
         given(pureChecksContext.body()).willReturn(txn);
 
-        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -346,7 +348,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                         .build()));
         given(pureChecksContext.body()).willReturn(txn);
 
-        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext)).doesNotThrowAnyException();
+        Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(pureChecksContext))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -371,7 +374,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.dispatch(
                         argThat(options -> TokenAirdropStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
-                .will((invocation) -> {
+                .will(invocation -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
                     var pendingAirdropRecord = PendingAirdropRecord.newBuilder()

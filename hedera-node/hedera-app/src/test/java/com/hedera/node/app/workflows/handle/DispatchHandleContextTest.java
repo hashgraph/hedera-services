@@ -290,15 +290,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             CRYPTO_TRANSFER,
             null);
 
-    private static final TransactionBody MISSING_PAYER_ID =
-            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
-
-    private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(1_234L).build();
-    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
-            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
-            .build();
-
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -403,7 +394,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             dispatchProcessor,
             throttleAdviser,
             feeAccumulator,
-            EMPTY_METADATA
+            EMPTY_METADATA,
+            transactionChecker
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];

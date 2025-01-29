@@ -62,7 +62,6 @@ import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
@@ -219,10 +218,9 @@ class QueryCheckerTest extends AppTestBase {
         final var transaction = Transaction.newBuilder().build();
         final var transactionInfo = new TransactionInfo(
                 transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER, null);
-        final var pureCheckContext = new PureChecksContextImpl(txBody, configuration, dispatcher, transactionChecker);
         doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
                 .when(cryptoTransferHandler)
-                .pureChecks(pureCheckContext);
+                .pureChecks(any());
 
         // then
         assertThatThrownBy(() -> checker.validateCryptoTransfer(transactionInfo, configuration))

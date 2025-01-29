@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
     private PureChecksContext pureChecksContext;
 
     @BeforeEach
+    @Override
     public void setUp() {
         super.setUp();
         configuration = HederaTestConfigBuilder.create()
@@ -126,7 +127,8 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     .build();
             given(pureChecksContext.body()).willReturn(txn);
 
-            Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(NullPointerException.class);
+            Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -227,25 +229,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     .isInstanceOf(HandleException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
-
-        // @Test removed this test as nfts.maxBatchSizeWipe is not for fungible tokens
-        //        void fungibleAmountExceedsBatchSize() {
-        //            configuration = HederaTestConfigBuilder.create()
-        //                    .withValue("tokens.nfts.areEnabled", true)
-        //                    .withValue("tokens.nfts.maxBatchSizeWipe", 5)
-        //                    .getOrCreateConfig();
-        //            mockOkExpiryValidator();
-        //            writableAccountStore = newWritableStoreWithAccounts(
-        //                    Account.newBuilder().accountId(ACCOUNT_4680).build(),
-        //                    Account.newBuilder().accountId(TREASURY_ACCOUNT_9876).build());
-        //            writableTokenStore = newWritableStoreWithTokens();
-        //            final var txn = newWipeTxn(ACCOUNT_4680, TOKEN_531, 6);
-        //            final var context = mockContext(txn);
-        //
-        //            assertThatThrownBy(() -> subject.handle(context))
-        //                    .isInstanceOf(HandleException.class)
-        //                    .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
-        //        }
 
         @Test
         void nftAmountExceedsBatchSize() {

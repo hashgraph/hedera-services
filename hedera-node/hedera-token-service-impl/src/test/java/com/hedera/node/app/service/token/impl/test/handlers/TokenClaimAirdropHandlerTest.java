@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         final var txn = newTokenClaimAirdrop(
                 TokenClaimAirdropTransactionBody.newBuilder().build());
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
+        final var msg =
+                assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
         assertEquals(ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST, msg.responseCode());
     }
 
@@ -129,7 +130,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build());
         given(pureChecksContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
+        final var msg =
+                assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
         assertEquals(ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST, msg.responseCode());
     }
 
@@ -148,7 +150,8 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build());
         given(pureChecksContext.body()).willReturn(txn);
 
-        final var msg = assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
+        final var msg =
+                assertThrows(PreCheckException.class, () -> tokenClaimAirdropHandler.pureChecks(pureChecksContext));
         assertEquals(ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED, msg.responseCode());
     }
 

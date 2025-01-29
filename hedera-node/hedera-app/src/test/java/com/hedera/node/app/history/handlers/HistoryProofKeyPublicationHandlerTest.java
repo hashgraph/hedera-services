@@ -82,7 +82,6 @@ class HistoryProofKeyPublicationHandlerTest {
 
     @Test
     void pureChecksAndPreHandleDoNothing() {
-        given(pureChecksContext.body()).willReturn(TransactionBody.DEFAULT);
         assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
         assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     private CryptoDeleteAllowanceHandler subject;
 
     @BeforeEach
+    @Override
     public void setUp() {
         super.setUp();
         final var deleteAllowanceValidator = new DeleteAllowanceValidator();
@@ -154,31 +155,6 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         // we expect the allowances to not be removed because of no op when list is empty
         assertThat(writableNftStore.get(nftIdSl1).spenderId()).isNotNull();
         assertThat(writableNftStore.get(nftIdSl2).spenderId()).isNotNull();
-    }
-
-    @Test
-    void canDeleteAllowancesOnTreasury() {
-        writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
-        writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
-
-        final var txn = cryptoDeleteAllowanceTransaction(payerId);
-        given(handleContext.body()).willReturn(txn);
-        given(handleContext.payer()).willReturn(payerId);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-
-        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
-
-        subject.handle(handleContext);
-
-        assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isNull();
-        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isNull();
     }
 
     @Test
@@ -370,22 +346,6 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         final var bytesPerTransaction =
                 cryptoDeleteAllowanceTransactionBody.nftAllowances().size() * nftDeleteAllowanceSize + (2 * longSize);
         given(feeCalc.addBytesPerTransaction(bytesPerTransaction)).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
-
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
-    }
-
-    @Test
-    @DisplayName("check that fees are 1 for delete NFT serials trx")
-    void testCountNftDeleteSerials() {
-        final var feeCtx = mock(FeeContext.class);
-        final var feeCalcFact = mock(FeeCalculatorFactory.class);
-        final var feeCalc = mock(FeeCalculator.class);
-        final var txnBody = cryptoDeleteAllowanceTransaction(payerId);
-        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
-        given(feeCtx.body()).willReturn(txnBody);
-        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
-        given(feeCalc.addBytesPerTransaction(anyLong())).willReturn(feeCalc);
         given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
 
         assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));

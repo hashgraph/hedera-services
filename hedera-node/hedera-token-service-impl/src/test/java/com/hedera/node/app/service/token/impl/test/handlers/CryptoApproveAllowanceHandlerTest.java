@@ -29,6 +29,7 @@ import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -67,7 +68,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -571,7 +571,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void validateValidNftAllowance() throws PreCheckException {
+    void validateValidNftAllowance() {
         final var validNftAllowance = NftAllowance.newBuilder()
                 .spender(spenderId)
                 .tokenId(nonFungibleTokenId)
@@ -580,7 +580,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 payerId, false, Collections.emptyList(), Collections.emptyList(), List.of(validNftAllowance));
         given(pureChecksContext.body()).willReturn(txn);
 
-        subject.pureChecks(pureChecksContext); // No exception thrown
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext)); // No exception thrown
     }
 
     @Test
@@ -679,36 +679,6 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 writableTokenStore, writableNftStore, ownerAccount, spenderId, nonFungibleTokenId, List.of());
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
     }
-
-    //
-    //    @Test
-    //    void failsToUpdateSpenderIfWrongOwner() {
-    //        final var serials = List.of(1, 2);
-    //
-    //        AssertionsForClassTypes.assertThatThrownBy(() -> subject.updateSpender(
-    //                        readableTokenStore, readableNftStore, ownerAccount, spenderId, nonFungibleTokenId,
-    // serials))
-    //                .isInstanceOf(HandleException.class)
-    //                .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
-    //    }
-
-    //
-    //    @Test
-    //    void updatesSpenderAsExpected() {
-    //        nft1.setOwner(ownerId);
-    //        nft2.setOwner(ownerId);
-    //
-    //        given(tokenStore.loadUniqueToken(tokenId, serial1)).willReturn(nft1);
-    //        given(tokenStore.loadUniqueToken(tokenId, serial2)).willReturn(nft2);
-    //        given(tokenStore.loadToken(tokenId)).willReturn(token);
-    //        given(token.getTreasury()).willReturn(treasury);
-    //        given(treasury.getId()).willReturn(ownerId);
-    //
-    //        updateSpender(tokenStore, ownerId, spenderId, tokenId, List.of(serial1, serial2));
-    //
-    //        assertEquals(spenderId, nft1.getSpender());
-    //        assertEquals(spenderId, nft2.getSpender());
-    //    }
 
     private TransactionBody cryptoApproveAllowanceTransaction(
             final AccountID id,
