@@ -60,7 +60,7 @@ public interface HapiPropertySource {
     String ENTITY_STRING = "%d.%d.%d";
     // Default shard and realm for static ID building (ideally should be the same as test-client's config)
     int shard = 1;
-    int realm = 2;
+    long realm = 2;
 
     static byte[] explicitBytesOf(@NonNull final Address address) {
         var asBytes = address.value().toByteArray();
