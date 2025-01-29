@@ -246,7 +246,7 @@ public class ConsensusRounds {
      */
     private void updateMinGenNonAncient() {
         if (getFameDecidedBelow() == ConsensusConstants.ROUND_FIRST) {
-            // if there are no rounds, set the defaults
+            // if no round has been decided, no events are ancient yet
             minGenNonAncient = EventConstants.FIRST_GENERATION;
             return;
         }

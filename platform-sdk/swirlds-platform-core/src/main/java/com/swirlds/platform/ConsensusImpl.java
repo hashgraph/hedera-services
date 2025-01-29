@@ -158,6 +158,7 @@ public class ConsensusImpl implements Consensus {
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
 
+    /** Consensus configuration */
     private final ConsensusConfig config;
     /** wall clock time */
     private final Time time;

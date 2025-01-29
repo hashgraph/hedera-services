@@ -124,7 +124,7 @@ class EventDeduplicatorTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncientThreshold ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
 
-        long minimumGenerationNonAncient = EventConstants.FIRST_GENERATION_tmp;
+        long minimumGenerationNonAncient = EventConstants.FIRST_GENERATION;
         long minimumRoundNonAncient = ConsensusConstants.ROUND_FIRST;
 
         // events that have been emitted from the deduplicator
