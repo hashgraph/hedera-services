@@ -80,7 +80,6 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
                 getExternalPath(NODE_ADMIN_KEYS_JSON).toAbsolutePath().toString());
         System.setProperty("hedera.profiles.active", "DEV");
 
-        // Update node realm and shard
         // We get the shard/realm from the metadata account which is coming from the property file
         var shard = metadata().accountId().shardNum();
         var realm = metadata().accountId().realmNum();
