@@ -131,7 +131,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks throws exception when file id is null")
-    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+    void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         SystemUndeleteTransactionBody transactionBody = mock(SystemUndeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
         given(transaction.systemUndeleteOrThrow()).willReturn(transactionBody);
@@ -143,7 +143,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks does not throw exception when file id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+    void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
         given(context.body()).willReturn(newFileUnDeleteTxn());
 
         assertThatCode(() -> subject.pureChecks(context)).doesNotThrowAnyException();
@@ -151,7 +151,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("calculateFees method invocations")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -172,8 +172,8 @@ class FileSystemUndeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context =
-                new PreHandleContextImpl(mockStoreFactory, newFileUnDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
+        final var context = new PreHandleContextImpl(
+                mockStoreFactory, newFileUnDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -199,7 +199,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
@@ -228,7 +228,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileUnDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
@@ -247,7 +247,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileUnDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemFileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
@@ -257,7 +257,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileSystemFileId);
 
-        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile).isPresent();
         assertThat(changedFile.get().deleted()).isFalse();
     }
 

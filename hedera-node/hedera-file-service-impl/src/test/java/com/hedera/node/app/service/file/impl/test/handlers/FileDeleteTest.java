@@ -126,7 +126,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks throws exception when file id is null")
-    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+    void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         FileDeleteTransactionBody transactionBody = mock(FileDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
         given(transaction.fileDeleteOrThrow()).willReturn(transactionBody);
@@ -138,7 +138,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks does not throw exception when file id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+    void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
         given(context.body()).willReturn(newDeleteTxn());
 
         assertThatCode(() -> subject.pureChecks(context)).doesNotThrowAnyException();
@@ -146,7 +146,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("calculateFees method invocations")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -167,7 +167,8 @@ class FileDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
+        final var context = new PreHandleContextImpl(
+                mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -189,12 +190,12 @@ class FileDeleteTest extends FileTestBase {
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher, transactionChecker);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, transactionBody, testConfig, mockDispatcher, transactionChecker);
 
         subject.preHandle(realPreContext);
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(0);
+        assertThat(realPreContext.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -206,12 +207,12 @@ class FileDeleteTest extends FileTestBase {
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         subject.preHandle(realPreContext);
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(1);
+        assertThat(realPreContext.requiredNonPayerKeys()).hasSize(1);
         assertThat(realPreContext
                         .requiredNonPayerKeys()
                         .toArray(Key[]::new)[0]
@@ -260,7 +261,7 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())
@@ -271,9 +272,9 @@ class FileDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile).isPresent();
         assertThat(changedFile.get().deleted()).isTrue();
-        assertThat(Bytes.EMPTY).isEqualTo(changedFile.get().contents());
+        assertThat(changedFile.get().contents()).isEqualTo(Bytes.EMPTY);
     }
 
     @Test
@@ -285,7 +286,7 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())

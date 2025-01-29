@@ -131,7 +131,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks throws exception when file id is null")
-    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+    void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         SystemDeleteTransactionBody transactionBody = mock(SystemDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
         given(transaction.systemDeleteOrThrow()).willReturn(transactionBody);
@@ -143,7 +143,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks does not throw exception when file id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+    void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
         given(context.body()).willReturn(newFileDeleteTxn());
 
         assertThatCode(() -> subject.pureChecks(context)).doesNotThrowAnyException();
@@ -151,7 +151,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("calculateFees method invocations")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -172,7 +172,8 @@ class FileSystemDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new PreHandleContextImpl(mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
+        final var context = new PreHandleContextImpl(
+                mockStoreFactory, newFileDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -198,12 +199,12 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemFileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
-        assertThat(ENTITY_NOT_ALLOWED_TO_DELETE).isEqualTo(thrown.getStatus());
+        assertThat(thrown.getStatus()).isEqualTo(ENTITY_NOT_ALLOWED_TO_DELETE);
         assertThat(existingFile.get().deleted()).isFalse();
     }
 
@@ -228,7 +229,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
@@ -247,7 +248,7 @@ class FileSystemDeleteTest extends FileTestBase {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
@@ -257,7 +258,7 @@ class FileSystemDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile).isPresent();
         assertThat(changedFile.get().deleted()).isTrue();
     }
 
