@@ -66,6 +66,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -99,6 +100,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
+
+    @Mock
+    private WritableEntityCounters entityCounters;
 
     @Mock
     private KeyVerifier keyVerifier;
@@ -135,9 +139,9 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         writableTopicState = writableTopicStateWithOneKey();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         given(storeFactory.readableStore(ReadableTopicStore.class)).willReturn(readableStore);
-        writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class));
+        writableStore = new WritableTopicStore(writableStates, config, mock(StoreMetricsService.class), entityCounters);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         given(handleContext.configuration()).willReturn(config);
@@ -191,7 +195,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        readableStore = new ReadableTopicStoreImpl(readableStates);
+        readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
         final var context = new FakePreHandleContext(accountStore, newDefaultSubmitMessageTxn(topicEntityNum));
         context.registerStore(ReadableTopicStore.class, readableStore);
 

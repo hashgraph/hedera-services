@@ -24,6 +24,7 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableStates;
@@ -45,21 +46,27 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
     public TokenServiceApi newInstance(
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableStates writableStates) {
-        return new TokenServiceApiImpl(configuration, storeMetricsService, writableStates, op -> {
-            final var assessor = new CustomFeeAssessmentStep(op);
-            try {
-                final var result = assessor.assessFees(
-                        new ReadableTokenStoreImpl(writableStates),
-                        new ReadableTokenRelationStoreImpl(writableStates),
-                        configuration,
-                        new ReadableAccountStoreImpl(writableStates),
-                        AccountID::hasAlias,
-                        false);
-                return !result.assessedCustomFees().isEmpty();
-            } catch (Exception ignore) {
-                return false;
-            }
-        });
+            @NonNull final WritableStates writableStates,
+            @NonNull final WritableEntityCounters entityCounters) {
+        return new TokenServiceApiImpl(
+                configuration,
+                storeMetricsService,
+                writableStates,
+                op -> {
+                    final var assessor = new CustomFeeAssessmentStep(op);
+                    try {
+                        final var result = assessor.assessFees(
+                                new ReadableTokenStoreImpl(writableStates, entityCounters),
+                                new ReadableTokenRelationStoreImpl(writableStates, entityCounters),
+                                configuration,
+                                new ReadableAccountStoreImpl(writableStates, entityCounters),
+                                AccountID::hasAlias,
+                                false);
+                        return !result.assessedCustomFees().isEmpty();
+                    } catch (Exception ignore) {
+                        return false;
+                    }
+                },
+                entityCounters);
     }
 }

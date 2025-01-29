@@ -22,6 +22,8 @@ import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_KEY;
 import static com.hedera.node.app.roster.schemas.V0540RosterSchema.ROSTER_STATES_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
@@ -41,6 +43,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -51,6 +54,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -89,6 +93,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     private AtomicReference<Timestamp> freezeTimeBackingStore;
     private AtomicReference<PlatformState> platformStateBackingStore;
     private AtomicReference<RosterState> rosterStateBackingStore;
+    private AtomicReference<EntityCounts> entityCountsBackingStore;
     private ConcurrentHashMap<ProtoBytes, Roster> rosters = new ConcurrentHashMap<>();
     private ConcurrentHashMap<EntityNumber, Node> nodes = new ConcurrentHashMap<>();
     private ConcurrentHashMap<EntityNumber, StakingNodeInfo> stakingInfo = new ConcurrentHashMap<>();
@@ -104,6 +109,12 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         freezeTimeBackingStore = new AtomicReference<>(null);
         platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         rosterStateBackingStore = new AtomicReference<>(ROSTER_STATE);
+        entityCountsBackingStore = new AtomicReference<>(EntityCounts.DEFAULT);
+
+        when(writableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .then(invocation -> new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY, entityCountsBackingStore::get, entityCountsBackingStore::set));
+
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
@@ -119,7 +130,14 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                 .addService(
                         PlatformStateService.NAME,
                         Map.of(V0540PlatformStateSchema.PLATFORM_STATE_KEY, platformStateBackingStore))
-                .addService(TokenService.NAME, Map.of(STAKING_INFO_KEY, stakingInfo));
+                .addService(TokenService.NAME, Map.of(STAKING_INFO_KEY, stakingInfo))
+                .addService(
+                        EntityIdService.NAME,
+                        Map.of(
+                                ENTITY_ID_STATE_KEY,
+                                new AtomicReference<>(EntityNumber.newBuilder().build()),
+                                ENTITY_COUNTS_KEY,
+                                entityCountsBackingStore));
 
         subject = new PlatformStateUpdates(rosterExportHelper);
     }
@@ -276,6 +294,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     void worksAroundInvalidCandidate() {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
+        entityCountsBackingStore.set(EntityCounts.newBuilder().numNodes(1).build());
         final var txBody = TransactionBody.newBuilder()
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
         final var fakeEndpoint = new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org");

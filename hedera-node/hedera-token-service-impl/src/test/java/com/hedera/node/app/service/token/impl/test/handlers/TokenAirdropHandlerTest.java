@@ -331,8 +331,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .copyBuilder()
                 .customFees(Collections.emptyList())
                 .build();
-        writableTokenStore.put(tokenWithNoCustomFees);
-        writableTokenStore.put(nftWithNoCustomFees);
+        writableTokenStore.putAndIncrementCount(tokenWithNoCustomFees);
+        writableTokenStore.putAndIncrementCount(nftWithNoCustomFees);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         givenAirdropTxn();
@@ -529,7 +529,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                 .build();
         given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
                 .willReturn(writableAirdropState);
-        writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
+        writableAirdropStore =
+                new WritableAirdropStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, validator);
 
         final var newAirdropValue = airdropWithValue(20);

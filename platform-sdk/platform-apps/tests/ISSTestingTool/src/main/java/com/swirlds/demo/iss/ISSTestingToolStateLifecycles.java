@@ -100,7 +100,7 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull ISSTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -151,7 +151,6 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
                 }
             }
         }
-        return true;
     }
 
     /**
@@ -370,8 +369,9 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

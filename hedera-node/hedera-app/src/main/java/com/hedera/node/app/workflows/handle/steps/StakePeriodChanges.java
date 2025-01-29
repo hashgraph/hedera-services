@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -174,8 +176,9 @@ public class StakePeriodChanges {
 
     private WritableNodeStore newWritableNodeStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var entityCounters = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
         final var writableFactory =
-                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
+                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService, entityCounters);
         return writableFactory.getStore(WritableNodeStore.class);
     }
 
