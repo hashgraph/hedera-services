@@ -111,6 +111,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     // The status of pending work
     private PendingWork pendingWork = NONE;
+    private boolean genesisWorkComplete = false;
     // The last time at which interval-based processing was done
     private Instant lastIntervalProcessTime = Instant.EPOCH;
     // The last platform-assigned time
@@ -234,14 +235,18 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
+
+        // Check for pending work at the start of each round
+        final var blockStreamInfo = blockStreamInfoFrom(state);
+        pendingWork = classifyPendingWork(blockStreamInfo, version);
+        log.info("Pending work classified as {}", pendingWork);
+
         // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
-            final var blockStreamInfo = blockStreamInfoFrom(state);
             consensusTimeFirstRoundInBlock = round.getConsensusTimestamp();
             boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
 
-            pendingWork = classifyPendingWork(blockStreamInfo, version);
             lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
@@ -267,8 +272,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 preUserItems = null;
                 worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
             }
+
+            // Set initial boundary timestamp when starting a new block
+            boundaryStateChangeListener.setBoundaryTimestamp(consensusTimeFirstRoundInBlock);
         }
         consensusTimeLastRound = round.getConsensusTimestamp();
+        log.info("Updated last round time to {} for round {}", consensusTimeLastRound, round.getRoundNum());
     }
 
     @Override
@@ -283,6 +292,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (pendingWork == NONE) {
             // Should never happen but throwing IllegalStateException might make the situation even worse, so just log
             log.error("HandleWorkflow confirmed finished work but none was pending");
+        } else if (pendingWork == GENESIS_WORK) {
+            genesisWorkComplete = true;
         }
         pendingWork = NONE;
     }
@@ -501,11 +512,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * @return the type of pending work given the block stream info and version
      */
     @VisibleForTesting
-    static PendingWork classifyPendingWork(
+    PendingWork classifyPendingWork(
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);
-        if (EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
+        if (!genesisWorkComplete && EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
             // If we have never processed any time-based events, we must be at genesis
             return GENESIS_WORK;
         } else if (impliesPostUpgradeWorkPending(blockStreamInfo, version)) {
@@ -527,25 +538,34 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
+        // We need the signer to be ready
         if (!blockHashSigner.isReady()) {
             return false;
         }
 
-        // If we're at the freeze round, always close the block
+        // During freeze round, we should close the block regardless of other conditions
         if (roundNumber == freezeRoundNumber) {
             return true;
         }
 
-        // If blockPeriod is 0, fall back to using roundsPerBlock
+        // If blockPeriod is 0, use roundsPerBlock for both genesis and normal operations
         if (blockPeriod == 0) {
             return roundNumber % roundsPerBlock == 0;
         }
 
-        // Check if enough consensus time has elapsed since last block
+        // For time-based blocks, check if enough consensus time has elapsed
         final var elapsedSeconds = Duration.between(consensusTimeFirstRoundInBlock, consensusTimeLastRound)
                 .getSeconds();
-
-        // If we've exceeded the block period, close the block at this round boundary
+        log.info(
+                "Checking block closure: firstTime={}, lastTime={}, elapsed={}, blockPeriod={}",
+                consensusTimeFirstRoundInBlock,
+                consensusTimeLastRound,
+                elapsedSeconds,
+                blockPeriod);
+        // For time-based blocks, we want to ensure:
+        // 1. We've completed at least one round (roundNumber > 0)
+        // 2. We've exceeded the block period
+        // This ensures we include whole rounds and respect the time period
         return elapsedSeconds >= blockPeriod;
     }
 
@@ -776,3 +796,4 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 .complete(notification.hash().getBytes());
     }
 }
+

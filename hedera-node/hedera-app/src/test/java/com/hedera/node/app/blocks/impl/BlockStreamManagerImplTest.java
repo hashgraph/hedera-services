@@ -23,7 +23,6 @@ import static com.hedera.node.app.blocks.BlockStreamManager.ZERO_BLOCK_HASH;
 import static com.hedera.node.app.blocks.BlockStreamService.FAKE_RESTART_BLOCK_HASH;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
-import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.classifyPendingWork;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -169,14 +168,14 @@ class BlockStreamManagerImplTest {
     void classifiesPendingGenesisWorkByIntervalTime() {
         assertSame(
                 BlockStreamManager.PendingWork.GENESIS_WORK,
-                classifyPendingWork(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
+                subject.classifyPendingWork(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
     }
 
     @Test
     void classifiesPriorVersionHasPostUpgradeWorkWithDifferentVersionButIntervalTime() {
         assertSame(
                 POST_UPGRADE_WORK,
-                classifyPendingWork(
+                subject.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(
                                         SemanticVersion.newBuilder().major(1).build())
@@ -189,7 +188,7 @@ class BlockStreamManagerImplTest {
     void classifiesNonGenesisBlockOfSameVersionWithWorkNotDoneStillHasPostUpgradeWork() {
         assertEquals(
                 POST_UPGRADE_WORK,
-                classifyPendingWork(
+                subject.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(CREATION_VERSION)
                                 .lastIntervalProcessTime(new Timestamp(1234567, 890))
@@ -201,7 +200,7 @@ class BlockStreamManagerImplTest {
     void classifiesNonGenesisBlockOfSameVersionWithWorkDoneAsNoWork() {
         assertSame(
                 NONE,
-                classifyPendingWork(
+                subject.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .postUpgradeWorkDone(true)
                                 .creationSoftwareVersion(CREATION_VERSION)
