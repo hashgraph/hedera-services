@@ -135,7 +135,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .normalize();
         final var validator = new StateChangesValidator(
                 Bytes.fromHex(
-                        "912d5cf1478f1585f0d23ff8c7ecb05860b8a6c8c1f1d1ffe91d0fa45b642a98d54487d41f5966721a613ca646b28652"),
+                        "72f87f8b0c4fa307f31dd9b4148cfafc88f130e235b99224cf563fefbccd83d960103f0b7dc05a52d1462c03127b72c5"),
                 node0Dir.resolve("output/swirlds.log"),
                 node0Dir.resolve("config.txt"),
                 node0Dir.resolve("data/config/application.properties"),
@@ -475,16 +475,18 @@ public class StateChangesValidator implements BlockStreamValidator {
                             mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()),
                             mapValueFor(stateChange.mapUpdateOrThrow().valueOrThrow()));
                     entityChanges
-                            .computeIfAbsent(stateKey, k -> new HashSet<>())
+                            .computeIfAbsent(stateName, k -> new HashSet<>())
                             .add(mapKeyFor(stateChange.mapUpdateOrThrow().keyOrThrow()));
                     stateChangesSummary.countMapUpdate(serviceName, stateKey);
                 }
                 case MAP_DELETE -> {
                     final var mapState = writableStates.get(stateKey);
                     mapState.remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
-                    entityChanges
-                            .get(stateName)
-                            .remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
+                    final var keyToRemove =
+                            mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow());
+                    if (entityChanges.get(stateName) != null) {
+                        entityChanges.get(stateName).remove(keyToRemove);
+                    }
                     stateChangesSummary.countMapDelete(serviceName, stateKey);
                 }
                 case QUEUE_PUSH -> {
