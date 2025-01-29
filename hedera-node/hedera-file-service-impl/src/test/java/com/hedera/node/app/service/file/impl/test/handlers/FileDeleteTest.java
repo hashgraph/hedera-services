@@ -35,11 +35,11 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
@@ -109,7 +109,7 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         testConfig = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
         when(mockStoreFactory.getStore(ReadableFileStore.class)).thenReturn(mockStore);
@@ -219,7 +219,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
@@ -237,7 +237,7 @@ class FileDeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableFileStore(writableStates, testConfig, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body())

@@ -36,10 +36,10 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenReference;
 import com.hedera.hapi.node.token.TokenRejectTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -115,7 +115,6 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
         // Then:
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).contains(ownerId, treasuryId);
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
 
         // Verify balance removal
         final var endSenderTokenBalance =

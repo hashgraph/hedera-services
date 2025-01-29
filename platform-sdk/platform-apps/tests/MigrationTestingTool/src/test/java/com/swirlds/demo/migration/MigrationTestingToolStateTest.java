@@ -218,6 +218,13 @@ class MigrationTestingToolStateTest {
         assertThat(consumedTransactions).isEmpty();
     }
 
+    @Test
+    void onSealDefaultsToTrue() {
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        assertThat(result).isTrue();
+    }
+
     private void givenRoundAndEvent() {
         when(round.iterator()).thenReturn(Collections.singletonList(event).iterator());
         when(event.getConsensusTimestamp()).thenReturn(Instant.now());

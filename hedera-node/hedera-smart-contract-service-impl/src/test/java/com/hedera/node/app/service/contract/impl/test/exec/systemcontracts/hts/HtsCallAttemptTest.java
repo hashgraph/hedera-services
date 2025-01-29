@@ -36,8 +36,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
@@ -71,6 +72,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc20TransfersTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.swirlds.common.utility.CommonUtils;
@@ -103,24 +105,29 @@ class HtsCallAttemptTest extends CallTestBase {
     @Mock
     private MintDecoder mintDecoder;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
     private List<CallTranslator<HtsCallAttempt>> callTranslators;
+
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
 
     @BeforeEach
     void setUp() {
         callTranslators = List.of(
-                new AssociationsTranslator(associationsDecoder),
-                new Erc20TransfersTranslator(),
-                new Erc721TransferFromTranslator(),
-                new MintTranslator(mintDecoder),
-                new ClassicTransfersTranslator(classicTransfersDecoder),
-                new BalanceOfTranslator(),
-                new IsApprovedForAllTranslator(),
-                new NameTranslator(),
-                new TotalSupplyTranslator(),
-                new SymbolTranslator(),
-                new TokenUriTranslator(),
-                new OwnerOfTranslator(),
-                new DecimalsTranslator());
+                new AssociationsTranslator(associationsDecoder, systemContractMethodRegistry, contractMetrics),
+                new Erc20TransfersTranslator(systemContractMethodRegistry, contractMetrics),
+                new Erc721TransferFromTranslator(systemContractMethodRegistry, contractMetrics),
+                new MintTranslator(mintDecoder, systemContractMethodRegistry, contractMetrics),
+                new ClassicTransfersTranslator(classicTransfersDecoder, systemContractMethodRegistry, contractMetrics),
+                new BalanceOfTranslator(systemContractMethodRegistry, contractMetrics),
+                new IsApprovedForAllTranslator(systemContractMethodRegistry, contractMetrics),
+                new NameTranslator(systemContractMethodRegistry, contractMetrics),
+                new TotalSupplyTranslator(systemContractMethodRegistry, contractMetrics),
+                new SymbolTranslator(systemContractMethodRegistry, contractMetrics),
+                new TokenUriTranslator(systemContractMethodRegistry, contractMetrics),
+                new OwnerOfTranslator(systemContractMethodRegistry, contractMetrics),
+                new DecimalsTranslator(systemContractMethodRegistry, contractMetrics));
     }
 
     @Test
@@ -138,6 +145,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertNull(subject.redirectToken());
         verifyNoInteractions(nativeOperations);
@@ -159,6 +167,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertNull(subject.asExecutableCall());
     }
@@ -178,6 +187,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(DecimalsCall.class, subject.asExecutableCall());
     }
@@ -197,6 +207,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(TokenUriCall.class, subject.asExecutableCall());
     }
@@ -216,6 +227,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(OwnerOfCall.class, subject.asExecutableCall());
     }
@@ -238,6 +250,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(BalanceOfCall.class, subject.asExecutableCall());
     }
@@ -261,6 +274,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
@@ -282,6 +296,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(IsApprovedForAllCall.class, subject.asExecutableCall());
     }
@@ -301,6 +316,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(TotalSupplyCall.class, subject.asExecutableCall());
     }
@@ -320,6 +336,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(NameCall.class, subject.asExecutableCall());
     }
@@ -339,6 +356,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(SymbolCall.class, subject.asExecutableCall());
     }
@@ -369,6 +387,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(Erc721TransferFromCall.class, subject.asExecutableCall());
     }
@@ -399,6 +418,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
@@ -426,6 +446,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
         assertInstanceOf(Erc20TransfersCall.class, subject.asExecutableCall());
     }
@@ -479,6 +500,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());
@@ -542,6 +564,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
 
         assertInstanceOf(ClassicTransfersCall.class, subject.asExecutableCall());
@@ -613,6 +636,7 @@ class HtsCallAttemptTest extends CallTestBase {
                 verificationStrategies,
                 gasCalculator,
                 callTranslators,
+                systemContractMethodRegistry,
                 false);
 
         assertInstanceOf(DispatchForResponseCodeHtsCall.class, subject.asExecutableCall());

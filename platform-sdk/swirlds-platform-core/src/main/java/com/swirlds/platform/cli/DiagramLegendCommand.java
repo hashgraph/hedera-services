@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.diagram.ModelGroup;
-import com.swirlds.common.wiring.model.diagram.ModelManualLink;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.component.framework.model.diagram.ModelGroup;
+import com.swirlds.component.framework.model.diagram.ModelManualLink;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.wires.SolderType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;

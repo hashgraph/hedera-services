@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
@@ -78,6 +79,9 @@ class HtsSystemContractTest {
     @Mock
     private GasCalculator gasCalculator;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
     private MockedStatic<FrameUtils> frameUtils;
 
     private HtsSystemContract subject;
@@ -86,7 +90,7 @@ class HtsSystemContractTest {
     @BeforeEach
     void setUp() {
         frameUtils = Mockito.mockStatic(FrameUtils.class);
-        subject = new HtsSystemContract(gasCalculator, attemptFactory);
+        subject = new HtsSystemContract(gasCalculator, attemptFactory, contractMetrics);
     }
 
     @AfterEach

@@ -43,7 +43,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractCallLocalQuery;
@@ -52,12 +51,15 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -494,7 +496,9 @@ public class ThrottleAccumulator {
                                     .seconds()
                             + ledgerConfig.scheduleTxExpiryTimeSecs();
                 }
-                final var scheduleStore = new ReadableScheduleStoreImpl(state.getReadableStates(ScheduleService.NAME));
+                final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+                final var scheduleStore =
+                        new ReadableScheduleStoreImpl(state.getReadableStates(ScheduleService.NAME), entityIdStore);
                 final var numScheduled = scheduleStore.numTransactionsScheduledAt(expiry);
                 return numScheduled >= schedulingConfig.maxTxnPerSec();
             }
@@ -523,18 +527,30 @@ public class ThrottleAccumulator {
         gasThrottle.resetLastAllowedUse();
     }
 
+    /**
+     * Returns the gas limit for a contract transaction.
+     *
+     * @param txnBody  the transaction body
+     * @param function the functionality
+     * @return the gas limit for a contract transaction
+     */
     private long getGasLimitForContractTx(
-            @NonNull final TransactionBody txn, @NonNull final HederaFunctionality function) {
-        return switch (function) {
-            case CONTRACT_CREATE -> txn.contractCreateInstance().gas();
-            case CONTRACT_CALL -> txn.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> Optional.of(
-                            txn.ethereumTransactionOrThrow().ethereumData().toByteArray())
-                    .map(EthTxData::populateEthTxData)
-                    .map(EthTxData::gasLimit)
-                    .orElse(0L);
-            default -> 0L;
-        };
+            @NonNull final TransactionBody txnBody, @NonNull final HederaFunctionality function) {
+        final long nominalGas =
+                switch (function) {
+                    case CONTRACT_CREATE -> txnBody.contractCreateInstanceOrThrow()
+                            .gas();
+                    case CONTRACT_CALL -> txnBody.contractCallOrThrow().gas();
+                    case ETHEREUM_TRANSACTION -> Optional.of(txnBody.ethereumTransactionOrThrow()
+                                    .ethereumData()
+                                    .toByteArray())
+                            .map(EthTxData::populateEthTxData)
+                            .map(EthTxData::gasLimit)
+                            .orElse(0L);
+                    default -> 0L;
+                };
+        // Interpret negative gas as overflow
+        return nominalGas < 0 ? Long.MAX_VALUE : nominalGas;
     }
 
     private boolean isGasExhausted(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,10 +178,14 @@ class ConfigProviderImplTest {
     }
 
     @Test
-    void incorporatesOverrideProperties() {
+    void incorporatesOverridePropertiesEvenAfterUpdate() {
         final var subject = new ConfigProviderImpl(false, null, Map.of("baz.test", "789"));
         final var config = subject.getConfiguration();
         assertThat(config.getValue("baz.test")).isEqualTo("789");
+
+        subject.update(Bytes.EMPTY, Bytes.EMPTY);
+        final var postUpdateConfig = subject.getConfiguration();
+        assertThat(postUpdateConfig.getValue("baz.test")).isEqualTo("789");
     }
 
     @Test

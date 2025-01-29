@@ -38,16 +38,15 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -122,9 +121,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private Nft nft;
-
-    @Mock
-    private NftID nftId;
 
     @Mock
     private Key metadataKey;
@@ -389,7 +385,8 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 new MapWritableStates(
                         Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                 CONFIGURATION,
-                storeMetricsService);
+                storeMetricsService,
+                writableEntityCounters);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(

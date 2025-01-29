@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface AddressIdConverter {
     /**
-     * Given an address to be referenced in a synthetic {@link com.hedera.hapi.node.base.TransactionBody},
+     * Given an address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},
      * returns the {@link AccountID} that should be used in the synthetic transaction.
      *
      * @param address the address to be used in the synthetic transaction
@@ -37,7 +37,7 @@ public interface AddressIdConverter {
     AccountID convert(@NonNull Address address);
 
     /**
-     * Given a Besu sender address to be referenced in a synthetic {@link com.hedera.hapi.node.base.TransactionBody},
+     * Given a Besu sender address to be referenced in a synthetic {@link com.hedera.hapi.node.transaction.TransactionBody},
      * returns the {@link AccountID} that should be used in the synthetic transaction.
      *
      * @param address the address to be used in the synthetic transaction

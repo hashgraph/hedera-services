@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -29,6 +30,7 @@ import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,9 @@ class ServiceApiFactoryTest {
 
     @Mock
     private WritableStates writableStates;
+
+    @Mock
+    private WritableStates entityIdStates;
 
     @Mock
     private SavepointStackImpl stack;
@@ -63,6 +68,11 @@ class ServiceApiFactoryTest {
     void canCreateTokenServiceApi() {
         given(stack.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         given(writableStates.get(any())).willReturn(new MapWritableKVState<>("ACCOUNTS"));
+        given(stack.getWritableStates(EntityIdService.NAME)).willReturn(entityIdStates);
+        given(entityIdStates.getSingleton("ENTITY_ID"))
+                .willReturn(new WritableSingletonStateBase<>("ENTITY_ID", () -> null, (a) -> {}));
+        given(entityIdStates.getSingleton("ENTITY_COUNTS"))
+                .willReturn(new WritableSingletonStateBase<>("ENTITY_COUNTS", () -> null, (a) -> {}));
         assertNotNull(subject.getApi(TokenServiceApi.class));
     }
 

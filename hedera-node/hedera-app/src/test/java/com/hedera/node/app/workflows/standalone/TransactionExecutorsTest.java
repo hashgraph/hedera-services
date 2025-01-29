@@ -27,6 +27,8 @@ import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRAN
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -36,7 +38,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -44,6 +45,7 @@ import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fees.FeeService;
@@ -51,6 +53,7 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
@@ -81,6 +84,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -382,6 +386,7 @@ public class TransactionExecutorsTest {
         registerServices(appContext, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+        given(startupNetworks.genesisNetworkOrThrow(any())).willReturn(Network.DEFAULT);
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -395,7 +400,8 @@ public class TransactionExecutorsTest {
                 startupNetworks);
         final var writableStates = state.getWritableStates(FileService.NAME);
         final var readableStates = state.getReadableStates(AddressBookService.NAME);
-        final var nodeStore = new ReadableNodeStoreImpl(readableStates);
+        final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+        final var nodeStore = new ReadableNodeStoreImpl(readableStates, entityIdStore);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
         genesisContentProviders(nodeStore, config).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, config);
@@ -431,7 +437,7 @@ public class TransactionExecutorsTest {
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(appContext),
+                        new ContractServiceImpl(appContext, NO_OP_METRICS),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),

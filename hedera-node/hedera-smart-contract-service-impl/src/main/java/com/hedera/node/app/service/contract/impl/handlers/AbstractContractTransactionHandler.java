@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
-import com.hedera.hapi.node.base.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
@@ -103,5 +103,10 @@ public abstract class AbstractContractTransactionHandler implements TransactionH
             @NonNull final com.hederahashgraph.api.proto.java.TransactionBody txBody,
             @NonNull final SigValueObj sigValObj) {
         throw new IllegalStateException("must be overridden if `calculateFees` _not_ overridden");
+    }
+
+    protected @NonNull TransactionComponent getTransactionComponent(
+            @NonNull final HandleContext context, @NonNull final HederaFunctionality functionality) {
+        return provider.get().create(context, functionality);
     }
 }

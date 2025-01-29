@@ -36,11 +36,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenPauseTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -208,7 +208,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
                 .value(tokenId, copy)
                 .build();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
 
         subject.preHandle(preHandleContext);

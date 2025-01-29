@@ -17,10 +17,13 @@
 package com.swirlds.demo.stats.signing;
 
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.demo.stats.signing.StatsSigningTestingToolMain.SYSTEM_TRANSACTION_MARKER;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -77,12 +80,27 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
             @NonNull Event event,
             @NonNull StatsSigningTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
+
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
+                // We are not interested in pre-handling any system transactions, as they are
+                // specific for the platform only.We also don't want to consume deprecated
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+                // callback,since it's intended to be used only for the new form of encoded system
+                // transactions in Bytes.Thus, we can directly skip the current
+                // iteration, if it processes a deprecated system transaction with the
+                // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
                 if (transaction.isSystem()) {
                     return;
                 }
+
+                // We should consume in the callback the new form of system transactions in Bytes
+                if (areTransactionBytesSystemOnes(transaction)) {
+                    consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+                    return;
+                }
+
                 final TransactionSignature transactionSignature =
                         sttTransactionPool.expandSignatures(transaction.getApplicationTransaction());
                 if (transactionSignature != null) {
@@ -99,13 +117,29 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
             @NonNull StatsSigningTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         state.throwIfImmutable();
-        round.forEachTransaction(v -> handleTransaction(v, state));
+
+        round.forEachEventTransaction((event, transaction) -> {
+            // We are not interested in handling any system transactions, as they are
+            // specific for the platform only.We also don't want to consume deprecated
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION system transactions in the
+            // callback,since it's intended to be used only for the new form of encoded system
+            // transactions in Bytes.Thus, we can directly skip the current
+            // iteration, if it processes a deprecated system transaction with the
+            // EventTransaction.STATE_SIGNATURE_TRANSACTION type.
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            // We should consume in the callback the new form of system transactions in Bytes
+            if (areTransactionBytesSystemOnes(transaction)) {
+                consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+            } else {
+                handleTransaction(transaction, state);
+            }
+        });
     }
 
     private void handleTransaction(final ConsensusTransaction trans, final StatsSigningTestingToolState state) {
-        if (trans.isSystem()) {
-            return;
-        }
         final TransactionSignature s = trans.getMetadata();
 
         if (s != null && validateSignature(s, trans) && s.getSignatureStatus() != VerificationStatus.VALID) {
@@ -131,6 +165,40 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
         state.incrementRunningSum(TransactionCodec.txId(trans.getApplicationTransaction()));
 
         maybeDelay();
+    }
+
+    /**
+     * Checks if the transaction bytes are system ones.
+     *
+     * @param transaction the transaction to check
+     * @return true if the transaction bytes are system ones, false otherwise
+     */
+    private boolean areTransactionBytesSystemOnes(@NonNull final Transaction transaction) {
+        final var transactionBytes = transaction.getApplicationTransaction();
+
+        if (transactionBytes.length() == 0) {
+            return false;
+        }
+
+        return transactionBytes.getByte(0) == SYSTEM_TRANSACTION_MARKER;
+    }
+
+    private void consumeSystemTransaction(
+            @NonNull final Transaction transaction,
+            @NonNull final Event event,
+            @NonNull
+                    final Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        try {
+            final Bytes transactionBytes = transaction.getApplicationTransaction();
+            final Bytes strippedSystemTransactionBytes = transactionBytes.slice(1, transactionBytes.length() - 1);
+            final StateSignatureTransaction stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(strippedSystemTransactionBytes);
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 
     private void maybeDelay() {
@@ -164,7 +232,10 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {}
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {
+        // No-op
+        return true;
+    }
 
     @Override
     public void onUpdateWeight(

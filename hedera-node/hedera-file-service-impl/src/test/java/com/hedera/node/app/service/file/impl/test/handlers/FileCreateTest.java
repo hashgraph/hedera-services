@@ -40,11 +40,11 @@ import com.hedera.hapi.node.base.RealmID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ShardID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
@@ -134,7 +134,7 @@ class FileCreateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileCreateHandler(fileOpsUsage);
-        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
+        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
@@ -313,9 +313,11 @@ class FileCreateTest extends FileTestBase {
         final var txBody = newCreateTxn(keys, expirationTime);
         given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
+        givenEntityCounters(2);
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
-        final var fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
+        final var fileStore =
+                new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());

@@ -43,8 +43,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateStreamBuilder;
@@ -231,8 +231,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
-        assertEquals(1, writableStore.sizeOfState());
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_NODES_CREATED, msg.getStatus());
         assertEquals(0, writableStore.modifiedNodes().size());

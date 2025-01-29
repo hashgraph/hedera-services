@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
@@ -96,6 +96,28 @@ public interface HandleContext {
          * backward compatibility.)
          */
         LIMITED_CHILD_RECORDS
+    }
+
+    /**
+     * Metadata that can be attached to a dispatch.
+     * This metadata is passed when dispatching a child transaction and can
+     * be used to pass additional information to the targeted handlers.
+     */
+    class DispatchMetadata {
+        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(Map.of());
+
+        // Metadata keys
+        public static final String TRANSACTION_FIXED_FEE = "transactionFixedFee";
+
+        private final Map<String, Object> metadata;
+
+        public DispatchMetadata(Map<String, Object> metadata) {
+            this.metadata = metadata;
+        }
+
+        public Object getMetadata(String dataKey) {
+            return metadata.get(dataKey);
+        }
     }
 
     /**
@@ -373,4 +395,11 @@ public interface HandleContext {
         ON,
         OFF
     }
+
+    /**
+     * Metadata that can be attached to a dispatch.
+     * This metadata is passed when dispatching a child transaction and can
+     * be used to pass additional information to the targeted handlers.
+     */
+    DispatchMetadata dispatchMetadata();
 }

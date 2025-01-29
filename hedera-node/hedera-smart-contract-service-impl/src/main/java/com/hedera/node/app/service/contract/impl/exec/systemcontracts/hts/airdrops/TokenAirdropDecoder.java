@@ -25,8 +25,8 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
@@ -99,18 +99,22 @@ public class TokenAirdropDecoder {
                 tokenTransferList.transfers(aaList);
             }
             if (nftAmountsTuple.length > 0) {
-                final var nftAmount = nftAmountsTuple[0];
-                final var serial = (long) nftAmount.get(NFT_SERIAL);
-                final var sender = addressIdConverter.convert(nftAmount.get(NFT_SENDER));
-                final var receiver = addressIdConverter.convert(nftAmount.get(NFT_RECEIVER));
-                checkForSystemAccount(receiver);
-                final var isApproval = (boolean) nftAmount.get(NFT_IS_APPROVAL);
-                tokenTransferList.nftTransfers(NftTransfer.newBuilder()
-                        .senderAccountID(sender)
-                        .receiverAccountID(receiver)
-                        .serialNumber(serial)
-                        .isApproval(isApproval)
-                        .build());
+                final var nftTransfersList = new ArrayList<NftTransfer>();
+                Arrays.stream(nftAmountsTuple).forEach(nftAmount -> {
+                    final var serial = (long) nftAmount.get(NFT_SERIAL);
+                    final var sender = addressIdConverter.convert(nftAmount.get(NFT_SENDER));
+                    final var receiver = addressIdConverter.convert(nftAmount.get(NFT_RECEIVER));
+                    checkForSystemAccount(receiver);
+                    final var isApproval = (boolean) nftAmount.get(NFT_IS_APPROVAL);
+                    final var nftTransfer = NftTransfer.newBuilder()
+                            .senderAccountID(sender)
+                            .receiverAccountID(receiver)
+                            .serialNumber(serial)
+                            .isApproval(isApproval)
+                            .build();
+                    nftTransfersList.add(nftTransfer);
+                });
+                tokenTransferList.nftTransfers(nftTransfersList);
             }
             transferBuilderList.add(tokenTransferList.build());
         });
