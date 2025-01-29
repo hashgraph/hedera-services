@@ -26,6 +26,7 @@ module com.swirlds.platform.core.test.fixtures {
     requires transitive com.swirlds.state.impl.test.fixtures;
     requires transitive com.swirlds.state.impl;
     requires transitive com.swirlds.virtualmap;
+    requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.component.framework;
     requires com.swirlds.config.extensions.test.fixtures;
@@ -44,4 +45,6 @@ module com.swirlds.platform.core.test.fixtures {
     exports com.swirlds.platform.test.fixtures.state;
     exports com.swirlds.platform.test.fixtures.addressbook;
     exports com.swirlds.platform.test.fixtures.crypto;
+    exports com.swirlds.platform.test.fixtures.network.communication;
+    exports com.swirlds.platform.test.fixtures.network.communication.multithreaded;
 }
