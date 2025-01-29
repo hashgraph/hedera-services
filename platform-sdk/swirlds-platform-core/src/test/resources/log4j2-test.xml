@@ -23,11 +23,20 @@
 		<MarkerFilter marker="EXCEPTION" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="TESTING_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="SOCKET_EXCEPTIONS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<!-- Errors -->
+		<MarkerFilter marker="ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="INVALID_EVENT_ERROR" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<!-- Other -->
+		<MarkerFilter marker="THREADS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="SYNC" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="SYNC_START" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="SYNC_INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="SYNC_ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="CREATE_EVENT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="ADD_EVENT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="INTAKE_EVENT" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="WATCH_EVENTS_SEND_REC" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="QUEUES" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="HEARTBEAT" onMatch="DENY" onMismatch="NEUTRAL"/>
@@ -40,17 +49,25 @@
 		<MarkerFilter marker="LOCKS" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="TIME_MEASURE" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="STARTUP" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
-		<MarkerFilter marker="REGRESSION_TESTS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="ADV_CRYPTO_SYSTEM" onMatch="DENY" onMismatch="NEUTRAL"/>
-		<MarkerFilter marker="FCFS_DIAGNOSTICS" onMatch="DENY" onMismatch="NEUTRAL"/>
-		<MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="EVENT_STREAM" onMatch="DENY" onMismatch="NEUTRAL"/>
-		<MarkerFilter marker="EVENT_RESTART" onMatch="DENY" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="RECONNECT" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="DEMO_INFO" onMatch="DENY" onMismatch="NEUTRAL"/>
-		<MarkerFilter marker="LOGM_FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_PARSER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 		<MarkerFilter marker="FREEZE" onMatch="ACCEPT" onMismatch="DENY"/>
-
+		<MarkerFilter marker="REGRESSION_TESTS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="FCFS_DIAGNOSTICS" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="EVENT_RESTART" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="LOGM_FREEZE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_STAT" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="DEMO_MAP" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="STALE_EVENTS" onMatch="DENY" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="SNAPSHOT_MANAGER" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="STATE_TO_DISK" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="PLATFORM_STATUS" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="OBJECT_STREAM" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="OBJECT_STREAM_FILE" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+		<MarkerFilter marker="CONSENSUS_VOTING" onMatch="DENY" onMismatch="NEUTRAL"/>
 	</Filters>
 
 	<Appenders>
@@ -61,7 +78,7 @@
 			</Filters>
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} %6r %t %msg%n"/>
 		</Console>
-		<RandomAccessFile immediateFlush="true" name="fileLog" fileName="swirlds.log" append="true">
+		<RandomAccessFile immediateFlush="true" name="fileLog" fileName="swirlds.log" append="false">
 			<PatternLayout>
 				<Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %6r %t %msg%n</Pattern>
 			</PatternLayout>
