@@ -17,6 +17,7 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
+import static com.swirlds.demo.consistency.ConsistencyTestingToolState.isSystemTransaction;
 
 import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,6 +62,9 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
 
         round.forEachTransaction(transaction -> {
             if (transaction.isSystem()) {
+                return;
+            }
+            if (isSystemTransaction(transaction)) {
                 return;
             }
             transactionContents.add(
