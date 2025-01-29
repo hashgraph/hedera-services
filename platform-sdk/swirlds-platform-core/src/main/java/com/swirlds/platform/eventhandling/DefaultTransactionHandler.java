@@ -50,6 +50,8 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
@@ -107,6 +109,11 @@ public class DefaultTransactionHandler implements TransactionHandler {
     private final boolean waitForPrehandle;
 
     /**
+     * A queue of accumulated transactions that will be applied to the state.
+     */
+    private final List<ScopedSystemTransaction<StateSignatureTransaction>> accumulatedTransactions;
+
+    /**
      * Constructor
      *
      * @param platformContext       contains various platform utilities
@@ -141,6 +148,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         // If the application transaction prehandler is a no-op then we don't need to wait for it.
         waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
+        accumulatedTransactions = new ArrayList<>();
     }
 
     /**
@@ -270,7 +278,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @return a StateAndRound object containing the signed state and the consensus round
      * @throws InterruptedException if this thread is interrupted
      */
-    @NonNull
+    @Nullable
     private StateAndRound createSignedState(
             @NonNull final ConsensusRound consensusRound,
             @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions)
@@ -279,25 +287,31 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
+
         final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
+
         if (isBoundary) {
-            // This logic to be completed in https://github.com/hashgraph/hedera-services/issues/17480
+            systemTransactions.addAll(accumulatedTransactions);
+            accumulatedTransactions.clear();
+
+            handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
+            final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
+
+            handlerMetrics.setPhase(CREATING_SIGNED_STATE);
+            final SignedState signedState = new SignedState(
+                    platformContext.getConfiguration(),
+                    CryptoStatic::verifySignature,
+                    immutableStateCons,
+                    "TransactionHandler.createSignedState()",
+                    freezeRoundReceived,
+                    true,
+                    consensusRound.isPcesRound());
+
+            final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
+            return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
         }
 
-        handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
-
-        handlerMetrics.setPhase(CREATING_SIGNED_STATE);
-        final SignedState signedState = new SignedState(
-                platformContext.getConfiguration(),
-                CryptoStatic::verifySignature,
-                immutableStateCons,
-                "TransactionHandler.createSignedState()",
-                freezeRoundReceived,
-                true,
-                consensusRound.isPcesRound());
-
-        final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
-        return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
+        accumulatedTransactions.addAll(systemTransactions);
+        return null;
     }
 }
