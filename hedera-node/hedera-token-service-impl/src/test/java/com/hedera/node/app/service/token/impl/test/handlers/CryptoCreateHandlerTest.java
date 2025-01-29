@@ -79,7 +79,6 @@ import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -127,9 +126,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private ExpiryValidator expiryValidator;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private AttributeValidator attributeValidator;

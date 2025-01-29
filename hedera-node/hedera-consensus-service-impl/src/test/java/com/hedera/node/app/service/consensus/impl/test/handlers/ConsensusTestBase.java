@@ -42,7 +42,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -163,9 +162,6 @@ public class ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     private ReadableTokenRelationStore tokenRelStore;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     protected WritableEntityCounters entityCounters;

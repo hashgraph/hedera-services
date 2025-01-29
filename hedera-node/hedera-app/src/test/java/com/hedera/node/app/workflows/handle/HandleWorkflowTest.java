@@ -41,7 +41,6 @@ import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
@@ -89,9 +88,6 @@ class HandleWorkflowTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private BlockRecordManager blockRecordManager;
@@ -215,7 +211,6 @@ class HandleWorkflowTest {
                 stakePeriodChanges,
                 dispatchProcessor,
                 configProvider,
-                storeMetricsService,
                 blockRecordManager,
                 blockStreamManager,
                 cacheWarmer,

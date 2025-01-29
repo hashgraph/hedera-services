@@ -76,7 +76,11 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
     @Override
     public void removeSlot(@NonNull final SlotKey key) {
         storage.remove(requireNonNull(key));
-        entityCounters.decrementEntityTypeCounter(EntityType.CONTRACT_STORAGE);
+    }
+
+    @Override
+    public void adjustSlotCount(final long delta) {
+        entityCounters.adjustEntityCount(EntityType.CONTRACT_STORAGE, delta);
     }
 
     /**
@@ -85,15 +89,6 @@ public class WritableContractStateStore extends ReadableContractStateStore imple
     @Override
     public void putSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
         storage.put(requireNonNull(key), requireNonNull(value));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void putSlotAndIncrementCount(@NonNull final SlotKey key, @NonNull final SlotValue value) {
-        putSlot(key, value);
-        entityCounters.incrementEntityTypeCount(EntityType.CONTRACT_STORAGE);
     }
 
     /**

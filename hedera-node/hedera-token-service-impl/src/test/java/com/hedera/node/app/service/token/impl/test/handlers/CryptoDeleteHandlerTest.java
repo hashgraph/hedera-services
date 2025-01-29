@@ -64,7 +64,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -105,9 +104,6 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private HandleContext.SavepointStack stack;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private WritableEntityCounters entityCounters;
@@ -446,8 +442,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(
-                configuration, storeMetricsService, writableStates, op -> false, entityCounters);
+        final var impl = new TokenServiceApiImpl(configuration, writableStates, op -> false, entityCounters);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

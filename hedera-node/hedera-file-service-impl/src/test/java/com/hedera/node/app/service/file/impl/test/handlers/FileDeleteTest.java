@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -95,9 +94,6 @@ class FileDeleteTest extends FileTestBase {
 
     @Mock
     protected FileFeeBuilder usageEstimator;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     protected Configuration testConfig;
 

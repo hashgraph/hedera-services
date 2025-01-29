@@ -95,7 +95,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -418,9 +417,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @Mock
     protected WritableStates writableStates;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock(strictness = Strictness.LENIENT)
     protected StoreFactory storeFactory;

@@ -106,7 +106,8 @@ public class IterableStorageManager {
         }));
 
         // Update contract metadata with the net change in slots used
-        allSizeChanges.forEach(change -> {
+        long totalChange = 0;
+        for (StorageSizeChange change : allSizeChanges) {
             if (change.numInsertions() != 0 || change.numRemovals() != 0) {
                 enhancement
                         .operations()
@@ -114,8 +115,10 @@ public class IterableStorageManager {
                                 change.contractID(),
                                 firstKeys.getOrDefault(change.contractID(), Bytes.EMPTY),
                                 change.netChange());
+                totalChange += change.netChange();
             }
-        });
+        }
+        store.adjustSlotCount(totalChange);
     }
 
     /**
@@ -206,8 +209,7 @@ public class IterableStorageManager {
                     contractID,
                     irreparable);
         }
-        store.putSlotAndIncrementCount(
-                new SlotKey(contractID, newKey), new SlotValue(newValue, Bytes.EMPTY, firstContractKey));
+        store.putSlot(new SlotKey(contractID, newKey), new SlotValue(newValue, Bytes.EMPTY, firstContractKey));
         return newKey;
     }
 

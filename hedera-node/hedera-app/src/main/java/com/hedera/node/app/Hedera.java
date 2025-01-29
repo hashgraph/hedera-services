@@ -423,14 +423,14 @@ public final class Hedera
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory the factory to use for creating the services registry
-     * @param migrator the migrator to use with the services
+     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory        the factory to use for creating the services registry
+     * @param migrator               the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
-     * @param hintsServiceFactory the factory for the hinTS service
-     * @param historyServiceFactory the factory for the history service
+     * @param hintsServiceFactory    the factory for the hinTS service
+     * @param historyServiceFactory  the factory for the history service
      * @param blockHashSignerFactory the factory for the block hash signer
-     * @param metrics the metrics object to use for reporting
+     * @param metrics                the metrics object to use for reporting
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -441,8 +441,7 @@ public final class Hedera
             @NonNull final HintsServiceFactory hintsServiceFactory,
             @NonNull final HistoryServiceFactory historyServiceFactory,
             @NonNull final BlockHashSignerFactory blockHashSignerFactory,
-            @NonNull final Metrics metrics,
-            @NonNull final StoreMetricsServiceImpl storeMetricsService) {
+            @NonNull final Metrics metrics) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         requireNonNull(hintsServiceFactory);
@@ -452,7 +451,7 @@ public final class Hedera
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.storeMetricsService = new StoreMetricsServiceImpl(metrics);
         logger.info(
                 """
 

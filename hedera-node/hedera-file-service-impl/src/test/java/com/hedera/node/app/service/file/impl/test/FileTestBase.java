@@ -38,7 +38,6 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -159,9 +158,6 @@ public class FileTestBase {
 
     @Mock(strictness = LENIENT)
     protected StoreFactory storeFactory;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     protected ReadableEntityCounters readableEntityCounters;

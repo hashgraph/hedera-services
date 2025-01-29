@@ -49,7 +49,6 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -83,9 +82,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Mock
     private NodeDeleteHandler subject;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     protected Configuration testConfig;
 

@@ -47,7 +47,6 @@ import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
-import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
@@ -403,8 +402,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         HISTORY_LIBRARY_CODEC,
                         bootstrapConfig),
                 TssBlockHashSigner::new,
-                metrics,
-                new StoreMetricsServiceImpl(metrics));
+                metrics);
     }
 
     /**

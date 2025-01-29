@@ -351,58 +351,28 @@ public class StateChangesValidator implements BlockStreamValidator {
         final var expectedNumTopics =
                 entityChanges.getOrDefault(stateNameOf(StateIdentifier.STATE_ID_TOPICS.protoOrdinal()), Set.of());
 
-        logger.info("Actual Entity counts:\n{}", actualCounts);
-        logger.info(
-                "Expected Entity counts:\n"
-                        + "    * Accounts: {}\n"
-                        + "    * Aliases: {}\n"
-                        + "    * Tokens: {}\n"
-                        + "    * TokenRelations: {}\n"
-                        + "    * Nfts: {}\n"
-                        + "    * Airdrops: {}\n"
-                        + "    * StakingInfos: {}\n"
-                        + "    * Topics: {}\n"
-                        + "    * Files: {}\n"
-                        + "    * Nodes: {}\n"
-                        + "    * Schedules: {}\n"
-                        + "    * ContractStorageSlots: {}\n"
-                        + "    * ContractBytecodes: {}",
-                expectedNumAccounts.size(),
-                expectedNumAliases.size(),
-                expectedNumTokens.size(),
-                expectedNumTokenRelations.size(),
-                expectedNumNfts.size(),
-                expectedNumAirdrops.size(),
-                expectedNumStakingInfos.size(),
-                expectedNumTopics.size(),
-                expectedNumFiles.size(),
-                expectedNumNodes.size(),
-                expectedNumSchedules.size(),
+        assertEquals(expectedNumAirdrops.size(), actualCounts.numAirdrops(), "Airdrop counts mismatch");
+        assertEquals(expectedNumTokens.size(), actualCounts.numTokens(), "Token counts mismatch");
+        assertEquals(
+                expectedNumTokenRelations.size(), actualCounts.numTokenRelations(), "Token relation counts mismatch");
+        assertEquals(expectedNumAccounts.size(), actualCounts.numAccounts(), "Account counts mismatch");
+        assertEquals(expectedNumAliases.size(), actualCounts.numAliases(), "Alias counts mismatch");
+        assertEquals(expectedNumStakingInfos.size(), actualCounts.numStakingInfos(), "Staking info counts mismatch");
+        assertEquals(expectedNumNfts.size(), actualCounts.numNfts(), "Nft counts mismatch");
+
+        assertEquals(
                 expectedNumContractStorageSlots.size(),
-                expectedNumContractBytecodes.size());
-
-        assertEquals(actualCounts.numAirdrops(), expectedNumAirdrops.size(), "Airdrop counts mismatch");
-        assertEquals(actualCounts.numTokens(), expectedNumTokens.size(), "Token counts mismatch");
-        assertEquals(
-                actualCounts.numTokenRelations(), expectedNumTokenRelations.size(), "Token relation counts mismatch");
-        assertEquals(actualCounts.numAccounts(), expectedNumAccounts.size(), "Account counts mismatch");
-        assertEquals(actualCounts.numAliases(), expectedNumAliases.size(), "Alias counts mismatch");
-        assertEquals(actualCounts.numStakingInfos(), expectedNumStakingInfos.size(), "Staking info counts mismatch");
-        assertEquals(actualCounts.numNfts(), expectedNumNfts.size(), "Nft counts mismatch");
-
-        assertEquals(
                 actualCounts.numContractStorageSlots(),
-                expectedNumContractStorageSlots.size(),
                 "Contract storage slot counts mismatch");
         assertEquals(
-                actualCounts.numContractBytecodes(),
                 expectedNumContractBytecodes.size(),
+                actualCounts.numContractBytecodes(),
                 "Contract bytecode counts mismatch");
 
-        assertEquals(actualCounts.numFiles(), expectedNumFiles.size(), "File counts mismatch");
-        assertEquals(actualCounts.numNodes(), expectedNumNodes.size(), "Node counts mismatch");
-        assertEquals(actualCounts.numSchedules(), expectedNumSchedules.size(), "Schedule counts mismatch");
-        assertEquals(actualCounts.numTopics(), expectedNumTopics.size(), "Topic counts mismatch");
+        assertEquals(expectedNumFiles.size(), actualCounts.numFiles(), "File counts mismatch");
+        assertEquals(expectedNumNodes.size(), actualCounts.numNodes(), "Node counts mismatch");
+        assertEquals(expectedNumSchedules.size(), actualCounts.numSchedules(), "Schedule counts mismatch");
+        assertEquals(expectedNumTopics.size(), actualCounts.numTopics(), "Topic counts mismatch");
     }
 
     private void hashInputOutputTree(
@@ -491,9 +461,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     mapState.remove(mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow()));
                     final var keyToRemove =
                             mapKeyFor(stateChange.mapDeleteOrThrow().keyOrThrow());
-                    if (entityChanges.get(stateName) != null) {
-                        entityChanges.get(stateName).remove(keyToRemove);
-                    }
+                    entityChanges.get(stateName).remove(keyToRemove);
                     stateChangesSummary.countMapDelete(serviceName, stateKey);
                 }
                 case QUEUE_PUSH -> {

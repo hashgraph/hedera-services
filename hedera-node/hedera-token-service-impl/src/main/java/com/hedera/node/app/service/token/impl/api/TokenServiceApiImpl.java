@@ -44,7 +44,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
@@ -77,15 +76,13 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     /**
      * Constructs a {@link TokenServiceApiImpl}.
      *
-     * @param config              the configuration
-     * @param storeMetricsService the store metrics service
-     * @param writableStates      the writable states
-     * @param customFeeTest       a predicate for determining if a transfer has custom fees
+     * @param config         the configuration
+     * @param writableStates the writable states
+     * @param customFeeTest  a predicate for determining if a transfer has custom fees
      * @param entityCounters
      */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest,
             @NonNull final WritableEntityCounters entityCounters) {

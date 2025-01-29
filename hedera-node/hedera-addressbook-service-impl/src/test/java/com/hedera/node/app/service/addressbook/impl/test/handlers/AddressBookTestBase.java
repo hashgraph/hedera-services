@@ -44,7 +44,6 @@ import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -162,9 +161,6 @@ public class AddressBookTestBase {
 
     @Mock
     protected WritableStates writableStates;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     protected ReadableEntityIdStore readableEntityCounters;
     protected WritableEntityIdStore writableEntityCounters;

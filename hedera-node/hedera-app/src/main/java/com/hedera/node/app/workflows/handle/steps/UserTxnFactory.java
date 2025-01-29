@@ -51,7 +51,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -93,7 +92,6 @@ import javax.inject.Singleton;
 public class UserTxnFactory {
 
     private final ConfigProvider configProvider;
-    private final StoreMetricsService storeMetricsService;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -113,7 +111,6 @@ public class UserTxnFactory {
     @Inject
     public UserTxnFactory(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
@@ -129,7 +126,6 @@ public class UserTxnFactory {
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final ChildDispatchFactory childDispatchFactory) {
         this.configProvider = requireNonNull(configProvider);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -178,11 +174,7 @@ public class UserTxnFactory {
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var tokenContext = new TokenContextImpl(
-                config,
-                storeMetricsService,
-                stack,
-                consensusNow,
-                new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)));
+                config, stack, consensusNow, new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)));
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
@@ -226,7 +218,7 @@ public class UserTxnFactory {
         final var functionality = functionOfTxn(body);
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
         final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow, entityIdStore);
+        final var tokenContext = new TokenContextImpl(config, stack, consensusNow, entityIdStore);
         return new UserTxn(
                 type,
                 functionality,
@@ -296,9 +288,9 @@ public class UserTxnFactory {
 
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var entityNumGenerator = new EntityNumGeneratorImpl(entityIdStore);
-        final var writableStoreFactory = new WritableStoreFactory(
-                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService, entityIdStore);
-        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var writableStoreFactory =
+                new WritableStoreFactory(stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), entityIdStore);
+        final var serviceApiFactory = new ServiceApiFactory(stack, config);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);

@@ -60,7 +60,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -104,9 +103,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private EntityNumGenerator entityNumGenerator;

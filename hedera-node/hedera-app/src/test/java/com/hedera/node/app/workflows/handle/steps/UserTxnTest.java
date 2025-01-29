@@ -44,13 +44,11 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -63,7 +61,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
@@ -147,8 +144,6 @@ class UserTxnTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    private StoreMetricsService storeMetricsService = new StoreMetricsServiceImpl(new NoOpMetrics());
 
     @BeforeEach
     void setUp() {
@@ -247,7 +242,6 @@ class UserTxnTest {
     private UserTxnFactory createUserTxnFactory() {
         return new UserTxnFactory(
                 configProvider,
-                storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 preHandleWorkflow,

@@ -39,4 +39,6 @@ public interface WritableEntityCounters extends ReadableEntityCounters {
      * @param entityType the type of entity for which to increment the number
      */
     void incrementEntityTypeCount(final EntityType entityType);
+
+    void adjustEntityCount(final EntityType entityType, final long delta);
 }

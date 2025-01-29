@@ -48,8 +48,8 @@ public interface ServiceMigrator {
      * @param genesisNetworkInfo  The network information to use for the migrations
      * @param metrics             The metrics to use for the migrations
      * @param startupNetworks     The startup networks to use for the migrations
-     * @param storeMetricsService
-     * @param configProvider
+     * @param storeMetricsService The store metrics service to use for the migrations
+     * @param configProvider     The config provider to use for the migrations
      * @return The list of builders for state changes that occurred during the migrations
      */
     List<StateChanges.Builder> doMigrations(

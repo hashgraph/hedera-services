@@ -80,6 +80,11 @@ public class ReadableContractStateStore implements ContractStateStore {
         throw new UnsupportedOperationException("Cannot remove slots from a read-only store");
     }
 
+    @Override
+    public void adjustSlotCount(final long delta) {
+        throw new UnsupportedOperationException("Cannot adjust slot count in a read-only store");
+    }
+
     /**
      * Refuses to put slots.
      *
@@ -89,11 +94,6 @@ public class ReadableContractStateStore implements ContractStateStore {
      */
     @Override
     public void putSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
-        throw new UnsupportedOperationException("Cannot put slots in a read-only store");
-    }
-
-    @Override
-    public void putSlotAndIncrementCount(@NonNull final SlotKey key, @NonNull final SlotValue value) {
         throw new UnsupportedOperationException("Cannot put slots in a read-only store");
     }
 

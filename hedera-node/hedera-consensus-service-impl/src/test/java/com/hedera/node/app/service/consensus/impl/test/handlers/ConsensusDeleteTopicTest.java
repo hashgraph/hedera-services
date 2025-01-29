@@ -47,7 +47,6 @@ import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicH
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -70,9 +69,6 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
     @Mock
     private ReadableTopicStore mockStore;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private WritableEntityCounters entityCounters;

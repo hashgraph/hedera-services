@@ -32,7 +32,6 @@ import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableStates;
@@ -52,9 +51,6 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
 
     @Mock
     private WritableStates writableStates;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     protected ReadableEntityCounters readableEntityCounters;

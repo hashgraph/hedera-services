@@ -47,7 +47,6 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -193,9 +192,6 @@ public class CryptoHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     protected ReadableEntityCounters readableEntityCounters;
     protected WritableEntityCounters writableEntityCounters;
