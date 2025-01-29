@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -534,7 +534,6 @@ class TokenServiceApiImplTest {
             // When we try to charge a payer account that DOES NOT EXIST, then we get an IllegalStateException.
             final var unknownAccountId =
                     AccountID.newBuilder().accountNum(12345678L).build();
-
             assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, NODE_ACCOUNT_ID, fees, rb))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Payer account %s does not exist", unknownAccountId);
@@ -545,7 +544,6 @@ class TokenServiceApiImplTest {
             // Given a configuration that refers to a funding account that DOES NOT EXIST
             final var unknownAccountId =
                     AccountID.newBuilder().accountNum(12345678L).build();
-
             final var config = configBuilder
                     .withValue("ledger.fundingAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
@@ -563,7 +561,6 @@ class TokenServiceApiImplTest {
             // Given a configuration that refers to a staking reward account that DOES NOT EXIST
             final var unknownAccountId =
                     AccountID.newBuilder().accountNum(12345678L).build();
-
             final var config = configBuilder
                     .withValue("accounts.stakingRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();
@@ -581,7 +578,6 @@ class TokenServiceApiImplTest {
             // Given a configuration that refers to a node reward account that DOES NOT EXIST
             final var unknownAccountId =
                     AccountID.newBuilder().accountNum(12345678L).build();
-
             final var config = configBuilder
                     .withValue("accounts.nodeRewardAccount", unknownAccountId.accountNumOrThrow())
                     .getOrCreateConfig();

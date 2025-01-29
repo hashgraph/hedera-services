@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -287,7 +287,6 @@ class TokenAssociateToAccountHandlerTest {
             // Put a new account into the account store that has no tokens associated with it
             final var newAcctNum = 12345L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
-
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)
                     .headTokenId(TokenID.DEFAULT)
@@ -335,7 +334,6 @@ class TokenAssociateToAccountHandlerTest {
             mockContext();
             final var newAcctNum = 21212L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
-
             // put a new account into the account store that has two tokens associated with it
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)
@@ -424,7 +422,6 @@ class TokenAssociateToAccountHandlerTest {
             mockContext();
             final var newAcctNum = 21212L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
-
             // put a new account into the account store that has a bogus head token number
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)

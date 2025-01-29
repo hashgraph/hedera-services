@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,6 @@ final class PreHandleResultTest implements Scenarios {
         @DisplayName("Pre-Handle Failures set the payer, status, responseCode, and txInfo")
         void preHandleFailure(@Mock TransactionInfo txInfo) {
             final var payer = AccountID.newBuilder().accountNum(1001).build();
-
             final var responseCode = INVALID_PAYER_ACCOUNT_ID;
             final var result =
                     PreHandleResult.preHandleFailure(payer, null, responseCode, txInfo, null, null, null, null);

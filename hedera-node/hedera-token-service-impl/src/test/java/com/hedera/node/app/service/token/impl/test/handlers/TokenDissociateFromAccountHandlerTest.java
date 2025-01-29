@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var accountNumber = 12345L;
             final AccountID accountId =
                     AccountID.newBuilder().accountNum(accountNumber).build();
-
             writableAccountStore.put(Account.newBuilder()
                     .accountId(accountId)
                     .expiredAndPendingRemoval(true)
@@ -159,7 +158,6 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             final var accountNumber = 53135;
             final AccountID accountId =
                     AccountID.newBuilder().accountNum(accountNumber).build();
-
             writableAccountStore.put(Account.newBuilder()
                     .accountId(accountId)
                     .expiredAndPendingRemoval(false)

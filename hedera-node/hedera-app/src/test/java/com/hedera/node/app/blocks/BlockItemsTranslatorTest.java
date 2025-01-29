@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,6 @@ class BlockItemsTranslatorTest {
             TokenID.newBuilder().tokenNum(123).build(),
             AccountID.newBuilder().accountNum(98L).build(),
             List.of(AccountID.newBuilder().accountNum(2L).build())));
-
     private static final TransferList TRANSFER_LIST = TransferList.newBuilder()
             .accountAmounts(
                     AccountAmount.newBuilder()

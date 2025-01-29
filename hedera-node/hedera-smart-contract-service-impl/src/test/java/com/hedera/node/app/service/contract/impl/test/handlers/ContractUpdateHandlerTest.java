@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -496,7 +496,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         when(contract.accountIdOrThrow())
                 .thenReturn(AccountID.newBuilder().accountNum(666).build());
-
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
         given(context.storeFactory()).willReturn(storeFactory);
@@ -728,7 +727,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(accountStore.getContractById(targetContractWithEvmAddress)).thenReturn(contract);
         when(contract.accountIdOrThrow())
                 .thenReturn(AccountID.newBuilder().accountNum(999L).build());
-
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
         given(context.storeFactory()).willReturn(storeFactory);

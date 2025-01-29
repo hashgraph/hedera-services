@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,7 +213,6 @@ class FileUpdateTest extends FileTestBase {
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.payer())
                 .willReturn(AccountID.newBuilder().accountNum(1001L).build());
-
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
@@ -359,7 +358,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         given(handleContext.payer())
                 .willReturn(AccountID.newBuilder().accountNum(50L).build());
-
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:
