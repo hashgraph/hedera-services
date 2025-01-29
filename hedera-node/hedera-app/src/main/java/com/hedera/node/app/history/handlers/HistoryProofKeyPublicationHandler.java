@@ -18,7 +18,6 @@ package com.hedera.node.app.history.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.history.ReadableHistoryStore.ProofKeyPublication;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.impl.ProofControllers;

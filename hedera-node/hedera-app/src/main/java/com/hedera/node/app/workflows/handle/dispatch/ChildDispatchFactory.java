@@ -366,8 +366,8 @@ public class ChildDispatchFactory {
         try {
             final var pureChecksContext = new PureChecksContextImpl(txBody, config, dispatcher, transactionChecker);
             dispatcher.dispatchPureChecks(pureChecksContext);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher, transactionChecker);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory, txBody, syntheticPayerId, config, dispatcher, transactionChecker);
             dispatcher.dispatchPreHandle(preHandleContext);
             return new PreHandleResult(
                     null,

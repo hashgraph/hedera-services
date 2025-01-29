@@ -399,8 +399,8 @@ public class UserTxnFactory {
         try {
             final var pureChecksContext = new PureChecksContextImpl(body, config, dispatcher, transactionChecker);
             dispatcher.dispatchPureChecks(pureChecksContext);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, body, syntheticPayerId, config, dispatcher, transactionChecker);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory, body, syntheticPayerId, config, dispatcher, transactionChecker);
             dispatcher.dispatchPreHandle(preHandleContext);
             final var txInfo = getTxnInfoFrom(syntheticPayerId, body);
             return new PreHandleResult(

@@ -490,7 +490,8 @@ public class PreHandleContextImpl implements PreHandleContext {
         final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(pureChecksContext);
         // Throws PreCheckException if the payer account does not exist
-        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
+        final var context =
+                new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
         try {
             // Accumulate all required keys in the context
             dispatcher.dispatchPreHandle(context);

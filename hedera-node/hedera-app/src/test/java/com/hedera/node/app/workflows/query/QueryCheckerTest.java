@@ -108,26 +108,62 @@ class QueryCheckerTest extends AppTestBase {
     @BeforeEach
     void setup() {
         checker = new QueryChecker(
-                authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher, transactionChecker);
+                authorizer,
+                cryptoTransferHandler,
+                solvencyPreCheck,
+                expiryValidation,
+                feeManager,
+                dispatcher,
+                transactionChecker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
         assertThatThrownBy(() -> new QueryChecker(
-                        null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher, transactionChecker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager, dispatcher, transactionChecker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        authorizer, cryptoTransferHandler, null, expiryValidation, feeManager, dispatcher, transactionChecker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager, dispatcher, transactionChecker))
+                        null,
+                        cryptoTransferHandler,
+                        solvencyPreCheck,
+                        expiryValidation,
+                        feeManager,
+                        dispatcher,
+                        transactionChecker))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
-                        authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null, dispatcher, transactionChecker))
+                        authorizer,
+                        null,
+                        solvencyPreCheck,
+                        expiryValidation,
+                        feeManager,
+                        dispatcher,
+                        transactionChecker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer,
+                        cryptoTransferHandler,
+                        null,
+                        expiryValidation,
+                        feeManager,
+                        dispatcher,
+                        transactionChecker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer,
+                        cryptoTransferHandler,
+                        solvencyPreCheck,
+                        null,
+                        feeManager,
+                        dispatcher,
+                        transactionChecker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new QueryChecker(
+                        authorizer,
+                        cryptoTransferHandler,
+                        solvencyPreCheck,
+                        expiryValidation,
+                        null,
+                        dispatcher,
+                        transactionChecker))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -150,7 +186,8 @@ class QueryCheckerTest extends AppTestBase {
                 transaction, txBody, signatureMap, transaction.signedTransactionBytes(), CRYPTO_TRANSFER, null);
 
         // when
-        assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo, configuration)).doesNotThrowAnyException();
+        assertThatCode(() -> checker.validateCryptoTransfer(transactionInfo, configuration))
+                .doesNotThrowAnyException();
     }
 
     @Test

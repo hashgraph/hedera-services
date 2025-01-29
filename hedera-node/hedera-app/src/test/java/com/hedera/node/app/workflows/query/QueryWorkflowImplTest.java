@@ -73,7 +73,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
-import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -581,7 +580,9 @@ class QueryWorkflowImplTest extends AppTestBase {
                                 .header(ResponseHeader.newBuilder().build())
                                 .build())
                         .build());
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo, config);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+                .when(queryChecker)
+                .validateCryptoTransfer(transactionInfo, config);
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -804,7 +805,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo, config);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+                .when(queryChecker)
+                .validateCryptoTransfer(transactionInfo, config);
         final var responseBuffer = newEmptyBuffer();
 
         // when
