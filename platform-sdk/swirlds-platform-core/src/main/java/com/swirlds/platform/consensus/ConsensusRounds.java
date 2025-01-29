@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,13 +52,10 @@ public class ConsensusRounds {
     private long minGenNonAncient = EventConstants.FIRST_GENERATION;
 
     /** Constructs an empty object */
-    public ConsensusRounds(
-            @NonNull final ConsensusConfig config,
-            @NonNull final Roster roster) {
+    public ConsensusRounds(@NonNull final ConsensusConfig config, @NonNull final Roster roster) {
         this.config = Objects.requireNonNull(config);
-        this.minimumJudgeStorage = new SequentialRingBuffer<>(
-                ConsensusConstants.ROUND_FIRST,
-                config.roundsExpired() * 2);
+        this.minimumJudgeStorage =
+                new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2);
         this.rosterEntryMap = RosterUtils.toMap(Objects.requireNonNull(roster));
         reset();
     }
