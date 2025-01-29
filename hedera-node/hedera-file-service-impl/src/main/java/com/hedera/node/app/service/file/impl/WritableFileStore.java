@@ -67,13 +67,23 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     }
 
     /**
-     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link File} into the state, as well as exporting its ID to the transaction
+     * receipt. If a file with the same ID already exists, it will be overwritten.
      *
      * @param file - the file to be persisted.
      */
     public void put(@NonNull final File file) {
         filesState.put(requireNonNull(file).fileId(), file);
+    }
+
+    /**
+     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction.
+     * Also increments the entity counter for the file.
+     * @param file - the file to be persisted.
+     */
+    public void putAndIncrementCount(@NonNull final File file) {
+        put(file);
+        entityCounters.incrementEntityTypeCount(EntityType.FILE);
     }
 
     /**
@@ -96,16 +106,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     public @NonNull Optional<File> getForModify(final FileID fileId) {
         final var file = filesState.getForModify(fileId);
         return Optional.ofNullable(file);
-    }
-
-    /**
-     * Returns the number of files in the state.
-     *
-     * @return the number of files in the state
-     */
-    public long sizeOfState() {
-        return filesState.size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**

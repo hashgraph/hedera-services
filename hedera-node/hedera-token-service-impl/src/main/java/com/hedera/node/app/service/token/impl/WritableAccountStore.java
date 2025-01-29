@@ -51,11 +51,12 @@ import java.util.Set;
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
     private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
-     * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
+     * @param states              The state to use.
+     * @param configuration       The configuration used to read the maximum capacity.
      * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableAccountStore(
@@ -83,8 +84,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Persists a new {@link Account} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link Account} into the state. If an account with the same ID already exists, it will be overwritten.
      *
      * @param account - the account to be added to modifications in state.
      */
@@ -95,9 +95,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
+     * Persists a new {@link Account} into the state. Also increments the entity count for {@link EntityType#ACCOUNT}.
+     * @param account - the account to be added in state.
+     */
+    public void putAndIncrementCount(@NonNull final Account account) {
+        put(account);
+        entityCounters.incrementEntityTypeCount(EntityType.ACCOUNT);
+    }
+
+    /**
      * Persists a new alias linked to the account persisted to state.
      *
-     * @param alias - the alias to be added to modifications in state.
+     * @param alias     - the alias to be added to modifications in state.
      * @param accountId - the account number to be added to modifications in state.
      */
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
@@ -121,7 +130,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
+     * Persists a new alias linked to the account persisted to state. Also increments the entity count for {@link EntityType#ALIAS}.
+     * @param alias    - the alias to be added in state.
+     * @param accountId - the account number to be added in state.
+     */
+    public void putAndIncrementCountAlias(@NonNull final Bytes alias, final AccountID accountId) {
+        putAlias(alias, accountId);
+        entityCounters.incrementEntityTypeCount(EntityType.ALIAS);
+    }
+
+    /**
      * Removes an alias from the cache. This should only ever happen as the result of a delete operation.
+     *
      * @param alias The alias of the account to remove.
      */
     public void removeAlias(@NonNull final Bytes alias) {
@@ -180,28 +200,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the number of accounts in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of accounts in the state
-     */
-    public long sizeOfAccountState() {
-        return accountState().size();
-        // FUTURE: Use entityCounters to get size.
-    }
-
-    /**
-     * Returns the number of aliases in the state. It also includes modifications in the {@link
-     * WritableKVState}.
-     *
-     * @return the number of aliases in the state
-     */
-    public long sizeOfAliasesState() {
-        return aliases().size();
-        // FUTURE: Use entityCounters to get size.
-    }
-
-    /**
      * Returns the set of accounts modified in existing state.
      *
      * @return the set of accounts modified in existing state
@@ -254,6 +252,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
 
     /**
      * Checks if the given accountId is not the default accountId. If it is, throws an {@link IllegalArgumentException}.
+     *
      * @param accountId The accountId to check.
      */
     public static void requireNotDefault(@NonNull final AccountID accountId) {
