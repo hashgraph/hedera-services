@@ -142,7 +142,6 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
-        given(pureChecksContext.body()).willReturn(txn);
 
     }
 
@@ -254,6 +253,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .withMetadataKey(metadataKey)
                 .withMetadata(String.valueOf(metadata))
                 .build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         assertThat(txn.data().value()).toString().contains("test metadata");
         assertThat(txn.data().value()).hasNoNullFieldsOrProperties();
@@ -262,6 +262,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsForInvalidMetaDataKey() {
         txn = new TokenUpdateBuilder().withMetadataKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
@@ -298,41 +299,49 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
                 .build();
         txn = new TokenUpdateBuilder().withAdminKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withFreezeKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
 
         txn = new TokenUpdateBuilder().withKycKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_KYC_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withMetadataKey(invalidAllZeros).build();
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
@@ -501,6 +510,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
     }
@@ -513,6 +523,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenUpdateBuilder().withSymbol(null).build();
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
     }
@@ -529,6 +540,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
 
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
@@ -543,6 +555,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
     }
@@ -554,6 +568,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         txn = new TokenUpdateBuilder().withName(null).build();
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
     }
@@ -569,6 +585,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(configuration, 1));
         given(handleContext.body()).willReturn(txn);
+        given(pureChecksContext.body()).willReturn(txn);
 
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
@@ -1134,26 +1151,36 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void validatesUpdatingKeys() {
         txn = new TokenUpdateBuilder().withAdminKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(Key.DEFAULT).build();
+        given(pureChecksContext.body()).willReturn(txn);
+
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));

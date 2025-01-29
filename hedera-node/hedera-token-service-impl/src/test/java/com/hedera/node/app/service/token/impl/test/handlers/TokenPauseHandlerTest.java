@@ -112,10 +112,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     public void testPureChecksThrowsExceptionWhenDoesNotHaveToken() {
         TokenPauseTransactionBody transactionBody = mock(TokenPauseTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
-        given(handleContext.body()).willReturn(transaction);
         given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
         given(transactionBody.hasToken()).willReturn(false);
-        given(pureChecksContext.body()).willReturn(handleContext.body());
+        given(pureChecksContext.body()).willReturn(transaction);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
     }
@@ -124,10 +123,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     public void testPureChecksDoesNotThrowExceptionWhenHasToken() {
         TokenPauseTransactionBody transactionBody = mock(TokenPauseTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
-        given(handleContext.body()).willReturn(transaction);
         given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
         given(transactionBody.hasToken()).willReturn(true);
-        given(pureChecksContext.body()).willReturn(handleContext.body());
+        given(pureChecksContext.body()).willReturn(transaction);
 
         assertThatCode(() -> subject.pureChecks(pureChecksContext)).doesNotThrowAnyException();
     }
