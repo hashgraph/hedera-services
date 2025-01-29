@@ -134,8 +134,8 @@ public class TurtleNode {
                 .withKeysAndCerts(privateKeys)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
-                .withSystemTransactionEncoderCallback((x) -> {
-                    return Bytes.EMPTY;
+                .withSystemTransactionEncoderCallback(x -> {
+                    return Bytes.wrap(randotron.nextByteArray(440));
                 });
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
