@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
@@ -48,6 +49,9 @@ public class AddressBookUtils {
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
     public static final String[] CLASSIC_NODE_NAMES =
             new String[] {"node1", "node2", "node3", "node4", "node5", "node6", "node7", "node8"};
+
+    private static final String REALM = JutilPropertySource.getDefaultInstance().get("default.realm");
+    private static final String SHARD = JutilPropertySource.getDefaultInstance().get("default.shard");
 
     private AddressBookUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -140,8 +144,7 @@ public class AddressBookUtils {
                     .append(", 127.0.0.1, ")
                     .append(nextExternalGossipPort + (node.getNodeId() * 2))
                     .append(", ")
-                    // todo made this configurable
-                    .append("1.2.")
+                    .append(SHARD + "." + REALM + ".")
                     .append(node.getAccountId().accountNumOrThrow())
                     .append('\n');
             maxNodeId = Math.max(node.getNodeId(), maxNodeId);
@@ -225,10 +228,9 @@ public class AddressBookUtils {
         return new NodeMetadata(
                 nodeId,
                 CLASSIC_NODE_NAMES[nodeId],
-                // todo made this configurable
                 AccountID.newBuilder()
-                        .realmNum(2)
-                        .shardNum(1)
+                        .shardNum(Long.parseLong(SHARD))
+                        .realmNum(Long.parseLong(REALM))
                         .accountNum(CLASSIC_FIRST_NODE_ACCOUNT_NUM + nodeId)
                         .build(),
                 host,
