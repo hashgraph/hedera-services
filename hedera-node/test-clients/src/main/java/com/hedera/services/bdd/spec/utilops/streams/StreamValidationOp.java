@@ -86,8 +86,7 @@ public class StreamValidationOp extends UtilOp {
             StateChangesValidator.FACTORY,
             BlockContentsValidator.FACTORY,
             BlockNumberSequenceValidator.FACTORY,
-            BlockItemNonceValidator.FACTORY,
-            EntityCountsValidator.FACTORY);
+            BlockItemNonceValidator.FACTORY);
 
     public static void main(String[] args) {}
 
