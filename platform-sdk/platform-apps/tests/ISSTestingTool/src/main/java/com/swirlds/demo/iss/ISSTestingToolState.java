@@ -28,6 +28,7 @@ package com.swirlds.demo.iss;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -44,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
@@ -96,6 +98,11 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
     }
 
     public void initState(InitTrigger trigger, Platform platform) {
+        throwIfImmutable();
+
+        final PlatformContext platformContext = platform.getContext();
+        super.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
+
         // since the test occurrences are relative to the genesis timestamp, the data only needs to be parsed at genesis
         if (trigger == InitTrigger.GENESIS) {
             final ISSTestingToolConfig testingToolConfig =
@@ -177,6 +184,10 @@ public class ISSTestingToolState extends PlatformMerkleStateRoot {
      */
     private ISSTestingToolState(final ISSTestingToolState that) {
         super(that);
+        this.runningSum = that.runningSum;
+        this.genesisTimestamp = that.genesisTimestamp;
+        this.plannedIssList = new ArrayList<>(that.plannedIssList);
+        this.plannedLogErrorList = new ArrayList<>(that.plannedLogErrorList);
     }
 
     /**

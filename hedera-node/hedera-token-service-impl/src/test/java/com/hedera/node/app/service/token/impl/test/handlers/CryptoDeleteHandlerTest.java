@@ -44,11 +44,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -62,6 +62,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
@@ -107,6 +108,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private WritableEntityCounters entityCounters;
 
     private Configuration configuration;
 
@@ -425,7 +429,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         readableAccounts = emptyStateBuilder.build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
     }
 
     private void updateWritableStore(Map<Long, Account> accountsToAdd) {
@@ -435,14 +439,15 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
     }
 
     private void givenTxnWith(AccountID deleteAccountId, AccountID transferAccountId) {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(configuration, storeMetricsService, writableStates, op -> false);
+        final var impl = new TokenServiceApiImpl(
+                configuration, storeMetricsService, writableStates, op -> false, entityCounters);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

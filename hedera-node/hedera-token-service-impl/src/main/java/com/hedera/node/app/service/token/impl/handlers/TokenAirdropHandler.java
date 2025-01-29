@@ -46,10 +46,10 @@ import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -479,7 +479,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                     .numberPendingAirdrops(numPendingAirdrops + 1)
                     .build();
             accountStore.put(updatedSenderAccount);
-            pendingStore.put(pendingId, newHeadAirdrop);
+            pendingStore.putAndIncrementCount(pendingId, newHeadAirdrop);
         }
     }
 

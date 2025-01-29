@@ -36,16 +36,17 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -73,6 +74,9 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private WritableEntityCounters entityCounters;
+
     private ConsensusDeleteTopicHandler subject;
 
     @BeforeEach
@@ -81,7 +85,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
+        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService, entityCounters);
     }
 
     @Test
@@ -161,7 +165,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        final var readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         final var context = new FakePreHandleContext(accountStore, txn);
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -177,7 +181,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
-        final var readableStore = new ReadableTopicStoreImpl(readableStates);
+        final var readableStore = new ReadableTopicStoreImpl(readableStates, readableEntityCounters);
 
         final var context = new FakePreHandleContext(accountStore, txn);
         context.registerStore(ReadableTopicStore.class, readableStore);
@@ -201,11 +205,14 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 Bytes.wrap(runningHash),
                 memo,
                 null,
+                null,
+                null,
+                null,
                 null);
 
         writableTopicState = writableTopicStateWithOneKey();
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableTopicState);
-        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
+        writableStore = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService, entityCounters);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

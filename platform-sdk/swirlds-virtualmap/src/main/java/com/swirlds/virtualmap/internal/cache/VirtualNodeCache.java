@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.cache;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+import static com.swirlds.logging.legacy.LogMarker.VIRTUAL_MERKLE_STATS;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.CLASS_ID;
 import static java.util.Objects.requireNonNull;
 
@@ -493,18 +494,16 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Fire off the cleaning threads to go and clear out data in the indexes that doesn't need
         // to be there anymore.
-        getCleaningPool(virtualMapConfig).execute(() -> {
-            purge(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
-            purge(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
-            purge(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
+        purge(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
+        purge(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
+        purge(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
 
-            dirtyLeaves = null;
-            dirtyLeafPaths = null;
-            dirtyHashes = null;
-        });
+        dirtyLeaves = null;
+        dirtyLeafPaths = null;
+        dirtyHashes = null;
 
         if (logger.isTraceEnabled()) {
-            logger.trace("Released {}", fastCopyVersion);
+            logger.trace(VIRTUAL_MERKLE_STATS.getMarker(), "Released {}", fastCopyVersion);
         }
 
         return true;
@@ -553,6 +552,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
             if (logger.isTraceEnabled()) {
                 logger.trace(
+                        VIRTUAL_MERKLE_STATS.getMarker(),
                         "Merged version {}, {} dirty leaves, {} dirty internals",
                         fastCopyVersion,
                         dirtyLeaves.size(),
@@ -1434,11 +1434,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void purge(
+    private static <K, V> StandardFuture<Void> purge(
             final ConcurrentArray<Mutation<K, V>> array,
             final Map<K, Mutation<K, V>> index,
             @NonNull final VirtualMapConfig virtualMapConfig) {
-        array.parallelTraverse(getCleaningPool(virtualMapConfig), element -> {
+        return array.parallelTraverse(getCleaningPool(virtualMapConfig), element -> {
             if (element.isFiltered()) {
                 return;
             }

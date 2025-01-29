@@ -32,15 +32,16 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.ContractServiceComponent;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
@@ -98,14 +99,17 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private ContractsConfig contractsConfig;
 
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
     private final Metrics metrics = new NoOpMetrics();
-    private final ContractMetrics contractMetrics = new ContractMetrics(() -> metrics, () -> contractsConfig);
+    private final ContractMetrics contractMetrics =
+            new ContractMetrics(metrics, () -> contractsConfig, systemContractMethodRegistry);
 
     private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
-        contractMetrics.createContractMetrics();
+        contractMetrics.createContractPrimaryMetrics();
         given(contractServiceComponent.contractMetrics()).willReturn(contractMetrics);
         subject = new ContractCreateHandler(() -> factory, gasCalculator, contractServiceComponent);
     }

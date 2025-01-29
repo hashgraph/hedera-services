@@ -32,8 +32,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -177,7 +177,12 @@ public class UserTxnFactory {
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+        final var tokenContext = new TokenContextImpl(
+                config,
+                storeMetricsService,
+                stack,
+                consensusNow,
+                new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)));
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
@@ -220,7 +225,8 @@ public class UserTxnFactory {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var functionality = functionOfTxn(body);
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+        final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow, entityIdStore);
         return new UserTxn(
                 type,
                 functionality,
@@ -286,17 +292,16 @@ public class UserTxnFactory {
         final var consensusNow = userTxn.consensusNow();
         final var creatorInfo = userTxn.creatorInfo();
         final var tokenContextImpl = userTxn.tokenContextImpl();
+        final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
 
         final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var entityNumGenerator = new EntityNumGeneratorImpl(entityIdStore);
         final var writableStoreFactory = new WritableStoreFactory(
-                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService, entityIdStore);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-        final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
@@ -322,7 +327,8 @@ public class UserTxnFactory {
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
-                feeAccumulator);
+                feeAccumulator,
+                HandleContext.DispatchMetadata.EMPTY_METADATA);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(

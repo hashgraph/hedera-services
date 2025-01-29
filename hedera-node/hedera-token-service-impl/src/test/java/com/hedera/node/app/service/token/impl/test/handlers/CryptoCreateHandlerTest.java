@@ -61,11 +61,11 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
@@ -78,6 +78,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -135,6 +136,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
+
+    @Mock
+    private WritableEntityCounters entityCounters;
 
     private CryptoCreateHandler subject;
 
@@ -702,7 +706,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
         when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -740,7 +744,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var copy = account.copyBuilder().deleted(true).build();
         writableAccounts.put(id, copy);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
     }
 
     private void setupConfig() {

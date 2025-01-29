@@ -41,7 +41,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -49,6 +48,7 @@ import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
 import com.hedera.hapi.node.token.NftAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -118,7 +118,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
@@ -131,7 +131,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var allowance =
                 cryptoAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -145,7 +145,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var allowance =
                 tokenAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -159,7 +159,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         final var allowance =
                 nftAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -197,7 +197,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(ownerId, ownerAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
@@ -384,7 +384,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(nftIdSl2, nftSl2.copyBuilder().ownerId(payerId).build())
                 .build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableNftStore = new WritableNftStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId,

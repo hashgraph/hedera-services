@@ -103,9 +103,9 @@
 
 # Protection Rules for Github Configuration Files and Actions Workflows
 /.github/                                           @hashgraph/platform-ci @hashgraph/release-engineering-managers
-/.github/workflows/                                 @hashgraph/platform-ci @hashgraph/platform-ci-committers
-/.github/workflows/node-zxf-deploy-integration.yaml @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops
-/.github/workflows/node-zxf-deploy-preview.yaml     @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops
+/.github/workflows/                                 @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers
+/.github/workflows/node-zxf-deploy-integration.yaml @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops @hashgraph/release-engineering-managers
+/.github/workflows/node-zxf-deploy-preview.yaml     @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
 **/pom.xml                                          @hashgraph/platform-ci @hashgraph/devops

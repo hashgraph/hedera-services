@@ -42,10 +42,10 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -245,7 +245,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             currentSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the treasury
             final var uniqueToken = buildNewlyMintedNft(consensusTime, tokenId, meta, currentSerialNumber);
-            nftStore.put(uniqueToken);
+            nftStore.putAndIncrementCount(uniqueToken);
             // all minted serials should be added to the receipt
             mintedSerials.add(currentSerialNumber);
         }

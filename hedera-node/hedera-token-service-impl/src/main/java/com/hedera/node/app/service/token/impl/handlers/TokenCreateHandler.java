@@ -34,10 +34,10 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -147,7 +147,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFees(), context.expiryValidator());
         // Put token into modifications map
-        tokenStore.put(newToken);
+        tokenStore.putAndIncrementCount(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
         associateAccounts(

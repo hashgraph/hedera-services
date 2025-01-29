@@ -34,9 +34,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
@@ -46,6 +47,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
@@ -100,12 +102,17 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
 
     private CreateTranslator createTranslator;
 
+    @Mock
+    private ContractMetrics contractMetrics;
+
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
     private ScheduleNativeTranslator subject;
 
     @BeforeEach
     void setUp() {
-        createTranslator = new CreateTranslator(decoder);
-        subject = new ScheduleNativeTranslator(htsCallFactory);
+        createTranslator = new CreateTranslator(decoder, systemContractMethodRegistry, contractMetrics);
+        subject = new ScheduleNativeTranslator(htsCallFactory, systemContractMethodRegistry, contractMetrics);
     }
 
     @Test
@@ -126,11 +133,10 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 verificationStrategies,
                 signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
         // when/then
-        // we need to fill in the create translator map for this test to work.
-        new CreateTranslator(new CreateDecoder());
-        assertTrue(subject.matches(attempt));
+        assertTrue(subject.identifyMethod(attempt).isPresent());
     }
 
     @Test
@@ -144,10 +150,11 @@ class ScheduleNativeTranslatorTest extends CallTestBase {
                 verificationStrategies,
                 signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 DEFAULT_CONFIG);
 
         // when/then
-        assertFalse(subject.matches(attempt));
+        assertFalse(subject.identifyMethod(attempt).isPresent());
     }
 
     @Test

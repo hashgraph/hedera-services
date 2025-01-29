@@ -26,8 +26,8 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +52,7 @@ public class TokenClaimAirdropDecoder {
     }
 
     public TransactionBody decodeTokenClaimAirdrop(@NonNull final HtsCallAttempt attempt) {
-        final var call = TokenClaimAirdropTranslator.CLAIM_AIRDROP.decodeCall(attempt.inputBytes());
+        final var call = TokenClaimAirdropTranslator.CLAIM_AIRDROPS.decodeCall(attempt.inputBytes());
         final var maxPendingAirdropsToClaim =
                 attempt.configuration().getConfigData(TokensConfig.class).maxAllowedPendingAirdropsToClaim();
         final var transferList = (Tuple[]) call.get(TRANSFER_LIST);

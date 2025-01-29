@@ -65,11 +65,11 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransactionBody;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -858,7 +858,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     /* --------------------------------- Helpers */
     /**
-     * A builder for {@link com.hedera.hapi.node.base.TransactionBody} instances.
+     * A builder for {@link com.hedera.hapi.node.transaction.TransactionBody} instances.
      */
     private class TokenCreateBuilder {
         private AccountID payer = payerId;

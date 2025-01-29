@@ -143,8 +143,9 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
      * {@inheritDoc}
      */
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull ConsistencyTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull ConsistencyTestingToolState state) {
         // no-op
+        return true;
     }
 
     /**
