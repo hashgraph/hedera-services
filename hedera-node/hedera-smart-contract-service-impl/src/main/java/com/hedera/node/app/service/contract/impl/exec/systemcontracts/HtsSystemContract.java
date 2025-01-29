@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractNativeSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallFactory;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
@@ -37,8 +38,11 @@ public class HtsSystemContract extends AbstractNativeSystemContract implements H
     public static final ContractID HTS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HTS_EVM_ADDRESS));
 
     @Inject
-    public HtsSystemContract(@NonNull final GasCalculator gasCalculator, @NonNull final HtsCallFactory callFactory) {
-        super(HTS_SYSTEM_CONTRACT_NAME, callFactory, HTS_CONTRACT_ID, gasCalculator);
+    public HtsSystemContract(
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final HtsCallFactory callFactory,
+            @NonNull final ContractMetrics contractMetrics) {
+        super(HTS_SYSTEM_CONTRACT_NAME, callFactory, HTS_CONTRACT_ID, gasCalculator, contractMetrics);
     }
 
     @Override

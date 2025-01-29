@@ -22,9 +22,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.getscheduledinfo.GetScheduledInfoTranslator.GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.getscheduledinfo.GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.TokenTupleUtils.fungibleTokenInfoTupleFor;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -77,10 +78,10 @@ public class GetScheduledFungibleTokenCreateCall extends AbstractCall {
         final var ledgerId = Bytes.wrap(ledgerConfig.id().toByteArray()).toString();
         return gasOnly(
                 successResult(
-                        GET_SCHEDULED_FUNGIBLE_TOKEN_CREATE_TRANSACTION
+                        GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO
                                 .getOutputs()
-                                .encodeElements(
-                                        SUCCESS.protoOrdinal(), fungibleTokenInfoTupleFor(tokenCreation, ledgerId, 1)),
+                                .encode(Tuple.of(
+                                        SUCCESS.protoOrdinal(), fungibleTokenInfoTupleFor(tokenCreation, ledgerId, 1))),
                         gasCalculator.viewGasRequirement()),
                 SUCCESS,
                 true);

@@ -20,7 +20,6 @@ import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -85,7 +84,6 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
             try {
                 final PlatformEvent candidate =
                         switch (fileVersion) {
-                            case ORIGINAL -> EventSerializationUtils.deserializePlatformEvent(stream, true);
                             case PROTOBUF_EVENTS -> new PlatformEvent(stream.readPbjRecord(GossipEvent.PROTOBUF));
                         };
                 if (candidate.getAncientIndicator(fileType) >= lowerBound) {
@@ -96,7 +94,6 @@ public class PcesFileIterator implements IOIterator<PlatformEvent> {
                 // This is possible (if not likely) when a node is shut down abruptly.
                 hasPartialEvent = true;
                 closeFile();
-                throw e;
             } catch (final NullPointerException e) {
                 // The PlatformEvent constructor can throw this if the event is malformed.
                 hasPartialEvent = true;

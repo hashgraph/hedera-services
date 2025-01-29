@@ -30,7 +30,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -54,8 +53,8 @@ import org.junit.jupiter.api.Test;
 public class ConsistencyTestingToolStateTest {
 
     private static ConsistencyTestingToolState state;
+    private static ConsistencyTestingToolStateLifecycles stateLifecycle;
     private Random random;
-    private PlatformStateModifier platformStateModifier;
     private Platform platform;
     private PlatformContext platformContext;
     private Round round;
@@ -72,7 +71,8 @@ public class ConsistencyTestingToolStateTest {
 
     @BeforeAll
     static void initState() {
-        state = new ConsistencyTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, mock(Function.class));
+        state = new ConsistencyTestingToolState(mock(Function.class));
+        stateLifecycle = new ConsistencyTestingToolStateLifecycles();
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
     }
 
@@ -95,10 +95,9 @@ public class ConsistencyTestingToolStateTest {
         when(stateCommonConfig.savedStateDirectory()).thenReturn(Path.of("consistency-test"));
         when(consistencyTestingToolConfig.logfileDirectory()).thenReturn("consistency-test");
 
-        state.init(platform, initTrigger, softwareVersion);
+        stateLifecycle.onStateInitialized(state, platform, initTrigger, softwareVersion);
 
         random = new Random();
-        platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
 
@@ -130,7 +129,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(round)
                 .forEachEventTransaction(any());
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycle.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
     }
@@ -149,7 +148,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(round)
                 .forEachEventTransaction(any());
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycle.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
     }
@@ -176,7 +175,7 @@ public class ConsistencyTestingToolStateTest {
                 .forEachEventTransaction(any());
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycle.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).hasSize(3);
     }
@@ -194,7 +193,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(round)
                 .forEachEventTransaction(any());
 
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycle.onHandleConsensusRound(round, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
     }
@@ -219,7 +218,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(event)
                 .forEachTransaction(any());
 
-        state.preHandle(event, consumer);
+        stateLifecycle.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).hasSize(3);
     }
@@ -237,7 +236,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(event)
                 .forEachTransaction(any());
 
-        state.preHandle(event, consumer);
+        stateLifecycle.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).hasSize(1);
     }
@@ -255,7 +254,7 @@ public class ConsistencyTestingToolStateTest {
                 .when(event)
                 .forEachTransaction(any());
 
-        state.preHandle(event, consumer);
+        stateLifecycle.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
     }
@@ -272,8 +271,15 @@ public class ConsistencyTestingToolStateTest {
                 .when(event)
                 .forEachTransaction(any());
 
-        state.preHandle(event, consumer);
+        stateLifecycle.onPreHandle(event, state, consumer);
 
         assertThat(consumedTransactions).isEmpty();
+    }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        final boolean result = stateLifecycle.onSealConsensusRound(round, state);
+
+        assertThat(result).isTrue();
     }
 }

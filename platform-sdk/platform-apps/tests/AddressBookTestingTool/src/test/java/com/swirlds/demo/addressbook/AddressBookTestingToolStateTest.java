@@ -29,7 +29,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -57,9 +56,9 @@ class AddressBookTestingToolStateTest {
 
     private static final int RUNNING_SUM_INDEX = 3;
     private static AddressBookTestingToolState state;
+    private static AddressBookTestingToolStateLifecycles stateLifecycles;
     private AddressBookTestingToolMain main;
     private Random random;
-    private PlatformStateModifier platformStateModifier;
     private Platform platform;
     private PlatformContext platformContext;
     private Round round;
@@ -76,7 +75,8 @@ class AddressBookTestingToolStateTest {
 
     @BeforeAll
     static void initState() {
-        state = new AddressBookTestingToolState(FAKE_MERKLE_STATE_LIFECYCLES, mock(Function.class));
+        state = new AddressBookTestingToolState(mock(Function.class));
+        stateLifecycles = new AddressBookTestingToolStateLifecycles();
         FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
     }
 
@@ -99,11 +99,10 @@ class AddressBookTestingToolStateTest {
         when(addressBookTestingToolConfig.testScenario())
                 .thenReturn(String.valueOf(AddressBookTestScenario.GENESIS_NORMAL));
 
-        state.init(platform, initTrigger, softwareVersion);
+        stateLifecycles.onStateInitialized(state, platform, initTrigger, softwareVersion);
 
         main = mock(AddressBookTestingToolMain.class);
         random = new Random();
-        platformStateModifier = mock(PlatformStateModifier.class);
         round = mock(Round.class);
         event = mock(ConsensusEvent.class);
 
@@ -136,7 +135,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.getApplicationTransaction()).thenReturn(bytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -158,7 +157,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -191,7 +190,7 @@ class AddressBookTestingToolStateTest {
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -211,7 +210,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.isSystem()).thenReturn(true);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -236,7 +235,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureTransactionBytes);
 
         // When
-        state.handleConsensusRound(round, platformStateModifier, consumer);
+        stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         verify(round, times(1)).iterator();
@@ -264,7 +263,7 @@ class AddressBookTestingToolStateTest {
         when(thirdConsensusTransaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).hasSize(3);
@@ -280,7 +279,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).hasSize(1);
@@ -295,7 +294,7 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.isSystem()).thenReturn(true);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).isEmpty();
@@ -312,10 +311,21 @@ class AddressBookTestingToolStateTest {
         when(consensusTransaction.getApplicationTransaction()).thenReturn(emptyStateSignatureBytes);
 
         // When
-        state.preHandle(event, consumer);
+        stateLifecycles.onPreHandle(event, state, consumer);
 
         // Then
         assertThat(consumedTransactions).isEmpty();
+    }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given (empty)
+
+        // When
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
     }
 
     private void givenRoundAndEvent() {

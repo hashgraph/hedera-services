@@ -30,17 +30,17 @@ is to gather the required signatures for the scheduled transaction, the `waitFor
 
 ### New Solidity Functions
 
-| Function Selector Hash |                                    Short Selector                                     |                                                                  Function Signature                                                                   | HAPI operation  |                           Description                            |
-|------------------------|---------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------------------------------------------------------------|
-| `0xe780c5d3`           | `getScheduledFungibleTokenCreateTransaction(address scheduleAddress)`                 | `function getScheduledFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, FungibleTokenInfo memory tokenInfo)`       | ScheduleGetInfo | Retrieve information for the scheduled token create              |
-| `0x14749042`           | `getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress)`              | `function getScheduledNonFungibleTokenCreateTransaction(address scheduleAddress) returns (int64 responseCode, NonFungibleTokenInfo memory tokenInfo)` | ScheduleGetInfo | Retrieve information for the scheduled nft create                |
-| `0xca829811`           | `scheduleNative(address systemContractAddress, bytes callData, address payerAddress)` | `function scheduleNative(address systemContractAddress, bytes callData, address payerAddress) returns (int64 responseCode, address scheduleAddress)`  | ScheduleCreate  | Schedule a token create or update as determined by the call data |
+| Function Selector Hash |                                    Short Selector                                     |                                                                  Function Signature                                                                  | HAPI operation  |                           Description                            |
+|------------------------|---------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|------------------------------------------------------------------|
+| `0xda2d5f8f`           | `getScheduledCreateFungibleTokenInfo(address scheduleAddress)`                        | `function getScheduledCreateFungibleTokenInfo(address scheduleAddress) returns (int64 responseCode, FungibleTokenInfo memory tokenInfo)`             | ScheduleGetInfo | Retrieve information for the scheduled token create              |
+| `0xd68c902c`           | `getScheduledCreateNonFungibleTokenInfo(address scheduleAddress)`                     | `function getScheduledCreateNonFungibleTokenInfo(address scheduleAddress) returns (int64 responseCode, NonFungibleTokenInfo memory tokenInfo)`       | ScheduleGetInfo | Retrieve information for the scheduled nft create                |
+| `0xca829811`           | `scheduleNative(address systemContractAddress, bytes callData, address payerAddress)` | `function scheduleNative(address systemContractAddress, bytes callData, address payerAddress) returns (int64 responseCode, address scheduleAddress)` | ScheduleCreate  | Schedule a token create or update as determined by the call data |
 
 ### System Contract Module
 
-- `ScheduleNativeTranslator` - This class will be responsible for handling the `scheduleCreateFungibleToken`, `scheduleCreateFungibleTokenWithCustomFees`, `scheduleCreateNonFungibleToken`, `scheduleCreateNonFungibleTokenWithCustomFees`, `scheduleUpdateTokenInfo` and selectors and dispatching them to the Schedule Service.
+- `ScheduleNativeTranslator` - This class will be responsible for handling the `scheduleNative` selector and dispatching it to the Schedule Service.
 - `ScheduleNativeCall` - This class provides methods and constants for decoding the given `HssCallAttempt` into the appropriate `TransactionBody` by using the `asSchedulableDispatchIn` method of the `Call` interfaced described below.
-- `GetScheduledInfoTranslator` - This class will be responsible for handling the `getScheduledFungibleTokenCreateTransaction` and `getScheduledNonFungibleTokenCreateTransaction` selectors and dispatching them to the Schedule Service.
+- `GetScheduledInfoTranslator` - This class will be responsible for handling the `getScheduledCreateFungibleTokenInfo` and `getScheduledCreateNonFungibleTokenInfo` selectors and dispatching them to the Schedule Service.
 - `GetScheduledTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 - `GetScheduledNonFungibleTokenInfoCall` - This class provides methods and constants for decoding the `ScheduleGetInfoResponse` into a `PricedResult`.
 
@@ -95,7 +95,7 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 ## Phased Implementation
 
 1. Implement the `scheduleNative` system contract function.
-2. Implement the `getScheduledFungibleTokenCreateTransaction`, `getScheduledNonFungibleTokenCreateTransaction` system contract functions.
+2. Implement the `getScheduledCreateFungibleTokenInfo`, `getScheduledCreateNonFungibleTokenInfo` system contract functions.
 
 ## Acceptance Tests
 
@@ -103,8 +103,8 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 
 #### Positive Tests
 
-- validate that `getScheduledFungibleTokenCreateTransaction` returns the correct token info for a given schedule address.
-- validate that `getScheduledNonFungibleTokenCreateTransaction` returns the correct non-fungible token info for a given schedule address.
+- validate that `getScheduledCreateFungibleTokenInfo` returns the correct token info for a given schedule address.
+- validate that `getScheduledCreateNonFungibleTokenInfo` returns the correct non-fungible token info for a given schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create token and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create token with a designated payer and returns the schedule address.
 - validate that `scheduleNative` successfully creates a schedule for create token with custom fees and returns the schedule address.
@@ -117,6 +117,6 @@ The throttles for `ScheduledCreate` and `ScheduledGetInfo` will be applied to th
 
 #### Negative Tests
 
-- validate that `getScheduledFungibleTokenCreateTransaction` returns an error for a non-existing schedule address.
-- validate that `getScheduledNonFungibleTokenCreateTransaction` returns an error for a non-existing schedule address.
+- validate that `getScheduledCreateFungibleTokenInfo` returns an error for a non-existing schedule address.
+- validate that `getScheduledCreateNonFungibleTokenInfo` returns an error for a non-existing schedule address.
 - validate that the create/update functions would not be executed if the required signers did not sign the schedules.
