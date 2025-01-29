@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.util.TokenRelListCalculator;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -305,6 +306,7 @@ class TokenRelListCalculatorTest {
                 LOCAL_TOKEN_REL_5);
 
         final var wrappedState = new MapReadableKVState<>(TOKEN_RELS_KEY, tokenRels);
-        return new ReadableTokenRelationStoreImpl(mockStates(Map.of(TOKEN_RELS_KEY, wrappedState)));
+        return new ReadableTokenRelationStoreImpl(
+                mockStates(Map.of(TOKEN_RELS_KEY, wrappedState)), mock(ReadableEntityCounters.class));
     }
 }

@@ -482,7 +482,7 @@ public class TokenAirdropHandler extends TransferExecutor implements Transaction
                     .numberPendingAirdrops(numPendingAirdrops + 1)
                     .build();
             accountStore.put(updatedSenderAccount);
-            pendingStore.put(pendingId, newHeadAirdrop);
+            pendingStore.putAndIncrementCount(pendingId, newHeadAirdrop);
         }
     }
 

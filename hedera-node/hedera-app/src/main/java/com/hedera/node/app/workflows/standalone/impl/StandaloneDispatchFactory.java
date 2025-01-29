@@ -155,21 +155,20 @@ public class StandaloneDispatchFactory {
                 new KVStateChangeListener(),
                 blockStreamConfig.streamMode());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, consensusTransaction, readableStoreFactory);
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow, entityIdStore);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var writableStoreFactory = new WritableStoreFactory(
-                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService, entityIdStore);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-        final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
+        final var entityNumGenerator = new EntityNumGeneratorImpl(entityIdStore);
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var baseBuilder = initializeBuilderInfo(
                 stack.getBaseBuilder(StreamBuilder.class), txnInfo, exchangeRateManager.exchangeRates());

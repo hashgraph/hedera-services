@@ -272,7 +272,7 @@ public record SystemContractMethod(
         return function.encodeCallWithArgs(args);
     }
 
-    public TupleType getOutputs() {
+    public <T extends Tuple> TupleType<T> getOutputs() {
         return function.getOutputs();
     }
 

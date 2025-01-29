@@ -48,7 +48,6 @@ import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -141,7 +140,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
 
         // build a new token
-        final var newTokenNum = context.entityNumGenerator().newEntityNum(EntityType.TOKEN);
+        final var newTokenNum = context.entityNumGenerator().newEntityNum();
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
         final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 
@@ -149,7 +148,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFees(), context.expiryValidator());
         // Put token into modifications map
-        tokenStore.put(newToken);
+        tokenStore.putAndIncrementCount(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
         associateAccounts(

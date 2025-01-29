@@ -246,7 +246,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             currentSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the treasury
             final var uniqueToken = buildNewlyMintedNft(consensusTime, tokenId, meta, currentSerialNumber);
-            nftStore.put(uniqueToken);
+            nftStore.putAndIncrementCount(uniqueToken);
             // all minted serials should be added to the receipt
             mintedSerials.add(currentSerialNumber);
         }
