@@ -231,7 +231,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
             schedule = markedExecuted(schedule, consensusNow);
         }
-        scheduleStore.put(schedule);
+        scheduleStore.putAndIncrementCount(schedule);
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)
                 .scheduleID(schedule.scheduleId())

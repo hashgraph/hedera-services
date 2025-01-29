@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,10 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -47,6 +49,8 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
     private final WritableKVState<EntityIDPair, TokenRelation> tokenRelState;
 
+    private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableTokenRelationStore} instance.
      *
@@ -57,9 +61,11 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     public WritableTokenRelationStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
         this.tokenRelState = requireNonNull(states).get(V0490TokenSchema.TOKEN_RELS_KEY);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAggregateRels();
         final var storeMetrics = storeMetricsService.get(StoreType.TOKEN_RELATION, maxCapacity);
@@ -67,7 +73,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
-     * Persists a new {@link TokenRelation} into the state.
+     * Persists an updated {@link TokenRelation} into the state.
      *
      * @param tokenRelation - the tokenRelation to be persisted
      */
@@ -83,6 +89,15 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     }
 
     /**
+     * Persists a new {@link TokenRelation} into the state and increments the entity counter for token relations.
+     * @param tokenRelation the token relation to be persisted
+     */
+    public void putAndIncrementCount(@NonNull final TokenRelation tokenRelation) {
+        put(tokenRelation);
+        entityCounters.incrementEntityTypeCount(EntityType.TOKEN_ASSOCIATION);
+    }
+
+    /**
      * Removes a {@link TokenRelation} from the state.
      *
      * @param tokenRelation the {@code TokenRelation} to be removed
@@ -92,6 +107,7 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
                 .accountId(tokenRelation.accountId())
                 .tokenId(tokenRelation.tokenId())
                 .build());
+        entityCounters.decrementEntityTypeCounter(EntityType.TOKEN_ASSOCIATION);
     }
 
     /**

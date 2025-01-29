@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ public class TokenHandlerHelper {
         final var isContract = acct.smartContract();
 
         validateFalse(acct.deleted(), errorOnAccountDeleted);
-        final var type = isContract ? EntityType.CONTRACT : EntityType.ACCOUNT;
+        final var type = isContract ? EntityType.CONTRACT_BYTECODE : EntityType.ACCOUNT;
 
         final var expiryStatus =
                 expiryValidator.expirationStatus(type, acct.expiredAndPendingRemoval(), acct.tinybarBalance());
@@ -188,15 +188,34 @@ public class TokenHandlerHelper {
             @NonNull final TokenID tokenId,
             @NonNull final ReadableTokenStore tokenStore,
             @NonNull final TokenValidations tokenValidations) {
+        return getIfUsable(tokenId, tokenStore, tokenValidations, null);
+    }
+
+    /**
+     * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid.
+     *
+     * @param tokenId the ID of the token to get
+     * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
+     * @param tokenValidations whether validate paused token status
+     * @param errorIfNotUsable the error response code, if token is not usable
+     * @return the token if it exists and is usable
+     * @throws HandleException if any of the token conditions are not met
+     */
+    @NonNull
+    public static Token getIfUsable(
+            @NonNull final TokenID tokenId,
+            @NonNull final ReadableTokenStore tokenStore,
+            @NonNull final TokenValidations tokenValidations,
+            @Nullable final ResponseCodeEnum errorIfNotUsable) {
         requireNonNull(tokenId);
         requireNonNull(tokenStore);
         requireNonNull(tokenValidations);
 
         final var token = tokenStore.get(tokenId);
-        validateTrue(token != null, INVALID_TOKEN_ID);
-        validateFalse(token.deleted(), TOKEN_WAS_DELETED);
+        validateTrue(token != null, errorIfNotUsable == null ? INVALID_TOKEN_ID : errorIfNotUsable);
+        validateFalse(token.deleted(), errorIfNotUsable == null ? TOKEN_WAS_DELETED : errorIfNotUsable);
         if (tokenValidations == REQUIRE_NOT_PAUSED) {
-            validateFalse(token.paused(), TOKEN_IS_PAUSED);
+            validateFalse(token.paused(), errorIfNotUsable == null ? TOKEN_IS_PAUSED : errorIfNotUsable);
         }
         return token;
     }

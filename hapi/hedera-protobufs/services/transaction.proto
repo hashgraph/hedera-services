@@ -102,7 +102,12 @@ import "node_create.proto";
 import "node_update.proto";
 import "node_delete.proto";
 
+import "custom_fees.proto";
 import "event/state_signature_transaction.proto";
+
+import "auxiliary/history/history_proof_signature.proto";
+import "auxiliary/history/history_proof_key_publication.proto";
+import "auxiliary/history/history_proof_vote.proto";
 
 /**
  * A wrapper around signed transaction bytes.<br/>
@@ -167,7 +172,7 @@ message Transaction {
  */
 message TransactionBody {
     // <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
-    reserved 30, 61, 62, 63, 64;
+    reserved 30, 61, 62, 63, 64, 66, 67, 68;
 
     reserved "tssMessage", "tssVote", "tssShareSignature", "tssEncryptionKey";
 
@@ -241,12 +246,14 @@ message TransactionBody {
      * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 6;
+
     /**
-* The <b>entire public key</b> of the trusted batch assembler.
-*
-* Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
-*/
-    Key batchKey = 66;
+     * The <b>entire public key</b> of the trusted batch assembler.
+     *
+     * Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
+     */
+    Key batchKey = 72;
+
     // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
     oneof data {
@@ -614,14 +621,38 @@ message TransactionBody {
          */
         com.hedera.hapi.platform.event.StateSignatureTransaction state_signature_transaction = 65;
 
-        AtomicBatchTransactionBody atomicBatch = 67;
+        /**
+         * A transaction body for contributed a signature with a node's proof key to a history proof.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody history_proof_signature = 69;
+
+        /**
+         * A transaction body for publishing a node's metadata proof key.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody history_proof_key_publication = 70;
+
+        /**
+         * A transaction body for voting on a metadata proof descending from the ledger id.
+         */
+        com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
+
+        AtomicBatchTransactionBody atomicBatch = 73;
     }
+
+    /**
+     * A list of maximum custom fees that the users are willing to pay.
+     * <p>
+     * This field is OPTIONAL.<br/>
+     * If left empty, the users are accepting to pay any custom fee.<br/>
+     * If used with a transaction type that does not support custom fee limits, the transaction will fail.
+     */
+    repeated CustomFeeLimit max_custom_fees = 1001;
 }
 
 /**
  * Create an atomic batch.
  */
 message AtomicBatchTransactionBody {
-    // <<<pbj.java_package = "com.hedera.hapi.node.util">>> This comment is special code for setting PBJ Compiler java package
-    repeated Transaction transactions = 1;
+  // <<<pbj.java_package = "com.hedera.hapi.node.util">>> This comment is special code for setting PBJ Compiler java package
+  repeated Transaction transactions = 1;
 }

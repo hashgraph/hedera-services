@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -45,6 +47,8 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     /** The underlying data storage class that holds the NFT data. */
     private final WritableKVState<NftID, Nft> nftState;
 
+    private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableNftStore} instance.
      *
@@ -55,9 +59,11 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public WritableNftStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
         this.nftState = states.get(V0490TokenSchema.NFTS_KEY);
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).nftsMaxAllowedMints();
         final var storeMetrics = storeMetricsService.get(StoreType.NFT, maxCapacity);
@@ -65,7 +71,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     }
 
     /**
-     * Persists a new {@link Nft} into the state, as well as exporting its ID to the transaction
+     * Persists an updated {@link Nft} into the state, as well as exporting its ID to the transaction
      * receipt.
      *
      * @param nft - the nft to be persisted.
@@ -74,6 +80,16 @@ public class WritableNftStore extends ReadableNftStoreImpl {
         Objects.requireNonNull(nft);
         requireNotDefault(nft.nftId());
         nftState.put(nft.nftId(), nft);
+    }
+
+    /**
+     * Persists a new {@link Nft} into the state. This also increments the entity counts for
+     * {@link EntityType#NFT}.
+     * @param nft the nft to be persisted
+     */
+    public void putAndIncrementCount(@NonNull final Nft nft) {
+        put(nft);
+        entityCounters.incrementEntityTypeCount(EntityType.NFT);
     }
 
     /**
@@ -117,6 +133,7 @@ public class WritableNftStore extends ReadableNftStoreImpl {
      */
     public void remove(final @NonNull NftID serialNum) {
         nftState.remove(requireNonNull(serialNum));
+        entityCounters.decrementEntityTypeCounter(EntityType.NFT);
     }
 
     /**
