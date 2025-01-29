@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
@@ -138,7 +139,7 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
+        verify(prngPrecompile).computeFully(PRNG_CONTRACT_ID, TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
         verify(result).isRefundGas();
         verify(frame).decrementRemainingGas(ZERO_GAS_REQUIREMENT);
         verify(frame).setOutputData(OUTPUT_DATA);
@@ -154,7 +155,7 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verify(prngPrecompile).computeFully(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
+        verify(prngPrecompile).computeFully(PRNG_CONTRACT_ID, TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS, frame);
         verifyHalt(INSUFFICIENT_GAS, false);
         verify(operationTracer).tracePrecompileResult(frame, SYSTEM);
     }
@@ -326,7 +327,8 @@ class CustomMessageCallProcessorTest {
     private void givenPrngCall(long gasRequirement) {
         givenCallWithCode(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
         given(frame.getInputData()).willReturn(TestHelpers.PRNG_SYSTEM_CONTRACT_ADDRESS);
-        given(prngPrecompile.computeFully(any(), any())).willReturn(new FullResult(result, gasRequirement, null));
+        given(prngPrecompile.computeFully(any(), any(), any()))
+                .willReturn(new FullResult(result, gasRequirement, null));
     }
 
     private void verifyHalt(@NonNull final ExceptionalHaltReason reason) {

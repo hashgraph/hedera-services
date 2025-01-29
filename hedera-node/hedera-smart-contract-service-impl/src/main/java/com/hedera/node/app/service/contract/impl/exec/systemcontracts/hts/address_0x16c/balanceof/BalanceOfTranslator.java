@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_16C_CONTRACT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -45,7 +45,7 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
                     "balanceOf(address)", ReturnTypes.INT)
             .withModifier(Modifier.VIEW)
             .withCategory(Category.TOKEN_QUERY)
-            .withSupportedAddress(HTS_167_CONTRACT_ID);
+            .withSupportedAddress(HTS_16C_CONTRACT_ID);
 
     /**
      * Default constructor for injection.

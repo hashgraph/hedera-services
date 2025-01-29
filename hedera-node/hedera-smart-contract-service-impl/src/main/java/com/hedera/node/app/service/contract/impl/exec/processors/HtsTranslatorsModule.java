@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -476,6 +476,21 @@ public interface HtsTranslatorsModule {
     @Named("HtsTranslators")
     static CallTranslator<HtsCallAttempt> provideTokenRejectsTranslator(
             @NonNull final RejectTokensTranslator translator) {
+        return translator;
+    }
+
+    /**
+     * Provides Translator for HTS System Contraact at address 0x16c
+     */
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HtsTranslators")
+    static CallTranslator<HtsCallAttempt> provideBalanceOfTranslator_16c(
+            @NonNull
+                    final com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof
+                                    .BalanceOfTranslator
+                            translator) {
         return translator;
     }
 }
