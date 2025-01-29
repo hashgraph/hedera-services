@@ -128,7 +128,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
             validateTrue(treasuryRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        TokenBurnStreamBuilder tokenBurnStreamBuilderRecord =
+        final TokenBurnStreamBuilder tokenBurnStreamBuilderRecord =
                 context.savepointStack().getBaseBuilder(TokenBurnStreamBuilder.class);
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
             validateTrue(fungibleBurnCount >= 0, INVALID_TOKEN_BURN_AMOUNT);

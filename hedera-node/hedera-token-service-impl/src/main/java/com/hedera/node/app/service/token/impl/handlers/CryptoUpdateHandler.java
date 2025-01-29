@@ -347,17 +347,17 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
     /**
      * This method calculates the base size of the cryptoUpdate transaction.
      * This is the duplicated code as in mono-service
-     * @param op the {@link CryptoUpdateTransactionBody}
+     * @param txBody the {@link CryptoUpdateTransactionBody}
      * @param keySize the size of the key
      * @return the calculated base size
      */
-    private static long baseSizeOf(final CryptoUpdateTransactionBody op, final long keySize) {
+    private static long baseSizeOf(final CryptoUpdateTransactionBody txBody, final long keySize) {
         return BASIC_ENTITY_ID_SIZE
-                + op.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
-                + (op.hasExpirationTime() ? LONG_SIZE : 0L)
-                + (op.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
-                + (op.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
-                + (op.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
+                + txBody.memoOrElse("").getBytes(StandardCharsets.UTF_8).length
+                + (txBody.hasExpirationTime() ? LONG_SIZE : 0L)
+                + (txBody.hasAutoRenewPeriod() ? LONG_SIZE : 0L)
+                + (txBody.hasProxyAccountID() ? BASIC_ENTITY_ID_SIZE : 0L)
+                + (txBody.hasMaxAutomaticTokenAssociations() ? INT_SIZE : 0L)
                 + keySize;
     }
 

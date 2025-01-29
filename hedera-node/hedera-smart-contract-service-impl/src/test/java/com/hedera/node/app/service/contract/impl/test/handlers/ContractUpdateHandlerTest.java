@@ -554,7 +554,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         final var updatedContract = subject.update(contractAccount, context, op);
 
-        assertEquals(contractAccount.key(), updatedContract.key());
+        assertEquals(contractAccount.key(), updatedContract.key(), "Admin key should not be updated when key is empty");
     }
 
     @Test

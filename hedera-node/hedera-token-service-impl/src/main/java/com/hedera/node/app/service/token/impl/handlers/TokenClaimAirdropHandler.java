@@ -105,9 +105,9 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
     }
 
     @Override
-    public void pureChecks(@NonNull PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
-        var txn = context.body();
+        final var txn = context.body();
         requireNonNull(txn);
 
         final var op = txn.tokenClaimAirdrop();

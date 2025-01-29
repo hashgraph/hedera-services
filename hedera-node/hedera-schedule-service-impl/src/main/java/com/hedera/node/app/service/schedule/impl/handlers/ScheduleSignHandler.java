@@ -67,7 +67,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
-        var body = context.body();
+        final var body = context.body();
         requireNonNull(body);
         validateTruePreCheck(body.hasScheduleSign(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleSignOrThrow();

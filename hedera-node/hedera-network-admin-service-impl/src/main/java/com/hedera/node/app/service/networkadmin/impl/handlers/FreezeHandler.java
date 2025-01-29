@@ -115,16 +115,7 @@ public class FreezeHandler implements TransactionHandler {
         final TransactionBody txn = context.body();
 
         requireNonNull(txn);
-        FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
-
-        // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
-        // reject any freeze transactions that set these properties
-        if (freezeTxn.startHour() != 0
-                || freezeTxn.startMin() != 0
-                || freezeTxn.endHour() != 0
-                || freezeTxn.endMin() != 0) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
-        }
+        final FreezeTransactionBody freezeTxn = getFreezeTransactionBody(txn);
 
         final FreezeType freezeType = freezeTxn.freezeType();
         if (freezeType == UNKNOWN_FREEZE_TYPE) {
@@ -150,6 +141,21 @@ public class FreezeHandler implements TransactionHandler {
                 throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
             }
         }
+    }
+
+    private static @NonNull FreezeTransactionBody getFreezeTransactionBody(final TransactionBody txn)
+            throws PreCheckException {
+        final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
+
+        // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
+        // reject any freeze transactions that set these properties
+        if (freezeTxn.startHour() != 0
+                || freezeTxn.startMin() != 0
+                || freezeTxn.endHour() != 0
+                || freezeTxn.endMin() != 0) {
+            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+        }
+        return freezeTxn;
     }
 
     @Override

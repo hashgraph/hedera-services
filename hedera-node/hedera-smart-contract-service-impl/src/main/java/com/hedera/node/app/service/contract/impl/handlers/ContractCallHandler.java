@@ -83,7 +83,7 @@ public class ContractCallHandler extends AbstractContractTransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
         try {
             final var txn = context.body();

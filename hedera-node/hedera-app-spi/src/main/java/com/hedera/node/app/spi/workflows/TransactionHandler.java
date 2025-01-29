@@ -47,7 +47,7 @@ public interface TransactionHandler {
      * @throws NullPointerException if {@code txBody} is {@code null}
      * @throws PreCheckException if the transaction is invalid
      */
-    void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException;
+    void pureChecks(@NonNull PureChecksContext context) throws PreCheckException;
 
     /**
      * This method can be used to perform any warm up, e.g. loading data into memory that is needed

@@ -71,7 +71,7 @@ public class FileDeleteHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
-        var body = context.body();
+        final var body = context.body();
         final FileDeleteTransactionBody transactionBody = body.fileDeleteOrThrow();
 
         if (transactionBody.fileID() == null) {

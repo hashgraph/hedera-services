@@ -76,7 +76,7 @@ public class FileAppendHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
-        var body = context.body();
+        final var body = context.body();
         final FileAppendTransactionBody transactionBody = body.fileAppendOrThrow();
 
         if (transactionBody.fileID() == null) {

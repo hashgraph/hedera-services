@@ -108,8 +108,8 @@ class ContractDeleteHandlerTest {
                         ContractDeleteTransactionBody.newBuilder().permanentRemoval(true))
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
-        final var ex = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, ex.responseCode());
+        final var exc = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
+        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, exc.responseCode());
     }
 
     @Test

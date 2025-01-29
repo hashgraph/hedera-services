@@ -96,7 +96,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     private ReadableAccountStore accountStore;
 
     @Mock
-    PureChecksContext pureChecksContext;
+    private PureChecksContext pureChecksContext;
 
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageStreamBuilder recordBuilder;

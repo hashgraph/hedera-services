@@ -52,5 +52,5 @@ public interface PureChecksContext {
      * @return the TransactionBogy
      */
     @Nullable
-    TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException;
+    TransactionBody bodyFromTransaction(@NonNull Transaction txn) throws PreCheckException;
 }
