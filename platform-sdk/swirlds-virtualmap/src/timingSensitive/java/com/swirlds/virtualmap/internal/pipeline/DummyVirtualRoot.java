@@ -333,6 +333,11 @@ class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends Par
         statistics.recordMerge(copyIndex * 2); // Use copyIndex*2 as merge duration
     }
 
+    @Override
+    public boolean shouldBeCompacted() {
+        return false;
+    }
+
     /**
      * Wait until merged.
      */
@@ -341,7 +346,7 @@ class DummyVirtualRoot<K extends VirtualKey, V extends VirtualValue> extends Par
     }
 
     @Override
-    public void garbageCollectIfNeeded() {
+    public void garbageCollect() {
         // no-op
     }
 

@@ -450,6 +450,10 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
         return executorService.awaitTermination(timeout, unit);
     }
 
+    private boolean canBeCompacted(final VirtualRoot<K, V> copy) {
+        return copy.shouldBeCompacted() && (copy.isDestroyed() || copy.isDetached()); // destroyed or detached
+    }
+
     /**
      * Compacts a copy, if needed. Usually a copy should be compacted, if its estimated size exceeds
      * flush threshold. Compaction may remove duplicate mutations from copy's node cache, which may
@@ -462,7 +466,7 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
         if (!copy.isHashed()) {
             hashCopy(copy);
         }
-        copy.garbageCollectIfNeeded();
+        copy.garbageCollect();
     }
 
     /**
@@ -558,7 +562,9 @@ public class VirtualPipeline<K extends VirtualKey, V extends VirtualValue> {
             if (!copy.isImmutable()) {
                 break;
             }
-            compact(copy);
+            if (canBeCompacted(copy)) {
+                compact(copy);
+            }
             if ((next == copies.getFirst()) && shouldBeFlushed(copy)) {
                 logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush {}", copy.getFastCopyVersion());
                 flush(copy);

@@ -28,6 +28,8 @@ import java.nio.file.Path;
  */
 public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> extends MerkleNode {
 
+    boolean shouldBeCompacted();
+
     /**
      * Check if this copy is a copy that has been designated for flushing. Once designated
      * as a flushable copy, this method should still return true after the flush has completed.
@@ -89,7 +91,7 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
      * exceeds the flush threshold, remove all redundant changes. Estimated size may be
      * changed after this call.
      */
-    void garbageCollectIfNeeded();
+    void garbageCollect();
 
     /**
      * Check if the hash for this copy has already been computed.

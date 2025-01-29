@@ -63,6 +63,11 @@ public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue>
     }
 
     @Override
+    public boolean shouldBeCompacted() {
+        return false;
+    }
+
+    @Override
     public boolean shouldBeFlushed() {
         return false;
     }
@@ -87,7 +92,7 @@ public final class NoOpVirtualRoot<K extends VirtualKey, V extends VirtualValue>
     }
 
     @Override
-    public void garbageCollectIfNeeded() {}
+    public void garbageCollect() {}
 
     @Override
     public boolean isHashed() {
