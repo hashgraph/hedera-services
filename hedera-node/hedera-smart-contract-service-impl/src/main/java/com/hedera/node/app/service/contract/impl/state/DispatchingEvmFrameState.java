@@ -185,12 +185,15 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull List<StorageAccesses> getStorageChanges() {
         final Map<ContractID, List<StorageAccess>> modifications = new TreeMap<>(HapiUtils.CONTRACT_ID_COMPARATOR);
-        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
-                .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
-                .add(StorageAccess.newWrite(
-                        pbjToTuweniUInt256(slotKey.key()),
-                        valueOrZero(contractStateStore.getOriginalSlotValue(slotKey)),
-                        valueOrZero(contractStateStore.getSlotValue(slotKey)))));
+        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> {
+            final var originalValue = valueOrZero(contractStateStore.getOriginalSlotValue(slotKey));
+            final var newValue = valueOrZero(contractStateStore.getSlotValue(slotKey));
+            if (!originalValue.isZero() || !newValue.isZero()) {
+                modifications
+                        .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
+                        .add(StorageAccess.newWrite(pbjToTuweniUInt256(slotKey.key()), originalValue, newValue));
+            }
+        });
         final List<StorageAccesses> allChanges = new ArrayList<>();
         modifications.forEach(
                 (number, storageAccesses) -> allChanges.add(new StorageAccesses(number, storageAccesses)));
