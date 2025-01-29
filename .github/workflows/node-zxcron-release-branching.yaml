@@ -17,7 +17,7 @@
 name: "ZXCron: Automatic Release Branching"
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 defaults:
@@ -290,7 +290,7 @@ jobs:
         with:
           webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK }}
           webhook-type: incoming-webhook
-          payload-templated: 'true'
+          payload-templated: "true"
           payload: |
             {
               "attachments": [
