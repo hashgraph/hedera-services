@@ -275,7 +275,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 new PureChecksContextImpl(nestedTxn, configuration(), dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(nestedPureChecksContext);
         final var nestedContext = new PreHandleContextImpl(
-                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher);
+                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher, transactionChecker);
         try {
             dispatcher.dispatchPreHandle(nestedContext);
         } catch (final PreCheckException ignored) {

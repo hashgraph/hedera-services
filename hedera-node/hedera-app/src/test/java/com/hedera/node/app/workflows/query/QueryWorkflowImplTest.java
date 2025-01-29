@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -87,6 +88,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.State;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -151,6 +153,9 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
+
+    @Mock
+    private Configuration config;
 
     private VersionedConfiguration configuration;
     private Transaction payment;
@@ -576,7 +581,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                                 .header(ResponseHeader.newBuilder().build())
                                 .build())
                         .build());
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo, config);
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -799,7 +804,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo, config);
         final var responseBuffer = newEmptyBuffer();
 
         // when

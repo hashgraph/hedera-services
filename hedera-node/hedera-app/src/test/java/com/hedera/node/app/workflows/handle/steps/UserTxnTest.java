@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -166,6 +167,9 @@ class UserTxnTest {
 
     @Mock
     private WritableKVState<AccountID, Account> accountState;
+
+    @Mock
+    private TransactionChecker transactionChecker;
 
     @BeforeEach
     void setUp() {
@@ -284,6 +288,7 @@ class UserTxnTest {
                 networkUtilizationManager,
                 blockRecordManager,
                 blockStreamManager,
-                childDispatchFactory);
+                childDispatchFactory,
+                transactionChecker);
     }
 }

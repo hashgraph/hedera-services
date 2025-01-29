@@ -54,6 +54,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -97,6 +98,7 @@ public class StandaloneDispatchFactory {
     private final ChildDispatchFactory childDispatchFactory;
     private final TransactionDispatcher transactionDispatcher;
     private final NetworkUtilizationManager networkUtilizationManager;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public StandaloneDispatchFactory(
@@ -111,7 +113,8 @@ public class StandaloneDispatchFactory {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ChildDispatchFactory childDispatchFactory,
             @NonNull final TransactionDispatcher transactionDispatcher,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
+            @NonNull final TransactionChecker transactionChecker) {
         this.feeManager = requireNonNull(feeManager);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -124,6 +127,7 @@ public class StandaloneDispatchFactory {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -195,7 +199,8 @@ public class StandaloneDispatchFactory {
                 dispatchProcessor,
                 throttleAdvisor,
                 feeAccumulator,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                transactionChecker);
         final var fees = transactionDispatcher.dispatchComputeFees(dispatchHandleContext);
         return new RecordDispatch(
                 baseBuilder,

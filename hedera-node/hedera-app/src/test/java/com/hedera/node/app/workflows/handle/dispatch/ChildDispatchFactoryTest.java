@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -135,6 +136,9 @@ class ChildDispatchFactoryTest {
     @Mock
     private ExchangeRateManager exchangeRateManager;
 
+    @Mock
+    private TransactionChecker transactionChecker;
+
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
@@ -153,7 +157,8 @@ class ChildDispatchFactoryTest {
                 dispatchProcessor,
                 serviceScopeLookup,
                 storeMetricsService,
-                exchangeRateManager);
+                exchangeRateManager,
+                transactionChecker);
     }
 
     @Test

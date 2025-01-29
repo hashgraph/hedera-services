@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -41,8 +42,8 @@ public class HistoryProofKeyPublicationHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
-        requireNonNull(body);
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
     }
 
     @Override
