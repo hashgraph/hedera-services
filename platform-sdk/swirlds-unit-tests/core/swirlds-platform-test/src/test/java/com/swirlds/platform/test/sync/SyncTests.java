@@ -828,7 +828,7 @@ public class SyncTests {
                     params.getAncientMode() == BIRTH_ROUND_THRESHOLD
                             ? ConsensusConstants.ROUND_FIRST
                                     + caller.getEmitter().getGraphGenerator().getMaxBirthRound(creatorIdToExpire)
-                            : EventConstants.FIRST_GENERATION_tmp
+                            : EventConstants.FIRST_GENERATION
                                     + caller.getEmitter().getGraphGenerator().getMaxGeneration(creatorIdToExpire));
         });
 

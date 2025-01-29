@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui;
 
 import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
-import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION_tmp;
+import static com.swirlds.platform.system.events.EventConstants.FIRST_GENERATION;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.config.api.Configuration;
@@ -44,7 +44,7 @@ public class GuiEventStorage {
     // A note on concurrency: although all input to this class is sequential and thread safe, access to this class
     // happens asynchronously. This requires all methods to be synchronized.
 
-    private long maxGeneration = FIRST_GENERATION_tmp;
+    private long maxGeneration = FIRST_GENERATION;
 
     private final Consensus consensus;
     private final SimpleLinker linker;

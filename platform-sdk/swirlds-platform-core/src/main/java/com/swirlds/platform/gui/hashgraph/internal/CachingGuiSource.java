@@ -31,7 +31,7 @@ public class CachingGuiSource implements HashgraphGuiSource {
     private List<EventImpl> events = null;
     private AddressBook addressBook = null;
     private long maxGeneration = EventConstants.GENERATION_UNDEFINED;
-    private long startGeneration = EventConstants.FIRST_GENERATION_tmp;
+    private long startGeneration = EventConstants.FIRST_GENERATION;
     private int numGenerations = HashgraphGuiConstants.DEFAULT_GENERATIONS_TO_DISPLAY;
 
     public CachingGuiSource(final HashgraphGuiSource source) {

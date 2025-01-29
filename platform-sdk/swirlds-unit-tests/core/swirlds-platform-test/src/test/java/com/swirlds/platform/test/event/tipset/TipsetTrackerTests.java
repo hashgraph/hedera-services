@@ -152,7 +152,7 @@ class TipsetTrackerTests {
         // Slowly advance the ancient threshold, we should see tipsets disappear as we go.
         long ancientThreshold = ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD
                 ? ConsensusConstants.ROUND_FIRST
-                : EventConstants.FIRST_GENERATION_tmp;
+                : EventConstants.FIRST_GENERATION;
         while (tracker.size() > 0) {
             ancientThreshold += random.nextInt(1, 5);
             final EventWindow eventWindow =
