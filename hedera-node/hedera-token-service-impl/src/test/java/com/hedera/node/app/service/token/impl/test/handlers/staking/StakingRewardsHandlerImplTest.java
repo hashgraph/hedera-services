@@ -330,7 +330,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
     //    @Test
     //    void anAutoCreatedAccountShouldNotHaveStakeStartUpdated() {
-    //        final var newId = AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(10000000000L).build();
+    //        final var newId = AccountID.newBuilder().accountNum(10000000000L).build();
     //        writableAccountStore.put(givenValidAccountBuilder().accountId(newId).build());
     //
     //        given(handleContext.consensusNow()).willReturn(stakePeriodStartInstant);

@@ -147,8 +147,7 @@ class OnDiskTest extends MerkleTestBase {
                 Account.PROTOBUF,
                 virtualMap);
         for (int i = 0; i < 10; i++) {
-            final var id =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(i).build();
+            final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
                     .accountId(id)
                     .memo("Account " + i)
@@ -179,8 +178,7 @@ class OnDiskTest extends MerkleTestBase {
         final var rs = new OnDiskReadableKVState<>(
                 ACCOUNT_STATE_KEY, onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 0; i < 10; i++) {
-            final var id =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(i).build();
+            final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
             assertThat(acct).isNotNull();
             assertThat(acct.accountId()).isEqualTo(id);
@@ -199,8 +197,7 @@ class OnDiskTest extends MerkleTestBase {
                 Account.PROTOBUF,
                 virtualMap);
         for (int i = 1; i < 10; i++) {
-            final var id =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(i).build();
+            final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = Account.newBuilder()
                     .accountId(id)
                     .memo("Account " + i)
@@ -214,8 +211,7 @@ class OnDiskTest extends MerkleTestBase {
         final var rs = new OnDiskReadableKVState<>(
                 ACCOUNT_STATE_KEY, onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY), AccountID.PROTOBUF, virtualMap);
         for (int i = 1; i < 10; i++) {
-            final var id =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(i).build();
+            final var id = AccountID.newBuilder().accountNum(i).build();
             final var acct = rs.get(id);
             assertThat(acct).isNotNull();
             assertThat(acct.accountId()).isEqualTo(id);

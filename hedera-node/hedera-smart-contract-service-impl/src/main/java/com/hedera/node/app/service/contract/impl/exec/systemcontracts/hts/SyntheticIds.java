@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 @Singleton
 public class SyntheticIds {
     private static final AccountID DEBIT_NON_CANONICAL_REFERENCE_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0L).build();
+            AccountID.newBuilder().accountNum(0L).build();
     private static final AccountID CREDIT_NON_CANONICAL_REFERENCE_ID =
             AccountID.newBuilder().alias(Bytes.wrap(new byte[20])).build();
 
@@ -107,7 +107,7 @@ public class SyntheticIds {
     }
 
     private static AccountID numericIdWith(final long number) {
-        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(number).build();
+        return AccountID.newBuilder().accountNum(number).build();
     }
 
     private static AccountID aliasIdWith(final byte[] alias) {

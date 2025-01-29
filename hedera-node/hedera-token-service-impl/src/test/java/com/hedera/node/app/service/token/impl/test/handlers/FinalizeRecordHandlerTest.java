@@ -77,17 +77,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final AccountID ACCOUNT_1212_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1212).build();
+            AccountID.newBuilder().accountNum(1212).build();
     private final Account ACCOUNT_1212 =
             givenValidAccountBuilder().accountId(ACCOUNT_1212_ID).build();
     private final AccountID ACCOUNT_3434_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3434).build();
+            AccountID.newBuilder().accountNum(3434).build();
     private final Account ACCOUNT_3434 = givenValidAccountBuilder()
             .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
     private final AccountID ACCOUNT_5656_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(5656).build();
+            AccountID.newBuilder().accountNum(5656).build();
     private final Account ACCOUNT_5656 = givenValidAccountBuilder()
             .accountId(ACCOUNT_5656_ID)
             .tinybarBalance(10000)
@@ -774,10 +774,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .token(TOKEN_321)
                         .nftTransfers(NftTransfer.newBuilder()
                                 .serialNumber(1)
-                                .senderAccountID(AccountID.newBuilder()
-                                        .shardNum(1)
-                                        .realmNum(2)
-                                        .accountNum(0))
+                                .senderAccountID(AccountID.newBuilder().accountNum(0))
                                 .receiverAccountID(ACCOUNT_3434_ID)
                                 .build())
                         .build()));

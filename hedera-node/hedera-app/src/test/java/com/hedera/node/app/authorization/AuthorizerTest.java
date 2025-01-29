@@ -83,8 +83,7 @@ final class AuthorizerTest {
                 1);
 
         final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
-        accountID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
+        accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
         final var authorized = authorizer.isAuthorized(accountID, hapiFunction);
@@ -102,8 +101,7 @@ final class AuthorizerTest {
                 1);
 
         final var authorizer = new AuthorizerImpl(configProvider, privilegesVerifier);
-        accountID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234L).build();
+        accountID = AccountID.newBuilder().accountNum(1234L).build();
 
         // expect:
         final var authorized = authorizer.isAuthorized(accountID, hapiFunction);

@@ -83,11 +83,11 @@ class DispatchUsageManagerTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final AccountID CREATOR_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            AccountID.newBuilder().accountNum(3).build();
     private static final AccountID OTHER_NODE_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(4).build();
+            AccountID.newBuilder().accountNum(4).build();
     private static final AccountID PAYER_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1_234).build();
+            AccountID.newBuilder().accountNum(1_234).build();
     private static final TransactionBody NONDESCRIPT_TXN_BODY = TransactionBody.newBuilder()
             .nodeAccountID(CREATOR_ACCOUNT_ID)
             .transactionID(

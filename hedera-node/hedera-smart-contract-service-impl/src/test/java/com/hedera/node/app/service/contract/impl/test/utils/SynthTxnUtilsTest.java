@@ -60,11 +60,7 @@ class SynthTxnUtilsTest {
     @Test
     void convertsParentWithStakedNodeAndDeclinedRewardAndAutoRenewIdAndNoAdminKeyAsExpected() {
         final var parent = Account.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123L)
-                        .build())
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .key(Key.newBuilder().contractID(ContractID.newBuilder().contractNum(123L)))
                 .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
                 .stakedNodeId(3)
@@ -86,11 +82,7 @@ class SynthTxnUtilsTest {
     @Test
     void convertsParentWithStakedAccountAndNoAutoRenewIdAndAdminKeyAsExpected() {
         final var parent = Account.newBuilder()
-                .accountId(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(123L)
-                        .build())
+                .accountId(AccountID.newBuilder().accountNum(123L).build())
                 .key(AN_ED25519_KEY)
                 .stakedAccountId(A_NEW_ACCOUNT_ID)
                 .declineReward(true)

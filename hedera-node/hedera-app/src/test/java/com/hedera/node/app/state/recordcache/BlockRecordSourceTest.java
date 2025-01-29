@@ -189,11 +189,7 @@ class BlockRecordSourceTest {
         assertThat(subject.childReceiptsOf(TransactionID.DEFAULT))
                 .containsExactly(FIRST_RECORD.receiptOrThrow(), SECOND_RECORD.receiptOrThrow());
         assertThat(subject.childReceiptsOf(TransactionID.newBuilder()
-                        .accountID(AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(2L)
-                                .build())
+                        .accountID(AccountID.newBuilder().accountNum(2L).build())
                         .build()))
                 .isEmpty();
     }

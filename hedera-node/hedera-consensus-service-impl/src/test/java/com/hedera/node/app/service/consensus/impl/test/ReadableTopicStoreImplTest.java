@@ -64,8 +64,7 @@ class ReadableTopicStoreImplTest extends ConsensusTestBase {
 
     @Test
     void getsTopicIfTopicExistsWithNoAutoRenewAccount() {
-        final var accountId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(0L).build();
+        final var accountId = AccountID.newBuilder().accountNum(0L).build();
         givenValidTopic(accountId);
         readableTopicState = readableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);

@@ -78,12 +78,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenAssociateToAccountHandlerTest {
     private static final AccountID ACCOUNT_888 =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(888).build();
-    private static final AccountID ACCOUNT_1339 = AccountID.newBuilder()
-            .shardNum(1)
-            .realmNum(2)
-            .accountNum(MISC_ACCOUNT.getAccountNum())
-            .build();
+            AccountID.newBuilder().accountNum(888).build();
+    private static final AccountID ACCOUNT_1339 =
+            AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
     private static final TokenID TOKEN_300 = TokenID.newBuilder().tokenNum(300).build();
     private static final TokenID TOKEN_400 = TokenID.newBuilder().tokenNum(400).build();
 
@@ -188,8 +185,7 @@ class TokenAssociateToAccountHandlerTest {
         @Test
         void accountNotFound() {
             mockContext();
-            final var missingAcctId =
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(99999L);
+            final var missingAcctId = AccountID.newBuilder().accountNum(99999L);
             final var txn = TransactionBody.newBuilder()
                     .transactionID(
                             TransactionID.newBuilder().accountID(ACCOUNT_888).build())
@@ -290,11 +286,8 @@ class TokenAssociateToAccountHandlerTest {
 
             // Put a new account into the account store that has no tokens associated with it
             final var newAcctNum = 12345L;
-            final var newAcctId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(newAcctNum)
-                    .build();
+            final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
+
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)
                     .headTokenId(TokenID.DEFAULT)
@@ -341,11 +334,8 @@ class TokenAssociateToAccountHandlerTest {
         void tokensAssociateToAccountWithExistingTokenRels() {
             mockContext();
             final var newAcctNum = 21212L;
-            final var newAcctId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(newAcctNum)
-                    .build();
+            final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
+
             // put a new account into the account store that has two tokens associated with it
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)
@@ -433,11 +423,8 @@ class TokenAssociateToAccountHandlerTest {
         void missingAccountHeadTokenDoesntStopTokenAssociation() {
             mockContext();
             final var newAcctNum = 21212L;
-            final var newAcctId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(newAcctNum)
-                    .build();
+            final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
+
             // put a new account into the account store that has a bogus head token number
             writableAccountStore.put(Account.newBuilder()
                     .accountId(newAcctId)

@@ -130,11 +130,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     private CryptoUpdateStreamBuilder streamBuilder;
 
     private final long updateAccountNum = 32132L;
-    private final AccountID updateAccountId = AccountID.newBuilder()
-            .shardNum(1)
-            .realmNum(2)
-            .accountNum(updateAccountNum)
-            .build();
+    private final AccountID updateAccountId =
+            AccountID.newBuilder().accountNum(updateAccountNum).build();
 
     private Account updateAccount;
     private Configuration configuration;
@@ -735,11 +732,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     @Test
     void accountMissingFails() {
         final var txn = new CryptoUpdateBuilder()
-                .withTarget(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(10)
-                        .build())
+                .withTarget(AccountID.newBuilder().accountNum(10).build())
                 .build();
         givenTxnWith(txn);
 
@@ -889,11 +882,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
 
         public CryptoUpdateHandlerTest.CryptoUpdateBuilder withProxyAccountNum(final long proxyAccountNum) {
-            this.proxyAccountId = AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(proxyAccountNum)
-                    .build();
+            this.proxyAccountId =
+                    AccountID.newBuilder().accountNum(proxyAccountNum).build();
+
             return this;
         }
 

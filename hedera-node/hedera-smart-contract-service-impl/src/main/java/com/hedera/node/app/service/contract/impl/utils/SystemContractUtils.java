@@ -141,8 +141,6 @@ public final class SystemContractUtils {
 
     private static ContractID contractIdFromEvmAddress(final byte[] bytes) {
         return ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
                 .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
     }

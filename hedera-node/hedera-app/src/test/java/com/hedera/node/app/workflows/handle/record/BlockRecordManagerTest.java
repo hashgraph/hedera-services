@@ -92,8 +92,8 @@ final class BlockRecordManagerTest extends AppTestBase {
 
     private static final Timestamp FIRST_CONS_TIME_OF_LAST_BLOCK = new Timestamp(1682899224, 38693760);
     private static final Instant FORCED_BLOCK_SWITCH_TIME = Instant.ofEpochSecond(1682899224L, 38693760);
-    private static final NodeInfoImpl NODE_INFO = new NodeInfoImpl(
-            0, AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
+    private static final NodeInfoImpl NODE_INFO =
+            new NodeInfoImpl(0, AccountID.newBuilder().accountNum(3).build(), 10, List.of(), Bytes.EMPTY);
     /**
      * Temporary in memory file system used for testing
      */

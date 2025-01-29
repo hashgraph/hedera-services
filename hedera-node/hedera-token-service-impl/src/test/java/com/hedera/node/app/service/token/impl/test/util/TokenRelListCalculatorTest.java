@@ -55,7 +55,7 @@ class TokenRelListCalculatorTest {
     private static final TokenID TOKEN_ID_5 = asToken(5L);
 
     private static final AccountID ACCT_2300_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2300L).build();
+            AccountID.newBuilder().accountNum(2300L).build();
     private static final Account ACCT_2300 = Account.newBuilder()
             .accountId(ACCT_2300_ID)
             .headTokenId(TOKEN_ID_1)

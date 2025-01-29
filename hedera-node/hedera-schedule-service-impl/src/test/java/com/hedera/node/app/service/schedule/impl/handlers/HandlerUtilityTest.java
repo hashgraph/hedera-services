@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 
 class HandlerUtilityTest extends ScheduleHandlerTestBase {
     private static final AccountID PAYER_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666L).build();
+            AccountID.newBuilder().accountNum(666L).build();
     private static final Timestamp VALID_START = new Timestamp(1_234_567L, 890);
 
     @BeforeEach

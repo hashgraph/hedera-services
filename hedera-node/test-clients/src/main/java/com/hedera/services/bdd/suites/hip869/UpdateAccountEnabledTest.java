@@ -139,11 +139,7 @@ public class UpdateAccountEnabledTest {
                 viewNode(
                         "testNode",
                         node -> assertEquals(
-                                AccountID.newBuilder()
-                                        .shardNum(1)
-                                        .realmNum(2)
-                                        .accountNum(1000)
-                                        .build(),
+                                AccountID.newBuilder().accountNum(1000).build(),
                                 node.accountId(),
                                 "Node accountId should be updated")));
     }

@@ -131,10 +131,8 @@ class HandleHederaNativeOperationsTest {
     @BeforeEach
     void setUp() {
         subject = new HandleHederaNativeOperations(context, A_SECP256K1_KEY);
-        deletedAccount =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L).build();
-        beneficiaryAccount =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2L).build();
+        deletedAccount = AccountID.newBuilder().accountNum(1L).build();
+        beneficiaryAccount = AccountID.newBuilder().accountNum(2L).build();
     }
 
     @Test
@@ -304,16 +302,8 @@ class HandleHederaNativeOperationsTest {
         subject.trackSelfDestructBeneficiary(deletedAccount, beneficiaryAccount, frame);
         verify(beneficiaries)
                 .addBeneficiaryForDeletedAccount(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(1L)
-                                .build(),
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(2L)
-                                .build());
+                        AccountID.newBuilder().accountNum(1L).build(),
+                        AccountID.newBuilder().accountNum(2L).build());
     }
 
     @Test
@@ -323,14 +313,7 @@ class HandleHederaNativeOperationsTest {
 
         subject.setNonce(123L, 456L);
 
-        verify(tokenServiceApi)
-                .setNonce(
-                        AccountID.newBuilder()
-                                .shardNum(1)
-                                .realmNum(2)
-                                .accountNum(123L)
-                                .build(),
-                        456L);
+        verify(tokenServiceApi).setNonce(AccountID.newBuilder().accountNum(123L).build(), 456L);
     }
 
     @Test

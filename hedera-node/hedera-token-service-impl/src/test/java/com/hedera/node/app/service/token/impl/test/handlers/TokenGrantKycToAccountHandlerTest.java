@@ -84,7 +84,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         final var missingTokenTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
-                        .account(AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1L))
+                        .account(AccountID.newBuilder().accountNum(1L))
                         .build())
                 .build();
 
@@ -132,7 +132,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(-1).build(),
+                AccountID.newBuilder().accountNum(-1).build(),
                 autoRenewSecs,
                 expirationTime,
                 memo,

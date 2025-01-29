@@ -110,12 +110,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public void setNonce(final long contractNumber, final long nonce) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.setNonce(
-                AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(contractNumber)
-                        .build(),
-                nonce);
+                AccountID.newBuilder().accountNum(contractNumber).build(), nonce);
     }
 
     /**

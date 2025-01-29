@@ -126,10 +126,6 @@ public abstract class AbstractEvmEntityAccount extends AbstractMutableEvmAccount
 
     @Override
     public @NonNull ContractID hederaContractId() {
-        return ContractID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .contractNum(numberOfLongZero(address))
-                .build();
+        return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 }

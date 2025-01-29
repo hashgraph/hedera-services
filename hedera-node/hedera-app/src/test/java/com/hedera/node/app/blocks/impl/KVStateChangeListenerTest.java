@@ -30,8 +30,7 @@ import org.junit.jupiter.api.Test;
 
 class KVStateChangeListenerTest {
     private static final int STATE_ID = 1;
-    private static final AccountID KEY =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1234).build();
+    private static final AccountID KEY = AccountID.newBuilder().accountNum(1234).build();
     private static final Account VALUE = Account.newBuilder().accountId(KEY).build();
     private KVStateChangeListener listener;
 

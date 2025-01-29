@@ -347,11 +347,11 @@ public class ActionStack {
     }
 
     private AccountID accountIdWith(final long num) {
-        return AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(num).build();
+        return AccountID.newBuilder().accountNum(num).build();
     }
 
     private ContractID contractIdWith(final long num) {
-        return ContractID.newBuilder().shardNum(1).realmNum(2).contractNum(num).build();
+        return ContractID.newBuilder().contractNum(num).build();
     }
 
     private ContractAction withUnsetRecipientIfNeeded(

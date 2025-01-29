@@ -38,11 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AbstractScheduleHandlerTest {
     private static final ContractID CONTRACT_ID =
             ContractID.newBuilder().contractNum(666L).build();
-    private static final AccountID ACCOUNT_CONTRACT_ID = AccountID.newBuilder()
-            .shardNum(1)
-            .realmNum(2)
-            .accountNum(CONTRACT_ID.contractNumOrThrow())
-            .build();
+    private static final AccountID ACCOUNT_CONTRACT_ID =
+            AccountID.newBuilder().accountNum(CONTRACT_ID.contractNumOrThrow()).build();
     private static final ContractID OTHER_CONTRACT_ID =
             ContractID.newBuilder().contractNum(777L).build();
     private static final ContractID CONTRACT_ALIAS =

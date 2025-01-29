@@ -73,11 +73,7 @@ public final class ConsensusTestUtils {
                 -1L,
                 0L,
                 -1L,
-                AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(1234567L)
-                        .build(),
+                AccountID.newBuilder().accountNum(1234567L).build(),
                 false,
                 null,
                 "memo",

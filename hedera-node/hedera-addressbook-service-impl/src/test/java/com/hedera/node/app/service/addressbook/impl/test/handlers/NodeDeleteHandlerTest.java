@@ -257,8 +257,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksWhenSysAdminSign() throws PreCheckException {
-        final var accountID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(50).build();
+        final var accountID = AccountID.newBuilder().accountNum(50).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
         subject.preHandle(context);
@@ -269,8 +268,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksWhenAddressBookAdminSign() throws PreCheckException {
-        final var accountID =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(55).build();
+        final var accountID = AccountID.newBuilder().accountNum(55).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
         subject.preHandle(context);

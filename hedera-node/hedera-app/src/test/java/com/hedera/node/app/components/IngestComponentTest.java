@@ -102,7 +102,7 @@ class IngestComponentTest {
 
         final var selfNodeInfo = new NodeInfoImpl(
                 1L,
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1001).build(),
+                AccountID.newBuilder().accountNum(1001).build(),
                 10,
                 List.of(endpointFor("127.0.0.1", 50211), endpointFor("127.0.0.1", 23456)),
                 Bytes.wrap("cert7"));

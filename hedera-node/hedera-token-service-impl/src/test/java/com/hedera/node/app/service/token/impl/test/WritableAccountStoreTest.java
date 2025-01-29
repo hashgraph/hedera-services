@@ -51,8 +51,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @Test
     void finalizingAccountAsContractCountsAsNewContract() {
-        final var hollowAccountId =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666).build();
+        final var hollowAccountId = AccountID.newBuilder().accountNum(666).build();
         writableAccounts.put(
                 hollowAccountId, Account.newBuilder().accountId(hollowAccountId).build());
         writableAccounts.commit();
@@ -77,12 +76,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         final var afterNonce = 456L;
         final var unchangedOtherNonce = 789;
         final var brandNewNonce = 999;
-        final var contractIdByNum =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(666).build();
-        final var otherContractIdByNum =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(777).build();
-        final var newContractIdByNum =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(888).build();
+        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
+        final var otherContractIdByNum = AccountID.newBuilder().accountNum(777).build();
+        final var newContractIdByNum = AccountID.newBuilder().accountNum(888).build();
         writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, beforeNonce));
         writableAccounts.put(otherContractIdByNum, contractWith(otherContractIdByNum, unchangedOtherNonce));
         writableAccounts.commit();
@@ -205,11 +201,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         writableStore.put(account);
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
         assertThat(writableStore.modifiedAccountsInState())
-                .isEqualTo(Set.of(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(3)
-                        .build()));
+                .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));
     }
 
     private Account contractWith(final AccountID id, final long nonce) {

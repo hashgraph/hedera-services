@@ -104,8 +104,7 @@ class ContractGetInfoHandlerTest {
 
     private final Account smartContractAccount = Account.newBuilder()
             .smartContract(true)
-            .accountId(
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(1).build())
+            .accountId(AccountID.newBuilder().accountNum(1).build())
             .key(Key.DEFAULT)
             .build();
 

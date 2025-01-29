@@ -69,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenUnfreezeAccountHandlerTest {
 
     private static final AccountID ACCOUNT_13257 =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(13257L).build();
+            AccountID.newBuilder().accountNum(13257L).build();
     private TokenUnfreezeAccountHandler subject;
 
     @BeforeEach

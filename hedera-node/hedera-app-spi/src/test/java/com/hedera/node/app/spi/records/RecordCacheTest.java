@@ -34,11 +34,7 @@ import org.junit.jupiter.api.Test;
 
 class RecordCacheTest {
     private static final TransactionID USER_TXN_ID = TransactionID.newBuilder()
-            .accountID(AccountID.newBuilder()
-                    .shardNum(1)
-                    .realmNum(2)
-                    .accountNum(666L)
-                    .build())
+            .accountID(AccountID.newBuilder().accountNum(666L).build())
             .transactionValidStart(new Timestamp(1, 0))
             .scheduled(true)
             .build();

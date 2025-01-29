@@ -206,8 +206,8 @@ final class V0490TokenSchemaTest {
         // Verify created blocklist account OBJECTS
         final long expectedBlocklistIndex = BEGINNING_ENTITY_ID + EVM_ADDRESSES.length;
         for (int i = 3001; i <= expectedBlocklistIndex; i++) {
-            final var acct = acctsStateResult.get(
-                    AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(i).build());
+            final var acct =
+                    acctsStateResult.get(AccountID.newBuilder().accountNum(i).build());
             assertThat(acct).isNotNull();
             assertThat(acct.alias()).isEqualTo(Bytes.fromHex(EVM_ADDRESSES[i - (int) BEGINNING_ENTITY_ID - 1]));
         }

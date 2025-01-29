@@ -52,8 +52,6 @@ public class ContractDeleteTranslator implements BlockTransactionPartsTranslator
                                 stateChange.mapUpdateOrThrow().valueOrThrow().accountValueOrThrow();
                         if (account.deleted()) {
                             receiptBuilder.contractID(ContractID.newBuilder()
-                                    .shardNum(1)
-                                    .realmNum(2)
                                     .contractNum(account.accountIdOrThrow().accountNumOrThrow())
                                     .build());
                             iter.remove();

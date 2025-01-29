@@ -43,7 +43,7 @@ import org.mockito.Mockito;
 
 class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     private final AccountID scheduleDeleter =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3001L).build();
+            AccountID.newBuilder().accountNum(3001L).build();
 
     private ScheduleDeleteHandler subject;
     private PreHandleContext realPreContext;

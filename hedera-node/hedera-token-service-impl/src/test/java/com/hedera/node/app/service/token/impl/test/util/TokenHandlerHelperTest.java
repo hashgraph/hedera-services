@@ -50,7 +50,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenHandlerHelperTest {
     private static final AccountID ACCT_2300 =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2300L).build();
+            AccountID.newBuilder().accountNum(2300L).build();
     private static final TokenID TOKEN_ID_45 = TokenID.newBuilder().tokenNum(45).build();
     private static final NftID NFT_ID =
             NftID.newBuilder().tokenId(TOKEN_ID_45).serialNumber(123).build();

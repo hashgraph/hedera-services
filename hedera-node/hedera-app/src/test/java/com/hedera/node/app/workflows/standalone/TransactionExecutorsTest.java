@@ -144,9 +144,9 @@ public class TransactionExecutorsTest {
     private static final long GAS = 100_000L;
     private static final long EXPECTED_LUCKY_NUMBER = 42L;
     private static final AccountID TREASURY_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(2).build();
+            AccountID.newBuilder().accountNum(2).build();
     private static final AccountID NODE_ACCOUNT_ID =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3).build();
+            AccountID.newBuilder().accountNum(3).build();
     private static final FileID EXPECTED_INITCODE_ID =
             FileID.newBuilder().fileNum(1001).build();
     private static final ContractID EXPECTED_CONTRACT_ID =
@@ -447,8 +447,7 @@ public class TransactionExecutorsTest {
     }
 
     private static NetworkInfo fakeNetworkInfo() {
-        final AccountID someAccount =
-                AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(12345).build();
+        final AccountID someAccount = AccountID.newBuilder().accountNum(12345).build();
         final var addressBook = new AddressBook(StreamSupport.stream(
                         Spliterators.spliteratorUnknownSize(
                                 RandomAddressBookBuilder.create(new Random())

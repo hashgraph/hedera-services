@@ -76,8 +76,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileCreateTest extends FileTestBase {
 
-    static final AccountID ACCOUNT_ID_3 =
-            AccountID.newBuilder().shardNum(1).realmNum(2).accountNum(3L).build();
+    static final AccountID ACCOUNT_ID_3 = AccountID.newBuilder().accountNum(3L).build();
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Mock
