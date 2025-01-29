@@ -2497,7 +2497,10 @@ public class UtilVerbs {
 
     /**
      * Returns the charged gas for a transaction in USD.
-     * The multiplier 71 is used to convert gas to tinybars.
+     * The multiplier 71 is used to convert gas to tinybars. This multiplier comes from the feeScheduls.json file.
+     * See
+     * {@link com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues#topLevelTinybarGasPrice() topLevelTinybarGasPrice}
+     * for more information.
      * @param spec the spec
      * @param txn the transaction
      * @return
