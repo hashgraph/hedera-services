@@ -40,18 +40,12 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 testModuleInfo {
-    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.merkle")
-    requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.platform.test.fixtures")
-    requires("awaitility")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
-    requires("org.mockito.junit.jupiter")
-    requires("com.swirlds.metrics.api")
-    requires("org.hiero.event.creator")
-    requires("org.hiero.event.creator.impl")
     requires("com.swirlds.state.impl")
     requires("org.mockito")
-    requires("org.hiero.consensus.gossip")
     requiresStatic("com.github.spotbugs.annotations")
 }
