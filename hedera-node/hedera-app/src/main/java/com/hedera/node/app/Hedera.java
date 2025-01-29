@@ -59,7 +59,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
-import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -1129,7 +1128,8 @@ public final class Hedera
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
         final var rosterStore = new ReadableStoreFactory(state).getStore(ReadableRosterStore.class);
-        final var networkInfo = new StateNetworkInfo(platform.getSelfId().id(), state, rosterStore.getActiveRoster(), configProvider);
+        final var networkInfo =
+                new StateNetworkInfo(platform.getSelfId().id(), state, rosterStore.getActiveRoster(), configProvider);
         final var blockHashSigner = blockHashSignerFactory.apply(hintsService, historyService, configProvider);
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
