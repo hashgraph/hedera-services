@@ -66,6 +66,6 @@ public class AtomicBatchTest {
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result
                 getAccountBalance("foo").hasTinyBars(ONE_HBAR),
-                validateChargedUsd("batchTxn",0.001));
+                validateChargedUsd("batchTxn", 0.001));
     }
 }
