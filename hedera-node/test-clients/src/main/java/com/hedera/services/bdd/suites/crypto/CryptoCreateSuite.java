@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -973,5 +975,23 @@ public class CryptoCreateSuite {
                     .hasPrecheck(INVALID_ALIAS_KEY);
             allRunFor(spec, op);
         }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validateNonZeroRealmAndShard() {
+        return hapiTest(
+                overridingTwo("hedera.shard", "5", "hedera.realm", "10"),
+                cryptoCreate("createdAccount"),
+                getAccountInfo("createdAccount").has(accountWith().withShard(5).withRealm(10L)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> validateNonZeroRealmAndShardAlias() {
+        final var validAlias = "validAlias";
+        return hapiTest(
+                overridingTwo("hedera.shard", "5", "hedera.realm", "10"),
+                newKeyNamed(validAlias),
+                cryptoTransfer(movingHbar(1).between(GENESIS, validAlias)).via("transferTxn"),
+                getAliasedAccountInfo(validAlias).has(accountWith().withShard(5).withRealm(10L)));
     }
 }
