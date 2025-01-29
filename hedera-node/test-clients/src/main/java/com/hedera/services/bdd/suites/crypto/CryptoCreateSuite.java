@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_OUTCOMES;
@@ -91,6 +92,7 @@ import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.swirlds.common.utility.CommonUtils;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -977,18 +979,20 @@ public class CryptoCreateSuite {
         }));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> validateNonZeroRealmAndShard() {
-        return hapiTest(
+        return propertyPreservingHapiTest(
+                List.of("hedera.shard", "hedera.realm"),
                 overridingTwo("hedera.shard", "5", "hedera.realm", "10"),
                 cryptoCreate("createdAccount"),
                 getAccountInfo("createdAccount").has(accountWith().withShard(5).withRealm(10L)));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> validateNonZeroRealmAndShardAlias() {
         final var validAlias = "validAlias";
-        return hapiTest(
+        return propertyPreservingHapiTest(
+                List.of("hedera.shard", "hedera.realm"),
                 overridingTwo("hedera.shard", "5", "hedera.realm", "10"),
                 newKeyNamed(validAlias),
                 cryptoTransfer(movingHbar(1).between(GENESIS, validAlias)).via("transferTxn"),
