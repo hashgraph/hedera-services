@@ -168,7 +168,7 @@ class ChildDispatchFactoryTest {
         assertThat(noOpKeyVerifier.verificationFor(Key.DEFAULT, assistant).passed())
                 .isTrue();
         assertThat(noOpKeyVerifier.verificationFor(Bytes.EMPTY).passed()).isTrue();
-        assertThat(noOpKeyVerifier.numSignaturesVerified()).isEqualTo(0L);
+        assertThat(noOpKeyVerifier.numSignaturesVerified()).isZero();
     }
 
     @Test
@@ -185,7 +185,7 @@ class ChildDispatchFactoryTest {
         assertThat(derivedVerifier.verificationFor(Key.DEFAULT, (k, v) -> false).passed())
                 .isTrue();
         assertThat(derivedVerifier.verificationFor(Bytes.EMPTY).passed()).isTrue();
-        assertThat(derivedVerifier.numSignaturesVerified()).isEqualTo(0L);
+        assertThat(derivedVerifier.numSignaturesVerified()).isZero();
         assertThat(derivedVerifier.authorizingSimpleKeys()).containsExactly(A_CONTRACT_ID_KEY);
     }
 

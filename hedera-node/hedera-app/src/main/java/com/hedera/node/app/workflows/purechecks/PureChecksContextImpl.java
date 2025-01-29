@@ -72,8 +72,7 @@ public class PureChecksContextImpl implements PureChecksContext {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
-        final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
-        dispatcher.dispatchPureChecks(pureChecksContext);
+        dispatcher.dispatchPureChecks(this);
     }
 
     @Nullable
