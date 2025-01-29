@@ -150,6 +150,10 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             @Nullable final ContractID contractID, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
+        if (oldSlotValue == null && value.isZero()) {
+            // Special case---don't set explicitly set a zero value for a missing slot
+            return;
+        }
         // Ensure we don't change any prev/next keys until the base commit
         final var slotValue = new SlotValue(
                 tuweniToPbjBytes(requireNonNull(value)),
@@ -185,15 +189,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull List<StorageAccesses> getStorageChanges() {
         final Map<ContractID, List<StorageAccess>> modifications = new TreeMap<>(HapiUtils.CONTRACT_ID_COMPARATOR);
-        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> {
-            final var originalValue = valueOrZero(contractStateStore.getOriginalSlotValue(slotKey));
-            final var newValue = valueOrZero(contractStateStore.getSlotValue(slotKey));
-            if (!originalValue.isZero() || !newValue.isZero()) {
-                modifications
-                        .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
-                        .add(StorageAccess.newWrite(pbjToTuweniUInt256(slotKey.key()), originalValue, newValue));
-            }
-        });
+        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
+                .computeIfAbsent(slotKey.contractID(), k -> new ArrayList<>())
+                .add(StorageAccess.newWrite(
+                        pbjToTuweniUInt256(slotKey.key()),
+                        valueOrZero(contractStateStore.getOriginalSlotValue(slotKey)),
+                        valueOrZero(contractStateStore.getSlotValue(slotKey)))));
         final List<StorageAccesses> allChanges = new ArrayList<>();
         modifications.forEach(
                 (number, storageAccesses) -> allChanges.add(new StorageAccesses(number, storageAccesses)));
