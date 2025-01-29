@@ -1824,7 +1824,7 @@ public class UtilVerbs {
                     .toList();
             final var createdId = createdIds.get(creationNum);
             final var accDetails = getContractInfo(CommonUtils.hex(
-                        asEvmAddress(createdId.getShardNum(), createdId.getRealmNum(), createdId.getContractNum())))
+                            asEvmAddress(createdId.getShardNum(), createdId.getRealmNum(), createdId.getContractNum())))
                     .logged();
             allRunFor(spec, accDetails);
         });
