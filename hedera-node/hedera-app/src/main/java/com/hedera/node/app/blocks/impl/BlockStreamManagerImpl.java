@@ -378,7 +378,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             writer = null;
             blockHashSigner
                     .signFuture(blockHash)
-                    .thenAccept(signature -> finishProofWithSignature(blockHash, signature));
+                    .thenAcceptAsync(signature -> finishProofWithSignature(blockHash, signature));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {

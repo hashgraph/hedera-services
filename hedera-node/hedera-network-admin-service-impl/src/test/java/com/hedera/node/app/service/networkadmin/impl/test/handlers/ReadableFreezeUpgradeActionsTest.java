@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -489,6 +490,7 @@ class ReadableFreezeUpgradeActionsTest {
                 .build();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
+        given(readableEntityCounters.getCounterFor(EntityType.NODE)).willReturn(4L);
         subject = new FreezeUpgradeActions(
                 configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
@@ -613,6 +615,7 @@ class ReadableFreezeUpgradeActionsTest {
                 .build();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         nodeStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
+        given(readableEntityCounters.getCounterFor(EntityType.NODE)).willReturn(4L);
         subject = new FreezeUpgradeActions(
                 configuration, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);

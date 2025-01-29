@@ -66,10 +66,9 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements 
      *
      * @return the next new entity number
      */
-    public long incrementAndGet(final EntityType entityType) {
+    public long incrementAndGet() {
         final var newEntityNum = peekAtNextNumber();
         entityIdState.put(new EntityNumber(newEntityNum));
-        incrementEntityTypeCount(entityType);
         return newEntityNum;
     }
 

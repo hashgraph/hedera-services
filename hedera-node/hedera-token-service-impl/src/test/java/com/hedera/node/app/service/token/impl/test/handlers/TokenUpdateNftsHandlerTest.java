@@ -38,7 +38,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -122,9 +121,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private Nft nft;
-
-    @Mock
-    private NftID nftId;
 
     @Mock
     private Key metadataKey;

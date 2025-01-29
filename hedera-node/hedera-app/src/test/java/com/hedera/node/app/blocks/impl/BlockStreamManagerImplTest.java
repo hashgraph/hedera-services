@@ -87,9 +87,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -137,6 +139,9 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private ReadableStates readableStates;
+
+    @Mock
+    private CompletableFuture<Bytes> mockSigningFuture;
 
     private WritableStates writableStates;
 
@@ -282,7 +287,14 @@ class BlockStreamManagerImplTest {
         subject.writeItem(FAKE_RECORD_FILE_ITEM);
 
         // Immediately resolve to the expected ledger signature
-        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
         // End the round
         subject.endRound(state, ROUND_NO);
 
@@ -498,7 +510,14 @@ class BlockStreamManagerImplTest {
         }
 
         // Immediately resolve to the expected ledger signature
-        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
         // End the round
         subject.endRound(state, ROUND_NO);
 
@@ -538,6 +557,7 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void supportsMultiplePendingBlocksWithIndirectProofAsExpected() throws ParseException {
         given(blockHashSigner.isReady()).willReturn(true);
         givenSubjectWith(
@@ -568,8 +588,8 @@ class BlockStreamManagerImplTest {
         subject.writeItem(FAKE_TRANSACTION_RESULT);
         subject.writeItem(FAKE_STATE_CHANGES);
         subject.writeItem(FAKE_RECORD_FILE_ITEM);
-        final var firstSignature = new CompletableFuture<Bytes>();
-        final var secondSignature = new CompletableFuture<Bytes>();
+        final CompletableFuture<Bytes> firstSignature = (CompletableFuture<Bytes>) mock(CompletableFuture.class);
+        final CompletableFuture<Bytes> secondSignature = (CompletableFuture<Bytes>) mock(CompletableFuture.class);
         given(blockHashSigner.signFuture(any())).willReturn(firstSignature).willReturn(secondSignature);
         // End the round in block N
         subject.endRound(state, ROUND_NO);
@@ -590,8 +610,12 @@ class BlockStreamManagerImplTest {
         // End the round in block N+1
         subject.endRound(state, ROUND_NO + 1);
 
-        secondSignature.complete(FIRST_FAKE_SIGNATURE);
-        firstSignature.complete(SECOND_FAKE_SIGNATURE);
+        final ArgumentCaptor<Consumer<Bytes>> firstCaptor = ArgumentCaptor.forClass(Consumer.class);
+        final ArgumentCaptor<Consumer<Bytes>> secondCaptor = ArgumentCaptor.forClass(Consumer.class);
+        verify(firstSignature).thenAcceptAsync(firstCaptor.capture());
+        verify(secondSignature).thenAcceptAsync(secondCaptor.capture());
+        secondCaptor.getValue().accept(FIRST_FAKE_SIGNATURE);
+        firstCaptor.getValue().accept(SECOND_FAKE_SIGNATURE);
 
         // Assert both block proofs were written, but with the proof for N using an indirect proof
         final var aProofItem = lastAItem.get();
