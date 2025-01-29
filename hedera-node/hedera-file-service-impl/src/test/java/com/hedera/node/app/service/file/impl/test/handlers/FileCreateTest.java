@@ -60,6 +60,8 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -104,6 +106,9 @@ class FileCreateTest extends FileTestBase {
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private FilesConfig config;
 
@@ -185,7 +190,8 @@ class FileCreateTest extends FileTestBase {
 
         // then:
         assertThat(context.payerKey()).isEqualTo(payerKey);
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_EXPIRATION_TIME);
+        given(pureChecksContext.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_EXPIRATION_TIME);
     }
 
     @Test

@@ -55,7 +55,9 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -104,6 +106,12 @@ class FileSystemUndeleteTest extends FileTestBase {
     @Mock
     private StoreMetricsService storeMetricsService;
 
+    @Mock
+    private PureChecksContext context;
+
+    @Mock
+    private TransactionChecker transactionChecker;
+
     protected Configuration testConfig;
 
     @BeforeEach
@@ -126,19 +134,19 @@ class FileSystemUndeleteTest extends FileTestBase {
     public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         SystemUndeleteTransactionBody transactionBody = mock(SystemUndeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
-        given(handleContext.body()).willReturn(transaction);
         given(transaction.systemUndeleteOrThrow()).willReturn(transactionBody);
         given(transactionBody.fileID()).willReturn(null);
+        given(context.body()).willReturn(transaction);
 
-        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(context)).isInstanceOf(PreCheckException.class);
     }
 
     @Test
     @DisplayName("pureChecks does not throw exception when file id is not null")
     public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
-        given(handleContext.body()).willReturn(newFileUnDeleteTxn());
+        given(context.body()).willReturn(newFileUnDeleteTxn());
 
-        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(context)).doesNotThrowAnyException();
     }
 
     @Test
@@ -165,7 +173,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
         final var context =
-                new PreHandleContextImpl(mockStoreFactory, newFileUnDeleteTxn(), testConfig, mockDispatcher);
+                new PreHandleContextImpl(mockStoreFactory, newFileUnDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
