@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,12 +148,7 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
             // Write the record file version int first to start of file
             outputStream.writeInt(VERSION_7);
             // [2] - start_object_running_hash
-            writeMessage(
-                    outputStream,
-                    START_OBJECT_RUNNING_HASH,
-                    startObjectRunningHash,
-                    com.hedera.hapi.streams.HashObject.PROTOBUF::write,
-                    com.hedera.hapi.streams.HashObject.PROTOBUF::measureRecord);
+            writeMessage(outputStream, START_OBJECT_RUNNING_HASH, startObjectRunningHash, HashObject.PROTOBUF);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

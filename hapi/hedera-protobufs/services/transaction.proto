@@ -31,6 +31,7 @@ package proto;
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 import "basic_types.proto";
@@ -127,7 +128,6 @@ import "auxiliary/history/history_proof_vote.proto";
  * The four deprecated fields will be removed and reserved in a future release.
  */
 message Transaction {
-    // <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
     /**
      * TransactionBody body = 1 [deprecated = true];
      * Replaced with `signedTransactionBytes`.<br/>
