@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.consistency;
 
+import static com.swirlds.demo.consistency.ConsistencyTestingToolState.isSystemTransaction;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.Objects.requireNonNull;
@@ -96,7 +97,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
      * Writes the round and its contents to a log on disk
      */
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull ConsistencyTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -115,7 +116,6 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
         }
 
         state.processTransactions(round, stateSignatureTransactionCallback);
-        return true;
     }
 
     /**
@@ -131,7 +131,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
                 return;
             }
 
-            if (state.isSystemTransaction(transaction)) {
+            if (isSystemTransaction(transaction)) {
                 state.consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 return;
             }
@@ -144,8 +144,9 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
      * {@inheritDoc}
      */
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull ConsistencyTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull ConsistencyTestingToolState state) {
         // no-op
+        return true;
     }
 
     /**

@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
@@ -33,8 +35,10 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -46,6 +50,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.time.Duration;
 import java.time.Instant;
@@ -72,13 +77,13 @@ public class NodeStakeUpdatesTest {
     @Mock
     private ReadableBlockRecordStore blockStore;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private SavepointStackImpl stack;
 
     @Mock
     private Dispatch dispatch;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private WritableStates writableStates;
 
     @Mock
@@ -87,6 +92,12 @@ public class NodeStakeUpdatesTest {
     @Mock
     private WritableKVState<EntityNumber, Node> nodesState;
 
+    @Mock
+    private WritableSingletonState<EntityCounts> entityCountsState;
+
+    @Mock
+    private WritableSingletonState<EntityNumber> entityIdState;
+
     private StakePeriodChanges subject;
 
     @BeforeEach
@@ -94,6 +105,10 @@ public class NodeStakeUpdatesTest {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
         subject = new StakePeriodChanges(stakingPeriodCalculator, exchangeRateManager, storeMetricsService);
+
+        given(stack.getWritableStates(EntityIdService.NAME)).willReturn(writableStates);
+        given(writableStates.<EntityCounts>getSingleton(ENTITY_COUNTS_KEY)).willReturn(entityCountsState);
+        given(writableStates.<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY)).willReturn(entityIdState);
     }
 
     @Test

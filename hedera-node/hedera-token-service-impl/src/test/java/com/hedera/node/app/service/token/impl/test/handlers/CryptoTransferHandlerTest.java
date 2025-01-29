@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -369,6 +370,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     return cryptoCreateRecordBuilder;
                 });
 
+        when(handleContext.dispatchMetadata()).thenReturn(mock(DispatchMetadata.class));
+
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
@@ -504,7 +507,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         givenTxn();
-
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
@@ -539,23 +542,23 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
         givenStoresAndConfig(handleContext);
         givenTxn();
-
+        given(handleContext.dispatchMetadata()).willReturn(HandleContext.DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(hbarReceiverId).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
+                    writableAccountStore.putAndIncrementCount(copy);
+                    writableAccountStore.putAndIncrementCountAlias(ecKeyAlias.value(), asAccount(hbarReceiver));
                     given(cryptoCreateRecordBuilder.status()).willReturn(SUCCESS);
                     return cryptoCreateRecordBuilder;
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
-                    writableAccountStore.put(copy);
-                    writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
+                    writableAccountStore.putAndIncrementCount(copy);
+                    writableAccountStore.putAndIncrementCountAlias(edKeyAlias.value(), asAccount(tokenReceiver));
                     writableTokenRelStore.put(fungibleTokenRelation
                             .copyBuilder()
                             .kycGranted(true)
@@ -582,7 +585,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(4); // includes fee collector for custom fees
         assertThat(writableAccountStore.modifiedAccountsInState())
                 .contains(ownerId, asAccount(hbarReceiver), asAccount(tokenReceiver));
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
 
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();

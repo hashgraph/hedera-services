@@ -129,7 +129,7 @@ class IngestComponentTest {
                 appContext,
                 new HistoryLibraryImpl(),
                 HISTORY_LIBRARY_CODEC,
-                configuration);
+                DEFAULT_CONFIG);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())

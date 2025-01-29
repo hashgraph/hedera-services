@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,9 +42,12 @@ public class ReadableContractStateStore implements ContractStateStore {
     private static final Logger logger = LogManager.getLogger(ReadableContractStateStore.class);
     private final ReadableKVState<SlotKey, SlotValue> storage;
     private final ReadableKVState<ContractID, Bytecode> bytecode;
+    private final ReadableEntityCounters entityCounters;
 
-    public ReadableContractStateStore(@NonNull final ReadableStates states) {
+    public ReadableContractStateStore(
+            @NonNull final ReadableStates states, @NonNull final ReadableEntityCounters entityCounters) {
         requireNonNull(states);
+        this.entityCounters = requireNonNull(entityCounters);
         this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
         this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
     }
@@ -87,6 +92,11 @@ public class ReadableContractStateStore implements ContractStateStore {
         throw new UnsupportedOperationException("Cannot put slots in a read-only store");
     }
 
+    @Override
+    public void putSlotAndIncrementCount(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+        throw new UnsupportedOperationException("Cannot put slots in a read-only store");
+    }
+
     /**
      * Returns an empty set of modified slot keys.
      *
@@ -126,11 +136,11 @@ public class ReadableContractStateStore implements ContractStateStore {
      */
     @Override
     public long getNumSlots() {
-        return storage.size();
+        return entityCounters.getCounterFor(EntityType.CONTRACT_STORAGE);
     }
 
     @Override
     public long getNumBytecodes() {
-        return bytecode.size();
+        return entityCounters.getCounterFor(EntityType.CONTRACT_BYTECODE);
     }
 }

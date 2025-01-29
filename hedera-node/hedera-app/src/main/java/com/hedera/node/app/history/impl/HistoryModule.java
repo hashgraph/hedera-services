@@ -23,6 +23,7 @@ import com.hedera.node.app.history.handlers.HistoryProofKeyPublicationHandler;
 import com.hedera.node.app.history.handlers.HistoryProofSignatureHandler;
 import com.hedera.node.app.history.handlers.HistoryProofVoteHandler;
 import com.hedera.node.app.spi.AppContext;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import dagger.Binds;
 import dagger.Module;
@@ -51,5 +52,11 @@ public interface HistoryModule {
             @NonNull final HistoryProofVoteHandler historyProofVoteHandler) {
         return new HistoryHandlers(
                 historyProofSignatureHandler, historyProofKeyPublicationHandler, historyProofVoteHandler);
+    }
+
+    @Provides
+    @Singleton
+    static Supplier<Configuration> provideConfigSupplier(@NonNull final AppContext appContext) {
+        return requireNonNull(appContext).configSupplier();
     }
 }

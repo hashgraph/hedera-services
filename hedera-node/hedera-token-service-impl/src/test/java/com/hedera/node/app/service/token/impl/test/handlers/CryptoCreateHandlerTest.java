@@ -78,10 +78,10 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -136,6 +136,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
+
+    @Mock
+    private WritableEntityCounters entityCounters;
 
     private CryptoCreateHandler subject;
 
@@ -318,7 +321,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(entityNumGenerator.newEntityNum(EntityType.ACCOUNT)).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         given(handleContext.payer()).willReturn(id);
         setupConfig();
         setupExpiryValidator();
@@ -390,7 +393,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(accountID(id.accountNum()));
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(entityNumGenerator.newEntityNum(EntityType.ACCOUNT)).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         setupConfig();
         setupExpiryValidator();
 
@@ -541,7 +544,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.payer()).willReturn(accountID(id.accountNum()));
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(entityNumGenerator.newEntityNum(EntityType.ACCOUNT)).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
 
         setupConfig();
         setupExpiryValidator();
@@ -665,7 +668,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(entityNumGenerator.newEntityNum(EntityType.ACCOUNT)).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         given(handleContext.payer()).willReturn(id);
         setupConfig();
         setupExpiryValidator();
@@ -703,7 +706,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
                 .build();
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
         when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
@@ -741,7 +744,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         final var copy = account.copyBuilder().deleted(true).build();
         writableAccounts.put(id, copy);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService, entityCounters);
     }
 
     private void setupConfig() {

@@ -94,16 +94,13 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
      */
     private void handleTransaction(
             @NonNull final ISSTestingToolState state, @NonNull final ConsensusTransaction transaction) {
-        if (transaction.isSystem()) {
-            return;
-        }
         final int delta =
                 ByteUtils.byteArrayToInt(transaction.getApplicationTransaction().toByteArray(), 0);
         state.incrementRunningSum(delta);
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull ISSTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
@@ -154,7 +151,6 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
                 }
             }
         }
-        return true;
     }
 
     /**
@@ -373,8 +369,9 @@ public class ISSTestingToolStateLifecycles implements StateLifecycles<ISSTesting
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull ISSTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

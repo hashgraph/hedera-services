@@ -515,14 +515,16 @@ public final class Hedera
                                     requireNonNull(initState);
                                     final var rosterHash =
                                             RosterUtils.hash(roster).getBytes();
-                                    final var hintsStore =
-                                            new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME));
-                                    final var historyStore = new ReadableHistoryStoreImpl(
-                                            initState.getReadableStates(HistoryService.NAME));
                                     final var tssConfig =
                                             configProvider.getConfiguration().getConfigData(TssConfig.class);
-                                    return (!tssConfig.hintsEnabled() || hintsStore.isReadyToAdopt(rosterHash))
-                                            && (!tssConfig.historyEnabled() || historyStore.isReadyToAdopt(rosterHash));
+                                    return (!tssConfig.hintsEnabled()
+                                                    || new ReadableHintsStoreImpl(
+                                                                    initState.getReadableStates(HintsService.NAME))
+                                                            .isReadyToAdopt(rosterHash))
+                                            && (!tssConfig.historyEnabled()
+                                                    || new ReadableHistoryStoreImpl(
+                                                                    initState.getReadableStates(HistoryService.NAME))
+                                                            .isReadyToAdopt(rosterHash));
                                 },
                                 () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
@@ -967,11 +969,15 @@ public final class Hedera
      *
      * @param round the round whose platform state changes are completed
      * @param state the state after the platform has made all its changes
+     * @return true if a block has closed, signaling a safe time to sign the state without risking loss
+     * of transactions in the event of an incident
      */
-    public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
+    public boolean onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
         requireNonNull(state);
         requireNonNull(round);
         onSealConsensusRound.accept(round, state);
+        // This logic to be completed in https://github.com/hashgraph/hedera-services/issues/17469
+        return true;
     }
 
     /*==================================================================================================================
