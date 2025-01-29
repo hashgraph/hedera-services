@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +66,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private CryptoDeleteAllowanceHandler subject;
 
@@ -185,7 +189,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .serialNumbers(List.of())
                 .build();
         final var txn = allowancesTxn(payerId, List.of(nftAllowance));
-        assertThatThrownBy(() -> subject.pureChecks(txn))
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
     }
@@ -198,7 +204,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .serialNumbers(List.of(1L, 2L))
                 .build();
         final var txn = allowancesTxn(payerId, List.of(nftAllowance));
-        assertDoesNotThrow(() -> subject.pureChecks(txn));
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
     }
 
     @Test
@@ -207,7 +215,9 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .cryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody.newBuilder())
                 .build();
-        assertThatThrownBy(() -> subject.pureChecks(txn))
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
     }

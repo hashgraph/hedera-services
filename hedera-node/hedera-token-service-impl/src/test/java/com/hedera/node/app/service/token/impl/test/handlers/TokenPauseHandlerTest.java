@@ -56,6 +56,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +89,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
 
+    @Mock
+    private PureChecksContext pureChecksContext;
+
     @BeforeEach
     void setUp() throws PreCheckException {
         given(accountStore.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
@@ -111,8 +115,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         given(handleContext.body()).willReturn(transaction);
         given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
         given(transactionBody.hasToken()).willReturn(false);
+        given(pureChecksContext.body()).willReturn(handleContext.body());
 
-        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
     }
 
     @Test
@@ -122,8 +127,9 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         given(handleContext.body()).willReturn(transaction);
         given(transaction.tokenPauseOrThrow()).willReturn(transactionBody);
         given(transactionBody.hasToken()).willReturn(true);
+        given(pureChecksContext.body()).willReturn(handleContext.body());
 
-        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(pureChecksContext)).doesNotThrowAnyException();
     }
 
     @Test

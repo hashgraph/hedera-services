@@ -70,6 +70,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableStates;
@@ -111,6 +112,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private WritableEntityCounters entityCounters;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private Configuration configuration;
 
@@ -252,8 +256,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     @Test
     void pureChecksPassForValidTxn() {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThatNoException().isThrownBy(() -> subject.pureChecks(txn));
+        assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
     }
 
     @Test

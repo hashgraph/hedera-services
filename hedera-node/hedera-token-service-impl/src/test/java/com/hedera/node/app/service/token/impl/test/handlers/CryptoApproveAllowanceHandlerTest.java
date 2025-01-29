@@ -66,6 +66,8 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -85,6 +87,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = Strictness.LENIENT)
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private CryptoApproveAllowanceHandler subject;
 
@@ -137,7 +142,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(allowance), List.of(tokenAllowance), List.of(nftAllowance));
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     @Test
@@ -151,7 +158,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(allowance), List.of(nftAllowance));
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     @Test
@@ -165,7 +174,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(allowance));
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+        given(pureChecksContext.body()).willReturn(txn);
+
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     @Test
@@ -448,8 +459,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.cryptoAllowances()).hasSize(1);
         assertThat(existingOwner.tokenAllowances()).hasSize(1);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.pureChecks(txn))
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
 
@@ -507,8 +519,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                         .build()),
                 List.of(tokenAllowance),
                 List.of(nftAllowance));
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.pureChecks(txn))
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
 
@@ -523,8 +536,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                         .tokenId(fungibleTokenId)
                         .build()),
                 List.of(nftAllowance));
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThatThrownBy(() -> subject.pureChecks(txn))
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
     }
@@ -536,8 +550,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 NftAllowance.newBuilder().tokenId(nonFungibleTokenId).build();
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, Collections.emptyList(), Collections.emptyList(), List.of(invalidNftAllowance));
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_ALLOWANCE_SPENDER_ID);
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ALLOWANCE_SPENDER_ID);
     }
 
     @Test
@@ -550,8 +565,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, Collections.emptyList(), List.of(invalidTokenAllowance), Collections.emptyList());
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), NEGATIVE_ALLOWANCE_AMOUNT);
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), NEGATIVE_ALLOWANCE_AMOUNT);
     }
 
     @Test
@@ -562,8 +578,9 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, Collections.emptyList(), Collections.emptyList(), List.of(validNftAllowance));
+        given(pureChecksContext.body()).willReturn(txn);
 
-        subject.pureChecks(txn); // No exception thrown
+        subject.pureChecks(pureChecksContext); // No exception thrown
     }
 
     @Test

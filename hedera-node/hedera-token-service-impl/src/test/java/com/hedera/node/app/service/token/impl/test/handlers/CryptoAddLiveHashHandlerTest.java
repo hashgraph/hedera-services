@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 
@@ -31,6 +32,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +47,9 @@ class CryptoAddLiveHashHandlerTest {
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
+    @Mock
+    private PureChecksContext pureChecksContext;
+
     private final CryptoAddLiveHashHandler subject = new CryptoAddLiveHashHandler();
 
     @Test
@@ -52,7 +57,7 @@ class CryptoAddLiveHashHandlerTest {
         // Verify no exception is thrown
         Assertions.assertThatNoException()
                 .isThrownBy(
-                        () -> subject.pureChecks(TransactionBody.newBuilder().build()));
+                        () -> subject.pureChecks(pureChecksContext));
     }
 
     @Test
