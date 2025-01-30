@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,12 @@
 
 package com.swirlds.platform.util;
 
-import static com.swirlds.common.io.streams.SerializableStreamConstants.BOOLEAN_BYTES;
-import static com.swirlds.common.io.streams.SerializableStreamConstants.CLASS_ID_BYTES;
-import static com.swirlds.common.io.streams.SerializableStreamConstants.VERSION_BYTES;
-
 import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.EventTransaction.TransactionOneOfType;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 
 /**
  * Utility class for handling PJB transactions.
@@ -36,29 +31,6 @@ import java.util.List;
  */
 public final class TransactionUtils {
     private TransactionUtils() {}
-
-    /**
-     * Get the size of a list of transactions.
-     *
-     * @param transactions the transactions to get the size of
-     * @return the size of the transactions
-     */
-    public static int getLegacyObjectSize(@NonNull final List<EventTransaction> transactions) {
-        int totalByteLength = Integer.BYTES; // length of array size
-        if (transactions.isEmpty()) {
-            return totalByteLength;
-        }
-
-        totalByteLength += BOOLEAN_BYTES;
-
-        for (final EventTransaction transaction : transactions) {
-            totalByteLength += CLASS_ID_BYTES;
-            totalByteLength += VERSION_BYTES;
-            totalByteLength += getLegacyTransactionSize(transaction.transaction());
-        }
-
-        return totalByteLength;
-    }
 
     /**
      * Get the size of a transaction.<br>
@@ -94,6 +66,11 @@ public final class TransactionUtils {
         }
     }
 
+    public static int getLegacyTransactionSize(@NonNull final Bytes transaction) {
+        return Integer.BYTES // add the the size of array length field
+                + (int) transaction.length(); // add the size of the array
+    }
+
     /**
      * Check if a transaction is a system transaction.<br>
      * This is a convenience method that delegates to {@link #isSystemTransaction(OneOf)}.
@@ -101,8 +78,8 @@ public final class TransactionUtils {
      * @param transaction the transaction to check
      * @return {@code true} if the transaction is a system transaction, {@code false} otherwise
      */
-    public static boolean isSystemTransaction(@NonNull final EventTransaction transaction) {
-        return isSystemTransaction(transaction.transaction());
+    public static boolean isSystemTransaction(final EventTransaction transaction) {
+        return transaction == null ? false : isSystemTransaction(transaction.transaction());
     }
 
     /**

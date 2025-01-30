@@ -211,6 +211,7 @@ public class ChildDispatchFactory {
                 preHandleResult,
                 childVerifier,
                 consensusNow,
+                options.dispatchMetadata(),
                 creatorInfo,
                 config,
                 topLevelFunction,
@@ -237,6 +238,7 @@ public class ChildDispatchFactory {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
+            @NonNull final HandleContext.DispatchMetadata dispatchMetadata,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
@@ -254,15 +256,18 @@ public class ChildDispatchFactory {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack);
+        final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
+        final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
         final var writableStoreFactory = new WritableStoreFactory(
-                childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+                childStack,
+                serviceScopeLookup.getServiceName(txnInfo.txBody()),
+                config,
+                storeMetricsService,
+                writableEntityIdStore);
         final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-        final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
         final var childFeeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
@@ -296,7 +301,8 @@ public class ChildDispatchFactory {
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childTokenContext = new TokenContextImpl(config, storeMetricsService, childStack, consensusNow);
+        final var childTokenContext =
+                new TokenContextImpl(config, storeMetricsService, childStack, consensusNow, writableEntityIdStore);
         return new RecordDispatch(
                 builder,
                 config,

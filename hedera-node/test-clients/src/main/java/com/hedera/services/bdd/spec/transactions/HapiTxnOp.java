@@ -56,6 +56,7 @@ import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hedera.services.bdd.spec.verification.Condition;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -66,6 +67,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -635,6 +637,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    public T maxCustomFee(Function<HapiSpec, CustomFeeLimit> f) {
+        maxCustomFeeList.add(f);
+        return self();
+    }
+
     public T signedByPayerAnd(String... keys) {
         final String[] copy = new String[keys.length + 1];
         copy[0] = DEFAULT_PAYER;
@@ -864,5 +871,20 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public ResponseCodeEnum getActualStatus() {
         return lastReceipt.getStatus();
+    }
+
+    public void updateStateFromRecord(TransactionRecord record, HapiSpec spec) throws Throwable {
+        this.actualStatus = record.getReceipt().getStatus();
+        this.lastReceipt = record.getReceipt();
+        updateStateOf(spec);
+    }
+
+    public T batchKey(String key) {
+        batchKey = Optional.of(spec -> spec.registry().getKey(key));
+        return self();
+    }
+
+    public Optional<AccountID> getNode() {
+        return node;
     }
 }

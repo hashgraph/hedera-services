@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
-import com.swirlds.platform.state.service.schemas.V058RosterLifecycleTransitionSchema;
+import com.swirlds.platform.state.service.schemas.V059RosterLifecycleTransitionSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -56,7 +56,7 @@ class PlatformStateServiceTest {
         final var schemas = captor.getAllValues();
         assertEquals(2, schemas.size());
         assertInstanceOf(V0540PlatformStateSchema.class, schemas.getFirst());
-        assertInstanceOf(V058RosterLifecycleTransitionSchema.class, schemas.getLast());
+        assertInstanceOf(V059RosterLifecycleTransitionSchema.class, schemas.getLast());
     }
 
     @Test

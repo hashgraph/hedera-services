@@ -776,8 +776,4 @@ public class TxnVerbs {
     public static HapiAtomicBatch atomicBatch(HapiTxnOp<?>... ops) {
         return new HapiAtomicBatch(ops);
     }
-
-    public static HapiAtomicBatch atomicBatch(Transaction... transactions) {
-        return new HapiAtomicBatch(transactions);
-    }
 }
