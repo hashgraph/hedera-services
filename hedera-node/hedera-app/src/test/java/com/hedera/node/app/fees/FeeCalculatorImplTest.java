@@ -52,7 +52,8 @@ public class FeeCalculatorImplTest {
     private TransactionBody txnBody;
 
     @NonNull
-    private static final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = ServicesSoftwareVersion::new;
+    private static final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory =
+            ServicesSoftwareVersion::new;
 
     @BeforeEach
     void setUp() {
