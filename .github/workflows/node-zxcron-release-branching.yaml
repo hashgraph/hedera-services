@@ -267,7 +267,7 @@ jobs:
           echo "number=${VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Update Software Version
-        run: sed -i 's/version=.*$/version=${{ steps.version.outputs.number }}/g' gradle.properties
+        run: ./gradlew versionAsSpecified -PnewVersion=${{ steps.version.outputs.number }}
 
       - name: Commit Version Changes
         id: git-commit
