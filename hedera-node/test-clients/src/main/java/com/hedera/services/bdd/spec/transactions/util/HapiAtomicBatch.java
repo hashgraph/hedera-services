@@ -104,7 +104,6 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
                             } else {
                                 for (HapiTxnOp<?> op : operationsToBatch) {
                                     try {
-                                        b.addTransactions(op.signedTxnFor(spec));
                                         // set node account id to 0.0.0 if not set
                                         if (op.getNode().isEmpty()) {
                                             op.setNode(DEFAULT_NODE_ACCOUNT_ID);

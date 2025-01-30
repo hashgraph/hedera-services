@@ -27,16 +27,12 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
 
     @HapiTest
-    @Disabled
-    // just test that the batch is submitted
-    // disabled for now because there is no handler logic and streamValidation is failing in CI
     public Stream<DynamicTest> simpleBatchTest() {
         final var batchOperator = "batchOperator";
         final var innerTnxPayer = "innerPayer";
@@ -60,7 +56,8 @@ public class AtomicBatchTest {
                 // use custom txn id so we can get the record
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
                 // create a batch txn
-                atomicBatch(innerTxn).payingWith(batchOperator),
+                //                atomicBatch(innerTxn).payingWith(batchOperator),
+                atomicBatch(innerTxn),
                 // get and log inner txn record
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result
