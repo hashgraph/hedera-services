@@ -57,6 +57,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -77,6 +78,9 @@ class TokenRevokeKycFromAccountHandlerTest {
     private ReadableAccountStore accountStore;
     private TokenRevokeKycFromAccountHandler subject;
 
+    @Mock
+    private PureChecksContext pureChecksContext;
+
     @BeforeEach
     void setUp() {
         accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
@@ -95,9 +99,9 @@ class TokenRevokeKycFromAccountHandlerTest {
                             .account(AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()))
                             .build())
                     .build();
+            given(pureChecksContext.body()).willReturn(txn);
 
-            final var context = new FakePreHandleContext(accountStore, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
+            assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_TOKEN_ID);
         }
 
         @Test
@@ -110,9 +114,9 @@ class TokenRevokeKycFromAccountHandlerTest {
                             .account((AccountID) null)
                             .build())
                     .build();
+            given(pureChecksContext.body()).willReturn(txn);
 
-            final var context = new FakePreHandleContext(accountStore, txn);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+            assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ACCOUNT_ID);
         }
     }
 

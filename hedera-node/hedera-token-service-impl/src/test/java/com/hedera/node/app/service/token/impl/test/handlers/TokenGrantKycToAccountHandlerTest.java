@@ -60,6 +60,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.Collections;
@@ -79,35 +80,34 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
+    @Mock
+    private PureChecksContext pureChecksContext;
+
     @Test
     void txnHasNoToken() throws PreCheckException {
-        final var payerAcct = newPayerAccount();
-        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
         final var missingTokenTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
                         .account(AccountID.newBuilder().accountNum(1L))
                         .build())
                 .build();
+        given(pureChecksContext.body()).willReturn(missingTokenTxn);
 
-        final var context = new FakePreHandleContext(accountStore, missingTokenTxn);
-        Assertions.assertThatThrownBy(() -> subject.preHandle(context))
+        Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
     @Test
     void txnHasNoAccount() throws PreCheckException {
-        final var payerAcct = newPayerAccount();
-        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
         final var missingAcctTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(
                         TokenGrantKycTransactionBody.newBuilder().token(tokenId).build())
                 .build();
+        given(pureChecksContext.body()).willReturn(missingAcctTxn);
 
-        final var context = new FakePreHandleContext(accountStore, missingAcctTxn);
-        Assertions.assertThatThrownBy(() -> subject.preHandle(context))
+        Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }

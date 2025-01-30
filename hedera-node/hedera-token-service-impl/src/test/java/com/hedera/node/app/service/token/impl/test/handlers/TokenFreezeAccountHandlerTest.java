@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -72,6 +73,9 @@ class TokenFreezeAccountHandlerTest {
             AccountID.newBuilder().accountNum(13257).build();
 
     private TokenFreezeAccountHandler subject;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     @BeforeEach
     void setUp() {
@@ -99,10 +103,9 @@ class TokenFreezeAccountHandlerTest {
                     .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
                             .token(TokenID.newBuilder().tokenNum(123L)))
                     .build();
+            given(pureChecksContext.body()).willReturn(theTxn);
 
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+            Assertions.assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ACCOUNT_ID);
         }
     }
 
