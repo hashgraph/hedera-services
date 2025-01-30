@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateStreams;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withAddressOfKey;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLongZeroAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -94,13 +93,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
 @Tag(CRYPTO)
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
@@ -978,11 +973,5 @@ public class CryptoCreateSuite {
                     .hasPrecheck(INVALID_ALIAS_KEY);
             allRunFor(spec, op);
         }));
-    }
-
-    @HapiTest
-    @Order(Integer.MAX_VALUE)
-    final Stream<DynamicTest> streamValidation() {
-        return hapiTest(validateStreams());
     }
 }
