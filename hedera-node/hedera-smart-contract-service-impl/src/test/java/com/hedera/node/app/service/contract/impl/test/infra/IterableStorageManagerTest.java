@@ -146,9 +146,9 @@ class IterableStorageManagerTest {
         // Model deleting the first contract storage
         verify(store).putSlot(new SlotKey(CONTRACT_1, BYTES_2), new SlotValue(BYTES_2, Bytes.EMPTY, BYTES_3));
         verify(store).removeSlot(new SlotKey(CONTRACT_1, BYTES_1));
-        verify(store).adjustSlotCount(-1);
         // The new first key is BYTES_2 as the first slot for the contract was deleted.
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, -1);
+        verify(store).adjustSlotCount(-1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -206,9 +206,9 @@ class IterableStorageManagerTest {
         verify(store).putSlot(new SlotKey(CONTRACT_1, BYTES_1), new SlotValue(BYTES_1, Bytes.EMPTY, BYTES_3));
         verify(store).putSlot(new SlotKey(CONTRACT_1, BYTES_3), new SlotValue(BYTES_3, BYTES_1, BYTES_3));
         verify(store).removeSlot(new SlotKey(CONTRACT_1, BYTES_2));
-        verify(store).adjustSlotCount(-1);
         // The new first key is BYTES_1 as before running the test
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_1, -1);
+        verify(store).adjustSlotCount(-1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -257,9 +257,27 @@ class IterableStorageManagerTest {
 
         // The new first key is BYTES_2
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, 1);
-        verify(store).adjustSlotCount(1);
+        verify(store).adjustSlotCount(+1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
+    }
+
+    @Test
+    void zeroIntoEmptySlotJustRemovesSuperfluousPendingUpdate() {
+        final var accesses = List.of(new StorageAccesses(
+                CONTRACT_1, List.of(StorageAccess.newWrite(UInt256.valueOf(2L), UInt256.ZERO, UInt256.ZERO))));
+
+        final var sizeChanges = List.of(new StorageSizeChange(CONTRACT_1, 0, 0));
+
+        given(enhancement.nativeOperations()).willReturn(hederaNativeOperations);
+        given(hederaNativeOperations.getAccount(CONTRACT_1)).willReturn(account);
+        given(account.firstContractStorageKey()).willReturn(Bytes.EMPTY);
+
+        // "Insert" zero into an empty slot
+        subject.persistChanges(enhancement, accesses, sizeChanges, store);
+
+        verify(store).removeSlot(new SlotKey(CONTRACT_1, BYTES_2));
+        verifyNoMoreInteractions(store);
     }
 
     @Test
@@ -302,10 +320,10 @@ class IterableStorageManagerTest {
                 .putSlot(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.ONE), BYTES_3, BYTES_1));
-        verify(store).adjustSlotCount(2);
 
         // The new first key is BYTES_3
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_3, 2);
+        verify(store).adjustSlotCount(2);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -335,10 +353,10 @@ class IterableStorageManagerTest {
                 .putSlot(
                         new SlotKey(CONTRACT_1, BYTES_1),
                         new SlotValue(tuweniToPbjBytes(UInt256.ONE), BYTES_2, Bytes.EMPTY));
-        verify(store).adjustSlotCount(1);
 
         // The new first key is BYTES_2
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, 1);
+        verify(store).adjustSlotCount(+1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }
@@ -365,10 +383,10 @@ class IterableStorageManagerTest {
                 .putSlot(
                         new SlotKey(CONTRACT_1, BYTES_2),
                         new SlotValue(tuweniToPbjBytes(UInt256.MAX_VALUE), Bytes.EMPTY, BYTES_1));
-        verify(store).adjustSlotCount(1);
 
         // The new first key is BYTES_2
         verify(hederaOperations).updateStorageMetadata(CONTRACT_1, BYTES_2, 1);
+        verify(store).adjustSlotCount(+1);
         verifyNoMoreInteractions(store);
         verifyNoMoreInteractions(hederaOperations);
     }

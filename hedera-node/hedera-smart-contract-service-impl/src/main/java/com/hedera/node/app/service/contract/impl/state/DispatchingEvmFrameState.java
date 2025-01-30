@@ -151,7 +151,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var slotKey = new SlotKey(contractID, tuweniToPbjBytes(requireNonNull(key)));
         final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
         if (oldSlotValue == null && value.isZero()) {
-            // Special case---don't set explicitly set a zero value for a missing slot
+            // Small optimization---don't put zero into an empty slot
             return;
         }
         // Ensure we don't change any prev/next keys until the base commit
