@@ -302,16 +302,11 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
 
     public @NonNull Optional<SystemContractMethod> isMethod(@NonNull final SystemContractMethod... methods) {
         for (final var method : methods) {
-            if (Arrays.equals(method.selector(), this.selector()) && isMatchingContractID(method)) {
+            if (Arrays.equals(method.selector(), this.selector()) && method.hasSupportedAddress(contractID)) {
                 return Optional.of(method);
             }
         }
         return Optional.empty();
-    }
-
-    private boolean isMatchingContractID(@NonNull final SystemContractMethod method) {
-        return method.supportedAddresses().contains(ContractID.DEFAULT)
-                || method.supportedAddresses().contains(contractID);
     }
 
     /**

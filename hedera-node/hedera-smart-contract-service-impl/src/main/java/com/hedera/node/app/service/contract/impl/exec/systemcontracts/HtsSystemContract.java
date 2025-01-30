@@ -37,7 +37,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class HtsSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
-    public static final String HTS_SYSTEM_CONTRACT_NAME = "HTS_167";
+    public static final String HTS_SYSTEM_CONTRACT_NAME = "HTS";
     public static final String HTS_167_EVM_ADDRESS = "0x167";
     public static final String HTS_16C_EVM_ADDRESS = "0x16C";
     public static final ContractID HTS_167_CONTRACT_ID =

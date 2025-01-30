@@ -126,7 +126,7 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.setUnlimitedAutoAssociations.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
-        @ConfigProperty(value = "systemContract.callable.hts.address", defaultValue = "359")
+        @ConfigProperty(value = "systemContract.hts.addresses", defaultValue = "359") // 359 = 0x167, 364 = 0x16C
                 Set<Long> callableHTSAddresses,
         @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean evmEthTransactionZeroHapiFeesEnabled,

@@ -40,7 +40,9 @@ import org.apache.tuweni.bytes.Bytes;
  * @param categories Set of category flags possibly empty
  * @param modifier An optional Solidity function modifier (e.g., pure or view)
  * @param variants Set of method variants (e.g., version number, or FT vs NFT), possibly empty
- * @param supportedAddresses Set of supported contract addresses, cannot be empty.  Default is ALL.  Unlike the other fields, when using the `withSupportedAddress` method, the existing supported addresses are overridden.
+ * @param supportedAddresses Set of supported contract addresses, cannot be empty.  Default is ALL and is denoted by ContractID.Default.
+ *                           Unlike the other fields on set like with[Contract,Via,Modifier], when setting the new value with `withSupportedAddress` method,
+ *                           the existing supported addresses are replaced.
  */
 public record SystemContractMethod(
         @NonNull Function function,
@@ -270,6 +272,10 @@ public record SystemContractMethod(
     public @NonNull SystemContractMethod withSupportedAddresses(@NonNull final ContractID... supportedAddresses) {
         // Unlike the other with methods, this one replaces the set of supported addresses as the default of ALL should
         // be overridden
+        if (supportedAddresses.length == 0) {
+            return new SystemContractMethod(
+                    function, systemContract, via, categories, modifier, variants, Set.of(ContractID.DEFAULT));
+        }
         final var sa = new java.util.HashSet<ContractID>();
         sa.addAll(Arrays.asList(supportedAddresses));
         return new SystemContractMethod(function, systemContract, via, categories, modifier, variants, sa);
@@ -329,6 +335,10 @@ public record SystemContractMethod(
         var intersection = this.categories.clone();
         intersection.retainAll(categories);
         return !intersection.isEmpty();
+    }
+
+    public boolean hasSupportedAddress(@NonNull final ContractID supportedAddress) {
+        return supportedAddresses.contains(ContractID.DEFAULT) || supportedAddresses.contains(supportedAddress);
     }
 
     /**

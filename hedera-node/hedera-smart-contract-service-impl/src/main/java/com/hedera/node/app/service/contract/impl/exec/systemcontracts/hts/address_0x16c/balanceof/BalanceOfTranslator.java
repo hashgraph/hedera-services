@@ -41,7 +41,7 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     /**
      * Selector for balanceOf(address) method.
      */
-    public static final SystemContractMethod BALANCE_OF = SystemContractMethod.declare(
+    public static final SystemContractMethod BALANCE_OF_16C = SystemContractMethod.declare(
                     "balanceOf(address)", ReturnTypes.INT)
             .withModifier(Modifier.VIEW)
             .withCategory(Category.TOKEN_QUERY)
@@ -57,7 +57,7 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
         // Dagger2
         super(SystemContractMethod.SystemContract.HTS, systemContractMethodRegistry, contractMetrics);
 
-        registerMethods(BALANCE_OF);
+        registerMethods(BALANCE_OF_16C);
     }
 
     /**
@@ -65,9 +65,8 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
      */
     @Override
     public BalanceOfCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final Address owner = BalanceOfTranslator.BALANCE_OF
-                .decodeCall(attempt.input().toArrayUnsafe())
-                .get(0);
+        final Address owner =
+                BALANCE_OF_16C.decodeCall(attempt.input().toArrayUnsafe()).get(0);
         return new BalanceOfCall(
                 attempt.enhancement(), attempt.systemContractGasCalculator(), attempt.redirectToken(), owner);
     }
@@ -75,6 +74,6 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public @NonNull Optional<SystemContractMethod> identifyMethod(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isMethod(BALANCE_OF);
+        return attempt.isMethod(BALANCE_OF_16C);
     }
 }

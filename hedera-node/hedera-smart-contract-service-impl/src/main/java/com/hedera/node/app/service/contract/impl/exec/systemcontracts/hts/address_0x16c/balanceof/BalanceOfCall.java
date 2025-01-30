@@ -20,10 +20,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof.BalanceOfTranslator.BALANCE_OF_16C;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractRevertibleTokenViewCall;
@@ -62,7 +64,7 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
         if (ownerNum < 0) {
             return gasOnly(
                     successResult(
-                            BalanceOfTranslator.BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(0)),
+                            BALANCE_OF_16C.getOutputs().encode(Tuple.singleton(BigInteger.valueOf(0))),
                             gasCalculator.viewGasRequirement()),
                     INVALID_ACCOUNT_ID,
                     true);
@@ -71,7 +73,7 @@ public class BalanceOfCall extends AbstractRevertibleTokenViewCall {
         final var tokenNum = token.tokenIdOrThrow().tokenNum();
         final var relation = nativeOperations().getTokenRelation(ownerNum, tokenNum);
         final var balance = relation == null ? 0 : relation.balance();
-        final var output = BalanceOfTranslator.BALANCE_OF.getOutputs().encodeElements(BigInteger.valueOf(balance));
+        final var output = BALANCE_OF_16C.getOutputs().encode(Tuple.singleton(BigInteger.valueOf(balance)));
 
         return gasOnly(successResult(output, gasCalculator.viewGasRequirement()), SUCCESS, true);
     }

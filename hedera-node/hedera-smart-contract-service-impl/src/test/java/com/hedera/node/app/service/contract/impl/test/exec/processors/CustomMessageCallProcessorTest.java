@@ -43,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
@@ -284,6 +285,17 @@ class CustomMessageCallProcessorTest {
         verify(operationTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
     }
 
+    @Test
+    void callsToDisabledPrecompile() {
+        givenDisabledEvmPrecompileCall();
+
+        subject.start(frame, operationTracer);
+
+        verify(frame).setOutputData(NOOP_OUTPUT_DATA);
+        verify(frame).setState(MessageFrame.State.COMPLETED_SUCCESS);
+        verify(frame).setExceptionalHaltReason(Optional.empty());
+    }
+
     private void givenHaltableFrame(@NonNull final AtomicBoolean isHalted) {
         doAnswer(invocation -> {
                     isHalted.set(true);
@@ -322,6 +334,19 @@ class CustomMessageCallProcessorTest {
         given(frame.getInputData()).willReturn(INPUT_DATA);
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+    }
+
+    private void givenDisabledEvmPrecompileCall() {
+        final Deque<MessageFrame> stack = new ArrayDeque<>();
+        Configuration DISABLED_PRECOMPILE_CONFIG = HederaTestConfigBuilder.create()
+                .withValue("contracts.precompile.disabled", "6")
+                .getOrCreateConfig();
+        given(registry.get(ADDRESS_6)).willReturn(nativePrecompile);
+        given(frame.getContractAddress()).willReturn(ADDRESS_6);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DISABLED_PRECOMPILE_CONFIG);
+        when(frame.getValue()).thenReturn(Wei.ZERO);
+        given(addressChecks.isSystemAccount(ADDRESS_6)).willReturn(true);
     }
 
     private void givenPrngCall(long gasRequirement) {

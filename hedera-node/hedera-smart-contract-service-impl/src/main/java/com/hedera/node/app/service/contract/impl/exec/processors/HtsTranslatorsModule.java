@@ -478,19 +478,4 @@ public interface HtsTranslatorsModule {
             @NonNull final RejectTokensTranslator translator) {
         return translator;
     }
-
-    /**
-     * Provides Translator for HTS System Contraact at address 0x16c
-     */
-    @Provides
-    @Singleton
-    @IntoSet
-    @Named("HtsTranslators")
-    static CallTranslator<HtsCallAttempt> provideBalanceOfTranslator_16c(
-            @NonNull
-                    final com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof
-                                    .BalanceOfTranslator
-                            translator) {
-        return translator;
-    }
 }
