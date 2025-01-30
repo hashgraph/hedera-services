@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -130,9 +129,6 @@ class ChildDispatchFactoryTest {
     private ServiceScopeLookup serviceScopeLookup;
 
     @Mock
-    private StoreMetricsService storeMetricsService;
-
-    @Mock
     private ExchangeRateManager exchangeRateManager;
 
     private ChildDispatchFactory subject;
@@ -152,7 +148,6 @@ class ChildDispatchFactoryTest {
                 feeManager,
                 dispatchProcessor,
                 serviceScopeLookup,
-                storeMetricsService,
                 exchangeRateManager);
     }
 

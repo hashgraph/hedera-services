@@ -82,7 +82,6 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordSource;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -120,6 +119,7 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -143,7 +143,6 @@ public class HandleWorkflow {
     private final NetworkInfo networkInfo;
     private final StakePeriodChanges stakePeriodChanges;
     private final DispatchProcessor dispatchProcessor;
-    private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
@@ -179,7 +178,6 @@ public class HandleWorkflow {
             @NonNull final StakePeriodChanges stakePeriodChanges,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
@@ -205,7 +203,6 @@ public class HandleWorkflow {
         this.networkInfo = requireNonNull(networkInfo);
         this.stakePeriodChanges = requireNonNull(stakePeriodChanges);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
@@ -496,13 +493,13 @@ public class HandleWorkflow {
             var nextTime = boundaryStateChangeListener
                     .lastConsensusTimeOrThrow()
                     .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
-            final var writableEntityIdStore = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
+            final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
+            final var writableEntityIdStore = new WritableEntityIdStore(entityIdWritableStates);
             // Now we construct the iterator and start executing transactions in this interval
             final var iter = scheduleService.executableTxns(
                     executionStart,
                     consensusNow,
-                    StoreFactoryImpl.from(
-                            state, ScheduleService.NAME, config, storeMetricsService, writableEntityIdStore));
+                    StoreFactoryImpl.from(state, ScheduleService.NAME, config, writableEntityIdStore));
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             // Configuration sets a maximum number of execution slots per user transaction
             int n = schedulingConfig.maxExecutionsPerUserTxn();
@@ -522,7 +519,7 @@ public class HandleWorkflow {
                     }
                 }
                 executionEnd = executableTxn.nbf();
-                doStreamingKVChanges(writableStates, executionEnd, iter::remove);
+                doStreamingKVChanges(writableStates, executionEnd, iter::remove, entityIdWritableStates);
                 nextTime = boundaryStateChangeListener
                         .lastConsensusTimeOrThrow()
                         .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
@@ -531,7 +528,7 @@ public class HandleWorkflow {
             // The purgeUntilNext() iterator extension purges any schedules with wait_until_expiry=false
             // that expire after the last schedule returned from next(), until either the next executable
             // schedule or the iterator boundary is reached
-            doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext);
+            doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext, entityIdWritableStates);
             // If the iterator is not exhausted, we can only mark the second _before_ the last-executed NBF time
             // as complete; if it is exhausted, we mark the rightmost second of the interval as complete
             if (iter.hasNext()) {
@@ -573,12 +570,16 @@ public class HandleWorkflow {
     private void purgeScheduling(@NonNull final State state, final Instant then, final Instant now) {
         if (!Instant.EPOCH.equals(then) && then.getEpochSecond() < now.getEpochSecond()) {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
-            final var entityCounters = new WritableEntityIdStore(state.getWritableStates(EntityIdService.NAME));
-            doStreamingKVChanges(writableStates, now, () -> {
-                final var scheduleStore = new WritableScheduleStoreImpl(
-                        writableStates, configProvider.getConfiguration(), storeMetricsService, entityCounters);
-                scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
-            });
+            final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
+            final var entityCounters = new WritableEntityIdStore(entityIdWritableStates);
+            doStreamingKVChanges(
+                    writableStates,
+                    now,
+                    () -> {
+                        final var scheduleStore = new WritableScheduleStoreImpl(writableStates, entityCounters);
+                        scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
+                    },
+                    entityIdWritableStates);
         }
     }
 
@@ -631,8 +632,6 @@ public class HandleWorkflow {
                     // those changes already being visible in the FAB
                     final var writableNodeStore = new WritableNodeStore(
                             userTxn.stack().getWritableStates(AddressBookService.NAME),
-                            userTxn.config(),
-                            storeMetricsService,
                             new WritableEntityIdStore(userTxn.stack().getWritableStates(EntityIdService.NAME)));
                     addressBookHelper.adjustPostUpgradeNodeMetadata(networkInfo, userTxn.config(), writableNodeStore);
 
@@ -749,16 +748,23 @@ public class HandleWorkflow {
      * block stream.
      *
      * @param writableStates the writable states to commit the action to
-     * @param now            the consensus timestamp of the action
-     * @param action         the action to commit
+     * @param now the consensus timestamp of the action
+     * @param action the action to commit
+     * @param entityIdWritableStates if not null, the writable states for the entity ID service
      */
     private void doStreamingKVChanges(
-            @NonNull final WritableStates writableStates, @NonNull final Instant now, @NonNull final Runnable action) {
+            @NonNull final WritableStates writableStates,
+            @NonNull final Instant now,
+            @NonNull final Runnable action,
+            @Nullable final WritableStates entityIdWritableStates) {
         if (streamMode != RECORDS) {
             kvStateChangeListener.reset();
         }
         action.run();
         ((CommittableWritableStates) writableStates).commit();
+        if (entityIdWritableStates != null) {
+            ((CommittableWritableStates) entityIdWritableStates).commit();
+        }
         if (streamMode != RECORDS) {
             final var changes = kvStateChangeListener.getStateChanges();
             if (!changes.isEmpty()) {
@@ -910,7 +916,8 @@ public class HandleWorkflow {
                 doStreamingKVChanges(
                         hintsWritableStates,
                         now,
-                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
+                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig),
+                        null);
             }
             if (tssConfig.historyEnabled()) {
                 final Bytes currentMetadata;
@@ -925,7 +932,8 @@ public class HandleWorkflow {
                 doStreamingKVChanges(
                         historyWritableStates,
                         now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig),
+                        null);
             }
         }
     }
