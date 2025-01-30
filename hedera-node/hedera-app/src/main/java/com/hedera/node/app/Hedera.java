@@ -446,7 +446,6 @@ public final class Hedera
         requireNonNull(constructableRegistry);
         requireNonNull(hintsServiceFactory);
         requireNonNull(historyServiceFactory);
-        requireNonNull(blockHashSignerFactory);
         this.metrics = requireNonNull(metrics);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
@@ -489,7 +488,8 @@ public final class Hedera
                         configSupplier,
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
-                        ThrottleAccumulator::new));
+                        ThrottleAccumulator::new,
+                        ignore -> version));
         boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configSupplier);
         hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
         historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
@@ -913,7 +913,7 @@ public final class Hedera
             @NonNull final Event event,
             @NonNull final State state,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
-        final var readableStoreFactory = new ReadableStoreFactory(state);
+        final var readableStoreFactory = new ReadableStoreFactory(state, ignore -> getSoftwareVersion());
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
         if (creator == null) {

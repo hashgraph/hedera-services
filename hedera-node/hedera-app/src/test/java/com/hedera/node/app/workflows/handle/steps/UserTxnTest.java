@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -51,6 +52,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -63,12 +65,14 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.time.Instant;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -148,6 +152,8 @@ class UserTxnTest {
 
     @Mock
     private TransactionChecker transactionChecker;
+
+    private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = ServicesSoftwareVersion::new;
 
     @BeforeEach
     void setUp() {
@@ -260,6 +266,7 @@ class UserTxnTest {
                 blockRecordManager,
                 blockStreamManager,
                 childDispatchFactory,
+                softwareVersionFactory,
                 transactionChecker);
     }
 }

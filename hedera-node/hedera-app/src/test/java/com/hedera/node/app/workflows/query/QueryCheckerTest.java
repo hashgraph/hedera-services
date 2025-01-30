@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -275,7 +276,7 @@ class QueryCheckerTest extends AppTestBase {
         void setup() {
             setupStandardStates();
 
-            final var storeFactory = new ReadableStoreFactory(state);
+            final var storeFactory = new ReadableStoreFactory(state, ServicesSoftwareVersion::new);
             store = storeFactory.getStore(ReadableAccountStore.class);
         }
 

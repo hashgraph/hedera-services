@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
@@ -68,6 +69,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
@@ -75,6 +77,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,6 +106,7 @@ public final class IngestChecker {
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
     private final OpWorkflowMetrics workflowMetrics;
+    private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -135,7 +139,8 @@ public final class IngestChecker {
             @NonNull final Authorizer authorizer,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final InstantSource instantSource,
-            @NonNull final OpWorkflowMetrics workflowMetrics) {
+            @NonNull final OpWorkflowMetrics workflowMetrics,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.blockStreamManager = requireNonNull(blockStreamManager);
@@ -150,6 +155,7 @@ public final class IngestChecker {
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
         this.instantSource = requireNonNull(instantSource);
         this.workflowMetrics = requireNonNull(workflowMetrics);
+        this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
     }
 
     /**
@@ -226,7 +232,7 @@ public final class IngestChecker {
         dispatcher.dispatchPureChecks(pureChecksContext);
 
         // 5. Get payer account
-        final var storeFactory = new ReadableStoreFactory(state);
+        final var storeFactory = new ReadableStoreFactory(state, softwareVersionFactory);
         final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
         final var payerKey = payer.key();
         // There should, absolutely, be a key for this account. If there isn't, then something is wrong in

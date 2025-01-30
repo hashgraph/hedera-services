@@ -389,7 +389,11 @@ public class TransactionExecutorsTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 new AppThrottleFactory(
-                        () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
+                        () -> config,
+                        () -> state,
+                        () -> ThrottleDefinitions.DEFAULT,
+                        ThrottleAccumulator::new,
+                        v -> new ServicesSoftwareVersion()));
         registerServices(appContext, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
