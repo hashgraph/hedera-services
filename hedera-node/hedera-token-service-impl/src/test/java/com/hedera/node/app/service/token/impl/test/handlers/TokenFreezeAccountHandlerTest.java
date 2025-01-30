@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -83,7 +82,11 @@ class TokenFreezeAccountHandlerTest {
     }
 
     @Nested
+    @ExtendWith(MockitoExtension.class)
     class PreHandleTests extends ParityTestBase {
+        @Mock
+        private PureChecksContext pureChecksContext;
+
         @Test
         void tokenFreezeWithNoToken() throws PreCheckException {
             final var theTxn = TransactionBody.newBuilder()
@@ -293,16 +296,6 @@ class TokenFreezeAccountHandlerTest {
                             .accountId(ACCOUNT_13257)
                             .frozen(true)
                             .build());
-        }
-
-        private HandleContext mockContext() {
-            final var context = mock(HandleContext.class);
-            final var storeFactory = mock(StoreFactory.class);
-            given(context.storeFactory()).willReturn(storeFactory);
-            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-
-            return context;
         }
 
         private void verifyNoPut() {
