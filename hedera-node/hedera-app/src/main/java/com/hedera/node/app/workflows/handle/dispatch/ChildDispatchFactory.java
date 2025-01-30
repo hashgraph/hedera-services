@@ -293,8 +293,8 @@ public class ChildDispatchFactory {
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childTokenContext = new TokenContextImpl(
-                config, childStack, consensusNow, writableEntityIdStore, softwareVersionFactory);
+        final var childTokenContext =
+                new TokenContextImpl(config, childStack, consensusNow, writableEntityIdStore, softwareVersionFactory);
         return new RecordDispatch(
                 builder,
                 config,

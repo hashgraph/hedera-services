@@ -162,8 +162,8 @@ public class StandaloneDispatchFactory {
         final var creatorInfo = creatorInfoFor(transactionBody);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, consensusTransaction, readableStoreFactory);
-        final var tokenContext = new TokenContextImpl(
-                config, stack, consensusNow, entityIdStore, softwareVersionFactory);
+        final var tokenContext =
+                new TokenContextImpl(config, stack, consensusNow, entityIdStore, softwareVersionFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var writableStoreFactory =
                 new WritableStoreFactory(stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), entityIdStore);

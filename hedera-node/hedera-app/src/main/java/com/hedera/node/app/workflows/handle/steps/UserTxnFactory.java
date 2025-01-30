@@ -180,7 +180,10 @@ public class UserTxnFactory {
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var tokenContext = new TokenContextImpl(
-                config, stack, consensusNow, new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)),
+                config,
+                stack,
+                consensusNow,
+                new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)),
                 softwareVersionFactory);
         return new UserTxn(
                 type,
@@ -225,8 +228,8 @@ public class UserTxnFactory {
         final var functionality = functionOfTxn(body);
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
         final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
-        final var tokenContext = new TokenContextImpl(
-                config, stack, consensusNow, entityIdStore, softwareVersionFactory);
+        final var tokenContext =
+                new TokenContextImpl(config, stack, consensusNow, entityIdStore, softwareVersionFactory);
         return new UserTxn(
                 type,
                 functionality,

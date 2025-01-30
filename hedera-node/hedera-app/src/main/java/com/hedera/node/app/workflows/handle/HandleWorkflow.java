@@ -505,12 +505,8 @@ public class HandleWorkflow {
                     executionStart,
                     consensusNow,
                     StoreFactoryImpl.from(
-                            state,
-                            ScheduleService.NAME,
-                            config,
+                            state, ScheduleService.NAME, config, writableEntityIdStore, softwareVersionFactory));
 
-                            writableEntityIdStore,
-                            softwareVersionFactory));
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             // Configuration sets a maximum number of execution slots per user transaction
             int n = schedulingConfig.maxExecutionsPerUserTxn();
