@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
@@ -43,6 +58,9 @@ import java.util.stream.Stream;
 public interface HapiPropertySource {
 
     String ENTITY_STRING = "%d.%d.%d";
+    // Default shard and realm static ID building and comparisons
+    int shard = 0;
+    long realm = 0;
 
     static byte[] explicitBytesOf(@NonNull final Address address) {
         var asBytes = address.value().toByteArray();
@@ -332,8 +350,8 @@ public interface HapiPropertySource {
 
     static ContractID asContractIdWithEvmAddress(ByteString address) {
         return ContractID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
+                .setShardNum(shard)
+                .setRealmNum(realm)
                 .setEvmAddress(address)
                 .build();
     }

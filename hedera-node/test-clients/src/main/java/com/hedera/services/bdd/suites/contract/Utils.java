@@ -18,6 +18,8 @@ package com.hedera.services.bdd.suites.contract;
 
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.relocatedIfNotPresentInWorkingDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.realm;
+import static com.hedera.services.bdd.spec.HapiPropertySource.shard;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -276,7 +278,7 @@ public class Utils {
 
     public static AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
         return AccountAmount.newBuilder()
-                .setAccountID(accountId(0,0,hexedEvmAddress))
+                .setAccountID(accountId(shard, realm, hexedEvmAddress))
                 .setAmount(amount)
                 .build();
     }
@@ -386,7 +388,7 @@ public class Utils {
 
     public static Address mirrorAddrWith(final long num) {
         return Address.wrap(
-                Address.toChecksumAddress(new BigInteger(1, HapiPropertySource.asSolidityAddress(0, 0, num))));
+                Address.toChecksumAddress(new BigInteger(1, HapiPropertySource.asSolidityAddress(shard, realm, num))));
     }
 
     public static Address nonMirrorAddrWith(final long num) {
