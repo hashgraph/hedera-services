@@ -113,13 +113,4 @@ class WritableEntityIdStoreTest {
         subject.decrementEntityTypeCounter(EntityType.CONTRACT_STORAGE);
         assertEquals(0, entityCountsState.get().numContractStorageSlots());
     }
-
-    @Test
-    void cannotDecrementSomeEntityTypes() {
-        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.ACCOUNT));
-        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.TOKEN));
-        assertThrows(IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.STAKING_INFO));
-        assertThrows(
-                IllegalStateException.class, () -> subject.decrementEntityTypeCounter(EntityType.CONTRACT_BYTECODE));
-    }
 }

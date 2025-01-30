@@ -40,5 +40,10 @@ public interface WritableEntityCounters extends ReadableEntityCounters {
      */
     void incrementEntityTypeCount(final EntityType entityType);
 
+    /**
+     * Adjusts the entity count for the given entity type by the given delta.
+     * @param entityType the type of entity for which to adjust the count
+     * @param delta the delta to adjust the count by
+     */
     void adjustEntityCount(final EntityType entityType, final long delta);
 }
