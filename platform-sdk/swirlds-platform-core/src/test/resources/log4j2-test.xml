@@ -91,10 +91,10 @@
 		<!-- </File> -->
 	</Appenders>
 	<Loggers>
-		<Root level="all">
+		<Root level="ERROR">
 			<!--			<AppenderRef ref="fileLog"/>-->
 			<!-- uncomment the following to also enable output to standard output -->
-			<AppenderRef ref="Console"/>
+			<!--AppenderRef ref="Console"/-->
 
 			<!-- uncomment the following to write to a log with no buffer, but writing everything immediately -->
 			<!-- <AppenderRef ref="stepsLog"/> -->
