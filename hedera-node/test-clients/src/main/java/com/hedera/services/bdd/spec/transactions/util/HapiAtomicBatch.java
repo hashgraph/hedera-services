@@ -51,7 +51,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private List<HapiTxnOp<?>> operationsToBatch;
+    private final List<HapiTxnOp<?>> operationsToBatch;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
@@ -70,13 +70,10 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
 
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
-        // TODO: Implement proper estimate for AtomicBatch
-        return 20_000_000L; // spec.fees().forActivityBasedOp(HederaFunctionality.AtomicBatch, this::usageEstimate, txn,
-        // numPayerKeys);
+        return spec.fees().forActivityBasedOp(HederaFunctionality.AtomicBatch, this::usageEstimate, txn, numPayerKeys);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        // TODO: check for correct estimation of the batch
         final var baseMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
         final var opMeta = new CryptoCreateMeta(txn.getCryptoCreateAccount());
         final var accumulator = new UsageAccumulator();
@@ -130,7 +127,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 
     @Override
