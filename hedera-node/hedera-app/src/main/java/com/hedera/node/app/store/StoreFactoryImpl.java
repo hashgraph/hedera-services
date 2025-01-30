@@ -18,11 +18,14 @@ package com.hedera.node.app.store;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Function;
 
 /**
  * Factory for creating stores and service APIs. Default implementation of {@link StoreFactory}.
@@ -46,11 +49,12 @@ public class StoreFactoryImpl implements StoreFactory {
             @NonNull final State state,
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
-            final WritableEntityIdStore writableEntityIdStore) {
+            @NonNull final WritableEntityIdStore writableEntityIdStore,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         requireNonNull(state);
         requireNonNull(serviceName);
         return new StoreFactoryImpl(
-                new ReadableStoreFactory(state),
+                new ReadableStoreFactory(state, softwareVersionFactory),
                 new WritableStoreFactory(state, serviceName, writableEntityIdStore),
                 new ServiceApiFactory(state, configuration));
     }

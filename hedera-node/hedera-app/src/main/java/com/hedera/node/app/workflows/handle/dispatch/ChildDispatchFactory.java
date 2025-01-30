@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -86,6 +87,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,6 +98,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -118,6 +121,7 @@ public class ChildDispatchFactory {
     private final DispatchProcessor dispatchProcessor;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ExchangeRateManager exchangeRateManager;
+    private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
 
     @Inject
     public ChildDispatchFactory(
@@ -127,7 +131,8 @@ public class ChildDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -135,6 +140,7 @@ public class ChildDispatchFactory {
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
     }
 
     /**
@@ -245,7 +251,7 @@ public class ChildDispatchFactory {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
-        final var readableStoreFactory = new ReadableStoreFactory(childStack);
+        final var readableStoreFactory = new ReadableStoreFactory(childStack, softwareVersionFactory);
         final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
         final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
         final var writableStoreFactory = new WritableStoreFactory(
@@ -287,7 +293,8 @@ public class ChildDispatchFactory {
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childTokenContext = new TokenContextImpl(config, childStack, consensusNow, writableEntityIdStore);
+        final var childTokenContext =
+                new TokenContextImpl(config, childStack, consensusNow, writableEntityIdStore, softwareVersionFactory);
         return new RecordDispatch(
                 builder,
                 config,

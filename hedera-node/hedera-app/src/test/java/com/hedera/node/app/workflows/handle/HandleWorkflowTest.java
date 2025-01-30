@@ -44,6 +44,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManage
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -57,6 +58,7 @@ import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -64,6 +66,7 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -154,8 +157,12 @@ class HandleWorkflowTest {
 
     private HandleWorkflow subject;
 
+    private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+
     @BeforeEach
-    void setUp() {}
+    void setUp() {
+        softwareVersionFactory = ServicesSoftwareVersion::new;
+    }
 
     @Test
     void onlySkipsEventWithMissingCreator() {
@@ -232,6 +239,7 @@ class HandleWorkflowTest {
                 scheduleService,
                 hintsService,
                 historyService,
-                congestionMetrics);
+                congestionMetrics,
+                softwareVersionFactory);
     }
 }
