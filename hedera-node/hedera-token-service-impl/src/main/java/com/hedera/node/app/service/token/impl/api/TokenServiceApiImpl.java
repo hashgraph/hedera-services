@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -75,19 +76,22 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     /**
      * Constructs a {@link TokenServiceApiImpl}.
-     * @param config the configuration
+     *
+     * @param config              the configuration
      * @param storeMetricsService the store metrics service
-     * @param writableStates the writable states
-     * @param customFeeTest a predicate for determining if a transfer has custom fees
+     * @param writableStates      the writable states
+     * @param customFeeTest       a predicate for determining if a transfer has custom fees
+     * @param entityCounters
      */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final WritableStates writableStates,
-            @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
+            @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest,
+            @NonNull final WritableEntityCounters entityCounters) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
-        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
+        this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService, entityCounters);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);
@@ -573,7 +577,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     private EntityType getEntityType(@NonNull final Account account) {
-        return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
+        return account.smartContract() ? EntityType.CONTRACT_BYTECODE : EntityType.ACCOUNT;
     }
 
     private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeStreamBuilder rb) {

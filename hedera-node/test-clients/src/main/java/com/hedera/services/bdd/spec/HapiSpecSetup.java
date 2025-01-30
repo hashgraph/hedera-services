@@ -106,7 +106,7 @@ public class HapiSpecSetup {
      *
      * @return the Ed25519 private key for the default payer in this spec setup
      */
-    public EdDSAPrivateKey payerKey() {
+    public EdDSAPrivateKey payerKeyAsEd25519() {
         if (StringUtils.isNotEmpty(defaultPayerKey())) {
             return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(defaultPayerKey()));
         } else if (StringUtils.isNotEmpty(defaultPayerMnemonic())) {

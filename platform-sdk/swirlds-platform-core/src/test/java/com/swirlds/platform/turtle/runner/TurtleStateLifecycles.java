@@ -58,8 +58,9 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull TurtleTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull TurtleTestingToolState state) {
         // no op
+        return true;
     }
 
     @Override

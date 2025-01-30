@@ -29,6 +29,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.nu
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
@@ -80,7 +81,7 @@ public class EvmAddressAliasCall extends AbstractCall {
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum responseCode, @NonNull final Address address) {
         return successResult(
-                EVM_ADDRESS_ALIAS.getOutputs().encodeElements((long) responseCode.protoOrdinal(), address),
+                EVM_ADDRESS_ALIAS.getOutputs().encode(Tuple.of((long) responseCode.protoOrdinal(), address)),
                 gasCalculator.viewGasRequirement());
     }
 }

@@ -100,6 +100,8 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.OneOf;
@@ -111,6 +113,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -155,6 +158,9 @@ public class SigReqAdapterUtils {
                     .build())
             .build();
 
+    @Mock
+    private ReadableEntityCounters readableEntityCounters;
+
     /**
      * Returns the {@link ReadableTokenStore} containing the "well-known" tokens that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
@@ -164,7 +170,7 @@ public class SigReqAdapterUtils {
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
         final var state = wellKnownTokenState();
-        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)), mock(ReadableEntityCounters.class));
     }
 
     /**
@@ -177,7 +183,8 @@ public class SigReqAdapterUtils {
         return new WritableTokenStore(
                 mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                mock(WritableEntityCounters.class));
     }
 
     private static WritableKVState<TokenID, Token> wellKnownTokenState() {
@@ -394,7 +401,8 @@ public class SigReqAdapterUtils {
         return new WritableTokenRelationStore(
                 mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                mock(WritableEntityCounters.class));
     }
 
     /**
@@ -404,7 +412,8 @@ public class SigReqAdapterUtils {
      */
     public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
         return new ReadableAccountStoreImpl(
-                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
+                mock(ReadableEntityCounters.class));
     }
 
     /**
@@ -416,7 +425,8 @@ public class SigReqAdapterUtils {
         return new WritableAccountStore(
                 mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())),
                 CONFIGURATION,
-                mock(StoreMetricsService.class));
+                mock(StoreMetricsService.class),
+                mock(WritableEntityCounters.class));
     }
 
     private static WritableKVState<AccountID, Account> wrappedAccountState() {

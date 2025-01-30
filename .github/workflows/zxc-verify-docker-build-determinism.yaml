@@ -180,6 +180,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Write Artifact Version Descriptor
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: |
           printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "$(./gradlew -q showVersion)" "$(git log -1 --format='%H' | cut -c1-8)" "$(date -u)" | tee "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/VERSION"
 
@@ -252,7 +253,7 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: 3.9
 

@@ -1276,4 +1276,29 @@ public class EthereumSuite {
                                     .hasKnownStatus(SUCCESS));
                 }));
     }
+
+    @HapiTest
+    final Stream<DynamicTest> negativeGasFailsGracefully() {
+        String receiver = "RECEIVER";
+        final String aliasBalanceSnapshot = "aliasBalance";
+        return hapiTest(
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(receiver).balance(0L),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via(AUTO_ACCOUNT_TRANSACTION_NAME),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords(),
+                balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY).accountIsAlias(),
+                ethereumCryptoTransfer(receiver, FIVE_HBARS)
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .nonce(0)
+                        .maxFeePerGas(0L)
+                        .maxGasAllowance(FIVE_HBARS)
+                        .gasLimit(2_000_000L * -1)
+                        .via(PAY_TXN)
+                        .hasPrecheck(INVALID_ETHEREUM_TRANSACTION));
+    }
 }

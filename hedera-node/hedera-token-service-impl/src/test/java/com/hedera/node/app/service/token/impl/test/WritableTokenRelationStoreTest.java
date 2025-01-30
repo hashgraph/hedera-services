@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -44,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableTokenRelationStoreTest {
+class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
     private static final long TOKEN_10 = 10L;
     private static final TokenID TOKEN_10_ID =
             TokenID.newBuilder().tokenNum(TOKEN_10).build();
@@ -66,11 +67,11 @@ class WritableTokenRelationStoreTest {
     private WritableTokenRelationStore subject;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         given(states.<EntityIDPair, TokenRelation>get(V0490TokenSchema.TOKEN_RELS_KEY))
                 .willReturn(tokenRelState);
 
-        subject = new WritableTokenRelationStore(states, CONFIGURATION, storeMetricsService);
+        subject = new WritableTokenRelationStore(states, CONFIGURATION, storeMetricsService, writableEntityCounters);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -78,10 +79,13 @@ class WritableTokenRelationStoreTest {
     void testNullConstructorArgs() {
         assertThrows(
                 NullPointerException.class,
-                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService));
+                () -> new WritableTokenRelationStore(null, CONFIGURATION, storeMetricsService, writableEntityCounters));
         assertThrows(
-                NullPointerException.class, () -> new WritableTokenRelationStore(states, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableTokenRelationStore(states, CONFIGURATION, null));
+                NullPointerException.class,
+                () -> new WritableTokenRelationStore(states, null, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableTokenRelationStore(states, CONFIGURATION, null, writableEntityCounters));
     }
 
     @Test
@@ -160,11 +164,7 @@ class WritableTokenRelationStoreTest {
 
     @Test
     void testSizeOfState() {
-        final var expectedSize = 3L;
-        given(tokenRelState.size()).willReturn(expectedSize);
-
-        final var result = subject.sizeOfState();
-        Assertions.assertThat(result).isEqualTo(expectedSize);
+        Assertions.assertThat(readableEntityCounters.numTokenRelations()).isEqualTo(subject.sizeOfState());
     }
 
     @Test

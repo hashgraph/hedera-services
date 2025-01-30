@@ -213,7 +213,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().build();
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
+        ;
 
         given(waivers.isNewKeySignatureWaived(any(), any())).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(any(), any())).willReturn(false);
@@ -962,7 +963,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         readableAccounts = emptyStateBuilder.build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates);
+        readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
+        ;
     }
 
     private void updateWritableAccountStore(Map<Long, Account> accountsToAdd) {
@@ -972,7 +974,8 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         }
         writableAccounts = emptyStateBuilder.build();
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
-        writableStore = new WritableAccountStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableStore = new WritableAccountStore(
+                writableStates, configuration, mock(StoreMetricsService.class), writableEntityCounters);
     }
 
     private void givenTxnWith(TransactionBody txn) {

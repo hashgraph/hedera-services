@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.config.data.FilesConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
@@ -41,6 +43,8 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableKVState<FileID, File> filesState;
 
+    private final WritableEntityCounters entityCounters;
+
     /**
      * Create a new {@link WritableFileStore} instance.
      *
@@ -51,9 +55,11 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     public WritableFileStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService) {
-        super(states);
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final WritableEntityCounters entityCounters) {
+        super(states, entityCounters);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
+        this.entityCounters = entityCounters;
 
         final long maxCapacity = configuration.getConfigData(FilesConfig.class).maxNumber();
         final var storeMetrics = storeMetricsService.get(StoreType.FILE, maxCapacity);
@@ -61,13 +67,23 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     }
 
     /**
-     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link File} into the state, as well as exporting its ID to the transaction
+     * receipt. If a file with the same ID already exists, it will be overwritten.
      *
      * @param file - the file to be persisted.
      */
     public void put(@NonNull final File file) {
         filesState.put(requireNonNull(file).fileId(), file);
+    }
+
+    /**
+     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction.
+     * Also increments the entity counter for the file.
+     * @param file - the file to be persisted.
+     */
+    public void putAndIncrementCount(@NonNull final File file) {
+        put(file);
+        entityCounters.incrementEntityTypeCount(EntityType.FILE);
     }
 
     /**
@@ -93,15 +109,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     }
 
     /**
-     * Returns the number of files in the state.
-     *
-     * @return the number of files in the state
-     */
-    public long sizeOfState() {
-        return filesState.size();
-    }
-
-    /**
      * Returns the set of files modified in existing state.
      *
      * @return the set of files modified in existing state
@@ -117,5 +124,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      */
     public void removeFile(final FileID fileId) {
         filesState.remove(fileId);
+        entityCounters.decrementEntityTypeCounter(EntityType.FILE);
     }
 }

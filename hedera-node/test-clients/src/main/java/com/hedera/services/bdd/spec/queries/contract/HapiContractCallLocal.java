@@ -204,7 +204,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
             final var function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
             if (rawResult.size() > 0) {
                 final var typedResult = function.decodeReturn(rawResult.toByteArray());
-                typedResultsObs.get().accept(typedResult.toList().toArray());
+                typedResultsObs.get().accept(typedResult.toArray());
             } else {
                 typedResultsObs.get().accept(new Object[1]);
             }

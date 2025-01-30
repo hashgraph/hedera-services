@@ -323,7 +323,7 @@ class SignScheduleTranslatorTest {
 
         // when:
         final var input = Bytes.wrapByteBuffer(
-                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
                 input,
                 subject,
@@ -354,7 +354,7 @@ class SignScheduleTranslatorTest {
 
         // when:
         final var input = Bytes.wrapByteBuffer(
-                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
                 input,
                 subject,
@@ -421,8 +421,8 @@ class SignScheduleTranslatorTest {
         given(schedule.scheduleId()).willReturn(scheduleID);
 
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
-                Bytes.wrapByteBuffer(
-                        SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS))),
+                Bytes.wrapByteBuffer(SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(
+                        Tuple.singleton(APPROVED_HEADLONG_ADDRESS))),
                 subject,
                 enhancement,
                 addressIdConverter,
