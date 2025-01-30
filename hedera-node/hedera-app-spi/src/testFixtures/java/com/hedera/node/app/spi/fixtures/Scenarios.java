@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -308,7 +308,7 @@ public interface Scenarios extends TransactionFactory {
                     .key(FAKE_ECDSA_KEY_INFOS[2].publicKey())
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
-    
+
     final AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
     final TestUser BOB = new TestUser(
             account1003,
