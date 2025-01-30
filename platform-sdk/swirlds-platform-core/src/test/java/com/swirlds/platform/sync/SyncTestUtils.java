@@ -25,22 +25,29 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SyncTestUtils {
+    static final Logger log = LogManager.getLogger(SyncTestUtils.class);
 
     public static void printEvents(final String heading, final Collection<? extends EventImpl> events) {
-        System.out.println("\n--- " + heading + " ---");
-        events.forEach(System.out::println);
+        StringBuffer bf = new StringBuffer("\n--- " + heading + " ---");
+        events.forEach(e -> bf.append(e.toString()).append("\n"));
+        log.debug(bf.toString());
     }
 
     public static void printTasks(final String heading, final Collection<PlatformEvent> events) {
-        System.out.println("\n--- " + heading + " ---");
-        events.forEach(System.out::println);
+        StringBuffer bf = new StringBuffer("\n--- " + heading + " ---");
+        events.forEach(e -> bf.append(e.toString()).append("\n"));
+        log.debug(bf.toString());
     }
 
     public static void printTipSet(final String nodeName, final SyncNode node) {
-        System.out.printf("\n--- %s's tipSet ---%n", nodeName);
-        node.getShadowGraph().getTips().forEach(tip -> System.out.println(tip.getEvent()));
+        StringBuffer bf = new StringBuffer("---" + nodeName + "'s tipSet ---");
+        node.getShadowGraph().getTips().forEach(tip -> bf.append(tip.getEvent().toString())
+                .append("\n"));
+        log.debug(bf.toString());
     }
 
     public static long getMaxIndicator(final List<ShadowEvent> tips, @NonNull final AncientMode ancientMode) {
