@@ -17,7 +17,6 @@
 package com.hedera.node.app.hapi.utils.throttles;
 
 import java.time.Instant;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -92,7 +91,6 @@ public class ConcurrentThrottleTestHelper {
                             }
                         }
                     }
-                    TimeUnit.MILLISECONDS.sleep(new Random().nextInt(1000));
                 } catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
