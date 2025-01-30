@@ -421,4 +421,12 @@ public class CryptoHandlerTestBase {
     protected AccountID accountID(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
     }
+
+    protected AccountID accountIDWithShardAndRealm(final long num, final long shard, final long realm) {
+        return AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
+    }
 }
