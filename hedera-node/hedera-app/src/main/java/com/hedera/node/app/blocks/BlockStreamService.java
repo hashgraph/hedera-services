@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.blocks;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema;
+import com.hedera.node.app.blocks.schemas.V0600BlockStreamSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
@@ -52,6 +53,7 @@ public class BlockStreamService implements Service {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         registry.register(new V0560BlockStreamSchema(this::setMigratedLastBlockHash));
+        registry.register(new V0600BlockStreamSchema());
     }
 
     /**

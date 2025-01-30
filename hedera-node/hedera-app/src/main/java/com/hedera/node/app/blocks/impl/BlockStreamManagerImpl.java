@@ -111,7 +111,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     // The status of pending work
     private PendingWork pendingWork = NONE;
-    private boolean genesisWorkComplete = false;
     // The last time at which interval-based processing was done
     private Instant lastIntervalProcessTime = Instant.EPOCH;
     // The last platform-assigned time
@@ -239,7 +238,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Check for pending work at the start of each round
         final var blockStreamInfo = blockStreamInfoFrom(state);
         pendingWork = classifyPendingWork(blockStreamInfo, version);
-        log.info("Pending work classified as {}", pendingWork);
+        log.info("Pending work classified as {} for round {}", pendingWork, round.getRoundNum());
 
         // Writer will be null when beginning a new block
         if (writer == null) {
@@ -272,12 +271,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 preUserItems = null;
                 worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
             }
-
-            // Set initial boundary timestamp when starting a new block
-            boundaryStateChangeListener.setBoundaryTimestamp(consensusTimeFirstRoundInBlock);
         }
         consensusTimeLastRound = round.getConsensusTimestamp();
-        log.info("Updated last round time to {} for round {}", consensusTimeLastRound, round.getRoundNum());
     }
 
     @Override
@@ -288,12 +283,31 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void confirmPendingWorkFinished() {
+    public void confirmPendingWorkFinished(@NonNull final State state) {
         if (pendingWork == NONE) {
             // Should never happen but throwing IllegalStateException might make the situation even worse, so just log
             log.error("HandleWorkflow confirmed finished work but none was pending");
+        } else if (pendingWork == POST_UPGRADE_WORK) {
+            final var blockStreamInfo = blockStreamInfoFrom(state);
+            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(blockStreamInfo
+                    .copyBuilder()
+                    .postUpgradeWorkDone(true)
+                    .creationSoftwareVersion(version)
+                    .build());
+            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
         } else if (pendingWork == GENESIS_WORK) {
-            genesisWorkComplete = true;
+            final var blockStreamInfo = blockStreamInfoFrom(state);
+            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(blockStreamInfo
+                    .copyBuilder()
+                    .genesisWorkDone(true)
+                    .postUpgradeWorkDone(true)
+                    .creationSoftwareVersion(version)
+                    .build());
+            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
         }
         pendingWork = NONE;
     }
@@ -363,7 +377,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     pendingWork != POST_UPGRADE_WORK,
                     version,
                     asTimestamp(lastIntervalProcessTime),
-                    asTimestamp(lastHandleTime)));
+                    asTimestamp(lastHandleTime),
+                    pendingWork != GENESIS_WORK));
             ((CommittableWritableStates) writableState).commit();
 
             worker.addItem(boundaryStateChangeListener.flushChanges());
@@ -512,12 +527,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * @return the type of pending work given the block stream info and version
      */
     @VisibleForTesting
-    PendingWork classifyPendingWork(
+    static PendingWork classifyPendingWork(
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);
-        if (!genesisWorkComplete && EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
-            // If we have never processed any time-based events, we must be at genesis
+        if (!blockStreamInfo.genesisWorkDone()) {
+            // If we have not completed the genesis work, we must do it before anything else
             return GENESIS_WORK;
         } else if (impliesPostUpgradeWorkPending(blockStreamInfo, version)) {
             return POST_UPGRADE_WORK;
@@ -796,4 +811,3 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 .complete(notification.hash().getBytes());
     }
 }
-

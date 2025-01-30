@@ -168,18 +168,18 @@ class BlockStreamManagerImplTest {
     void classifiesPendingGenesisWorkByIntervalTime() {
         assertSame(
                 BlockStreamManager.PendingWork.GENESIS_WORK,
-                subject.classifyPendingWork(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
+                BlockStreamManagerImpl.classifyPendingWork(BlockStreamInfo.DEFAULT, SemanticVersion.DEFAULT));
     }
 
     @Test
     void classifiesPriorVersionHasPostUpgradeWorkWithDifferentVersionButIntervalTime() {
         assertSame(
                 POST_UPGRADE_WORK,
-                subject.classifyPendingWork(
+                BlockStreamManagerImpl.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(
                                         SemanticVersion.newBuilder().major(1).build())
-                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -188,10 +188,10 @@ class BlockStreamManagerImplTest {
     void classifiesNonGenesisBlockOfSameVersionWithWorkNotDoneStillHasPostUpgradeWork() {
         assertEquals(
                 POST_UPGRADE_WORK,
-                subject.classifyPendingWork(
+                BlockStreamManagerImpl.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(CREATION_VERSION)
-                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -200,11 +200,11 @@ class BlockStreamManagerImplTest {
     void classifiesNonGenesisBlockOfSameVersionWithWorkDoneAsNoWork() {
         assertSame(
                 NONE,
-                subject.classifyPendingWork(
+                BlockStreamManagerImpl.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .postUpgradeWorkDone(true)
                                 .creationSoftwareVersion(CREATION_VERSION)
-                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
+                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -266,10 +266,10 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
         assertTrue(subject.hasLedgerId());
         assertSame(POST_UPGRADE_WORK, subject.pendingWork());
-        subject.confirmPendingWorkFinished();
+        subject.confirmPendingWorkFinished(state);
         assertSame(NONE, subject.pendingWork());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
-        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished());
+        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished(state));
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -318,7 +318,8 @@ class BlockStreamManagerImplTest {
                 true,
                 SemanticVersion.DEFAULT,
                 CONSENSUS_THEN,
-                BlockRecordService.EPOCH);
+                BlockRecordService.EPOCH,
+                true);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
@@ -397,10 +398,10 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
         assertTrue(subject.hasLedgerId());
         assertSame(POST_UPGRADE_WORK, subject.pendingWork());
-        subject.confirmPendingWorkFinished();
+        subject.confirmPendingWorkFinished(state);
         assertSame(NONE, subject.pendingWork());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
-        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished());
+        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished(state));
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -541,7 +542,8 @@ class BlockStreamManagerImplTest {
                 false,
                 SemanticVersion.DEFAULT,
                 CONSENSUS_THEN,
-                BlockRecordService.EPOCH);
+                BlockRecordService.EPOCH,
+                true);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
@@ -650,7 +652,6 @@ class BlockStreamManagerImplTest {
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(blockHashSigner.isReady()).willReturn(true);
-        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
 
         // When starting a round at t=0
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
@@ -667,6 +668,15 @@ class BlockStreamManagerImplTest {
 
         // When starting another round at t=3 (after period)
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1003));
+        // Set up the signature future to complete immediately and run the callback synchronously
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
         subject.startRound(round, state);
         subject.endRound(state, ROUND_NO);
 
@@ -716,7 +726,16 @@ class BlockStreamManagerImplTest {
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(blockHashSigner.isReady()).willReturn(true);
-        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
+
+        // Set up the signature future to complete immediately and run the callback synchronously
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
 
         // When starting a round at t=0
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
@@ -745,7 +764,16 @@ class BlockStreamManagerImplTest {
         givenEndOfRoundSetup();
         given(boundaryStateChangeListener.boundaryTimestampOrThrow()).willReturn(Timestamp.DEFAULT);
         given(blockHashSigner.isReady()).willReturn(true);
-        given(blockHashSigner.signFuture(any())).willReturn(completedFuture(FIRST_FAKE_SIGNATURE));
+
+        // Set up the signature future to complete immediately and run the callback synchronously
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
 
         // When processing rounds
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
@@ -839,6 +867,7 @@ class BlockStreamManagerImplTest {
                 .trailingOutputHashes(resultHashes)
                 .lastIntervalProcessTime(CONSENSUS_THEN)
                 .blockTime(asTimestamp(CONSENSUS_NOW.minusSeconds(5))) // Add block time to track last block creation
+                .genesisWorkDone(true)
                 .build();
     }
 

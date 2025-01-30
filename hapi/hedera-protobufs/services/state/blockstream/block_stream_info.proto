@@ -163,4 +163,12 @@ message BlockStreamInfo {
      * at which a user transaction was handled.
      */
     proto.Timestamp last_handle_time = 13;
+
+    /**
+     * Whether the genesis work has been done.
+     * <p>
+     * This MUST be false if and only if the network just started
+     * at genesis and has not yet done the genesis work.
+     */
+    bool genesis_work_done = 14;
 }
