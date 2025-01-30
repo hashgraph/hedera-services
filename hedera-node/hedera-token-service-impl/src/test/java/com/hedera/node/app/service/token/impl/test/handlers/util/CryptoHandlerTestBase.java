@@ -221,8 +221,8 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
         writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
@@ -235,8 +235,8 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
         writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 
@@ -249,8 +249,8 @@ public class CryptoHandlerTestBase {
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
         given(writableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(writableAliases);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        readableStore = new ReadableAccountStoreImpl(readableStates, configuration);
         writableStore = new WritableAccountStore(writableStates, configuration, storeMetricsService);
     }
 

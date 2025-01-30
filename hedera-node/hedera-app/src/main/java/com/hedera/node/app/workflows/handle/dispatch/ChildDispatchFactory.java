@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,7 +249,7 @@ public class ChildDispatchFactory {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
-        final var readableStoreFactory = new ReadableStoreFactory(childStack, config);
+        final var readableStoreFactory = new ReadableStoreFactory(childStack);
         final var writableStoreFactory = new WritableStoreFactory(
                 childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);

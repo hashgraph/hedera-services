@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,16 @@ import java.util.HexFormat;
  * A collection of static utility methods for working with aliases on {@link Account}s.
  */
 public final class AliasUtils {
+    /**
+     * The first 12 bytes of an "entity num alias". See {@link #isEntityNumAlias(Bytes)}.
+     *
+     * <p>FUTURE: The actual shard and realm are defined in config, and we should use that. However, the config can only
+     * be read dynamically, not statically. But, the shard and realm *cannot change* once a node has been started with
+     * a given state. So we really could have some static way to get the shard and realm, based on bootstrap config,
+     * or based on state as it has been loaded. This detail has not been worked out, and on all networks today shard
+     * and realm are 0, so we just let this byte array be all zeros for now.
+     */
+    private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[12];
     /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
     private static final int EVM_ADDRESS_SIZE = 20;
     /** All valid ECDSA protobuf encoded keys have this prefix. */
@@ -90,7 +100,7 @@ public final class AliasUtils {
 
     /**
      * Given some alias, determine whether it is an "entity num alias". If the alias is exactly 20 bytes long, and
-     * if its initial bytes match the prefix, then it is an entity num alias.
+     * if its initial bytes match the {@link #ENTITY_NUM_ALIAS_PREFIX}, then it is an entity num alias.
      *
      * <p>Every entity in the system (accounts, tokens, etc.) may be represented within ethereum with a 20-byte EVM
      * address. This address can be explicit (as part of the alias), or it can be based on the entity ID number. When
@@ -101,9 +111,8 @@ public final class AliasUtils {
      * @param alias The alias to check
      * @return True if the alias is an entity num alias
      */
-    public static boolean isEntityNumAlias(final Bytes alias, final long shard, final long realm) {
-        // Check if alias is of the correct size and matches the prefix
-        return isOfEvmAddressSize(alias) && alias.matchesPrefix(getAliasPrefix(shard, realm));
+    public static boolean isEntityNumAlias(final Bytes alias) {
+        return isOfEvmAddressSize(alias) && alias.matchesPrefix(ENTITY_NUM_ALIAS_PREFIX);
     }
 
     /**
@@ -247,21 +256,5 @@ public final class AliasUtils {
     public static boolean isAliasSizeGreaterThanEvmAddress(@NonNull final Bytes alias) {
         requireNonNull(alias);
         return alias.length() > EVM_ADDRESS_SIZE;
-    }
-
-    public static byte[] getAliasPrefix(long shard, long realm) {
-        // Create a 12-byte array for the prefix
-        final byte[] entityNumAliasPrefix = new byte[12];
-
-        // Populate the first 4 bytes with the shard (big-endian order)
-        for (int i = 0; i < 4; i++) {
-            entityNumAliasPrefix[3 - i] = (byte) (shard >> (i * 8));
-        }
-
-        // Populate the last 8 bytes with the realm (big-endian order)
-        for (int i = 0; i < 8; i++) {
-            entityNumAliasPrefix[11 - i] = (byte) (realm >> (i * 8));
-        }
-        return entityNumAliasPrefix;
     }
 }

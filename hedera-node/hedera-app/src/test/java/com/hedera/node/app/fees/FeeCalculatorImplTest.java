@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.OneOf;
-import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,9 +46,6 @@ public class FeeCalculatorImplTest {
 
     @Mock
     private TransactionBody txnBody;
-
-    @Mock
-    private Configuration configuration;
 
     @BeforeEach
     void setUp() {
@@ -72,14 +68,14 @@ public class FeeCalculatorImplTest {
                 ExchangeRate.DEFAULT,
                 false,
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeState(), configuration));
+                new ReadableStoreFactory(new FakeState()));
         assertNotNull(calculator);
 
         calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeState(), configuration),
+                new ReadableStoreFactory(new FakeState()),
                 HederaFunctionality.CONTRACT_CALL);
         assertNotNull(calculator);
     }
@@ -100,12 +96,12 @@ public class FeeCalculatorImplTest {
                         ExchangeRate.DEFAULT,
                         false,
                         congestionMultipliers,
-                        new ReadableStoreFactory(new FakeState(), configuration)));
+                        new ReadableStoreFactory(new FakeState())));
     }
 
     @Test
     void willReturnMultiplier() {
-        var storeFactory = new ReadableStoreFactory(new FakeState(), configuration);
+        var storeFactory = new ReadableStoreFactory(new FakeState());
         var calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),

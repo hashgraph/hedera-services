@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
 
-        this.readableStoreFactory = new ReadableStoreFactory(stack, configuration);
+        this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
                 new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
         this.consensusTime = requireNonNull(consensusTime, "consensusTime must not be null");

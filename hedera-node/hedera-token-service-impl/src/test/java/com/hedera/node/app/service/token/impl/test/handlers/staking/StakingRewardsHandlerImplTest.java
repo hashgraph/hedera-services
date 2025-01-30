@@ -1076,7 +1076,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccounts = writableBuilder.build();
 
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
         given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);

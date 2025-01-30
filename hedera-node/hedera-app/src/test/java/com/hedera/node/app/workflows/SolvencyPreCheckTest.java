@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,6 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.validation.ExpiryValidation;
-import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,9 +82,6 @@ class SolvencyPreCheckTest extends AppTestBase {
 
     @Mock(strictness = LENIENT)
     private Authorizer authorizer;
-
-    @Mock
-    private Configuration configuration;
 
     private SolvencyPreCheck subject;
 
@@ -118,7 +114,7 @@ class SolvencyPreCheckTest extends AppTestBase {
         @BeforeEach
         void setup() {
             setupStandardStates();
-            storeFactory = new ReadableStoreFactory(state, configuration);
+            storeFactory = new ReadableStoreFactory(state);
         }
 
         @SuppressWarnings("ConstantConditions")

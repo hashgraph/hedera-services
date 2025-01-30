@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,6 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -229,8 +228,7 @@ public class ThrottleAccumulator {
         final boolean allReqMet;
         if (queryFunction == CRYPTO_GET_ACCOUNT_BALANCE
                 && configuration.getConfigData(TokensConfig.class).countingGetBalanceThrottleEnabled()) {
-            final var accountStore =
-                    new ReadableStoreFactory(state, configuration).getStore(ReadableAccountStore.class);
+            final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
             final var tokenConfig = configuration.getConfigData(TokensConfig.class);
             final int associationCount =
                     Math.clamp(getAssociationCount(query, accountStore), 1, tokenConfig.maxRelsPerInfoQuery());
@@ -416,10 +414,8 @@ public class ThrottleAccumulator {
             }
             case TOKEN_MINT -> shouldThrottleMint(manager, txnInfo.txBody().tokenMint(), now, configuration);
             case CRYPTO_TRANSFER -> {
-                final var accountStore =
-                        new ReadableStoreFactory(state, configuration).getStore(ReadableAccountStore.class);
-                final var relationStore =
-                        new ReadableStoreFactory(state, configuration).getStore(ReadableTokenRelationStore.class);
+                final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
+                final var relationStore = new ReadableStoreFactory(state).getStore(ReadableTokenRelationStore.class);
                 yield shouldThrottleCryptoTransfer(
                         manager,
                         now,
@@ -428,8 +424,7 @@ public class ThrottleAccumulator {
                         getAutoAssociationsCount(txnInfo.txBody(), relationStore));
             }
             case ETHEREUM_TRANSACTION -> {
-                final var accountStore =
-                        new ReadableStoreFactory(state, configuration).getStore(ReadableAccountStore.class);
+                final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
                 yield shouldThrottleEthTxn(
                         manager, now, configuration, getImplicitCreationsCount(txnInfo.txBody(), accountStore));
             }
@@ -470,8 +465,7 @@ public class ThrottleAccumulator {
             if ((isAutoCreationEnabled || isLazyCreationEnabled) && scheduledFunction == CRYPTO_TRANSFER) {
                 final var transfer = scheduled.cryptoTransfer();
                 if (usesAliases(transfer)) {
-                    final var accountStore =
-                            new ReadableStoreFactory(state, config).getStore(ReadableAccountStore.class);
+                    final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
                     final var transferTxnBody = TransactionBody.newBuilder()
                             .cryptoTransfer(transfer)
                             .build();
@@ -732,9 +726,8 @@ public class ThrottleAccumulator {
     private boolean referencesAliasNotInUse(
             @NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {
         if (isAlias(idOrAlias)) {
-            var hederaConfig = configSupplier.get().getConfigData(HederaConfig.class);
             final var alias = idOrAlias.aliasOrElse(Bytes.EMPTY);
-            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias, hederaConfig.shard(), hederaConfig.realm())) {
+            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias)) {
                 return false;
             }
             return accountStore.getAccountIDByAlias(alias) == null;

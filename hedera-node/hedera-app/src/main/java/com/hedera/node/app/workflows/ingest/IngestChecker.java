@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ public final class IngestChecker {
         dispatcher.dispatchPureChecks(txBody);
 
         // 5. Get payer account
-        final var storeFactory = new ReadableStoreFactory(state, configuration);
+        final var storeFactory = new ReadableStoreFactory(state);
         final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
         final var payerKey = payer.key();
         // There should, absolutely, be a key for this account. If there isn't, then something is wrong in

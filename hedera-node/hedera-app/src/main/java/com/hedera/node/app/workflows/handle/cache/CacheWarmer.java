@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -55,18 +53,15 @@ public class CacheWarmer {
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
     private final Executor executor;
-    private final Configuration configuration;
 
     @Inject
     public CacheWarmer(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull @Named("CacheWarmer") final Executor executor,
-            @NonNull final ConfigProvider configProvider) {
+            @NonNull @Named("CacheWarmer") final Executor executor) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
         this.executor = requireNonNull(executor);
-        this.configuration = requireNonNull(configProvider.getConfiguration());
     }
 
     /**
@@ -77,7 +72,7 @@ public class CacheWarmer {
      */
     public void warm(@NonNull final State state, @NonNull final Round round) {
         executor.execute(() -> {
-            final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state, configuration);
+            final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
             final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
             for (final ConsensusEvent event : round) {
                 event.forEachTransaction(platformTransaction -> executor.execute(() -> {

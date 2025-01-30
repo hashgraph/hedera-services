@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.config.ConfigProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,13 +35,10 @@ class CacheWarmerTest {
     @Mock
     TransactionDispatcher dispatcher;
 
-    @Mock
-    ConfigProvider configProvider;
-
     @Test
     @DisplayName("Instantiation test")
     void testInstantiation() {
-        final var cacheWarmer = new CacheWarmer(checker, dispatcher, Runnable::run, configProvider);
+        final var cacheWarmer = new CacheWarmer(checker, dispatcher, Runnable::run);
         assertThat(cacheWarmer).isInstanceOf(CacheWarmer.class);
     }
 }

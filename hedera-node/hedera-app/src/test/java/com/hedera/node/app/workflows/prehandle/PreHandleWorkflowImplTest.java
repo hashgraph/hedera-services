@@ -143,10 +143,10 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                                 STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
                         "ALIASES",
                         Collections.emptyMap()));
+        storeFactory = new ReadableStoreFactory(fakeMerkleState);
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
-        storeFactory = new ReadableStoreFactory(fakeMerkleState, configProvider.getConfiguration());
 
         workflow = new PreHandleWorkflowImpl(
                 dispatcher,

@@ -907,8 +907,7 @@ public final class Hedera
             @NonNull final Event event,
             @NonNull final State state,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
-        final var readableStoreFactory =
-                new ReadableStoreFactory(state, configProvider().getConfiguration());
+        final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
         if (creator == null) {

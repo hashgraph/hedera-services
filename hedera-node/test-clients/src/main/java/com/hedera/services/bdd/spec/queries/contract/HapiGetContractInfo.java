@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,7 +156,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
                 || !absentRelationships.isEmpty()
                 || expectations.isPresent()
                 || registryEntry.isPresent()) {
-            final var detailsLookup = QueryVerbs.getAccountDetails(toEntityId(actualInfo.getContractID()))
+            final var detailsLookup = QueryVerbs.getAccountDetails(
+                            "0.0." + actualInfo.getContractID().getContractNum())
                     .payingWith(GENESIS);
             CustomSpecAssert.allRunFor(spec, detailsLookup);
             final var response = detailsLookup.getResponse();
@@ -305,10 +306,6 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             contractGetInfo = builder.build();
         }
         return Query.newBuilder().setContractGetInfo(contractGetInfo).build();
-    }
-
-    private String toEntityId(ContractID contractID) {
-        return contractID.getShardNum() + "." + contractID.getRealmNum() + "." + contractID.getContractNum();
     }
 
     @Override

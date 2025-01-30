@@ -59,7 +59,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {
-        super(states, configuration);
+        super(states);
 
         final long maxCapacity =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();

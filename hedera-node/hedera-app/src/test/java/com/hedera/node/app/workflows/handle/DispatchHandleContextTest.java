@@ -293,7 +293,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-        readableStoreFactory = new ReadableStoreFactory(baseState, configuration);
+        readableStoreFactory = new ReadableStoreFactory(baseState);
         apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
         storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);

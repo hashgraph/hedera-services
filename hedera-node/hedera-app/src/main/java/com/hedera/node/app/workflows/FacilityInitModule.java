@@ -147,8 +147,7 @@ public interface FacilityInitModule {
 
     private static @Nullable File getFileFromStorage(
             @NonNull final State state, @NonNull final ConfigProvider configProvider, final long fileNum) {
-        final var readableFileStore =
-                new ReadableStoreFactory(state, configProvider.getConfiguration()).getStore(ReadableFileStore.class);
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
                 .fileNum(fileNum)

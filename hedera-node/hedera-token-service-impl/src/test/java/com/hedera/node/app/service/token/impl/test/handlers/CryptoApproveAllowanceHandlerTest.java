@@ -118,7 +118,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
@@ -131,7 +131,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         final var allowance =
                 cryptoAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -145,7 +145,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         final var allowance =
                 tokenAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -159,7 +159,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         final var allowance =
                 nftAllowance.copyBuilder().spender((AccountID) null).build();
 
@@ -197,7 +197,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(ownerId, ownerAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
 
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));

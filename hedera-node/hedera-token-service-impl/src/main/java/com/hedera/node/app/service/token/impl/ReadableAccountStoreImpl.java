@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -74,17 +72,14 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      */
     private final ReadableKVState<ProtoBytes, AccountID> aliases;
 
-    private final HederaConfig hederaConfig;
-
     /**
      * Create a new {@link ReadableAccountStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableAccountStoreImpl(@NonNull final ReadableStates states, @NonNull final Configuration configuration) {
+    public ReadableAccountStoreImpl(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
-        this.hederaConfig = requireNonNull(configuration).getConfigData(HederaConfig.class);
     }
 
     /** Get the account state. Convenience method for auto-casting to the right kind of state (readable vs. writable) */
@@ -197,12 +192,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                 // any other form of valid alias (in which case it will be in the map). So we do a quick check
                 // first to see if it is a valid long zero, and if not, then we look it up in the map.
                 final Bytes alias = accountOneOf.as();
-                final var shard = hederaConfig.shard();
-                final var realm = hederaConfig.realm();
-                if (isEntityNumAlias(alias, shard, realm)) {
+                if (isEntityNumAlias(alias)) {
                     yield id.copyBuilder()
-                            .shardNum(shard)
-                            .realmNum(realm)
                             .accountNum(extractIdFromAddressAlias(alias))
                             .build();
                 }
