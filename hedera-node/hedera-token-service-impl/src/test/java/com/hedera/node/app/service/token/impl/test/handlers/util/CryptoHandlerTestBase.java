@@ -418,10 +418,22 @@ public class CryptoHandlerTestBase {
                 0);
     }
 
+    /**
+     * Create an account ID.
+     * @param num the account number
+     * @return the account ID
+     */
     protected AccountID accountID(final long num) {
         return AccountID.newBuilder().accountNum(num).build();
     }
 
+    /**
+     * Create an account ID with the given shard and realm.
+     * @param num the account number
+     * @param shard the shard number
+     * @param realm the realm number
+     * @return the account ID
+     */
     protected AccountID accountIDWithShardAndRealm(final long num, final long shard, final long realm) {
         return AccountID.newBuilder()
                 .shardNum(shard)
