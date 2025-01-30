@@ -94,6 +94,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     private Token token1, token2, token3;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3;
+
     @Mock
     private Configuration configuration;
 

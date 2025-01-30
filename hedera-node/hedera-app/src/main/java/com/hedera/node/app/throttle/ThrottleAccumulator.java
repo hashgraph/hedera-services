@@ -743,7 +743,7 @@ public class ThrottleAccumulator {
             @NonNull final AccountID idOrAlias, @NonNull final ReadableAccountStore accountStore) {
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.aliasOrElse(Bytes.EMPTY);
-            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias, idOrAlias.shardNum(),idOrAlias.realmNum())) {
+            if (isOfEvmAddressSize(alias) && isEntityNumAlias(alias, idOrAlias.shardNum(), idOrAlias.realmNum())) {
                 return false;
             }
             return accountStore.getAccountIDByAlias(alias) == null;

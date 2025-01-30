@@ -147,7 +147,12 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         // You can never set the alias to be an "entity num alias" (sometimes called "long-zero").
         final var alias = op.alias();
-        validateFalsePreCheck(isEntityNumAlias(alias, op.shardIDOrElse(ShardID.DEFAULT).shardNum(), op.realmIDOrElse(RealmID.DEFAULT).realmNum()), INVALID_ALIAS_KEY);
+        validateFalsePreCheck(
+                isEntityNumAlias(
+                        alias,
+                        op.shardIDOrElse(ShardID.DEFAULT).shardNum(),
+                        op.realmIDOrElse(RealmID.DEFAULT).realmNum()),
+                INVALID_ALIAS_KEY);
         // The alias, if set, must be of EVM address size, or it must be a valid key.
         validateTruePreCheck(alias.length() == 0 || isOfEvmAddressSize(alias) || isKeyAlias(alias), INVALID_ALIAS_KEY);
         // There must be a key provided, and it must not be empty, unless in one very particular case, where the
