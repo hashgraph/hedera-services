@@ -89,7 +89,7 @@ public class V0560BlockStreamSchema extends Schema {
     }
 
     @Override
-    public void restart(@NonNull final MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         final var state = ctx.newStates().getSingleton(BLOCK_STREAM_INFO_KEY);
         if (ctx.isGenesis()) {

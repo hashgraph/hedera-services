@@ -238,7 +238,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Check for pending work at the start of each round
         final var blockStreamInfo = blockStreamInfoFrom(state);
         pendingWork = classifyPendingWork(blockStreamInfo, version);
-        log.info("Pending work classified as {} for round {}", pendingWork, round.getRoundNum());
 
         // Writer will be null when beginning a new block
         if (writer == null) {
@@ -571,16 +570,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // For time-based blocks, check if enough consensus time has elapsed
         final var elapsedSeconds = Duration.between(consensusTimeFirstRoundInBlock, consensusTimeLastRound)
                 .getSeconds();
-        log.info(
-                "Checking block closure: firstTime={}, lastTime={}, elapsed={}, blockPeriod={}",
-                consensusTimeFirstRoundInBlock,
-                consensusTimeLastRound,
-                elapsedSeconds,
-                blockPeriod);
-        // For time-based blocks, we want to ensure:
-        // 1. We've completed at least one round (roundNumber > 0)
-        // 2. We've exceeded the block period
-        // This ensures we include whole rounds and respect the time period
         return elapsedSeconds >= blockPeriod;
     }
 

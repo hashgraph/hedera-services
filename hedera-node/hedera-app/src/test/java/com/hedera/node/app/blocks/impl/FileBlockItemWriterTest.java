@@ -80,6 +80,10 @@ public class FileBlockItemWriterTest {
         // Assertion to check if the block file is created
         Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
         assertThat(Files.exists(expectedBlockFile)).isTrue();
+
+        // Marker file should not exist yet since block is not closed
+        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+        assertThat(Files.exists(expectedMarkerFile)).isFalse();
     }
 
     @Test
@@ -136,8 +140,16 @@ public class FileBlockItemWriterTest {
         // Close the block
         fileBlockItemWriter.closeBlock();
 
-        // Read the contents of the file
-        Path expectedBlockFile = tempDir.resolve("block-0.0.3").resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
+        Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+
+        // Verify both block file and marker file exist
+        assertThat(Files.exists(expectedBlockFile)).isTrue();
+        assertThat(Files.exists(expectedMarkerFile)).isTrue();
+
+        // Verify marker file is empty
+        assertThat(Files.size(expectedMarkerFile)).isZero();
 
         // Ungzip the file
         try (GZIPInputStream gzis = new GZIPInputStream(Files.newInputStream(expectedBlockFile))) {
@@ -167,7 +179,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlock() {
+    public void testCloseBlock() throws IOException {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -182,10 +194,16 @@ public class FileBlockItemWriterTest {
         // Close the block
         fileBlockItemWriter.closeBlock();
 
-        // Read the contents of the file
-        Path expectedBlockFile = tempDir.resolve("block-0.0.3").resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
+        Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
+        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
 
+        // Verify both block file and marker file exist
         assertThat(Files.exists(expectedBlockFile)).isTrue();
+        assertThat(Files.exists(expectedMarkerFile)).isTrue();
+
+        // Verify marker file is empty
+        assertThat(Files.size(expectedMarkerFile)).isZero();
     }
 
     @Test
@@ -217,6 +235,11 @@ public class FileBlockItemWriterTest {
 
         // Close the block
         fileBlockItemWriter.closeBlock();
+
+        // Verify marker file exists before attempting second close
+        Path expectedDirectory = tempDir.resolve("block-0.0.3");
+        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+        assertThat(Files.exists(expectedMarkerFile)).isTrue();
 
         assertThatThrownBy(fileBlockItemWriter::closeBlock, "Cannot close a FileBlockItemWriter that is already closed")
                 .isInstanceOf(IllegalStateException.class);
