@@ -52,12 +52,11 @@ public class FeeCalculatorImplTest {
     private TransactionBody txnBody;
 
     @NonNull
-    private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+    private static final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = ServicesSoftwareVersion::new;
 
     @BeforeEach
     void setUp() {
         feeData = new FeeData(FeeComponents.DEFAULT, FeeComponents.DEFAULT, FeeComponents.DEFAULT, SubType.DEFAULT);
-        softwareVersionFactory = ServicesSoftwareVersion::new;
     }
 
     @Test
