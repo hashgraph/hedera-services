@@ -79,6 +79,7 @@ public class AtomicBatchHandler implements TransactionHandler {
                 try {
                     body = context.bodyFromTransaction(transaction);
                 } catch (HandleException e) {
+                    //we should have validated the inner transaction in preChecks already, so this should not happen.
                     throw new HandleException(INNER_TRANSACTION_FAILED);
                 }
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();

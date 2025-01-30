@@ -336,6 +336,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 ConsensusThrottling.ON,
                 streamBuilderType,
                 ReversingBehavior.REVERSIBLE,
-                NOOP_TRANSACTION_CUSTOMIZER);
+                NOOP_TRANSACTION_CUSTOMIZER,
+                EMPTY_METADATA);
     }
 }

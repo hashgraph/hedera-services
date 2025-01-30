@@ -107,8 +107,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ThrottleAdviser throttleAdviser;
     private final FeeAccumulator feeAccumulator;
     private Map<AccountID, Long> dispatchPaidRewards;
-    private final TransactionChecker transactionChecker;
     private final DispatchMetadata dispatchMetaData;
+    private final TransactionChecker transactionChecker;
 
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
@@ -133,8 +133,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final TransactionChecker transactionChecker,
-            @NonNull final DispatchMetadata handleMetaData) {
+            @NonNull final DispatchMetadata handleMetaData,
+            @NonNull final TransactionChecker transactionChecker) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);

@@ -157,8 +157,7 @@ class ChildDispatchFactoryTest {
                 dispatchProcessor,
                 serviceScopeLookup,
                 storeMetricsService,
-                exchangeRateManager,
-                transactionChecker);
+                exchangeRateManager);
     }
 
     @Test
