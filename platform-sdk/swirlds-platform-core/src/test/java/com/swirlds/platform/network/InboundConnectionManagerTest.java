@@ -29,9 +29,13 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 class InboundConnectionManagerTest {
+    static final Logger log = LogManager.getLogger(InboundConnectionManagerTest.class);
+
     @Test
     void test() throws InterruptedException {
         final int numThreads = 10;
@@ -57,7 +61,7 @@ class InboundConnectionManagerTest {
                         }
                     }
                 } catch (final InterruptedException e) {
-                    e.printStackTrace();
+                    log.error(e);
                 }
             });
             threads.add(thread);
@@ -65,7 +69,7 @@ class InboundConnectionManagerTest {
         }
 
         while (allDone.getCount() > 0) {
-            System.out.println("Connections to go " + allDone.getCount());
+            log.debug("Connections to go {}", allDone.getCount());
             final Connection c = lcs.waitForConnection();
             if (c instanceof FakeConnection fc) {
                 // wait until either all threads are done, or the current connection is disconnected

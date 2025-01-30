@@ -234,4 +234,8 @@ class SignedStateComparisonTest {
         printMismatchedNodes(shallowIterator, 1000);
         printMismatchedNodes(deepIterator, 1000);
     }
+
+    static void printMismatchedNodes(final Iterator<MismatchedNodes> nodeIterator, final int limit) {
+        // SignedStateComparison.printMismatchedNodes(nodeIterator, limit);
+    }
 }

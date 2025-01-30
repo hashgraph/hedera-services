@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,11 +69,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Utility methods for testing merkle trees.
  */
 public final class MerkleTestUtils {
+    static final Logger log = LogManager.getLogger(MerkleTestUtils.class);
 
     private static Metrics createMetrics() {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
@@ -1293,10 +1296,7 @@ public final class MerkleTestUtils {
     public static <T extends MerkleNode> T hashAndTestSynchronization(
             final MerkleNode startingTree, final MerkleNode desiredTree, final ReconnectConfig reconnectConfig)
             throws Exception {
-        System.out.println("------------");
-        System.out.println("starting: " + startingTree);
-        System.out.println("desired: " + desiredTree);
-
+        log.debug("------------ starting: {}  desired:{} ", startingTree, desiredTree);
         if (startingTree != null && startingTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(startingTree);
         }
