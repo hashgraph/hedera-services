@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -282,7 +282,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         when(readableNftStore.get(nftIdSl1)).thenReturn(nft);
         when(token.tokenIdOrThrow()).thenReturn(nonFungibleTokenId);
         when(nft.ownerId()).thenReturn(AccountID.newBuilder().accountNum(1).build());
-
         when(token.hasMetadataKey()).thenReturn(true);
 
         assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
@@ -301,7 +300,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         when(readableNftStore.get(nftIdSl1)).thenReturn(nft);
         when(token.tokenIdOrThrow()).thenReturn(nonFungibleTokenId);
         when(nft.ownerId()).thenReturn(AccountID.newBuilder().accountNum(1).build());
-
         when(token.hasMetadataKey()).thenReturn(false);
 
         Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))

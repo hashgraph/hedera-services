@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,6 @@ class StakingRewardsHelperTest extends CryptoTokenHandlerTestBase {
     void getsAllRewardReceiversIfExplicitlyStakedToNode() {
         final var alreadyStakedToNodeRewardReceiver =
                 AccountID.newBuilder().accountNum(payerId.accountNum()).build();
-
         final var explicitRewardReceiver =
                 AccountID.newBuilder().accountNum(1234567L).build();
 

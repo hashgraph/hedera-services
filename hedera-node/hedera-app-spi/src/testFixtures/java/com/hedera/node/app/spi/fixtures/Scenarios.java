@@ -309,8 +309,6 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
 
-    // AccountID.newBuilder().accountNum
-    // AccountID.newBuilder().accountNum
     final AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
     final TestUser BOB = new TestUser(
             account1003,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -483,7 +483,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var invalidAutoRenewId =
                 AccountID.newBuilder().accountNum(200000L).build();
-
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, invalidAutoRenewId));
         txn = new TokenCreateBuilder().withAutoRenewAccount(invalidAutoRenewId).build();

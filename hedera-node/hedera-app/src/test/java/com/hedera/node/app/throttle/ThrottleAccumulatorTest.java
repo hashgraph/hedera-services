@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,7 +217,6 @@ class ThrottleAccumulatorTest {
 
         // when
         final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
-
         var noAns = subject.checkAndEnforceThrottle(TRANSACTION_GET_RECEIPT, TIME_INSTANT, query, state, queryPayerId);
         subject.checkAndEnforceThrottle(GET_VERSION_INFO, TIME_INSTANT.plusNanos(1), query, state, queryPayerId);
         final var yesAns = subject.checkAndEnforceThrottle(
@@ -376,7 +375,6 @@ class ThrottleAccumulatorTest {
 
         // then
         final var queryPayerId = AccountID.newBuilder().accountNum(1_234L).build();
-
         assertTrue(
                 subject.checkAndEnforceThrottle(NETWORK_GET_EXECUTION_TIME, TIME_INSTANT, query, state, queryPayerId));
     }

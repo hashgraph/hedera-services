@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,10 +64,8 @@ class ClassicTransfersDecoderTest {
         final var totalToTransfer = 50L;
         BDDMockito.given(converter.convert(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         BDDMockito.given(converter.convertCredit(ACCT_ADDR_2))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_42).build());
-
         final var encodedInput = ClassicTransfersTranslator.TRANSFER_TOKEN.encodeCallWithArgs(
                 TOKEN_ADDR_10, ACCT_ADDR_1, ACCT_ADDR_2, totalToTransfer);
 
@@ -87,10 +85,8 @@ class ClassicTransfersDecoderTest {
         final var totalToTransfer = 25L;
         BDDMockito.given(converter.convert(ACCT_ADDR_2))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_42).build());
-
         BDDMockito.given(converter.convertCredit(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         final var encodedInput = ClassicTransfersTranslator.TRANSFER_FROM.encodeCallWithArgs(
                 TOKEN_ADDR_10, ACCT_ADDR_2, ACCT_ADDR_1, BigInteger.valueOf(totalToTransfer));
 
@@ -110,10 +106,8 @@ class ClassicTransfersDecoderTest {
         final var totalToTransfer = 25L;
         BDDMockito.given(converter.convert(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         BDDMockito.given(converter.convertCredit(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         final var encodedInput = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.encodeCallWithArgs(
                 transferList()
                         .withAccountAmounts(
@@ -130,7 +124,6 @@ class ClassicTransfersDecoderTest {
     void decodeCryptoTransferOverflow() {
         BDDMockito.given(converter.convertCredit(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         final var encodedInput = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.encodeCallWithArgs(
                 transferList()
                         .withAccountAmounts(
@@ -145,7 +138,6 @@ class ClassicTransfersDecoderTest {
     void decodeCryptoTokenTransferOverflow() {
         BDDMockito.given(converter.convertCredit(ACCT_ADDR_1))
                 .willReturn(AccountID.newBuilder().accountNum(ACCOUNT_ID_41).build());
-
         final var encodedInput = ClassicTransfersTranslator.CRYPTO_TRANSFER_V2.encodeCallWithArgs(
                 transferList().withAccountAmounts().build(),
                 tokenTransferLists()
