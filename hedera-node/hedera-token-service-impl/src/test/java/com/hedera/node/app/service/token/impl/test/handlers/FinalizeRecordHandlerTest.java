@@ -42,6 +42,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -64,6 +65,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -385,12 +387,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
         final var childAmount = fungibleAmountToTransfer / 2;
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(senderAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(senderAcct);
-        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(senderTokenRel);
-        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(senderTokenRel);
-        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
-        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+
+        setupTestStores(senderAcct, senderTokenRel);
         // Simulate the token receiver's account (ACCOUNT_3434) being auto-created (with an hbar balance of 0)
         writableAccountStore.put(ACCOUNT_3434
                 .copyBuilder()
@@ -448,6 +446,31 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .forEachChildRecord(any(), any());
 
         subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+        BDDMockito.verify(recordBuilder)
+                .transferList(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(-childAmount)
+                                        .build())
+                        .build());
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-500)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(500)
+                                        .build())
+                        .build()));
     }
 
     @Test
@@ -460,12 +483,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
         final var childAmount = fungibleAmountToTransfer / 2;
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(senderAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(senderAcct);
-        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(senderTokenRel);
-        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(senderTokenRel);
-        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
-        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+
+        setupTestStores(senderAcct, senderTokenRel);
         // Simulate the token receiver's account (ACCOUNT_3434) being auto-created (with an hbar balance of 0)
         writableAccountStore.put(ACCOUNT_3434
                 .copyBuilder()
@@ -519,6 +538,31 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .forEachChildRecord(any(), any());
 
         subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+        BDDMockito.verify(recordBuilder)
+                .transferList(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(-childAmount)
+                                        .build())
+                        .build());
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-fungibleAmountToTransfer)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(fungibleAmountToTransfer)
+                                        .build())
+                        .build()));
     }
 
     @Test
@@ -1138,5 +1182,14 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         return context;
+    }
+
+    private void setupTestStores(@NonNull Account senderAccount, @NonNull TokenRelation tokenRelation) {
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(senderAccount);
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(senderAccount);
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRelation);
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRelation);
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
     }
 }
