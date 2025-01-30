@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,15 @@ public enum BlockStreamAccess {
     }
 
     private static boolean isBlockFile(@NonNull final Path path) {
-        return path.toFile().isFile() && extractBlockNumber(path) != -1;
+        if (!path.toFile().isFile() || extractBlockNumber(path) == -1) {
+            return false;
+        }
+        // Check for marker file
+        Path markerFile = path.resolveSibling(path.getFileName()
+                .toString()
+                .replace(COMPRESSED_FILE_EXT, ".mf")
+                .replace(UNCOMPRESSED_FILE_EXT, ".mf"));
+        return Files.exists(markerFile);
     }
 
     private static long extractBlockNumber(@NonNull final Path path) {
