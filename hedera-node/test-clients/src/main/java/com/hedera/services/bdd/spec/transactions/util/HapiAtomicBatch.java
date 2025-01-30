@@ -51,7 +51,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private List<HapiTxnOp<?>> operationsToBatch;
+    private final List<HapiTxnOp<?>> operationsToBatch;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
@@ -127,7 +127,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 
     @Override
