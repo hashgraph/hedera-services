@@ -148,7 +148,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final InstantSource instantSource,
             @NonNull final OpWorkflowMetrics workflowMetrics,
             final boolean shouldCharge,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");

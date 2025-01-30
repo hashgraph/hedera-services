@@ -76,7 +76,7 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final InstantSource instantSource,
             @NonNull final OpWorkflowMetrics opWorkflowMetrics,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         return new QueryWorkflowImpl(
                 stateAccessor,
                 submissionManager,
@@ -114,7 +114,7 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
             @NonNull final InstantSource instantSource,
             @NonNull final OpWorkflowMetrics opWorkflowMetrics,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         return new QueryWorkflowImpl(
                 stateAccessor,
                 submissionManager,

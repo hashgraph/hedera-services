@@ -132,7 +132,7 @@ public class UserTxnFactory {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);

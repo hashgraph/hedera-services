@@ -116,7 +116,7 @@ public class StandaloneDispatchFactory {
             @NonNull final ChildDispatchFactory childDispatchFactory,
             @NonNull final TransactionDispatcher transactionDispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.feeManager = requireNonNull(feeManager);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);

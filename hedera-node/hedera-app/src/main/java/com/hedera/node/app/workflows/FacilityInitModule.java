@@ -87,7 +87,7 @@ public interface FacilityInitModule {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final WorkingStateAccessor workingStateAccessor,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         return state -> {
             if (hasHandledGenesisTxn(state)) {
                 initializeExchangeRateManager(state, configProvider, exchangeRateManager, softwareVersionFactory);
@@ -113,7 +113,7 @@ public interface FacilityInitModule {
             @NonNull final State state,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
         final var file = requireNonNull(
@@ -126,7 +126,7 @@ public interface FacilityInitModule {
             @NonNull final State state,
             @NonNull final ConfigProvider configProvider,
             @NonNull final FeeManager feeManager,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         log.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
@@ -155,7 +155,7 @@ public interface FacilityInitModule {
             @NonNull final State state,
             @NonNull final ConfigProvider configProvider,
             final long fileNum,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var readableFileStore =
                 new ReadableStoreFactory(state, softwareVersionFactory).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);

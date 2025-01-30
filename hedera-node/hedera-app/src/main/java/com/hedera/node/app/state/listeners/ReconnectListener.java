@@ -57,7 +57,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
     public ReconnectListener(
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
         this.softwareVersionFactory = softwareVersionFactory;

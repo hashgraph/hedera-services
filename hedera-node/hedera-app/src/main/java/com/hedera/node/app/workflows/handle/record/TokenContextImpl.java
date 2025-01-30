@@ -53,7 +53,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final SavepointStackImpl stack,
             @NonNull final Instant consensusTime,
             @NonNull final WritableEntityCounters entityCounters,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");

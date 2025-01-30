@@ -151,7 +151,8 @@ public class ReadableStoreFactory {
      *
      * @param state the {@link State} to use
      */
-    public ReadableStoreFactory(@NonNull final State state, Function<SemanticVersion, SoftwareVersion> versionFactory) {
+    public ReadableStoreFactory(
+            @NonNull final State state, @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.state = requireNonNull(state, "The supplied argument 'state' cannot be null!");
         this.versionFactory = requireNonNull(versionFactory, "The supplied argument 'versionFactory' cannot be null!");
     }

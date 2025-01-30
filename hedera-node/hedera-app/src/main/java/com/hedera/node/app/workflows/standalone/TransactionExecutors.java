@@ -214,7 +214,7 @@ public enum TransactionExecutors {
             @NonNull final State state,
             @NonNull final Map<String, String> properties,
             @Nullable final TracerBinding customTracerBinding,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         return newExecutor(state, properties, customTracerBinding, Set.of(), softwareVersionFactory);
     }
 
@@ -231,7 +231,7 @@ public enum TransactionExecutors {
             @NonNull final Map<String, String> properties,
             @Nullable final TracerBinding customTracerBinding,
             @NonNull final Set<Operation> customOps,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var tracerBinding =
                 customTracerBinding != null ? customTracerBinding : DefaultTracerBinding.DEFAULT_TRACER_BINDING;
         final var executor = newExecutorComponent(state, properties, tracerBinding, customOps, softwareVersionFactory);

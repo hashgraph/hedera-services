@@ -65,7 +65,7 @@ public class CacheWarmer {
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull @Named("CacheWarmer") final Executor executor,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
         this.executor = requireNonNull(executor);

@@ -62,7 +62,7 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StartupNetworks startupNetworks,
-            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
