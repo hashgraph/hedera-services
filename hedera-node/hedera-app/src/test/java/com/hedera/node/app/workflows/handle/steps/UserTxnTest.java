@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +34,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventTransaction;
@@ -51,8 +49,6 @@ import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -67,14 +63,11 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,9 +93,6 @@ class UserTxnTest {
     private State state;
 
     @Mock
-    private ConsensusEvent event;
-
-    @Mock
     private NodeInfo creatorInfo;
 
     @Mock
@@ -113,12 +103,6 @@ class UserTxnTest {
 
     @Mock
     private TransactionInfo txnInfo;
-
-    @Mock
-    private ConfigProvider configProvider;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private KVStateChangeListener kvStateChangeListener;
@@ -137,9 +121,6 @@ class UserTxnTest {
 
     @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private BlockRecordInfo blockRecordInfo;
 
     @Mock
     private ServiceScopeLookup serviceScopeLookup;
@@ -163,10 +144,7 @@ class UserTxnTest {
     private BlockStreamManager blockStreamManager;
 
     @Mock
-    private WritableStates writableStates;
-
-    @Mock
-    private WritableKVState<AccountID, Account> accountState;
+    private ConfigProvider configProvider;
 
     @Mock
     private TransactionChecker transactionChecker;
@@ -217,9 +195,6 @@ class UserTxnTest {
         given(feeManager.congestionMultiplierFor(any(), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
                 .willReturn(CONGESTION_MULTIPLIER);
         given(serviceScopeLookup.getServiceName(any())).willReturn(ConsensusServiceImpl.NAME);
-        given(state.getWritableStates(any())).willReturn(writableStates);
-        given(writableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(accountState);
-        given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
         final var factory = createUserTxnFactory();
@@ -251,9 +226,6 @@ class UserTxnTest {
         given(feeManager.congestionMultiplierFor(any(), eq(CONSENSUS_CREATE_TOPIC), any(ReadableStoreFactory.class)))
                 .willReturn(1L);
         given(serviceScopeLookup.getServiceName(any())).willReturn(ConsensusServiceImpl.NAME);
-        given(state.getWritableStates(any())).willReturn(writableStates);
-        given(writableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(accountState);
-        given(accountState.getStateKey()).willReturn(ACCOUNTS_KEY);
         given(dispatcher.dispatchComputeFees(any())).willReturn(Fees.FREE);
 
         final var factory = createUserTxnFactory();
@@ -274,7 +246,6 @@ class UserTxnTest {
     private UserTxnFactory createUserTxnFactory() {
         return new UserTxnFactory(
                 configProvider,
-                storeMetricsService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 preHandleWorkflow,

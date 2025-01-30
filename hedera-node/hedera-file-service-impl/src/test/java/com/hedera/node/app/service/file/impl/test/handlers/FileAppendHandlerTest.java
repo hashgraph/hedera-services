@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -342,8 +341,7 @@ class FileAppendHandlerTest extends FileTestBase {
         given(handleContext.body()).willReturn(txBody);
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStore(
-                writableStates, testConfig, mock(StoreMetricsService.class), writableEntityCounters);
+        writableStore = new WritableFileStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

@@ -59,7 +59,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyComparator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -120,7 +119,6 @@ public class ChildDispatchFactory {
     private final FeeManager feeManager;
     private final DispatchProcessor dispatchProcessor;
     private final ServiceScopeLookup serviceScopeLookup;
-    private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionChecker transactionChecker;
 
@@ -132,7 +130,6 @@ public class ChildDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionChecker transactionChecker) {
         this.dispatcher = requireNonNull(dispatcher);
@@ -141,7 +138,6 @@ public class ChildDispatchFactory {
         this.feeManager = requireNonNull(feeManager);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.transactionChecker = requireNonNull(transactionChecker);
     }
@@ -223,7 +219,6 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 blockRecordInfo,
                 serviceScopeLookup,
-                storeMetricsService,
                 exchangeRateManager,
                 dispatcher,
                 options.throttling());
@@ -252,7 +247,6 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
@@ -260,12 +254,8 @@ public class ChildDispatchFactory {
         final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
         final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
         final var writableStoreFactory = new WritableStoreFactory(
-                childStack,
-                serviceScopeLookup.getServiceName(txnInfo.txBody()),
-                config,
-                storeMetricsService,
-                writableEntityIdStore);
-        final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
+                childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), writableEntityIdStore);
+        final var serviceApiFactory = new ServiceApiFactory(childStack, config);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
@@ -303,8 +293,7 @@ public class ChildDispatchFactory {
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childTokenContext =
-                new TokenContextImpl(config, storeMetricsService, childStack, consensusNow, writableEntityIdStore);
+        final var childTokenContext = new TokenContextImpl(config, childStack, consensusNow, writableEntityIdStore);
         return new RecordDispatch(
                 builder,
                 config,

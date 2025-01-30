@@ -46,7 +46,6 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
@@ -144,8 +143,6 @@ public interface HederaInjectionComponent {
     ReconnectCompleteListener reconnectListener();
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
-
-    StoreMetricsService storeMetricsService();
 
     SubmissionManager submissionManager();
 
