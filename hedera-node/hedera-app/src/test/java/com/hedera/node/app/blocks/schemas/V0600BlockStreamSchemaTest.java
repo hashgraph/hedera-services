@@ -33,6 +33,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Unit tests for {@link V0600BlockStreamSchema}.
+ */
 @ExtendWith(MockitoExtension.class)
 public class V0600BlockStreamSchemaTest {
     @Mock
@@ -47,17 +50,17 @@ public class V0600BlockStreamSchemaTest {
     private V0600BlockStreamSchema subject;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         subject = new V0600BlockStreamSchema();
     }
 
     @Test
-    void versionIsV0600() {
-        assertEquals(new SemanticVersion(0, 60, 0, "", ""), subject.getVersion());
+    protected void versionIsV0600() {
+        assertEquals(new SemanticVersion(0, 60, 0, "", ""), subject.getVersion(), "version is V0600");
     }
 
     @Test
-    void doesNotModifyStateAtGenesis() {
+    protected void doesNotModifyStateAtGenesis() {
         given(migrationContext.isGenesis()).willReturn(true);
 
         subject.migrate(migrationContext);
@@ -66,7 +69,7 @@ public class V0600BlockStreamSchemaTest {
     }
 
     @Test
-    void setsGenesisWorkDoneToTrueForNonGenesisMigration() {
+    protected void setsGenesisWorkDoneToTrueForNonGenesisMigration() {
         given(migrationContext.isGenesis()).willReturn(false);
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))

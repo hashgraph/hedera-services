@@ -36,12 +36,15 @@ public class V0600BlockStreamSchema extends Schema {
 
     public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
 
+    /**
+     * Constructs a new schema instance.
+     */
     public V0600BlockStreamSchema() {
         super(VERSION);
     }
 
     @Override
-    public void migrate(@NonNull MigrationContext ctx) {
+    public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
         if (!ctx.isGenesis()) {
             final var blockStreamInfoState = ctx.newStates().<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);

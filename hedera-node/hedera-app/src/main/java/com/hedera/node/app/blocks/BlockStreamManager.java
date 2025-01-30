@@ -90,7 +90,7 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
      * Confirms that the post-upgrade work has been completed.
      * @param state the state of the app
      */
-    void confirmPendingWorkFinished(@NonNull final State state);
+    void confirmPendingWorkFinished(@NonNull State state);
 
     /**
      * Returns whether post-upgrade work is pending.
@@ -133,7 +133,7 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
      * @param roundNum the number of the round that has just ended
      * @return returns true if the round is the last round in the block
      */
-    boolean endRound(@NonNull State state, final long roundNum);
+    boolean endRound(@NonNull State state, long roundNum);
 
     /**
      * Writes a block item to the stream.
