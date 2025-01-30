@@ -81,7 +81,7 @@ public class AtomicBatchHandler implements TransactionHandler {
     }
 
     @Override
-    public @NonNull Fees calculateFees(@NonNull FeeContext feeContext) {
+    public @NonNull Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         calculator.resetUsage();
