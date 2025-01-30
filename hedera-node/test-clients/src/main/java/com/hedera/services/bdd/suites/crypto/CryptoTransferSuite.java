@@ -572,7 +572,7 @@ public class CryptoTransferSuite {
                         .hasKnownStatus(INVALID_SIGNATURE),
                 cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
                                 .setToken(nftId.get())
-                                .addNftTransfers(ocWith(accountId(partyAliasAddr.get()), counterId.get(), 1L))))
+                                .addNftTransfers(ocWith(accountId(0,0, partyAliasAddr.get()), counterId.get(), 1L))))
                         .signedBy(DEFAULT_PAYER)
                         .hasKnownStatus(INVALID_SIGNATURE),
                 cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
@@ -590,7 +590,7 @@ public class CryptoTransferSuite {
                 cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
                                 .setToken(nftId.get())
                                 .addNftTransfers(ocWith(
-                                        accountId(partyAliasAddr.get()), accountId(counterAliasAddr.get()), 1L))))
+                                        accountId(0,0,partyAliasAddr.get()), accountId(0,0,counterAliasAddr.get()), 1L))))
                         .signedBy(DEFAULT_PAYER, MULTI_KEY)
                         .via(NFT_XFER),
                 cryptoTransfer((spec, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()

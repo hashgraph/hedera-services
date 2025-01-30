@@ -713,7 +713,7 @@ public class Create2OperationSuite {
                                             .addNftTransfers(NftTransfer.newBuilder()
                                                     .setSerialNumber(2L)
                                                     .setSenderAccountID(tt)
-                                                    .setReceiverAccountID(accountId(userMirrorAddr.get()))));
+                                                    .setReceiverAccountID(accountId(0,0,userMirrorAddr.get()))));
                         })
                         .signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
                 sourcing(() -> getContractInfo(userLiteralId.get()).logged()));

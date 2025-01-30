@@ -276,7 +276,7 @@ public class Utils {
 
     public static AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
         return AccountAmount.newBuilder()
-                .setAccountID(accountId(hexedEvmAddress))
+                .setAccountID(accountId(0,0,hexedEvmAddress))
                 .setAmount(amount)
                 .build();
     }
@@ -289,8 +289,10 @@ public class Utils {
                 .build();
     }
 
-    public static AccountID accountId(final String hexedEvmAddress) {
+    public static AccountID accountId(final long shard, final long realm, final String hexedEvmAddress) {
         return AccountID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
                 .setAlias(ByteString.copyFrom(unhex(hexedEvmAddress)))
                 .build();
     }
