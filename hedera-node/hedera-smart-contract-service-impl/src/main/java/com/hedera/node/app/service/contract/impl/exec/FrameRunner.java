@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -124,8 +125,10 @@ public class FrameRunner {
 
     private RecipientMetadata computeRecipientMetadata(
             @NonNull final MessageFrame frame, @NonNull final Address address) {
-        if (isLongZero(address)) {
-            return new RecipientMetadata(false, asNumberedContractId(address));
+        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
+        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
+        if (isLongZero(shard, realm, address)) {
+            return new RecipientMetadata(false, asNumberedContractId(shard, realm, address));
         } else {
             final var updater = proxyUpdaterFor(frame);
             return new RecipientMetadata(updater.getPendingCreation() != null, updater.getHederaContractId(address));

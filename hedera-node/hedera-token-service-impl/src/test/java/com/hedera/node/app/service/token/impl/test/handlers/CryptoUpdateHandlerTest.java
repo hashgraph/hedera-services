@@ -885,6 +885,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         public CryptoUpdateHandlerTest.CryptoUpdateBuilder withProxyAccountNum(final long proxyAccountNum) {
             this.proxyAccountId =
                     AccountID.newBuilder().accountNum(proxyAccountNum).build();
+
             return this;
         }
 

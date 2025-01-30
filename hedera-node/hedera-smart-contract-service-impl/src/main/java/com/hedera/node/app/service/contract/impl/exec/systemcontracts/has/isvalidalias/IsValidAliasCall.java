@@ -78,7 +78,9 @@ public class IsValidAliasCall extends AbstractCall {
      */
     public static @NonNull AliasKind getAliasKindForAddressWithAccount(
             @NonNull final Address address, @NonNull final HederaNativeOperations nativeOperations) {
-        final boolean isAccountNumAlias /*aka long-zero*/ = isLongZero(address);
+        final var shard = nativeOperations.getShardNum();
+        final var realm = nativeOperations.getRealmNum();
+        final boolean isAccountNumAlias /*aka long-zero*/ = isLongZero(shard, realm, address);
         final long accountNum = accountNumberForEvmReference(address, nativeOperations);
 
         if (accountNum == MISSING_ENTITY_NUMBER) {

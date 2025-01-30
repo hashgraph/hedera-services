@@ -89,9 +89,10 @@ public class Utils {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
     }
 
-    public static ByteString parsedToByteString(long n) {
-        return ByteString.copyFrom(
-                Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
+    public static ByteString parsedToByteString(long shard, long realm, long n) {
+        final var hexString =
+                Bytes.wrap(asSolidityAddress((int) shard, realm, n)).toHexString();
+        return ByteString.copyFrom(Bytes32.fromHexStringLenient(hexString).toArray());
     }
 
     public static String asHexedAddress(final TokenID id) {
@@ -301,15 +302,19 @@ public class Utils {
 
     public static Key aliasContractIdKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setContractID(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setContractID(ContractID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 
     public static Key aliasDelegateContractKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setDelegatableContractId(
-                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setDelegatableContractId(ContractID.newBuilder()
+                        .setShardNum(1)
+                        .setRealmNum(2)
+                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 

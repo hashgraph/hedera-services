@@ -809,6 +809,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
             if (stakedAccountId > 0) {
                 createTxnBody.stakedAccountId(
                         AccountID.newBuilder().accountNum(stakedAccountId).build());
+
             } else {
                 createTxnBody.stakedNodeId(stakeNodeId);
             }
@@ -838,6 +839,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         public CryptoCreateBuilder withProxyAccountNum(final long proxyAccountNum) {
             this.proxyAccountId =
                     AccountID.newBuilder().accountNum(proxyAccountNum).build();
+
             return this;
         }
 

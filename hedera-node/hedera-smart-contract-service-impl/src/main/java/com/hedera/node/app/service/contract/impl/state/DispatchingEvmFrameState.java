@@ -374,6 +374,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @Nullable Address getAddress(final long number) {
         final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+
         final var account = nativeOperations.getAccount(accountID);
         if (account != null) {
             if (account.deleted()) {
@@ -420,6 +421,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return false;
         }
         final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+
         final var account = nativeOperations.getAccount(accountID);
         if (account == null) {
             return false;
@@ -487,12 +489,15 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(@NonNull final Address address) {
-        if (isLongZero(address)) {
+        final var shard = nativeOperations.getShardNum();
+        final var realm = nativeOperations.getRealmNum();
+        if (isLongZero(shard, realm, address)) {
             return Optional.of(INVALID_ALIAS_KEY);
         }
         final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
             AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+
             final var account = nativeOperations.getAccount(accountID);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
@@ -561,6 +566,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             return null;
         }
         final AccountID accountID = AccountID.newBuilder().accountNum(number).build();
+
         final var account = nativeOperations.getAccount(accountID);
         if (account != null) {
             if (account.deleted() || account.expiredAndPendingRemoval() || isNotPriority(address, account)) {

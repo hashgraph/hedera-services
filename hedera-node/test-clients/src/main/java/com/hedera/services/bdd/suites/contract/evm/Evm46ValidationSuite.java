@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -400,6 +400,8 @@ public class Evm46ValidationSuite {
                             .saveContractId(
                                     "nonMirrorAddress",
                                     ContractID.newBuilder()
+                                            .setShardNum(1)
+                                            .setRealmNum(2)
                                             .setEvmAddress(senderAddress)
                                             .build());
                     spec.registry()

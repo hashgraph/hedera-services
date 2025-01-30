@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -1437,7 +1438,7 @@ public class UtilVerbs {
             long tinyBarMaxNetworkFee,
             long tinyBarMaxServiceFee) {
         return withOpContext((spec, opLog) -> {
-            if (!spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
+            if (!spec.setup().defaultNode().equals(asAccount(asEntityString(3)))) {
                 opLog.info("Sleeping to wait for fee reduction...");
                 Thread.sleep(20000);
                 return;
@@ -1822,8 +1823,9 @@ public class UtilVerbs {
             final var createdIds = creationResult.getCreatedContractIDsList().stream()
                     .sorted(Comparator.comparing(ContractID::getContractNum))
                     .toList();
+            final var createdId = createdIds.get(creationNum);
             final var accDetails = getContractInfo(CommonUtils.hex(
-                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                            asEvmAddress(createdId.getShardNum(), createdId.getRealmNum(), createdId.getContractNum())))
                     .has(contractWith().maxAutoAssociations(maxAutoAssociations))
                     .logged();
             allRunFor(spec, accDetails);
@@ -2399,8 +2401,10 @@ public class UtilVerbs {
     }
 
     private static Object swapLongZeroToEVMAddresses(HapiSpec spec, Object arg, Address address) {
+        final var shard = spec.setup().defaultShard();
+        final var realm = spec.setup().defaultRealm();
         var explicitFromHeadlong = explicitFromHeadlong(address);
-        if (isLongZeroAddress(explicitFromHeadlong)) {
+        if (isLongZeroAddress(shard.getShardNum(), realm.getRealmNum(), explicitFromHeadlong)) {
             var contractNum = numberOfLongZero(explicitFromHeadlong(address));
             if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
                 return HapiParserUtil.asHeadlongAddress(spec.registry().getEVMAddress(String.valueOf(contractNum)));

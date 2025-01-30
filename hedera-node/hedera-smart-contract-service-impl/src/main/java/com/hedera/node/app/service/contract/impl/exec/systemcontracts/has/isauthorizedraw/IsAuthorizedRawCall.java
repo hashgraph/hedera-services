@@ -272,7 +272,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // If the signature is for an ecdsa key, the HIP states that the account must have an evm address rather than a
         // long zero address
         if (signatureType == SignatureType.EC) {
-            return !isLongZeroAddress(explicitFromHeadlong(address));
+            final var shard = enhancement.nativeOperations().getShardNum();
+            final var realm = enhancement.nativeOperations().getRealmNum();
+            return !isLongZeroAddress(shard, realm, explicitFromHeadlong(address));
         }
 
         return true;

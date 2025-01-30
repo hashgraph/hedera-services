@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class CryptoCreateSuite {
     public static final String ACCOUNT = "account";
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
     public static final String ED_25519_KEY = "ed25519Alias";
-    public static final String ACCOUNT_ID = "0.0.10";
+    public static final String ACCOUNT_ID = "1.2.10";
     public static final String CIVILIAN = "civilian";
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";
@@ -110,7 +110,7 @@ public class CryptoCreateSuite {
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return hapiTest(submitModified(
-                withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account").stakedAccountId("0.0.3")));
+                withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account").stakedAccountId("1.2.3")));
     }
 
     @HapiTest

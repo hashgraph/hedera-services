@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy.Decision;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -36,7 +37,8 @@ public enum NoopVerificationStrategies implements VerificationStrategies {
     public VerificationStrategy activatingOnlyContractKeysFor(
             @NonNull final Address sender,
             final boolean requiresDelegatePermission,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final Configuration configuration) {
         return NOOP_VERIFICATION_STRATEGY;
     }
 }

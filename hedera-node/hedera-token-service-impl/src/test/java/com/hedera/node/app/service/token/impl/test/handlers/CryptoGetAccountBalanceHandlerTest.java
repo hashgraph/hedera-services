@@ -63,6 +63,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -93,6 +94,9 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     private Token token1, token2, token3;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3;
+
+    @Mock
+    private Configuration configuration;
 
     private CryptoGetAccountBalanceHandler subject;
 
@@ -203,8 +207,12 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         ;
-        final AccountID invalidRealmAccountId =
-                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
+        final AccountID invalidRealmAccountId = AccountID.newBuilder()
+                .shardNum(1)
+                .realmNum(2)
+                .accountNum(5)
+                .realmNum(-1L)
+                .build();
 
         final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
         when(context.query()).thenReturn(query);
@@ -506,7 +514,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQuery(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
@@ -515,7 +527,11 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header((QueryHeader) null)
                 .build();
 

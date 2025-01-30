@@ -233,7 +233,8 @@ class SignScheduleTranslatorTest {
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
                 .willReturn(verificationStrategy);
 
         // when:
@@ -263,7 +264,8 @@ class SignScheduleTranslatorTest {
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
                 .willReturn(verificationStrategy);
         given(systemContractOperations.maybeEthSenderKey()).willReturn(key);
 
@@ -315,7 +317,8 @@ class SignScheduleTranslatorTest {
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
                 .willReturn(verificationStrategy);
 
         // when:
@@ -345,7 +348,8 @@ class SignScheduleTranslatorTest {
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        OWNER_BESU_ADDRESS, true, nativeOperations, configuration))
                 .willReturn(verificationStrategy);
 
         // when:

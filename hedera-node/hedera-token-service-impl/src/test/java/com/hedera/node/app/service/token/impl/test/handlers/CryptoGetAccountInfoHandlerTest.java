@@ -74,6 +74,7 @@ import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
@@ -101,6 +102,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
+
+    @Mock
+    private Configuration configuration;
+
     private CryptoOpsUsage cryptoOpsUsage;
     private final InstantSource instantSource = InstantSource.system();
 
@@ -357,7 +362,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var expectedInfo = getExpectedAccountInfo2(balancesInQueriesEnabled);
 
         account = account.copyBuilder()
-                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .stakedAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .declineReward(false)
                 .build();
         setupAccountStore();
@@ -638,7 +647,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         return StakingInfo.newBuilder()
                 .declineReward(false)
                 .stakedToMe(1_234L)
-                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .stakedAccountId(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(1)
+                        .build())
                 .build();
     }
 
@@ -652,7 +665,11 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     private Query createCryptoGetInfoQuery(final long accountId) {
         final var data = CryptoGetInfoQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(AccountID.newBuilder()
+                        .shardNum(1)
+                        .realmNum(2)
+                        .accountNum(accountId)
+                        .build())
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
