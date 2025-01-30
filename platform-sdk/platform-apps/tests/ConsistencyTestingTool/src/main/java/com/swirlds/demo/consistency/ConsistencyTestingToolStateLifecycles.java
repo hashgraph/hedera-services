@@ -16,6 +16,7 @@
 
 package com.swirlds.demo.consistency;
 
+import static com.swirlds.demo.consistency.ConsistencyTestingToolState.isSystemTransaction;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.util.Objects.requireNonNull;
@@ -130,7 +131,7 @@ public class ConsistencyTestingToolStateLifecycles implements StateLifecycles<Co
                 return;
             }
 
-            if (state.isSystemTransaction(transaction)) {
+            if (isSystemTransaction(transaction)) {
                 state.consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
                 return;
             }

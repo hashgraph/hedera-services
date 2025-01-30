@@ -314,6 +314,7 @@ public class SystemSetup {
 
         entityCountsState.put(entityCountsUpdated);
         log.info("Initialized entity counts for post-upgrade state to {}", entityCountsUpdated);
+        dispatch.stack().commitFullStack();
     }
 
     /**
