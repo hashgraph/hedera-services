@@ -48,13 +48,11 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
-import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +78,6 @@ class TokenRevokeKycFromAccountHandlerTest {
 
     @BeforeEach
     void setUp() {
-        accountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
         subject = new TokenRevokeKycFromAccountHandler();
     }
 
@@ -88,7 +85,7 @@ class TokenRevokeKycFromAccountHandlerTest {
     class PreHandleTests {
         @Test
         @DisplayName("When op token ID is null, tokenOrThrow throws an exception")
-        void nullTokenIdThrowsException() throws PreCheckException {
+        void nullTokenIdThrowsException() {
             final var txn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(PBJ_PAYER_ID))
                     .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()
@@ -103,7 +100,7 @@ class TokenRevokeKycFromAccountHandlerTest {
 
         @Test
         @DisplayName("When op account ID is null, accountOrThrow throws an exception")
-        void nullAccountIdThrowsException() throws PreCheckException {
+        void nullAccountIdThrowsException() {
             final var txn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(PBJ_PAYER_ID))
                     .tokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder()

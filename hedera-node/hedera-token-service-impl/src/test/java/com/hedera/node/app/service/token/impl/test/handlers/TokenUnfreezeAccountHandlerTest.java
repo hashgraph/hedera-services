@@ -108,7 +108,7 @@ class TokenUnfreezeAccountHandlerTest {
         }
 
         @Test
-        void tokenUnfreezeWithNoAccount() throws PreCheckException {
+        void tokenUnfreezeWithNoAccount() {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
                     .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()

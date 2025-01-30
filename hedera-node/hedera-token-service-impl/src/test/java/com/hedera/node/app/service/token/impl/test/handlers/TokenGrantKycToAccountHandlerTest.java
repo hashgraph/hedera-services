@@ -67,13 +67,10 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     private final TokenGrantKycToAccountHandler subject = new TokenGrantKycToAccountHandler();
 
     @Mock
-    private ReadableAccountStore accountStore;
-
-    @Mock
     private PureChecksContext pureChecksContext;
 
     @Test
-    void txnHasNoToken() throws PreCheckException {
+    void txnHasNoToken() {
         final var missingTokenTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()
@@ -88,7 +85,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void txnHasNoAccount() throws PreCheckException {
+    void txnHasNoAccount() {
         final var missingAcctTxn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(TEST_DEFAULT_PAYER))
                 .tokenGrantKyc(

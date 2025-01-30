@@ -73,9 +73,6 @@ class TokenFreezeAccountHandlerTest {
 
     private TokenFreezeAccountHandler subject;
 
-    @Mock
-    private PureChecksContext pureChecksContext;
-
     @BeforeEach
     void setUp() {
         subject = new TokenFreezeAccountHandler();
@@ -100,7 +97,7 @@ class TokenFreezeAccountHandlerTest {
         }
 
         @Test
-        void tokenFreezeWithNoAccount() throws PreCheckException {
+        void tokenFreezeWithNoAccount() {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
                     .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
