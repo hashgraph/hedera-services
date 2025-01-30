@@ -65,7 +65,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -228,7 +227,6 @@ class PlatformTestingToolStateTest {
                 roster,
                 List.of(platformEvent),
                 platformEvent,
-                new Generations(),
                 eventWindow,
                 new ConsensusSnapshot(),
                 false,
@@ -384,7 +382,6 @@ class PlatformTestingToolStateTest {
                 roster,
                 List.of(platformEvent),
                 platformEvent,
-                new Generations(),
                 eventWindow,
                 new ConsensusSnapshot(),
                 false,
