@@ -146,7 +146,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     void validatesQueryWhenValidAccount() {
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates,configuration);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         given(context.query()).willReturn(query);
@@ -161,7 +161,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
-        final var store = new ReadableAccountStoreImpl(readableStates,configuration);
+        final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createEmptyCryptoGetInfoQuery();
 
@@ -179,7 +179,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
-        final var store = new ReadableAccountStoreImpl(readableStates,configuration);
+        final var store = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -198,7 +198,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .value(deleteAccountId, deleteAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        readableStore = new ReadableAccountStoreImpl(readableStates,configuration);
+        readableStore = new ReadableAccountStoreImpl(readableStates);
 
         final var query = createCryptoGetInfoQuery(deleteAccountNum);
         when(context.query()).thenReturn(query);
@@ -443,7 +443,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .value(id, account)
                 .build();
         given(readableStates1.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(readableAccounts);
-        ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1,configuration);
+        ReadableAccountStore ReadableAccountStore = new ReadableAccountStoreImpl(readableStates1);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(ReadableAccountStore);
     }
 

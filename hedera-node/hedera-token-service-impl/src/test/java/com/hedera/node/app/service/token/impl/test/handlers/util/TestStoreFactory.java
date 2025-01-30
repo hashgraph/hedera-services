@@ -95,7 +95,7 @@ public final class TestStoreFactory {
      * @return the new store
      */
     public static ReadableAccountStore newReadableStoreWithAccounts(Account... accounts) {
-        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)),CONFIGURATION);
+        return new ReadableAccountStoreImpl(new MapReadableStates(writableAccountStates(accounts)));
     }
 
     private static Map<String, MapWritableKVState<?, ?>> writableAccountStates(final Account... accounts) {

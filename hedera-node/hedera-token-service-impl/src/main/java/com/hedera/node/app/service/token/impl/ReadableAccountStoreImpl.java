@@ -192,7 +192,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                 // any other form of valid alias (in which case it will be in the map). So we do a quick check
                 // first to see if it is a valid long zero, and if not, then we look it up in the map.
                 final Bytes alias = accountOneOf.as();
-                if (isEntityNumAlias(alias)) {
+                if (isEntityNumAlias(alias, id.shardNum(), id.realmNum())) {
                     yield id.copyBuilder()
                             .accountNum(extractIdFromAddressAlias(alias))
                             .build();

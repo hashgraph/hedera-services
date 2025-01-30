@@ -61,7 +61,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .value(spenderId, spenderAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates,configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
     }
 
     @Test
@@ -131,7 +131,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                 .value(deleteAccountId, deleteAccount)
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
-        readableAccountStore = new ReadableAccountStoreImpl(readableStates, configuration);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
         assertThatThrownBy(
                         () -> getEffectiveOwner(deleteAccountId, deleteAccount, readableAccountStore, expiryValidator))
                 .isInstanceOf(HandleException.class)
