@@ -17,6 +17,7 @@
 package com.hedera.node.app.components;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
@@ -36,7 +37,9 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -66,6 +69,7 @@ import java.time.InstantSource;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -117,13 +121,20 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
-        final var hintsService = new HintsServiceImpl(appContext);
-        final var historyService = new HistoryServiceImpl(appContext);
+        final var hintsService = new HintsServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class), DEFAULT_CONFIG);
+        final var historyService = new HistoryServiceImpl(
+                NO_OP_METRICS,
+                ForkJoinPool.commonPool(),
+                appContext,
+                new HistoryLibraryImpl(),
+                HISTORY_LIBRARY_CODEC,
+                DEFAULT_CONFIG);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
-                .contractServiceImpl(new ContractServiceImpl(appContext))
+                .contractServiceImpl(new ContractServiceImpl(appContext, NO_OP_METRICS))
                 .scheduleService(new ScheduleServiceImpl())
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)

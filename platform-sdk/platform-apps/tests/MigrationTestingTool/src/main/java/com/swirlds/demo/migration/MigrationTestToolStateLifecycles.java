@@ -136,8 +136,9 @@ public class MigrationTestToolStateLifecycles implements StateLifecycles<Migrati
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull MigrationTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull MigrationTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,13 +39,17 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
     /** The underlying data storage class that holds the token data. */
     private final ReadableKVState<TokenID, Token> tokenState;
 
+    private final ReadableEntityCounters entityCounters;
+
     /**
      * Create a new {@link ReadableTokenStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableTokenStoreImpl(@NonNull final ReadableStates states) {
+    public ReadableTokenStoreImpl(
+            @NonNull final ReadableStates states, @NonNull final ReadableEntityCounters entityCounters) {
         requireNonNull(states);
+        this.entityCounters = requireNonNull(entityCounters);
         this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
     }
 
@@ -115,7 +121,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      */
     @Override
     public long sizeOfState() {
-        return tokenState.size();
+        return entityCounters.getCounterFor(EntityType.TOKEN);
     }
 
     @Override

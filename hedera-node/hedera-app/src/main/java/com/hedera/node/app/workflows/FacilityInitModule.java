@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,11 @@ public interface FacilityInitModule {
             if (hasHandledGenesisTxn(state)) {
                 initializeExchangeRateManager(state, configProvider, exchangeRateManager);
                 initializeFeeManager(state, configProvider, feeManager);
-                observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+                observePropertiesAndPermissions(state, configProvider.getConfiguration(), (properties, permissions) -> {
+                    if (!Bytes.EMPTY.equals(properties) || !Bytes.EMPTY.equals(permissions)) {
+                        configProvider.update(properties, permissions);
+                    }
+                });
                 throttleServiceManager.init(state, throttleDefinitionsFrom(state, configProvider));
             } else {
                 final var schema = fileService.fileSchema();

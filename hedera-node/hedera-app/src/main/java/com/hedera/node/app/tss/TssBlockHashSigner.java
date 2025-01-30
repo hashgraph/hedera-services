@@ -107,7 +107,7 @@ public class TssBlockHashSigner implements BlockHashSigner {
                 return hintsService.signFuture(blockHash);
             }
         } else {
-            final var vk = hintsService == null ? Bytes.EMPTY : hintsService.currentVerificationKeyOrThrow();
+            final var vk = hintsService == null ? Bytes.EMPTY : hintsService.activeVerificationKeyOrThrow();
             final var proof = historyService.getCurrentProof(vk);
             if (hintsService == null) {
                 return CompletableFuture.supplyAsync(() -> assemble(noThrowSha384HashOf(blockHash), vk, proof));

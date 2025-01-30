@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
+import com.hedera.node.app.spi.validation.EntityType;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,7 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         initializeToken();
-        subject = new ReadableTokenStoreImpl(states);
+        subject = new ReadableTokenStoreImpl(states, readableEntityCounters);
     }
 
     private void initializeToken() {
@@ -146,8 +147,8 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
 
     @Test
     void returnSizeOfState() {
-        final var store = new ReadableTokenStoreImpl(readableStates);
-        assertEquals(readableStates.get(TOKENS).size(), store.sizeOfState());
+        final var store = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
+        assertEquals(readableEntityCounters.getCounterFor(EntityType.TOKEN), store.sizeOfState());
     }
 
     @Test

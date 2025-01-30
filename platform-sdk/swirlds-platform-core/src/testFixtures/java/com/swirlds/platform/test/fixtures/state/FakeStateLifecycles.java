@@ -223,9 +223,10 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull PlatformMerkleStateRoot state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull PlatformMerkleStateRoot state) {
         // Touch this round
         round.getRoundNum();
+        return true;
     }
 
     @Override

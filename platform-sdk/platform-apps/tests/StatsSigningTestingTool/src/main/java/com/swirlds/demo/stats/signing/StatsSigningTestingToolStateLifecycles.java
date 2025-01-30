@@ -232,7 +232,10 @@ public class StatsSigningTestingToolStateLifecycles implements StateLifecycles<S
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {}
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull StatsSigningTestingToolState state) {
+        // No-op
+        return true;
+    }
 
     @Override
     public void onUpdateWeight(

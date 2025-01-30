@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,10 +102,14 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void throwsIfNullValuesAsArgs(@Mock StoreMetricsService storeMetricsService) {
         final var configuration = HederaTestConfigBuilder.createConfig();
         assertThrows(
-                NullPointerException.class, () -> new WritableAccountStore(null, configuration, storeMetricsService));
+                NullPointerException.class,
+                () -> new WritableAccountStore(null, configuration, storeMetricsService, writableEntityCounters));
         assertThrows(
-                NullPointerException.class, () -> new WritableAccountStore(writableStates, null, storeMetricsService));
-        assertThrows(NullPointerException.class, () -> new WritableAccountStore(writableStates, configuration, null));
+                NullPointerException.class,
+                () -> new WritableAccountStore(writableStates, null, storeMetricsService, writableEntityCounters));
+        assertThrows(
+                NullPointerException.class,
+                () -> new WritableAccountStore(writableStates, configuration, null, writableEntityCounters));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
@@ -136,7 +140,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @Test
     void canRemoveAlias() {
-        writableStore.putAlias(alias.aliasOrThrow(), id);
+        writableStore.putAndIncrementCountAlias(alias.aliasOrThrow(), id);
         assertEquals(1, writableStore.sizeOfAliasesState());
         writableStore.removeAlias(alias.aliasOrThrow());
         assertEquals(0, writableStore.sizeOfAliasesState());
@@ -146,8 +150,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getForModifyDoesntLookForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.put(account);
-        writableStore.putAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getForModify(alias);
 
@@ -160,8 +164,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getWithAliasedIdLooksForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.put(account);
-        writableStore.putAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getAliasedAccountById(alias);
 
@@ -198,7 +202,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(writableStore.sizeOfAliasesState()).isZero();
         assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
 
-        writableStore.put(account);
+        writableStore.putAndIncrementCount(account);
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
         assertThat(writableStore.modifiedAccountsInState())
                 .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));

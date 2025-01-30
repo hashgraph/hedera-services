@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.UnrecoverableKeyException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -102,8 +101,8 @@ public class CryptoArgsProvider {
      */
     @NonNull
     public static RosterAndCerts loadAddressBookWithKeys(final int size)
-            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
-                    NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
+            throws URISyntaxException, KeyLoadingException, KeyStoreException, NoSuchAlgorithmException,
+                    KeyGeneratingException, NoSuchProviderException {
         final AddressBook createdAB = createAddressBook(size);
         final Map<NodeId, KeysAndCerts> loadedC = EnhancedKeyStoreLoader.using(
                         createdAB,

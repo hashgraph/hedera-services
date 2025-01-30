@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
@@ -122,9 +121,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private Nft nft;
-
-    @Mock
-    private NftID nftId;
 
     @Mock
     private Key metadataKey;
@@ -389,7 +385,8 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 new MapWritableStates(
                         Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
                 CONFIGURATION,
-                storeMetricsService);
+                storeMetricsService,
+                writableEntityCounters);
 
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(

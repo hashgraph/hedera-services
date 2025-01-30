@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,5 +103,10 @@ public abstract class AbstractContractTransactionHandler implements TransactionH
             @NonNull final com.hederahashgraph.api.proto.java.TransactionBody txBody,
             @NonNull final SigValueObj sigValObj) {
         throw new IllegalStateException("must be overridden if `calculateFees` _not_ overridden");
+    }
+
+    protected @NonNull TransactionComponent getTransactionComponent(
+            @NonNull final HandleContext context, @NonNull final HederaFunctionality functionality) {
+        return provider.get().create(context, functionality);
     }
 }

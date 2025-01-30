@@ -16,18 +16,23 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.impl.WritableHintsStoreImplTest.WITH_ENABLED_HINTS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HintsServiceImplTest {
+    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
@@ -53,11 +59,15 @@ class HintsServiceImplTest {
     @Mock
     private SchemaRegistry schemaRegistry;
 
+    @Mock
+    private HintsLibrary library;
+
     private HintsServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HintsServiceImpl(appContext);
+        subject =
+                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, WITH_ENABLED_HINTS);
     }
 
     @Test
@@ -72,7 +82,7 @@ class HintsServiceImplTest {
                 UnsupportedOperationException.class,
                 () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
-        assertThrows(UnsupportedOperationException.class, subject::currentVerificationKeyOrThrow);
+        assertThrows(UnsupportedOperationException.class, subject::activeVerificationKeyOrThrow);
         assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));
         assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
     }
