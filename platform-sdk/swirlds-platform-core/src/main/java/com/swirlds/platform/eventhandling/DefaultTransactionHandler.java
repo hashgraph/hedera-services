@@ -289,8 +289,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
         }
 
         final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
-
-        if (isBoundary) {
+        if (isBoundary || freezeRoundReceived) {
             systemTransactions.addAll(accumulatedTransactions);
             accumulatedTransactions.clear();
 
