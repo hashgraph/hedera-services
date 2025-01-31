@@ -102,7 +102,7 @@ jobs:
         run: |
           echo ${{ steps.increment_version.outputs.new_version }} > version.txt
 
-      - name: Publish to Maven Central
+      - name: Update Versions
         run: |
           ./gradlew versionAsSpecified -PnewVersion=${{ steps.increment_version.outputs.new-version }}
 
