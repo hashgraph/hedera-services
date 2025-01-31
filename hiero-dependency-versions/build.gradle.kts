@@ -121,7 +121,6 @@ dependencies.constraints {
     api("org.eclipse.collections:eclipse-collections:$eclipseCollections") {
         because("org.eclipse.collections.impl")
     }
-    api("org.hamcrest:hamcrest:2.2") { because("org.hamcrest") }
     api("org.hyperledger.besu:besu-datatypes:$besu") { because("org.hyperledger.besu.datatypes") }
     api("org.hyperledger.besu:evm:$besu") { because("org.hyperledger.besu.evm") }
     api("org.hyperledger.besu:secp256k1:0.8.2") {
