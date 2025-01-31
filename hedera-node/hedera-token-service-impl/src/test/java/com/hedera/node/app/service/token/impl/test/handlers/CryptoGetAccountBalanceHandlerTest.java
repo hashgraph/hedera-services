@@ -61,6 +61,8 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHa
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.Metrics;
@@ -94,13 +96,19 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private CryptoGetAccountBalanceHandler subject;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
+        final var config = HederaTestConfigBuilder.createConfig();
+        final var versionedConfig = new VersionedConfigImpl(config, 1);
+        when(configProvider.getConfiguration()).thenReturn(versionedConfig);
         given(metrics.getOrCreate(any())).willReturn(balanceSpeedometer);
-        subject = new CryptoGetAccountBalanceHandler(metrics);
+        subject = new CryptoGetAccountBalanceHandler(metrics, configProvider);
     }
 
     @Test
