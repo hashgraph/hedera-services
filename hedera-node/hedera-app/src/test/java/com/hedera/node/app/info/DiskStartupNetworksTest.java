@@ -273,7 +273,7 @@ class DiskStartupNetworksTest {
                         tssBaseService,
                         PLATFORM_STATE_SERVICE,
                         new EntityIdService(),
-                        new RosterService(roster -> true, () -> state),
+                        new RosterService(roster -> true, () -> {}, () -> state),
                         new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         final var migrator = new FakeServiceMigrator();

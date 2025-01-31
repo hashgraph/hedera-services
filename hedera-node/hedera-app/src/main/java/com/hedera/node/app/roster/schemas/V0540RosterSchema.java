@@ -60,6 +60,10 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
      */
     private final V0540RosterBaseSchema baseSchema = new V0540RosterBaseSchema();
     /**
+     * A callback to run when a candidate roster is adopted.
+     */
+    private final Runnable onAdopt;
+    /**
      * The test to use to determine if a candidate roster may be adopted at an upgrade boundary.
      */
     private final Predicate<Roster> canAdopt;
@@ -74,10 +78,12 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
     private final Supplier<State> stateSupplier;
 
     public V0540RosterSchema(
+            @NonNull final Runnable onAdopt,
             @NonNull final Predicate<Roster> canAdopt,
             @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
             @NonNull final Supplier<State> stateSupplier) {
         super(VERSION);
+        this.onAdopt = requireNonNull(onAdopt);
         this.canAdopt = requireNonNull(canAdopt);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
         this.stateSupplier = requireNonNull(stateSupplier);
@@ -113,6 +119,7 @@ public class V0540RosterSchema extends Schema implements RosterTransplantSchema 
                 } else if (canAdopt.test(candidateRoster)) {
                     log.info("Adopting candidate roster in round {}", activeRoundNumber);
                     rosterStore.adoptCandidateRoster(activeRoundNumber);
+                    onAdopt.run();
                 } else {
                     log.info("Rejecting candidate roster in round {}", activeRoundNumber);
                 }

@@ -332,15 +332,31 @@ public class HintsControllerImpl implements HintsController {
     }
 
     /**
-     * Returns the party ID that this node should use in the target roster.
+     * Returns the party ID that this node should use in the target roster. These ids are assigned
+     * by sorting the unassigned node ids and unused party ids in ascending order, and matching
+     * node ids and party ids by their indexes in these lists.
+     * <p>
+     * For example, suppose there are three nodes with ids {@code 7}, {@code 9}, and {@code 12};
+     * and the party size is four (hence party ids are {@code 0}, {@code 1}, {@code 2}, and {@code 3}).
+     * Then we can think of two lists,
+     * <ul>
+     *     <Li>{@code (7, 9, 12)}</Li>
+     *     <Li>{@code (0, 1, 2, 3)}</Li>
+     * </ul>
+     * And do three assignments: {@code 7 -> 0}, {@code 9 -> 1}, and {@code 12 -> 2}.
+     * <p>
+     * The important thing about this strategy is that it doesn't matter the <b>order</b> in
+     * which we do the assignments. For example, if the nodes publish their keys in the order
+     * {@code 9}, {@code 7}, {@code 12}, then after assigning {@code 9 -> 1}, the remaining
+     * lists will be,
+     * <ul>
+     *     <Li>{@code (7, 12)}</Li>
+     *     <Li>{@code (0, 2, 3)}</Li>
+     * </ul>
+     * And no matter which node publishes their key next, they still the same id as expected.
+     * @throws IndexOutOfBoundsException if the node id has already been assigned a party id
      */
     private int expectedPartyId(final long nodeId) {
-        // List both unassigned node ids and unused party ids in ascending order, and assign
-        // the node to the party id at the same position in the list. Note that no matter how
-        // many assignments have been made from the time the construction started, a remaining
-        // unassigned node id will always be assigned the same party id; to see this, imagine
-        // the starting lists as being zipped together---clearly, removing an assigned pair
-        // from some index in the zipped list doesn't change any other index
         final var unassignedNodeIds = weights.targetNodeWeights().keySet().stream()
                 .filter(id -> !nodePartyIds.containsKey(id))
                 .sorted()
