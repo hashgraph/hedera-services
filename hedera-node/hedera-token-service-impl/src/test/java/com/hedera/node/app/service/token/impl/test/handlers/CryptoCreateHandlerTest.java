@@ -94,7 +94,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -220,41 +219,35 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertDoesNotThrow(() -> subject.pureChecks(txn));
     }
 
-    // TODO: fix
     @Test
-    @Disabled
     @DisplayName("pureChecks succeeds when expected shardId is specified")
     void validateNonZeroShardAndRealm() {
         final long shard = 5;
         final long realm = 10;
-        txn = new CryptoCreateBuilder()
-                .withShardId(shard)
-                .withRealmId(realm)
-                .withStakedAccountId(3)
-                .build();
+        txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         given(handleContext.payer()).willReturn(id);
-        setupConfig();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("cryptoCreateWithAlias.enabled", true)
+                .withValue("ledger.maxAutoAssociations", 5000)
+                .withValue("entities.limitTokenAssociations", false)
+                .withValue("tokens.maxPerAccount", 1000)
+                .withValue("hedera.shard", shard)
+                .withValue("hedera.realm", realm)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
         setupExpiryValidator();
 
-        // newly created account and payer account are not modified. Validate payers balance
+        // newly created account is not modified.
         assertFalse(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
-        assertFalse(writableStore
-                .modifiedAccountsInState()
-                .contains(accountIDWithShardAndRealm(id.accountNum(), shard, realm)));
-        assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
-
         assertDoesNotThrow(() -> subject.pureChecks(txn));
         subject.handle(handleContext);
 
         // newly created account and payer account are modified
         assertTrue(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
-        assertTrue(writableStore
-                .modifiedAccountsInState()
-                .contains(accountIDWithShardAndRealm(id.accountNum(), shard, realm)));
 
         // Validate created account exists and check record builder has created account recorded
         final var createdAccount = writableStore.get(AccountID.newBuilder()

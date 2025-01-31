@@ -64,8 +64,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.RealmID;
-import com.hedera.hapi.node.base.ShardID;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -123,13 +121,15 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final var op = txn.cryptoCreateAccountOrThrow();
-        final var shard = op.shardIDOrElse(ShardID.DEFAULT).shardNum();
-        final var realm = op.realmIDOrElse(RealmID.DEFAULT).realmNum();
         // Note: validation lives here for now but should take place in handle in the future
         validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
         validateTruePreCheck(op.autoRenewPeriodOrThrow().seconds() >= 0, INVALID_RENEWAL_PERIOD);
-        validateTruePreCheck(shard >= 0 && shard <= Integer.MAX_VALUE, INVALID_ACCOUNT_ID);
-        validateTruePreCheck(realm >= 0, INVALID_ACCOUNT_ID);
+        if (op.hasShardID()) {
+            validateTruePreCheck(op.shardIDOrThrow().shardNum() == 0, INVALID_ACCOUNT_ID);
+        }
+        if (op.hasRealmID()) {
+            validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
+        }
         // HIP 904 now allows for unlimited auto-associations
         validateTruePreCheck(
                 op.maxAutomaticTokenAssociations() >= UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
@@ -143,9 +143,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         // sendRecordThreshold, receiveRecordThreshold and proxyAccountID are deprecated. So no need to check them.
         validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-        // You can never set the alias to be an "entity num alias" (sometimes called "long-zero").
         final var alias = op.alias();
-        validateFalsePreCheck(isEntityNumAlias(alias, shard, realm), INVALID_ALIAS_KEY);
         // The alias, if set, must be of EVM address size, or it must be a valid key.
         validateTruePreCheck(alias.length() == 0 || isOfEvmAddressSize(alias) || isKeyAlias(alias), INVALID_ALIAS_KEY);
         // There must be a key provided, and it must not be empty, unless in one very particular case, where the
@@ -313,7 +311,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var accountConfig = context.configuration().getConfigData(AccountsConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var alias = op.alias();
+        // You can never set the alias to be an "entity num alias" (sometimes called "long-zero").
+        validateFalse(isEntityNumAlias(alias, hederaConfig.shard(), hederaConfig.realm()), INVALID_ALIAS_KEY);
 
         // We have a limit on the total maximum number of entities that can be created on the network, for different
         // types of entities. We need to verify that creating a new account won't exceed that number.
