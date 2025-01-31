@@ -186,7 +186,12 @@ public class FileBlockItemWriter implements BlockItemWriter {
             writableStreamingData.close();
             state = State.CLOSED;
             // Write a .mf file to indicate that the block file is complete.
-            Files.createFile(getBlockFilePath(blockNumber).resolveSibling(longToFileName(blockNumber) + ".mf"));
+            Path markerFile = getBlockFilePath(blockNumber).resolveSibling(longToFileName(blockNumber) + ".mf");
+            if (Files.exists(markerFile)) {
+                logger.info("Skipping block marker file for {} as it already exists", markerFile);
+            } else {
+                Files.createFile(markerFile);
+            }
         } catch (final IOException e) {
             logger.error("Error closing the FileBlockItemWriter output stream", e);
             throw new UncheckedIOException(e);
