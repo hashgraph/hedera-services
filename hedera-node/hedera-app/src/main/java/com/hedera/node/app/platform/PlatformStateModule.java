@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.node.app.platform;
 
-public enum EntityType {
-    ACCOUNT,
-    CONTRACT,
-    FILE,
-    NFT,
-    SCHEDULE,
-    TOKEN,
-    TOKEN_ASSOCIATION,
-    TOPIC,
-    AIRDROP,
-    NODE,
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
+import dagger.Module;
+import dagger.Provides;
+import java.util.function.Function;
+import javax.inject.Singleton;
+
+@Module
+public interface PlatformStateModule {
+
+    @Provides
+    @Singleton
+    static Function<SemanticVersion, SoftwareVersion> softwareVersionFactory() {
+        return ServicesSoftwareVersion::new;
+    }
 }

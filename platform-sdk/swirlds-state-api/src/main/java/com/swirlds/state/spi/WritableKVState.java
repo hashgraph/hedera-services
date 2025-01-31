@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -110,14 +109,4 @@ public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
     default boolean isModified() {
         return !modifiedKeys().isEmpty();
     }
-
-    /**
-     * Sets up metrics for the {@code WritableKVState}.
-     *
-     * <p>This is an intermediate solution until we are sure the data layer is reporting the right values.
-     * The default implementation is empty which means that no metrics are set up.
-     *
-     * @param storeMetrics helper class to report utilization-metrics
-     */
-    default void setMetrics(@NonNull StoreMetrics storeMetrics) {}
 }

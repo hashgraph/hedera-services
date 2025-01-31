@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -47,10 +47,10 @@ public class PendingAirdropUpdater {
      * Updates sender accounts ({@code headPendingAirdropId()} and {@code numberPendingAirdrops()}).
      * Update neighbour pending airdrops linked list pointers ({@code previousAirdrop()} and {@code nextAirdrop()}).
      *
-     * @param airdropsToRemove list of PendingAirdropId to be removed
+     * @param airdropsToRemove set of PendingAirdropIds to be removed
      */
     public void removePendingAirdrops(
-            @NonNull final List<PendingAirdropId> airdropsToRemove,
+            @NonNull final Set<PendingAirdropId> airdropsToRemove,
             @NonNull final WritableAirdropStore pendingAirdropStore,
             @NonNull final WritableAccountStore accountStore) {
         for (final var id : airdropsToRemove) {
