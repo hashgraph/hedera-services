@@ -72,6 +72,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -81,6 +82,7 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -149,6 +151,12 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private State state;
+
+    @Mock
+    private Iterator<ConsensusEvent> mockIterator;
+
+    @Mock
+    private ConsensusEvent mockEvent;
 
     private final AtomicReference<Bytes> lastAItem = new AtomicReference<>();
     private final AtomicReference<Bytes> lastBItem = new AtomicReference<>();
@@ -653,6 +661,8 @@ class BlockStreamManagerImplTest {
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(blockHashSigner.isReady()).willReturn(true);
 
+        given(mockEvent.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
+
         // When starting a round at t=0
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
         subject.initLastBlockHash(N_MINUS_2_BLOCK_HASH);
@@ -823,6 +833,10 @@ class BlockStreamManagerImplTest {
     }
 
     private void givenEndOfRoundSetup(@Nullable final AtomicReference<BlockHeader> headerRef) {
+        // Add mock for round iterator
+        lenient().when(round.iterator()).thenReturn(mockIterator);
+        lenient().when(mockIterator.next()).thenReturn(mockEvent);
+        lenient().when(mockEvent.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
         lenient().when(boundaryStateChangeListener.flushChanges()).thenReturn(FAKE_STATE_CHANGES);
         lenient()
                 .doAnswer(invocationOnMock -> {
