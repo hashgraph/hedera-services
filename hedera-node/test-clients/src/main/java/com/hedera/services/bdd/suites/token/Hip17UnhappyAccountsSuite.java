@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -60,140 +60,120 @@ public class Hip17UnhappyAccountsSuite {
 
     @HapiTest
     final Stream<DynamicTest> uniqueTokenOperationsFailForDeletedAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForDeletedAccount")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(CLIENT_1),
-                        cryptoCreate(TREASURY))
-                .when(
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(
-                                UNIQUE_TOKEN_A,
-                                List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
-                        tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
-                        cryptoDelete(CLIENT_1))
-                .then(
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(ACCOUNT_DELETED),
-                        revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
-                        tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
-                        tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(ACCOUNT_DELETED));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoCreate(CLIENT_1),
+                cryptoCreate(TREASURY),
+                tokenCreate(UNIQUE_TOKEN_A)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .treasury(TREASURY),
+                mintToken(UNIQUE_TOKEN_A, List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
+                tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
+                cryptoDelete(CLIENT_1),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
+                        .hasKnownStatus(ACCOUNT_DELETED),
+                revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
+                grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
+                tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
+                tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(ACCOUNT_DELETED),
+                wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(ACCOUNT_DELETED));
     }
 
     @HapiTest
     final Stream<DynamicTest> uniqueTokenOperationsFailForKycRevokedAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForKycRevokedAccount")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(CLIENT_1),
-                        cryptoCreate(CLIENT_2),
-                        cryptoCreate(TREASURY))
-                .when(
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(
-                                UNIQUE_TOKEN_A,
-                                List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
-                        tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
-                        tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
-                        revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1))
-                .then(
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(CLIENT_1, CLIENT_2))
-                                .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
-                                .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoCreate(CLIENT_1),
+                cryptoCreate(CLIENT_2),
+                cryptoCreate(TREASURY),
+                tokenCreate(UNIQUE_TOKEN_A)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .treasury(TREASURY),
+                mintToken(UNIQUE_TOKEN_A, List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
+                tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
+                grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
+                tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
+                revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
+                        .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(CLIENT_1, CLIENT_2))
+                        .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN),
+                wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
+                        .hasKnownStatus(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
     }
 
     @HapiTest
     final Stream<DynamicTest> uniqueTokenOperationsFailForFrozenAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForFrozenAccount")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(CLIENT_1),
-                        cryptoCreate(CLIENT_2),
-                        cryptoCreate(TREASURY))
-                .when(
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(
-                                UNIQUE_TOKEN_A,
-                                List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
-                        tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
-                        tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
-                        tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1))
-                .then(
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(CLIENT_1, CLIENT_2))
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
-                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoCreate(CLIENT_1),
+                cryptoCreate(CLIENT_2),
+                cryptoCreate(TREASURY),
+                tokenCreate(UNIQUE_TOKEN_A)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .treasury(TREASURY),
+                mintToken(UNIQUE_TOKEN_A, List.of(ByteString.copyFromUtf8(MEMO_1), ByteString.copyFromUtf8(MEMO_2))),
+                tokenAssociate(CLIENT_1, UNIQUE_TOKEN_A),
+                grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1)),
+                tokenAssociate(CLIENT_2, UNIQUE_TOKEN_A),
+                tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 2L).between(TREASURY, CLIENT_1))
+                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(CLIENT_1, CLIENT_2))
+                        .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN),
+                wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
     @HapiTest
     final Stream<DynamicTest> uniqueTokenOperationsFailForDissociatedAccount() {
-        return defaultHapiSpec("UniqueTokenOperationsFailForDissociatedAccount")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(FREEZE_KEY),
-                        newKeyNamed(KYC_KEY),
-                        newKeyNamed(WIPE_KEY),
-                        cryptoCreate(CLIENT_1),
-                        cryptoCreate(TREASURY))
-                .when(
-                        tokenCreate(UNIQUE_TOKEN_A)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .supplyKey(SUPPLY_KEY)
-                                .freezeKey(FREEZE_KEY)
-                                .kycKey(KYC_KEY)
-                                .wipeKey(WIPE_KEY)
-                                .treasury(TREASURY),
-                        mintToken(UNIQUE_TOKEN_A, List.of(ByteString.copyFromUtf8("memo"))))
-                .then(
-                        tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L))
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1))
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                newKeyNamed(FREEZE_KEY),
+                newKeyNamed(KYC_KEY),
+                newKeyNamed(WIPE_KEY),
+                cryptoCreate(CLIENT_1),
+                cryptoCreate(TREASURY),
+                tokenCreate(UNIQUE_TOKEN_A)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .supplyKey(SUPPLY_KEY)
+                        .freezeKey(FREEZE_KEY)
+                        .kycKey(KYC_KEY)
+                        .wipeKey(WIPE_KEY)
+                        .treasury(TREASURY),
+                mintToken(UNIQUE_TOKEN_A, List.of(ByteString.copyFromUtf8("memo"))),
+                tokenFreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                tokenUnfreeze(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                grantTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                revokeTokenKyc(UNIQUE_TOKEN_A, CLIENT_1).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                wipeTokenAccount(UNIQUE_TOKEN_A, CLIENT_1, List.of(1L)).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                cryptoTransfer(movingUnique(UNIQUE_TOKEN_A, 1L).between(TREASURY, CLIENT_1))
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 }

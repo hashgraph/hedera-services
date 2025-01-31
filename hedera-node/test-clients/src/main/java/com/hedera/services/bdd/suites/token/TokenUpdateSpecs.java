@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -110,43 +109,41 @@ public class TokenUpdateSpecs {
     private static final String TREASURY_UPDATE_TXN = "treasuryUpdateTxn";
     private static final String INVALID_TREASURY = "invalidTreasury";
 
-    private static String TOKEN_TREASURY = "treasury";
+    private static final String TOKEN_TREASURY = "treasury";
 
     @HapiTest
     final Stream<DynamicTest> canUpdateExpiryOnlyOpWithoutAdminKey() {
         String originalMemo = "First things first";
         String saltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("ValidatesNewExpiry")
-                .given(
-                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("freezeKey"),
-                        newKeyNamed("newFreezeKey"),
-                        newKeyNamed("kycKey"),
-                        newKeyNamed("newKycKey"),
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("newSupplyKey"),
-                        newKeyNamed("wipeKey"),
-                        newKeyNamed("newWipeKey"),
-                        newKeyNamed("pauseKey"),
-                        newKeyNamed("newPauseKey"),
-                        tokenCreate("primary")
-                                .name(saltedName)
-                                .entityMemo(originalMemo)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .adminKey("adminKey")
-                                .freezeKey("freezeKey")
-                                .kycKey("kycKey")
-                                .supplyKey("supplyKey")
-                                .wipeKey("wipeKey")
-                                .pauseKey("pauseKey")
-                                .payingWith(civilian))
-                .when()
-                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> tokenUpdate("primary")
+        return hapiTest(
+                cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                newKeyNamed("adminKey"),
+                newKeyNamed("freezeKey"),
+                newKeyNamed("newFreezeKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed("newKycKey"),
+                newKeyNamed("supplyKey"),
+                newKeyNamed("newSupplyKey"),
+                newKeyNamed("wipeKey"),
+                newKeyNamed("newWipeKey"),
+                newKeyNamed("pauseKey"),
+                newKeyNamed("newPauseKey"),
+                tokenCreate("primary")
+                        .name(saltedName)
+                        .entityMemo(originalMemo)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey("adminKey")
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey("supplyKey")
+                        .wipeKey("wipeKey")
+                        .pauseKey("pauseKey")
+                        .payingWith(civilian),
+                doWithStartupConfigNow("entities.maxLifetime", (value, now) -> tokenUpdate("primary")
                         .expiry(parseLong(value) + now.getEpochSecond() - 12345)));
     }
 
@@ -164,78 +161,68 @@ public class TokenUpdateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> validatesAlreadyDeletedToken() {
-        return defaultHapiSpec("ValidatesAlreadyDeletedToken")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate("tbd").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenDelete("tbd"))
-                .when()
-                .then(tokenUpdate("tbd").signedByPayerAnd("adminKey").hasKnownStatus(TOKEN_WAS_DELETED));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbd").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenDelete("tbd"),
+                tokenUpdate("tbd").signedByPayerAnd("adminKey").hasKnownStatus(TOKEN_WAS_DELETED));
     }
 
     @HapiTest
     final Stream<DynamicTest> tokensCanBeMadeImmutableWithEmptyKeyList() {
         final var mutableForNow = "mutableForNow";
-        return defaultHapiSpec("TokensCanBeMadeImmutableWithEmptyKeyList")
-                .given(
-                        newKeyNamed("initialAdmin"),
-                        cryptoCreate("neverToBe").balance(0L),
-                        tokenCreate(mutableForNow).adminKey("initialAdmin"))
-                .when(
-                        tokenUpdate(mutableForNow)
-                                .usingInvalidAdminKey()
-                                .signedByPayerAnd("initialAdmin")
-                                .hasPrecheck(INVALID_ADMIN_KEY),
-                        tokenUpdate(mutableForNow).properlyEmptyingAdminKey().signedByPayerAnd("initialAdmin"))
-                .then(
-                        getTokenInfo(mutableForNow),
-                        tokenUpdate(mutableForNow)
-                                .treasury("neverToBe")
-                                .signedBy(GENESIS, "initialAdmin", "neverToBe")
-                                .hasKnownStatus(TOKEN_IS_IMMUTABLE));
+        return hapiTest(
+                newKeyNamed("initialAdmin"),
+                cryptoCreate("neverToBe").balance(0L),
+                tokenCreate(mutableForNow).adminKey("initialAdmin"),
+                tokenUpdate(mutableForNow)
+                        .usingInvalidAdminKey()
+                        .signedByPayerAnd("initialAdmin")
+                        .hasPrecheck(INVALID_ADMIN_KEY),
+                tokenUpdate(mutableForNow).properlyEmptyingAdminKey().signedByPayerAnd("initialAdmin"),
+                getTokenInfo(mutableForNow),
+                tokenUpdate(mutableForNow)
+                        .treasury("neverToBe")
+                        .signedBy(GENESIS, "initialAdmin", "neverToBe")
+                        .hasKnownStatus(TOKEN_IS_IMMUTABLE));
     }
 
     @HapiTest
     final Stream<DynamicTest> standardImmutabilitySemanticsHold() {
         long then = Instant.now().getEpochSecond() + 1_234_567L;
         final var immutable = "immutable";
-        return defaultHapiSpec("StandardImmutabilitySemanticsHold")
-                .given(tokenCreate(immutable).expiry(then))
-                .when(
-                        tokenUpdate(immutable).treasury(ADDRESS_BOOK_CONTROL).hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate(immutable).expiry(then - 1).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenUpdate(immutable).expiry(then + 1))
-                .then(getTokenInfo(immutable).logged());
+        return hapiTest(
+                tokenCreate(immutable).expiry(then),
+                tokenUpdate(immutable).treasury(ADDRESS_BOOK_CONTROL).hasKnownStatus(TOKEN_IS_IMMUTABLE),
+                tokenUpdate(immutable).expiry(then - 1).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                tokenUpdate(immutable).expiry(then + 1),
+                getTokenInfo(immutable).logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> validatesMissingRef() {
-        return defaultHapiSpec("ValidatesMissingRef")
-                .given(cryptoCreate(PAYER))
-                .when()
-                .then(
-                        tokenUpdate("0.0.0")
-                                .fee(ONE_HBAR)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID),
-                        tokenUpdate("1.2.3")
-                                .fee(ONE_HBAR)
-                                .payingWith(PAYER)
-                                .signedBy(PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_ID));
+        return hapiTest(
+                cryptoCreate(PAYER),
+                tokenUpdate("0.0.0")
+                        .fee(ONE_HBAR)
+                        .payingWith(PAYER)
+                        .signedBy(PAYER)
+                        .hasKnownStatus(INVALID_TOKEN_ID),
+                tokenUpdate("1.2.3")
+                        .fee(ONE_HBAR)
+                        .payingWith(PAYER)
+                        .signedBy(PAYER)
+                        .hasKnownStatus(INVALID_TOKEN_ID));
     }
 
     @HapiTest
     final Stream<DynamicTest> validatesMissingAdminKey() {
-        return defaultHapiSpec("ValidatesMissingAdminKey")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(PAYER),
-                        tokenCreate("tbd").treasury(TOKEN_TREASURY))
-                .when()
-                .then(tokenUpdate("tbd")
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(PAYER),
+                tokenCreate("tbd").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbd")
                         .autoRenewAccount(GENESIS)
                         .payingWith(PAYER)
                         .signedBy(PAYER, GENESIS)
@@ -244,202 +231,185 @@ public class TokenUpdateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> keysChange() {
-        return defaultHapiSpec("KeysChange")
-                .given(
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("newAdminKey"),
-                        newKeyNamed("kycThenFreezeKey"),
-                        newKeyNamed("freezeThenKycKey"),
-                        newKeyNamed("wipeThenSupplyKey"),
-                        newKeyNamed("supplyThenWipeKey"),
-                        newKeyNamed("oldFeeScheduleKey"),
-                        newKeyNamed("newFeeScheduleKey"),
-                        cryptoCreate("misc").balance(0L),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        tokenCreate("tbu")
-                                .treasury(TOKEN_TREASURY)
-                                .freezeDefault(true)
-                                .initialSupply(10)
-                                .adminKey("adminKey")
-                                .kycKey("kycThenFreezeKey")
-                                .freezeKey("freezeThenKycKey")
-                                .supplyKey("supplyThenWipeKey")
-                                .wipeKey("wipeThenSupplyKey")
-                                .feeScheduleKey("oldFeeScheduleKey"))
-                .when(
-                        getTokenInfo("tbu").logged(),
-                        tokenUpdate("tbu")
-                                .adminKey("newAdminKey")
-                                .kycKey("freezeThenKycKey")
-                                .freezeKey("kycThenFreezeKey")
-                                .wipeKey("supplyThenWipeKey")
-                                .supplyKey("wipeThenSupplyKey")
-                                .feeScheduleKey("newFeeScheduleKey")
-                                .signedByPayerAnd("adminKey", "newAdminKey"),
-                        tokenAssociate("misc", "tbu"))
-                .then(
-                        getTokenInfo("tbu").logged(),
-                        tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycThenFreezeKey"),
-                        grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
-                        getAccountInfo("misc").logged(),
-                        cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
-                        mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
-                        burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
-                        wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "supplyThenWipeKey"),
-                        getAccountInfo(TOKEN_TREASURY).logged());
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                newKeyNamed("newAdminKey"),
+                newKeyNamed("kycThenFreezeKey"),
+                newKeyNamed("freezeThenKycKey"),
+                newKeyNamed("wipeThenSupplyKey"),
+                newKeyNamed("supplyThenWipeKey"),
+                newKeyNamed("oldFeeScheduleKey"),
+                newKeyNamed("newFeeScheduleKey"),
+                cryptoCreate("misc").balance(0L),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbu")
+                        .treasury(TOKEN_TREASURY)
+                        .freezeDefault(true)
+                        .initialSupply(10)
+                        .adminKey("adminKey")
+                        .kycKey("kycThenFreezeKey")
+                        .freezeKey("freezeThenKycKey")
+                        .supplyKey("supplyThenWipeKey")
+                        .wipeKey("wipeThenSupplyKey")
+                        .feeScheduleKey("oldFeeScheduleKey"),
+                getTokenInfo("tbu").logged(),
+                tokenUpdate("tbu")
+                        .adminKey("newAdminKey")
+                        .kycKey("freezeThenKycKey")
+                        .freezeKey("kycThenFreezeKey")
+                        .wipeKey("supplyThenWipeKey")
+                        .supplyKey("wipeThenSupplyKey")
+                        .feeScheduleKey("newFeeScheduleKey")
+                        .signedByPayerAnd("adminKey", "newAdminKey"),
+                tokenAssociate("misc", "tbu"),
+                getTokenInfo("tbu").logged(),
+                tokenUnfreeze("tbu", "misc").signedBy(GENESIS, "kycThenFreezeKey"),
+                grantTokenKyc("tbu", "misc").signedBy(GENESIS, "freezeThenKycKey"),
+                getAccountInfo("misc").logged(),
+                cryptoTransfer(moving(5, "tbu").between(TOKEN_TREASURY, "misc")),
+                mintToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
+                burnToken("tbu", 10).signedBy(GENESIS, "wipeThenSupplyKey"),
+                wipeTokenAccount("tbu", "misc", 5).signedBy(GENESIS, "supplyThenWipeKey"),
+                getAccountInfo(TOKEN_TREASURY).logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> newTreasuryAutoAssociationWorks() {
-        return defaultHapiSpec("NewTreasuryAutoAssociationWorks")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("oldTreasury").balance(0L),
-                        tokenCreate("tbu").adminKey("adminKey").treasury("oldTreasury"))
-                .when(
-                        cryptoCreate("newTreasuryWithoutRemainingAutoAssociations")
-                                .balance(0L),
-                        cryptoCreate("newTreasuryWithRemainingAutoAssociations")
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(10))
-                .then(
-                        tokenUpdate("tbu")
-                                .treasury("newTreasuryWithoutRemainingAutoAssociations")
-                                .signedByPayerAnd("adminKey", "newTreasuryWithoutRemainingAutoAssociations")
-                                .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
-                        tokenUpdate("tbu")
-                                .treasury("newTreasuryWithRemainingAutoAssociations")
-                                .signedByPayerAnd("adminKey", "newTreasuryWithRemainingAutoAssociations"),
-                        getTokenInfo("tbu").hasTreasury("newTreasuryWithRemainingAutoAssociations"));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("oldTreasury").balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury("oldTreasury"),
+                cryptoCreate("newTreasuryWithoutRemainingAutoAssociations").balance(0L),
+                cryptoCreate("newTreasuryWithRemainingAutoAssociations")
+                        .balance(0L)
+                        .maxAutomaticTokenAssociations(10),
+                tokenUpdate("tbu")
+                        .treasury("newTreasuryWithoutRemainingAutoAssociations")
+                        .signedByPayerAnd("adminKey", "newTreasuryWithoutRemainingAutoAssociations")
+                        .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+                tokenUpdate("tbu")
+                        .treasury("newTreasuryWithRemainingAutoAssociations")
+                        .signedByPayerAnd("adminKey", "newTreasuryWithRemainingAutoAssociations"),
+                getTokenInfo("tbu").hasTreasury("newTreasuryWithRemainingAutoAssociations"));
     }
 
     @HapiTest
     final Stream<DynamicTest> newTreasuryMustSign() {
-        return defaultHapiSpec("NewTreasuryMustSign")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("oldTreasury").balance(0L),
-                        cryptoCreate("newTreasury").balance(0L),
-                        tokenCreate("tbu").adminKey("adminKey").treasury("oldTreasury"))
-                .when(
-                        tokenAssociate("newTreasury", "tbu"),
-                        cryptoTransfer(moving(1, "tbu").between("oldTreasury", "newTreasury")))
-                .then(
-                        tokenUpdate("tbu")
-                                .treasury("newTreasury")
-                                .signedBy(GENESIS, "adminKey")
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd("adminKey", "newTreasury"));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("oldTreasury").balance(0L),
+                cryptoCreate("newTreasury").balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury("oldTreasury"),
+                tokenAssociate("newTreasury", "tbu"),
+                cryptoTransfer(moving(1, "tbu").between("oldTreasury", "newTreasury")),
+                tokenUpdate("tbu")
+                        .treasury("newTreasury")
+                        .signedBy(GENESIS, "adminKey")
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd("adminKey", "newTreasury"));
     }
 
     @HapiTest
     final Stream<DynamicTest> treasuryEvolves() {
-        return defaultHapiSpec("TreasuryEvolves")
-                .given(
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("kycKey"),
-                        newKeyNamed("freezeKey"),
-                        cryptoCreate("oldTreasury").balance(0L),
-                        cryptoCreate("newTreasury").balance(0L),
-                        tokenCreate("tbu")
-                                .adminKey("adminKey")
-                                .freezeDefault(true)
-                                .kycKey("kycKey")
-                                .freezeKey("freezeKey")
-                                .treasury("oldTreasury"))
-                .when(
-                        getAccountInfo("oldTreasury").logged(),
-                        getAccountInfo("newTreasury").logged(),
-                        tokenAssociate("newTreasury", "tbu"),
-                        tokenUpdate("tbu")
-                                .treasury("newTreasury")
-                                .via(TREASURY_UPDATE_TXN)
-                                .signedByPayerAnd("adminKey", "newTreasury"))
-                .then(
-                        getAccountInfo("oldTreasury").logged(),
-                        getAccountInfo("newTreasury").logged(),
-                        getTxnRecord(TREASURY_UPDATE_TXN).logged());
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed("freezeKey"),
+                cryptoCreate("oldTreasury").balance(0L),
+                cryptoCreate("newTreasury").balance(0L),
+                tokenCreate("tbu")
+                        .adminKey("adminKey")
+                        .freezeDefault(true)
+                        .kycKey("kycKey")
+                        .freezeKey("freezeKey")
+                        .treasury("oldTreasury"),
+                getAccountInfo("oldTreasury").logged(),
+                getAccountInfo("newTreasury").logged(),
+                tokenAssociate("newTreasury", "tbu"),
+                tokenUpdate("tbu")
+                        .treasury("newTreasury")
+                        .via(TREASURY_UPDATE_TXN)
+                        .signedByPayerAnd("adminKey", "newTreasury"),
+                getAccountInfo("oldTreasury").logged(),
+                getAccountInfo("newTreasury").logged(),
+                getTxnRecord(TREASURY_UPDATE_TXN).logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> validAutoRenewWorks() {
         final var firstPeriod = THREE_MONTHS_IN_SECONDS;
         final var secondPeriod = THREE_MONTHS_IN_SECONDS + 1234;
-        return defaultHapiSpec("validAutoRenewWorks")
-                .given(
-                        cryptoCreate("autoRenew").balance(0L),
-                        cryptoCreate("newAutoRenew").balance(0L),
-                        newKeyNamed("adminKey"))
-                .when(
-                        tokenCreate("tbu")
-                                .adminKey("adminKey")
-                                .autoRenewAccount("autoRenew")
-                                .autoRenewPeriod(firstPeriod),
-                        tokenUpdate("tbu")
-                                .signedBy(GENESIS, "adminKey")
-                                .autoRenewAccount("newAutoRenew")
-                                .autoRenewPeriod(secondPeriod)
-                                .hasKnownStatus(INVALID_SIGNATURE),
-                        tokenUpdate("tbu")
-                                .autoRenewAccount("newAutoRenew")
-                                .autoRenewPeriod(secondPeriod)
-                                .signedByPayerAnd("adminKey", "newAutoRenew"))
-                .then(getTokenInfo("tbu").logged());
+        return hapiTest(
+                cryptoCreate("autoRenew").balance(0L),
+                cryptoCreate("newAutoRenew").balance(0L),
+                newKeyNamed("adminKey"),
+                tokenCreate("tbu")
+                        .adminKey("adminKey")
+                        .autoRenewAccount("autoRenew")
+                        .autoRenewPeriod(firstPeriod),
+                tokenUpdate("tbu")
+                        .signedBy(GENESIS, "adminKey")
+                        .autoRenewAccount("newAutoRenew")
+                        .autoRenewPeriod(secondPeriod)
+                        .hasKnownStatus(INVALID_SIGNATURE),
+                tokenUpdate("tbu")
+                        .autoRenewAccount("newAutoRenew")
+                        .autoRenewPeriod(secondPeriod)
+                        .signedByPayerAnd("adminKey", "newAutoRenew"),
+                getTokenInfo("tbu").logged());
     }
 
     @HapiTest
     final Stream<DynamicTest> symbolChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
-        return defaultHapiSpec("SymbolChanges")
-                .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu").symbol(hopefullyUnique).signedByPayerAnd("adminKey"))
-                .then(
-                        getTokenInfo("tbu").hasSymbol(hopefullyUnique),
-                        tokenAssociate(GENESIS, "tbu"),
-                        cryptoTransfer(moving(1, "tbu").between(TOKEN_TREASURY, GENESIS)));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu").symbol(hopefullyUnique).signedByPayerAnd("adminKey"),
+                getTokenInfo("tbu").hasSymbol(hopefullyUnique),
+                tokenAssociate(GENESIS, "tbu"),
+                cryptoTransfer(moving(1, "tbu").between(TOKEN_TREASURY, GENESIS)));
     }
 
     @HapiTest
     final Stream<DynamicTest> changeAutoRenewAccount() {
         var account = "autoRenewAccount";
 
-        return defaultHapiSpec("AutoRenewAccountChange")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(account).balance(0L))
-                .when(
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
-                                .autoRenewAccount(account)
-                                .signedByPayerAnd("adminKey", account))
-                .then(getTokenInfo("tbu").hasAutoRenewAccount(account));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(account).balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu")
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
+                        .autoRenewAccount(account)
+                        .signedByPayerAnd("adminKey", account),
+                getTokenInfo("tbu").hasAutoRenewAccount(account));
     }
 
     @HapiTest
     final Stream<DynamicTest> nameChanges() {
         var hopefullyUnique = "ORIGINAL" + TxnUtils.randomUppercase(5);
 
-        return defaultHapiSpec("NameChanges")
-                .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenUpdate("tbu").name(hopefullyUnique).signedByPayerAnd("adminKey"))
-                .then(getTokenInfo("tbu").hasName(hopefullyUnique));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu").name(hopefullyUnique).signedByPayerAnd("adminKey"),
+                getTokenInfo("tbu").hasName(hopefullyUnique));
     }
 
     @HapiTest
     final Stream<DynamicTest> tooLongNameCheckHolds() {
         var tooLongName = "ORIGINAL" + TxnUtils.randomUppercase(MAX_NAME_LENGTH + 1);
 
-        return defaultHapiSpec("TooLongNameCheckHolds")
-                .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu")
                         .name(tooLongName)
                         .signedByPayerAnd("adminKey")
                         .hasPrecheck(TOKEN_NAME_TOO_LONG));
@@ -449,10 +419,11 @@ public class TokenUpdateSpecs {
     final Stream<DynamicTest> tooLongSymbolCheckHolds() {
         var tooLongSymbol = TxnUtils.randomUppercase(MAX_SYMBOL_LENGTH + 1);
 
-        return defaultHapiSpec("TooLongSymbolCheckHolds")
-                .given(newKeyNamed("adminKey"), cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu")
                         .symbol(tooLongSymbol)
                         .signedByPayerAnd("adminKey")
                         .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
@@ -460,15 +431,13 @@ public class TokenUpdateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> deletedAutoRenewAccountCheckHolds() {
-        return defaultHapiSpec("DeletedAutoRenewAccountCheckHolds")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate("autoRenewAccount").balance(0L),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L))
-                .when(
-                        cryptoDelete("autoRenewAccount"),
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate("autoRenewAccount").balance(0L),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoDelete("autoRenewAccount"),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu")
                         .autoRenewAccount("autoRenewAccount")
                         .signedByPayerAnd("adminKey", "autoRenewAccount")
                         .hasKnownStatus(INVALID_AUTORENEW_ACCOUNT));
@@ -476,49 +445,45 @@ public class TokenUpdateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> renewalPeriodCheckHolds() {
-        return defaultHapiSpec("RenewalPeriodCheckHolds")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("autoRenewAccount").balance(0L))
-                .when(
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
-                        tokenCreate("withAutoRenewAcc")
-                                .adminKey("adminKey")
-                                .autoRenewAccount("autoRenewAccount")
-                                .treasury(TOKEN_TREASURY))
-                .then(
-                        tokenUpdate("tbu")
-                                .autoRenewAccount("autoRenewAccount")
-                                .autoRenewPeriod(-1123)
-                                .signedByPayerAnd("adminKey", "autoRenewAccount")
-                                .hasKnownStatus(INVALID_RENEWAL_PERIOD),
-                        tokenUpdate("tbu")
-                                .autoRenewAccount("autoRenewAccount")
-                                .autoRenewPeriod(0)
-                                .signedByPayerAnd("adminKey", "autoRenewAccount")
-                                .hasKnownStatus(INVALID_RENEWAL_PERIOD),
-                        tokenUpdate("withAutoRenewAcc")
-                                .autoRenewPeriod(-1)
-                                .signedByPayerAnd("adminKey")
-                                .hasKnownStatus(INVALID_RENEWAL_PERIOD),
-                        tokenUpdate("withAutoRenewAcc")
-                                .autoRenewPeriod(100000000000L)
-                                .signedByPayerAnd("adminKey")
-                                .hasKnownStatus(INVALID_RENEWAL_PERIOD));
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("autoRenewAccount").balance(0L),
+                tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
+                tokenCreate("withAutoRenewAcc")
+                        .adminKey("adminKey")
+                        .autoRenewAccount("autoRenewAccount")
+                        .treasury(TOKEN_TREASURY),
+                tokenUpdate("tbu")
+                        .autoRenewAccount("autoRenewAccount")
+                        .autoRenewPeriod(-1123)
+                        .signedByPayerAnd("adminKey", "autoRenewAccount")
+                        .hasKnownStatus(INVALID_RENEWAL_PERIOD),
+                tokenUpdate("tbu")
+                        .autoRenewAccount("autoRenewAccount")
+                        .autoRenewPeriod(0)
+                        .signedByPayerAnd("adminKey", "autoRenewAccount")
+                        .hasKnownStatus(INVALID_RENEWAL_PERIOD),
+                tokenUpdate("withAutoRenewAcc")
+                        .autoRenewPeriod(-1)
+                        .signedByPayerAnd("adminKey")
+                        .hasKnownStatus(INVALID_RENEWAL_PERIOD),
+                tokenUpdate("withAutoRenewAcc")
+                        .autoRenewPeriod(100000000000L)
+                        .signedByPayerAnd("adminKey")
+                        .hasKnownStatus(INVALID_RENEWAL_PERIOD));
     }
 
     @HapiTest
     final Stream<DynamicTest> invalidTreasuryCheckHolds() {
-        return defaultHapiSpec("InvalidTreasuryCheckHolds")
-                .given(
-                        newKeyNamed("adminKey"),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate(INVALID_TREASURY).balance(0L))
-                .when(
-                        cryptoDelete(INVALID_TREASURY),
-                        tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY))
-                .then(tokenUpdate("tbu")
+        return hapiTest(
+                newKeyNamed("adminKey"),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate(INVALID_TREASURY).balance(0L),
+                cryptoDelete(INVALID_TREASURY),
+                tokenCreate("tbu")
+                        .adminKey("adminKey")
+                        .treasury(TOKEN_TREASURY)
                         .treasury(INVALID_TREASURY)
                         .signedByPayerAnd("adminKey", INVALID_TREASURY)
                         .hasKnownStatus(ACCOUNT_DELETED));
@@ -531,107 +496,99 @@ public class TokenUpdateSpecs {
         String saltedName = salted("primary");
         String newSaltedName = salted("primary");
         final var civilian = "civilian";
-        return defaultHapiSpec("UpdateHappyPath")
-                .given(
-                        cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        cryptoCreate("newTokenTreasury").balance(0L),
-                        cryptoCreate("autoRenewAccount").balance(0L),
-                        cryptoCreate("newAutoRenewAccount").balance(0L),
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("freezeKey"),
-                        newKeyNamed("newFreezeKey"),
-                        newKeyNamed("kycKey"),
-                        newKeyNamed("newKycKey"),
-                        newKeyNamed("supplyKey"),
-                        newKeyNamed("newSupplyKey"),
-                        newKeyNamed("wipeKey"),
-                        newKeyNamed("newWipeKey"),
-                        newKeyNamed("pauseKey"),
-                        newKeyNamed("newPauseKey"),
-                        tokenCreate("primary")
-                                .name(saltedName)
-                                .entityMemo(originalMemo)
-                                .treasury(TOKEN_TREASURY)
-                                .autoRenewAccount("autoRenewAccount")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
-                                .initialSupply(500)
-                                .decimals(1)
-                                .adminKey("adminKey")
-                                .freezeKey("freezeKey")
-                                .kycKey("kycKey")
-                                .supplyKey("supplyKey")
-                                .wipeKey("wipeKey")
-                                .pauseKey("pauseKey")
-                                .payingWith(civilian))
-                .when(
-                        tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary")
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .signedByPayerAnd("adminKey")
-                                .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        tokenUpdate("primary")
-                                .name(newSaltedName)
-                                .entityMemo(updatedMemo)
-                                .treasury("newTokenTreasury")
-                                .autoRenewAccount("newAutoRenewAccount")
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
-                                .freezeKey("newFreezeKey")
-                                .kycKey("newKycKey")
-                                .supplyKey("newSupplyKey")
-                                .wipeKey("newWipeKey")
-                                .pauseKey("newPauseKey")
-                                .signedByPayerAnd("adminKey", "newTokenTreasury", "newAutoRenewAccount", civilian)
-                                .payingWith(civilian))
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
-                        getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 500),
-                        getAccountInfo(TOKEN_TREASURY)
-                                .hasToken(ExpectedTokenRel.relationshipWith("primary")
-                                        .balance(0)),
-                        getAccountInfo("newTokenTreasury")
-                                .hasToken(ExpectedTokenRel.relationshipWith("primary")
-                                        .freeze(TokenFreezeStatus.Unfrozen)
-                                        .kyc(TokenKycStatus.Granted)
-                                        .balance(500)),
-                        getTokenInfo("primary")
-                                .logged()
-                                .hasEntityMemo(updatedMemo)
-                                .hasRegisteredId("primary")
-                                .hasName(newSaltedName)
-                                .hasTreasury("newTokenTreasury")
-                                .hasFreezeKey("primary")
-                                .hasKycKey("primary")
-                                .hasSupplyKey("primary")
-                                .hasWipeKey("primary")
-                                .hasPauseKey("primary")
-                                .hasTotalSupply(500)
-                                .hasAutoRenewAccount("newAutoRenewAccount")
-                                .hasPauseStatus(TokenPauseStatus.Unpaused)
-                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
+        return hapiTest(
+                cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                cryptoCreate("newTokenTreasury").balance(0L),
+                cryptoCreate("autoRenewAccount").balance(0L),
+                cryptoCreate("newAutoRenewAccount").balance(0L),
+                newKeyNamed("adminKey"),
+                newKeyNamed("freezeKey"),
+                newKeyNamed("newFreezeKey"),
+                newKeyNamed("kycKey"),
+                newKeyNamed("newKycKey"),
+                newKeyNamed("supplyKey"),
+                newKeyNamed("newSupplyKey"),
+                newKeyNamed("wipeKey"),
+                newKeyNamed("newWipeKey"),
+                newKeyNamed("pauseKey"),
+                newKeyNamed("newPauseKey"),
+                tokenCreate("primary")
+                        .name(saltedName)
+                        .entityMemo(originalMemo)
+                        .treasury(TOKEN_TREASURY)
+                        .autoRenewAccount("autoRenewAccount")
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                        .initialSupply(500)
+                        .decimals(1)
+                        .adminKey("adminKey")
+                        .freezeKey("freezeKey")
+                        .kycKey("kycKey")
+                        .supplyKey("supplyKey")
+                        .wipeKey("wipeKey")
+                        .pauseKey("pauseKey")
+                        .payingWith(civilian),
+                tokenAssociate("newTokenTreasury", "primary"),
+                tokenUpdate("primary")
+                        .entityMemo(ZERO_BYTE_MEMO)
+                        .signedByPayerAnd("adminKey")
+                        .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                tokenUpdate("primary")
+                        .name(newSaltedName)
+                        .entityMemo(updatedMemo)
+                        .treasury("newTokenTreasury")
+                        .autoRenewAccount("newAutoRenewAccount")
+                        .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
+                        .freezeKey("newFreezeKey")
+                        .kycKey("newKycKey")
+                        .supplyKey("newSupplyKey")
+                        .wipeKey("newWipeKey")
+                        .pauseKey("newPauseKey")
+                        .signedByPayerAnd("adminKey", "newTokenTreasury", "newAutoRenewAccount", civilian)
+                        .payingWith(civilian),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
+                getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 500),
+                getAccountInfo(TOKEN_TREASURY)
+                        .hasToken(ExpectedTokenRel.relationshipWith("primary").balance(0)),
+                getAccountInfo("newTokenTreasury")
+                        .hasToken(ExpectedTokenRel.relationshipWith("primary")
+                                .freeze(TokenFreezeStatus.Unfrozen)
+                                .kyc(TokenKycStatus.Granted)
+                                .balance(500)),
+                getTokenInfo("primary")
+                        .logged()
+                        .hasEntityMemo(updatedMemo)
+                        .hasRegisteredId("primary")
+                        .hasName(newSaltedName)
+                        .hasTreasury("newTokenTreasury")
+                        .hasFreezeKey("primary")
+                        .hasKycKey("primary")
+                        .hasSupplyKey("primary")
+                        .hasWipeKey("primary")
+                        .hasPauseKey("primary")
+                        .hasTotalSupply(500)
+                        .hasAutoRenewAccount("newAutoRenewAccount")
+                        .hasPauseStatus(TokenPauseStatus.Unpaused)
+                        .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateTokenTreasuryRequiresZeroTokenBalance() {
-        return defaultHapiSpec("updateTokenTreasuryRequiresZeroTokenBalance")
-                .given(
-                        cryptoCreate("oldTreasury"),
-                        cryptoCreate("newTreasury"),
-                        newKeyNamed("adminKey"),
-                        newKeyNamed("supplyKey"),
-                        tokenCreate("non-fungible")
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .adminKey("adminKey")
-                                .supplyKey("supplyKey")
-                                .treasury("oldTreasury"))
-                .when(
-                        mintToken(
-                                "non-fungible",
-                                List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo1"))),
-                        tokenAssociate("newTreasury", "non-fungible"),
-                        cryptoTransfer(movingUnique("non-fungible", 1).between("oldTreasury", "newTreasury")))
-                .then(tokenUpdate("non-fungible")
+        return hapiTest(
+                cryptoCreate("oldTreasury"),
+                cryptoCreate("newTreasury"),
+                newKeyNamed("adminKey"),
+                newKeyNamed("supplyKey"),
+                tokenCreate("non-fungible")
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0)
+                        .adminKey("adminKey")
+                        .supplyKey("supplyKey")
+                        .treasury("oldTreasury"),
+                mintToken("non-fungible", List.of(ByteString.copyFromUtf8("memo"), ByteString.copyFromUtf8("memo1"))),
+                tokenAssociate("newTreasury", "non-fungible"),
+                cryptoTransfer(movingUnique("non-fungible", 1).between("oldTreasury", "newTreasury")),
+                tokenUpdate("non-fungible")
                         .treasury("newTreasury")
                         .signedByPayerAnd("adminKey", "newTreasury")
                         .hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES));
@@ -642,49 +599,43 @@ public class TokenUpdateSpecs {
         final var token = "token";
         final var multiKey = "multiKey";
         final var memoToBeErased = "memoToBeErased";
-        return defaultHapiSpec("TokenUpdateCanClearMemo")
-                .given(
-                        newKeyNamed(multiKey),
-                        tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
-                        getTokenInfo(token).hasEntityMemo(memoToBeErased))
-                .when(tokenUpdate(token).entityMemo("").signedByPayerAnd(multiKey))
-                .then(getTokenInfo(token).logged().hasEntityMemo(""));
+        return hapiTest(
+                newKeyNamed(multiKey),
+                tokenCreate(token).entityMemo(memoToBeErased).adminKey(multiKey),
+                getTokenInfo(token).hasEntityMemo(memoToBeErased),
+                tokenUpdate(token).entityMemo("").signedByPayerAnd(multiKey),
+                getTokenInfo(token).logged().hasEntityMemo(""));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateNftTreasuryHappyPath() {
-        return defaultHapiSpec("UpdateNftTreasuryHappyPath")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate("newTokenTreasury"),
-                        newKeyNamed("adminKeyA"),
-                        newKeyNamed("supplyKeyA"),
-                        newKeyNamed("pauseKeyA"),
-                        tokenCreate("primary")
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0)
-                                .adminKey("adminKeyA")
-                                .supplyKey("supplyKeyA")
-                                .pauseKey("pauseKeyA"),
-                        mintToken("primary", List.of(ByteString.copyFromUtf8("memo1"))))
-                .when(
-                        tokenAssociate("newTokenTreasury", "primary"),
-                        tokenUpdate("primary")
-                                .treasury("newTokenTreasury")
-                                .via("tokenUpdateTxn")
-                                .signedByPayerAnd("adminKeyA", "newTokenTreasury"))
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
-                        getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 1),
-                        getTokenInfo("primary")
-                                .hasTreasury("newTokenTreasury")
-                                .hasPauseKey("primary")
-                                .hasPauseStatus(TokenPauseStatus.Unpaused)
-                                .logged(),
-                        getTokenNftInfo("primary", 1)
-                                .hasAccountID("newTokenTreasury")
-                                .logged());
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate("newTokenTreasury"),
+                newKeyNamed("adminKeyA"),
+                newKeyNamed("supplyKeyA"),
+                newKeyNamed("pauseKeyA"),
+                tokenCreate("primary")
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(0)
+                        .adminKey("adminKeyA")
+                        .supplyKey("supplyKeyA")
+                        .pauseKey("pauseKeyA"),
+                mintToken("primary", List.of(ByteString.copyFromUtf8("memo1"))),
+                tokenAssociate("newTokenTreasury", "primary"),
+                tokenUpdate("primary")
+                        .treasury("newTokenTreasury")
+                        .via("tokenUpdateTxn")
+                        .signedByPayerAnd("adminKeyA", "newTokenTreasury"),
+                getAccountBalance(TOKEN_TREASURY).hasTokenBalance("primary", 0),
+                getAccountBalance("newTokenTreasury").hasTokenBalance("primary", 1),
+                getTokenInfo("primary")
+                        .hasTreasury("newTokenTreasury")
+                        .hasPauseKey("primary")
+                        .hasPauseStatus(TokenPauseStatus.Unpaused)
+                        .logged(),
+                getTokenNftInfo("primary", 1).hasAccountID("newTokenTreasury").logged());
     }
 
     @HapiTest
@@ -695,15 +646,13 @@ public class TokenUpdateSpecs {
         final var multiKey = "allSeasons";
         final var sender = "sender";
 
-        return defaultHapiSpec("SafeToUpdateCustomFeesWithNewFallbackWhileTransferring")
-                .given(
-                        newKeyNamed(multiKey),
-                        cryptoCreate(hbarCollector),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(sender).maxAutomaticTokenAssociations(100),
-                        cryptoCreate(beneficiary).maxAutomaticTokenAssociations(100))
-                .when()
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                newKeyNamed(multiKey),
+                cryptoCreate(hbarCollector),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(sender).maxAutomaticTokenAssociations(100),
+                cryptoCreate(beneficiary).maxAutomaticTokenAssociations(100),
+                withOpContext((spec, opLog) -> {
                     for (int i = 0; i < 3; i++) {
                         final var name = uniqueTokenFeeKey + i;
                         final var creation = tokenCreate(name)
@@ -746,44 +695,38 @@ public class TokenUpdateSpecs {
         final var feeScheduleKey = "feeSchedule";
         final var newFeeScheduleKey = "feeScheduleRedux";
 
-        return defaultHapiSpec("CustomFeesOnlyUpdatableWithKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(feeScheduleKey),
-                        newKeyNamed(newFeeScheduleKey),
-                        cryptoCreate(hbarCollector),
-                        tokenCreate(tokenNoFeeKey)
-                                .adminKey(adminKey)
-                                .withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
-                        tokenCreate(uniqueTokenFeeKey)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(adminKey)
-                                .feeScheduleKey(feeScheduleKey)
-                                .initialSupply(0)
-                                .adminKey(adminKey)
-                                .withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
-                        tokenCreate(tokenWithFeeKey)
-                                .adminKey(adminKey)
-                                .feeScheduleKey(feeScheduleKey)
-                                .withCustom(fixedHbarFee(origHbarFee, hbarCollector)))
-                .when(
-                        tokenUpdate(tokenNoFeeKey)
-                                .feeScheduleKey(newFeeScheduleKey)
-                                .signedByPayerAnd(adminKey)
-                                .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
-                        tokenUpdate(tokenWithFeeKey)
-                                .usingInvalidFeeScheduleKey()
-                                .feeScheduleKey(newFeeScheduleKey)
-                                .signedByPayerAnd(adminKey)
-                                .hasPrecheck(INVALID_CUSTOM_FEE_SCHEDULE_KEY),
-                        tokenUpdate(tokenWithFeeKey)
-                                .feeScheduleKey(newFeeScheduleKey)
-                                .signedByPayerAnd(adminKey),
-                        tokenFeeScheduleUpdate(tokenWithFeeKey).withCustom(fixedHbarFee(newHbarFee, hbarCollector)),
-                        tokenFeeScheduleUpdate(uniqueTokenFeeKey)
-                                .withCustom(royaltyFeeWithFallback(
-                                        1, 3, fixedHbarFeeInheritingRoyaltyCollector(1_000), hbarCollector)))
-                .then(getTokenInfo(tokenWithFeeKey)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(feeScheduleKey),
+                newKeyNamed(newFeeScheduleKey),
+                cryptoCreate(hbarCollector),
+                tokenCreate(tokenNoFeeKey).adminKey(adminKey).withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
+                tokenCreate(uniqueTokenFeeKey)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(adminKey)
+                        .feeScheduleKey(feeScheduleKey)
+                        .initialSupply(0)
+                        .adminKey(adminKey)
+                        .withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
+                tokenCreate(tokenWithFeeKey)
+                        .adminKey(adminKey)
+                        .feeScheduleKey(feeScheduleKey)
+                        .withCustom(fixedHbarFee(origHbarFee, hbarCollector)),
+                tokenUpdate(tokenNoFeeKey)
+                        .feeScheduleKey(newFeeScheduleKey)
+                        .signedByPayerAnd(adminKey)
+                        .hasKnownStatus(TOKEN_HAS_NO_FEE_SCHEDULE_KEY),
+                tokenUpdate(tokenWithFeeKey)
+                        .usingInvalidFeeScheduleKey()
+                        .feeScheduleKey(newFeeScheduleKey)
+                        .signedByPayerAnd(adminKey)
+                        .hasPrecheck(INVALID_CUSTOM_FEE_SCHEDULE_KEY),
+                tokenUpdate(tokenWithFeeKey).feeScheduleKey(newFeeScheduleKey).signedByPayerAnd(adminKey),
+                tokenFeeScheduleUpdate(tokenWithFeeKey).withCustom(fixedHbarFee(newHbarFee, hbarCollector)),
+                tokenFeeScheduleUpdate(uniqueTokenFeeKey)
+                        .withCustom(royaltyFeeWithFallback(
+                                1, 3, fixedHbarFeeInheritingRoyaltyCollector(1_000), hbarCollector)),
+                getTokenInfo(tokenWithFeeKey)
                         .hasCustom(fixedHbarFeeInSchedule(newHbarFee, hbarCollector))
                         .hasFeeScheduleKey(tokenWithFeeKey));
     }
@@ -799,26 +742,24 @@ public class TokenUpdateSpecs {
         final var freeze = "freeze";
         final var freezeKey2 = "freezeKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoFreezeKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(freezeKey),
-                        newKeyNamed(freezeKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(freeze).key(freezeKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(freezeKey),
+                newKeyNamed(freezeKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(freeze).key(freezeKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .freezeKey(freezeKey2)
                         .signedBy(adminKey, freezeKey)
                         .payingWith(freeze)
-                        .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_FREEZE_KEY));
     }
 
     @HapiTest
@@ -832,26 +773,24 @@ public class TokenUpdateSpecs {
         final var supply = "supply";
         final var supplyKey2 = "supplyKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoSupplyKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(supplyKey),
-                        newKeyNamed(supplyKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(supply).key(supplyKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(supplyKey),
+                newKeyNamed(supplyKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(supply).key(supplyKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .supplyKey(supplyKey2)
                         .signedBy(adminKey, supplyKey)
                         .payingWith(supply)
-                        .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_SUPPLY_KEY));
     }
 
     @HapiTest
@@ -865,26 +804,24 @@ public class TokenUpdateSpecs {
         final var kyc = "kyc";
         final var kycKey2 = "kycKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoKycKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(kycKey),
-                        newKeyNamed(kycKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(kyc).key(kycKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(kycKey),
+                newKeyNamed(kycKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(kyc).key(kycKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .kycKey(kycKey2)
                         .signedBy(adminKey, kycKey)
                         .payingWith(kyc)
-                        .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_KYC_KEY));
     }
 
     @HapiTest
@@ -898,26 +835,24 @@ public class TokenUpdateSpecs {
         final var wipe = "wipe";
         final var wipeKey2 = "wipeKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoWipeKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(wipeKey),
-                        newKeyNamed(wipeKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(wipe).key(wipeKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(wipeKey),
+                newKeyNamed(wipeKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(wipe).key(wipeKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .wipeKey(wipeKey2)
                         .signedBy(adminKey, wipeKey)
                         .payingWith(wipe)
-                        .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_WIPE_KEY));
     }
 
     @HapiTest
@@ -931,26 +866,24 @@ public class TokenUpdateSpecs {
         final var pause = "pause";
         final var pauseKey2 = "pauseKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoPauseKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(pauseKey),
-                        newKeyNamed(pauseKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(pause).key(pauseKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(pauseKey),
+                newKeyNamed(pauseKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(pause).key(pauseKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .pauseKey(pauseKey2)
                         .signedBy(adminKey, pauseKey)
                         .payingWith(pause)
-                        .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     @HapiTest
@@ -964,60 +897,55 @@ public class TokenUpdateSpecs {
         final var metadata = "metadata";
         final var metadataKey2 = "metadataKey2";
 
-        return defaultHapiSpec("tokenUpdateTokenHasNoMetadataKey")
-                .given(
-                        newKeyNamed(adminKey),
-                        newKeyNamed(metadataKey),
-                        newKeyNamed(metadataKey2),
-                        cryptoCreate(HBAR_COLLECTOR),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
-                        cryptoCreate(metadata).key(metadataKey).balance(ONE_MILLION_HBARS),
-                        tokenCreate(tokenName)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(10)
-                                .adminKey(adminKey)
-                                .payingWith(admin))
-                .when(tokenUpdate(tokenName)
+        return hapiTest(
+                newKeyNamed(adminKey),
+                newKeyNamed(metadataKey),
+                newKeyNamed(metadataKey2),
+                cryptoCreate(HBAR_COLLECTOR),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(admin).key(adminKey).balance(ONE_MILLION_HBARS),
+                cryptoCreate(metadata).key(metadataKey).balance(ONE_MILLION_HBARS),
+                tokenCreate(tokenName)
+                        .treasury(TOKEN_TREASURY)
+                        .initialSupply(10)
+                        .adminKey(adminKey)
+                        .payingWith(admin),
+                tokenUpdate(tokenName)
                         .metadataKey(metadataKey2)
                         .signedBy(adminKey, metadataKey)
                         .payingWith(metadata)
-                        .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY))
-                .then();
+                        .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY));
     }
 
     @HapiTest
     final Stream<DynamicTest> updateUniqueTreasuryWithNfts() {
         final var specialKey = "special";
 
-        return defaultHapiSpec("UpdateUniqueTreasuryWithNfts")
-                .given(
-                        newKeyNamed(specialKey),
-                        cryptoCreate("oldTreasury").balance(0L),
-                        cryptoCreate("newTreasury").balance(0L),
-                        tokenCreate("tbu")
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .adminKey(specialKey)
-                                .supplyKey(specialKey)
-                                .treasury("oldTreasury"))
-                .when(
-                        mintToken("tbu", List.of(ByteString.copyFromUtf8("BLAMMO"))),
-                        getAccountInfo("oldTreasury").logged(),
-                        getAccountInfo("newTreasury").logged(),
-                        tokenAssociate("newTreasury", "tbu"),
-                        tokenUpdate("tbu").memo("newMemo").signedByPayerAnd(specialKey),
-                        tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd(specialKey, "newTreasury"),
-                        burnToken("tbu", List.of(1L)),
-                        getTokenInfo("tbu").hasTreasury("newTreasury"),
-                        tokenUpdate("tbu")
-                                .treasury("newTreasury")
-                                .via(TREASURY_UPDATE_TXN)
-                                .signedByPayerAnd(specialKey, "newTreasury"))
-                .then(
-                        getAccountInfo("oldTreasury").logged(),
-                        getAccountInfo("newTreasury").logged(),
-                        getTokenInfo("tbu").hasTreasury("newTreasury"));
+        return hapiTest(
+                newKeyNamed(specialKey),
+                cryptoCreate("oldTreasury").balance(0L),
+                cryptoCreate("newTreasury").balance(0L),
+                tokenCreate("tbu")
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .adminKey(specialKey)
+                        .supplyKey(specialKey)
+                        .treasury("oldTreasury"),
+                mintToken("tbu", List.of(ByteString.copyFromUtf8("BLAMMO"))),
+                getAccountInfo("oldTreasury").logged(),
+                getAccountInfo("newTreasury").logged(),
+                tokenAssociate("newTreasury", "tbu"),
+                tokenUpdate("tbu").memo("newMemo").signedByPayerAnd(specialKey),
+                tokenUpdate("tbu").treasury("newTreasury").signedByPayerAnd(specialKey, "newTreasury"),
+                burnToken("tbu", List.of(1L)),
+                getTokenInfo("tbu").hasTreasury("newTreasury"),
+                tokenUpdate("tbu")
+                        .treasury("newTreasury")
+                        .via(TREASURY_UPDATE_TXN)
+                        .signedByPayerAnd(specialKey, "newTreasury"),
+                getAccountInfo("oldTreasury").logged(),
+                getAccountInfo("newTreasury").logged(),
+                getTokenInfo("tbu").hasTreasury("newTreasury"));
     }
 
     @LeakyHapiTest(overrides = {"tokens.nfts.useTreasuryWildcards"})
