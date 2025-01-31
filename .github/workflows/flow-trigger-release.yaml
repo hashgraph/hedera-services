@@ -102,7 +102,7 @@ jobs:
       # Semantic versioning only works off branches, not tags.
       - name: Create a Temporary Semantic Release Branch
         run: |
-          echo "git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}"
+          set -x
           git checkout -b ${{ steps.branch_name.outputs.BRANCH_NAME }}
 
       - name: Echo Current Branch Name
