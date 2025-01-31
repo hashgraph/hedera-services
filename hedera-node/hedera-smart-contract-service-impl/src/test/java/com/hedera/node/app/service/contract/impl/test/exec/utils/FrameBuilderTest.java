@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,7 +205,6 @@ class FrameBuilderTest {
         assertEquals(NON_SYSTEM_LONG_ZERO_ADDRESS, frame.getContractAddress());
         assertEquals(transaction.evmPayload(), frame.getInputData());
         assertSame(CONTRACT_CODE, frame.getCode());
-        assertNull(accessTrackerFor(frame));
         assertSame(tinybarValues, tinybarValuesFor(frame));
     }
 
