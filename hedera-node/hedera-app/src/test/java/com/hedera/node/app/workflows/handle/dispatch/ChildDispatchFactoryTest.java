@@ -154,8 +154,8 @@ class ChildDispatchFactoryTest {
                 dispatchProcessor,
                 serviceScopeLookup,
                 exchangeRateManager,
-                ServicesSoftwareVersion::new,
-                transactionChecker);
+                transactionChecker,
+                ServicesSoftwareVersion::new);
     }
 
     @Test
