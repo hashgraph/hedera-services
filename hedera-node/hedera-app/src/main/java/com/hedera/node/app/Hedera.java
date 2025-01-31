@@ -1135,7 +1135,8 @@ public final class Hedera
                 .round();
         final var initialStateHash = new InitialStateHash(initialStateHashFuture, roundNum);
 
-        final var rosterStore = new ReadableStoreFactory(state, ignore -> getSoftwareVersion()).getStore(ReadableRosterStore.class);
+        final var rosterStore =
+                new ReadableStoreFactory(state, ignore -> getSoftwareVersion()).getStore(ReadableRosterStore.class);
         final var networkInfo =
                 new StateNetworkInfo(platform.getSelfId().id(), state, rosterStore.getActiveRoster(), configProvider);
         final var blockHashSigner = blockHashSignerFactory.apply(hintsService, historyService, configProvider);
