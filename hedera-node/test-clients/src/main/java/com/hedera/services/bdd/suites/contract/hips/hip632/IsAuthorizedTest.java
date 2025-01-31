@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.hip632;
+package com.hedera.services.bdd.suites.contract.hips.hip632;
 
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPrivateKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
