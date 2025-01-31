@@ -502,7 +502,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 // task depends on the last "store bucket" task
                 notifyTaskRef.get().join();
                 if (exceptionOccurred.get() != null) {
-                    throw new RuntimeException(exceptionOccurred.get());
+                    throw new IOException(exceptionOccurred.get());
                 }
                 // close files session
                 dataFileReader = fileCollection.endWriting(0, numOfBuckets);
