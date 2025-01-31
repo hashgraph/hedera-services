@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,11 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Duration;
 import java.util.Random;
@@ -58,7 +61,12 @@ class TransactionPrehandlerTests {
                 .when(state)
                 .close();
 
+        final SignedState signedState = mock(SignedState.class);
+        final PlatformMerkleStateRoot merkleStateRoot = mock(PlatformMerkleStateRoot.class);
+        when(signedState.getState()).thenReturn(merkleStateRoot);
+
         final SignedStateNexus latestImmutableStateNexus = mock(SignedStateNexus.class);
+        final StateLifecycles stateLifecycles = mock(StateLifecycles.class);
         // return null until returnValidState is set to true. keep track of when the first state retrieval is attempted,
         // so we can assert that prehandle hasn't happened before the state is available
         when(latestImmutableStateNexus.getState(any())).thenAnswer(i -> {
@@ -68,8 +76,8 @@ class TransactionPrehandlerTests {
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final TransactionPrehandler transactionPrehandler =
-                new DefaultTransactionPrehandler(platformContext, () -> latestImmutableStateNexus.getState("test"));
+        final TransactionPrehandler transactionPrehandler = new DefaultTransactionPrehandler(
+                platformContext, () -> latestImmutableStateNexus.getState("test"), stateLifecycles);
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
 

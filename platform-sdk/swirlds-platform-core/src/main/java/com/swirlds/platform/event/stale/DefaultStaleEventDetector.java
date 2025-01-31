@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import static com.swirlds.platform.event.AncientMode.BIRTH_ROUND_THRESHOLD;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.wiring.transformers.RoutableData;
+import com.swirlds.component.framework.transformers.RoutableData;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -84,9 +83,6 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     @Mock
     private NodeDeleteHandler subject;
 
-    @Mock
-    private StoreMetricsService storeMetricsService;
-
     protected Configuration testConfig;
 
     @BeforeEach
@@ -97,7 +93,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         testConfig = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
         lenient().when(handleContext.configuration()).thenReturn(testConfig);
     }
 
@@ -150,7 +146,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = emptyWritableNodeState();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
-        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
@@ -171,7 +167,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
-        writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())

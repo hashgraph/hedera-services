@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,23 @@
 
 package com.swirlds.platform.turtle.gossip;
 
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
+import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.model.TraceableWiringModel;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.model.TraceableWiringModel;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -51,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -69,12 +64,6 @@ class SimulatedGossipTests {
             uniqueDescriptors.add(event.getDescriptor());
         }
         return uniqueDescriptors;
-    }
-
-    @BeforeAll
-    static void beforeAll() throws ConstructableRegistryException {
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
-        ConstructableRegistry.getInstance().registerConstructables("");
     }
 
     @SuppressWarnings("unchecked")
@@ -109,10 +98,9 @@ class SimulatedGossipTests {
                     .withDeterministicModeEnabled(true)
                     .build();
 
-            final TaskScheduler<Void> eventInputShim = model.schedulerBuilder("eventInputShim")
+            final TaskScheduler<Void> eventInputShim = model.<Void>schedulerBuilder("eventInputShim")
                     .configure(DIRECT_THREADSAFE_CONFIGURATION)
-                    .build()
-                    .cast();
+                    .build();
 
             final List<PlatformEvent> receivedEventsForNode = new ArrayList<>();
             receivedEvents.put(nodeId, receivedEventsForNode);

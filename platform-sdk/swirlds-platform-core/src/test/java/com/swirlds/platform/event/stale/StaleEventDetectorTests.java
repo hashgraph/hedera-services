@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,13 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.transformers.RoutableData;
+import com.swirlds.component.framework.transformers.RoutableData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -174,7 +173,6 @@ class StaleEventDetectorTests {
                 mock(Roster.class),
                 events,
                 mock(PlatformEvent.class),
-                mock(Generations.class),
                 eventWindow,
                 mock(ConsensusSnapshot.class),
                 false,

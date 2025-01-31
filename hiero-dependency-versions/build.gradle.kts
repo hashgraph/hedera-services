@@ -61,7 +61,7 @@ dependencies.constraints {
         because("com.fasterxml.jackson.databind")
     }
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jackson") {
-        because("com.fasterxml.jackson.dataformat")
+        because("com.fasterxml.jackson.dataformat.yaml")
     }
     api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
@@ -87,7 +87,7 @@ dependencies.constraints {
     api("io.grpc:grpc-netty:$grpc") { because("io.grpc.netty") }
     api("io.grpc:grpc-protobuf:$grpc") { because("io.grpc.protobuf") }
     api("io.grpc:grpc-stub:$grpc") { because("io.grpc.stub") }
-    api("com.esaulpaugh:headlong:6.1.1") { because("com.esaulpaugh.headlong") }
+    api("com.esaulpaugh:headlong:12.3.3") { because("com.esaulpaugh.headlong") }
     api("info.picocli:picocli:4.6.3") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.179") { because("io.github.classgraph") }
     api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
@@ -112,7 +112,7 @@ dependencies.constraints {
     api("org.apache.logging.log4j:log4j-slf4j2-impl:$log4j") {
         because("org.apache.logging.log4j.slf4j2.impl")
     }
-    api("org.assertj:assertj-core:3.23.1") { because("org.assertj.core") }
+    api("org.assertj:assertj-core:3.27.3") { because("org.assertj.core") }
     api("org.bouncycastle:bcpkix-jdk18on:$bouncycastle") { because("org.bouncycastle.pkix") }
     api("org.bouncycastle:bcprov-jdk18on:$bouncycastle") { because("org.bouncycastle.provider") }
     api("org.eclipse.collections:eclipse-collections-api:$eclipseCollections") {

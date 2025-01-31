@@ -19,10 +19,14 @@ package com.hedera.node.app.workflows.standalone;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.workflows.standalone.impl.NoopVerificationStrategies.NOOP_VERIFICATION_STRATEGIES;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.hints.impl.FakeHintsLibrary;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -39,16 +43,23 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
@@ -68,20 +79,165 @@ public enum TransactionExecutors {
     }
 
     /**
+     * The properties to use when creating a new {@link TransactionExecutor}.
+     * @param state the {@link State} to use
+     * @param appProperties the properties to use
+     * @param customTracerBinding the custom tracer binding to use
+     * @param customOps the custom operations to use
+     */
+    public record Properties(
+            @NonNull State state,
+            @NonNull Map<String, String> appProperties,
+            @Nullable TracerBinding customTracerBinding,
+            @NonNull Set<Operation> customOps,
+            @NonNull Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+        /**
+         * Create a new {@link Builder} instance.
+         * @return a new {@link Builder} instance
+         */
+        public static Builder newBuilder() {
+            return new Builder();
+        }
+
+        /**
+         * Builder for {@link Properties}.
+         */
+        public static class Builder {
+            private State state;
+            private TracerBinding customTracerBinding;
+            private final Map<String, String> appProperties = new HashMap<>();
+            private final Set<Operation> customOps = new HashSet<>();
+            private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+
+            /**
+             * Set the required {@link State} field.
+             */
+            public Builder state(@NonNull final State state) {
+                this.state = requireNonNull(state);
+                return this;
+            }
+
+            /**
+             * Add or override a single property.
+             */
+            public Builder appProperty(@NonNull final String key, @NonNull final String value) {
+                requireNonNull(key);
+                requireNonNull(value);
+                this.appProperties.put(key, value);
+                return this;
+            }
+
+            /**
+             * Add/override multiple properties at once.
+             */
+            public Builder appProperties(@NonNull final Map<String, String> properties) {
+                requireNonNull(properties);
+                this.appProperties.putAll(properties);
+                return this;
+            }
+
+            /**
+             * Set the optional {@link TracerBinding}.
+             */
+            public Builder customTracerBinding(@Nullable final TracerBinding customTracerBinding) {
+                this.customTracerBinding = customTracerBinding;
+                return this;
+            }
+
+            /**
+             * Set the custom operations in bulk.
+             */
+            public Builder customOps(@NonNull final Set<? extends Operation> customOps) {
+                requireNonNull(customOps);
+                this.customOps.addAll(customOps);
+                return this;
+            }
+
+            /**
+             * Add a single custom operation.
+             */
+            public Builder addCustomOp(@NonNull final Operation customOp) {
+                requireNonNull(customOp);
+                this.customOps.add(customOp);
+                return this;
+            }
+
+            /**
+             * Set the software version factory.
+             */
+            public Builder softwareVersionFactory(
+                    @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+                this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
+                return this;
+            }
+
+            /**
+             * Build and return the immutable {@link Properties} record.
+             */
+            public Properties build() {
+                if (state == null) {
+                    throw new IllegalStateException("State must not be null");
+                }
+                return new Properties(
+                        state,
+                        Map.copyOf(appProperties),
+                        customTracerBinding,
+                        Set.copyOf(customOps),
+                        softwareVersionFactory);
+            }
+        }
+    }
+
+    /**
      * Creates a new {@link TransactionExecutor} based on the given {@link State} and properties.
+     * @param properties the properties to use for the executor
+     * @return a new {@link TransactionExecutor}
+     */
+    public TransactionExecutor newExecutor(@NonNull final Properties properties) {
+        requireNonNull(properties);
+        return newExecutor(
+                properties.state(),
+                properties.appProperties(),
+                properties.customTracerBinding(),
+                properties.customOps(),
+                properties.softwareVersionFactory());
+    }
+
+    /**
+     * Creates a new {@link TransactionExecutor} based on the given {@link State} and properties.
+     * Prefer
      *
      * @param state the {@link State} to create the executor from
      * @param properties the properties to use for the executor
      * @param customTracerBinding if not null, the tracer binding to use
      * @return a new {@link TransactionExecutor}
      */
+    @Deprecated(since = "0.58")
     public TransactionExecutor newExecutor(
             @NonNull final State state,
             @NonNull final Map<String, String> properties,
-            @Nullable final TracerBinding customTracerBinding) {
+            @Nullable final TracerBinding customTracerBinding,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+        return newExecutor(state, properties, customTracerBinding, Set.of(), softwareVersionFactory);
+    }
+
+    /**
+     * Creates a new {@link TransactionExecutor}.
+     * @param state the {@link State} to use
+     * @param properties the properties to use
+     * @param customTracerBinding the custom tracer binding to use
+     * @param customOps the custom operations to use
+     * @return a new {@link TransactionExecutor}
+     */
+    private TransactionExecutor newExecutor(
+            @NonNull final State state,
+            @NonNull final Map<String, String> properties,
+            @Nullable final TracerBinding customTracerBinding,
+            @NonNull final Set<Operation> customOps,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var tracerBinding =
                 customTracerBinding != null ? customTracerBinding : DefaultTracerBinding.DEFAULT_TRACER_BINDING;
-        final var executor = newExecutorComponent(state, properties, tracerBinding);
+        final var executor = newExecutorComponent(state, properties, tracerBinding, customOps, softwareVersionFactory);
         executor.initializer().accept(state);
         executor.stateNetworkInfo().initFrom(state);
         final var exchangeRateManager = executor.exchangeRateManager();
@@ -99,14 +255,17 @@ public enum TransactionExecutors {
     private ExecutorComponent newExecutorComponent(
             @NonNull final State state,
             @NonNull final Map<String, String> properties,
-            @NonNull final TracerBinding tracerBinding) {
+            @NonNull final TracerBinding tracerBinding,
+            @NonNull final Set<Operation> customOps,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
+        final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         final AtomicReference<ExecutorComponent> componentRef = new AtomicReference<>();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
-                        bootstrapConfigProvider.getConfiguration().getConfigData(HederaConfig.class),
+                        bootstrapConfig.getConfigData(HederaConfig.class),
                         new SignatureExpanderImpl(),
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
@@ -117,16 +276,21 @@ public enum TransactionExecutors {
                         configProvider::getConfiguration,
                         () -> state,
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
-                        ThrottleAccumulator::new));
-        final var contractService = new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding);
+                        ThrottleAccumulator::new,
+                        softwareVersionFactory));
+        final var contractService = new ContractServiceImpl(
+                appContext, NO_OP_METRICS, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
+        final var hintsService = new HintsServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary(), bootstrapConfig);
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .scheduleServiceImpl(scheduleService)
+                .hintsService(hintsService)
                 .metrics(NO_OP_METRICS)
                 .throttleFactory(appContext.throttleFactory())
                 .maxSignedTxnSize(Optional.ofNullable(properties.get(MAX_SIGNED_TXN_SIZE_PROPERTY))

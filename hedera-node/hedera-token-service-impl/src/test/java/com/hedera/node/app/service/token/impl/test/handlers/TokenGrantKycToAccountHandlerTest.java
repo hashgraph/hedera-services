@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -43,6 +44,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -52,8 +54,8 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -147,7 +149,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 .value(TokenID.newBuilder().tokenNum(tokenNum).build(), storedToken)
                 .build();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableState);
-        return new ReadableTokenStoreImpl(readableStates);
+        return new ReadableTokenStoreImpl(readableStates, mock(ReadableEntityCounters.class));
     }
 
     @Nested

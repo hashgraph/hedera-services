@@ -1,9 +1,24 @@
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 module com.swirlds.common {
 
     /* Exported packages. This list should remain alphabetized. */
     exports com.swirlds.common;
     exports com.swirlds.common.config;
-    exports com.swirlds.common.config.singleton;
     exports com.swirlds.common.constructable;
     exports com.swirlds.common.constructable.internal;
     exports com.swirlds.common.context;
@@ -61,17 +76,6 @@ module com.swirlds.common {
     exports com.swirlds.common.utility.throttle;
     exports com.swirlds.common.jackson;
     exports com.swirlds.common.units;
-    exports com.swirlds.common.wiring;
-    exports com.swirlds.common.wiring.component;
-    exports com.swirlds.common.wiring.counters;
-    exports com.swirlds.common.wiring.model;
-    exports com.swirlds.common.wiring.schedulers;
-    exports com.swirlds.common.wiring.schedulers.builders;
-    exports com.swirlds.common.wiring.tasks;
-    exports com.swirlds.common.wiring.transformers;
-    exports com.swirlds.common.wiring.wires;
-    exports com.swirlds.common.wiring.wires.input;
-    exports com.swirlds.common.wiring.wires.output;
 
     /* Targeted exports */
     exports com.swirlds.common.crypto.internal to
@@ -140,10 +144,10 @@ module com.swirlds.common {
             com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
     exports com.swirlds.common.threading.atomic;
-    exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
     exports com.swirlds.common.merkle.synchronization.stats;
 
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.logging;
@@ -151,7 +155,6 @@ module com.swirlds.common {
     requires transitive com.swirlds.metrics.impl;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive io.prometheus.simpleclient;
     requires transitive lazysodium.java;
     requires transitive org.apache.logging.log4j;
