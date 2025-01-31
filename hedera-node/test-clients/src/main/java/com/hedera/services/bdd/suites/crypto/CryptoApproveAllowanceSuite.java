@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,13 +74,13 @@ import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.APPROVE;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.ERC_20_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.RECIPIENT;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.TRANSFER_FROM;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.TRANSFER_SIGNATURE;
+import static com.hedera.services.bdd.suites.contract.leaky.LeakyContractTestsSuite.TRANSFER_SIG_NAME;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.APPROVE;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.ERC_20_CONTRACT;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECIPIENT;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_FROM;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_SIGNATURE;
-import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_SIG_NAME;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
