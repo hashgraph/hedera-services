@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package com.hedera.node.app.blocks.impl.contexts;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.blocks.impl.TranslationContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@link TranslationContext} implementation with the id of an involved token.
  * @param memo The memo for the transaction
  * @param txnId The transaction ID
- * @param transaction The transaction
+ * @param serializedTransaction The serialized transaction
  * @param functionality The functionality of the transaction
  * @param tokenId The id of the involved token
  */
@@ -36,7 +36,7 @@ public record TokenOpContext(
         @NonNull String memo,
         @NonNull ExchangeRateSet transactionExchangeRates,
         @NonNull TransactionID txnId,
-        @NonNull Transaction transaction,
+        @NonNull Bytes serializedTransaction,
         @NonNull HederaFunctionality functionality,
         @NonNull TokenID tokenId)
         implements TranslationContext {}
