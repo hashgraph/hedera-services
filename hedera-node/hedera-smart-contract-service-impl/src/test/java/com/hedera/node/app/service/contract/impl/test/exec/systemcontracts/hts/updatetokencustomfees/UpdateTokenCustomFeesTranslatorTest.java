@@ -152,7 +152,7 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
 
     @Test
     void callFromFungibleTest() {
-        Tuple tuple = new Tuple(
+        Tuple tuple = Tuple.of(
                 FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
                 new Tuple[] {
                     Tuple.of(
@@ -183,7 +183,7 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
 
     @Test
     void callFromNonFungibleTest() {
-        Tuple tuple = new Tuple(
+        Tuple tuple = Tuple.of(
                 NON_FUNGIBLE_TOKEN_HEADLONG_ADDRESS,
                 new Tuple[] {
                     Tuple.of(
