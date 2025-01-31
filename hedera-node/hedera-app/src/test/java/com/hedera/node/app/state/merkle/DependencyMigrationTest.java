@@ -19,6 +19,7 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
+import static com.swirlds.platform.state.service.PlatformStateFacade.DEFAULT_PLATFORM_STATE_FACADE;
 import static com.swirlds.state.test.fixtures.merkle.TestSchema.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -48,7 +49,6 @@ import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
@@ -80,12 +80,12 @@ class DependencyMigrationTest extends MerkleTestBase {
 
     private ConfigProviderImpl configProvider;
 
-    private MerkleStateRoot<?> merkleTree;
+    private MerkleStateRoot merkleTree;
 
     @BeforeEach
     void setUp() {
         registry = mock(ConstructableRegistry.class);
-        merkleTree = new TestMerkleStateRoot();
+        merkleTree = new MerkleStateRoot();
         configProvider = new ConfigProviderImpl();
         storeMetricsService = new StoreMetricsServiceImpl(new NoOpMetrics());
     }
@@ -111,7 +111,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                             mock(Metrics.class),
                             startupNetworks,
                             storeMetricsService,
-                            configProvider))
+                            configProvider,
+                            DEFAULT_PLATFORM_STATE_FACADE))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -129,7 +130,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                             mock(Metrics.class),
                             startupNetworks,
                             storeMetricsService,
-                            configProvider))
+                            configProvider,
+                            DEFAULT_PLATFORM_STATE_FACADE))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -147,7 +149,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                             mock(Metrics.class),
                             startupNetworks,
                             storeMetricsService,
-                            configProvider))
+                            configProvider,
+                            DEFAULT_PLATFORM_STATE_FACADE))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -165,7 +168,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                             null,
                             startupNetworks,
                             storeMetricsService,
-                            configProvider))
+                            configProvider,
+                            DEFAULT_PLATFORM_STATE_FACADE))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -213,7 +217,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 startupNetworks,
                 storeMetricsService,
-                configProvider);
+                configProvider,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         // Then: we verify the migrations had the desired effects on both entity ID state and DependentService state
         // First check that the entity ID service has an updated entity ID, despite its schema migration not doing
@@ -325,7 +330,8 @@ class DependencyMigrationTest extends MerkleTestBase {
                 mock(Metrics.class),
                 startupNetworks,
                 storeMetricsService,
-                configProvider);
+                configProvider,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         // Then: we verify the migrations were run in the expected order
         Assertions.assertThat(orderedInvocations)

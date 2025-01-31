@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -56,6 +57,7 @@ public class ReconnectProtocol implements Protocol {
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
     private final SignedStateValidator validator;
+    private final PlatformStateFacade platformStateFacade;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final FallenBehindManager fallenBehindManager;
@@ -113,7 +115,8 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Configuration configuration,
-            @NonNull final Time time) {
+            @NonNull final Time time,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -127,6 +130,7 @@ public class ReconnectProtocol implements Protocol {
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
+        this.platformStateFacade = Objects.requireNonNull(platformStateFacade);
         Objects.requireNonNull(time);
 
         final Duration minimumTimeBetweenReconnects =
@@ -314,7 +318,8 @@ public class ReconnectProtocol implements Protocol {
                             connection.getOtherId(),
                             state.get().getRound(),
                             reconnectMetrics,
-                            configuration)
+                            configuration,
+                            platformStateFacade)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.interfaces.MerkleTraversable;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.logging.legacy.LogMarker;
@@ -57,7 +58,9 @@ public class StateEditorRm extends StateEditorOperation {
         final int indexInParent = parentInfo.indexInParent();
 
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorRm.run()")) {
-            final MerkleNode child = reservedSignedState.get().getState().getNodeAtRoute(destinationRoute);
+            MerkleTraversable state =
+                    (MerkleTraversable) reservedSignedState.get().getState();
+            final MerkleNode child = state.getNodeAtRoute(destinationRoute);
 
             if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
                 logger.info(
@@ -70,8 +73,7 @@ public class StateEditorRm extends StateEditorOperation {
             parent.setChild(indexInParent, null);
 
             // Invalidate hashes in path down from root
-            new MerkleRouteIterator(reservedSignedState.get().getState(), parent.getRoute())
-                    .forEachRemaining(Hashable::invalidateHash);
+            new MerkleRouteIterator(state.cast(), parent.getRoute()).forEachRemaining(Hashable::invalidateHash);
         }
     }
 }

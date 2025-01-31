@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.swirlds.platform.reconnect;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.platform.state.service.PlatformStateFacade.DEFAULT_PLATFORM_STATE_FACADE;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,12 +48,12 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.network.protocol.ProtocolFactory;
 import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import com.swirlds.state.State;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -176,7 +177,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         assertEquals(
                 params.shouldInitiate,
@@ -219,7 +221,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         assertEquals(
                 params.shouldAccept(),
@@ -253,7 +256,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -305,10 +309,11 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration,
-                Time.getCurrent());
+                Time.getCurrent(),
+                DEFAULT_PLATFORM_STATE_FACADE);
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
-        final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
+        final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
@@ -326,7 +331,8 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration,
-                Time.getCurrent());
+                Time.getCurrent(),
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         // pretend we have fallen behind
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
@@ -370,7 +376,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldInitiate());
         protocol.initiateFailed();
@@ -414,7 +421,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
 
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldAccept());
@@ -452,7 +460,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
     }
@@ -482,7 +491,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 fallenBehindManager,
                 () -> PlatformStatus.CHECKING,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
     }
@@ -508,7 +518,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertTrue(protocol.shouldAccept());
 
@@ -554,7 +565,8 @@ class ReconnectProtocolTests {
                 mock(SignedStateValidator.class),
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
-                configuration);
+                configuration,
+                DEFAULT_PLATFORM_STATE_FACADE);
         final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
         assertFalse(protocol.shouldAccept());
 

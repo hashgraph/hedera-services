@@ -19,7 +19,6 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
@@ -28,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
@@ -37,13 +37,16 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.address.Address;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.cert.X509Certificate;
@@ -105,7 +108,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final PlatformMerkleStateRoot state;
+    private final State state;
 
     /**
      * The timestamp of when this object was created.
@@ -167,6 +170,8 @@ public class SignedState implements SignedStateInfo {
      */
     private final boolean pcesRound;
 
+    private final PlatformStateFacade platformStateFacade;
+
     /**
      * Instantiate a signed state.
      *
@@ -187,12 +192,15 @@ public class SignedState implements SignedStateInfo {
     public SignedState(
             @NonNull final Configuration configuration,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final PlatformMerkleStateRoot state,
+            @NonNull final State state,
             @NonNull final String reason,
             final boolean freezeState,
             final boolean deleteOnBackgroundThread,
-            final boolean pcesRound) {
-        state.reserve();
+            final boolean pcesRound,
+            @NonNull final PlatformStateFacade platformStateFacade) {
+        this.platformStateFacade = platformStateFacade;
+        Reservable reservable = state.cast();
+        reservable.reserve();
 
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.state = requireNonNull(state);
@@ -214,7 +222,14 @@ public class SignedState implements SignedStateInfo {
     }
 
     public void init(@NonNull PlatformContext platformContext) {
-        state.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
+        state.init(
+                platformContext.getTime(),
+                platformContext.getMetrics(),
+                platformContext.getMerkleCryptography(),
+                () -> {
+                    ConsensusSnapshot consensusSnapshot = platformStateFacade.consensusSnapshotOf(state);
+                    return consensusSnapshot == null ? PlatformStateAccessor.GENESIS_ROUND : consensusSnapshot.round();
+                });
     }
 
     /**
@@ -222,7 +237,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getReadablePlatformState().getRound();
+        return platformStateFacade.roundOf(state);
     }
 
     /**
@@ -231,7 +246,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getReadablePlatformState().getRound() == GENESIS_ROUND;
+        return platformStateFacade.isGenesisStateOf(state);
     }
 
     /**
@@ -282,7 +297,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull PlatformMerkleStateRoot getState() {
+    public @NonNull State getState() {
         return state;
     }
 
@@ -469,7 +484,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getReadablePlatformState().getConsensusTimestamp();
+        return platformStateFacade.consensusTimestampOf(state);
     }
 
     /**

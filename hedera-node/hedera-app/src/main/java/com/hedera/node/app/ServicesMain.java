@@ -54,6 +54,7 @@ import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.tss.TssBlockHashSigner;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -82,8 +83,8 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -113,7 +114,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class simply delegates to {@link Hedera}.
  */
-public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
+public class ServicesMain implements SwirldMain<State> {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
@@ -164,15 +165,15 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull PlatformMerkleStateRoot newMerkleStateRoot() {
-        return hederaOrThrow().newMerkleStateRoot();
+    public @NonNull State newStateRoot() {
+        return hederaOrThrow().newStateRoot();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public StateLifecycles<PlatformMerkleStateRoot> newStateLifecycles() {
+    public StateLifecycles<State> newStateLifecycles() {
         return new StateLifecyclesImpl(hederaOrThrow());
     }
 
@@ -194,16 +195,16 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
      *     <li>Create the application's {@link Hedera} singleton, which overrides
      *     the default factory for the stable {@literal 0x8e300b0dfdafbb1a} class
      *     id of the Services Merkle tree root with a reference to its
-     *     {@link Hedera#newMerkleStateRoot()} method.</li>
+     *     {@link Hedera#newStateRoot()} method.</li>
      *     <li>Determine this node's <b>self id</b> by searching the <i>config.txt</i>
      *     in the working directory for any address book entries with IP addresses
      *     local to this machine; if there is more than one such entry, fail unless
      *     the command line args include a {@literal -local N} arg.</li>
      *     <li>Build a {@link Platform} instance from Services application metadata
      *     and the working directory <i>settings.txt</i>, providing the same
-     *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
+     *     {@link Hedera#newStateRoot()} method reference as the genesis state
      *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
-     *     {@link StateLifecycles#onStateInitialized(MerkleStateRoot, Platform, InitTrigger, SoftwareVersion)}
+     *     {@link StateLifecycles#onStateInitialized(State, Platform, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleStateRoot} instance that delegates the call back to our
      *     Hedera instance.)</li>
      *     <li>Call {@link Hedera#init(Platform, NodeId)} to complete startup phase
@@ -223,18 +224,18 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
      *      <li>Create a genesis state; or,</li>
      *      <li>Deserialize a saved state.</li>
      * </ol>
-     * In both cases the state object will be created by the {@link Hedera#newMerkleStateRoot()}
+     * In both cases the state object will be created by the {@link Hedera#newStateRoot()}
      * method reference bound to our Hedera instance. Because,
      * <ol>
      *      <li>We provided this method as the genesis state factory right above; and,</li>
-     *      <li>Our Hedera instance's constructor registered its {@link Hedera#newMerkleStateRoot()}
+     *      <li>Our Hedera instance's constructor registered its {@link Hedera#newStateRoot()}
      *      method with the {@link ConstructableRegistry} as the factory for the Services state root
      *      class id.</li>
      * </ol>
-     *  Now, note that {@link Hedera#newMerkleStateRoot()} returns {@link PlatformMerkleStateRoot}
+     *  Now, note that {@link Hedera#newStateRoot()} returns {@link MerkleStateRoot}
      *  instances that delegate their lifecycle methods to an injected instance of
      *  {@link StateLifecycles}---and the implementation of that
-     *  injected by {@link Hedera#newMerkleStateRoot()} delegates these calls back to the Hedera
+     *  injected by {@link Hedera#newStateRoot()} delegates these calls back to the Hedera
      *  instance itself.
      *  <p>
      *  Thus, the Hedera instance centralizes nearly all the setup and runtime logic for the
@@ -282,7 +283,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         // --- Initialize the platform metrics and the Hedera instance ---
         setupGlobalMetrics(platformConfig);
         metrics = getMetricsProvider().createPlatformMetrics(selfId);
-        hedera = newHedera(metrics);
+        final PlatformStateFacade platformStateFacade = new PlatformStateFacade(ServicesSoftwareVersion::new);
+        hedera = newHedera(metrics, platformStateFacade);
         final var version = hedera.getSoftwareVersion();
         final var isGenesis = new AtomicBoolean(false);
         logger.info("Starting node {} with version {}", selfId, version);
@@ -293,7 +295,7 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
         final var fileSystemManager = FileSystemManager.create(platformConfig);
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
-        StateLifecycles<PlatformMerkleStateRoot> stateLifecycles = hedera.newStateLifecycles();
+        StateLifecycles<State> stateLifecycles = hedera.newStateLifecycles();
         final var maybeDiskAddressBook = loadLegacyAddressBook();
         final var reservedState = loadInitialState(
                 platformConfig,
@@ -308,13 +310,14 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         // Fallback to the legacy address book if genesis-network.json or equivalent not loaded
                         genesisNetwork = DiskStartupNetworks.fromLegacyAddressBook(maybeDiskAddressBook.orElseThrow());
                     }
-                    final var genesisState = hedera.newMerkleStateRoot();
+                    final var genesisState = hedera.newStateRoot();
                     hedera.initializeStatesApi(genesisState, GENESIS, genesisNetwork, platformConfig);
                     return genesisState;
                 },
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
-                selfId);
+                selfId,
+                platformStateFacade);
         final var initialState = reservedState.state();
         final var state = initialState.get().getState();
         if (!isGenesis.get()) {
@@ -352,7 +355,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         stateLifecycles,
                         selfId,
                         canonicalEventStreamLoc(selfId.id(), state),
-                        rosterHistory)
+                        rosterHistory,
+                        platformStateFacade)
                 .withPlatformContext(platformContext)
                 .withConfiguration(platformConfig)
                 .withKeysAndCerts(keysAndCerts)
@@ -381,10 +385,12 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     /**
      * Creates a canonical {@link Hedera} instance for the given node id and metrics.
      *
-     * @param metrics  the metrics
+     * @param metrics             the metrics
+     * @param platformStateFacade
      * @return the {@link Hedera} instance
      */
-    public static Hedera newHedera(@NonNull final Metrics metrics) {
+    public static Hedera newHedera(
+            @NonNull final Metrics metrics, @NonNull final PlatformStateFacade platformStateFacade) {
         requireNonNull(metrics);
         return new Hedera(
                 ConstructableRegistry.getInstance(),
@@ -402,7 +408,8 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
                         HISTORY_LIBRARY_CODEC,
                         bootstrapConfig),
                 TssBlockHashSigner::new,
-                metrics);
+                metrics,
+                platformStateFacade);
     }
 
     /**
@@ -490,27 +497,35 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<PlatformMerkleStateRoot> stateRootSupplier,
+            @NonNull final Supplier<State> stateRootSupplier,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
-            @NonNull final NodeId selfId) {
+            @NonNull final NodeId selfId,
+            @NonNull final PlatformStateFacade platformStateFacade) {
         final var loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion);
+                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, platformStateFacade);
         try (loadedState) {
             if (loadedState.isNotNull()) {
                 logger.info(
                         STARTUP.getMarker(),
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-                return copyInitialSignedState(configuration, loadedState.get());
+                return copyInitialSignedState(configuration, loadedState.get(), platformStateFacade);
             }
         }
         final var stateRoot = stateRootSupplier.get();
         final var signedState = new SignedState(
-                configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
+                configuration,
+                CryptoStatic::verifySignature,
+                stateRoot,
+                "genesis state",
+                false,
+                false,
+                false,
+                platformStateFacade);
         final var reservedSignedState = signedState.reserve("initial reservation on genesis state");
         try (reservedSignedState) {
-            return copyInitialSignedState(configuration, reservedSignedState.get());
+            return copyInitialSignedState(configuration, reservedSignedState.get(), platformStateFacade);
         }
     }
 

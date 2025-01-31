@@ -21,8 +21,10 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,10 +52,11 @@ public final class BirthRoundStateMigration {
     public static void modifyStateForBirthRoundMigration(
             @NonNull final SignedState initialState,
             @NonNull final AncientMode ancientMode,
-            @NonNull final SoftwareVersion appVersion) {
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
-            if (initialState.getState().getReadablePlatformState().getFirstVersionInBirthRoundMode() != null) {
+            if (platformStateFacade.firstVersionInBirthRoundModeOf(initialState.getState()) != null) {
                 throw new IllegalStateException(
                         "Cannot revert to generation mode after birth round migration has been completed.");
             }
@@ -63,8 +66,8 @@ public final class BirthRoundStateMigration {
             return;
         }
 
-        final PlatformMerkleStateRoot state = initialState.getState();
-        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState();
+        final State state = initialState.getState();
+        final PlatformStateModifier writablePlatformState = platformStateFacade.getWritablePlatformStateOf(state);
 
         final boolean alreadyMigrated = writablePlatformState.getFirstVersionInBirthRoundMode() != null;
         if (alreadyMigrated) {
@@ -105,6 +108,6 @@ public final class BirthRoundStateMigration {
         writablePlatformState.setSnapshot(modifiedConsensusSnapshot);
 
         state.invalidateHash();
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
+        MerkleCryptoFactory.getInstance().digestTreeSync(state.cast());
     }
 }

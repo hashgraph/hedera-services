@@ -58,6 +58,7 @@ public class FeeCalculatorImplTest {
     @BeforeEach
     void setUp() {
         feeData = new FeeData(FeeComponents.DEFAULT, FeeComponents.DEFAULT, FeeComponents.DEFAULT, SubType.DEFAULT);
+        softwareVersionFactory = ServicesSoftwareVersion::new;
     }
 
     @Test

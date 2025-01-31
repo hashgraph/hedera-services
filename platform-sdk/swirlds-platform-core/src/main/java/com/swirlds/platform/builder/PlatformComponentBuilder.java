@@ -1073,7 +1073,8 @@ public class PlatformComponentBuilder {
                     x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
                     state -> blocks.loadReconnectStateReference().get().accept(state),
                     () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
-                    blocks.intakeEventCounter());
+                    blocks.intakeEventCounter(),
+                    blocks.platformStateFacade());
         }
         return gossip;
     }
@@ -1141,7 +1142,11 @@ public class PlatformComponentBuilder {
             final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
 
             stateSnapshotManager = new DefaultStateSnapshotManager(
-                    blocks.platformContext(), actualMainClassName, blocks.selfId(), blocks.swirldName());
+                    blocks.platformContext(),
+                    actualMainClassName,
+                    blocks.selfId(),
+                    blocks.swirldName(),
+                    blocks.platformStateFacade());
         }
         return stateSnapshotManager;
     }
@@ -1172,7 +1177,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public HashLogger buildHashLogger() {
         if (hashLogger == null) {
-            hashLogger = new DefaultHashLogger(blocks.platformContext());
+            hashLogger = new DefaultHashLogger(blocks.platformContext(), blocks.platformStateFacade());
         }
         return hashLogger;
     }
@@ -1303,7 +1308,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.swirldStateManager(),
                     blocks.statusActionSubmitterReference().get(),
-                    blocks.appVersion());
+                    blocks.appVersion(),
+                    blocks.platformStateFacade());
         }
         return transactionHandler;
     }

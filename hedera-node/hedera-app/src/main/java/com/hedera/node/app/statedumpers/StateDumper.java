@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public class StateDumper {
             @NonNull final State state,
             @NonNull final DumpCheckpoint checkpoint,
             @NonNull final Set<MerkleStateChild> childrenToDump) {
-        if (!(state instanceof MerkleStateRoot<?> merkleState)) {
+        if (!(state instanceof MerkleStateRoot merkleState)) {
             throw new IllegalArgumentException("Expected a " + MerkleStateRoot.class.getSimpleName());
         }
         final SingletonNode<BlockInfo> blockInfoNode = requireNonNull(

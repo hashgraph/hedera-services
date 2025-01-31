@@ -31,9 +31,11 @@ import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.nexus.SignedStateNexus;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -62,6 +64,7 @@ public class ReconnectStateLoader {
     private final SavedStateController savedStateController;
     private final Roster roster;
     private final StateLifecycles stateLifecycles;
+    private final PlatformStateFacade platformStateFacade;
 
     /**
      * Constructor.
@@ -83,7 +86,8 @@ public class ReconnectStateLoader {
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final SavedStateController savedStateController,
             @NonNull final Roster roster,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final StateLifecycles stateLifecycles,
+            @NonNull final PlatformStateFacade platformStateFacade) {
         this.platform = Objects.requireNonNull(platform);
         this.platformContext = Objects.requireNonNull(platformContext);
         this.platformWiring = Objects.requireNonNull(platformWiring);
@@ -92,6 +96,7 @@ public class ReconnectStateLoader {
         this.savedStateController = Objects.requireNonNull(savedStateController);
         this.roster = Objects.requireNonNull(roster);
         this.stateLifecycles = stateLifecycles;
+        this.platformStateFacade = platformStateFacade;
     }
 
     /**
@@ -109,8 +114,10 @@ public class ReconnectStateLoader {
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
             final Hash reconnectHash = signedState.getState().getHash();
-            SoftwareVersion creationSoftwareVersion =
-                    signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
+            final State state = signedState.getState();
+            final PlatformStateAccessor readablePlatformState = platformStateFacade.readablePlatformStateOf(state);
+            final SoftwareVersion creationSoftwareVersion =
+                    platformStateFacade.creationSoftwareVersionOf(signedState.getState());
             signedState.init(platformContext);
             stateLifecycles.onStateInitialized(
                     signedState.getState(), platform, InitTrigger.RECONNECT, creationSoftwareVersion);
@@ -123,7 +130,6 @@ public class ReconnectStateLoader {
             }
 
             // Before attempting to load the state, verify that the platform roster matches the state roster.
-            final State state = signedState.getState();
             final Roster stateRoster = RosterRetriever.retrieveActiveOrGenesisRoster(state);
             if (!roster.equals(stateRoster)) {
                 throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes "
@@ -148,8 +154,7 @@ public class ReconnectStateLoader {
             platformWiring
                     .getSignatureCollectorStateInput()
                     .put(signedState.reserve("loading reconnect state into sig collector"));
-            platformWiring.consensusSnapshotOverride(Objects.requireNonNull(
-                    signedState.getState().getReadablePlatformState().getSnapshot()));
+            platformWiring.consensusSnapshotOverride(Objects.requireNonNull(readablePlatformState.getSnapshot()));
 
             final Roster previousRoster = RosterRetriever.retrievePreviousRoster(state);
             platformWiring.getRosterUpdateInput().inject(new RosterUpdate(previousRoster, roster));
@@ -161,12 +166,12 @@ public class ReconnectStateLoader {
 
             platformWiring.updateEventWindow(new EventWindow(
                     signedState.getRound(),
-                    signedState.getState().getReadablePlatformState().getAncientThreshold(),
-                    signedState.getState().getReadablePlatformState().getAncientThreshold(),
+                    readablePlatformState.getAncientThreshold(),
+                    readablePlatformState.getAncientThreshold(),
                     ancientMode));
 
-            final RunningEventHashOverride runningEventHashOverride = new RunningEventHashOverride(
-                    signedState.getState().getReadablePlatformState().getLegacyRunningEventHash(), true);
+            final RunningEventHashOverride runningEventHashOverride =
+                    new RunningEventHashOverride(readablePlatformState.getLegacyRunningEventHash(), true);
             platformWiring.updateRunningHash(runningEventHashOverride);
             platformWiring.getPcesWriterRegisterDiscontinuityInput().inject(signedState.getRound());
 

@@ -76,6 +76,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -96,8 +97,7 @@ import org.apache.logging.log4j.Logger;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 @ConstructableIgnored
-public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends PartialNaryMerkleInternal
-        implements MerkleInternal, State {
+public class MerkleStateRoot extends PartialNaryMerkleInternal implements MerkleInternal, State {
 
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
@@ -114,6 +114,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     // indices globally, assuming these indices do not change that often. We need to re-think index lookup,
     // but at this point all major rewrites seem to risky.
     private static final Map<String, Integer> INDEX_LOOKUP = new ConcurrentHashMap<>();
+    private LongSupplier roundSupplier;
 
     private MerkleCryptography merkleCryptography;
     private Time time;
@@ -162,10 +163,11 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
-    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography) {
+    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography, LongSupplier roundSupplier) {
         this.time = time;
         this.metrics = metrics;
         this.merkleCryptography = merkleCryptography;
+        this.roundSupplier = roundSupplier;
         snapshotMetrics = new MerkleRootSnapshotMetrics(metrics);
     }
 
@@ -174,11 +176,12 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      *
      * @param from The other state to fast-copy from. Cannot be null.
      */
-    protected MerkleStateRoot(@NonNull final MerkleStateRoot<T> from) {
+    protected MerkleStateRoot(@NonNull final MerkleStateRoot from) {
         // Copy the Merkle route from the source instance
         super(from);
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
         this.listeners.addAll(from.listeners);
+        this.roundSupplier = from.roundSupplier;
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -249,10 +252,10 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     @Override
     @NonNull
     public ReadableStates getReadableStates(@NonNull String serviceName) {
-        return readableStatesMap.computeIfAbsent(serviceName, s -> {
-            final var stateMetadata = services.get(s);
-            return stateMetadata == null ? EMPTY_READABLE_STATES : new MerkleReadableStates(stateMetadata);
-        });
+        if (services.get(serviceName) == null) {
+            return EMPTY_READABLE_STATES;
+        }
+        return readableStatesMap.computeIfAbsent(serviceName, s -> new MerkleReadableStates(services.get(s)));
     }
 
     /**
@@ -262,6 +265,9 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     @NonNull
     public WritableStates getWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
+        if (services.get(serviceName) == null) {
+            return new MerkleWritableStates(serviceName, Map.of());
+        }
         return writableStatesMap.computeIfAbsent(serviceName, s -> {
             final var stateMetadata = services.getOrDefault(s, Map.of());
             return new MerkleWritableStates(serviceName, stateMetadata);
@@ -284,14 +290,12 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     @NonNull
     @Override
-    public T copy() {
+    public MerkleStateRoot copy() {
         throwIfImmutable();
         throwIfDestroyed();
         setImmutable(true);
-        return copyingConstructor();
+        return new MerkleStateRoot(this);
     }
-
-    protected abstract T copyingConstructor();
 
     @Override
     public MerkleNode migrate(int version) {
@@ -928,21 +932,22 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
         throwIfMutable();
         throwIfDestroyed();
         final long startTime = time.currentTimeMillis();
-        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath, getCurrentRound());
+        MerkleTreeSnapshotWriter.createSnapshot(this, targetPath, roundSupplier.getAsLong());
         snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
     }
-
-    /**
-     * Returns the number of the current rount
-     */
-    public abstract long getCurrentRound();
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public MerkleStateRoot<?> loadSnapshot(@NonNull Path targetPath) throws IOException {
-        return (MerkleStateRoot<?>)
+    public MerkleStateRoot loadSnapshot(@NonNull Path targetPath) throws IOException {
+        return (MerkleStateRoot)
                 MerkleTreeSnapshotReader.readStateFileData(targetPath).stateRoot();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public MerkleStateRoot cast() {
+        return super.cast();
     }
 }

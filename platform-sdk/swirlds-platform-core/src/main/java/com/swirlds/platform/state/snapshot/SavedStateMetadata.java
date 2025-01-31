@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformStateAccessor;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -165,12 +166,16 @@ public record SavedStateMetadata(
      * @return the signed state metadata
      */
     public static SavedStateMetadata create(
-            @NonNull final SignedState signedState, @NonNull final NodeId selfId, @NonNull final Instant now) {
+            @NonNull final SignedState signedState,
+            @NonNull final NodeId selfId,
+            @NonNull final Instant now,
+            @NonNull final PlatformStateFacade platformStateFacade) {
         Objects.requireNonNull(signedState, "signedState must not be null");
         Objects.requireNonNull(signedState.getState().getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
-        final PlatformStateAccessor platformState = signedState.getState().getReadablePlatformState();
+        final PlatformStateAccessor platformState =
+                platformStateFacade.getReadablePlatformStateOf(signedState.getState());
         final Roster roster = RosterRetriever.retrieveActiveOrGenesisRoster(signedState.getState());
 
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();

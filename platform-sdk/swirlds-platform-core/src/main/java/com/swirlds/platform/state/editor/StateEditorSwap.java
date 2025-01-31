@@ -22,6 +22,7 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatNode;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.interfaces.MerkleTraversable;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -53,8 +54,10 @@ public class StateEditorSwap extends StateEditorOperation {
             final StateEditor.ParentInfo parentInfoA = getStateEditor().getParentInfo(pathA);
             final StateEditor.ParentInfo parentInfoB = getStateEditor().getParentInfo(pathB);
 
-            final MerkleNode nodeA = reservedSignedState.get().getState().getNodeAtRoute(parentInfoA.target());
-            final MerkleNode nodeB = reservedSignedState.get().getState().getNodeAtRoute(parentInfoB.target());
+            MerkleTraversable merkleTraversable =
+                    reservedSignedState.get().getState().cast();
+            final MerkleNode nodeA = merkleTraversable.getNodeAtRoute(parentInfoA.target());
+            final MerkleNode nodeB = merkleTraversable.getNodeAtRoute(parentInfoB.target());
 
             if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
                 logger.info(LogMarker.CLI.getMarker(), "Swapping {} and {}", formatNode(nodeA), formatNode(nodeB));
@@ -75,12 +78,10 @@ public class StateEditorSwap extends StateEditorOperation {
 
             // Invalidate hashes in path down from root
             new MerkleRouteIterator(
-                            reservedSignedState.get().getState(),
-                            parentInfoA.parent().getRoute())
+                            merkleTraversable.cast(), parentInfoA.parent().getRoute())
                     .forEachRemaining(Hashable::invalidateHash);
             new MerkleRouteIterator(
-                            reservedSignedState.get().getState(),
-                            parentInfoB.parent().getRoute())
+                            merkleTraversable.cast(), parentInfoB.parent().getRoute())
                     .forEachRemaining(Hashable::invalidateHash);
         }
     }
