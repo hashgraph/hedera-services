@@ -122,7 +122,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // The last non-empty (i.e., not skipped) round number that will eventually get a start-of-state hash
     private long lastNonEmptyRoundNumber;
     private Bytes lastBlockHash;
-    private Instant consensusTimeFirstRoundInBlock;
+    private Instant consensusTimeFirstEventInBlock;
     private Instant consensusTimeLastRound;
     private BlockItemWriter writer;
     private StreamingTreeHasher inputTreeHasher;
@@ -242,7 +242,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
-            consensusTimeFirstRoundInBlock = round.getConsensusTimestamp();
+            consensusTimeFirstEventInBlock = round.iterator().next().getConsensusTimestamp();
             boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
 
             lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
@@ -449,7 +449,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @NonNull Timestamp blockTimestamp() {
-        return new Timestamp(consensusTimeFirstRoundInBlock.getEpochSecond(), consensusTimeFirstRoundInBlock.getNano());
+        return asTimestamp(consensusTimeFirstEventInBlock);
     }
 
     @Override
@@ -562,13 +562,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             return true;
         }
 
-        // If blockPeriod is 0, use roundsPerBlock for both genesis and normal operations
+        // If blockPeriod is 0, use roundsPerBlock
         if (blockPeriod == 0) {
             return roundNumber % roundsPerBlock == 0;
         }
 
         // For time-based blocks, check if enough consensus time has elapsed
-        final var elapsedSeconds = Duration.between(consensusTimeFirstRoundInBlock, consensusTimeLastRound)
+        final var elapsedSeconds = Duration.between(consensusTimeFirstEventInBlock, consensusTimeLastRound)
                 .getSeconds();
         return elapsedSeconds >= blockPeriod;
     }
