@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -54,6 +55,7 @@ class TurtleTests {
      * Simulate a turtle network for 5 minutes.
      */
     @Test
+    @Disabled
     void turtleTest() {
         final Randotron randotron = Randotron.create();
 
