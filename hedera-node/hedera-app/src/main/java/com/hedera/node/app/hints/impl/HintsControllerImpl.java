@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -38,6 +40,7 @@ import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.IntStream;
 
 /**
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
@@ -106,40 +109,71 @@ public class HintsControllerImpl implements HintsController {
         this.codec = requireNonNull(codec);
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
-        publications.forEach(this::addHintsKeyPublication);
+        // Ensure we are up-to-date on any published hinTS keys we might need for this construction
+        if (!construction.hasHintsScheme()) {
+            final var cutoffTime = construction.hasPreprocessingStartTime()
+                    ? asInstant(construction.preprocessingStartTimeOrThrow())
+                    : Instant.MAX;
+            publications.forEach(publication -> {
+                if (!publication.adoptionTime().isAfter(cutoffTime)) {
+                    maybeUpdateForHintsKey(publication);
+                }
+            });
+        }
     }
 
     @Override
     public long constructionId() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return construction.constructionId();
     }
 
     @Override
     public boolean isStillInProgress() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return !construction.hasHintsScheme();
     }
 
     @Override
     public boolean hasNumParties(final int numParties) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return this.numParties == numParties;
     }
 
     @Override
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(now);
         requireNonNull(hintsStore);
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (construction.hasHintsScheme()) {
+            return;
+        }
+        if (construction.hasPreprocessingStartTime()) {
+            if (!votes.containsKey(selfId) && preprocessingVoteFuture == null) {
+                preprocessingVoteFuture =
+                        startPreprocessingVoteFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
+            }
+        } else {
+            throw new AssertionError("Not implemented");
+        }
     }
 
     @Override
     public @NonNull OptionalInt partyIdOf(final long nodeId) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!weights.targetIncludes(nodeId)) {
+            return OptionalInt.empty();
+        }
+        return nodePartyIds.containsKey(nodeId)
+                ? OptionalInt.of(nodePartyIds.get(nodeId))
+                : OptionalInt.of(expectedPartyId(nodeId));
     }
 
     @Override
     public void addHintsKeyPublication(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        throw new UnsupportedOperationException("Not yet implemented");
+        // If grace period is over, we have either finished construction or already set the
+        // preprocessing time to something earlier than consensus now; so we will not use
+        // this key and can return immediately
+        if (!construction.hasGracePeriodEndTime()) {
+            return;
+        }
+        maybeUpdateForHintsKey(publication);
     }
 
     @Override
@@ -153,5 +187,98 @@ public class HintsControllerImpl implements HintsController {
     @Override
     public void cancelPendingWork() {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /**
+     * If the publication is for the expected party id, update the node and party id mappings and
+     * start a validation future for the hinTS key.
+     * @param publication the publication
+     */
+    private void maybeUpdateForHintsKey(@NonNull final HintsKeyPublication publication) {
+        final int partyId = publication.partyId();
+        final long nodeId = publication.nodeId();
+        if (partyId == expectedPartyId(nodeId)) {
+            nodePartyIds.put(nodeId, partyId);
+            partyNodeIds.put(partyId, nodeId);
+            validationFutures.put(publication.adoptionTime(), validationFuture(partyId, publication.hintsKey()));
+        }
+    }
+
+    /**
+     * Returns the party ID that this node should use in the target roster. These ids are assigned
+     * by sorting the unassigned node ids and unused party ids in ascending order, and matching
+     * node ids and party ids by their indexes in these lists.
+     * <p>
+     * For example, suppose there are three nodes with ids {@code 7}, {@code 9}, and {@code 12};
+     * and the party size is four (hence party ids are {@code 0}, {@code 1}, {@code 2}, and {@code 3}).
+     * Then we can think of two lists,
+     * <ul>
+     *     <Li>{@code (7, 9, 12)}</Li>
+     *     <Li>{@code (0, 1, 2, 3)}</Li>
+     * </ul>
+     * And do three assignments: {@code 7 -> 0}, {@code 9 -> 1}, and {@code 12 -> 2}.
+     * <p>
+     * The important thing about this strategy is that it doesn't matter the <b>order</b> in
+     * which we do the assignments. For example, if the nodes publish their keys in the order
+     * {@code 9}, {@code 7}, {@code 12}, then after assigning {@code 9 -> 1}, the remaining
+     * lists will be,
+     * <ul>
+     *     <Li>{@code (7, 12)}</Li>
+     *     <Li>{@code (0, 2, 3)}</Li>
+     * </ul>
+     * And no matter which node publishes their key next, they still the same id as expected.
+     * @throws IndexOutOfBoundsException if the node id has already been assigned a party id
+     */
+    private int expectedPartyId(final long nodeId) {
+        final var unassignedNodeIds = weights.targetNodeWeights().keySet().stream()
+                .filter(id -> !nodePartyIds.containsKey(id))
+                .sorted()
+                .toList();
+        final var unusedPartyIds = IntStream.range(0, numParties)
+                .filter(id -> !partyNodeIds.containsKey(id))
+                .boxed()
+                .toList();
+        return unusedPartyIds.get(unassignedNodeIds.indexOf(nodeId));
+    }
+
+    /**
+     * Returns a future that completes to a validation of the given hints key.
+     *
+     * @param partyId the party ID
+     * @param hintsKey the hints key
+     * @return the future
+     */
+    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final Bytes hintsKey) {
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    final var isValid = library.validateHintsKey(hintsKey, partyId, numParties);
+                    return new Validation(partyId, hintsKey, isValid);
+                },
+                executor);
+    }
+
+    /**
+     * Returns a future that completes to the aggregated hinTS keys for this construction for
+     * all valid published hinTS keys.
+     *
+     * @return the future
+     */
+    private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
+        return CompletableFuture.runAsync(
+                () -> {
+                    final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
+                            .map(CompletableFuture::join)
+                            .filter(Validation::isValid)
+                            .collect(toMap(Validation::partyId, Validation::hintsKey));
+                    final var aggregatedWeights = nodePartyIds.entrySet().stream()
+                            .filter(entry -> hintKeys.containsKey(entry.getValue()))
+                            .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
+                    final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
+                    final var preprocessedKeys = codec.decodePreprocessedKeys(output);
+                    submissions
+                            .submitHintsVote(construction.constructionId(), preprocessedKeys)
+                            .join();
+                },
+                executor);
     }
 }

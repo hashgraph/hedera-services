@@ -18,6 +18,7 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -56,6 +57,12 @@ public class HintsServiceImpl implements HintsService {
                 .create(library, appContext, executor, metrics);
     }
 
+    @VisibleForTesting
+    HintsServiceImpl(@NonNull final Configuration bootstrapConfig, @NonNull final HintsServiceComponent component) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.component = requireNonNull(component);
+    }
+
     @Override
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
@@ -66,7 +73,17 @@ public class HintsServiceImpl implements HintsService {
         requireNonNull(hintsStore);
         requireNonNull(now);
         requireNonNull(tssConfig);
-        throw new UnsupportedOperationException();
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasHintsScheme()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
+                    controller.advanceConstruction(now, hintsStore);
+                }
+            }
+            case HANDOFF -> hintsStore.updateForHandoff(activeRosters);
+        }
     }
 
     @Override

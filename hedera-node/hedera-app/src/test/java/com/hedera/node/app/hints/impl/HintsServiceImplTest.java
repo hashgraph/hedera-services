@@ -20,19 +20,19 @@ import static com.hedera.node.app.hints.impl.WritableHintsStoreImplTest.WITH_ENA
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.hints.HintsLibrary;
+import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
-import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.time.Instant;
-import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HintsServiceImplTest {
-    private static final Metrics NO_OP_METRICS = new NoOpMetrics();
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
-
-    @Mock
-    private AppContext appContext;
 
     @Mock
     private TssConfig tssConfig;
@@ -60,14 +56,22 @@ class HintsServiceImplTest {
     private SchemaRegistry schemaRegistry;
 
     @Mock
-    private HintsLibrary library;
+    private HintsServiceComponent component;
+
+    @Mock
+    private HintsContext context;
+
+    @Mock
+    private HintsControllers controllers;
+
+    @Mock
+    private HintsController controller;
 
     private HintsServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, library, WITH_ENABLED_HINTS);
+        subject = new HintsServiceImpl(WITH_ENABLED_HINTS, component);
     }
 
     @Test
@@ -78,12 +82,47 @@ class HintsServiceImplTest {
 
     @Test
     void nothingSupportedExceptRegisteringSchemas() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig));
         assertThrows(UnsupportedOperationException.class, subject::isReady);
         assertThrows(UnsupportedOperationException.class, subject::activeVerificationKeyOrThrow);
         assertThrows(UnsupportedOperationException.class, () -> subject.signFuture(Bytes.EMPTY));
+        given(component.signingContext()).willReturn(context);
         assertDoesNotThrow(() -> subject.registerSchemas(schemaRegistry));
+    }
+
+    @Test
+    void callPurgeAfterHandoff() {
+        given(activeRosters.phase()).willReturn(ActiveRosters.Phase.HANDOFF);
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig);
+
+        verify(hintsStore).updateForHandoff(activeRosters);
+    }
+
+    @Test
+    void doesNothingAtBootstrapIfTheConstructionIsComplete() {
+        given(activeRosters.phase()).willReturn(ActiveRosters.Phase.BOOTSTRAP);
+        final var construction =
+                HintsConstruction.newBuilder().hintsScheme(HintsScheme.DEFAULT).build();
+        given(hintsStore.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, tssConfig))
+                .willReturn(construction);
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig);
+
+        verifyNoInteractions(component);
+    }
+
+    @Test
+    void usesControllerIfTheConstructionIsIncompleteDuringTransition() {
+        given(activeRosters.phase()).willReturn(ActiveRosters.Phase.TRANSITION);
+        final var construction = HintsConstruction.DEFAULT;
+        given(hintsStore.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, tssConfig))
+                .willReturn(construction);
+        given(component.controllers()).willReturn(controllers);
+        given(controllers.getOrCreateFor(activeRosters, construction, hintsStore))
+                .willReturn(controller);
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig);
+
+        verify(controller).advanceConstruction(CONSENSUS_NOW, hintsStore);
     }
 }
