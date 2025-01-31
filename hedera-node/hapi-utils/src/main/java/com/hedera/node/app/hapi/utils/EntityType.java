@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.validation;
+package com.hedera.node.app.hapi.utils;
 
 /**
  * Various entity types in all services
