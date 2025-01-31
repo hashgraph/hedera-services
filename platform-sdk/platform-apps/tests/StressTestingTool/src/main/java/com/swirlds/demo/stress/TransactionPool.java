@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ import java.util.Random;
  * Provides pre-generated random transactions.
  */
 final class TransactionPool {
+
+    public static final byte APPLICATION_TRANSACTION_MARKER = 1;
+
     /**
      * the array of transactions
      */
@@ -58,6 +61,9 @@ final class TransactionPool {
         for (int i = 0; i < transactions.length; i++) {
             final byte[] data = new byte[transactionSize];
             random.nextBytes(data);
+            // Add byte with value of 1 as a marker to indicate the start of an application transaction. This is used
+            // to later differentiate between application transactions and system transactions.
+            data[0] = APPLICATION_TRANSACTION_MARKER;
             transactions[i] = data;
         }
     }

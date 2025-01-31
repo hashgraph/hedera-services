@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
@@ -105,8 +106,8 @@ class ScheduleNativeCallTest extends CallTestBase {
         final var result = subject.execute(frame).fullResult();
 
         // then
-        final var encodedResponse = RC_AND_ADDRESS_ENCODER.encodeElements(
-                (long) SUCCESS.protoOrdinal(), headlongAddressOf(CALLED_SCHEDULE_ID));
+        final var encodedResponse = RC_AND_ADDRESS_ENCODER.encode(
+                Tuple.of((long) SUCCESS.protoOrdinal(), headlongAddressOf(CALLED_SCHEDULE_ID)));
         final var expectedOutput = gasPlus(successResult(encodedResponse, 100L, recordBuilder), SUCCESS, false, 1100L)
                 .fullResult();
         assertEquals(State.COMPLETED_SUCCESS, result.result().getState());

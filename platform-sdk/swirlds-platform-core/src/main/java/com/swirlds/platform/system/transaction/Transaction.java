@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@
 
 package com.swirlds.platform.system.transaction;
 
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.platform.util.TransactionUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
@@ -32,21 +29,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 public sealed interface Transaction permits ConsensusTransaction {
 
     /**
-     * Returns the transaction as a PBJ record
-     * @return the transaction
-     */
-    @NonNull
-    EventTransaction getTransaction();
-
-    /**
      * A convenience method for retrieving the application transaction {@link Bytes} object. Before calling this method,
      * ensure that the transaction is not a system transaction by calling {@link #isSystem()}.
      *
      * @return the application transaction Bytes or {@code Bytes.EMPTY} if the transaction is a system transaction
      */
-    default @NonNull Bytes getApplicationTransaction() {
-        return !isSystem() ? getTransaction().transaction().as() : Bytes.EMPTY;
-    }
+    Bytes getApplicationTransaction();
 
     /**
      * Get the size of the transaction
@@ -61,9 +49,8 @@ public sealed interface Transaction permits ConsensusTransaction {
      * @return {@code true} if this is a system transaction; otherwise {@code false} if this is an application
      * 		transaction
      */
-    default boolean isSystem() {
-        return TransactionUtils.isSystemTransaction(getTransaction());
-    }
+    @Deprecated
+    boolean isSystem();
 
     /**
      * Returns the custom metadata object set via {@link #setMetadata(Object)}.

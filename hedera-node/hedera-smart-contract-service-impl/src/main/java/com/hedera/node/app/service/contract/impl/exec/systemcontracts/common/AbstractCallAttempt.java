@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.SystemContract;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,6 +36,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -54,6 +58,7 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
     private final VerificationStrategies verificationStrategies;
     private final SystemContractGasCalculator gasCalculator;
     private final List<CallTranslator<T>> callTranslators;
+    private final SystemContractMethodRegistry systemContractMethodRegistry;
     private final boolean isStaticCall;
 
     // If non-null, the address of a non-contract entity (e.g., account or token) whose
@@ -89,6 +94,7 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<T>> callTranslators,
             final boolean isStaticCall,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
             @NonNull final com.esaulpaugh.headlong.abi.Function redirectFunction) {
         requireNonNull(input);
         requireNonNull(redirectFunction);
@@ -101,6 +107,7 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
         this.enhancement = requireNonNull(enhancement);
         this.verificationStrategies = requireNonNull(verificationStrategies);
         this.onlyDelegatableContractKeysActive = onlyDelegatableContractKeysActive;
+        this.systemContractMethodRegistry = requireNonNull(systemContractMethodRegistry);
 
         if (isRedirectSelector(redirectFunction.selector(), input.toArrayUnsafe())) {
             Tuple abiCall = null;
@@ -126,6 +133,8 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
         this.senderId = addressIdConverter.convertSender(senderAddress);
         this.isStaticCall = isStaticCall;
     }
+
+    protected abstract SystemContract systemContractKind();
 
     protected abstract T self();
 
@@ -279,12 +288,31 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
 
     /**
      * Returns whether this call attempt is a selector for any of the given functions.
-     * @param configEnabled whether the config is enabled
-     * @param functions selectors to match against
+     * @param methods selectors to match against
      * @return boolean result
      */
-    public boolean isSelectorIfConfigEnabled(final boolean configEnabled, @NonNull final Function... functions) {
-        return configEnabled && isSelector(functions);
+    public boolean isSelector(@NonNull final SystemContractMethod... methods) {
+        return isMethod(methods).isPresent();
+    }
+
+    public @NonNull Optional<SystemContractMethod> isMethod(@NonNull final SystemContractMethod... methods) {
+        for (final var method : methods) {
+            if (Arrays.equals(method.selector(), this.selector())) {
+                return Optional.of(method);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns whether this call attempt is a selector for any of the given functions.
+     * @param configEnabled whether the config is enabled
+     * @param methods selectors to match against
+     * @return boolean result
+     */
+    public boolean isSelectorIfConfigEnabled(
+            final boolean configEnabled, @NonNull final SystemContractMethod... methods) {
+        return configEnabled && isSelector(methods);
     }
 
     /**
@@ -304,5 +332,9 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
      */
     public boolean isOnlyDelegatableContractKeysActive() {
         return onlyDelegatableContractKeysActive;
+    }
+
+    public SystemContractMethodRegistry getSystemContractMethodRegistry() {
+        return systemContractMethodRegistry;
     }
 }

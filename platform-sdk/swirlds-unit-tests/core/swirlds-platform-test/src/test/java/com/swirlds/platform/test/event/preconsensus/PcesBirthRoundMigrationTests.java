@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
@@ -46,8 +44,6 @@ import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -63,7 +59,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -82,11 +77,6 @@ class PcesBirthRoundMigrationTests {
     private Path pcesPath;
     private Path temporaryFilePath;
 
-    @BeforeAll
-    static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-    }
-
     @BeforeEach
     void beforeEach() throws IOException {
         if (Files.exists(testDirectory)) {
@@ -97,8 +87,6 @@ class PcesBirthRoundMigrationTests {
         recycleBinPath = testDirectory.resolve("recycle-bin");
         pcesPath = testDirectory.resolve("pces");
         temporaryFilePath = testDirectory.resolve("tmp");
-
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(0));
     }
 
     @AfterEach
@@ -106,8 +94,6 @@ class PcesBirthRoundMigrationTests {
         if (Files.exists(testDirectory)) {
             FileUtils.deleteDirectory(testDirectory);
         }
-
-        StaticSoftwareVersion.reset();
     }
 
     /**

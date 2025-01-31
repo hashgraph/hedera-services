@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
@@ -96,7 +95,6 @@ class DefaultTransactionHandlerTests {
                 roster,
                 events,
                 keystone,
-                new Generations(),
                 EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD),
                 SyntheticSnapshot.GENESIS_SNAPSHOT,
                 pcesRound,
@@ -156,7 +154,9 @@ class DefaultTransactionHandlerTests {
                 pcesRound,
                 handlerOutput.reservedSignedState().get().isPcesRound(),
                 "the state should match the PCES boolean");
-        verify(tester.getSwirldStateManager().getConsensusState()).sealConsensusRound(consensusRound);
+        verify(tester.getStateLifecycles())
+                .onSealConsensusRound(
+                        consensusRound, tester.getSwirldStateManager().getConsensusState());
     }
 
     @Test

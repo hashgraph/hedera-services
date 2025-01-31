@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,18 @@
 package com.hedera.node.app.workflows.standalone;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.MAX_SIGNED_TXN_SIZE_PROPERTY;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.TRANSACTION_EXECUTORS;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -38,6 +42,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -48,9 +53,14 @@ import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.FileService;
@@ -75,6 +85,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.internal.CryptoUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
@@ -104,12 +115,17 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
+import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.AbstractOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.StandardJsonTracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -142,6 +158,8 @@ public class TransactionExecutorsTest {
             ContractID.newBuilder().contractNum(1002).build();
     private static final com.esaulpaugh.headlong.abi.Function PICK_FUNCTION =
             new com.esaulpaugh.headlong.abi.Function("pick()", "(uint32)");
+    private static final com.esaulpaugh.headlong.abi.Function GET_LAST_BLOCKHASH_FUNCTION =
+            new com.esaulpaugh.headlong.abi.Function("getLastBlockHash()", "(bytes32)");
     private static final String EXPECTED_TRACE_START =
             "{\"pc\":0,\"op\":96,\"gas\":\"0x13458\",\"gasCost\":\"0x3\",\"memSize\":0,\"depth\":1,\"refund\":0,\"opName\":\"PUSH1\"}";
 
@@ -154,6 +172,21 @@ public class TransactionExecutorsTest {
     @Mock
     private StartupNetworks startupNetworks;
 
+    @Mock
+    private TransactionExecutors.TracerBinding tracerBinding;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
+    @Mock
+    private State state;
+
+    @Mock
+    private ConfigProviderImpl configProvider;
+
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
+
     @Test
     void executesTransactionsAsExpected() {
         final var overrides = Map.of("hedera.transaction.maxMemoUtf8Bytes", "101");
@@ -161,7 +194,10 @@ public class TransactionExecutorsTest {
         final var state = genesisState(overrides);
 
         // Get a standalone executor based on this state, with an override to allow slightly longer memos
-        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, overrides, null);
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(TransactionExecutors.Properties.newBuilder()
+                .state(state)
+                .appProperties(overrides)
+                .build());
 
         // Execute a FileCreate that uploads the initcode for the Multipurpose.sol contract
         final var uploadOutput = executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH);
@@ -169,7 +205,7 @@ public class TransactionExecutorsTest {
         assertThat(uploadReceipt.fileIDOrThrow()).isEqualTo(EXPECTED_INITCODE_ID);
 
         // Execute a ContractCreate that creates a Multipurpose contract instance
-        final var creationOutput = executor.execute(createMultipurposeContract(), Instant.EPOCH);
+        final var creationOutput = executor.execute(createContract(), Instant.EPOCH);
         final var creationReceipt =
                 creationOutput.getFirst().transactionRecord().receiptOrThrow();
         assertThat(creationReceipt.contractIDOrThrow()).isEqualTo(EXPECTED_CONTRACT_ID);
@@ -190,17 +226,80 @@ public class TransactionExecutorsTest {
     }
 
     @Test
+    void usesOverrideBlockhashOpAsExpected() {
+        final var state = genesisState(Map.of());
+        final var writableStates = state.getWritableStates(BlockRecordService.NAME);
+        final var blockInfoSingleton = writableStates.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
+        blockInfoSingleton.put(requireNonNull(blockInfoSingleton.get())
+                .copyBuilder()
+                .lastBlockNumber(666L)
+                .build());
+        ((CommittableWritableStates) writableStates).commit();
+
+        // Use a custom operation that overrides the BLOCKHASH operation
+        final var customOp = new CustomBlockhashOperation();
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(TransactionExecutors.Properties.newBuilder()
+                .state(state)
+                .addCustomOp(customOp)
+                .appProperty("hedera.transaction.maxMemoUtf8Bytes", "101")
+                .build());
+
+        final var uploadOutput = executor.execute(uploadEmitBlockTimestampInitcode(), Instant.EPOCH);
+        final var uploadReceipt = uploadOutput.getFirst().transactionRecord().receiptOrThrow();
+        assertThat(uploadReceipt.fileIDOrThrow()).isEqualTo(EXPECTED_INITCODE_ID);
+
+        final var creationOutput = executor.execute(createContract(), Instant.EPOCH);
+        final var creationReceipt =
+                creationOutput.getFirst().transactionRecord().receiptOrThrow();
+        assertThat(creationReceipt.contractIDOrThrow()).isEqualTo(EXPECTED_CONTRACT_ID);
+
+        final var callOutput = executor.execute(contractCallGetLastBlockHashFunction(), Instant.EPOCH);
+        final var callRecord = callOutput.getFirst().transactionRecord();
+        final var callResult = callRecord.contractCallResultOrThrow().contractCallResult();
+        final byte[] blockHash = GET_LAST_BLOCKHASH_FUNCTION
+                .getOutputs()
+                .decode(callResult.toByteArray())
+                .get(0);
+        assertThat(Bytes32.wrap(blockHash)).isEqualTo(CustomBlockhashOperation.FAKE_BLOCK_HASH);
+    }
+
+    @Test
     void respectsOverrideMaxSignedTxnSize() {
         final var overrides = Map.of(MAX_SIGNED_TXN_SIZE_PROPERTY, "42");
         // Construct a full implementation of the consensus node State API with all genesis accounts and files
         final var state = genesisState(overrides);
 
         // Get a standalone executor based on this state, with an override to allow slightly longer memos
-        final var executor = TRANSACTION_EXECUTORS.newExecutor(state, overrides, null);
+        final var executor = TRANSACTION_EXECUTORS.newExecutor(TransactionExecutors.Properties.newBuilder()
+                .state(state)
+                .appProperties(overrides)
+                .build());
 
         // With just 42 bytes allowed for signed transactions, the executor will not be able to construct
         // a dispatch for the transaction and throw an exception
         assertThrows(NullPointerException.class, () -> executor.execute(uploadMultipurposeInitcode(), Instant.EPOCH));
+    }
+
+    @Test
+    void propertiesBuilderRequiresNonNullState() {
+        assertThrows(IllegalStateException.class, () -> TransactionExecutors.Properties.newBuilder()
+                .build());
+    }
+
+    @Test
+    void propertiesBuilderBulkOptionsAsExpected() {
+        final var customOps = Set.of(new CustomBlockhashOperation());
+        final var appProperties = Map.of("hedera.transaction.maxMemoUtf8Bytes", "101");
+        final var properties = TransactionExecutors.Properties.newBuilder()
+                .customOps(customOps)
+                .appProperties(appProperties)
+                .customTracerBinding(tracerBinding)
+                .state(state)
+                .build();
+
+        assertThat(properties.customOps()).isEqualTo(customOps);
+        assertThat(properties.appProperties()).isEqualTo(appProperties);
+        assertThat(properties.customTracerBinding()).isEqualTo(tracerBinding);
     }
 
     private TransactionBody contractCallMultipurposePickFunction() {
@@ -214,7 +313,18 @@ public class TransactionExecutorsTest {
                 .build();
     }
 
-    private TransactionBody createMultipurposeContract() {
+    private TransactionBody contractCallGetLastBlockHashFunction() {
+        final var callData = GET_LAST_BLOCKHASH_FUNCTION.encodeCallWithArgs();
+        return newBodyBuilder()
+                .contractCall(ContractCallTransactionBody.newBuilder()
+                        .contractID(EXPECTED_CONTRACT_ID)
+                        .functionParameters(Bytes.wrap(callData.array()))
+                        .gas(GAS)
+                        .build())
+                .build();
+    }
+
+    private TransactionBody createContract() {
         final var maxLifetime =
                 DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
         return newBodyBuilder()
@@ -232,6 +342,18 @@ public class TransactionExecutorsTest {
         return newBodyBuilder()
                 .fileCreate(FileCreateTransactionBody.newBuilder()
                         .contents(resourceAsBytes("initcode/Multipurpose.bin"))
+                        .keys(IMMUTABILITY_SENTINEL_KEY.keyListOrThrow())
+                        .expirationTime(new Timestamp(maxLifetime, 0))
+                        .build())
+                .build();
+    }
+
+    private TransactionBody uploadEmitBlockTimestampInitcode() {
+        final var maxLifetime =
+                DEFAULT_CONFIG.getConfigData(EntitiesConfig.class).maxLifetime();
+        return newBodyBuilder()
+                .fileCreate(FileCreateTransactionBody.newBuilder()
+                        .contents(resourceAsBytes("initcode/EmitBlockTimestamp.bin"))
                         .keys(IMMUTABILITY_SENTINEL_KEY.keyListOrThrow())
                         .expirationTime(new Timestamp(maxLifetime, 0))
                         .build())
@@ -267,10 +389,15 @@ public class TransactionExecutorsTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 new AppThrottleFactory(
-                        () -> config, () -> state, () -> ThrottleDefinitions.DEFAULT, ThrottleAccumulator::new));
-        registerServices(appContext, config, servicesRegistry);
+                        () -> config,
+                        () -> state,
+                        () -> ThrottleDefinitions.DEFAULT,
+                        ThrottleAccumulator::new,
+                        v -> new ServicesSoftwareVersion()));
+        registerServices(appContext, servicesRegistry);
         final var migrator = new FakeServiceMigrator();
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+        given(startupNetworks.genesisNetworkOrThrow(any())).willReturn(Network.DEFAULT);
         migrator.doMigrations(
                 state,
                 servicesRegistry,
@@ -281,10 +408,15 @@ public class TransactionExecutorsTest {
                 config,
                 networkInfo,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         final var writableStates = state.getWritableStates(FileService.NAME);
+        final var readableStates = state.getReadableStates(AddressBookService.NAME);
+        final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+        final var nodeStore = new ReadableNodeStoreImpl(readableStates, entityIdStore);
         final var files = writableStates.<FileID, File>get(V0490FileSchema.BLOBS_KEY);
-        genesisContentProviders(networkInfo, config).forEach((fileNum, provider) -> {
+        genesisContentProviders(nodeStore, config).forEach((fileNum, provider) -> {
             final var fileId = createFileID(fileNum, config);
             files.put(
                     fileId,
@@ -299,12 +431,12 @@ public class TransactionExecutorsTest {
     }
 
     private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(
-            @NonNull final NetworkInfo networkInfo, @NonNull final Configuration config) {
+            @NonNull final ReadableNodeStore nodeStore, @NonNull final Configuration config) {
         final var genesisSchema = new V0490FileSchema();
         final var filesConfig = config.getConfigData(FilesConfig.class);
         return Map.of(
-                filesConfig.addressBook(), ignore -> genesisSchema.genesisAddressBook(networkInfo),
-                filesConfig.nodeDetails(), ignore -> genesisSchema.genesisNodeDetails(networkInfo),
+                filesConfig.addressBook(), ignore -> genesisSchema.nodeStoreAddressBook(nodeStore),
+                filesConfig.nodeDetails(), ignore -> genesisSchema.nodeStoreNodeDetails(nodeStore),
                 filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
                 filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates,
                 filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
@@ -313,14 +445,12 @@ public class TransactionExecutorsTest {
     }
 
     private void registerServices(
-            @NonNull final AppContext appContext,
-            @NonNull final Configuration config,
-            @NonNull final ServicesRegistry servicesRegistry) {
+            @NonNull final AppContext appContext, @NonNull final ServicesRegistry servicesRegistry) {
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        new ContractServiceImpl(appContext),
+                        new ContractServiceImpl(appContext, NO_OP_METRICS),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -399,7 +529,7 @@ public class TransactionExecutorsTest {
     private Bytes resourceAsBytes(@NonNull final String loc) {
         try {
             try (final var in = TransactionExecutorsTest.class.getClassLoader().getResourceAsStream(loc)) {
-                final var bytes = Objects.requireNonNull(in).readAllBytes();
+                final var bytes = requireNonNull(in).readAllBytes();
                 return Bytes.wrap(bytes);
             }
         } catch (IOException e) {
@@ -427,6 +557,23 @@ public class TransactionExecutorsTest {
             return Bytes.wrap(certificate.getEncoded());
         } catch (CertificateEncodingException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private class CustomBlockhashOperation extends AbstractOperation {
+        private static final OperationResult ONLY_RESULT = new Operation.OperationResult(0L, null);
+        private static final Bytes32 FAKE_BLOCK_HASH = Bytes32.fromHexString("0x1234567890");
+
+        protected CustomBlockhashOperation() {
+            super(64, "BLOCKHASH", 1, 1, gasCalculator);
+        }
+
+        @Override
+        public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
+            // This stack item has the requested block number, ignore it
+            frame.popStackItem();
+            frame.pushStackItem(FAKE_BLOCK_HASH);
+            return ONLY_RESULT;
         }
     }
 }

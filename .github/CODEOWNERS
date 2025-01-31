@@ -2,7 +2,7 @@
 ##### Global Protection Rule ######
 ###################################
 # NOTE: This rule is overriden by the more specific rules below. This is the catch-all rule for all files not covered by the more specific rules below.
-*                                               @hashgraph/devops-ci @hashgraph/release-engineering-managers
+*                                               @hashgraph/platform-ci @hashgraph/release-engineering-managers
 #########################
 ##### Example apps ######
 #########################
@@ -29,10 +29,10 @@
 # Hedera Node Deployments - Configuration & Grafana Dashboards
 /hedera-node/configuration/**                   @rbair23 @dalvizu @poulok @netopyr @Nana-EC @SimiHunjan @steven-sheehy @nathanklick
 /hedera-node/configuration/dev/**               @hashgraph/hedera-services
-/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/devops-ci @hashgraph/devops @hashgraph/hedera-services
+/hedera-node/infrastructure/**                  @hashgraph/release-engineering-managers @hashgraph/platform-ci @hashgraph/devops @hashgraph/hedera-services
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/devops-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
+/hedera-node/docker/                            @hashgraph/hedera-services @hashgraph/platform-ci @hashgraph/release-engineering @hashgraph/release-engineering-managers
 
 # Hedera Node Modules
 /hedera-node/hapi*/                             @hashgraph/hedera-services
@@ -47,6 +47,9 @@
 /hedera-node/hedera-util*/                      @hashgraph/hedera-services
 /hedera-node/hedera-staking*/                   @hashgraph/hedera-services
 /hedera-node/test-clients/                      @hashgraph/hedera-services @hashgraph/hedera-smart-contracts-core
+
+# Documentation
+/hedera-node/docs/design/services/smart-contract-service    @hashgraph/hedera-smart-contracts-core
 
 ###############################
 ##### Hedera Cryptography #####
@@ -99,40 +102,40 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                           @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.github/workflows/                                 @hashgraph/devops-ci @hashgraph/devops-ci-committers
-/.github/workflows/node-zxf-deploy-integration.yaml @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/devops
-/.github/workflows/node-zxf-deploy-preview.yaml     @hashgraph/devops-ci @hashgraph/devops-ci-committers @hashgraph/devops
+/.github/                                           @hashgraph/platform-ci @hashgraph/release-engineering-managers
+/.github/workflows/                                 @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/release-engineering-managers
+/.github/workflows/node-zxf-deploy-integration.yaml @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops @hashgraph/release-engineering-managers
+/.github/workflows/node-zxf-deploy-preview.yaml     @hashgraph/platform-ci @hashgraph/platform-ci-committers @hashgraph/devops @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
-**/pom.xml                                          @hashgraph/devops-ci @hashgraph/devops
+**/pom.xml                                          @hashgraph/platform-ci @hashgraph/devops
 
 # Gradle project files and inline plugins
-/gradle/                                            @hashgraph/devops-ci @hashgraph/devops-ci-committers
-gradlew                                             @hashgraph/devops-ci @hashgraph/devops-ci-committers
-gradlew.bat                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/build-logic/                                     @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/gradle.*                                         @hashgraph/devops-ci @hashgraph/devops-ci-committers
-**/*.gradle.*                                       @hashgraph/devops-ci @hashgraph/devops-ci-committers
+/gradle/                                            @hashgraph/platform-ci @hashgraph/platform-ci-committers
+gradlew                                             @hashgraph/platform-ci @hashgraph/platform-ci-committers
+gradlew.bat                                         @hashgraph/platform-ci @hashgraph/platform-ci-committers
+**/build-logic/                                     @hashgraph/platform-ci @hashgraph/platform-ci-committers
+**/gradle.*                                         @hashgraph/platform-ci @hashgraph/platform-ci-committers
+**/*.gradle.*                                       @hashgraph/platform-ci @hashgraph/platform-ci-committers
 
 # Codacy Tool Configurations
-/config/                                            @hashgraph/devops-ci @hashgraph/release-engineering-managers
-.remarkrc                                           @hashgraph/devops-ci @hashgraph/release-engineering-managers
+/config/                                            @hashgraph/platform-ci @hashgraph/release-engineering-managers
+.remarkrc                                           @hashgraph/platform-ci @hashgraph/release-engineering-managers
 
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                         @hashgraph/release-engineering-managers
 
 # Protect the repository root files
-/README.md                                          @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
+/README.md                                          @hashgraph/platform-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
 **/LICENSE                                          @hashgraph/release-engineering-managers
 
 # CodeCov configuration
-**/codecov.yml                                      @hashgraph/devops-ci @hashgraph/release-engineering-managers
+**/codecov.yml                                      @hashgraph/platform-ci @hashgraph/release-engineering-managers
 
 # Git Ignore definitions
-**/.gitignore                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
-**/.gitignore.*                                     @hashgraph/devops-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
+**/.gitignore                                       @hashgraph/platform-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
+**/.gitignore.*                                     @hashgraph/platform-ci @hashgraph/release-engineering-managers @hashgraph/platform-base @hashgraph/hedera-services @hashgraph/platform-hashgraph
 
 # Legacy CircleCI configuration
-.circleci.settings.xml                              @hashgraph/devops-ci @hashgraph/release-engineering-managers
-/.circleci/                                         @hashgraph/devops-ci @hashgraph/release-engineering-managers
+.circleci.settings.xml                              @hashgraph/platform-ci @hashgraph/release-engineering-managers
+/.circleci/                                         @hashgraph/platform-ci @hashgraph/release-engineering-managers
