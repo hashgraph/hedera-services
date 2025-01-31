@@ -107,6 +107,7 @@ import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -179,6 +180,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private FeeAccumulator feeAccumulator;
+
+    @Mock
+    private TransactionChecker transactionChecker;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -282,15 +286,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Bytes.EMPTY,
             CRYPTO_TRANSFER,
             null);
-
-    private static final TransactionBody MISSING_PAYER_ID =
-            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
-
-    private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(1_234L).build();
-    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
-            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
-            .build();
 
     @BeforeEach
     void setup() {
@@ -396,7 +391,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             dispatchProcessor,
             throttleAdviser,
             feeAccumulator,
-            EMPTY_METADATA
+            EMPTY_METADATA,
+            transactionChecker
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -629,7 +625,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
                     .when(dispatcher)
-                    .dispatchPureChecks(txBody);
+                    .dispatchPureChecks(any());
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
 
             contextDispatcher.accept(context);
@@ -784,7 +780,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                transactionChecker);
     }
 
     private void mockNeeded() {

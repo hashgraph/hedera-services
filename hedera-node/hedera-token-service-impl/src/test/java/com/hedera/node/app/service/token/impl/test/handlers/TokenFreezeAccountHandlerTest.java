@@ -32,7 +32,6 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -58,6 +57,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -79,7 +79,11 @@ class TokenFreezeAccountHandlerTest {
     }
 
     @Nested
+    @ExtendWith(MockitoExtension.class)
     class PreHandleTests extends ParityTestBase {
+        @Mock
+        private PureChecksContext pureChecksContext;
+
         @Test
         void tokenFreezeWithNoToken() throws PreCheckException {
             final var theTxn = TransactionBody.newBuilder()
@@ -93,16 +97,15 @@ class TokenFreezeAccountHandlerTest {
         }
 
         @Test
-        void tokenFreezeWithNoAccount() throws PreCheckException {
+        void tokenFreezeWithNoAccount() {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
                     .tokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
                             .token(TokenID.newBuilder().tokenNum(123L)))
                     .build();
+            given(pureChecksContext.body()).willReturn(theTxn);
 
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+            Assertions.assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ACCOUNT_ID);
         }
     }
 
@@ -290,16 +293,6 @@ class TokenFreezeAccountHandlerTest {
                             .accountId(ACCOUNT_13257)
                             .frozen(true)
                             .build());
-        }
-
-        private HandleContext mockContext() {
-            final var context = mock(HandleContext.class);
-            final var storeFactory = mock(StoreFactory.class);
-            given(context.storeFactory()).willReturn(storeFactory);
-            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-
-            return context;
         }
 
         private void verifyNoPut() {

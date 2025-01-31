@@ -61,6 +61,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -73,6 +74,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -111,6 +113,7 @@ public class UserTxnFactory {
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final ChildDispatchFactory childDispatchFactory;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public UserTxnFactory(
@@ -129,7 +132,8 @@ public class UserTxnFactory {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory,
+            @NonNull final TransactionChecker transactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
@@ -150,6 +154,7 @@ public class UserTxnFactory {
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
         this.softwareVersionFactory = softwareVersionFactory;
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -331,7 +336,8 @@ public class UserTxnFactory {
                 dispatchProcessor,
                 throttleAdvisor,
                 feeAccumulator,
-                HandleContext.DispatchMetadata.EMPTY_METADATA);
+                HandleContext.DispatchMetadata.EMPTY_METADATA,
+                transactionChecker);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(
@@ -394,9 +400,10 @@ public class UserTxnFactory {
             @NonNull final Configuration config,
             @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
-            dispatcher.dispatchPureChecks(body);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, body, syntheticPayerId, config, dispatcher);
+            final var pureChecksContext = new PureChecksContextImpl(body, config, dispatcher, transactionChecker);
+            dispatcher.dispatchPureChecks(pureChecksContext);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory, body, syntheticPayerId, config, dispatcher, transactionChecker);
             dispatcher.dispatchPreHandle(preHandleContext);
             final var txInfo = getTxnInfoFrom(syntheticPayerId, body);
             return new PreHandleResult(

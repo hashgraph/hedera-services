@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,10 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleHappyPath() throws InvalidKeyException, PreCheckException {
+    void preHandleHappyPath() throws PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, deleteBody, testConfig, mockDispatcher, mockTransactionChecker);
 
         subject.preHandle(realPreContext);
         assertThat(scheduleDeleter).isEqualTo(realPreContext.payer());
@@ -70,7 +71,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
     void failsIfScheduleMissing() throws PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, deleteBody, testConfig, mockDispatcher, mockTransactionChecker);
         scheduleMapById.put(testScheduleID, null);
 
         Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
@@ -80,7 +82,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
     void failsIfScheduleIsImmutable() throws PreCheckException {
         final TransactionBody deleteBody = scheduleDeleteTransaction(testScheduleID);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, deleteBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, deleteBody, testConfig, mockDispatcher, mockTransactionChecker);
 
         final Schedule noAdmin = scheduleInState.copyBuilder().adminKey(nullKey).build();
         reset(writableById);
