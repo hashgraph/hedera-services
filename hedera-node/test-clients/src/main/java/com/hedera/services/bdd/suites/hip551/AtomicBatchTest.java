@@ -23,6 +23,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -62,5 +64,67 @@ public class AtomicBatchTest {
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result
                 getAccountBalance("foo").hasTinyBars(ONE_HBAR));
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> multiBatchSuccess() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId1 = "innerId1";
+        final var innerTxnId2 = "innerId2";
+        final var account1 = "foo1";
+        final var account2 = "foo2";
+
+        final var innerTxn1 = cryptoCreate(account1)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId1)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+        final var innerTxn2 = cryptoCreate(account2)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId2)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+
+        return hapiTest(
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                cryptoCreate(innerTnxPayer).balance(ONE_HUNDRED_HBARS),
+                usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
+                usableTxnIdNamed(innerTxnId2).payerId(innerTnxPayer),
+                atomicBatch(innerTxn1, innerTxn2),
+                getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
+                getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged(),
+                getAccountBalance(account1).hasTinyBars(ONE_HBAR),
+                getAccountBalance(account2).hasTinyBars(ONE_HBAR));
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> multiBatchFail() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId1 = "innerId1";
+        final var innerTxnId2 = "innerId2";
+        final var account1 = "foo1";
+        final var account2 = "foo2";
+
+        final var innerTxn1 = cryptoCreate(account1)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId1)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+        final var innerTxn2 = cryptoCreate(account2)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId2)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+
+        return hapiTest(
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
+                usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
+                usableTxnIdNamed(innerTxnId2).payerId(innerTnxPayer),
+                atomicBatch(innerTxn1, innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED),
+                getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
+                getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
     }
 }
