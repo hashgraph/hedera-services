@@ -1237,7 +1237,7 @@ public class PlatformTestingToolStateLifecycles implements StateLifecycles<Platf
      */
     @Override
     public boolean onSealConsensusRound(@NonNull Round round, @NonNull PlatformTestingToolState state) {
-        return round.getRoundNum() % 50 == 0;
+        return round.getRoundNum() % 3 == 0;
     }
 
     @Override
