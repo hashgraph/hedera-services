@@ -809,6 +809,27 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
+    void deleteLastLeaf() {
+        VirtualRootNode<TestKey, TestValue> root = createRoot();
+        root.put(new TestKey(1), new TestValue(1000000));
+
+        final VirtualRootNode<TestKey, TestValue> copy = root.copy();
+        copy.postInit(root.getState());
+        copy.remove(new TestKey(1));
+
+        final VirtualRootNode<TestKey, TestValue> copyCopy = copy.copy();
+        copyCopy.postInit(root.getState());
+
+        final VirtualLeafRecord<TestKey, TestValue> leaf = copy.getCache().lookupLeafByPath(1, false);
+        assertTrue(leaf == null || leaf == VirtualNodeCache.DELETED_LEAF_RECORD);
+        assertNull(copy.get(new TestKey(1)));
+        assertNull(copyCopy.get(new TestKey(1)));
+        assertEquals(1, copy.getCache().deletedLeaves().toList().size());
+
+        root.release();
+    }
+
+    @Test
     @DisplayName("Copy of a root node with terminated pipeline")
     void copyOfRootNodeWithTerminatedPipeline() {
         VirtualRootNode<TestKey, TestValue> root = createRoot();
