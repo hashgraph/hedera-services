@@ -25,7 +25,6 @@ defaults:
 permissions:
   id-token: write
   contents: write
-  issues: write
 
 jobs:
   next-main-release:
