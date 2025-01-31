@@ -72,6 +72,10 @@ import java.time.Duration;
  *      Virtual root copy flush threshold. A copy can be flushed to disk only if it's size exceeds this
  *      threshold. If set to zero, size-based flushes aren't used, and copies are flushed based on {@link
  *      #flushInterval} instead.
+ * @param percentCopyFlushAfterGCThreshold
+ *      If a copy is a candidate to flush, and its estimated size after GC is greater than {@link
+ *      #percentCopyFlushAfterGCThreshold} percents of {@link #copyFlushThreshold}, then the copy is
+ *      flushed to disk, otherwise it's GCed and then merged to the next copy.
  * @param familyThrottleThreshold
  *      Virtual root family throttle threshold. When estimated size of all unreleased copies of the same virtual
  *      root exceeds this threshold, virtual pipeline starts applying backpressure on creating new root copies.
@@ -102,6 +106,8 @@ public record VirtualMapConfig(
                 long virtualMapWarningInterval,
         @Min(1) @ConfigProperty(defaultValue = "20") int flushInterval,
         @ConfigProperty(defaultValue = "200000000") long copyFlushThreshold,
+        @Min(0) @Max(100) @ConfigProperty(defaultValue = "80.0")
+                double percentCopyFlushAfterGCThreshold, // FUTURE WORK: We need to add min/max support for double
         @ConfigProperty(defaultValue = "2000000000") long familyThrottleThreshold,
         @ConfigProperty(defaultValue = "10000") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,

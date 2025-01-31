@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import java.nio.file.Path;
  */
 public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> extends MerkleNode {
 
+    boolean shouldBeCompacted();
+
     /**
      * Check if this copy is a copy that has been designated for flushing. Once designated
      * as a flushable copy, this method should still return true after the flush has completed.
@@ -48,10 +50,8 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
      * returning true are guaranteed to be flushed, but other copies may be flushed, too.
      *
      * <p>This method can be expensive and may block for a long time before returning.
-     *
-     * @return if the copy has been flushed
      */
-    boolean flush();
+    void flush();
 
     /**
      * Check if this copy has already been flushed.
@@ -85,6 +85,13 @@ public interface VirtualRoot<K extends VirtualKey, V extends VirtualValue> exten
      * @return true if this copy has been merged
      */
     boolean isMerged();
+
+    /**
+     * If this copy contains merged changes from multiple versions, and its estimated size
+     * exceeds the flush threshold, remove all redundant changes. Estimated size may be
+     * changed after this call.
+     */
+    void garbageCollect();
 
     /**
      * Check if the hash for this copy has already been computed.
