@@ -38,7 +38,7 @@ val eclipseCollections = "11.1.0"
 val grpc = "1.69.0"
 val hederaCryptography = "0.1.1-SNAPSHOT"
 val helidon = "4.1.6"
-val jackson = "2.16.0"
+val jackson = "2.18.2"
 val junit5 = "5.10.2"
 val log4j = "2.21.1"
 val mockito = "5.15.2"
@@ -104,7 +104,7 @@ dependencies.constraints {
     api("org.apache.commons:commons-collections4:4.4") {
         because("org.apache.commons.collections4")
     }
-    api("commons-io:commons-io:2.15.1") { because("org.apache.commons.io") }
+    api("commons-io:commons-io:2.18.0") { because("org.apache.commons.io") }
     api("org.apache.commons:commons-lang3:3.17.0") { because("org.apache.commons.lang3") }
     api("org.apache.commons:commons-compress:1.26.0") { because("org.apache.commons.compress") }
     api("org.apache.logging.log4j:log4j-api:$log4j") { because("org.apache.logging.log4j") }
@@ -121,7 +121,6 @@ dependencies.constraints {
     api("org.eclipse.collections:eclipse-collections:$eclipseCollections") {
         because("org.eclipse.collections.impl")
     }
-    api("org.hamcrest:hamcrest:2.2") { because("org.hamcrest") }
     api("org.hyperledger.besu:besu-datatypes:$besu") { because("org.hyperledger.besu.datatypes") }
     api("org.hyperledger.besu:evm:$besu") { because("org.hyperledger.besu.evm") }
     api("org.hyperledger.besu:secp256k1:0.8.2") {
@@ -139,7 +138,7 @@ dependencies.constraints {
     api("org.testcontainers:junit-jupiter:$testContainers") {
         because("org.testcontainers.junit.jupiter")
     }
-    api("org.yaml:snakeyaml:2.2") { because("org.yaml.snakeyaml") }
+    api("org.yaml:snakeyaml:2.3") { because("org.yaml.snakeyaml") }
     api("io.tmio:tuweni-bytes:$tuweni") { because("tuweni.bytes") }
     api("io.tmio:tuweni-units:$tuweni") { because("tuweni.units") }
     api("uk.org.webcompere:system-stubs-core:$webcompare") {
