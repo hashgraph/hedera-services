@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 
 public final class ConfigUtils {
@@ -31,5 +32,6 @@ public final class ConfigUtils {
             .withConfigDataType(VirtualMapConfig.class)
             .withConfigDataType(TemporaryFileConfig.class)
             .withConfigDataType(StateCommonConfig.class)
+            .withConfigDataType(SyncConfig.class)
             .build();
 }
