@@ -61,6 +61,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -109,6 +110,7 @@ public class UserTxnFactory {
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final ChildDispatchFactory childDispatchFactory;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public UserTxnFactory(
@@ -127,7 +129,8 @@ public class UserTxnFactory {
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
-            @NonNull final ChildDispatchFactory childDispatchFactory) {
+            @NonNull final ChildDispatchFactory childDispatchFactory,
+            @NonNull final TransactionChecker transactionChecker) {
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
@@ -148,6 +151,7 @@ public class UserTxnFactory {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -328,7 +332,8 @@ public class UserTxnFactory {
                 dispatchProcessor,
                 throttleAdvisor,
                 feeAccumulator,
-                HandleContext.DispatchMetadata.EMPTY_METADATA);
+                HandleContext.DispatchMetadata.EMPTY_METADATA,
+                transactionChecker);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(

@@ -107,6 +107,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -255,6 +256,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private Predicate<Key> signatureTest;
 
+    @Mock
+    private TransactionChecker transactionChecker;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -399,7 +403,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             dispatchProcessor,
             throttleAdviser,
             feeAccumulator,
-            EMPTY_METADATA
+            EMPTY_METADATA,
+            transactionChecker
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -787,7 +792,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                transactionChecker);
     }
 
     private void mockNeeded() {
