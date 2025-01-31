@@ -18,14 +18,9 @@ package com.swirlds.platform.turtle.runner;
 
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
-import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.swirlds.common.utility.NonCryptographicHashing;
-import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.*;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.Round;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Consumer;
 
 /**
  * A simple testing application intended for use with TURTLE.
@@ -44,10 +39,10 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
         public static final int ORIGINAL = 1;
     }
 
-    private long state;
+    long state;
 
     public TurtleTestingToolState() {
-        super(FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(1));
+        super(version -> new BasicSoftwareVersion(1));
     }
 
     /**
@@ -80,21 +75,6 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(
-            @NonNull final Round round,
-            @NonNull final PlatformStateModifier platformState,
-            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
-        state = NonCryptographicHashing.hash64(
-                state,
-                round.getRoundNum(),
-                round.getConsensusTimestamp().getNano(),
-                round.getConsensusTimestamp().getEpochSecond());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public TurtleTestingToolState copy() {
         throwIfImmutable();
         setImmutable(true);
@@ -110,6 +90,8 @@ public class TurtleTestingToolState extends PlatformMerkleStateRoot {
     public static PlatformMerkleStateRoot getStateRootNode() {
         final PlatformMerkleStateRoot state = new TurtleTestingToolState();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(state);
+
         return state;
     }
 }

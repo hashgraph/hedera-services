@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.utility.throttle.RateLimiter;
-import com.swirlds.common.wiring.wires.output.StandardOutputWire;
+import com.swirlds.component.framework.wires.output.StandardOutputWire;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.wiring.NoInput;

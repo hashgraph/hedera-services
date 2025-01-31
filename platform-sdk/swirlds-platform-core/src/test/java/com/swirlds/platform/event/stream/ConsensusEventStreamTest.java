@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.system.events.CesEvent;
 import java.util.List;
 import java.util.Random;
@@ -63,10 +63,9 @@ class ConsensusEventStreamTest {
         final ComponentWiring<ConsensusEventStream, Void> wiring = new ComponentWiring<>(
                 model,
                 ConsensusEventStream.class,
-                model.schedulerBuilder("eventStreamManager")
+                model.<Void>schedulerBuilder("eventStreamManager")
                         .withType(TaskSchedulerType.DIRECT)
-                        .build()
-                        .cast());
+                        .build());
         wiring.bind(CONSENSUS_EVENT_STREAM);
 
         wiring.getInputWire(ConsensusEventStream::addEvents).inject(List.of(freezeEvent));
@@ -92,10 +91,9 @@ class ConsensusEventStreamTest {
         final ComponentWiring<ConsensusEventStream, Void> wiring = new ComponentWiring<>(
                 model,
                 ConsensusEventStream.class,
-                model.schedulerBuilder("eventStreamManager")
+                model.<Void>schedulerBuilder("eventStreamManager")
                         .withType(TaskSchedulerType.DIRECT)
-                        .build()
-                        .cast());
+                        .build());
         wiring.bind(CONSENSUS_EVENT_STREAM);
 
         wiring.getInputWire(ConsensusEventStream::legacyHashOverride)

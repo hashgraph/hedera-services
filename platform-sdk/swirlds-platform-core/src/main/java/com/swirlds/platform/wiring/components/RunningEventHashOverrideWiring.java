@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.wiring.components;
 
-import static com.swirlds.common.wiring.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
+import static com.swirlds.component.framework.model.diagram.HyperlinkBuilder.platformCoreHyperlink;
+import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 
 import com.swirlds.common.stream.RunningEventHashOverride;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.wires.input.BindableInputWire;
-import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.common.wiring.wires.output.OutputWire;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.wires.input.BindableInputWire;
+import com.swirlds.component.framework.wires.input.InputWire;
+import com.swirlds.component.framework.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -46,11 +46,11 @@ public record RunningEventHashOverrideWiring(
     @NonNull
     public static RunningEventHashOverrideWiring create(@NonNull final WiringModel model) {
 
-        final TaskScheduler<RunningEventHashOverride> taskScheduler = model.schedulerBuilder("RunningEventHashOverride")
+        final TaskScheduler<RunningEventHashOverride> taskScheduler = model.<RunningEventHashOverride>schedulerBuilder(
+                        "RunningEventHashOverride")
                 .withType(DIRECT_THREADSAFE)
                 .withHyperlink(platformCoreHyperlink(RunningEventHashOverrideWiring.class))
-                .build()
-                .cast();
+                .build();
 
         final BindableInputWire<RunningEventHashOverride, RunningEventHashOverride> inputWire =
                 taskScheduler.buildInputWire("hash override");
