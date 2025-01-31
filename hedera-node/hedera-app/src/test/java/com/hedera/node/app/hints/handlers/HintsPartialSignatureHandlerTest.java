@@ -17,9 +17,7 @@
 package com.hedera.node.app.hints.handlers;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -57,7 +55,6 @@ class HintsPartialSignatureHandlerTest {
 
     @Test
     void pureChecksDoNothing() {
-        given(pureChecksContext.body()).willReturn(TransactionBody.DEFAULT);
         assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
     }
 
