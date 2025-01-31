@@ -288,6 +288,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
             swirldStateManager.savedStateInFreezePeriod();
         }
 
+        final StateAndRound result;
         final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
         if (isBoundary || freezeRoundReceived) {
             systemTransactions.addAll(accumulatedTransactions);
@@ -307,10 +308,12 @@ public class DefaultTransactionHandler implements TransactionHandler {
                     consensusRound.isPcesRound());
 
             final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
-            return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
+            result = new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
+        } else {
+            result = null;
+            accumulatedTransactions.addAll(systemTransactions);
         }
 
-        accumulatedTransactions.addAll(systemTransactions);
-        return null;
+        return result;
     }
 }

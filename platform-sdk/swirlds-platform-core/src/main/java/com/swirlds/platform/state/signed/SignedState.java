@@ -198,12 +198,9 @@ public class SignedState implements SignedStateInfo {
         this.state = requireNonNull(state);
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
-        if (stateConfig.stateHistoryEnabled()) {
-            history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
-            history.recordAction(CREATION, getReservationCount(), reason, null);
-        } else {
-            history = null;
-        }
+        // FIXME Change back later for JRS runs only
+        history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
+        history.recordAction(CREATION, getReservationCount(), reason, null);
 
         registryRecord = RuntimeObjectRegistry.createRecord(getClass(), history);
         sigSet = new SigSet();
