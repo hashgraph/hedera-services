@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hss.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasPlus;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.RC_AND_ADDRESS_ENCODER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_SCHEDULE_ID;
@@ -97,7 +98,7 @@ class ScheduleNativeCallTest extends CallTestBase {
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
         given(recordBuilder.scheduleID()).willReturn(CALLED_SCHEDULE_ID);
-        given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
+        given(htsCallFactory.createCallAttemptFrom(any(), any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
         given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
@@ -121,7 +122,7 @@ class ScheduleNativeCallTest extends CallTestBase {
         given(systemContractOperations.dispatch(any(), any(), any(), any(), any(), any()))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(failureStatus);
-        given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
+        given(htsCallFactory.createCallAttemptFrom(any(), any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
         given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
@@ -137,7 +138,7 @@ class ScheduleNativeCallTest extends CallTestBase {
     @Test
     void throwsWhenNativeCallIsNull() {
         // given
-        given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
+        given(htsCallFactory.createCallAttemptFrom(any(), any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(null);
 
         // when/then
@@ -150,7 +151,7 @@ class ScheduleNativeCallTest extends CallTestBase {
         given(systemContractOperations.dispatch(any(), any(), any(), any(), any(), any()))
                 .willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(SUCCESS);
-        given(htsCallFactory.createCallAttemptFrom(any(), any(), any())).willReturn(nativeAttempt);
+        given(htsCallFactory.createCallAttemptFrom(any(), any(), any(), any())).willReturn(nativeAttempt);
         given(nativeAttempt.asExecutableCall()).willReturn(nativeCall);
         given(nativeCall.asSchedulableDispatchIn())
                 .willReturn(SchedulableTransactionBody.newBuilder().build());
@@ -172,6 +173,7 @@ class ScheduleNativeCallTest extends CallTestBase {
 
     private void prepareCall() {
         subject = new ScheduleNativeCall(
+                HTS_167_CONTRACT_ID,
                 gasCalculator,
                 mockEnhancement(),
                 verificationStrategy,
