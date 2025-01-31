@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.turtle.gossip;
+package com.swirlds.platform.turtle;
 
 import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration.DIRECT_THREADSAFE_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
@@ -37,6 +36,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
+import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 class SimulatedGossipTests {
 
@@ -115,13 +116,13 @@ class SimulatedGossipTests {
                     .bind(
                             model,
                             eventInputWire,
-                            mock(BindableInputWire.class),
+                            Mockito.mock(BindableInputWire.class),
                             eventOutputWire,
-                            mock(BindableInputWire.class),
-                            mock(BindableInputWire.class),
-                            mock(BindableInputWire.class),
-                            mock(BindableInputWire.class),
-                            mock(BindableInputWire.class));
+                            Mockito.mock(BindableInputWire.class),
+                            Mockito.mock(BindableInputWire.class),
+                            Mockito.mock(BindableInputWire.class),
+                            Mockito.mock(BindableInputWire.class),
+                            Mockito.mock(BindableInputWire.class));
         }
 
         // For each event, choose a random subset of nodes that will submit the event. Our end goal is to see
