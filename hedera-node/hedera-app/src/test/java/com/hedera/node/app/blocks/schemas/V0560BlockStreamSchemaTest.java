@@ -84,7 +84,7 @@ public class V0560BlockStreamSchemaTest {
                 .willReturn(state);
         given(migrationContext.isGenesis()).willReturn(true);
 
-        subject.restart(migrationContext);
+        subject.migrate(migrationContext);
 
         verify(state).put(BlockStreamInfo.newBuilder().blockNumber(-1).build());
     }
@@ -113,7 +113,7 @@ public class V0560BlockStreamSchemaTest {
                 .willReturn(state);
         given(migrationContext.sharedValues()).willReturn(sharedValues);
 
-        subject.restart(migrationContext);
+        subject.migrate(migrationContext);
 
         verify(migratedBlockHashConsumer).accept(Bytes.fromHex("abcd".repeat(24)));
         final var expectedInfo = new BlockStreamInfo(
@@ -129,7 +129,8 @@ public class V0560BlockStreamSchemaTest {
                 false,
                 SemanticVersion.DEFAULT,
                 blockInfo.consTimeOfLastHandledTxn(),
-                blockInfo.consTimeOfLastHandledTxn());
+                blockInfo.consTimeOfLastHandledTxn(),
+                true);
         verify(state).put(expectedInfo);
     }
 
@@ -140,7 +141,7 @@ public class V0560BlockStreamSchemaTest {
                 .willReturn(state);
         given(state.get()).willReturn(BlockStreamInfo.DEFAULT);
 
-        subject.restart(migrationContext);
+        subject.migrate(migrationContext);
 
         verifyNoInteractions(migratedBlockHashConsumer);
     }

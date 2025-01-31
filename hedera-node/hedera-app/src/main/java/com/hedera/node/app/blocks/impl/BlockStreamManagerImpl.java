@@ -71,6 +71,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -93,6 +94,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private final int roundsPerBlock;
+    private final int blockPeriod;
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final BlockHashSigner blockHashSigner;
@@ -120,7 +122,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // The last non-empty (i.e., not skipped) round number that will eventually get a start-of-state hash
     private long lastNonEmptyRoundNumber;
     private Bytes lastBlockHash;
-    private Instant blockTimestamp;
+    private Instant consensusTimeFirstEventInBlock;
+    private Instant consensusTimeLastRound;
     private BlockItemWriter writer;
     private StreamingTreeHasher inputTreeHasher;
     private StreamingTreeHasher outputTreeHasher;
@@ -187,6 +190,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
+        this.blockPeriod = blockStreamConfig.blockPeriod();
         this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
@@ -230,13 +234,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Track freeze round numbers because they always end a block
             freezeRoundNumber = round.getRoundNum();
         }
+
+        // Check for pending work at the start of each round
+        final var blockStreamInfo = blockStreamInfoFrom(state);
+        pendingWork = classifyPendingWork(blockStreamInfo, version);
+
+        // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
-            blockTimestamp = round.getConsensusTimestamp();
-            boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
+            consensusTimeFirstEventInBlock = round.iterator().next().getConsensusTimestamp();
+            boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
 
-            final var blockStreamInfo = blockStreamInfoFrom(state);
-            pendingWork = classifyPendingWork(blockStreamInfo, version);
             lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
@@ -263,6 +271,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 worker.addItem(BlockItem.newBuilder().blockHeader(header).build());
             }
         }
+        consensusTimeLastRound = round.getConsensusTimestamp();
     }
 
     @Override
@@ -273,10 +282,31 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void confirmPendingWorkFinished() {
+    public void confirmPendingWorkFinished(@NonNull final State state) {
         if (pendingWork == NONE) {
             // Should never happen but throwing IllegalStateException might make the situation even worse, so just log
             log.error("HandleWorkflow confirmed finished work but none was pending");
+        } else if (pendingWork == POST_UPGRADE_WORK) {
+            final var blockStreamInfo = blockStreamInfoFrom(state);
+            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(blockStreamInfo
+                    .copyBuilder()
+                    .postUpgradeWorkDone(true)
+                    .creationSoftwareVersion(version)
+                    .build());
+            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
+        } else if (pendingWork == GENESIS_WORK) {
+            final var blockStreamInfo = blockStreamInfoFrom(state);
+            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
+                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+            blockStreamInfoState.put(blockStreamInfo
+                    .copyBuilder()
+                    .genesisWorkDone(true)
+                    .postUpgradeWorkDone(true)
+                    .creationSoftwareVersion(version)
+                    .build());
+            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
         }
         pendingWork = NONE;
     }
@@ -307,7 +337,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void endRound(@NonNull final State state, final long roundNum) {
+    public boolean endRound(@NonNull final State state, final long roundNum) {
         if (shouldCloseBlock(roundNum, roundsPerBlock)) {
             // If there were no user transactions in the block, this writes all the accumulated
             // items starting from the header, sacrificing the benefits of concurrency; but
@@ -346,7 +376,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     pendingWork != POST_UPGRADE_WORK,
                     version,
                     asTimestamp(lastIntervalProcessTime),
-                    asTimestamp(lastHandleTime)));
+                    asTimestamp(lastHandleTime),
+                    pendingWork != GENESIS_WORK));
             ((CommittableWritableStates) writableState).commit();
 
             worker.addItem(boundaryStateChangeListener.flushChanges());
@@ -388,7 +419,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         diskNetworkExport);
                 DiskStartupNetworks.writeNetworkInfo(state, exportPath, EnumSet.allOf(InfoType.class));
             }
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -416,7 +449,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @NonNull Timestamp blockTimestamp() {
-        return new Timestamp(blockTimestamp.getEpochSecond(), blockTimestamp.getNano());
+        return asTimestamp(consensusTimeFirstEventInBlock);
     }
 
     @Override
@@ -497,8 +530,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);
-        if (EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
-            // If we have never processed any time-based events, we must be at genesis
+        if (!blockStreamInfo.genesisWorkDone()) {
+            // If we have not completed the genesis work, we must do it before anything else
             return GENESIS_WORK;
         } else if (impliesPostUpgradeWorkPending(blockStreamInfo, version)) {
             return POST_UPGRADE_WORK;
@@ -519,10 +552,25 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     private boolean shouldCloseBlock(final long roundNumber, final int roundsPerBlock) {
+        // We need the signer to be ready
         if (!blockHashSigner.isReady()) {
             return false;
         }
-        return roundNumber % roundsPerBlock == 0 || roundNumber == freezeRoundNumber;
+
+        // During freeze round, we should close the block regardless of other conditions
+        if (roundNumber == freezeRoundNumber) {
+            return true;
+        }
+
+        // If blockPeriod is 0, use roundsPerBlock
+        if (blockPeriod == 0) {
+            return roundNumber % roundsPerBlock == 0;
+        }
+
+        // For time-based blocks, check if enough consensus time has elapsed
+        final var elapsedSeconds = Duration.between(consensusTimeFirstEventInBlock, consensusTimeLastRound)
+                .getSeconds();
+        return elapsedSeconds >= blockPeriod;
     }
 
     private boolean isFreezeRound(@NonNull final PlatformState platformState, @NonNull final Round round) {
