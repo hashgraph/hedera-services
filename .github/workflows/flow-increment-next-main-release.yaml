@@ -15,6 +15,7 @@
 ##
 
 name: "[Main] Prepare Next Release Version"
+BREAK
 on:
   workflow_dispatch:
 
