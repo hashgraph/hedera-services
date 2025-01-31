@@ -68,9 +68,6 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ExecutableTxn;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -88,7 +85,6 @@ import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -158,7 +154,6 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
-    private final AddressBookHelper addressBookHelper;
     private final ConfigProvider configProvider;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
@@ -194,7 +189,6 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService,
@@ -221,7 +215,6 @@ public class HandleWorkflow {
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         this.userTxnFactory = requireNonNull(userTxnFactory);
         this.configProvider = requireNonNull(configProvider);
-        this.addressBookHelper = requireNonNull(addressBookHelper);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
@@ -613,32 +606,17 @@ public class HandleWorkflow {
                     // we need to update that stake metadata from any node additions or deletions that
                     // just took effect; it would be nice to unify the FAB and stake metadata in the future
                     final var writableTokenStates = userTxn.stack().getWritableStates(TokenService.NAME);
-                    final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
+                    stakeInfoHelper.adjustPostUpgradeStakes(
                             userTxn.tokenContextImpl(),
                             networkInfo,
                             userTxn.config(),
                             new WritableStakingInfoStore(writableTokenStates),
                             new WritableNetworkStakingRewardsStore(writableTokenStates));
-
-                    // (FUTURE) Verify we can remove this deprecated node metadata sync now that DAB is active;
-                    // it should never happen case that nodes are added or removed from the address book without
-                    // those changes already being visible in the FAB
-                    final var addressBookWritableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    addressBookHelper.adjustPostUpgradeNodeMetadata(
-                            networkInfo,
-                            userTxn.config(),
-                            addressBookWritableStoreFactory.getStore(WritableNodeStore.class));
-
-                    if (streamMode != RECORDS) {
-                        // Only externalize this if we are streaming blocks
-                        streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
-                        userTxn.stack().commitTransaction(streamBuilder);
-                    } else {
+                    if (streamMode == RECORDS) {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
-                        userTxn.stack().commitSystemStateChanges();
                     }
+                    userTxn.stack().commitSystemStateChanges();
                 }
 
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
