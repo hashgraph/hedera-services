@@ -55,7 +55,7 @@ public enum NoOpStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     @Override
     public boolean onSealConsensusRound(@NonNull Round round, @NonNull PlatformMerkleStateRoot state) {
         // no-op
-        return round.getRoundNum() % 10 == 0;
+        return true;
     }
 
     @Override
