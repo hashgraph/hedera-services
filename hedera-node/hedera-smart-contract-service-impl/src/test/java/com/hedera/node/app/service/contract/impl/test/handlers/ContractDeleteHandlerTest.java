@@ -109,7 +109,7 @@ class ContractDeleteHandlerTest {
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
         final var exc = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, exc.responseCode());
+        assertEquals(PERMANENT_REMOVAL_REQUIRES_SYSTEM_INITIATION, exc.responseCode(), "Incorrect response code");
     }
 
     @Test

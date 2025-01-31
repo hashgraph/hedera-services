@@ -111,7 +111,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(transactionBody.nodeId()).willReturn(-1L);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
-        var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
         assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 

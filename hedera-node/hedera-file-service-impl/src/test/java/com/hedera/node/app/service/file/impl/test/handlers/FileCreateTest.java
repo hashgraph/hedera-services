@@ -339,7 +339,7 @@ class FileCreateTest extends FileTestBase {
         return mockPayerLookup(A_COMPLEX_KEY);
     }
 
-    private Key mockPayerLookup(Key key) {
+    private Key mockPayerLookup(final Key key) {
         final var account = mock(Account.class);
         given(account.key()).willReturn(key);
         given(accountStore.getAccountById(ACCOUNT_ID_3)).willReturn(account);

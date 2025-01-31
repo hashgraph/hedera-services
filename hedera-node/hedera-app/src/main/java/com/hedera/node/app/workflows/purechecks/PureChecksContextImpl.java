@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.purechecks;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
@@ -26,8 +25,10 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implementation of {@link PureChecksContext}.
+ */
 public class PureChecksContextImpl implements PureChecksContext {
     /**
      * The transaction body.
@@ -68,17 +69,5 @@ public class PureChecksContextImpl implements PureChecksContext {
     @Override
     public Configuration configuration() {
         return configuration;
-    }
-
-    @Override
-    public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
-        dispatcher.dispatchPureChecks(this);
-    }
-
-    @Nullable
-    @Override
-    public TransactionBody bodyFromTransaction(@NonNull final Transaction txn) throws PreCheckException {
-        final var transactionInfo = transactionChecker.check(txn, null);
-        return transactionInfo.txBody();
     }
 }

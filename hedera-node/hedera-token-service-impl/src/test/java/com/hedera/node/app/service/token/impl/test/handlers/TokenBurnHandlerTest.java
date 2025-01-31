@@ -133,8 +133,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build();
             given(pureChecksContext.body()).willReturn(txn);
 
-            Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
