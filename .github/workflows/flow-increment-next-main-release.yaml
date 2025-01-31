@@ -35,11 +35,6 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: 20
-
       - name: Checkout Code
         id: checkout_code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -95,10 +90,6 @@ jobs:
           echo "new-version=${new_version}" >> ${GITHUB_OUTPUT}
           printf "New Version: ${new_version}" >> ${GITHUB_STEP_SUMMARY}
 
-      - name: Update version.txt
-        run: |
-          echo ${{ steps.increment_version.outputs.new_version }} > version.txt
-
       - name: Update Versions
         run: |
           ./gradlew versionAsSpecified -PnewVersion=${{ steps.increment_version.outputs.new-version }}
@@ -110,4 +101,4 @@ jobs:
           author_name: ${{ secrets.SVCS_GIT_USER_NAME }}
           author_email: ${{ secrets.SVCS_GIT_USER_EMAIL }}
           commit: --signoff
-          message: "chore: Minor Version Roll"
+          message: "chore: Minor Version Roll to ${{ steps.increment_version.outputs.new-version }}"
