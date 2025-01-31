@@ -23,7 +23,7 @@ defaults:
     shell: bash
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   next-main-release:
