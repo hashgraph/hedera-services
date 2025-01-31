@@ -250,8 +250,8 @@ public enum TransactionExecutors {
                         () -> state,
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new));
-        final var contractService =
-                new ContractServiceImpl(appContext, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
+        final var contractService = new ContractServiceImpl(
+                appContext, NO_OP_METRICS, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
         final var component = DaggerExecutorComponent.builder()

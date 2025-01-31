@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
@@ -66,6 +67,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -234,6 +236,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private WritableSingletonState<EntityNumber> entityNumberState;
 
     @Mock
+    private WritableSingletonState<EntityCounts> entityCountsState;
+
+    @Mock
     private ExchangeRateInfo exchangeRateInfo;
 
     @Mock
@@ -397,7 +402,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             childDispatchFactory,
             dispatchProcessor,
             throttleAdviser,
-            feeAccumulator
+            feeAccumulator,
+            EMPTY_METADATA,
+            transactionChecker
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -785,6 +792,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator,
+                EMPTY_METADATA,
                 transactionChecker);
     }
 
@@ -801,10 +809,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         .state(MapWritableKVState.builder("ALIASES").build())
                         .build());
         lenient().when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
+        lenient().when(writableStates.<EntityCounts>getSingleton(anyString())).thenReturn(entityCountsState);
         lenient().when(stack.getWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
         lenient().when(stack.getReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
         lenient().when(exchangeRateManager.exchangeRateInfo(any())).thenReturn(exchangeRateInfo);
         given(baseState.getWritableStates(TokenService.NAME)).willReturn(writableStates);
         given(baseState.getReadableStates(TokenService.NAME)).willReturn(defaultTokenReadableStates());
+        given(baseState.getReadableStates(EntityIdService.NAME)).willReturn(writableStates);
     }
 }

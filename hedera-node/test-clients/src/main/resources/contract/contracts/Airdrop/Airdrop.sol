@@ -108,8 +108,8 @@ contract Airdrop is HederaTokenService {
         IHederaTokenService.TokenTransferList memory airdrop;
         airdrop.token = token;
         IHederaTokenService.NftTransfer[] memory nftTransfers = new IHederaTokenService.NftTransfer[](length);
+        int64 serial = 1;
         for (uint i = 0; i < length; i++) {
-            int64 serial = 1;
             nftTransfers[i] = prepareNftTransfer(sender, receivers[i], serial);
             serial++;
         }

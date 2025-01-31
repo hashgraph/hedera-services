@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -35,7 +37,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.config.AddressBookConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -112,8 +113,6 @@ public class StakePeriodChanges {
                 stack.rollbackFullStack();
             }
             final var config = tokenContext.configuration();
-            final var useRosterLifecycle =
-                    config.getConfigData(AddressBookConfig.class).useRosterLifecycle();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
                 final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
@@ -121,8 +120,8 @@ public class StakePeriodChanges {
                         .copyBuilder()
                         .weight(weight)
                         .build());
-                final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
-                        tokenContext, exchangeRateManager.exchangeRates(), weightUpdates, useRosterLifecycle);
+                final var streamBuilder =
+                        endOfStakingPeriodUpdater.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
                 if (streamBuilder != null) {
                     stack.commitTransaction(streamBuilder);
                 }
@@ -177,8 +176,9 @@ public class StakePeriodChanges {
 
     private WritableNodeStore newWritableNodeStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
+        final var entityCounters = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
         final var writableFactory =
-                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService);
+                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService, entityCounters);
         return writableFactory.getStore(WritableNodeStore.class);
     }
 

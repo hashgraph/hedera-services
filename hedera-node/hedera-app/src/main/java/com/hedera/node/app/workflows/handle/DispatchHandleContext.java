@@ -107,6 +107,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ThrottleAdviser throttleAdviser;
     private final FeeAccumulator feeAccumulator;
     private Map<AccountID, Long> dispatchPaidRewards;
+    private final DispatchMetadata dispatchMetaData;
     private final TransactionChecker transactionChecker;
 
     public DispatchHandleContext(
@@ -132,6 +133,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final FeeAccumulator feeAccumulator,
+            @NonNull final DispatchMetadata handleMetaData,
             @NonNull final TransactionChecker transactionChecker) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
@@ -157,6 +159,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
         this.networkInfo = requireNonNull(networkInfo);
+        this.dispatchMetaData = requireNonNull(handleMetaData);
         this.transactionChecker = requireNonNull(transactionChecker);
     }
 
@@ -401,6 +404,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NodeInfo creatorInfo() {
         return creatorInfo;
+    }
+
+    @NonNull
+    @Override
+    public DispatchMetadata dispatchMetadata() {
+        return dispatchMetaData;
     }
 
     @Nullable

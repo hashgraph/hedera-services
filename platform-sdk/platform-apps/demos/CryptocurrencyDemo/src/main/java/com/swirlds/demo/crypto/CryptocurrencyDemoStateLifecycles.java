@@ -117,8 +117,9 @@ public class CryptocurrencyDemoStateLifecycles implements StateLifecycles<Crypto
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull CryptocurrencyDemoState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull CryptocurrencyDemoState state) {
         // no-op
+        return true;
     }
 
     @Override

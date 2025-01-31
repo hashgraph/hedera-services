@@ -101,6 +101,28 @@ public interface HandleContext {
     }
 
     /**
+     * Metadata that can be attached to a dispatch.
+     * This metadata is passed when dispatching a child transaction and can
+     * be used to pass additional information to the targeted handlers.
+     */
+    class DispatchMetadata {
+        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(Map.of());
+
+        // Metadata keys
+        public static final String TRANSACTION_FIXED_FEE = "transactionFixedFee";
+
+        private final Map<String, Object> metadata;
+
+        public DispatchMetadata(Map<String, Object> metadata) {
+            this.metadata = metadata;
+        }
+
+        public Object getMetadata(String dataKey) {
+            return metadata.get(dataKey);
+        }
+    }
+
+    /**
      * Returns the current consensus time.
      *
      * @return the current consensus time
@@ -375,6 +397,13 @@ public interface HandleContext {
         ON,
         OFF
     }
+
+    /**
+     * Metadata that can be attached to a dispatch.
+     * This metadata is passed when dispatching a child transaction and can
+     * be used to pass additional information to the targeted handlers.
+     */
+    DispatchMetadata dispatchMetadata();
 
     /**
      * Returns the TransactionBogy from the given transaction.
