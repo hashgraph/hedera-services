@@ -55,14 +55,15 @@ import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
@@ -261,7 +262,7 @@ public final class EventRecoveryWorkflow {
     private static void notifyStateRecovered(
             final NotificationEngine notificationEngine, final SignedState recoveredState) {
         final NewRecoveredStateNotification notification = new NewRecoveredStateNotification(
-                recoveredState.getSwirldState(), recoveredState.getRound(), recoveredState.getConsensusTimestamp());
+                recoveredState.getState(), recoveredState.getRound(), recoveredState.getConsensusTimestamp());
         notificationEngine.dispatch(NewRecoveredStateListener.class, notification);
     }
 
@@ -305,14 +306,16 @@ public final class EventRecoveryWorkflow {
         final RecoveryPlatform platform =
                 new RecoveryPlatform(configuration, initialState.get(), selfId, loadSigningKeys);
 
-        initialState
-                .get()
-                .getSwirldState()
-                .init(
-                        platform,
-                        InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
-
+        StateLifecycles stateLifecycles = appMain.newStateLifecycles();
+        SoftwareVersion softwareVersion =
+                initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion();
+        initialState.get().init(platformContext);
+        final var notificationEngine = platform.getNotificationEngine();
+        notificationEngine.register(
+                NewRecoveredStateListener.class,
+                notification -> stateLifecycles.onNewRecoveredState(notification.getState()));
+        stateLifecycles.onStateInitialized(
+                initialState.get().getState(), platform, InitTrigger.EVENT_STREAM_RECOVERY, softwareVersion);
         appMain.init(platform, platform.getSelfId());
 
         ReservedSignedState signedState = initialState;
@@ -330,7 +333,11 @@ public final class EventRecoveryWorkflow {
                     round.getRoundNum());
 
             signedState = handleNextRound(
-                    platformContext, signedState, round, configuration.getConfigData(ConsensusConfig.class));
+                    stateLifecycles,
+                    platformContext,
+                    signedState,
+                    round,
+                    configuration.getConfigData(ConsensusConfig.class));
             platform.setLatestState(signedState.get());
             lastEvent = getLastEvent(round);
         }
@@ -365,6 +372,7 @@ public final class EventRecoveryWorkflow {
      * @return the resulting signed state
      */
     private static ReservedSignedState handleNextRound(
+            @NonNull final StateLifecycles stateLifecycles,
             @NonNull final PlatformContext platformContext,
             @NonNull final ReservedSignedState previousState,
             @NonNull final StreamedRound round,
@@ -391,11 +399,7 @@ public final class EventRecoveryWorkflow {
             v.setCreationSoftwareVersion(previousReadablePlatformState.getCreationSoftwareVersion());
         });
 
-        applyTransactions(
-                previousState.get().getSwirldState().cast(),
-                newState.cast(),
-                newState.getWritablePlatformState(),
-                round);
+        applyTransactions(stateLifecycles, previousState.get().getState(), newState.cast(), round);
 
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
@@ -469,22 +473,21 @@ public final class EventRecoveryWorkflow {
      *
      * @param immutableState the immutable swirld state for the previous round
      * @param mutableState   the swirld state for the current round
-     * @param platformState  the platform state for the current round
      * @param round          the current round
      */
     static void applyTransactions(
-            final SwirldState immutableState,
-            final SwirldState mutableState,
-            final PlatformStateModifier platformState,
+            final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles,
+            final PlatformMerkleStateRoot immutableState,
+            final PlatformMerkleStateRoot mutableState,
             final Round round) {
 
         mutableState.throwIfImmutable();
 
         for (final ConsensusEvent event : round) {
-            immutableState.preHandle(event, NO_OP_CONSUMER);
+            stateLifecycles.onPreHandle(event, immutableState, NO_OP_CONSUMER);
         }
 
-        mutableState.handleConsensusRound(round, platformState, NO_OP_CONSUMER);
+        stateLifecycles.onHandleConsensusRound(round, mutableState, NO_OP_CONSUMER);
 
         // FUTURE WORK: there are currently no system transactions that are capable of modifying
         //  the state. If/when system transactions capable of modifying state are added, this workflow

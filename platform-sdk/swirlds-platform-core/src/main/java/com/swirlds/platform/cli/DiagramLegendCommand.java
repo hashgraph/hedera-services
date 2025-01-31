@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.diagram.ModelGroup;
-import com.swirlds.common.wiring.model.diagram.ModelManualLink;
-import com.swirlds.common.wiring.schedulers.TaskScheduler;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
-import com.swirlds.common.wiring.wires.SolderType;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.component.framework.model.diagram.ModelGroup;
+import com.swirlds.component.framework.model.diagram.ModelManualLink;
+import com.swirlds.component.framework.schedulers.TaskScheduler;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.wires.SolderType;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
@@ -58,28 +58,23 @@ public final class DiagramLegendCommand extends AbstractCommand {
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
-        final TaskScheduler<Integer> sequentialScheduler = model.schedulerBuilder("SequentialScheduler")
+        final TaskScheduler<Integer> sequentialScheduler = model.<Integer>schedulerBuilder("SequentialScheduler")
                 .withType(TaskSchedulerType.SEQUENTIAL)
                 .withUnhandledTaskCapacity(1)
-                .build()
-                .cast();
-        final TaskScheduler<Void> sequentialThreadScheduler = model.schedulerBuilder("SequentialThreadScheduler")
+                .build();
+        final TaskScheduler<Void> sequentialThreadScheduler = model.<Void>schedulerBuilder("SequentialThreadScheduler")
                 .withType(TaskSchedulerType.SEQUENTIAL_THREAD)
                 .withUnhandledTaskCapacity(1)
-                .build()
-                .cast();
-        final TaskScheduler<Void> directScheduler = model.schedulerBuilder("DirectScheduler")
+                .build();
+        final TaskScheduler<Void> directScheduler = model.<Void>schedulerBuilder("DirectScheduler")
                 .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
-        final TaskScheduler<Void> directThreadsafeScheduler = model.schedulerBuilder("DirectThreadsafeScheduler")
+                .build();
+        final TaskScheduler<Void> directThreadsafeScheduler = model.<Void>schedulerBuilder("DirectThreadsafeScheduler")
                 .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                .build()
-                .cast();
-        final TaskScheduler<Void> concurrentScheduler = model.schedulerBuilder("ConcurrentScheduler")
+                .build();
+        final TaskScheduler<Void> concurrentScheduler = model.<Void>schedulerBuilder("ConcurrentScheduler")
                 .withType(TaskSchedulerType.CONCURRENT)
-                .build()
-                .cast();
+                .build();
 
         final String wireSubstitutionString = "wire substitution (for readability)";
         sequentialScheduler.getOutputWire().solderTo(sequentialThreadScheduler.buildInputWire(wireSubstitutionString));

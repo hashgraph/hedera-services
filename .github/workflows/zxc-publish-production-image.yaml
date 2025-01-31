@@ -88,7 +88,7 @@ jobs:
       docker-image-tag: ${{ inputs.version }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350 # v2.10.3
+        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
         with:
           egress-policy: audit
 
@@ -189,7 +189,7 @@ jobs:
           cp -rvf ~/artifact-build/* hedera-node/infrastructure/docker/containers/production-next/consensus-node/sdk/
 
       - name: Build Consensus Node Image
-        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6.11.0
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
         env:
           SOURCE_DATE_EPOCH: ${{ steps.commit.outputs.source-date }}
         with:

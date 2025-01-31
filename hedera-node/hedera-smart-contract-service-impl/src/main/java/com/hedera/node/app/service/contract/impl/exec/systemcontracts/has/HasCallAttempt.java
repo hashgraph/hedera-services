@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.SystemContract;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.swirlds.config.api.Configuration;
@@ -68,6 +71,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
             @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator<HasCallAttempt>> callTranslators,
+            @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
             final boolean isStaticCall) {
         super(
                 input,
@@ -81,6 +85,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
                 gasCalculator,
                 callTranslators,
                 isStaticCall,
+                systemContractMethodRegistry,
                 REDIRECT_FOR_ACCOUNT);
         if (isRedirect()) {
             this.redirectAccount = linkedAccount(requireNonNull(redirectAddress));
@@ -88,6 +93,11 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
             this.redirectAccount = null;
         }
         this.signatureVerifier = requireNonNull(signatureVerifier);
+    }
+
+    @Override
+    protected SystemContract systemContractKind() {
+        return SystemContractMethod.SystemContract.HAS;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.model.WiringModelBuilder;
-import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.model.WiringModel;
+import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,10 +42,9 @@ public class EventWindowManagerTests {
         final ComponentWiring<EventWindowManager, EventWindow> wiring = new ComponentWiring<>(
                 model,
                 EventWindowManager.class,
-                model.schedulerBuilder("eventWindowManager")
+                model.<EventWindow>schedulerBuilder("eventWindowManager")
                         .withType(TaskSchedulerType.DIRECT_THREADSAFE)
-                        .build()
-                        .cast());
+                        .build());
         wiring.bind(eventWindowManager);
 
         final AtomicReference<EventWindow> output = new AtomicReference<>(null);

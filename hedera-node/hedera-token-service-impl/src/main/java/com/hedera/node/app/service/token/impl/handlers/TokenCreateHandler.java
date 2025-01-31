@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
                 newToken, accountStore, tokenRelationStore, tokenStore, op.customFees(), context.expiryValidator());
         // Put token into modifications map
-        tokenStore.put(newToken);
+        tokenStore.putAndIncrementCount(newToken);
         // associate token with treasury and collector ids of custom fees whose token denomination
         // is set to sentinel value
         associateAccounts(

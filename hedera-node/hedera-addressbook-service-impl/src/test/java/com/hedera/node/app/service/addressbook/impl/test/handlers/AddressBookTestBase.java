@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -30,20 +32,26 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.EntityType;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
@@ -96,9 +104,6 @@ public class AddressBookTestBase {
                                     A_COMPLEX_KEY)))
             .build();
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
-    public static final Configuration WITH_ROSTER_LIFECYCLE = HederaTestConfigBuilder.create()
-            .withValue("addressBook.useRosterLifecycle", true)
-            .getOrCreateConfig();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
@@ -157,8 +162,8 @@ public class AddressBookTestBase {
     @Mock
     protected WritableStates writableStates;
 
-    @Mock
-    private StoreMetricsService storeMetricsService;
+    protected ReadableEntityIdStore readableEntityCounters;
+    protected WritableEntityIdStore writableEntityCounters;
 
     protected MapReadableKVState<EntityNumber, Node> readableNodeState;
     protected MapWritableKVState<EntityNumber, Node> writableNodeState;
@@ -173,36 +178,76 @@ public class AddressBookTestBase {
     }
 
     protected void refreshStoresWithCurrentNodeInReadable() {
+        givenEntityCountersWithOneNodeInWritable();
         readableNodeState = readableNodeState();
         writableNodeState = emptyWritableNodeState();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
-        readableStore = new ReadableNodeStoreImpl(readableStates);
-        writableStore = new WritableNodeStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
+        readableStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
+    }
+
+    protected void givenEntityCounters() {
+        given(writableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
+        given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT, c -> {}));
+        given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
+        given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> EntityCounts.DEFAULT));
+        readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
+        writableEntityCounters = new WritableEntityIdStore(writableStates);
+    }
+
+    protected void givenEntityCountersWithOneNodeInWritable() {
+        given(writableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build(), c -> {}));
+        given(writableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numNodes(1).build(),
+                        c -> {}));
+        given(readableStates.getSingleton(ENTITY_ID_STATE_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_ID_STATE_KEY, () -> EntityNumber.newBuilder().build()));
+        given(readableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .willReturn(new ReadableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY,
+                        () -> EntityCounts.newBuilder().numNodes(1).build()));
+        readableEntityCounters = new ReadableEntityIdStoreImpl(readableStates);
+        writableEntityCounters = new WritableEntityIdStore(writableStates);
     }
 
     protected void refreshStoresWithCurrentNodeInBothReadableAndWritable() {
+        givenEntityCountersWithOneNodeInWritable();
         readableNodeState = readableNodeState();
         writableNodeState = writableNodeStateWithOneKey();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
-        readableStore = new ReadableNodeStoreImpl(readableStates);
+        readableStore = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentNodeInWritable() {
+        givenEntityCountersWithOneNodeInWritable();
+        writableEntityCounters.incrementEntityTypeCount(EntityType.NODE);
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithMoreNodeInWritable() {
+        givenEntityCounters();
         writableNodeState = writableNodeStateWithMoreKeys();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableStore = new WritableNodeStore(writableStates, configuration, storeMetricsService);
+        writableStore = new WritableNodeStore(writableStates, writableEntityCounters);
     }
 
     @NonNull

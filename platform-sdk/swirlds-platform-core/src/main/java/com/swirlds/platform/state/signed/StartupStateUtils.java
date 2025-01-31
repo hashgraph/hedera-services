@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.SavedStateLoadedPayload;
-import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
@@ -315,7 +314,8 @@ public final class StartupStateUtils {
 
     /**
      * Build and initialize a genesis state.
-     *
+     * <p>
+     * <b>Important:</b> Only used by {@link com.swirlds.platform.Browser}.
      * @param configuration         the configuration for this node
      * @param addressBook           the current address book
      * @param appVersion            the software version of the app
@@ -327,10 +327,7 @@ public final class StartupStateUtils {
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final PlatformMerkleStateRoot stateRoot) {
-
-        if (!configuration.getConfigData(AddressBookConfig.class).useRosterLifecycle()) {
-            initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
-        }
+        initGenesisState(configuration, stateRoot, stateRoot.getWritablePlatformState(), addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
                 configuration, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
