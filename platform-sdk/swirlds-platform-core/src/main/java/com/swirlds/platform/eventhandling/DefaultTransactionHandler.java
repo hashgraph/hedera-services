@@ -50,8 +50,6 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
@@ -109,11 +107,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
     private final boolean waitForPrehandle;
 
     /**
-     * A queue of accumulated transactions that will be applied to the state.
-     */
-    private final List<ScopedSystemTransaction<StateSignatureTransaction>> accumulatedTransactions;
-
-    /**
      * Constructor
      *
      * @param platformContext       contains various platform utilities
@@ -148,7 +141,6 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
         // If the application transaction prehandler is a no-op then we don't need to wait for it.
         waitForPrehandle = schedulersConfig.applicationTransactionPrehandler().type() != TaskSchedulerType.NO_OP;
-        accumulatedTransactions = new ArrayList<>();
     }
 
     /**
@@ -278,7 +270,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @return a StateAndRound object containing the signed state and the consensus round
      * @throws InterruptedException if this thread is interrupted
      */
-    @Nullable
+    @NonNull
     private StateAndRound createSignedState(
             @NonNull final ConsensusRound consensusRound,
             @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions)
@@ -288,12 +280,9 @@ public class DefaultTransactionHandler implements TransactionHandler {
             swirldStateManager.savedStateInFreezePeriod();
         }
 
-        final StateAndRound result;
         final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
+        final ReservedSignedState reservedSignedState;
         if (isBoundary || freezeRoundReceived) {
-            systemTransactions.addAll(accumulatedTransactions);
-            accumulatedTransactions.clear();
-
             handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
             final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
 
@@ -307,13 +296,11 @@ public class DefaultTransactionHandler implements TransactionHandler {
                     true,
                     consensusRound.isPcesRound());
 
-            final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
-            result = new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
+            reservedSignedState = signedState.reserve("transaction handler output");
         } else {
-            result = null;
-            accumulatedTransactions.addAll(systemTransactions);
+            reservedSignedState = null;
         }
 
-        return result;
+        return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
     }
 }
