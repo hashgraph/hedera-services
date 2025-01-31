@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
@@ -84,7 +99,7 @@ public interface HapiPropertySource {
 
     default FileID getFile(String property) {
         try {
-            return asFile(get(property));
+            return asFile(get("default.shard"), get("default.realm"), get(property));
         } catch (Exception ignore) {
         }
         return FileID.getDefaultInstance();
@@ -92,7 +107,7 @@ public interface HapiPropertySource {
 
     default AccountID getAccount(String property) {
         try {
-            return asAccount(get(property));
+            return asAccount(get("default.shard"), get("default.realm"), get(property));
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
@@ -226,6 +241,54 @@ public interface HapiPropertySource {
                 .setShardNum(nativeParts[0])
                 .setRealmNum(nativeParts[1])
                 .setAccountNum(nativeParts[2])
+                .build();
+    }
+
+    static AccountID asAccount(String shard, String realm, String num) {
+        return AccountID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setAccountNum(Long.parseLong(num))
+                .build();
+    }
+
+    static ContractID asContract(String shard, String realm, String num) {
+        return ContractID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setContractNum(Long.parseLong(num))
+                .build();
+    }
+
+    static FileID asFile(String shard, String realm, String num) {
+        return FileID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setFileNum(Long.parseLong(num))
+                .build();
+    }
+
+    static ScheduleID asSchedule(String shard, String realm, String num) {
+        return ScheduleID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setScheduleNum(Long.parseLong(num))
+                .build();
+    }
+
+    static TokenID asToken(String shard, String realm, String num) {
+        return TokenID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setTokenNum(Long.parseLong(num))
+                .build();
+    }
+
+    static TopicID asTopic(String shard, String realm, String num) {
+        return TopicID.newBuilder()
+                .setShardNum(Long.parseLong(shard))
+                .setRealmNum(Long.parseLong(realm))
+                .setTopicNum(Long.parseLong(num))
                 .build();
     }
 
