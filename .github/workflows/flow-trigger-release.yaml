@@ -130,8 +130,14 @@ jobs:
         id: next_version
         run: |
           echo "Compute next version number using git-semver"
-          echo "next_release=$(git-semver next --stable=false)" >> ${GITHUB_OUTPUT}
-          echo "Next release version is: ${next_release}"
+          OUTPUT=$(git-semver next --stable=false 2>&1) || STATUS=$?
+          echo "$OUTPUT"
+          if [[ -n "$STATUS" ]]; then
+            echo "git-semver failed with status $STATUS"
+            exit $STATUS
+          fi
+          echo "next_release=$OUTPUT" >> ${GITHUB_OUTPUT}
+          echo "Next release version is: $OUTPUT"
 
       - name: Apply Tag with Calculated Next Version
         run: |
