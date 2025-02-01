@@ -109,6 +109,11 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
+    public HintsHandlers handlers() {
+        return component.handlers();
+    }
+
+    @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
         final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);

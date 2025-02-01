@@ -26,7 +26,7 @@ import java.time.Instant;
 import java.util.OptionalInt;
 
 /**
- * A {@link HintsController} that does nothing; the right implementation if an {@link HintsControllerImpl} cannot
+ * A {@link HintsController} that does nothing; the right implementation if a {@link HintsControllerImpl} cannot
  * be constructed. (For example, because the current roster does have strictly greater than 2/3 weight in the
  * candidate roster.)
  */

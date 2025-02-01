@@ -80,11 +80,6 @@ public interface HintsService extends Service, BlockHashSigner {
     Bytes activeVerificationKeyOrThrow();
 
     /**
-     * Returns the handlers for the {@link HintsService}.
-     */
-    HintsHandlers handlers();
-
-    /**
      * Initializes hinTS signing from the next construction in the given {@link ReadableHintsStore}.
      */
     void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore);
@@ -124,6 +119,11 @@ public interface HintsService extends Service, BlockHashSigner {
      * Stops the hinTS service, causing it to abandon any in-progress work.
      */
     void stop();
+
+    /**
+     * Returns the handlers for the {@link HintsService}.
+     */
+    HintsHandlers handlers();
 
     @Override
     default int migrationOrder() {

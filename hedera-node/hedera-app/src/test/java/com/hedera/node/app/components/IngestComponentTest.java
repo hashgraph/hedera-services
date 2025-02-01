@@ -42,6 +42,7 @@ import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -147,7 +148,8 @@ class IngestComponentTest {
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
                 .kvStateChangeListener(new KVStateChangeListener())
-                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener(
+                        new StoreMetricsServiceImpl(metrics), () -> configProvider.getConfiguration()))
                 .migrationStateChanges(List.of())
                 .hintsService(hintsService)
                 .historyService(historyService)

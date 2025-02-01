@@ -23,16 +23,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Bundles the handlers for the {@link com.hedera.node.app.hints.HintsService}.
  * @param keyPublicationHandler the handler for key publication
- * @param aggregationVoteHandler the handler for aggregation votes
+ * @param preprocessingVoteHandler the handler for preprocessing votes
  * @param partialSignatureHandler the handler for partial signatures
  */
 public record HintsHandlers(
         @NonNull HintsKeyPublicationHandler keyPublicationHandler,
-        @NonNull HintsAggregationVoteHandler aggregationVoteHandler,
+        @NonNull HintsPreprocessingVoteHandler preprocessingVoteHandler,
         @NonNull HintsPartialSignatureHandler partialSignatureHandler) {
     public HintsHandlers {
         requireNonNull(keyPublicationHandler);
-        requireNonNull(aggregationVoteHandler);
+        requireNonNull(preprocessingVoteHandler);
         requireNonNull(partialSignatureHandler);
     }
 }

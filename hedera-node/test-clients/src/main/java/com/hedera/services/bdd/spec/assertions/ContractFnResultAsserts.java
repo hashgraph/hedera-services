@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
     public static Object[] viaAbi(String abi, byte[] bytes) {
         com.esaulpaugh.headlong.abi.Function function = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
-        return function.decodeReturn(bytes).toList().toArray();
+        return function.decodeReturn(bytes).toArray();
     }
 
     /* Helpers to create the provider for #resultThruAbi. */

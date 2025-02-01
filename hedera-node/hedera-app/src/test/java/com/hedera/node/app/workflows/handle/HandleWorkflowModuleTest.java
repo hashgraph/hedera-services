@@ -23,10 +23,10 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
+import com.hedera.node.app.hints.handlers.HintsPreprocessingVoteHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
@@ -118,6 +118,15 @@ class HandleWorkflowModuleTest {
 
     @Mock
     private AddressBookHandlers addressBookHandlers;
+
+    @Mock
+    private HintsPreprocessingVoteHandler preprocessingVoteHandler;
+
+    @Mock
+    private HintsPartialSignatureHandler partialSignatureHandler;
+
+    @Mock
+    private HintsKeyPublicationHandler hintsKeyPublicationHandler;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -341,6 +350,8 @@ class HandleWorkflowModuleTest {
         given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
         given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
 
+        final var hintsHandlers =
+                new HintsHandlers(hintsKeyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler);
         final var handlers = HandleWorkflowModule.provideTransactionHandlers(
                 networkAdminHandlers,
                 consensusHandlers,
@@ -350,7 +361,7 @@ class HandleWorkflowModuleTest {
                 tokenHandlers,
                 utilHandlers,
                 addressBookHandlers,
-                new HintsHandlers(keyPublicationHandler, aggregationVoteHandler, partialSignatureHandler));
+                hintsHandlers);
         assertInstanceOf(TransactionHandlers.class, handlers);
     }
 }

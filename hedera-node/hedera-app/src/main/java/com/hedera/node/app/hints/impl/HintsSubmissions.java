@@ -18,11 +18,12 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
-import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -39,8 +40,8 @@ import org.apache.logging.log4j.Logger;
 public class HintsSubmissions extends TssSubmissions {
     private static final Logger logger = LogManager.getLogger(HintsSubmissions.class);
 
+    private final HintsContext context;
     private final HintsKeyAccessor keyAccessor;
-    private final HintsContext signingContext;
     private final BiConsumer<TransactionBody, String> onFailure =
             (body, reason) -> logger.warn("Failed to submit {} ({})", body, reason);
 
@@ -49,30 +50,58 @@ public class HintsSubmissions extends TssSubmissions {
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
             @NonNull final HintsKeyAccessor keyAccessor,
-            @NonNull final HintsContext signingContext) {
+            @NonNull final HintsContext context) {
         super(executor, appContext);
         this.keyAccessor = requireNonNull(keyAccessor);
-        this.signingContext = requireNonNull(signingContext);
+        this.context = requireNonNull(context);
     }
 
     /**
      * Attempts to submit a hinTS key aggregation vote to the network.
-     * @param body the vote to submit
+     * @param partyId the ID of the party submitting the vote
+     * @param numParties the total number of parties in the vote
+     * @param hintsKey the key to vote for
      * @return a future that completes when the vote has been submitted
      */
-    public CompletableFuture<Void> submitHintsKey(@NonNull final HintsKeyPublicationTransactionBody body) {
-        requireNonNull(body);
-        return submit(b -> b.hintsKeyPublication(body), onFailure);
+    public CompletableFuture<Void> submitHintsKey(
+            final int partyId, final int numParties, @NonNull final Bytes hintsKey) {
+        requireNonNull(hintsKey);
+        final var op = new HintsKeyPublicationTransactionBody(partyId, numParties, hintsKey);
+        return submit(b -> b.hintsKeyPublication(op), onFailure);
     }
 
     /**
-     * Attempts to submit a hinTS key aggregation vote to the network.
-     * @param body the vote to submit
+     * Submits a vote for the same hinTS preprocessing output for the given construction id that another
+     * node with the given ID has already voted for.
+     * @param constructionId the construction ID to vote for
+     * @param congruentNodeId the ID of the node that has already voted
      * @return a future that completes when the vote has been submitted
      */
-    public CompletableFuture<Void> submitHintsVote(@NonNull final HintsPreprocessingVoteTransactionBody body) {
-        requireNonNull(body);
-        return submit(b -> b.hintsAggregationVote(body), onFailure);
+    public CompletableFuture<Void> submitHintsVote(final long constructionId, final long congruentNodeId) {
+        final var op = HintsPreprocessingVoteTransactionBody.newBuilder()
+                .constructionId(constructionId)
+                .vote(PreprocessingVote.newBuilder()
+                        .congruentNodeId(congruentNodeId)
+                        .build())
+                .build();
+        return submit(b -> b.hintsPreprocessingVote(op), onFailure);
+    }
+
+    /**
+     * Submits a vote for the given hinTS preprocessing output for the given construction id.
+     * @param constructionId the construction ID to vote for
+     * @param preprocessedKeys the keys to vote for
+     * @return a future that completes when the vote has been submitted
+     */
+    public CompletableFuture<Void> submitHintsVote(
+            final long constructionId, @NonNull final PreprocessedKeys preprocessedKeys) {
+        final var op = HintsPreprocessingVoteTransactionBody.newBuilder()
+                .constructionId(constructionId)
+                .vote(PreprocessingVote.newBuilder()
+                        .preprocessedKeys(preprocessedKeys)
+                        .build())
+                .build();
+        return submit(b -> b.hintsPreprocessingVote(op), onFailure);
     }
 
     /**
@@ -82,7 +111,7 @@ public class HintsSubmissions extends TssSubmissions {
      */
     public CompletableFuture<Void> submitPartialSignature(@NonNull final Bytes message) {
         requireNonNull(message);
-        final long constructionId = signingContext.constructionIdOrThrow();
+        final long constructionId = context.constructionIdOrThrow();
         return submit(
                 b -> {
                     final var signature = keyAccessor.signWithBlsPrivateKey(constructionId, message);

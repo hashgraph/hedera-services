@@ -19,10 +19,10 @@ package com.hedera.node.app.hints.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hints.HintsKeyAccessor;
-import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
+import com.hedera.node.app.hints.handlers.HintsPreprocessingVoteHandler;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -44,6 +44,10 @@ public interface HintsModule {
         return requireNonNull(appContext).selfNodeInfoSupplier();
     }
 
+    @Binds
+    @Singleton
+    HintsKeyAccessor bindHintsKeyAccessor(@NonNull HintsKeyAccessorImpl hintsKeyAccessorImpl);
+
     @Provides
     @Singleton
     static Supplier<Configuration> provideConfigSupplier(@NonNull final AppContext appContext) {
@@ -64,8 +68,8 @@ public interface HintsModule {
     @Singleton
     static HintsHandlers provideHintsHandlers(
             @NonNull final HintsKeyPublicationHandler keyPublicationHandler,
-            @NonNull final HintsAggregationVoteHandler aggregationVoteHandler,
+            @NonNull final HintsPreprocessingVoteHandler preprocessingVoteHandler,
             @NonNull final HintsPartialSignatureHandler partialSignatureHandler) {
-        return new HintsHandlers(keyPublicationHandler, aggregationVoteHandler, partialSignatureHandler);
+        return new HintsHandlers(keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler);
     }
 }
