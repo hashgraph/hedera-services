@@ -43,6 +43,9 @@ public record StateAndRound(
      */
     @NonNull
     public StateAndRound makeAdditionalReservation(@NonNull final String reservationReason) {
+        if (reservedSignedState == null) {
+            throw new IllegalStateException("Cannot make additional reservation on a null reserved signed state");
+        }
         return new StateAndRound(reservedSignedState.getAndReserve(reservationReason), round, systemTransactions);
     }
 }
