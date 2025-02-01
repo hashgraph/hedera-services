@@ -90,7 +90,7 @@ dependencies.constraints {
     api("com.esaulpaugh:headlong:12.3.3") { because("com.esaulpaugh.headlong") }
     api("info.picocli:picocli:4.6.3") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.179") { because("io.github.classgraph") }
-    api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
+    api("io.perfmark:perfmark-api:0.27.0") { because("io.perfmark") }
     api("io.prometheus:simpleclient:0.16.0") { because("io.prometheus.simpleclient") }
     api("io.prometheus:simpleclient_httpserver:0.16.0") {
         because("io.prometheus.simpleclient.httpserver")
