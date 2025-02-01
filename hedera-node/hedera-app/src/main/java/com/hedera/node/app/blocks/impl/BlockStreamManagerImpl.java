@@ -570,7 +570,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         @Override
-        protected boolean exec() {
+        protected boolean execImpl() {
             Bytes bytes = BlockItem.PROTOBUF.toBytes(item);
 
             final var kind = item.item().kind();
@@ -605,7 +605,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         @Override
-        protected boolean exec() {
+        protected boolean execImpl() {
             final var kind = item.item().kind();
             switch (kind) {
                 case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> inputTreeHasher.addLeaf(hash);
