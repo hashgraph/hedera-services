@@ -65,7 +65,7 @@ class ConcurrentTask extends AbstractTask {
         try {
             handler.accept(data);
         } catch (final Throwable t) {
-            completeExceptionallyImpl(t);
+            completeExceptionally(t);
         } finally {
             offRamp.offRamp();
         }
