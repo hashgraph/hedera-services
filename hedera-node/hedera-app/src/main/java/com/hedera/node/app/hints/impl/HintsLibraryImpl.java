@@ -26,7 +26,27 @@ import java.util.Map;
 /**
  * Default implementation of {@link HintsLibrary}.
  */
-public class FakeHintsLibrary implements HintsLibrary {
+public class HintsLibraryImpl implements HintsLibrary {
+    @Override
+    public Bytes newCrs(final int n) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Bytes updateCrs(@NonNull final Bytes crs, @NonNull final Bytes entropy) {
+        requireNonNull(crs);
+        requireNonNull(entropy);
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean verifyCrsUpdate(@NonNull Bytes oldCrs, @NonNull Bytes newCrs, @NonNull Bytes proof) {
+        requireNonNull(oldCrs);
+        requireNonNull(newCrs);
+        requireNonNull(proof);
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public Bytes newBlsKeyPair() {
         throw new UnsupportedOperationException();

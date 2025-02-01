@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.hints.impl.FakeHintsLibrary;
+import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -283,7 +283,7 @@ public enum TransactionExecutors {
         final var fileService = new FileServiceImpl();
         final var scheduleService = new ScheduleServiceImpl();
         final var hintsService = new HintsServiceImpl(
-                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new FakeHintsLibrary(), bootstrapConfig);
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl(), bootstrapConfig);
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
