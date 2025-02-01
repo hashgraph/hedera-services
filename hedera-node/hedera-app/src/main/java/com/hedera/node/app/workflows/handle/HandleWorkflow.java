@@ -68,9 +68,6 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
-import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.schedule.ExecutableTxn;
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -88,7 +85,6 @@ import com.hedera.node.app.state.HederaRecordCache.DueDiligenceFailure;
 import com.hedera.node.app.state.recordcache.BlockRecordSource;
 import com.hedera.node.app.state.recordcache.LegacyListRecordSource;
 import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -158,7 +154,6 @@ public class HandleWorkflow {
     private final StakePeriodManager stakePeriodManager;
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
-    private final AddressBookHelper addressBookHelper;
     private final ConfigProvider configProvider;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
@@ -194,7 +189,6 @@ public class HandleWorkflow {
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final List<StateChanges.Builder> migrationStateChanges,
             @NonNull final UserTxnFactory userTxnFactory,
-            @NonNull final AddressBookHelper addressBookHelper,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final ScheduleService scheduleService,
@@ -221,7 +215,6 @@ public class HandleWorkflow {
         this.migrationStateChanges = new ArrayList<>(migrationStateChanges);
         this.userTxnFactory = requireNonNull(userTxnFactory);
         this.configProvider = requireNonNull(configProvider);
-        this.addressBookHelper = requireNonNull(addressBookHelper);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.scheduleService = requireNonNull(scheduleService);
@@ -398,7 +391,7 @@ public class HandleWorkflow {
 
         final var userTxn = userTxnFactory.createUserTxn(state, creator, txn, consensusNow, type);
         var lastRecordManagerTime = streamMode == RECORDS ? blockRecordManager.consTimeOfLastHandledTxn() : null;
-        final var handleOutput = executeTopLevel(userTxn, txnVersion);
+        final var handleOutput = executeTopLevel(userTxn, txnVersion, state);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -587,11 +580,13 @@ public class HandleWorkflow {
      * just the transaction with a {@link ResponseCodeEnum#FAIL_INVALID} transaction result,
      * and no other side effects.
      *
-     * @param userTxn    the user transaction to execute
+     * @param userTxn the user transaction to execute
      * @param txnVersion the software version for the event containing the transaction
+     * @param state the state to commit any direct changes against
      * @return the stream output from executing the transaction
      */
-    private HandleOutput executeTopLevel(@NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion) {
+    private HandleOutput executeTopLevel(
+            @NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion, @NonNull final State state) {
         try {
             if (isOlderSoftwareEvent(txnVersion)) {
                 if (streamMode != BLOCKS) {
@@ -611,30 +606,29 @@ public class HandleWorkflow {
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     // Since we track node stake metadata separately from the future address book (FAB),
                     // we need to update that stake metadata from any node additions or deletions that
-                    // just took effect; it would be nice to unify the FAB and stake metadata in the future
-                    final var writableTokenStates = userTxn.stack().getWritableStates(TokenService.NAME);
-                    final var streamBuilder = stakeInfoHelper.adjustPostUpgradeStakes(
-                            userTxn.tokenContextImpl(),
-                            networkInfo,
-                            userTxn.config(),
-                            new WritableStakingInfoStore(writableTokenStates),
-                            new WritableNetworkStakingRewardsStore(writableTokenStates));
-
-                    // (FUTURE) Verify we can remove this deprecated node metadata sync now that DAB is active;
-                    // it should never happen case that nodes are added or removed from the address book without
-                    // those changes already being visible in the FAB
-                    final var addressBookWritableStoreFactory = new WritableStoreFactory(
-                            userTxn.stack(), AddressBookService.NAME, userTxn.config(), storeMetricsService);
-                    addressBookHelper.adjustPostUpgradeNodeMetadata(
-                            networkInfo,
-                            userTxn.config(),
-                            addressBookWritableStoreFactory.getStore(WritableNodeStore.class));
-
-                    if (streamMode != RECORDS) {
-                        // Only externalize this if we are streaming blocks
-                        streamBuilder.exchangeRate(exchangeRateManager.exchangeRates());
-                        userTxn.stack().commitTransaction(streamBuilder);
-                    } else {
+                    // just took effect; it would be nice to unify the FAB and stake metadata in the future.
+                    // IMPORTANT:
+                    //   (1) These K/V changes must be committed directly to the state instead of
+                    //   being accumulated in the user stack in case it is rolled back.
+                    //   (2) The K/V changes must also be written immediately in their own block item,
+                    //   instead of being added to the base builder state changes, because if there is
+                    //   a preceding NodeStakeUpdate added later in executeTopLevel(), *its* state changes
+                    //   will come before the base builder's changes in the block stream
+                    final var writableTokenStates = state.getWritableStates(TokenService.NAME);
+                    final int maxPrecedingRecords = userTxn.config()
+                            .getConfigData(ConsensusConfig.class)
+                            .handleMaxPrecedingRecords();
+                    doStreamingKVChanges(
+                            writableTokenStates,
+                            // Ensure that even if the user txn has preceding children, these state changes still have
+                            // an earlier consensus time; since in fact they are, in fact, committed first
+                            userTxn.consensusNow().minusNanos(maxPrecedingRecords + 1),
+                            () -> stakeInfoHelper.adjustPostUpgradeStakes(
+                                    networkInfo,
+                                    userTxn.config(),
+                                    new WritableStakingInfoStore(writableTokenStates),
+                                    new WritableNetworkStakingRewardsStore(writableTokenStates)));
+                    if (streamMode == RECORDS) {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
                         userTxn.stack().commitSystemStateChanges();

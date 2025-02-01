@@ -37,7 +37,6 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
@@ -231,7 +230,6 @@ class HandleWorkflowTest {
                 stakePeriodManager,
                 migrationStateChanges,
                 userTxnFactory,
-                new AddressBookHelper(),
                 kvStateChangeListener,
                 boundaryStateChangeListener,
                 scheduleService,

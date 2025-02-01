@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
@@ -30,13 +29,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
-import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -45,8 +41,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableStates;
 import java.time.Duration;
 import java.time.Instant;
 import org.assertj.core.api.Assertions;
@@ -79,13 +73,7 @@ public class NodeStakeUpdatesTest {
     private Dispatch dispatch;
 
     @Mock
-    private WritableStates writableStates;
-
-    @Mock
     private StoreMetricsService storeMetricsService;
-
-    @Mock
-    private WritableKVState<EntityNumber, Node> nodesState;
 
     private StakePeriodChanges subject;
 
@@ -107,8 +95,6 @@ public class NodeStakeUpdatesTest {
     void processUpdateCalledForGenesisTxn() {
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
                         .consTimeOfLastHandledTxn(Timestamp.newBuilder().seconds(1_234_567L))
@@ -151,8 +137,6 @@ public class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
         given(context.consensusTime()).willReturn(currentConsensusTime);
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         // Pre-condition check
         Assertions.assertThat(
@@ -182,8 +166,6 @@ public class NodeStakeUpdatesTest {
                         StakePeriodChanges.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         subject.process(dispatch, stack, context, BLOCKS, false, CONSENSUS_TIME_1234567);
 
@@ -207,8 +189,6 @@ public class NodeStakeUpdatesTest {
                         .build());
         given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
         given(context.configuration()).willReturn(DEFAULT_CONFIG);
-        given(stack.getWritableStates(AddressBookService.NAME)).willReturn(writableStates);
-        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodesState);
 
         Assertions.assertThatNoException()
                 .isThrownBy(() -> subject.process(dispatch, stack, context, RECORDS, false, Instant.EPOCH));
