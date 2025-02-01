@@ -599,10 +599,12 @@ public class PlatformWiring {
                 transactionHandlerStateAndRoundOutput.buildTransformer(
                         "getState", "state and round", StateAndRound::reservedSignedState);
 
+        final OutputWire<StateAndRound> notNullStateWire = transactionHandlerStateAndRoundOutput.buildFilter(
+                "notNullStateFilter", "state and round", ras -> ras.reservedSignedState() != null);
+
         transactionHandlerRoundOutput.solderTo(
                 latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
-        transactionHandlerStateAndRoundOutput.solderTo(
-                savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
+        notNullStateWire.solderTo(savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
 
         savedStateControllerWiring.getOutputWire().solderTo(stateHasherWiring.getInputWire(StateHasher::hashState));
 
