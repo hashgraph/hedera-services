@@ -20,6 +20,7 @@ import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
@@ -49,7 +50,7 @@ public class HintsControllers {
     private final HintsLibrary library;
     private final HintsLibraryCodec codec;
     private final HintsSubmissions submissions;
-    private final HintsContext context;
+    private final HintsContext signingContext;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
 
     /**
@@ -66,12 +67,12 @@ public class HintsControllers {
             @NonNull final HintsLibrary library,
             @NonNull final HintsLibraryCodec codec,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsContext context,
+            @NonNull final HintsContext signingContext,
             @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
         this.executor = requireNonNull(executor);
         this.keyAccessor = requireNonNull(keyAccessor);
         this.codec = requireNonNull(codec);
-        this.context = requireNonNull(context);
+        this.signingContext = requireNonNull(signingContext);
         this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
         this.selfNodeInfoSupplier = requireNonNull(selfNodeInfoSupplier);
@@ -154,7 +155,7 @@ public class HintsControllers {
                     votes,
                     publications,
                     submissions,
-                    context);
+                    signingContext);
         }
     }
 

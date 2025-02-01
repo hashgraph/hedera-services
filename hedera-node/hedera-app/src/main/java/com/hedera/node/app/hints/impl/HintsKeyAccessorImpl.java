@@ -18,6 +18,7 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

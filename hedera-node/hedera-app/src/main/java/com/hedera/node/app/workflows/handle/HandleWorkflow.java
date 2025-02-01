@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,12 +161,12 @@ public class HandleWorkflow {
     private final List<StateChanges.Builder> migrationStateChanges;
     private final UserTxnFactory userTxnFactory;
     private final AddressBookHelper addressBookHelper;
+    private final HintsService hintsService;
+    private final HistoryService historyService;
     private final ConfigProvider configProvider;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final ScheduleService scheduleService;
-    private final HintsService hintsService;
-    private final HistoryService historyService;
     private final CongestionMetrics congestionMetrics;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
 
@@ -234,7 +234,7 @@ public class HandleWorkflow {
                 .streamMode();
         this.hintsService = requireNonNull(hintsService);
         this.historyService = requireNonNull(historyService);
-        this.softwareVersionFactory = softwareVersionFactory;
+        this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
     }
 
     /**

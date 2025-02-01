@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import com.hedera.node.app.hints.handlers.HintsAggregationVoteHandler;
+import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
+import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
@@ -130,4 +133,7 @@ public record TransactionHandlers(
         @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull NodeDeleteHandler nodeDeleteHandler,
         @NonNull TokenClaimAirdropHandler tokenClaimAirdropHandler,
+        @NonNull HintsKeyPublicationHandler keyPublicationHandler,
+        @NonNull HintsAggregationVoteHandler aggregationVoteHandler,
+        @NonNull HintsPartialSignatureHandler partialSignatureHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

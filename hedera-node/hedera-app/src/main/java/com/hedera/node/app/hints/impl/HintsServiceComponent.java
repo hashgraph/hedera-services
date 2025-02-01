@@ -43,7 +43,11 @@ public interface HintsServiceComponent {
 
     HintsHandlers handlers();
 
+    HintsSubmissions submissions();
+
     HintsContext signingContext();
+
+    HintsControllers controllers();
 
     ConcurrentMap<Bytes, HintsContext.Signing> signings();
 

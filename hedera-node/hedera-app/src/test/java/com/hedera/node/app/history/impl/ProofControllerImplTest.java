@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.history.impl;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
-import com.hedera.hapi.node.state.history.HistoryProofVote;
 import com.hedera.hapi.node.state.history.HistorySignature;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.ReadableHistoryStore.HistorySignaturePublication;
@@ -91,15 +90,7 @@ class ProofControllerImplTest {
     }
 
     @Test
-    void nothingSupportedYet() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.constructionId());
-        assertThrows(UnsupportedOperationException.class, () -> subject.isStillInProgress());
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.advanceConstruction(CONSENSUS_NOW, METADATA, store));
-        assertThrows(UnsupportedOperationException.class, () -> subject.addProofKeyPublication(KEY_PUBLICATION));
-        assertThrows(UnsupportedOperationException.class, () -> subject.addSignaturePublication(SIGNATURE_PUBLICATION));
-        assertThrows(
-                UnsupportedOperationException.class, () -> subject.addProofVote(1L, HistoryProofVote.DEFAULT, store));
-        assertThrows(UnsupportedOperationException.class, () -> subject.cancelPendingWork());
+    void constructionIdAsGiven() {
+        assertEquals(0L, subject.constructionId());
     }
 }
