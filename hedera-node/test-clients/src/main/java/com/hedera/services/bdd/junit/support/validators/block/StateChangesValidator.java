@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
@@ -81,6 +82,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +119,8 @@ public class StateChangesValidator implements BlockStreamValidator {
     private final Set<String> servicesWritten = new HashSet<>();
     private final StateChangesSummary stateChangesSummary = new StateChangesSummary(new TreeMap<>());
 
+    private Instant lastStateChangesTime;
+    private StateChanges lastStateChanges;
     private PlatformMerkleStateRoot state;
 
     public static void main(String[] args) {
@@ -254,6 +258,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                     hashInputOutputTree(item, inputTreeHasher, outputTreeHasher);
                 }
                 if (item.hasStateChanges()) {
+                    final var changes = item.stateChangesOrThrow();
+                    final var at = asInstant(changes.consensusTimestampOrThrow());
+                    if (lastStateChanges != null && at.isBefore(requireNonNull(lastStateChangesTime))) {
+                        Assertions.fail("State changes are not in chronological order - last changes were \n "
+                                + lastStateChanges + "\ncurrent changes are \n  " + changes);
+                    }
+                    lastStateChanges = changes;
+                    lastStateChangesTime = at;
                     applyStateChanges(item.stateChangesOrThrow());
                 }
                 servicesWritten.forEach(name -> ((CommittableWritableStates) state.getWritableStates(name)).commit());

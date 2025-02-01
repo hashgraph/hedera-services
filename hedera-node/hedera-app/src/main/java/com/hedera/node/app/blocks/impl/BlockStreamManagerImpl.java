@@ -232,7 +232,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
         if (writer == null) {
             writer = writerSupplier.get();
-            blockTimestamp = round.getConsensusTimestamp();
+            // This iterator is never empty; c.f. DefaultTransactionHandler#handleConsensusRound()
+            blockTimestamp = round.iterator().next().getConsensusTimestamp();
             boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);

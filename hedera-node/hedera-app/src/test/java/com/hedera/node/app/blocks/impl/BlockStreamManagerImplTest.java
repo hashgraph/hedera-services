@@ -71,6 +71,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -135,6 +136,9 @@ class BlockStreamManagerImplTest {
 
     @Mock
     private ReadableStates readableStates;
+
+    @Mock
+    private ConsensusEvent consensusEvent;
 
     private WritableStates writableStates;
 
@@ -588,6 +592,9 @@ class BlockStreamManagerImplTest {
             @NonNull final PlatformState platformState,
             @NonNull final BlockItemWriter... writers) {
         given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.iterator())
+                .willAnswer(invocationOnMock -> List.of(consensusEvent).iterator());
+        given(consensusEvent.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
         final AtomicInteger nextWriter = new AtomicInteger(0);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("blockStream.roundsPerBlock", roundsPerBlock)
