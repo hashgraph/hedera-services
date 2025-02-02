@@ -602,7 +602,7 @@ public class PlatformWiring {
 
         transactionHandlerRoundOutput.solderTo(
                 latestImmutableStateNexusWiring.getInputWire(SignedStateNexus::setState));
-        transactionHandlerStateAndRoundOutput.solderTo(
+        transactionHandlerRoundOutput.solderTo(
                 savedStateControllerWiring.getInputWire(SavedStateController::markSavedState));
 
         savedStateControllerWiring.getOutputWire().solderTo(stateHasherWiring.getInputWire(StateHasher::hashState));
