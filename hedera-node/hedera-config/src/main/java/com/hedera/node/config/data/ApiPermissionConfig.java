@@ -48,9 +48,14 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_KEY_PUBLICATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_PREPROCESSING_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_VOTE;
+import static com.hedera.hapi.node.base.HederaFunctionality.LAMBDA_DISPATCH;
+import static com.hedera.hapi.node.base.HederaFunctionality.LAMBDA_S_STORE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
@@ -264,6 +269,9 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsKeyPublication,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsPreprocessingVote,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsPartialSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssShareSignature,
@@ -271,7 +279,9 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange stateSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofKeyPublication,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyAssemblySignature,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofVote) {
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange historyProofVote,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange lambdaDispatch,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange lambdaSStore) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -293,6 +303,8 @@ public record ApiPermissionConfig(
         permissionKeys.put(CONTRACT_CALL, c -> c.contractCallMethod);
         permissionKeys.put(CONTRACT_DELETE, c -> c.deleteContract);
         permissionKeys.put(ETHEREUM_TRANSACTION, c -> c.ethereumTransaction);
+        permissionKeys.put(LAMBDA_DISPATCH, c -> c.lambdaDispatch);
+        permissionKeys.put(LAMBDA_S_STORE, c -> c.lambdaSStore);
         permissionKeys.put(CONSENSUS_CREATE_TOPIC, c -> c.createTopic);
         permissionKeys.put(CONSENSUS_UPDATE_TOPIC, c -> c.updateTopic);
         permissionKeys.put(CONSENSUS_DELETE_TOPIC, c -> c.deleteTopic);
@@ -350,6 +362,9 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
         permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
+        permissionKeys.put(HINTS_KEY_PUBLICATION, c -> c.hintsKeyPublication);
+        permissionKeys.put(HINTS_PREPROCESSING_VOTE, c -> c.hintsPreprocessingVote);
+        permissionKeys.put(HINTS_PARTIAL_SIGNATURE, c -> c.hintsPartialSignature);
         permissionKeys.put(HISTORY_PROOF_KEY_PUBLICATION, c -> c.historyProofKeyPublication);
         permissionKeys.put(HISTORY_ASSEMBLY_SIGNATURE, c -> c.historyAssemblySignature);
         permissionKeys.put(HISTORY_PROOF_VOTE, c -> c.historyProofVote);

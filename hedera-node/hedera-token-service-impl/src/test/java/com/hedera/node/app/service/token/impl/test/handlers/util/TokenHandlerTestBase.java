@@ -22,8 +22,6 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHa
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.C_COMPLEX_KEY;
 import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-// FUTURE : Remove this and use CryptoTokenHandlerTestBase instead for all classes extending this class
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Fraction;
@@ -42,7 +40,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.ids.ReadableEntityCounters;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableStates;
@@ -116,6 +115,12 @@ public class TokenHandlerTestBase {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock
+    protected ReadableEntityCounters readableEntityCounters;
+
+    @Mock
+    protected WritableEntityCounters writableEntityCounters;
+
     protected MapReadableKVState<TokenID, Token> readableTokenState;
     protected MapWritableKVState<TokenID, Token> writableTokenState;
 
@@ -136,9 +141,9 @@ public class TokenHandlerTestBase {
         writableTokenState = emptyWritableTokenState();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
     }
 
     protected void refreshStoresWithCurrentTokenInWritable() {
@@ -146,9 +151,9 @@ public class TokenHandlerTestBase {
         writableTokenState = writableTokenStateWithOneKey();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        readableTokenStore = new ReadableTokenStoreImpl(readableStates);
+        readableTokenStore = new ReadableTokenStoreImpl(readableStates, readableEntityCounters);
         final var configuration = HederaTestConfigBuilder.createConfig();
-        writableTokenStore = new WritableTokenStore(writableStates, configuration, mock(StoreMetricsService.class));
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
     }
 
     @NonNull

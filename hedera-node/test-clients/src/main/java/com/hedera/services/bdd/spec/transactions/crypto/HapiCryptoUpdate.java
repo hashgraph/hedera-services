@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,14 @@
  */
 
 package com.hedera.services.bdd.spec.transactions.crypto;
+
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
@@ -45,9 +53,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,14 +60,8 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     static final Logger log = LogManager.getLogger(HapiCryptoUpdate.class);

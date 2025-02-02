@@ -16,6 +16,10 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import com.hedera.hapi.platform.event.legacy.StateSignatureTransaction;
@@ -79,17 +83,12 @@ import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Used by a {@link HapiSpec} to create transactions for submission to its target network.

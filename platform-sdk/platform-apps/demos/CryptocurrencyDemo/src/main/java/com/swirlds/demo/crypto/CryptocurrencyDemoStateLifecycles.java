@@ -51,14 +51,13 @@ public class CryptocurrencyDemoStateLifecycles implements StateLifecycles<Crypto
     }
 
     @Override
-    public boolean onHandleConsensusRound(
+    public void onHandleConsensusRound(
             @NonNull Round round,
             @NonNull CryptocurrencyDemoState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         state.throwIfImmutable();
         round.forEachEventTransaction(
                 (event, transaction) -> handleTransaction(event.getCreatorId(), transaction, state));
-        return true;
     }
 
     /**
@@ -118,8 +117,9 @@ public class CryptocurrencyDemoStateLifecycles implements StateLifecycles<Crypto
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull CryptocurrencyDemoState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull CryptocurrencyDemoState state) {
         // no-op
+        return true;
     }
 
     @Override

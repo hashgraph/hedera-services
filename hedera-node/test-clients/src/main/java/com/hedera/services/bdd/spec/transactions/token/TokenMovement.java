@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,12 @@
  */
 
 package com.hedera.services.bdd.spec.transactions.token;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
@@ -32,7 +38,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,12 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
-import static com.swirlds.common.utility.CommonUtils.unhex;
-import static java.util.Objects.requireNonNull;
 
 public class TokenMovement {
     private final long amount;

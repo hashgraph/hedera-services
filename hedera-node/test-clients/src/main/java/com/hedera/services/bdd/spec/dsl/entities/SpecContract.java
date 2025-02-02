@@ -16,6 +16,20 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
+import static com.hedera.services.bdd.suites.contract.Utils.lambdaInitcodeFromResources;
+import static java.util.Objects.requireNonNull;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
@@ -39,23 +53,8 @@ import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.bouncycastle.util.encoders.Hex;
-
 import java.util.List;
-
-import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
-import static com.hedera.services.bdd.suites.contract.Utils.lambdaInitcodeFromResources;
-import static java.util.Objects.requireNonNull;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Represents a Hedera account that may exist on one or more target networks and be

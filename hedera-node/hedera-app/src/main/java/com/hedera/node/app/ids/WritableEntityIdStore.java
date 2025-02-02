@@ -22,7 +22,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
-import com.hedera.node.app.spi.validation.EntityType;
+import com.hedera.node.app.hapi.utils.EntityType;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,7 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * A writeable store for entity ids.
  */
-public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
+public class WritableEntityIdStore extends ReadableEntityIdStoreImpl implements WritableEntityCounters {
     /**
      * The underlying data storage class that holds the entity id data.
      */
@@ -65,32 +66,42 @@ public class WritableEntityIdStore extends ReadableEntityIdStoreImpl {
      *
      * @return the next new entity number
      */
-    public long incrementAndGet(final EntityType entityType) {
+    public long incrementAndGet() {
         final var newEntityNum = peekAtNextNumber();
         entityIdState.put(new EntityNumber(newEntityNum));
-        entityCountsState.put(incrementEntityTypeCount(entityType));
         return newEntityNum;
     }
 
-    private EntityCounts incrementEntityTypeCount(final EntityType entityType) {
+    @Override
+    public void incrementEntityTypeCount(final EntityType entityType) {
+        adjustEntityCount(entityType, 1);
+    }
+
+    @Override
+    public void adjustEntityCount(final EntityType entityType, final long delta) {
         final var entityCounts = requireNonNull(entityCountsState.get());
         final var newEntityCounts = entityCounts.copyBuilder();
         switch (entityType) {
-            case ACCOUNT -> newEntityCounts.numAccounts(entityCounts.numAccounts() + 1);
-            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() + 1);
-            case TOKEN -> newEntityCounts.numTokens(entityCounts.numTokens() + 1);
-            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() + 1);
-            case TOPIC -> newEntityCounts.numTopics(entityCounts.numTopics() + 1);
-            case FILE -> newEntityCounts.numFiles(entityCounts.numFiles() + 1);
-            case CONTRACT_BYTECODE -> newEntityCounts.numContractBytecodes(entityCounts.numContractBytecodes() + 1);
+            case ACCOUNT -> newEntityCounts.numAccounts(entityCounts.numAccounts() + delta);
+            case ALIAS -> newEntityCounts.numAliases(entityCounts.numAliases() + delta);
+            case TOKEN -> newEntityCounts.numTokens(entityCounts.numTokens() + delta);
+            case TOKEN_ASSOCIATION -> newEntityCounts.numTokenRelations(entityCounts.numTokenRelations() + delta);
+            case TOPIC -> newEntityCounts.numTopics(entityCounts.numTopics() + delta);
+            case FILE -> newEntityCounts.numFiles(entityCounts.numFiles() + delta);
+            case CONTRACT_BYTECODE -> newEntityCounts.numContractBytecodes(entityCounts.numContractBytecodes() + delta);
             case CONTRACT_STORAGE -> newEntityCounts.numContractStorageSlots(
-                    entityCounts.numContractStorageSlots() + 1);
-            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() + 1);
-            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() + 1);
-            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() + 1);
-            case NODE -> newEntityCounts.numNodes(entityCounts.numNodes() + 1);
-            case STAKING_INFO -> newEntityCounts.numStakingInfos(entityCounts.numStakingInfos() + 1);
+                    entityCounts.numContractStorageSlots() + delta);
+            case NFT -> newEntityCounts.numNfts(entityCounts.numNfts() + delta);
+            case SCHEDULE -> newEntityCounts.numSchedules(entityCounts.numSchedules() + delta);
+            case AIRDROP -> newEntityCounts.numAirdrops(entityCounts.numAirdrops() + delta);
+            case NODE -> newEntityCounts.numNodes(entityCounts.numNodes() + delta);
+            case STAKING_INFO -> newEntityCounts.numStakingInfos(entityCounts.numStakingInfos() + delta);
         }
-        return newEntityCounts.build();
+        entityCountsState.put(newEntityCounts.build());
+    }
+
+    @Override
+    public void decrementEntityTypeCounter(final EntityType entityType) {
+        adjustEntityCount(entityType, -1);
     }
 }

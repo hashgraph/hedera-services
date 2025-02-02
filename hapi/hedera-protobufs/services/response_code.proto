@@ -1648,38 +1648,103 @@ enum ResponseCodeEnum {
     WAITING_FOR_LEDGER_ID = 375;
 
     /**
+     * The provided fee exempt key list size exceeded the limit.
+     */
+    MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED = 376;
+
+    /**
+     * The provided fee exempt key list contains duplicated keys.
+     */
+    FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS = 377;
+
+    /**
+     * The provided fee exempt key list contains an invalid key.
+     */
+    INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST = 378;
+
+    /**
+     * The provided fee schedule key contains an invalid key.
+     */
+    INVALID_FEE_SCHEDULE_KEY = 379;
+
+    /**
+     * If a fee schedule key is not set when we create a topic
+     * we cannot add it on update.
+     */
+    FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED = 380;
+
+    /**
+     * If the topic's custom fees are updated the topic SHOULD have a
+     * fee schedule key
+     */
+    FEE_SCHEDULE_KEY_NOT_SET = 381;
+
+    /**
+     * The fee amount is exceeding the amount that the payer
+     * is willing to pay.
+     */
+    MAX_CUSTOM_FEE_LIMIT_EXCEEDED = 382;
+
+    /**
+     * There are no corresponding custom fees.
+     */
+    NO_VALID_MAX_CUSTOM_FEE = 383;
+
+    /**
+     * The provided list contains invalid max custom fee.
+     */
+    INVALID_MAX_CUSTOM_FEES = 384;
+
+    /**
+     * The provided max custom fee list contains fees with
+     * duplicate denominations.
+     */
+    DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST = 385;
+
+    /**
+     * The provided max custom fee list contains fees with
+     * duplicate account id.
+     */
+    DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST = 386;
+
+    /**
+     * Max custom fees list is not supported for this operation.
+     */
+    MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 387;
+
+    /**
      * A lambda execution was throttled due to high network gas utilization.
      */
-    LAMBDA_EXECUTION_THROTTLED = 376;
+    LAMBDA_EXECUTION_THROTTLED = 388;
 
     /**
      * A user attempted to install a lambda at an index already in use.
      */
-    LAMBDA_INDEX_IN_USE = 377;
+    LAMBDA_INDEX_IN_USE = 389;
 
     /**
      * A transaction tried to call a lambda that requires externalization
      * without specifying that call option.
      */
-    LAMBDA_REQUIRES_EXTERNALIZATION = 378;
+    LAMBDA_REQUIRES_EXTERNALIZATION = 390;
 
     /**
      * A CryptoTransfer relying on a TRANSFER_ALLOWANCE lambda was rejected.
      */
-    REJECTED_BY_TRANSFER_ALLOWANCE_LAMBDA = 379;
+    REJECTED_BY_TRANSFER_ALLOWANCE_LAMBDA = 391;
 
     /**
      * A lambda id was invalid.
      */
-    INVALID_LAMBDA_ID = 380;
+    INVALID_LAMBDA_ID = 392;
 
     /**
      * A lambda storage key was too long.
      */
-    LAMBDA_STORAGE_KEY_TOO_LONG = 381;
+    LAMBDA_STORAGE_KEY_TOO_LONG = 393;
 
     /**
      * A lambda storage value was too long.
      */
-    LAMBDA_STORAGE_VALUE_TOO_LONG = 382;
+    LAMBDA_STORAGE_VALUE_TOO_LONG = 394;
 }

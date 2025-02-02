@@ -23,12 +23,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.fixtures.state.FakeStartupNetworks;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
@@ -60,6 +63,8 @@ import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
@@ -105,6 +110,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     private static final String ALIASES_KEY = "ALIASES";
     protected MapWritableKVState<AccountID, Account> accountsState;
     protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
+    protected WritableSingletonState<EntityCounts> entityCountsState;
+    protected WritableSingletonState<EntityNumber> entityIdState;
     protected State state;
 
     protected void setupStandardStates() {
@@ -116,22 +123,31 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         accountsState.put(nodeSelfAccountId, nodeSelfAccount);
         accountsState.commit();
         aliasesState = new MapWritableKVState<>(ALIASES_KEY);
+
+        entityIdState = new WritableSingletonStateBase<>("ENTITY_ID", () -> null, (a) -> {});
+        entityCountsState = new WritableSingletonStateBase<>("ENTITY_COUNTS", () -> EntityCounts.DEFAULT, (a) -> {});
         final var writableStates = MapWritableStates.builder()
                 .state(accountsState)
                 .state(aliasesState)
+                .state(entityIdState)
+                .state(entityCountsState)
                 .build();
 
         state = new State() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull String serviceName) {
-                return TokenService.NAME.equals(serviceName) ? writableStates : null;
+                return TokenService.NAME.equals(serviceName) || EntityIdService.NAME.equals(serviceName)
+                        ? writableStates
+                        : null;
             }
 
             @NonNull
             @Override
             public WritableStates getWritableStates(@NonNull String serviceName) {
-                return TokenService.NAME.equals(serviceName) ? writableStates : null;
+                return TokenService.NAME.equals(serviceName) || EntityIdService.NAME.equals(serviceName)
+                        ? writableStates
+                        : null;
             }
         };
     }

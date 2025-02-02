@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.config.ConfigProvider;
@@ -186,7 +188,9 @@ public class DiskStartupNetworks implements StartupNetworks {
     public static void writeNetworkInfo(
             @NonNull final State state, @NonNull final Path path, @NonNull final Set<InfoType> infoTypes) {
         requireNonNull(state);
-        final var nodeStore = new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+        final var entityIdStore = new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+        final var nodeStore =
+                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME), entityIdStore);
         Optional.ofNullable(RosterRetriever.retrieveActiveOrGenesisRoster(state))
                 .ifPresent(activeRoster -> {
                     final var network = Network.newBuilder();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 
 package com.hedera.node.app.hapi.utils;
+
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -53,14 +56,10 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-
-import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static java.util.Objects.requireNonNull;
 
 public class CommonPbjConverters {
     public static @NonNull com.hederahashgraph.api.proto.java.Query fromPbj(@NonNull Query query) {
@@ -148,7 +147,8 @@ public class CommonPbjConverters {
         }
     }
 
-    public static @NonNull com.hederahashgraph.api.proto.java.LambdaInstallation fromPbj(@NonNull final LambdaInstallation lambdaInstallation) {
+    public static @NonNull com.hederahashgraph.api.proto.java.LambdaInstallation fromPbj(
+            @NonNull final LambdaInstallation lambdaInstallation) {
         requireNonNull(lambdaInstallation);
         try {
             final var bytes = asBytes(LambdaInstallation.PROTOBUF, lambdaInstallation);
@@ -320,6 +320,7 @@ public class CommonPbjConverters {
             case TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES -> SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
             case TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES -> SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
             case SCHEDULE_CREATE_CONTRACT_CALL -> SubType.SCHEDULE_CREATE_CONTRACT_CALL;
+            case TOPIC_CREATE_WITH_CUSTOM_FEES -> SubType.TOPIC_CREATE_WITH_CUSTOM_FEES;
             case UNRECOGNIZED -> throw new IllegalArgumentException("Unknown subType UNRECOGNIZED");
         };
     }

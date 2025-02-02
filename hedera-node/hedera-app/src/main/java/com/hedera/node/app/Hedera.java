@@ -84,6 +84,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.GenesisNetworkInfo;
 import com.hedera.node.app.info.StateNetworkInfo;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
@@ -346,7 +347,7 @@ public final class Hedera
      * current system, these are the singleton and queue updates. Every {@link MerkleStateRoot} will have this
      * listener registered.
      */
-    private final BoundaryStateChangeListener boundaryStateChangeListener = new BoundaryStateChangeListener();
+    private final BoundaryStateChangeListener boundaryStateChangeListener;
 
     /**
      * A {@link StateChangeListener} that accumulates state changes that must be immediately reported as they occur,
@@ -376,6 +377,9 @@ public final class Hedera
 
     @Nullable
     private StartupNetworks startupNetworks;
+
+    @NonNull
+    private StoreMetricsServiceImpl storeMetricsService;
 
     private boolean onceOnlyServiceInitializationPostDaggerHasHappened = false;
 
@@ -419,14 +423,14 @@ public final class Hedera
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
      * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
-     * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
-     * @param registryFactory the factory to use for creating the services registry
-     * @param migrator the migrator to use with the services
+     * @param constructableRegistry  the registry to register {@link RuntimeConstructable} factories with
+     * @param registryFactory        the factory to use for creating the services registry
+     * @param migrator               the migrator to use with the services
      * @param startupNetworksFactory the factory for the startup networks
-     * @param hintsServiceFactory the factory for the hinTS service
-     * @param historyServiceFactory the factory for the history service
+     * @param hintsServiceFactory    the factory for the hinTS service
+     * @param historyServiceFactory  the factory for the history service
      * @param blockHashSignerFactory the factory for the block hash signer
-     * @param metrics the metrics object to use for reporting
+     * @param metrics                the metrics object to use for reporting
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -447,6 +451,7 @@ public final class Hedera
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
+        this.storeMetricsService = new StoreMetricsServiceImpl(metrics);
         logger.info(
                 """
 
@@ -484,7 +489,9 @@ public final class Hedera
                         configSupplier,
                         () -> daggerApp.workingStateAccessor().getState(),
                         () -> daggerApp.throttleServiceManager().activeThrottleDefinitionsOrThrow(),
-                        ThrottleAccumulator::new));
+                        ThrottleAccumulator::new,
+                        ignore -> version));
+        boundaryStateChangeListener = new BoundaryStateChangeListener(storeMetricsService, configSupplier);
         hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
         historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);
@@ -746,7 +753,9 @@ public final class Hedera
                 platformConfig,
                 genesisNetworkInfo,
                 metrics,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         this.initState = null;
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
@@ -905,7 +914,7 @@ public final class Hedera
             @NonNull final Event event,
             @NonNull final State state,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
-        final var readableStoreFactory = new ReadableStoreFactory(state);
+        final var readableStoreFactory = new ReadableStoreFactory(state, ignore -> getSoftwareVersion());
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
         if (creator == null) {
@@ -969,11 +978,15 @@ public final class Hedera
      *
      * @param round the round whose platform state changes are completed
      * @param state the state after the platform has made all its changes
+     * @return true if a block has closed, signaling a safe time to sign the state without risking loss
+     * of transactions in the event of an incident
      */
-    public void onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
+    public boolean onSealConsensusRound(@NonNull final Round round, @NonNull final State state) {
         requireNonNull(state);
         requireNonNull(round);
         onSealConsensusRound.accept(round, state);
+        // This logic to be completed in https://github.com/hashgraph/hedera-services/issues/17469
+        return true;
     }
 
     /*==================================================================================================================
