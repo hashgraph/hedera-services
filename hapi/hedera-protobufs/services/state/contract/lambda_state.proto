@@ -83,4 +83,9 @@ message LambdaState {
    * doubly-linked list of lambdas.
    */
   uint64 next_index = 8;
+
+  /**
+   * The number of storage slots the lambda is using.
+   */
+  uint32 num_storage_slots = 9;
 }

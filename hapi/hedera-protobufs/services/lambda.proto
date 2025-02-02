@@ -86,21 +86,6 @@ message LambdaInitcode {
 }
 
 /**
- * A slot in the storage of a lambda.
- */
-message LambdaStorageSlot {
-  /**
-   * The 32-byte key of the slot; leading zeros may be omitted.
-   */
-  bytes key = 1;
-  /**
-   * If the slot is present, the 32-byte value of the slot;
-   * leaving this field empty in an update removes the slot.
-   */
-  bytes value = 2;
-}
-
-/**
  * Specifies the bytecode and initial storage slots for a lambda
  * that wants to initialize itself explicitly.
  */
@@ -122,6 +107,21 @@ message LambdaExplicitInit {
    * The initial storage of the lambda.
    */
   repeated LambdaStorageSlot storage_slots = 5;
+}
+
+/**
+ * A slot in the storage of a lambda.
+ */
+message LambdaStorageSlot {
+  /**
+   * The 32-byte key of the slot; leading zeros may be omitted.
+   */
+  bytes key = 1;
+  /**
+   * If the slot is present, the 32-byte value of the slot;
+   * leaving this field empty in an update removes the slot.
+   */
+  bytes value = 2;
 }
 
 /**

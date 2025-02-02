@@ -1662,4 +1662,24 @@ enum ResponseCodeEnum {
      * without specifying that call option.
      */
     LAMBDA_REQUIRES_EXTERNALIZATION = 378;
+
+    /**
+     * A CryptoTransfer relying on a TRANSFER_ALLOWANCE lambda was rejected.
+     */
+    REJECTED_BY_TRANSFER_ALLOWANCE_LAMBDA = 379;
+
+    /**
+     * A lambda id was invalid.
+     */
+    INVALID_LAMBDA_ID = 380;
+
+    /**
+     * A lambda storage key was too long.
+     */
+    LAMBDA_STORAGE_KEY_TOO_LONG = 381;
+
+    /**
+     * A lambda storage value was too long.
+     */
+    LAMBDA_STORAGE_VALUE_TOO_LONG = 382;
 }

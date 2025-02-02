@@ -16,10 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
-import static java.util.Objects.requireNonNull;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import com.hedera.hapi.platform.event.legacy.StateSignatureTransaction;
@@ -46,6 +42,7 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.LambdaSStoreTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
@@ -82,12 +79,17 @@ import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Used by a {@link HapiSpec} to create transactions for submission to its target network.
@@ -465,6 +467,10 @@ public class TxnFactory {
     }
 
     public Consumer<TokenAirdropTransactionBody.Builder> defaultDefTokenAirdropTransactionBody() {
+        return builder -> {};
+    }
+
+    public Consumer<LambdaSStoreTransactionBody.Builder> defaultDefLambdaSStoreTransactionBody() {
         return builder -> {};
     }
 }

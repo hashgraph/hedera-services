@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.hapi.utils;
 
-import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-import static java.util.Objects.requireNonNull;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -31,6 +27,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.LambdaCall;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseType;
 import com.hedera.hapi.node.base.ServiceEndpoint;
@@ -38,6 +35,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.lambda.LambdaInstallation;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -55,10 +53,14 @@ import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static java.util.Objects.requireNonNull;
 
 public class CommonPbjConverters {
     public static @NonNull com.hederahashgraph.api.proto.java.Query fromPbj(@NonNull Query query) {
@@ -131,6 +133,26 @@ public class CommonPbjConverters {
         try {
             final var bytes = asBytes(Key.PROTOBUF, keyValue);
             return com.hederahashgraph.api.proto.java.Key.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.LambdaCall fromPbj(@NonNull final LambdaCall lambdaCall) {
+        requireNonNull(lambdaCall);
+        try {
+            final var bytes = asBytes(LambdaCall.PROTOBUF, lambdaCall);
+            return com.hederahashgraph.api.proto.java.LambdaCall.parseFrom(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.LambdaInstallation fromPbj(@NonNull final LambdaInstallation lambdaInstallation) {
+        requireNonNull(lambdaInstallation);
+        try {
+            final var bytes = asBytes(LambdaInstallation.PROTOBUF, lambdaInstallation);
+            return com.hederahashgraph.api.proto.java.LambdaInstallation.parseFrom(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

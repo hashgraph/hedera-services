@@ -17,11 +17,12 @@
 package com.hedera.services.bdd.spec.dsl.annotations;
 
 import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecContract}.
@@ -62,4 +63,10 @@ public @interface Contract {
      * @return the maximum number of auto-associations
      */
     int maxAutoAssociations() default 0;
+
+    /**
+     * Whether this contract implements one or more Hiero lambdas; used to configure where the spec should
+     * look for bytecode and initcode resources.
+     */
+    boolean implementsLambda() default false;
 }

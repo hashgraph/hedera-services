@@ -16,21 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract;
 
-import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.common.utility.CommonUtils.unhex;
-import static java.lang.System.arraycopy;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -52,6 +37,17 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.crypto.Hash;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -67,19 +63,28 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.util.encoders.Hex;
-import org.hyperledger.besu.crypto.Hash;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.relocatedIfNotPresentInWorkingDir;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
+import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resources/contract/contracts/%1$s/%1$s%2$s";
+    public static final String INITCODE_EXTENSION = ".bin";
+    public static final String BYTECODE_EXTENSION = ".bbin";
+    public static final String LAMBDA_RESOURCE_PATH = "src/main/resources/contract/lambdas/%1$s/%1$s%2$s";
+    public static final String CONTRACT_RESOURCE_PATH = "src/main/resources/contract/contracts/%1$s/%1$s%2$s";
 
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
@@ -132,7 +137,7 @@ public class Utils {
     }
 
     /**
-     * Returns the bytecode of the contract by the name of the contract from the classpath resource.
+     * Returns the initcode of the contract by the name of the contract from the classpath resource.
      *
      * @param contractName the name of the contract
      * @return the bytecode of the contract
@@ -144,6 +149,40 @@ public class Utils {
         try {
             final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
             return ByteString.copyFrom(bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Returns the initcode of the lambda with the given name from the classpath resource.
+     *
+     * @param lambda the name of the lambda
+     * @return the bytecode of the lambda
+     * @throws IllegalArgumentException if the lambda is not found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes lambdaInitcodeFromResources(@NonNull final String lambda) {
+        final var path = getResourcePath(LAMBDA_RESOURCE_PATH, lambda, INITCODE_EXTENSION);
+        try {
+            return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path))));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Returns the pre-initialized bytecode of the lambda with the given name from the classpath resource.
+     *
+     * @param lambda the name of the lambda
+     * @return the bytecode of the lambda
+     * @throws IllegalArgumentException if the lambda is not found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes lambdaBytecodeFromResources(@NonNull final String lambda) {
+        final var path = getResourcePath(LAMBDA_RESOURCE_PATH, lambda, BYTECODE_EXTENSION);
+        try {
+            return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path))));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -237,10 +276,29 @@ public class Utils {
      * @param extension the type of the desired contract resource (.bin or .json)
      */
     public static String getResourcePath(String resourceName, final String extension) {
+        return getResourcePath(CONTRACT_RESOURCE_PATH, resourceName, extension);
+    }
+
+    /**
+     * Tries to get a path to the resource from the given path template, resource name, and extension.
+     * @param pathTemplate the path template
+     * @param resourceName the name of the resource
+     * @param extension the extension of the resource
+     * @return the path to the resource
+     * @throws IllegalArgumentException if the resource is not found
+     */
+    public static String getResourcePath(
+            @NonNull final String pathTemplate,
+            @NonNull String resourceName,
+            @NonNull final String extension) {
+        requireNonNull(pathTemplate);
+        requireNonNull(resourceName);
+        requireNonNull(extension);
         resourceName = resourceName.replaceAll("\\d*$", "");
-        final var path = String.format(RESOURCE_PATH, resourceName, extension);
+        final var path = String.format(pathTemplate, resourceName, extension);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
+            System.out.println(file.getAbsolutePath());
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
         }
         return file.getPath();

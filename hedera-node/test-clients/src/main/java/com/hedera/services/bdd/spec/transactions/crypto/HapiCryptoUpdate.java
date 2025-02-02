@@ -16,11 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions.crypto;
 
-import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
@@ -30,6 +25,7 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -38,16 +34,35 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.lambda.LambdaInstaller;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.defaultUpdateSigners;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     static final Logger log = LogManager.getLogger(HapiCryptoUpdate.class);
@@ -72,6 +87,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     private Optional<Boolean> isDeclinedReward = Optional.empty();
 
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
+    private final List<LambdaInstaller> lambdaInstallers = new ArrayList<>();
 
     public HapiCryptoUpdate(String account) {
         this.account = account;
@@ -226,6 +242,10 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                 builder.setStakedNodeId(newStakedNodeId.get());
                             }
                             isDeclinedReward.ifPresent(b -> builder.setDeclineReward(BoolValue.of(b)));
+                            lambdaInstallers.forEach(installer -> {
+                                allRunFor(spec, installer.specSetupOp());
+                                builder.addLambdaInstallations(CommonPbjConverters.fromPbj(installer.op()));
+                            });
                         });
         if (logUpdateDetailsToSysout) {
             System.out.println("\n---- Raw update ----\n");

@@ -607,7 +607,7 @@ interface IHieroTransferAllowance {
     /// @param proposedTransfers The proposed transfers
     /// @param args The extra arguments
     /// @return true If the proposed transfers are allowed, false or revert otherwise
-    function allow(ProposedTransfers memory proposedTransfers, bytes memory args) external returns (bool);
+    function allow(ProposedTransfers memory proposedTransfers, bytes memory args) external payable returns (bool);
 }
 ```
 
@@ -629,12 +629,12 @@ import "./IHieroTransferAllowance.sol";
 
 contract OneTimeCodeTransferAllowance is IHieroTransferAllowance {
     /// The hash of a one-time use passcode string
-    bytes32 storage passcodeHash;
+    bytes32 passcodeHash;
 
     /// Allow the proposed transfers if and only if the args are the
     /// ABI encoding of the current one-time use passcode in storage.
-    function allowTransfer(
-        IHieroTransferAllowance.ProposedTransfers memory proposedTransfers,
+    function allow(
+        IHieroTransferAllowance.ProposedTransfers memory,
         bytes memory args
     ) external override payable returns (bool) {
         (string memory passcode) = abi.decode(args, (string));
@@ -700,7 +700,7 @@ contract CreditSansCustomFeesTokenAllowance is IHieroTransferAllowance {
     ///   (1) The only transfers are direct HTS asset transfers
     ///   (2) The receiver is not debited
     ///   (3) The receiver is credited
-    function allowTransfer(
+    function allow(
         IHieroTransferAllowance.ProposedTransfers memory proposedTransfers,
         bytes memory args
     ) external override view returns (bool) {

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -29,8 +27,11 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@code TransactionDispatcher} provides functionality to forward pre-check, pre-handle, and handle-transaction
@@ -161,6 +162,7 @@ public class TransactionDispatcher {
             case CONTRACT_CALL -> handlers.contractCallHandler();
             case CONTRACT_DELETE_INSTANCE -> handlers.contractDeleteHandler();
             case ETHEREUM_TRANSACTION -> handlers.ethereumTransactionHandler();
+            case LAMBDA_SSTORE -> handlers.ethereumTransactionHandler();
 
             case CRYPTO_CREATE_ACCOUNT -> handlers.cryptoCreateHandler();
             case CRYPTO_UPDATE_ACCOUNT -> handlers.cryptoUpdateHandler();

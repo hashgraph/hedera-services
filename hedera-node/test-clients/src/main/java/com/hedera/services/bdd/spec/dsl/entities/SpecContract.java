@@ -16,18 +16,6 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
-import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
-import static java.util.Objects.requireNonNull;
-
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
@@ -39,6 +27,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetBytecodeOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
@@ -50,8 +39,23 @@ import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
+
+import java.util.List;
+
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PBJ_IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.PROTO_IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
+import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTypes;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
+import static com.hedera.services.bdd.suites.contract.Utils.lambdaInitcodeFromResources;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a Hedera account that may exist on one or more target networks and be
@@ -64,6 +68,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     private final long creationGas;
     private final String contractName;
     private final boolean immutable;
+    private final boolean lambda;
     private final int maxAutoAssociations;
     private final Account.Builder builder = Account.newBuilder();
     /**
@@ -85,6 +90,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
                 annotation.contract(),
                 annotation.creationGas(),
                 annotation.isImmutable(),
+                annotation.implementsLambda(),
                 annotation.maxAutoAssociations());
     }
 
@@ -93,9 +99,11 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
             @NonNull final String contractName,
             final long creationGas,
             final boolean immutable,
+            final boolean lambda,
             final int maxAutoAssociations) {
         super(name);
         this.immutable = immutable;
+        this.lambda = lambda;
         this.creationGas = creationGas;
         this.contractName = requireNonNull(contractName);
         this.maxAutoAssociations = maxAutoAssociations;
@@ -137,6 +145,15 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     public GetContractInfoOperation getInfo() {
         return new GetContractInfoOperation(this);
+    }
+
+    /**
+     * Returns an operation that retrieves the contract bytecode.
+     *
+     * @return the operation
+     */
+    public GetBytecodeOperation getBytecode() {
+        return new GetBytecodeOperation(this);
     }
 
     /**
@@ -234,7 +251,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     @Override
     protected Creation<SpecOperation, Account> newCreation(@NonNull final HapiSpec spec) {
         final var model = builder.build();
-        final var initcode = getInitcodeOf(contractName);
+        final var initcode = lambda ? fromPbj(lambdaInitcodeFromResources(contractName)) : getInitcodeOf(contractName);
         final SpecOperation op;
         constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {
