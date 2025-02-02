@@ -42,6 +42,7 @@ val jackson = "2.18.2"
 val junit5 = "5.10.2"
 val log4j = "2.21.1"
 val mockito = "5.8.0"
+val pbj = "0.9.16" // ATTENTION: keep in sync with plugin version in 'hapi/build.gradle.kts'
 val protobuf = "4.28.2"
 val testContainers = "1.20.4"
 val tuweni = "2.4.2"
@@ -79,7 +80,7 @@ dependencies.constraints {
     api("com.google.jimfs:jimfs:1.3.0") { because("com.google.common.jimfs") }
     api("com.google.protobuf:protobuf-java:$protobuf") { because("com.google.protobuf") }
     api("com.google.protobuf:protobuf-java-util:$protobuf") { because("com.google.protobuf.util") }
-    api("com.hedera.pbj:pbj-runtime:0.9.16") { because("com.hedera.pbj.runtime") }
+    api("com.hedera.pbj:pbj-runtime:$pbj") { because("com.hedera.pbj.runtime") }
     api("com.squareup:javapoet:1.13.0") { because("com.squareup.javapoet") }
     api("net.java.dev.jna:jna:5.12.1") { because("com.sun.jna") }
     api("com.google.dagger:dagger:$dagger") { because("dagger") }
