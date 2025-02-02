@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_LAMBDA_ID;
 import static com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema.STORAGE_KEY;
 import static com.hedera.node.app.service.contract.impl.schemas.V061ContractSchema.LAMBDA_STATES_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.LambdaID;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.lambda.LambdaState;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -45,23 +48,45 @@ public class ReadableLambdaStore {
         this.lambdaStates = states.get(LAMBDA_STATES_KEY);
     }
 
-    public record LambdaView(@NonNull LambdaState state, @NonNull List<Slot> selectedSlots) {}
+    public record LambdaView(@NonNull LambdaState state, @NonNull List<Slot> selectedSlots) {
+        public ContractID contractId() {
+            return state.contractIdOrThrow();
+        }
 
-    public record Slot(@NonNull SlotKey key, @Nullable SlotValue value) {}
+        public Bytes firstStorageKey() {
+            return state.firstContractStorageKey();
+        }
+    }
+
+    public record Slot(@NonNull SlotKey key, @Nullable SlotValue value) {
+        @Nullable
+        public Bytes maybeBytesValue() {
+            return (value == null || Bytes.EMPTY.equals(value.value())) ? null : value.value();
+        }
+
+        public @NonNull Bytes effectivePrevKey() {
+            return value == null ? Bytes.EMPTY : value.previousKey();
+        }
+
+        public @NonNull Bytes effectiveNextKey() {
+            return value == null ? Bytes.EMPTY : value.nextKey();
+        }
+    }
 
     /**
      * Returns a list of slot values for the given lambda and keys.
      * @param lambdaId the lambda ID
      * @param keys the keys
      * @return a list of slots
-     * @throws IllegalArgumentException if the lambda ID is not found
+     * @throws HandleException if the lambda ID is not found
      */
-    public LambdaView getView(@NonNull final LambdaID lambdaId, @NonNull final List<Bytes> keys) {
+    public LambdaView getView(@NonNull final LambdaID lambdaId, @NonNull final List<Bytes> keys)
+            throws HandleException {
         requireNonNull(lambdaId);
         requireNonNull(keys);
         final var state = lambdaStates.get(lambdaId);
         if (state == null) {
-            throw new IllegalArgumentException();
+            throw new HandleException(INVALID_LAMBDA_ID);
         }
         final var contractId = state.contractIdOrThrow();
         final List<Slot> slots = new ArrayList<>(keys.size());
@@ -73,7 +98,7 @@ public class ReadableLambdaStore {
         return new LambdaView(state, slots);
     }
 
-    protected Bytes zeroPaddedTo32(@NonNull final Bytes bytes) {
+    protected static Bytes zeroPaddedTo32(@NonNull final Bytes bytes) {
         final int len = (int) bytes.length();
         if (len == 32L) {
             return bytes;

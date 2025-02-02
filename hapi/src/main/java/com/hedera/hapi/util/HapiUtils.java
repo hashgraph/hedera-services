@@ -196,6 +196,8 @@ public class HapiUtils {
             case CRYPTO_DELETE_LIVE_HASH -> HederaFunctionality.CRYPTO_DELETE_LIVE_HASH;
             case CRYPTO_TRANSFER -> HederaFunctionality.CRYPTO_TRANSFER;
             case ETHEREUM_TRANSACTION -> HederaFunctionality.ETHEREUM_TRANSACTION;
+            case LAMBDA_SSTORE -> HederaFunctionality.LAMBDA_S_STORE;
+            case LAMBDA_DISPATCH -> HederaFunctionality.LAMBDA_DISPATCH;
             case FILE_APPEND -> HederaFunctionality.FILE_APPEND;
             case FILE_CREATE -> HederaFunctionality.FILE_CREATE;
             case FILE_UPDATE -> HederaFunctionality.FILE_UPDATE;
@@ -239,8 +241,6 @@ public class HapiUtils {
             case HISTORY_PROOF_SIGNATURE -> HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
             case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
             case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
-            case LAMBDA_SSTORE -> HederaFunctionality.LAMBDA_S_STORE;
-            case LAMBDA_DISPATCH -> HederaFunctionality.LAMBDA_DISPATCH;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

@@ -55,16 +55,22 @@ import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.HandleException.validateSuccess;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.LambdaID;
+import com.hedera.hapi.node.base.LambdaOwnerID;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.lambda.LambdaCreation;
+import com.hedera.hapi.node.lambda.LambdaDispatchTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
@@ -77,6 +83,7 @@ import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -291,6 +298,27 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 }
                 accountStore.putAndIncrementCountAlias(alias, createdAccountID);
             }
+        }
+
+        long lastIndex = 0L;
+        long defaultIndex = 1L;
+        for (final var installation : op.lambdaInstallations()) {
+            final long index = installation.hasIndex() ? installation.indexOrThrow() : defaultIndex++;
+            final LambdaID lambdaId = LambdaID.newBuilder()
+                    .ownerId(LambdaOwnerID.newBuilder()
+                            .accountId(createdAccountID)
+                            .build())
+                    .index(index)
+                    .build();
+            final var body = TransactionBody.newBuilder()
+                    .lambdaDispatch(LambdaDispatchTransactionBody.newBuilder()
+                            .creation(new LambdaCreation(lambdaId, installation, lastIndex))
+                            .build())
+                    .build();
+            final var dispatchBuilder = context.dispatch(DispatchOptions.stepDispatch(
+                    context.payer(), body, StreamBuilder.class, NOOP_TRANSACTION_CUSTOMIZER));
+            validateSuccess(dispatchBuilder.status());
+            lastIndex = index;
         }
     }
 

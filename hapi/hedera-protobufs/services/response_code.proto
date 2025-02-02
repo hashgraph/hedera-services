@@ -1747,4 +1747,14 @@ enum ResponseCodeEnum {
      * A lambda storage value was too long.
      */
     LAMBDA_STORAGE_VALUE_TOO_LONG = 394;
+
+    /**
+     * A lambda installation had no init method.
+     */
+    LAMBDA_INSTALLATION_MISSING_INIT_METHOD = 395;
+
+    /**
+     * A lambda index was invalid.
+     */
+    INVALID_LAMBDA_INDEX = 396;
 }

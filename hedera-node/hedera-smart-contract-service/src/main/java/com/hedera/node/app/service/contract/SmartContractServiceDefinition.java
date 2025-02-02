@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public final class SmartContractServiceDefinition implements RpcServiceDefinitio
             new RpcMethodDefinition<>("systemDelete", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("systemUndelete", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("callEthereum", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("lambdaSStore", Transaction.class, TransactionResponse.class),
             new RpcMethodDefinition<>("ContractGetBytecode", Query.class, Response.class),
             new RpcMethodDefinition<>("getBySolidityID", Query.class, Response.class),
             new RpcMethodDefinition<>("getTxRecordByContractID", Query.class, Response.class),

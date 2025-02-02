@@ -40,7 +40,7 @@ public class HipExamplesTest {
                         .maxAutomaticTokenAssociations(1)
                         .installing(
                                 lambdaBytecode("OneTimeCodeTransferAllowance").atIndex(123)),
-                cryptoTransfer(movingUnique(cleverCoin.name(), 1L)
-                        .between(cleverCoin.treasury().name(), "sphinx")));
+                cleverCoin.doWith(token -> cryptoTransfer(movingUnique(cleverCoin.name(), 1L)
+                        .between(cleverCoin.treasury().name(), "sphinx"))));
     }
 }
