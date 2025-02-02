@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
-import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -61,14 +60,13 @@ public class DefaultSavedStateController implements SavedStateController {
      */
     @Override
     @NonNull
-    public StateAndRound markSavedState(@NonNull final StateAndRound stateAndRound) {
-        final ReservedSignedState reservedSignedState = stateAndRound.reservedSignedState();
+    public ReservedSignedState markSavedState(@NonNull final ReservedSignedState reservedSignedState) {
         final SignedState signedState = reservedSignedState.get();
         final StateToDiskReason reason = shouldSaveToDisk(signedState, previousSavedStateTimestamp);
         if (reason != null) {
             markSavingToDisk(reservedSignedState, reason);
         }
-        return stateAndRound;
+        return reservedSignedState;
     }
 
     /**

@@ -279,25 +279,28 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
+
         final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
-        if (isBoundary) {
-            // This logic to be completed in https://github.com/hashgraph/hedera-services/issues/17480
+        final ReservedSignedState reservedSignedState;
+        if (isBoundary || freezeRoundReceived) {
+            handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
+            final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
+
+            handlerMetrics.setPhase(CREATING_SIGNED_STATE);
+            final SignedState signedState = new SignedState(
+                    platformContext.getConfiguration(),
+                    CryptoStatic::verifySignature,
+                    immutableStateCons,
+                    "TransactionHandler.createSignedState()",
+                    freezeRoundReceived,
+                    true,
+                    consensusRound.isPcesRound());
+
+            reservedSignedState = signedState.reserve("transaction handler output");
+        } else {
+            reservedSignedState = null;
         }
 
-        handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
-
-        handlerMetrics.setPhase(CREATING_SIGNED_STATE);
-        final SignedState signedState = new SignedState(
-                platformContext.getConfiguration(),
-                CryptoStatic::verifySignature,
-                immutableStateCons,
-                "TransactionHandler.createSignedState()",
-                freezeRoundReceived,
-                true,
-                consensusRound.isPcesRound());
-
-        final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
         return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
     }
 }
