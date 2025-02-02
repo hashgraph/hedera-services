@@ -22,6 +22,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -43,9 +44,7 @@ public record StateAndRound(
      */
     @NonNull
     public StateAndRound makeAdditionalReservation(@NonNull final String reservationReason) {
-        if (reservedSignedState == null) {
-            throw new IllegalStateException("Cannot make additional reservation on a null reserved signed state");
-        }
+        Objects.requireNonNull(reservedSignedState, "reservedSignedState cannot be null");
         return new StateAndRound(reservedSignedState.getAndReserve(reservationReason), round, systemTransactions);
     }
 }
