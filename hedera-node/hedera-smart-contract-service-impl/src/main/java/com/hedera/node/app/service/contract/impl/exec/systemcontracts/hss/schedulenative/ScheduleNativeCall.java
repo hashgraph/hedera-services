@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.Ca
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
@@ -99,8 +100,8 @@ public class ScheduleNativeCall extends AbstractCall {
         if (status != SUCCESS) {
             return gasOnly(revertResult(status, gasRequirement), status, false);
         } else {
-            final var encodedRes = RC_AND_ADDRESS_ENCODER.encodeElements(
-                    (long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.scheduleID()));
+            final var encodedRes = RC_AND_ADDRESS_ENCODER.encode(
+                    Tuple.of((long) SUCCESS.protoOrdinal(), headlongAddressOf(recordBuilder.scheduleID())));
             return gasOnly(successResult(encodedRes, gasRequirement, recordBuilder), status, false);
         }
     }

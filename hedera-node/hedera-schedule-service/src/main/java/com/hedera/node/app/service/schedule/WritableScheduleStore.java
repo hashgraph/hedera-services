@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,12 +52,18 @@ public interface WritableScheduleStore extends ReadableScheduleStore {
     Schedule getForModify(@NonNull ScheduleID scheduleId);
 
     /**
-     * Add a schedule to this state.
+     * Add an updated schedule to this state. If the schedule already exists, it will be replaced.
      * If the schedule already exists it will be replaced.
      *
      * @param scheduleToAdd The schedule to add
      */
     void put(@NonNull Schedule scheduleToAdd);
+
+    /**
+     * Adds a new schedule to the store. This will also increment the entity counts for schedules.
+     * @param scheduleToAdd The schedule to add to the store
+     */
+    void putAndIncrementCount(@NonNull Schedule scheduleToAdd);
 
     /**
      * Purges all schedule state associated with the given order.

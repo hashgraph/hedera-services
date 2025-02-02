@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,12 @@ public class IterableStorageManager {
                                     firstContractKey,
                                     contractAccesses.contractID(),
                                     tuweniToPbjBytes(access.key()));
+                            case ZERO_INTO_EMPTY_SLOT -> {
+                                // Ensure a "new" zero isn't put into state, remove from KV state
+                                store.removeSlot(
+                                        new SlotKey(contractAccesses.contractID(), tuweniToPbjBytes(access.key())));
+                                yield firstContractKey;
+                            }
                                 // We always insert the new slot at the head
                             case INSERTION -> insertAccessedValue(
                                     store,
@@ -106,7 +112,8 @@ public class IterableStorageManager {
         }));
 
         // Update contract metadata with the net change in slots used
-        allSizeChanges.forEach(change -> {
+        long slotUsageChange = 0;
+        for (final var change : allSizeChanges) {
             if (change.numInsertions() != 0 || change.numRemovals() != 0) {
                 enhancement
                         .operations()
@@ -114,8 +121,12 @@ public class IterableStorageManager {
                                 change.contractID(),
                                 firstKeys.getOrDefault(change.contractID(), Bytes.EMPTY),
                                 change.netChange());
+                slotUsageChange += change.netChange();
             }
-        });
+        }
+        if (slotUsageChange != 0) {
+            store.adjustSlotCount(slotUsageChange);
+        }
     }
 
     /**

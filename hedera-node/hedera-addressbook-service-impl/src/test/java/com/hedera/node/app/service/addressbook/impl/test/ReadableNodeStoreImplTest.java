@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
@@ -90,7 +91,7 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
     @Test
     void getSizeOfState() {
         final var store = new ReadableNodeStoreImpl(readableStates, readableEntityCounters);
-        assertEquals(readableStates.get(NODES_KEY).size(), store.sizeOfState());
+        assertEquals(readableEntityCounters.getCounterFor(EntityType.NODE), store.sizeOfState());
     }
 
     @Test

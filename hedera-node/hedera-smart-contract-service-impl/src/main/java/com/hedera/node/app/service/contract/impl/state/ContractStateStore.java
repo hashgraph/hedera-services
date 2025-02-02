@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
@@ -50,6 +51,12 @@ public interface ContractStateStore {
      * @param key the {@link SlotKey} to remove
      */
     void removeSlot(@NonNull SlotKey key);
+
+    /**
+     * Adjusts the slot count by the given delta in the {@link WritableEntityCounters}.
+     * @param delta the delta to adjust the slot count by
+     */
+    void adjustSlotCount(final long delta);
 
     /**
      * Puts the given {@link SlotValue} for the given {@link SlotKey}.

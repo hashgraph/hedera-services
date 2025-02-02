@@ -20,11 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.config.data.TopicsConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,20 +40,11 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
      * Create a new {@link WritableTopicStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableTopicStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         this.entityCounters = entityCounters;
-
-        final long maxCapacity = configuration.getConfigData(TopicsConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.TOPIC, maxCapacity);
-        topicState().setMetrics(storeMetrics);
     }
 
     @Override
@@ -65,8 +53,8 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     }
 
     /**
-     * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link Topic} into the state, as well as exporting its ID to the transaction
+     * receipt. If a topic with the same ID already exists, it will be overwritten.
      *
      * @param topic - the topic to be persisted.
      */
@@ -74,6 +62,17 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
         requireNonNull(topic);
         requireNonNull(topic.topicId());
         topicState().put(topic.topicId(), topic);
+    }
+
+    /**
+     * Persists a new {@link Topic} into the state, as well as exporting its ID to the transaction
+     * receipt. It also increments the entity count for {@link EntityType#TOPIC}.
+     *
+     * @param topic - the topic to be persisted.
+     */
+    public void putAndIncrementCount(@NonNull final Topic topic) {
+        put(topic);
+        entityCounters.incrementEntityTypeCount(EntityType.TOPIC);
     }
 
     /**
@@ -85,15 +84,6 @@ public class WritableTopicStore extends ReadableTopicStoreImpl {
     public Topic getForModify(@NonNull final TopicID topicID) {
         requireNonNull(topicID);
         return topicState().getForModify(topicID);
-    }
-
-    /**
-     * Returns the number of topics in the state.
-     * @return the number of topics in the state
-     */
-    public long sizeOfState() {
-        return topicState().size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**

@@ -45,7 +45,6 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -270,7 +269,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final EntityNumGenerator entityNumGenerator = mock(EntityNumGenerator.class);
         given(mockContext.body()).willReturn(createTransaction);
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
-        given(entityNumGenerator.newEntityNum(EntityType.SCHEDULE)).willReturn(nextEntityId);
+        given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
         given(mockContext.allKeysForTransaction(any(), any())).willReturn(testChildKeys);
         // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))

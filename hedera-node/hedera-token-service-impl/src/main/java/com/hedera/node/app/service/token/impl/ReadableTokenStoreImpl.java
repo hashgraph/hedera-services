@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
@@ -120,8 +121,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      */
     @Override
     public long sizeOfState() {
-        return tokenState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.TOKEN);
     }
 
     @Override

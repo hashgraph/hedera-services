@@ -48,6 +48,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
@@ -59,9 +60,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -104,9 +103,6 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Mock(strictness = LENIENT)
     private HandleContext.SavepointStack stack;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
@@ -159,7 +155,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         config = HederaTestConfigBuilder.create()
                 .withValue("topics.maxNumber", 10L)
                 .getOrCreateConfig();
-        topicStore = new WritableTopicStore(writableStates, config, storeMetricsService, entityCounters);
+        topicStore = new WritableTopicStore(writableStates, entityCounters);
         given(handleContext.configuration()).willReturn(config);
 
         given(handleContext.storeFactory().readableStore(ReadableTopicStore.class))
@@ -308,7 +304,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -344,7 +340,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
                         1_234_567L + op.autoRenewPeriod().seconds(),
                         op.autoRenewPeriod().seconds(),
                         op.autoRenewAccount()));
-        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
 
         subject.handle(handleContext);
 
@@ -443,7 +439,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var writableState = writableTopicStateWithOneKey();
 
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService, entityCounters);
+        given(entityCounters.getCounterFor(EntityType.TOPIC)).willReturn(1L);
+        final var topicStore = new WritableTopicStore(writableStates, entityCounters);
         assertEquals(1, topicStore.sizeOfState());
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(storeFactory.readableStore(ReadableTopicStore.class)).willReturn(topicStore);
@@ -472,7 +469,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(writableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(writableState);
-        final var topicStore = new WritableTopicStore(writableStates, config, storeMetricsService, entityCounters);
+        given(entityCounters.getCounterFor(EntityType.TOPIC)).willReturn(1L);
+        final var topicStore = new WritableTopicStore(writableStates, entityCounters);
         assertEquals(1, topicStore.sizeOfState());
 
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -500,7 +498,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(entityNumGenerator.newEntityNum(EntityType.TOPIC)).willReturn(1_234L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var op = txnBody.consensusCreateTopic();
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))

@@ -74,7 +74,6 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -231,7 +230,7 @@ class HandleHederaOperationsTest {
     @Test
     void useNumberUsesContext() {
         given(context.entityNumGenerator()).willReturn(entityNumGenerator);
-        given(entityNumGenerator.newEntityNum(EntityType.CONTRACT_BYTECODE)).willReturn(123L);
+        given(entityNumGenerator.newEntityNum()).willReturn(123L);
         assertEquals(123L, subject.useNextEntityNumber());
     }
 

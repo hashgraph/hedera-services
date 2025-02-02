@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
@@ -72,8 +73,7 @@ public class ReadableTokenRelationStoreImpl implements ReadableTokenRelationStor
      */
     @Override
     public long sizeOfState() {
-        return readableTokenRelState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.TOKEN_ASSOCIATION);
     }
 
     /**

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
@@ -101,7 +102,8 @@ class ReadableTokenRelationStoreImplTest {
     @Test
     void testSizeOfState() {
         final var expectedSize = 3L;
-        given(tokenRelState.size()).willReturn(expectedSize);
+        given(readableEntityCounters.getCounterFor(EntityType.TOKEN_ASSOCIATION))
+                .willReturn(expectedSize);
 
         final var result = subject.sizeOfState();
         Assertions.assertThat(result).isEqualTo(expectedSize);

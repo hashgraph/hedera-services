@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi.ids;
 
-import com.hedera.node.app.spi.validation.EntityType;
-
 /**
  * Provides a way to generate entity numbers.
  */
@@ -30,10 +28,9 @@ public interface EntityNumGenerator {
      * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
      * because it will be reused.
      *
-     * @param entityType the type of entity for which to generate a number
      * @return the next entity number
      */
-    long newEntityNum(EntityType entityType);
+    long newEntityNum();
 
     /**
      * Peeks at the next entity number, for use by handlers that create entities.

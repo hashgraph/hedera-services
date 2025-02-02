@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
-import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -48,8 +47,6 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     private final long keyClassId;
     private final Codec<V> valueCodec;
     private final long valueClassId;
-
-    private StoreMetrics storeMetrics;
 
     /**
      * Create a new instance
@@ -140,16 +137,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     }
 
     @Override
-    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
-        this.storeMetrics = requireNonNull(storeMetrics);
-    }
-
-    @Override
     public void commit() {
         super.commit();
-
-        if (storeMetrics != null) {
-            storeMetrics.updateCount(sizeOfDataSource());
-        }
     }
 }

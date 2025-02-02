@@ -93,6 +93,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     private AtomicReference<Timestamp> freezeTimeBackingStore;
     private AtomicReference<PlatformState> platformStateBackingStore;
     private AtomicReference<RosterState> rosterStateBackingStore;
+    private AtomicReference<EntityCounts> entityCountsBackingStore;
     private ConcurrentHashMap<ProtoBytes, Roster> rosters = new ConcurrentHashMap<>();
     private ConcurrentHashMap<EntityNumber, Node> nodes = new ConcurrentHashMap<>();
     private ConcurrentHashMap<EntityNumber, StakingNodeInfo> stakingInfo = new ConcurrentHashMap<>();
@@ -108,6 +109,12 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         freezeTimeBackingStore = new AtomicReference<>(null);
         platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         rosterStateBackingStore = new AtomicReference<>(ROSTER_STATE);
+        entityCountsBackingStore = new AtomicReference<>(EntityCounts.DEFAULT);
+
+        when(writableStates.getSingleton(ENTITY_COUNTS_KEY))
+                .then(invocation -> new WritableSingletonStateBase<>(
+                        ENTITY_COUNTS_KEY, entityCountsBackingStore::get, entityCountsBackingStore::set));
+
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
@@ -130,7 +137,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
                                 ENTITY_ID_STATE_KEY,
                                 new AtomicReference<>(EntityNumber.newBuilder().build()),
                                 ENTITY_COUNTS_KEY,
-                                new AtomicReference<>(EntityCounts.DEFAULT)));
+                                entityCountsBackingStore));
 
         subject = new PlatformStateUpdates(rosterExportHelper);
     }
@@ -287,6 +294,7 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
     void worksAroundInvalidCandidate() {
         final var freezeTime = Timestamp.newBuilder().seconds(123L).nanos(456).build();
         freezeTimeBackingStore.set(freezeTime);
+        entityCountsBackingStore.set(EntityCounts.newBuilder().numNodes(1).build());
         final var txBody = TransactionBody.newBuilder()
                 .freeze(FreezeTransactionBody.newBuilder().freezeType(PREPARE_UPGRADE));
         final var fakeEndpoint = new ServiceEndpoint(Bytes.EMPTY, 50211, "test.org");

@@ -30,7 +30,6 @@ import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -60,16 +59,13 @@ public class StakePeriodChanges {
 
     private final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater;
     private final ExchangeRateManager exchangeRateManager;
-    private final StoreMetricsService storeMetricsService;
 
     @Inject
     public StakePeriodChanges(
             @NonNull final EndOfStakingPeriodUpdater endOfStakingPeriodUpdater,
-            @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final StoreMetricsService storeMetricsService) {
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.endOfStakingPeriodUpdater = requireNonNull(endOfStakingPeriodUpdater);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
     }
 
     /**
@@ -177,8 +173,7 @@ public class StakePeriodChanges {
     private WritableNodeStore newWritableNodeStore(
             @NonNull final SavepointStackImpl stack, @NonNull final Configuration config) {
         final var entityCounters = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
-        final var writableFactory =
-                new WritableStoreFactory(stack, AddressBookService.NAME, config, storeMetricsService, entityCounters);
+        final var writableFactory = new WritableStoreFactory(stack, AddressBookService.NAME, entityCounters);
         return writableFactory.getStore(WritableNodeStore.class);
     }
 

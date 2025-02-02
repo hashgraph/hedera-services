@@ -249,7 +249,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      * @param transaction the transaction to check
      * @return true if the transaction is a system transaction, false otherwise
      */
-    boolean isSystemTransaction(final @NonNull Transaction transaction) {
+    static boolean isSystemTransaction(final @NonNull Transaction transaction) {
         return transaction.getApplicationTransaction().length() > 8;
     }
 

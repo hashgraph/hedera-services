@@ -22,6 +22,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.swirlds.state.spi.ReadableKVState;
@@ -79,6 +80,11 @@ public class ReadableContractStateStore implements ContractStateStore {
         throw new UnsupportedOperationException("Cannot remove slots from a read-only store");
     }
 
+    @Override
+    public void adjustSlotCount(final long delta) {
+        throw new UnsupportedOperationException("Cannot adjust slot count in a read-only store");
+    }
+
     /**
      * Refuses to put slots.
      *
@@ -130,13 +136,11 @@ public class ReadableContractStateStore implements ContractStateStore {
      */
     @Override
     public long getNumSlots() {
-        return storage.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.CONTRACT_STORAGE);
     }
 
     @Override
     public long getNumBytecodes() {
-        return bytecode.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.CONTRACT_BYTECODE);
     }
 }

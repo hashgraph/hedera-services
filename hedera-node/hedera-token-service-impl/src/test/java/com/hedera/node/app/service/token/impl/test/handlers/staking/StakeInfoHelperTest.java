@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.test.WritableStakingInfoStoreImplTest.NODE_ID_1;
@@ -38,6 +40,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
@@ -54,6 +57,7 @@ import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,6 +83,17 @@ class StakeInfoHelperTest {
 
     private final StakeInfoHelper subject = new StakeInfoHelper();
 
+    private WritableEntityIdStore entityIdStore;
+
+    @BeforeEach
+    void setup() {
+        entityIdStore = new WritableEntityIdStore(new MapWritableStates(Map.of(
+                ENTITY_ID_STATE_KEY,
+                new WritableSingletonStateBase<>(ENTITY_ID_STATE_KEY, () -> null, c -> {}),
+                ENTITY_COUNTS_KEY,
+                new WritableSingletonStateBase<>(ENTITY_COUNTS_KEY, () -> null, c -> {}))));
+    }
+
     @ParameterizedTest
     @CsvSource({
         "20, 15", "9, 14", "10, 15",
@@ -94,8 +109,9 @@ class StakeInfoHelperTest {
                                 .unclaimedStakeRewardStart(5)
                                 .build())
                 .build();
-        infoStore =
-                new WritableStakingInfoStore(new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)));
+
+        infoStore = new WritableStakingInfoStore(
+                new MapWritableStates(Map.of(V0490TokenSchema.STAKING_INFO_KEY, state)), entityIdStore);
         assertUnclaimedStakeRewardStartPrecondition();
 
         subject.increaseUnclaimedStakeRewards(NODE_ID_1.number(), amount, infoStore);
@@ -119,7 +135,7 @@ class StakeInfoHelperTest {
                 .value(NODE_NUM_3, STAKING_INFO_3)
                 .build();
         final var newStates = newStatesInstance(stakingInfosState);
-        infoStore = new WritableStakingInfoStore(newStates);
+        infoStore = new WritableStakingInfoStore(newStates, entityIdStore);
         // Platform address book has node Ids 2, 4, 8
         final var networkInfo = new FakeNetworkInfo();
         given(tokenContext.consensusTime()).willReturn(Instant.EPOCH);

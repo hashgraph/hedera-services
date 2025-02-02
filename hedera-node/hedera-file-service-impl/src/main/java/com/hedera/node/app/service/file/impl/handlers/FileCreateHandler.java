@@ -38,7 +38,6 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -140,7 +139,7 @@ public class FileCreateHandler implements TransactionHandler {
             final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
-                    .fileNum(handleContext.entityNumGenerator().newEntityNum(EntityType.FILE))
+                    .fileNum(handleContext.entityNumGenerator().newEntityNum())
                     .shardNum(
                             fileCreateTransactionBody.hasShardID()
                                     ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
@@ -155,7 +154,7 @@ public class FileCreateHandler implements TransactionHandler {
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
-            fileStore.put(file);
+            fileStore.putAndIncrementCount(file);
 
             handleContext
                     .savepointStack()

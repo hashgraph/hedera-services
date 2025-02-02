@@ -88,7 +88,7 @@ class HistoryProofVoteHandlerTest {
     }
 
     @Test
-    void handleForwardsVoteWithActiveCOnstruction() {
+    void handleForwardsVoteWithActiveConstruction() {
         givenVoteWith(1L, HistoryProofVote.DEFAULT);
         given(controllers.getInProgressById(1L)).willReturn(Optional.of(controller));
         given(context.creatorInfo()).willReturn(nodeInfo);

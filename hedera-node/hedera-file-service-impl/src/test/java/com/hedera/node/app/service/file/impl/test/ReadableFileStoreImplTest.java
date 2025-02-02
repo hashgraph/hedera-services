@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.file.impl.test;
 
-import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -75,6 +75,6 @@ class ReadableFileStoreImplTest extends FileTestBase {
     @Test
     void returnSizeOfState() {
         final var store = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
-        assertEquals(readableStates.get(BLOBS_KEY).size(), store.sizeOfState());
+        assertEquals(readableEntityCounters.getCounterFor(EntityType.FILE), store.sizeOfState());
     }
 }

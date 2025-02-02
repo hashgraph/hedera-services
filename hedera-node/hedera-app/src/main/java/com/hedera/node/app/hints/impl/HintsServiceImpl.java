@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
@@ -71,6 +72,11 @@ public class HintsServiceImpl implements HintsService {
     @Override
     public @NonNull Bytes activeVerificationKeyOrThrow() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HintsHandlers handlers() {
+        return component.handlers();
     }
 
     @Override

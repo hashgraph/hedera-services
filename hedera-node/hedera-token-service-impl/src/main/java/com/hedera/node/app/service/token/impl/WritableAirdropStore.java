@@ -21,11 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.TokensConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,17 +49,10 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
      * @param states The state to use.
      */
     public WritableAirdropStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         airdropState = states.get(AIRDROPS_KEY);
         this.entityCounters = entityCounters;
-
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAllowedPendingAirdrops();
-        final var storeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.AIRDROP, maxCapacity);
-        airdropState.setMetrics(storeMetrics);
     }
 
     /**
@@ -76,6 +66,18 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
         requireNonNull(airdropId);
         requireNonNull(accountAirdrop);
         airdropState.put(airdropId, accountAirdrop);
+    }
+
+    /**
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state.
+     * It also increments the entity counts for {@link EntityType#AIRDROP}.
+     * @param airdropId the airdropId to be persisted
+     * @param accountAirdrop the account airdrop mapping for the given airdropId to be persisted
+     */
+    public void putAndIncrementCount(
+            @NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
+        put(airdropId, accountAirdrop);
+        entityCounters.incrementEntityTypeCount(EntityType.AIRDROP);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ public class NodeCreateHandler implements TransactionHandler {
                 .adminKey(op.adminKey());
         final var node = nodeBuilder.nodeId(getNextNodeID(nodeStore)).build();
 
-        nodeStore.put(node);
+        nodeStore.putAndIncrementCount(node);
 
         final var recordBuilder = handleContext.savepointStack().getBaseBuilder(NodeCreateStreamBuilder.class);
 

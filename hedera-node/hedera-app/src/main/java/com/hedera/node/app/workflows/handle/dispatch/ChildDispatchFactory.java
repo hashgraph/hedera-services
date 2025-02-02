@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -59,7 +60,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyComparator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -87,6 +87,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -97,6 +98,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -118,8 +120,8 @@ public class ChildDispatchFactory {
     private final FeeManager feeManager;
     private final DispatchProcessor dispatchProcessor;
     private final ServiceScopeLookup serviceScopeLookup;
-    private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
+    private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
 
     @Inject
     public ChildDispatchFactory(
@@ -129,16 +131,16 @@ public class ChildDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.feeManager = requireNonNull(feeManager);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
     }
 
     /**
@@ -218,7 +220,6 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 blockRecordInfo,
                 serviceScopeLookup,
-                storeMetricsService,
                 exchangeRateManager,
                 dispatcher,
                 options.throttling());
@@ -247,20 +248,15 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
-        final var readableStoreFactory = new ReadableStoreFactory(childStack);
+        final var readableStoreFactory = new ReadableStoreFactory(childStack, softwareVersionFactory);
         final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
         final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
         final var writableStoreFactory = new WritableStoreFactory(
-                childStack,
-                serviceScopeLookup.getServiceName(txnInfo.txBody()),
-                config,
-                storeMetricsService,
-                writableEntityIdStore);
-        final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
+                childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), writableEntityIdStore);
+        final var serviceApiFactory = new ServiceApiFactory(childStack, config);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
@@ -298,7 +294,7 @@ public class ChildDispatchFactory {
             builder.congestionMultiplier(congestionMultiplier);
         }
         final var childTokenContext =
-                new TokenContextImpl(config, storeMetricsService, childStack, consensusNow, writableEntityIdStore);
+                new TokenContextImpl(config, childStack, consensusNow, writableEntityIdStore, softwareVersionFactory);
         return new RecordDispatch(
                 builder,
                 config,

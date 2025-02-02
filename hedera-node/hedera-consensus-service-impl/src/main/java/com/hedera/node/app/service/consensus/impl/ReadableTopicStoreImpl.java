@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.swirlds.state.spi.ReadableKVState;
@@ -72,8 +73,7 @@ public class ReadableTopicStoreImpl implements ReadableTopicStore {
      * @return the number of topics in the state
      */
     public long sizeOfState() {
-        return topicState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.TOPIC);
     }
 
     protected <T extends ReadableKVState<TopicID, Topic>> T topicState() {

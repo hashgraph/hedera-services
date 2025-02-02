@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
@@ -62,8 +63,7 @@ public class ReadableNftStoreImpl implements ReadableNftStore {
      * @return the number of nfts in the state
      */
     public long sizeOfState() {
-        return nftState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.NFT);
     }
 
     @Override

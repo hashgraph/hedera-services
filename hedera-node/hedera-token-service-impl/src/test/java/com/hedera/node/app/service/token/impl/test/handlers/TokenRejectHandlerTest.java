@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,6 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
         // Then:
         assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).contains(ownerId, treasuryId);
-        assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
 
         // Verify balance removal
         final var endSenderTokenBalance =

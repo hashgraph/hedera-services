@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
@@ -80,7 +81,6 @@ public class ReadableFileStoreImpl extends FileStore implements ReadableFileStor
      * @return the number of files in the state
      */
     public long sizeOfState() {
-        return fileState.size();
-        // FUTURE: Use entityCounters to get size.
+        return entityCounters.getCounterFor(EntityType.FILE);
     }
 }

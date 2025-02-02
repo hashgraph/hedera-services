@@ -46,12 +46,12 @@ import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.DiskStartupNetworks.InfoType;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.tss.TssBaseServiceImpl;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -89,6 +89,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class DiskStartupNetworksTest {
+
+    @Mock
+    private ConfigProviderImpl configProvider;
+
+    @Mock
+    private StoreMetricsServiceImpl storeMetricsService;
+
     private static final long ROUND_NO = 666L;
 
     private static Network NETWORK;
@@ -99,9 +106,6 @@ class DiskStartupNetworksTest {
             NETWORK = Network.JSON.parse(new ReadableStreamingData(requireNonNull(fin)));
         }
     }
-
-    @Mock
-    private ConfigProvider configProvider;
 
     @Mock
     private StartupNetworks startupNetworks;
@@ -288,7 +292,9 @@ class DiskStartupNetworksTest {
                 DEFAULT_CONFIG,
                 FAKE_NETWORK_INFO,
                 NO_OP_METRICS,
-                startupNetworks);
+                startupNetworks,
+                storeMetricsService,
+                configProvider);
         addRosterInfo(state, network);
         addAddressBookInfo(state, network);
         return state;

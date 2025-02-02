@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,13 +67,12 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
 
         @Override
         public @NonNull TransactionRecordParityValidator create(@NonNull final HapiSpec spec) {
-            return new TransactionRecordParityValidator(
-                    spec.targetNetworkOrThrow().nodes().size());
+            return new TransactionRecordParityValidator();
         }
     };
 
-    public TransactionRecordParityValidator(final int networkSize) {
-        translator = new BlockTransactionalUnitTranslator(networkSize);
+    public TransactionRecordParityValidator() {
+        translator = new BlockTransactionalUnitTranslator();
     }
 
     /**
@@ -93,7 +92,7 @@ public class TransactionRecordParityValidator implements BlockStreamValidator {
                 node0Data.resolve("recordStreams/record0.0.3").toAbsolutePath().normalize();
         final var records = StreamFileAccess.STREAM_FILE_ACCESS.readStreamDataFrom(recordsLoc.toString(), "sidecar");
 
-        final var validator = new TransactionRecordParityValidator(4);
+        final var validator = new TransactionRecordParityValidator();
         validator.validateBlockVsRecords(blocks, records);
     }
 

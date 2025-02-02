@@ -28,8 +28,6 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +35,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -99,18 +96,9 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void throwsIfNullValuesAsArgs(@Mock StoreMetricsService storeMetricsService) {
-        final var configuration = HederaTestConfigBuilder.createConfig();
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(null, configuration, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(writableStates, null, storeMetricsService, writableEntityCounters));
-        assertThrows(
-                NullPointerException.class,
-                () -> new WritableAccountStore(writableStates, configuration, null, writableEntityCounters));
-        assertThrows(NullPointerException.class, () -> writableStore.put(null));
+    void throwsIfNullValuesAsArgs() {
+        assertThrows(NullPointerException.class, () -> new WritableAccountStore(null, writableEntityCounters));
+        assertThrows(NullPointerException.class, () -> new WritableAccountStore(writableStates, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
@@ -140,7 +128,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
     @Test
     void canRemoveAlias() {
-        writableStore.putAlias(alias.aliasOrThrow(), id);
+        writableStore.putAndIncrementCountAlias(alias.aliasOrThrow(), id);
         assertEquals(1, writableStore.sizeOfAliasesState());
         writableStore.removeAlias(alias.aliasOrThrow());
         assertEquals(0, writableStore.sizeOfAliasesState());
@@ -150,8 +138,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getForModifyDoesntLookForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.put(account);
-        writableStore.putAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getForModify(alias);
 
@@ -164,8 +152,8 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     void getWithAliasedIdLooksForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
-        writableStore.put(account);
-        writableStore.putAlias(alias.alias(), id);
+        writableStore.putAndIncrementCount(account);
+        writableStore.putAndIncrementCountAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getAliasedAccountById(alias);
 
@@ -202,7 +190,7 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(writableStore.sizeOfAliasesState()).isZero();
         assertThat(writableStore.modifiedAccountsInState()).isEqualTo(Collections.EMPTY_SET);
 
-        writableStore.put(account);
+        writableStore.putAndIncrementCount(account);
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
         assertThat(writableStore.modifiedAccountsInState())
                 .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));

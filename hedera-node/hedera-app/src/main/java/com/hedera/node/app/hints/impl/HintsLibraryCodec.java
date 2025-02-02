@@ -18,6 +18,7 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,6 +99,16 @@ public class HintsLibraryCodec {
      */
     public long extractTotalWeight(@NonNull final Bytes verificationKey) {
         requireNonNull(verificationKey);
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /**
+     * Decodes the given preprocessed keys into a {@link PreprocessedKeys} object.
+     * @param preprocessedKeys the preprocessed keys, encoded by the library
+     * @return the decoded preprocessed keys
+     */
+    public PreprocessedKeys decodePreprocessedKeys(@NonNull final Bytes preprocessedKeys) {
+        requireNonNull(preprocessedKeys);
         throw new UnsupportedOperationException("Not implemented");
     }
 }

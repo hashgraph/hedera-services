@@ -21,12 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
-import com.hedera.node.app.spi.validation.EntityType;
-import com.hedera.node.config.data.FilesConfig;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -49,31 +45,32 @@ public class WritableFileStore extends ReadableFileStoreImpl {
      * Create a new {@link WritableFileStore} instance.
      *
      * @param states The state to use.
-     * @param configuration The configuration used to read the maximum capacity.
-     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableFileStore(
-            @NonNull final WritableStates states,
-            @NonNull final Configuration configuration,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final WritableEntityCounters entityCounters) {
+            @NonNull final WritableStates states, @NonNull final WritableEntityCounters entityCounters) {
         super(states, entityCounters);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
         this.entityCounters = entityCounters;
-
-        final long maxCapacity = configuration.getConfigData(FilesConfig.class).maxNumber();
-        final var storeMetrics = storeMetricsService.get(StoreType.FILE, maxCapacity);
-        filesState.setMetrics(storeMetrics);
     }
 
     /**
-     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction
-     * receipt.
+     * Persists an updated {@link File} into the state, as well as exporting its ID to the transaction
+     * receipt. If a file with the same ID already exists, it will be overwritten.
      *
      * @param file - the file to be persisted.
      */
     public void put(@NonNull final File file) {
         filesState.put(requireNonNull(file).fileId(), file);
+    }
+
+    /**
+     * Persists a new {@link File} into the state, as well as exporting its ID to the transaction.
+     * Also increments the entity counter for the file.
+     * @param file - the file to be persisted.
+     */
+    public void putAndIncrementCount(@NonNull final File file) {
+        put(file);
+        entityCounters.incrementEntityTypeCount(EntityType.FILE);
     }
 
     /**
@@ -96,16 +93,6 @@ public class WritableFileStore extends ReadableFileStoreImpl {
     public @NonNull Optional<File> getForModify(final FileID fileId) {
         final var file = filesState.getForModify(fileId);
         return Optional.ofNullable(file);
-    }
-
-    /**
-     * Returns the number of files in the state.
-     *
-     * @return the number of files in the state
-     */
-    public long sizeOfState() {
-        return filesState.size();
-        // FUTURE: Use entityCounters to get size.
     }
 
     /**
