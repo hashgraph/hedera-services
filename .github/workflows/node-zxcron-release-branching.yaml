@@ -207,7 +207,7 @@ jobs:
 
   create-tag:
     name: Create Release Tag
-    runs-on: network-node-linux-small-scheduler
+    runs-on: network-node-linux-medium
     needs:
       - check-branch
       - create-branch
