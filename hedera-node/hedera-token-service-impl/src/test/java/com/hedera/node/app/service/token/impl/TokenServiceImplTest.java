@@ -26,6 +26,7 @@ import com.hedera.node.app.service.token.TokenServiceDefinition;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V058PendingRewardsSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import java.util.SortedMap;
@@ -62,12 +63,13 @@ class TokenServiceImplTest {
 
         subject.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
-        verify(schemaRegistry, times(3)).register(captor.capture());
+        verify(schemaRegistry, times(4)).register(captor.capture());
         final var schemas = captor.getAllValues();
-        assertThat(schemas).hasSize(3);
+        assertThat(schemas).hasSize(4);
         assertThat(schemas.getFirst()).isInstanceOf(V0490TokenSchema.class);
         assertThat(schemas.get(1)).isInstanceOf(V0500TokenSchema.class);
-        assertThat(schemas.getLast()).isInstanceOf(V0530TokenSchema.class);
+        assertThat(schemas.get(2)).isInstanceOf(V0530TokenSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V058PendingRewardsSchema.class);
     }
 
     @Test
