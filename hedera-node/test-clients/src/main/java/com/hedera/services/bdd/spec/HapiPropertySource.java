@@ -111,7 +111,7 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
             throw new RuntimeException(ignore);
         }
-        //return AccountID.getDefaultInstance();
+        // return AccountID.getDefaultInstance();
     }
 
     /**
