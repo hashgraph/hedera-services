@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.platform.state.service;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.state.SwirldStateManagerUtils;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-class StateEventHandlerManagerFreezePeriodCheckerTest {
+class PlatformStateFacadeTest {
 
     @Test
     void isInFreezePeriodTest() {
@@ -34,24 +33,24 @@ class StateEventHandlerManagerFreezePeriodCheckerTest {
         final Instant t4 = t3.plusSeconds(1);
 
         // No freeze time set
-        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t1, null, null));
+        assertFalse(PlatformStateFacade.isInFreezePeriod(t1, null, null));
 
         // No freeze time set, previous freeze time set
-        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, null, t1));
+        assertFalse(PlatformStateFacade.isInFreezePeriod(t2, null, t1));
 
         // Freeze time is in the future, never frozen before
-        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, t3, null));
+        assertFalse(PlatformStateFacade.isInFreezePeriod(t2, t3, null));
 
         // Freeze time is in the future, frozen before
-        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t2, t3, t1));
+        assertFalse(PlatformStateFacade.isInFreezePeriod(t2, t3, t1));
 
         // Freeze time is in the past, never frozen before
-        assertTrue(SwirldStateManagerUtils.isInFreezePeriod(t2, t1, null));
+        assertTrue(PlatformStateFacade.isInFreezePeriod(t2, t1, null));
 
         // Freeze time is in the past, frozen before at an earlier time
-        assertTrue(SwirldStateManagerUtils.isInFreezePeriod(t3, t2, t1));
+        assertTrue(PlatformStateFacade.isInFreezePeriod(t3, t2, t1));
 
         // Freeze time in the past, already froze at that exact time
-        assertFalse(SwirldStateManagerUtils.isInFreezePeriod(t3, t2, t2));
+        assertFalse(PlatformStateFacade.isInFreezePeriod(t3, t2, t2));
     }
 }

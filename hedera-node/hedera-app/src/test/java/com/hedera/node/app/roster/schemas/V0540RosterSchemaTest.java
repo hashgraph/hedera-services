@@ -28,6 +28,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -36,10 +37,8 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.RosterStateId;
-import com.swirlds.platform.state.service.PbjConverter;
-import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.WritableRosterStore;
-import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -101,6 +100,9 @@ class V0540RosterSchemaTest {
     @Mock
     private State state;
 
+    @Mock
+    private PlatformStateFacade platformStateFacade;
+
     private State getState() {
         return state;
     }
@@ -115,7 +117,7 @@ class V0540RosterSchemaTest {
 
     @BeforeEach
     void setUp() {
-        subject = new V0540RosterSchema(onAdopt, canAdopt, rosterStoreFactory, this::getState);
+        subject = new V0540RosterSchema(onAdopt, canAdopt, rosterStoreFactory, this::getState, platformStateFacade);
     }
 
     @Test
@@ -151,12 +153,8 @@ class V0540RosterSchemaTest {
 
         // Setup PlatformService states to return a given ADDRESS_BOOK,
         // and the readable RosterService states to be empty:
-        doReturn(readableStates).when(state).getReadableStates(PlatformStateService.NAME);
-        doReturn(platformStateSingleton).when(readableStates).getSingleton(V0540PlatformStateSchema.PLATFORM_STATE_KEY);
-        doReturn(platformState).when(platformStateSingleton).get();
-        doReturn(PbjConverter.toPbjAddressBook(ADDRESS_BOOK))
-                .when(platformState)
-                .addressBook();
+        when(platformStateFacade.roundOf(state)).thenReturn(ROUND_NO);
+        when(platformStateFacade.addressBookOf(state)).thenReturn(ADDRESS_BOOK);
         final ReadableStates rosterReadableStates = mock(ReadableStates.class);
         doReturn(rosterReadableStates).when(state).getReadableStates(RosterStateId.NAME);
         final ReadableSingletonState<RosterState> rosterStateSingleton = mock(ReadableSingletonState.class);
