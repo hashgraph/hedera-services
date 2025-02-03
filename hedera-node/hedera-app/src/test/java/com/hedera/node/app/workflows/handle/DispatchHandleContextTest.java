@@ -90,7 +90,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -107,6 +106,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -211,9 +211,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private ThrottleAdviser throttleAdviser;
 
     @Mock
-    private StoreMetricsService storeMetricsService;
-
-    @Mock
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
@@ -298,8 +295,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-        readableStoreFactory = new ReadableStoreFactory(baseState);
-        apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
+        readableStoreFactory = new ReadableStoreFactory(baseState, ServicesSoftwareVersion::new);
+        apiFactory = new ServiceApiFactory(stack, configuration);
         storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);
 
