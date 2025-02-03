@@ -395,7 +395,7 @@ public class HandleWorkflow {
 
         final var userTxn = userTxnFactory.createUserTxn(state, creator, txn, consensusNow, type);
         var lastRecordManagerTime = streamMode == RECORDS ? blockRecordManager.consTimeOfLastHandledTxn() : null;
-        final var handleOutput = executeTopLevel(userTxn, txnVersion);
+        final var handleOutput = executeTopLevel(userTxn, txnVersion, state);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -520,7 +520,7 @@ public class HandleWorkflow {
                     }
                 }
                 executionEnd = executableTxn.nbf();
-                doStreamingKVChanges(writableStates, executionEnd, iter::remove, entityIdWritableStates);
+                doStreamingKVChanges(writableStates, entityIdWritableStates, executionEnd, iter::remove);
                 nextTime = boundaryStateChangeListener
                         .lastConsensusTimeOrThrow()
                         .plusNanos(consensusConfig.handleMaxPrecedingRecords() + 1);
@@ -529,7 +529,7 @@ public class HandleWorkflow {
             // The purgeUntilNext() iterator extension purges any schedules with wait_until_expiry=false
             // that expire after the last schedule returned from next(), until either the next executable
             // schedule or the iterator boundary is reached
-            doStreamingKVChanges(writableStates, executionEnd, iter::purgeUntilNext, entityIdWritableStates);
+            doStreamingKVChanges(writableStates, entityIdWritableStates, executionEnd, iter::purgeUntilNext);
             // If the iterator is not exhausted, we can only mark the second _before_ the last-executed NBF time
             // as complete; if it is exhausted, we mark the rightmost second of the interval as complete
             if (iter.hasNext()) {
@@ -573,14 +573,10 @@ public class HandleWorkflow {
             final var writableStates = state.getWritableStates(ScheduleService.NAME);
             final var entityIdWritableStates = state.getWritableStates(EntityIdService.NAME);
             final var entityCounters = new WritableEntityIdStore(entityIdWritableStates);
-            doStreamingKVChanges(
-                    writableStates,
-                    now,
-                    () -> {
-                        final var scheduleStore = new WritableScheduleStoreImpl(writableStates, entityCounters);
-                        scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
-                    },
-                    entityIdWritableStates);
+            doStreamingKVChanges(writableStates, entityIdWritableStates, now, () -> {
+                final var scheduleStore = new WritableScheduleStoreImpl(writableStates, entityCounters);
+                scheduleStore.purgeExpiredRangeClosed(then.getEpochSecond(), now.getEpochSecond() - 1);
+            });
         }
     }
 
@@ -593,11 +589,13 @@ public class HandleWorkflow {
      * just the transaction with a {@link ResponseCodeEnum#FAIL_INVALID} transaction result,
      * and no other side effects.
      *
-     * @param userTxn    the user transaction to execute
+     * @param userTxn the user transaction to execute
      * @param txnVersion the software version for the event containing the transaction
+     * @param state the state to commit any direct changes against
      * @return the stream output from executing the transaction
      */
-    private HandleOutput executeTopLevel(@NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion) {
+    private HandleOutput executeTopLevel(
+            @NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion, @NonNull final State state) {
         try {
             if (isOlderSoftwareEvent(txnVersion)) {
                 if (streamMode != BLOCKS) {
@@ -617,21 +615,36 @@ public class HandleWorkflow {
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     // Since we track node stake metadata separately from the future address book (FAB),
                     // we need to update that stake metadata from any node additions or deletions that
-                    // just took effect; it would be nice to unify the FAB and stake metadata in the future
-                    final var writableTokenStates = userTxn.stack().getWritableStates(TokenService.NAME);
-                    final var writableEntityIdStates = userTxn.stack().getWritableStates(EntityIdService.NAME);
-                    stakeInfoHelper.adjustPostUpgradeStakes(
-                            userTxn.tokenContextImpl(),
-                            networkInfo,
-                            userTxn.config(),
-                            new WritableStakingInfoStore(
-                                    writableTokenStates, new WritableEntityIdStore(writableEntityIdStates)),
-                            new WritableNetworkStakingRewardsStore(writableTokenStates));
+                    // just took effect; it would be nice to unify the FAB and stake metadata in the future.
+                    // IMPORTANT:
+                    //   (1) These K/V changes must be committed directly to the state instead of
+                    //   being accumulated in the user stack in case it is rolled back.
+                    //   (2) The K/V changes must also be written immediately in their own block item,
+                    //   instead of being added to the base builder state changes, because if there is
+                    //   a preceding NodeStakeUpdate added later in executeTopLevel(), *its* state changes
+                    //   will come before the base builder's changes in the block stream
+                    final var writableTokenStates = state.getWritableStates(TokenService.NAME);
+                    final var writableEntityIdStates = state.getWritableStates(EntityIdService.NAME);
+                    final int maxPrecedingRecords = userTxn.config()
+                            .getConfigData(ConsensusConfig.class)
+                            .handleMaxPrecedingRecords();
+                    doStreamingKVChanges(
+                            writableTokenStates,
+                            // Ensure that even if the user txn has preceding children, these state changes still have
+                            // an earlier consensus time; since in fact they are, in fact, committed first
+                            writableEntityIdStates,
+                            userTxn.consensusNow().minusNanos(maxPrecedingRecords + 1),
+                            () -> stakeInfoHelper.adjustPostUpgradeStakes(
+                                    networkInfo,
+                                    userTxn.config(),
+                                    new WritableStakingInfoStore(
+                                            writableTokenStates, new WritableEntityIdStore(writableEntityIdStates)),
+                                    new WritableNetworkStakingRewardsStore(writableTokenStates)));
                     if (streamMode == RECORDS) {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();
+                        userTxn.stack().commitSystemStateChanges();
                     }
-                    userTxn.stack().commitSystemStateChanges();
                 }
 
                 final var dispatch = userTxnFactory.createDispatch(userTxn, exchangeRateManager.exchangeRates());
@@ -736,15 +749,15 @@ public class HandleWorkflow {
      * block stream.
      *
      * @param writableStates the writable states to commit the action to
+     * @param entityIdWritableStates if not null, the writable states for the entity ID service
      * @param now the consensus timestamp of the action
      * @param action the action to commit
-     * @param entityIdWritableStates if not null, the writable states for the entity ID service
      */
     private void doStreamingKVChanges(
             @NonNull final WritableStates writableStates,
+            @Nullable final WritableStates entityIdWritableStates,
             @NonNull final Instant now,
-            @NonNull final Runnable action,
-            @Nullable final WritableStates entityIdWritableStates) {
+            @NonNull final Runnable action) {
         if (streamMode != RECORDS) {
             kvStateChangeListener.reset();
         }
@@ -903,9 +916,9 @@ public class HandleWorkflow {
                 final var hintsStore = new WritableHintsStoreImpl(hintsWritableStates);
                 doStreamingKVChanges(
                         hintsWritableStates,
+                        null,
                         now,
-                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig),
-                        null);
+                        () -> hintsService.reconcile(activeRosters, hintsStore, now, tssConfig));
             }
             if (tssConfig.historyEnabled()) {
                 final Bytes currentMetadata;
@@ -919,9 +932,9 @@ public class HandleWorkflow {
                 final var historyStore = new WritableHistoryStoreImpl(historyWritableStates);
                 doStreamingKVChanges(
                         historyWritableStates,
+                        null,
                         now,
-                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig),
-                        null);
+                        () -> historyService.reconcile(activeRosters, currentMetadata, historyStore, now, tssConfig));
             }
         }
     }

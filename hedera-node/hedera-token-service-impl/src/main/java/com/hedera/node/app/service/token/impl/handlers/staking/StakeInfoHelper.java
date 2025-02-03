@@ -27,7 +27,6 @@ import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -181,14 +180,12 @@ public class StakeInfoHelper {
      * Also clears any pending rewards from the {@link NetworkStakingRewards} singleton for nodes that are no
      * longer in the address book.
      *
-     * @param context the token context
      * @param networkInfo the list of node infos from the address book
      * @param config the configuration for the node
      * @param infoStore the writable store for the staking info
      * @param rewardsStore the store for the staking rewards
      */
     public void adjustPostUpgradeStakes(
-            @NonNull final TokenContext context,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
             @NonNull final WritableStakingInfoStore infoStore,
@@ -197,7 +194,6 @@ public class StakeInfoHelper {
         requireNonNull(networkInfo);
         requireNonNull(config);
         requireNonNull(rewardsStore);
-        requireNonNull(context);
         final var preUpgradeNodeIds = infoStore.getAll();
         preUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
             final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
