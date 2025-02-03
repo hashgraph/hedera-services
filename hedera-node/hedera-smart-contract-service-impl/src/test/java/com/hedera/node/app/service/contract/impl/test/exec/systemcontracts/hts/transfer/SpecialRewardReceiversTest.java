@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ class SpecialRewardReceiversTest {
     void addsNftOwnershipChanges() {
         final var body = CryptoTransferTransactionBody.newBuilder()
                 .tokenTransfers(TokenTransferList.newBuilder()
-                        .nftTransfers(new NftTransfer(A_NEW_ACCOUNT_ID, B_NEW_ACCOUNT_ID, 123L, true))
+                        .nftTransfers(new NftTransfer(A_NEW_ACCOUNT_ID, B_NEW_ACCOUNT_ID, 123L, true, null, null))
                         .build())
                 .build();
         SPECIAL_REWARD_RECEIVERS.addInFrame(frame, body, List.of());
