@@ -67,14 +67,10 @@ testModuleInfo {
 }
 
 timingSensitiveModuleInfo {
-    requires("com.github.spotbugs.annotations")
     requires("com.swirlds.common")
-    requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.core.test.fixtures")
-    requires("org.mockito")
     requires("org.assertj.core")
     requires("org.junit.jupiter.params")
 }
