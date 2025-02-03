@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # The location were this script can be found.
 SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
@@ -26,7 +26,6 @@ pcli diagram \
     -s 'getStatusAction:PlatformStatusAction:💀' \
     -s 'LatestCompleteStateNotifier:complete state notification:💢' \
     -s 'RunningEventHashOverride:hash override:💨' \
-    -s 'TransactionResubmitterSplitter:submit transaction:♻️' \
     -s 'StaleEventDetectorRouter:publishStaleEvent:⚰️' \
     -s 'toStateWrittenToDiskAction:PlatformStatusAction:💾' \
     -s 'StatusStateMachine:PlatformStatus:🚦' \
@@ -38,9 +37,9 @@ pcli diagram \
     -g 'State File Management:State Snapshot Manager,📀,💾' \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,LatestCompleteStateNotifier' \
     -g 'State Signature Collection:State Signature Collector,LatestCompleteStateNexus,💢' \
-    -g 'Transaction Resubmitter:TransactionResubmitter,TransactionResubmitterSplitter' \
+    -g 'Transaction Resubmitter:TransactionResubmitter' \
     -g 'Stale Event Detector:StaleEventDetector,StaleEventDetectorSplitter,StaleEventDetectorRouter' \
-    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,Stale Event Detector,Transaction Resubmitter,⚰️,♻️' \
+    -g 'Event Creation:EventCreationManager,TransactionPool,SelfEventSigner,Stale Event Detector,Transaction Resubmitter,⚰️' \
     -g 'ISS Detector:IssDetector,IssDetectorSplitter,IssHandler,getStatusAction' \
     -g 'PCES Replay:pcesReplayer,✅' \
     -g 'Transaction Handler:TransactionHandler,postHandler_stateAndRoundReserver,getState,SavedStateController' \
