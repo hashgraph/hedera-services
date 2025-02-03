@@ -46,7 +46,6 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.test.fixtures.merkle.TestMerkleStateRoot;
 import com.swirlds.state.test.fixtures.merkle.TestSchema;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -195,7 +194,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void migrateFromV9ToV10() {
             SemanticVersion latestVersion = version(10, 0, 0);
             schemaRegistry.migrate(
-                    new TestMerkleStateRoot(),
+                    new MerkleStateRoot(),
                     version(9, 0, 0),
                     latestVersion,
                     config,
@@ -224,7 +223,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             for (int i = 1; i < versions.length; i++) {
                 versions[i] = version(0, i, 0);
             }
-            merkleTree = new TestMerkleStateRoot();
+            merkleTree = new MerkleStateRoot();
         }
 
         @Test

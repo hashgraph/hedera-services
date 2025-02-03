@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
@@ -37,6 +38,8 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import com.swirlds.state.State;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,7 +48,7 @@ import org.junit.jupiter.api.Test;
 class SwirldsStateManagerTests {
 
     private SwirldStateManager swirldStateManager;
-    private PlatformMerkleStateRoot initialState;
+    private State initialState;
 
     @BeforeEach
     void setup() {
@@ -77,14 +80,15 @@ class SwirldsStateManagerTests {
     @Test
     @DisplayName("Initial State - state reference counts")
     void initialStateReferenceCount() {
+        Reservable initialStateAsReservable = initialState.cast();
         assertEquals(
                 1,
-                initialState.getReservationCount(),
+                initialStateAsReservable.getReservationCount(),
                 "The initial state is copied and should be referenced once as the previous immutable state.");
+        Reservable consensusStateAsReservable =
+                swirldStateManager.getConsensusState().cast();
         assertEquals(
-                1,
-                swirldStateManager.getConsensusState().getReservationCount(),
-                "The consensus state should have one reference.");
+                1, consensusStateAsReservable.getReservationCount(), "The consensus state should have one reference.");
     }
 
     @Test
@@ -99,17 +103,19 @@ class SwirldsStateManagerTests {
     @DisplayName("Load From Signed State - state reference counts")
     void loadFromSignedStateRefCount() {
         final SignedState ss1 = newSignedState();
+        final Reservable state1 = ss1.getState().cast();
         MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss1);
 
         assertEquals(
                 2,
-                ss1.getState().getReservationCount(),
+                state1.getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
                         + "signed state and the previous immutable state in SwirldStateManager.");
+        Reservable consensusState = swirldStateManager.getConsensusState().cast();
         assertEquals(
                 1,
-                swirldStateManager.getConsensusState().getReservationCount(),
+                consensusState.getReservationCount(),
                 "The current consensus state should have a single reference count.");
 
         MerkleDb.resetDefaultInstancePath();
@@ -117,25 +123,25 @@ class SwirldsStateManagerTests {
         MerkleDb.resetDefaultInstancePath();
         swirldStateManager.loadFromSignedState(ss2);
 
+        Reservable state2 = ss2.getState().cast();
         assertEquals(
                 2,
-                ss2.getState().getReservationCount(),
+                state2.getReservationCount(),
                 "Loading from signed state should increment the reference count, because it is now referenced by the "
                         + "signed state and the previous immutable state in SwirldStateManager.");
         assertEquals(
                 1,
-                swirldStateManager.getConsensusState().getReservationCount(),
+                consensusState.getReservationCount(),
                 "The current consensus state should have a single reference count.");
         assertEquals(
                 1,
-                ss1.getState().getReservationCount(),
+                state1.getReservationCount(),
                 "The previous immutable state was replaced, so the old state's reference count should have been "
                         + "decremented.");
     }
 
-    private static PlatformMerkleStateRoot newState(PlatformStateFacade platformStateFacade) {
-        final PlatformMerkleStateRoot state =
-                new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
+    private static MerkleStateRoot newState(PlatformStateFacade platformStateFacade) {
+        final MerkleStateRoot state = new MerkleStateRoot();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
         platformStateFacade.setCreationSoftwareVersionTo(state, new BasicSoftwareVersion(nextInt(1, 100)));
@@ -146,10 +152,9 @@ class SwirldsStateManagerTests {
 
     private static SignedState newSignedState() {
         final SignedState ss = new RandomSignedStateGenerator().build();
+        final Reservable state = ss.getState().cast();
         assertEquals(
-                1,
-                ss.getState().getReservationCount(),
-                "Creating a signed state should increment the state reference count.");
+                1, state.getReservationCount(), "Creating a signed state should increment the state reference count.");
         return ss;
     }
 }
