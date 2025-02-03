@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.balanceof;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_16C_CONTRACT_ID;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -41,11 +41,11 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     /**
      * Selector for balanceOf(address) method.
      */
-    public static final SystemContractMethod BALANCE_OF = SystemContractMethod.declare(
+    public static final SystemContractMethod BALANCE_OF_16C = SystemContractMethod.declare(
                     "balanceOf(address)", ReturnTypes.INT)
             .withModifier(Modifier.VIEW)
             .withCategory(Category.TOKEN_QUERY)
-            .withSupportedAddress(HTS_167_CONTRACT_ID);
+            .withSupportedAddress(HTS_16C_CONTRACT_ID);
 
     /**
      * Default constructor for injection.
@@ -57,7 +57,7 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
         // Dagger2
         super(SystemContractMethod.SystemContract.HTS, systemContractMethodRegistry, contractMetrics);
 
-        registerMethods(BALANCE_OF);
+        registerMethods(BALANCE_OF_16C);
     }
 
     /**
@@ -66,7 +66,7 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public BalanceOfCall callFrom(@NonNull final HtsCallAttempt attempt) {
         final Address owner =
-                BALANCE_OF.decodeCall(attempt.input().toArrayUnsafe()).get(0);
+                BALANCE_OF_16C.decodeCall(attempt.input().toArrayUnsafe()).get(0);
         return new BalanceOfCall(
                 attempt.enhancement(), attempt.systemContractGasCalculator(), attempt.redirectToken(), owner);
     }
@@ -74,6 +74,6 @@ public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     @Override
     public @NonNull Optional<SystemContractMethod> identifyMethod(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
-        return attempt.isMethod(BALANCE_OF);
+        return attempt.isMethod(BALANCE_OF_16C);
     }
 }

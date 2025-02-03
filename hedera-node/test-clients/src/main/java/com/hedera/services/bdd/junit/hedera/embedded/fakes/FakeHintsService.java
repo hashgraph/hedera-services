@@ -20,7 +20,7 @@ import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
-import com.hedera.node.app.hints.impl.FakeHintsLibrary;
+import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class FakeHintsService implements HintsService {
     private final HintsService delegate;
-    private final FakeHintsLibrary operations = new FakeHintsLibrary();
+    private final HintsLibraryImpl operations = new HintsLibraryImpl();
     private final Queue<Runnable> pendingHintsSubmissions = new ArrayDeque<>();
 
     public FakeHintsService(@NonNull final AppContext appContext, @NonNull final Configuration bootstrapConfig) {

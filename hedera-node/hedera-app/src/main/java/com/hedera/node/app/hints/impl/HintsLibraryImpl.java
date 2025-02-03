@@ -28,20 +28,40 @@ import java.util.Map;
  */
 public class HintsLibraryImpl implements HintsLibrary {
     @Override
+    public Bytes newCrs(final int n) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Bytes updateCrs(@NonNull final Bytes crs, @NonNull final Bytes entropy) {
+        requireNonNull(crs);
+        requireNonNull(entropy);
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean verifyCrsUpdate(@NonNull Bytes oldCrs, @NonNull Bytes newCrs, @NonNull Bytes proof) {
+        requireNonNull(oldCrs);
+        requireNonNull(newCrs);
+        requireNonNull(proof);
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Bytes newBlsKeyPair() {
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Bytes computeHints(@NonNull final Bytes blsPrivateKey, final int partyId, final int n) {
         requireNonNull(blsPrivateKey);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean validateHintsKey(@NonNull final Bytes hintsKey, final int partyId, final int n) {
         requireNonNull(hintsKey);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -49,14 +69,14 @@ public class HintsLibraryImpl implements HintsLibrary {
             @NonNull final Map<Integer, Bytes> hintsKeys, @NonNull final Map<Integer, Long> weights, final int n) {
         requireNonNull(hintsKeys);
         requireNonNull(weights);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Bytes signBls(@NonNull final Bytes message, @NonNull final Bytes privateKey) {
         requireNonNull(message);
         requireNonNull(privateKey);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -65,7 +85,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(publicKey);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -76,7 +96,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(aggregationKey);
         requireNonNull(verificationKey);
         requireNonNull(partialSignatures);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -89,6 +109,6 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(verificationKey);
-        throw new AssertionError("Not implemented");
+        throw new UnsupportedOperationException();
     }
 }
