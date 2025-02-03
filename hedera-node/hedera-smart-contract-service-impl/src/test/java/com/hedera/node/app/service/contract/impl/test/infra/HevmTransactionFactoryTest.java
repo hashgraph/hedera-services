@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,6 +95,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.state.ReadableLambdaStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -138,6 +139,9 @@ class HevmTransactionFactoryTest {
     private ReadableAccountStore accountStore;
 
     @Mock
+    private ReadableLambdaStore lambdaStore;
+
+    @Mock
     private ExpiryValidator expiryValidator;
 
     @Mock
@@ -161,6 +165,7 @@ class HevmTransactionFactoryTest {
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
                 DEFAULT_ENTITIES_CONFIG,
+                lambdaStore,
                 null,
                 accountStore,
                 expiryValidator,
@@ -728,6 +733,7 @@ class HevmTransactionFactoryTest {
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
                 DEFAULT_ENTITIES_CONFIG,
+                lambdaStore,
                 null,
                 accountStore,
                 expiryValidator,
@@ -748,6 +754,7 @@ class HevmTransactionFactoryTest {
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
                 DEFAULT_ENTITIES_CONFIG,
+                lambdaStore,
                 HydratedEthTxData.failureFrom(CONTRACT_FILE_EMPTY),
                 accountStore,
                 expiryValidator,
@@ -768,6 +775,7 @@ class HevmTransactionFactoryTest {
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
                 DEFAULT_ENTITIES_CONFIG,
+                lambdaStore,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,
@@ -788,6 +796,7 @@ class HevmTransactionFactoryTest {
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,
                 DEFAULT_ENTITIES_CONFIG,
+                lambdaStore,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,

@@ -74,6 +74,16 @@ public class ReadableLambdaStore {
     }
 
     /**
+     * Returns the lambda state for the given lambda ID.
+     * @param lambdaId the lambda ID
+     * @return the lambda state, or null if not found
+     */
+    public @Nullable LambdaState getLambdaById(@NonNull final LambdaID lambdaId) {
+        requireNonNull(lambdaId);
+        return lambdaStates.get(lambdaId);
+    }
+
+    /**
      * Returns a list of slot values for the given lambda and keys.
      * @param lambdaId the lambda ID
      * @param keys the keys

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.hevm;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -25,7 +26,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import org.hyperledger.besu.datatypes.Wei;
 
 public record HederaEvmTransaction(
@@ -40,8 +40,13 @@ public record HederaEvmTransaction(
         long offeredGasPrice,
         long maxGasAllowance,
         @Nullable ContractCreateTransactionBody hapiCreation,
-        @Nullable HandleException exception) {
+        @Nullable HandleException exception,
+        boolean isLambdaDispatch) {
     public static final long NOT_APPLICABLE = -1L;
+
+    public @NonNull AccountID relayerIdOrThrow() {
+        return requireNonNull(relayerId);
+    }
 
     public boolean hasExpectedNonce() {
         return nonce != NOT_APPLICABLE;
@@ -80,7 +85,7 @@ public record HederaEvmTransaction(
     }
 
     public @NonNull ContractID contractIdOrThrow() {
-        return Objects.requireNonNull(contractId);
+        return requireNonNull(contractId);
     }
 
     public boolean hasValue() {
@@ -144,6 +149,7 @@ public record HederaEvmTransaction(
                 this.offeredGasPrice,
                 this.maxGasAllowance,
                 this.hapiCreation,
-                exception);
+                exception,
+                this.isLambdaDispatch);
     }
 }

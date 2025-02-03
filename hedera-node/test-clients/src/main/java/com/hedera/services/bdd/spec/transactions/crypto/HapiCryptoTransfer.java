@@ -562,7 +562,7 @@ public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
     }
 
     public static class CommonTransferAllowanceSwaps {
-        public BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> swapViaNftSenderLambda(
+        public static BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> swapViaNftSenderLambda(
                 @NonNull final String sender,
                 @NonNull final String receiver,
                 @NonNull final String token,
