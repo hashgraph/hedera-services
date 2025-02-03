@@ -17,19 +17,32 @@
 package com.hedera.services.bdd.suites.hip551;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
@@ -126,5 +139,62 @@ public class AtomicBatchTest {
                 atomicBatch(innerTxn1, innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
+    }
+
+    @Nested()
+    @DisplayName("Signatures - positive")
+    class AtomicBatchSignaturesPositive {
+
+        @HapiTest
+        // BATCH_18  BATCH_19
+        @DisplayName("Batch should finalize hollow account")
+        final Stream<DynamicTest> batchFinalizeHollowAccount() {
+            final var alias = "alias";
+            return hapiTest(flattened(
+                    newKeyNamed(alias).shape(SECP_256K1_SHAPE),
+                    createHollowAccountFrom(alias),
+                    getAliasedAccountInfo(alias).isHollow(),
+                    atomicBatch(cryptoCreate("foo").payingWith(alias))
+                            .payingWith(alias)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(alias)),
+                    getAliasedAccountInfo(alias).isNotHollow()));
+        }
+
+        @HapiTest
+        // BATCH_20
+        @DisplayName("Failing batch should finalize hollow account")
+        final Stream<DynamicTest> failingBatchShouldFinalizeHollowAccount() {
+            final var alias = "alias";
+            return hapiTest(flattened(
+                    newKeyNamed(alias).shape(SECP_256K1_SHAPE),
+                    createHollowAccountFrom(alias),
+                    getAliasedAccountInfo(alias).isHollow(),
+                    atomicBatch(
+                                    cryptoCreate("foo").payingWith(alias),
+                                    cryptoCreate("bar").alias(ByteString.EMPTY).payingWith(alias))
+                            .payingWith(alias)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
+                            .hasKnownStatus(INNER_TRANSACTION_FAILED),
+                    getAliasedAccountInfo(alias).isNotHollow()));
+        }
+
+        @HapiTest
+        // BATCH_23
+        @DisplayName("Threshold batch key should work")
+        final Stream<DynamicTest> thresholdBatchKeyShouldWork() {
+            final KeyShape threshKeyShape = KeyShape.threshOf(1, PREDEFINED_SHAPE, PREDEFINED_SHAPE);
+            final var threshBatchKey = "threshBatchKey";
+            final var alis = "alis";
+            final var bob = "bob";
+
+            return hapiTest(
+                    cryptoCreate(alis).balance(FIVE_HBARS),
+                    cryptoCreate(bob),
+                    newKeyNamed(threshBatchKey).shape(threshKeyShape.signedWith(sigs(alis, bob))),
+                    atomicBatch(
+                                    cryptoCreate("foo").batchKey(threshBatchKey),
+                                    cryptoCreate("bar").batchKey(threshBatchKey))
+                            .payingWith(alis));
+        }
     }
 }
