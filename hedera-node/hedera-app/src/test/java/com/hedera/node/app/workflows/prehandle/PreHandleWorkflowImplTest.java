@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+import static com.hedera.node.app.ids.schemas.V0590EntityIdSchema.ENTITY_COUNTS_KEY;
 import static com.hedera.node.app.workflows.TransactionScenarioBuilder.scenario;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.UNKNOWN_FAILURE;
@@ -40,8 +42,11 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -55,6 +60,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -68,9 +74,9 @@ import com.swirlds.platform.system.transaction.TransactionWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -144,7 +150,14 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                                 STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
                         "ALIASES",
                         Collections.emptyMap()));
-        storeFactory = new ReadableStoreFactory(fakeMerkleState);
+        fakeMerkleState.addService(
+                EntityIdService.NAME,
+                Map.of(
+                        ENTITY_ID_STATE_KEY,
+                        new AtomicReference<>(EntityNumber.newBuilder().build()),
+                        ENTITY_COUNTS_KEY,
+                        new AtomicReference<>(EntityCounts.DEFAULT)));
+        storeFactory = new ReadableStoreFactory(fakeMerkleState, ServicesSoftwareVersion::new);
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
@@ -196,27 +209,12 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         final List<Transaction> list = List.of(createAppPayloadWrapper(new byte[10]));
         final var transactions = list.stream();
         final var creator = NODE_1.nodeAccountID();
-        assertThatThrownBy(() -> workflow.preHandle(null, creator, transactions))
+        assertThatThrownBy(() -> workflow.preHandle(null, creator, transactions, txns -> {}))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.preHandle(storeFactory, null, transactions))
+        assertThatThrownBy(() -> workflow.preHandle(storeFactory, null, transactions, txns -> {}))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> workflow.preHandle(storeFactory, creator, null))
+        assertThatThrownBy(() -> workflow.preHandle(storeFactory, creator, null, txns -> {}))
                 .isInstanceOf(NullPointerException.class);
-    }
-
-    /**
-     * We do not currently handle any platform transactions that are marked as system transactions. This test ensures
-     * that if we send any system transactions, they are ignored.
-     */
-    @Test
-    @DisplayName("Pre-handle skips system transactions")
-    void preHandleSkipsSystemTransactionsTest() {
-        final var platformTx = createAppPayloadWrapper(new byte[10]);
-        final List<Transaction> list = List.of(platformTx);
-        final var transactions = list.stream();
-        final var creator = NODE_1.nodeAccountID();
-        workflow.preHandle(storeFactory, creator, transactions);
-        assertThat(Optional.ofNullable(platformTx.getMetadata())).isEmpty();
     }
 
     /**
@@ -256,7 +254,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 
-            workflow.preHandle(storeFactory, creator, transactions);
+            workflow.preHandle(storeFactory, creator, transactions, txns -> {});
             final PreHandleResult result = platformTx.getMetadata();
             assertThat(result.responseCode()).isEqualTo(UNKNOWN);
             assertThat(result.status()).isEqualTo(UNKNOWN_FAILURE);
@@ -295,7 +293,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .thenThrow(new PreCheckException(INVALID_TRANSACTION));
 
             // When we try to pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then we get a failure with INVALID_TRANSACTION
             final PreHandleResult result = platformTx.getMetadata();
@@ -316,7 +314,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new RuntimeException("Random"));
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // The throwable is caught, and we get an UNKNOWN status code
             final PreHandleResult result = platformTx.getMetadata();
@@ -342,7 +340,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction fails and the node is the payer
             final PreHandleResult result1 = platformTx.getMetadata();
@@ -369,7 +367,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction fails and the node is the payer
             final PreHandleResult result1 = platformTx.getMetadata();
@@ -399,7 +397,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(key, null, false));
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction still succeeds (since the payer signature check is async)
             final PreHandleResult result1 = platformTx.getMetadata();
@@ -432,7 +430,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction fails and the node is the payer
             final PreHandleResult result1 = platformTx.getMetadata();
@@ -459,7 +457,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
                     createAppPayloadWrapper(new byte[2]),
-                    previousResult);
+                    previousResult,
+                    txns -> {});
 
             // Then the entire result is re-used
             assertThat(result).isSameAs(previousResult);
@@ -493,7 +492,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .dispatchPreHandle(any());
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction failure is INVALID_ACCOUNT_AMOUNTS and the payer is the payer
             final PreHandleResult result = platformTx.getMetadata();
@@ -518,7 +517,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             doThrow(new RuntimeException()).when(dispatcher).dispatchPreHandle(any());
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction failure is UNKNOWN and the payer is null. There can be no payer in this case.
             final PreHandleResult result = platformTx.getMetadata();
@@ -560,7 +559,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .dispatchPreHandle(any());
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction succeeds
             final PreHandleResult result = platformTx.getMetadata();
@@ -601,7 +600,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction pre-handle succeeds!
             final PreHandleResult result = platformTx.getMetadata();
@@ -651,7 +650,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
                     platformTx,
-                    previousResult);
+                    previousResult,
+                    txns -> {});
 
             // Then the transaction pre-handle succeeds!
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
@@ -697,7 +697,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
                     platformTx,
-                    previousResult);
+                    previousResult,
+                    txns -> {});
 
             // Then the transaction pre-handle succeeds!
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
@@ -731,7 +732,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .thenReturn(new SignatureVerificationImpl(finalizedKey, hollowAccountAlias, true));
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction pre-handle succeeds!
             final PreHandleResult result = platformTx.getMetadata();
@@ -781,7 +782,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     .dispatchPreHandle(any());
 
             // When we pre-handle the transaction
-            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx));
+            workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
 
             // Then the transaction pre-handle succeeds!
             final PreHandleResult result = platformTx.getMetadata();

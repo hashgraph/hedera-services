@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
@@ -39,7 +54,9 @@ import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
+import com.hedera.services.bdd.spec.verification.Condition;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFeeLimit;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
@@ -60,6 +77,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -107,6 +125,21 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
     protected Optional<EnumSet<ResponseCodeEnum>> retryPrechecks = Optional.empty();
+
+    protected List<Condition> conditions = new ArrayList<>();
+
+    public T satisfies(@NonNull final Condition condition) {
+        conditions.add(condition);
+        return self();
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final Supplier<String> errorMessage) {
+        return satisfies(new Condition(condition, errorMessage));
+    }
+
+    public T satisfies(@NonNull final BooleanSupplier condition, @NonNull final String errorMessage) {
+        return satisfies(new Condition(condition, () -> errorMessage));
+    }
 
     /**
      * A strategy for submitting a transaction of the given function and type to a network node with the given id.
@@ -285,6 +318,12 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
         if (requiresFinalization(spec)) {
             spec.offerFinisher(new DelegatingOpFinisher(this));
+        }
+
+        for (final var condition : conditions) {
+            if (!condition.condition().getAsBoolean()) {
+                throw new HapiTxnCheckStateException("Condition failed: " + condition.errorMessage());
+            }
         }
 
         return !deferStatusResolution;
@@ -539,7 +578,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     }
 
     protected byte[] gasLongToBytes(final Long gas) {
-        return Bytes.wrap(LONG_TUPLE.encode(Tuple.of(gas)).array()).toArray();
+        return Bytes.wrap(LONG_TUPLE.encode(Tuple.singleton(gas)).array()).toArray();
     }
 
     /* Fluent builder methods to chain. */
@@ -594,6 +633,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T feeUsd(double price) {
         usdFee = OptionalDouble.of(price);
+        return self();
+    }
+
+    public T maxCustomFee(Function<HapiSpec, CustomFeeLimit> f) {
+        maxCustomFeeList.add(f);
         return self();
     }
 

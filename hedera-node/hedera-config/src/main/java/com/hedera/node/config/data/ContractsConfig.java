@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,8 @@ public record ContractsConfig(
                 boolean precompileAtomicCryptoTransferEnabled,
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true") @NetworkProperty
                 boolean precompileHrcFacadeAssociateEnabled,
+        @ConfigProperty(value = "precompile.disabled", defaultValue = "") @NetworkProperty
+                Set<Integer> disabledPrecompiles,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
         @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "true") @NetworkProperty
@@ -83,10 +85,15 @@ public record ContractsConfig(
         @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractSignScheduleEnabled,
+        @ConfigProperty(
+                        value = "systemContract.scheduleService.signSchedule.from.contract.enabled",
+                        defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractSignScheduleFromContractEnabled,
         @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAuthorizeScheduleEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.scheduleNative.enabled", defaultValue = "false")
+        @ConfigProperty(value = "systemContract.scheduleService.scheduleNative.enabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractScheduleNativeEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")

@@ -1,4 +1,19 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
@@ -110,10 +125,11 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file.
+     *
      * @param file the name of the marker file
-     *             @param now the timestamp to write to the marker file
-     *                        if null, the marker file will contain the string "✓"
-     *                        if not null, the marker file will contain the string representation of the timestamp
+     * @param now  the timestamp to write to the marker file
+     *             if null, the marker file will contain the string "✓"
+     *             if not null, the marker file will contain the string representation of the timestamp
      */
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
@@ -134,6 +150,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file containing the string '✓'.
+     *
      * @param file the name of the marker file
      */
     protected void writeCheckMarker(@NonNull final String file) {
@@ -143,8 +160,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Write a marker file containing the string representation of the given timestamp.
+     *
      * @param file the name of the marker file
-     * @param now the timestamp to write to the marker file
+     * @param now  the timestamp to write to the marker file
      */
     protected void writeSecondMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
@@ -158,8 +176,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether the two given hashes match.
+     *
      * @param curSpecialFilesHash the first hash
-     * @param hashFromTxnBody the second hash
+     * @param hashFromTxnBody     the second hash
      * @return true if the hashes match, false otherwise
      */
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
@@ -168,8 +187,9 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Extract the telemetry upgrade from the given archive data.
+     *
      * @param archiveData the archive data
-     * @param now the timestamp to write to the marker file
+     * @param now         the timestamp to write to the marker file
      * @return a future that completes when the extraction is done
      */
     public CompletableFuture<Void> extractTelemetryUpgrade(
@@ -180,6 +200,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Extract the software upgrade from the given archive data.
+     *
      * @param archiveData the archive data
      * @return a future that completes when the extraction is done
      */
@@ -190,6 +211,7 @@ public class ReadableFreezeUpgradeActions {
 
     /**
      * Check whether a freeze is scheduled.
+     *
      * @param platformStateStore the platform state
      * @return true if a freeze is scheduled, false otherwise
      */
@@ -259,9 +281,7 @@ public class ReadableFreezeUpgradeActions {
             FileUtils.cleanDirectory(keysDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (nodes != null
-                    && nodesConfig.enableDAB()
-                    && (!addressBookConfig.useRosterLifecycle() || networkAdminConfig.exportCandidateRoster())) {
+            if (nodes != null && nodesConfig.enableDAB() && networkAdminConfig.exportCandidateRoster()) {
                 generateConfigPem(artifactsLoc, keysLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
@@ -305,7 +325,7 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(keysLoc);
 
         var line = new StringBuilder();
-        int weight = 0;
+        long weight = 0;
         final var node = activeNode.node();
         final var name = "node" + (node.nodeId() + 1);
         final var alias = nameToAlias(name);
@@ -315,7 +335,7 @@ public class ReadableFreezeUpgradeActions {
 
         final var stakingNodeInfo = activeNode.stakingInfo();
         if (stakingNodeInfo != null) {
-            weight = stakingNodeInfo.weight();
+            weight = stakingNodeInfo.stake();
         }
 
         final var gossipEndpoints = node.gossipEndpoint();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermiss
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
@@ -41,6 +42,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import dagger.Binds;
 import dagger.Module;
@@ -49,6 +51,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,12 +86,17 @@ public interface FacilityInitModule {
             @NonNull final BootstrapConfigProviderImpl bootstrapConfigProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final WorkingStateAccessor workingStateAccessor) {
+            @NonNull final WorkingStateAccessor workingStateAccessor,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         return state -> {
             if (hasHandledGenesisTxn(state)) {
-                initializeExchangeRateManager(state, configProvider, exchangeRateManager);
-                initializeFeeManager(state, configProvider, feeManager);
-                observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+                initializeExchangeRateManager(state, configProvider, exchangeRateManager, softwareVersionFactory);
+                initializeFeeManager(state, configProvider, feeManager, softwareVersionFactory);
+                observePropertiesAndPermissions(state, configProvider.getConfiguration(), (properties, permissions) -> {
+                    if (!Bytes.EMPTY.equals(properties) || !Bytes.EMPTY.equals(permissions)) {
+                        configProvider.update(properties, permissions);
+                    }
+                });
                 throttleServiceManager.init(state, throttleDefinitionsFrom(state, configProvider));
             } else {
                 final var schema = fileService.fileSchema();
@@ -104,11 +112,12 @@ public interface FacilityInitModule {
     private static void initializeExchangeRateManager(
             @NonNull final State state,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
         final var file = requireNonNull(
-                getFileFromStorage(state, configProvider, fileNum),
+                getFileFromStorage(state, configProvider, fileNum, softwareVersionFactory),
                 "The initialized state had no exchange rates file 0.0." + fileNum);
         exchangeRateManager.init(state, file.contents());
     }
@@ -116,12 +125,13 @@ public interface FacilityInitModule {
     private static void initializeFeeManager(
             @NonNull final State state,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final FeeManager feeManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         log.info("Initializing fee schedules");
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.feeSchedules();
         final var file = requireNonNull(
-                getFileFromStorage(state, configProvider, fileNum),
+                getFileFromStorage(state, configProvider, fileNum, softwareVersionFactory),
                 "The initialized state had no fee schedule file 0.0." + fileNum);
         final var status = feeManager.update(file.contents());
         if (status != SUCCESS) {
@@ -142,8 +152,12 @@ public interface FacilityInitModule {
     }
 
     private static @Nullable File getFileFromStorage(
-            @NonNull final State state, @NonNull final ConfigProvider configProvider, final long fileNum) {
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+            @NonNull final State state,
+            @NonNull final ConfigProvider configProvider,
+            final long fileNum,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+        final var readableFileStore =
+                new ReadableStoreFactory(state, softwareVersionFactory).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
                 .fileNum(fileNum)

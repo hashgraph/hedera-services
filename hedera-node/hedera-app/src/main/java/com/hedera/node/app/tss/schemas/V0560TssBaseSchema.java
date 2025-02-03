@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.Set;
 /**
  * Schema for the TSS service.
  */
+@Deprecated(forRemoval = true, since = "0.59.0")
 public class V0560TssBaseSchema extends Schema {
     public static final String TSS_MESSAGE_MAP_KEY = "TSS_MESSAGES";
     public static final String TSS_VOTE_MAP_KEY = "TSS_VOTES";

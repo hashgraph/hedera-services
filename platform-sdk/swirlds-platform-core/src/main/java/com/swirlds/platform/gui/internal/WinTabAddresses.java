@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import static com.swirlds.platform.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiUtils;
 import com.swirlds.platform.gui.components.PrePaintableJPanel;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.Platform;
+import java.util.Collection;
 import javax.swing.JTextArea;
 
 /**
@@ -51,17 +53,17 @@ class WinTabAddresses extends PrePaintableJPanel {
         }
         redoWindow = false;
         String s = "";
-        synchronized (getPlatforms()) {
-            for (final Platform p : getPlatforms()) {
+        final Collection<SwirldsPlatform> platforms = getPlatforms();
+
+        synchronized (platforms) {
+            for (final Platform p : platforms) {
                 final RosterEntry entry =
                         RosterUtils.getRosterEntry(p.getRoster(), p.getSelfId().id());
                 final String name = RosterUtils.formatNodeName(entry.nodeId());
                 s += "\n" + entry.nodeId() + "   " + name
                         + "   " + name
-                        + "   " + RosterUtils.fetchHostname(entry, 1) // internal hostname
-                        + "   " + RosterUtils.fetchPort(entry, 1) // internal port
-                        + "   " + RosterUtils.fetchHostname(entry, 0) // external hostname
-                        + "   " + RosterUtils.fetchPort(entry, 0); // external port
+                        + "   " + RosterUtils.fetchHostname(entry, 0)
+                        + "   " + RosterUtils.fetchPort(entry, 0);
             }
         }
         s += wrap(

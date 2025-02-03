@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.hedera.services.bdd.junit.hedera.embedded.fakes.FakePlatformContext.PLATFORM_CONFIG;
 import static com.swirlds.platform.roster.RosterUtils.rosterFrom;
-import static com.swirlds.platform.state.service.PbjConverter.toPbjAddressBook;
-import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -33,20 +31,22 @@ import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.Hedera.TssBaseServiceFactory;
 import com.hedera.node.app.ServicesMain;
 import com.hedera.node.app.fixtures.state.FakeServiceMigrator;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.fixtures.state.FakeState;
+import com.hedera.node.app.hints.impl.HintsServiceImpl;
+import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
-import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeTssBaseService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHintsService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.FakeHistoryService;
+import com.hedera.services.bdd.junit.hedera.embedded.fakes.LapsingBlockHashSigner;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -56,18 +56,19 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
-import com.swirlds.state.spi.CommittableWritableStates;
-import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -112,6 +113,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     protected final Roster roster;
     protected final NodeId defaultNodeId;
     protected final AtomicInteger nextNano = new AtomicInteger(0);
+    protected final Metrics metrics;
     protected final Hedera hedera;
     protected final ServicesSoftwareVersion version;
     protected final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -121,11 +123,24 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
      */
     protected FakeState state;
     /**
-     * Non-final because the compiler can't tell that the {@link TssBaseServiceFactory} lambda we give the
-     * {@link Hedera} constructor will always set this (the fake's {@link com.hedera.node.app.tss.TssBaseServiceImpl}
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.BlockHashSignerFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's delegate will ultimately need
+     * needs to be constructed from the Hedera instance's {@code HintsService} and {@code HistoryService}).
+     */
+    protected LapsingBlockHashSigner blockHashSigner;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HintsServiceFactory} lambda we give the
+     * {@link Hedera} constructor will always set this (the fake's {@link HintsServiceImpl}
      * delegate needs to be constructed from the Hedera instance's {@link com.hedera.node.app.spi.AppContext}).
      */
-    protected FakeTssBaseService tssBaseService;
+    protected FakeHintsService hintsService;
+    /**
+     * Non-final because the compiler can't tell that the {@link com.hedera.node.app.Hedera.HistoryServiceFactory}
+     * lambda we give the {@link Hedera} constructor will always set this (the fake's
+     * {@link HistoryServiceImpl} delegate needs to be constructed from the Hedera
+     * instance's {@link com.hedera.node.app.spi.AppContext}).
+     */
+    protected FakeHistoryService historyService;
 
     protected AbstractEmbeddedHedera(@NonNull final EmbeddedNode node) {
         requireNonNull(node);
@@ -144,16 +159,24 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 .collect(toMap(Pair::left, Pair::right));
         defaultNodeId = NodeId.FIRST_NODE_ID;
         defaultNodeAccountId = fromPbj(accountIds.get(defaultNodeId));
+        final var metricsConfig = PLATFORM_CONFIG.getConfigData(MetricsConfig.class);
+        metrics = new DefaultPlatformMetrics(
+                defaultNodeId,
+                new MetricKeyRegistry(),
+                executorService,
+                new PlatformMetricsFactoryImpl(metricsConfig),
+                metricsConfig);
         hedera = new Hedera(
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
                 this::now,
-                appContext -> {
-                    this.tssBaseService = new FakeTssBaseService(appContext);
-                    return this.tssBaseService;
-                },
-                DiskStartupNetworks::new);
+                DiskStartupNetworks::new,
+                (appContext, bootstrapConfig) -> this.hintsService = new FakeHintsService(appContext, bootstrapConfig),
+                (appContext, bootstrapConfig) -> this.historyService = new FakeHistoryService(),
+                (hints, history, configProvider) ->
+                        this.blockHashSigner = new LapsingBlockHashSigner(hints, history, configProvider),
+                metrics);
         version = (ServicesSoftwareVersion) hedera.getSoftwareVersion();
         blockStreamEnabled = hedera.isBlockStreamEnabled();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -174,25 +197,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         } else {
             trigger = RESTART;
         }
-        hedera.initializeStatesApi(
-                state,
-                fakePlatform().getContext().getMetrics(),
-                trigger,
-                network,
-                ServicesMain.buildPlatformConfig(),
-                addressBook);
-
-        // TODO - remove this after https://github.com/hashgraph/hedera-services/issues/16552 is done
-        // and we are running all CI tests with the Roster lifecycle enabled
-        final var writableStates = state.getWritableStates(PlatformStateService.NAME);
-        final WritableSingletonState<PlatformState> platformState = writableStates.getSingleton(PLATFORM_STATE_KEY);
-        final var currentState = requireNonNull(platformState.get());
-        platformState.put(currentState
-                .copyBuilder()
-                .addressBook(toPbjAddressBook(addressBook))
-                .build());
-        ((CommittableWritableStates) writableStates).commit();
-        // --- end of temporary code block ---
+        hedera.initializeStatesApi(state, trigger, network, ServicesMain.buildPlatformConfig());
 
         hedera.setInitialStateHash(FAKE_START_OF_STATE_HASH);
         hedera.onStateInitialized(state, fakePlatform(), GENESIS);
@@ -220,11 +225,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
     @Override
     public FakeState state() {
         return state;
-    }
-
-    @Override
-    public FakeTssBaseService tssBaseService() {
-        return tssBaseService;
     }
 
     @Override
@@ -368,9 +368,5 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return new AddressBook(stream(spliteratorUnknownSize(addressBook.iterator(), 0), false)
                 .map(address -> address.copySetSigCert(sigCert))
                 .toList());
-    }
-
-    private static AccountID accountIdOf(@NonNull final Address address) {
-        return fromPbj(parseAccount(address.getMemo()));
     }
 }

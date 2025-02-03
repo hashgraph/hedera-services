@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,15 +34,17 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.addressbook.impl.helpers.AddressBookHelper;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.tss.TssBaseService;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemSetup;
@@ -56,6 +58,7 @@ import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -63,6 +66,7 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,9 +91,6 @@ class HandleWorkflowTest {
 
     @Mock
     private ConfigProvider configProvider;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private BlockRecordManager blockRecordManager;
@@ -146,12 +147,22 @@ class HandleWorkflowTest {
     private UserTxnFactory userTxnFactory;
 
     @Mock
-    private TssBaseService tssBaseService;
+    private HintsService hintsService;
+
+    @Mock
+    private HistoryService historyService;
+
+    @Mock
+    private CongestionMetrics congestionMetrics;
 
     private HandleWorkflow subject;
 
+    private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+
     @BeforeEach
-    void setUp() {}
+    void setUp() {
+        softwareVersionFactory = ServicesSoftwareVersion::new;
+    }
 
     @Test
     void onlySkipsEventWithMissingCreator() {
@@ -171,7 +182,7 @@ class HandleWorkflowTest {
 
         givenSubjectWith(RECORDS, emptyList());
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         verify(eventFromPresentCreator).consensusTransactionIterator();
         verify(recordCache).resetRoundReceipts();
@@ -188,7 +199,7 @@ class HandleWorkflowTest {
         givenSubjectWith(BOTH, builders);
         given(blockStreamManager.blockTimestamp()).willReturn(BLOCK_TIME);
 
-        subject.handleRound(state, round);
+        subject.handleRound(state, round, txns -> {});
 
         builders.forEach(builder -> verify(blockStreamManager)
                 .writeItem(BlockItem.newBuilder()
@@ -207,7 +218,6 @@ class HandleWorkflowTest {
                 stakePeriodChanges,
                 dispatchProcessor,
                 configProvider,
-                storeMetricsService,
                 blockRecordManager,
                 blockStreamManager,
                 cacheWarmer,
@@ -224,9 +234,12 @@ class HandleWorkflowTest {
                 migrationStateChanges,
                 userTxnFactory,
                 new AddressBookHelper(),
-                tssBaseService,
                 kvStateChangeListener,
                 boundaryStateChangeListener,
-                scheduleService);
+                scheduleService,
+                hintsService,
+                historyService,
+                congestionMetrics,
+                softwareVersionFactory);
     }
 }

@@ -1,21 +1,37 @@
-// SPDX-License-Identifier: Apache-2.0
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static java.util.Objects.requireNonNull;
-import static java.util.Spliterator.DISTINCT;
 
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.ReadableEntityIdStoreImpl;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.node.config.data.TssConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -27,10 +43,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.List;
-import java.util.Spliterators;
+import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.StreamSupport;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +73,7 @@ public class PlatformStateUpdates {
      * Checks whether the given transaction body is a freeze transaction and eventually
      * notifies the registered facility.
      *
-     * @param state the current state
+     * @param state  the current state
      * @param txBody the transaction body
      * @param config the configuration
      */
@@ -93,14 +109,33 @@ public class PlatformStateUpdates {
                     final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
                     // Even if using the roster lifecycle, we only set the candidate roster at PREPARE_UPGRADE if
                     // TSS machinery is not creating candidate rosters and keying them at stake period boundaries
-                    if (config.getConfigData(AddressBookConfig.class).useRosterLifecycle()
-                            && !config.getConfigData(TssConfig.class).keyCandidateRoster()) {
-                        logger.info("Creating candidate roster at PREPARE_UPGRADE since TSS is inactive");
-                        final var nodeStore =
-                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
+                    final var addressBookConfig = config.getConfigData(AddressBookConfig.class);
+                    final var entityIdStore =
+                            new ReadableEntityIdStoreImpl(state.getReadableStates(EntityIdService.NAME));
+                    if (addressBookConfig.createCandidateRosterOnPrepareUpgrade()) {
+                        final var nodeStore = new ReadableNodeStoreImpl(
+                                state.getReadableStates(AddressBookService.NAME), entityIdStore);
                         final var rosterStore = new WritableRosterStore(state.getWritableStates(RosterService.NAME));
-                        final var candidateRoster = nodeStore.snapshotOfFutureRoster();
-                        logger.info("Candidate roster is {}", candidateRoster);
+                        final var stakingInfoStore =
+                                new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenService.NAME));
+
+                        // update the candidate roster weights with weights from stakingNodeInfo map
+                        final Function<Long, Long> weightFunction = nodeId -> {
+                            final var stakingInfo = stakingInfoStore.get(nodeId);
+                            if (stakingInfo != null && !stakingInfo.deleted()) {
+                                return stakingInfo.stake();
+                            }
+                            // Default weight if no staking info is found or the node is deleted
+                            return 0L;
+                        };
+                        var candidateRoster = nodeStore.snapshotOfFutureRoster(weightFunction);
+                        // Ensure we don't have a candidate roster with all zero weights by preserving
+                        // weights from the current roster when no HBAR is staked to any node
+                        if (hasZeroWeight(candidateRoster)) {
+                            candidateRoster =
+                                    assignWeights(candidateRoster, requireNonNull(rosterStore.getActiveRoster()));
+                        }
+                        logger.info("Candidate roster with updated weights is {}", candidateRoster);
                         boolean rosterAccepted = false;
                         try {
                             rosterStore.putCandidateRoster(candidateRoster);
@@ -108,34 +143,30 @@ public class PlatformStateUpdates {
                         } catch (Exception e) {
                             logger.warn("Candidate roster was rejected", e);
                         }
-                        if (rosterAccepted && networkAdminConfig.exportCandidateRoster()) {
-                            doExport(candidateRoster, networkAdminConfig);
+                        if (rosterAccepted) {
+                            // If the candidate roster needs to be exported, export the file
+                            if (networkAdminConfig.exportCandidateRoster()) {
+                                doExport(candidateRoster, networkAdminConfig);
+                            }
                         }
-                    } else if (networkAdminConfig.exportCandidateRoster()) {
-                        // Having the option to export candidate-roster.json even before using the roster
-                        // lifecycle simplifies test automation in the adoption period
-                        final var nodeStore =
-                                new ReadableNodeStoreImpl(state.getReadableStates(AddressBookService.NAME));
-                        final var candidateRoster = new Roster(StreamSupport.stream(
-                                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT),
-                                        false)
-                                .mapToLong(EntityNumber::number)
-                                .sorted()
-                                .mapToObj(nodeStore::get)
-                                .filter(node -> node != null && !node.deleted())
-                                .map(node -> new RosterEntry(
-                                        node.nodeId(),
-                                        node.weight(),
-                                        node.gossipCaCertificate(),
-                                        List.of(
-                                                node.gossipEndpoint().getLast(),
-                                                node.gossipEndpoint().getFirst())))
-                                .toList());
-                        doExport(candidateRoster, networkAdminConfig);
                     }
                 }
             }
         }
+    }
+
+    private Roster assignWeights(@NonNull final Roster to, @NonNull final Roster from) {
+        final Map<Long, Long> fromWeights =
+                from.rosterEntries().stream().collect(Collectors.toMap(RosterEntry::nodeId, RosterEntry::weight));
+        return new Roster(to.rosterEntries().stream()
+                .map(entry -> entry.copyBuilder()
+                        .weight(fromWeights.getOrDefault(entry.nodeId(), 0L))
+                        .build())
+                .toList());
+    }
+
+    private boolean hasZeroWeight(@NonNull final Roster roster) {
+        return roster.rosterEntries().stream().mapToLong(RosterEntry::weight).sum() == 0L;
     }
 
     private void doExport(@NonNull final Roster candidateRoster, @NonNull final NetworkAdminConfig networkAdminConfig) {

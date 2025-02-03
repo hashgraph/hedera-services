@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("org.hiero.gradle.build") version "0.1.4" }
+plugins { id("org.hiero.gradle.build") version "0.3.1" }
 
 javaModules {
     // This "intermediate parent project" should be removed

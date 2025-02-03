@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package com.swirlds.platform.wiring;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.swirlds.common.wiring.component.ComponentWiring;
-import com.swirlds.common.wiring.transformers.RoutableData;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.transformers.RoutableData;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.event.PlatformEvent;
@@ -49,6 +49,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 
 /**
  * Responsible for coordinating the clearing of the platform wiring objects.
@@ -67,7 +68,7 @@ public class PlatformCoordinator {
     private final GossipWiring gossipWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring;
-    private final ComponentWiring<TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+    private final ComponentWiring<TransactionPrehandler, Queue<ScopedSystemTransaction<StateSignatureTransaction>>>
             applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring;
@@ -115,7 +116,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring,
             @NonNull
                     final ComponentWiring<
-                                    TransactionPrehandler, List<ScopedSystemTransaction<StateSignatureTransaction>>>
+                                    TransactionPrehandler, Queue<ScopedSystemTransaction<StateSignatureTransaction>>>
                             applicationTransactionPrehandlerWiring,
             @NonNull
                     final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>

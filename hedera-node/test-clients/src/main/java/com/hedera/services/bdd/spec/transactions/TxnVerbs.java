@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
+import com.hedera.services.bdd.spec.transactions.system.HapiStateSignature;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysDelete;
 import com.hedera.services.bdd.spec.transactions.system.HapiSysUndelete;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAirdrop;
@@ -740,7 +741,7 @@ public class TxnVerbs {
             final byte[] params = args.length == 0
                     ? new byte[] {}
                     : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
-                            .encodeCall(Tuple.of(args))
+                            .encodeCall(Tuple.from(args))
                             .array();
             final var updatedFile = updateLargeFile(
                     GENESIS,
@@ -755,6 +756,10 @@ public class TxnVerbs {
     /* SYSTEM */
     public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
         return new HapiFreeze().startingAt(freezeStartTime);
+    }
+
+    public static HapiStateSignature hapiStateSignature() {
+        return new HapiStateSignature();
     }
 
     /* UTIL */

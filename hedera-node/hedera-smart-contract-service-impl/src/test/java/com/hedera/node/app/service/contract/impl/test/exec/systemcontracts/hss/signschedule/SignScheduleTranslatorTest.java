@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,8 @@ import static com.hedera.node.app.service.contract.impl.test.exec.systemcontract
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -38,10 +37,13 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SignaturePair;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
@@ -51,9 +53,14 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.signschedule.SignScheduleTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.mint.MintTranslator;
+import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.spi.signatures.SignatureVerifier;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
+import java.util.List;
+import java.util.Random;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,18 +114,34 @@ class SignScheduleTranslatorTest {
     private ScheduleID scheduleID;
 
     @Mock
+    ContractMetrics contractMetrics;
+
+    private final SystemContractMethodRegistry systemContractMethodRegistry = new SystemContractMethodRegistry();
+
+    @Mock
     private Key key;
+
+    @Mock
+    private SignatureVerifier signatureVerifier;
+
+    private static final Key ecdsaKey = Key.newBuilder()
+            .ecdsaSecp256k1(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(
+                    "02b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39d2"))
+            .build();
+    private static final Key ed25519 = Key.newBuilder()
+            .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.fromHex(
+                    "02b3c641418e89452cd5202adfd4758f459acb8e364f741fd16cd2db79835d39c5"))
+            .build();
 
     private SignScheduleTranslator subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SignScheduleTranslator();
+        subject = new SignScheduleTranslator(systemContractMethodRegistry, contractMetrics);
     }
 
     @Test
     void testMatchesWhenSignScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -127,19 +150,15 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertTrue(matches);
+        assertThat(subject.identifyMethod(attempt)).isPresent();
     }
 
     @Test
     void testFailsMatchesWhenSignScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(false);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -148,19 +167,15 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
     void testMatchesWhenAuthorizeScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractAuthorizeScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -169,19 +184,15 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertTrue(matches);
+        assertThat(subject.identifyMethod(attempt)).isPresent();
     }
 
     @Test
     void testFailsMatchesWhenAuthorizeScheduleEnabled() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractAuthorizeScheduleEnabled()).willReturn(false);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -190,19 +201,15 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
     void testMatchesFailsOnRandomSelector() {
-        // given:
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSignScheduleEnabled()).willReturn(true);
         attempt = prepareHssAttemptWithSelectorAndCustomConfig(
@@ -211,18 +218,15 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
-
-        // when:
-        boolean matches = subject.matches(attempt);
-
-        // then:
-        assertFalse(matches);
+        assertThat(subject.identifyMethod(attempt)).isEmpty();
     }
 
     @Test
-    void testScheduleIdForSignScheduleProxy() {
+    void testAttemptForSignScheduleProxy() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(enhancement.systemOperations()).willReturn(systemContractOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
@@ -240,7 +244,9 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -269,7 +275,9 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -291,7 +299,9 @@ class SignScheduleTranslatorTest {
                 enhancement,
                 addressIdConverter,
                 verificationStrategies,
+                signatureVerifier,
                 gasCalculator,
+                systemContractMethodRegistry,
                 configuration);
 
         // then:
@@ -299,7 +309,7 @@ class SignScheduleTranslatorTest {
     }
 
     @Test
-    void testScheduleIdForAuthorizeSchedule() {
+    void testAttemptForAuthorizeSchedule() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
@@ -310,9 +320,17 @@ class SignScheduleTranslatorTest {
 
         // when:
         final var input = Bytes.wrapByteBuffer(
-                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfig(
-                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);
@@ -332,9 +350,17 @@ class SignScheduleTranslatorTest {
 
         // when:
         final var input = Bytes.wrapByteBuffer(
-                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.of(APPROVED_HEADLONG_ADDRESS)));
+                SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(Tuple.singleton(APPROVED_HEADLONG_ADDRESS)));
         attempt = prepareHssAttemptWithBytesAndCustomConfigAndDelegatableContractKeys(
-                input, subject, enhancement, addressIdConverter, verificationStrategies, gasCalculator, configuration);
+                input,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
 
         // then:
         final var call = subject.callFrom(attempt);
@@ -351,5 +377,233 @@ class SignScheduleTranslatorTest {
         long gas = SignScheduleTranslator.gasRequirement(transactionBody, gasCalculator, enhancement, payerId);
 
         assertEquals(expectedGas, gas);
+    }
+
+    @Test
+    void testBodyFor() {
+        // then:
+        final var body = subject.bodyFor(scheduleID);
+
+        assertThat(body.hasScheduleSign()).isTrue();
+        assertThat(body.scheduleSignOrThrow().scheduleID()).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForSignScheduleProxy() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                bytesForRedirectScheduleTxn(
+                        SignScheduleTranslator.SIGN_SCHEDULE_PROXY.selector(), NON_SYSTEM_LONG_ZERO_ADDRESS),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForAuthorizeSchedule() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.AUTHORIZE_SCHEDULE.encodeCall(
+                        Tuple.singleton(APPROVED_HEADLONG_ADDRESS))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testScheduleIdForScheduleService() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, new byte[0]))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var returnedScheduleId = subject.scheduleIdFor(attempt);
+        assertThat(returnedScheduleId).isEqualTo(scheduleID);
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenVerified() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+        given(signatureVerifier.verifySignature(any(), any(), any(), any(), any()))
+                .willReturn(true);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(296);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet).contains(ecdsaKey).contains(ed25519);
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenNotVerified() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+        given(signatureVerifier.verifySignature(any(), any(), any(), any(), any()))
+                .willReturn(false);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(296);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet).isEmpty();
+    }
+
+    @Test
+    void testGetKeysForSignScheduleThrowsWhenWrongChainId() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+
+        final var sigMapBytes = getSigMapKnownKeyTypeBytes(396);
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        assertThrows(HandleException.class, () -> SignScheduleTranslator.getKeyForSignSchedule(attempt));
+    }
+
+    @Test
+    void testGetKeysForSignScheduleWhenUnknownKeyType() {
+        given(enhancement.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.getSchedule(anyLong())).willReturn(schedule);
+        given(schedule.scheduleId()).willReturn(scheduleID);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.chainId()).willReturn(296);
+
+        final var sigMapBytes = getSigMapUnknownKeyTypeBytes();
+        attempt = prepareHssAttemptWithBytesAndCustomConfig(
+                Bytes.wrapByteBuffer(SignScheduleTranslator.SIGN_SCHEDULE.encodeCall(
+                        Tuple.of(APPROVED_HEADLONG_ADDRESS, sigMapBytes.toByteArray()))),
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                signatureVerifier,
+                gasCalculator,
+                systemContractMethodRegistry,
+                configuration);
+
+        final var keySet = SignScheduleTranslator.getKeyForSignSchedule(attempt);
+
+        assertThat(keySet).isEmpty();
+    }
+
+    private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapKnownKeyTypeBytes(final int chainId) {
+        final var signatureEcdsa = randomBytes(66);
+
+        int v = 35 + (chainId * 2);
+        final var ecSig = new byte[66];
+        signatureEcdsa[65] = (byte) (v & 0xFF);
+        v >>= 8;
+        signatureEcdsa[64] = (byte) (v & 0xFF);
+
+        final var signatureEd = randomBytes(64);
+        final var sigMap = SignatureMap.newBuilder()
+                .sigPair(List.of(
+                        SignaturePair.newBuilder()
+                                .pubKeyPrefix(ecdsaKey.ecdsaSecp256k1OrThrow())
+                                .ecdsaSecp256k1(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
+                                .build(),
+                        SignaturePair.newBuilder()
+                                .pubKeyPrefix(ed25519.ed25519OrThrow())
+                                .ed25519(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEd))
+                                .build()))
+                .build();
+
+        return SignatureMap.PROTOBUF.toBytes(sigMap);
+    }
+
+    private static com.hedera.pbj.runtime.io.buffer.Bytes getSigMapUnknownKeyTypeBytes() {
+        final var signatureEcdsa = randomBytes(64);
+        final var sigMap = SignatureMap.newBuilder()
+                .sigPair(List.of(SignaturePair.newBuilder()
+                        .pubKeyPrefix(ecdsaKey.ecdsaSecp256k1OrThrow())
+                        .rsa3072(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(signatureEcdsa))
+                        .build()))
+                .build();
+
+        return SignatureMap.PROTOBUF.toBytes(sigMap);
+    }
+
+    public static byte[] randomBytes(Random r, int length) {
+        byte[] ret = new byte[length];
+        r.nextBytes(ret);
+        return ret;
+    }
+
+    public static byte[] randomBytes(int length) {
+        return randomBytes(new Random(), length);
     }
 }

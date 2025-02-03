@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -141,5 +143,18 @@ public final class SystemContractUtils {
         return ContractID.newBuilder()
                 .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
                 .build();
+    }
+
+    /**
+     * compute the message as the concatenation of the realm, shard, and schedule numbers
+     * @param scheduleId the schedule id
+     * @return the message as defined above encoded as Bytes
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes messageFromScheduleId(final ScheduleID scheduleId) {
+        final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 3);
+        buffer.putLong(scheduleId.shardNum());
+        buffer.putLong(scheduleId.realmNum());
+        buffer.putLong(scheduleId.scheduleNum());
+        return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(buffer.array());
     }
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 module com.hedera.node.hapi {
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.codec;
@@ -42,6 +58,8 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.common;
     exports com.hedera.hapi.node.state.contract;
     exports com.hedera.hapi.node.state.file;
+    exports com.hedera.hapi.node.state.hints;
+    exports com.hedera.hapi.node.state.history;
     exports com.hedera.hapi.node.state.recordcache;
     exports com.hedera.hapi.node.state.recordcache.codec;
     exports com.hedera.hapi.node.state.blockrecords;
@@ -69,10 +87,14 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream.protoc;
     exports com.hedera.hapi.block;
     exports com.hedera.hapi.services.auxiliary.tss.legacy;
+    exports com.hedera.hapi.services.auxiliary.hints;
+    exports com.hedera.hapi.services.auxiliary.history;
+    exports com.hedera.hapi.platform.event.legacy;
+    exports com.hedera.hapi.node.state.entity;
 
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive io.grpc.stub;
     requires transitive io.grpc;
     requires io.grpc.protobuf;

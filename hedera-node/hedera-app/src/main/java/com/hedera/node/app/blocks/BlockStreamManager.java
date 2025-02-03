@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.swirlds.platform.system.state.notifications.StateHashedListener;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.function.BiConsumer;
 
 /**
  * Maintains the state and process objects needed to produce the block stream.
@@ -37,7 +36,7 @@ import java.util.function.BiConsumer;
  * Items written to the stream will be produced in the order they are written. The leaves of the input and output item
  * Merkle trees will be in the order they are written.
  */
-public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], byte[]>, StateHashedListener {
+public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener {
     Bytes ZERO_BLOCK_HASH = Bytes.wrap(new byte[48]);
 
     /**
@@ -59,6 +58,11 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
     }
 
     /**
+     * Returns whether the ledger ID has been set.
+     */
+    boolean hasLedgerId();
+
+    /**
      * Initializes the block stream manager after a restart or during reconnect with the hash of the last block
      * incorporated in the state used in the restart or reconnect. (At genesis, this hash should be the
      * {@link #ZERO_BLOCK_HASH}.)
@@ -74,6 +78,13 @@ public interface BlockStreamManager extends BlockRecordInfo, BiConsumer<byte[], 
      * @throws IllegalStateException if the last block hash was not explicitly initialized
      */
     void startRound(@NonNull Round round, @NonNull State state);
+
+    /**
+     * Notifies the block stream manager of the first user transaction time in the
+     * last-started round.
+     * @param at the consensus time of the first user transaction
+     */
+    void setRoundFirstUserTransactionTime(@NonNull Instant at);
 
     /**
      * Confirms that the post-upgrade work has been completed.
