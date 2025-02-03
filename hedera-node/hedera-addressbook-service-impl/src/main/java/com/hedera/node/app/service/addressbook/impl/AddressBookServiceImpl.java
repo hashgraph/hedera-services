@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,31 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.addressbook.impl.schemas.V057AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V058StakingInfoReconciliationSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.SortedMap;
+import java.util.function.Supplier;
 
 /**
  * Standard implementation of the {@link AddressBookService} {@link RpcService}.
  */
 public final class AddressBookServiceImpl implements AddressBookService {
+    private final Supplier<SortedMap<Long, StakingNodeInfo>> stakingNodeInfos;
+
+    public AddressBookServiceImpl(@NonNull final Supplier<SortedMap<Long, StakingNodeInfo>> stakingNodeInfos) {
+        this.stakingNodeInfos = stakingNodeInfos;
+    }
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(new V053AddressBookSchema());
         registry.register(new V057AddressBookSchema());
+        registry.register(new V058StakingInfoReconciliationSchema(stakingNodeInfos));
     }
 }

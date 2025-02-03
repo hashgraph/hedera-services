@@ -113,6 +113,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Spliterators;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 import org.apache.tuweni.bytes.Bytes32;
@@ -435,14 +436,14 @@ public class TransactionExecutorsTest {
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
-                        new TokenServiceImpl(),
+                        new TokenServiceImpl(TreeMap::new),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
-                        new AddressBookServiceImpl())
+                        new AddressBookServiceImpl(TreeMap::new))
                 .forEach(servicesRegistry::register);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,23 +28,26 @@ import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.util.SortedMap;
+import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenServiceImplTest {
+    @Mock
+    private Supplier<SortedMap<Long, Long>> pendingRewards;
 
     private TokenServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceImpl();
-    }
-
-    @Test
-    void defaultConstructor() {
-        assertThat(new TokenServiceImpl()).isNotNull();
+        subject = new TokenServiceImpl(pendingRewards);
     }
 
     @SuppressWarnings("DataFlowIssue")

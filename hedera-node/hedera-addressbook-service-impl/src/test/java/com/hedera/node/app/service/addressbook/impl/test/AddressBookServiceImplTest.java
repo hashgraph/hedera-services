@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,33 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.AddressBookTransplantSchema;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.addressbook.impl.schemas.V057AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V058StakingInfoReconciliationSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.util.SortedMap;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class AddressBookServiceImplTest {
+    @Mock
+    private Supplier<SortedMap<Long, StakingNodeInfo>> stakingNodeInfos;
+
     private AddressBookServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AddressBookServiceImpl();
+        subject = new AddressBookServiceImpl(stakingNodeInfos);
     }
 
     @Test
@@ -52,9 +63,10 @@ class AddressBookServiceImplTest {
         subject.registerSchemas(schemaRegistry);
         verify(schemaRegistry, times(2)).register(schemaCaptor.capture());
         final var schemas = schemaCaptor.getAllValues();
-        assertThat(schemas).hasSize(2);
+        assertThat(schemas).hasSize(3);
         assertThat(schemas.getFirst()).isInstanceOf(V053AddressBookSchema.class);
-        assertThat(schemas.getLast()).isInstanceOf(V057AddressBookSchema.class);
+        assertThat(schemas.get(1)).isInstanceOf(V057AddressBookSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V058StakingInfoReconciliationSchema.class);
         assertThat(schemas.getLast()).isInstanceOf(AddressBookTransplantSchema.class);
     }
 }

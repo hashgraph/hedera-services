@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -454,7 +454,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
-                        new AddressBookServiceImpl(),
+                        new AddressBookServiceImpl(
+                                () -> ((MerkleStateRoot<?>) requireNonNull(initState)).getStakingNodeInfos()),
                         // FUTURE: a lambda that tests if a ReadableTssStore
                         // constructed from the migration state returns a
                         // RosterKeys with the ledger id for the given roster
