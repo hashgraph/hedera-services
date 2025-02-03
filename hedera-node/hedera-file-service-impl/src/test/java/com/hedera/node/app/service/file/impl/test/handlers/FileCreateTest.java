@@ -53,7 +53,6 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -100,9 +99,6 @@ class FileCreateTest extends FileTestBase {
     private FileOpsUsage fileOpsUsage;
 
     @Mock
-    private StoreMetricsService storeMetricsService;
-
-    @Mock
     private EntityNumGenerator entityNumGenerator;
 
     private FilesConfig config;
@@ -134,7 +130,7 @@ class FileCreateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileCreateHandler(fileOpsUsage);
-        fileStore = new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
+        fileStore = new WritableFileStore(writableStates, writableEntityCounters);
         config = HederaTestConfigBuilder.createConfig().getConfigData(FilesConfig.class);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
@@ -316,8 +312,7 @@ class FileCreateTest extends FileTestBase {
         givenEntityCounters(2);
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
-        final var fileStore =
-                new WritableFileStore(writableStates, DEFAULT_CONFIG, storeMetricsService, writableEntityCounters);
+        final var fileStore = new WritableFileStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());
