@@ -282,7 +282,7 @@ jobs:
           author_name: ${{ secrets.PLATFORM_GIT_USER_NAME }}
           author_email: ${{ secrets.PLATFORM_GIT_USER_EMAIL }}
           commit: --signoff --gpg-sign
-          tag: "v${{ steps.version.outputs.number }} -s -m '[Automated Release] Hedera Node v${{ steps.version.outputs.number }}'"
+          tag: "v${{ steps.version.outputs.number }} -m '[Automated Release] Hedera Node v${{ steps.version.outputs.number }}'"
           message: "[Automated Release] Hedera Node v${{ steps.version.outputs.number }}"
 
       - name: Compute Commit Identifier
