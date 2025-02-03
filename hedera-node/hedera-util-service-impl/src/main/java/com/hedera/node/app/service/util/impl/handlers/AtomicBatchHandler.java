@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
@@ -49,6 +50,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AtomicBatchHandler implements TransactionHandler {
+
+    private static final AccountID ATOMIC_BATCH_NODE_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).shardNum(0).realmNum(0).build();
     /**
      * Constructs a {@link AtomicBatchHandler}
      */
@@ -74,6 +77,11 @@ public class AtomicBatchHandler implements TransactionHandler {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 
+        // verify that the atomic batch transaction body supposed or not supposed to have a btach key
+        if(txn.hasBatchKey()){
+            throw new PreCheckException(BATCH_LIST_EMPTY);
+        }
+
         Set<Transaction> set = new HashSet<>();
         for( final Transaction transaction : transactions) {
             if (transaction == null) {
@@ -89,6 +97,14 @@ public class AtomicBatchHandler implements TransactionHandler {
                 final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
                         transaction.signedTransactionBytes().toReadableSequentialData());
                 innerTrxBody = TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
+                if(!innerTrxBody.hasBatchKey()){
+                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                }
+
+                if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
+                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                }
+
                 //transaction checker parse and check - to check validity of the transaction expire
             } catch (Exception e) {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
@@ -109,9 +125,6 @@ public class AtomicBatchHandler implements TransactionHandler {
         final var atomicBatchTransactionBody = op.atomicBatchOrThrow();
         requireNonNull(op);
         List<Transaction> transactions = atomicBatchTransactionBody.transactions();
-        if (op.hasBatchKey()) {
-            context.requireKeyOrThrow(op.batchKey(), BAD_ENCODING);
-        }
 
         if (transactions.size() > context.configuration().getConfigData(AtomicBatchConfig.class).maxNumberOfTransactions()) {
             throw new PreCheckException(BATCH_SIZE_LIMIT_EXCEEDED);
@@ -124,6 +137,7 @@ public class AtomicBatchHandler implements TransactionHandler {
 
             //this method will dispatch the prehandle transaction of each transaction in the batch
             context.executeInnerPreHandle(body, payerId);
+            context.requireKeyOrThrow(transaction.body().batchKey(), BAD_ENCODING);
         }
     }
 
