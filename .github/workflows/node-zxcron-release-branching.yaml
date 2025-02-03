@@ -25,7 +25,7 @@ defaults:
     shell: bash
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GITHUB_CLI_VERSION: 2.21.2
