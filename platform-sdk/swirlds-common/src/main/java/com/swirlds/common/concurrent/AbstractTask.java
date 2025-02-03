@@ -80,7 +80,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
     @Override
     protected final boolean exec() {
         try {
-            return execImpl();
+            return onExecute();
         } catch (final Throwable t) {
             completeExceptionally(t);
             return false;
@@ -93,17 +93,17 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      *
      * @return true if this task is known to have been completed normally
      */
-    protected abstract boolean execImpl();
+    protected abstract boolean onExecute();
 
     @Override
     public final void completeExceptionally(final Throwable t) {
         super.completeExceptionally(t);
-        completeExceptionallyImpl(t);
+        onException(t);
     }
 
     /**
-     * Implement this method in subclasses to handle exceptions occurred in {@link #execImpl()}
+     * Implement this method in subclasses to handle exceptions occurred in {@link #onExecute()}
      * or in dependency tasks.
      */
-    protected void completeExceptionallyImpl(final Throwable t) {}
+    protected void onException(final Throwable t) {}
 }

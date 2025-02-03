@@ -147,7 +147,7 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             return true;
         }
 
@@ -191,14 +191,14 @@ public final class VirtualHasher<K extends VirtualKey, V extends VirtualValue> {
         }
 
         @Override
-        public void completeExceptionallyImpl(Throwable ex) {
+        public void onException(Throwable ex) {
             if (out != null) {
                 out.completeExceptionally(ex);
             }
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             try {
                 final Hash hash;
                 if (leaf != null) {

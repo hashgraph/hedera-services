@@ -86,7 +86,7 @@ class SequentialTask extends AbstractTask {
      * {@inheritDoc}
      */
     @Override
-    public boolean execImpl() {
+    public boolean onExecute() {
         busyTimer.activate();
         try {
             handler.accept(data);
@@ -107,7 +107,7 @@ class SequentialTask extends AbstractTask {
      * {@inheritDoc}
      */
     @Override
-    protected void completeExceptionallyImpl(final Throwable t) {
+    protected void onException(final Throwable t) {
         uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
     }
 }

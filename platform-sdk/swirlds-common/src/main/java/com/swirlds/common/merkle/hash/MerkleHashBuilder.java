@@ -153,7 +153,7 @@ public class MerkleHashBuilder {
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             try {
                 if (node == null || node.getHash() != null) {
                     out.send();
@@ -196,14 +196,14 @@ public class MerkleHashBuilder {
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             merkleCryptography.digestSync(internal, MERKLE_DIGEST_TYPE);
             out.send();
             return true;
         }
 
         @Override
-        public void completeExceptionallyImpl(Throwable ex) {
+        public void onException(Throwable ex) {
             // Try to reduce exception propagation; OK if multiple exceptions reported to out
             if (!out.isCompletedAbnormally()) {
                 out.completeExceptionally(ex);
@@ -225,13 +225,13 @@ public class MerkleHashBuilder {
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             future.set(root.getHash());
             return true;
         }
 
         @Override
-        public void completeExceptionallyImpl(Throwable ex) {
+        public void onException(Throwable ex) {
             if (!future.isCancelled()) {
                 future.cancelWithException(ex);
             }

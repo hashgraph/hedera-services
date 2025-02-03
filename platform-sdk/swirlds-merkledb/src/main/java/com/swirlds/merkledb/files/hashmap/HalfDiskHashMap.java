@@ -542,7 +542,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             // The next submit task to run after the current one. It will only be run, if
             // this task doesn't schedule tasks for all remaining buckets, and at least one
             // bucket is completely processed while this method is running
@@ -611,7 +611,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             try {
                 BufferedData bucketData =
                         fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
@@ -641,7 +641,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected void completeExceptionallyImpl(final Throwable t) {
+        protected void onException(final Throwable t) {
             exceptionOccurred.set(t);
             // Make sure the writing thread is resumed
             notifyTaskRef.get().completeExceptionally(t);
@@ -675,7 +675,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             try (bucket) {
                 final int bucketIndex = bucket.getBucketIndex();
                 if (bucket.isEmpty()) {
@@ -706,7 +706,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected void completeExceptionallyImpl(final Throwable t) {
+        protected void onException(final Throwable t) {
             exceptionOccurred.set(t);
             // Make sure the writing thread is resumed
             notifyTaskRef.get().completeExceptionally(t);
@@ -725,7 +725,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean execImpl() {
+        protected boolean onExecute() {
             // Task body is empty: the task is only needed to wait until its dependency
             // tasks are complete
             return true;

@@ -61,7 +61,7 @@ class ConcurrentTask extends AbstractTask {
      * {@inheritDoc}
      */
     @Override
-    protected boolean execImpl() {
+    protected boolean onExecute() {
         try {
             handler.accept(data);
         } catch (final Throwable t) {
@@ -76,7 +76,7 @@ class ConcurrentTask extends AbstractTask {
      * {@inheritDoc}
      */
     @Override
-    protected void completeExceptionallyImpl(final Throwable t) {
+    protected void onException(final Throwable t) {
         uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
     }
 }
