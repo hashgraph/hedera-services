@@ -1,10 +1,11 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 # The location were this script can be found.
 SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
 
 # You must install mermaid to use this script.
-# npm install -g @mermaid-js/mermaid-cli
+# npm install -g @mermaid-js/mermaid-cli@10.9.1
+# With newer versions, the diagram generation may not look as expected.
 
 # Add the flag "--less-mystery" to add back labels for mystery input wires (noisy diagram warning)
 
