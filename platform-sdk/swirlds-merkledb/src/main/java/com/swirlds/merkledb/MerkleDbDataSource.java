@@ -556,16 +556,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
     @Nullable
     @Override
     public VirtualLeafBytes<?> loadLeafRecord(final Bytes keyBytes) throws IOException {
-        return loadLeafRecord(keyBytes, keyBytes.hashCode());
-    }
-
-    @Deprecated
-    @Nullable
-    @Override
-    public VirtualLeafBytes<?> loadLeafRecord(final Bytes keyBytes, final int keyHashCode) throws IOException {
         requireNonNull(keyBytes);
-        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
-        // final int keyHashCode = keyBytes.hashCode();
+        final int keyHashCode = keyBytes.hashCode();
 
         final long path;
         VirtualLeafBytes<?> cached = null;
@@ -591,7 +583,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             // Cache miss
             cached = null;
             statisticsUpdater.countLeafKeyReads();
-            path = keyToPath.get(keyBytes, keyHashCode, INVALID_PATH);
+            path = keyToPath.get(keyBytes, INVALID_PATH);
         }
 
         // If the key didn't map to anything, we just return null
@@ -654,15 +646,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      */
     @Override
     public long findKey(final Bytes keyBytes) throws IOException {
-        return findKey(keyBytes, keyBytes.hashCode());
-    }
-
-    @Deprecated
-    @Override
-    public long findKey(final Bytes keyBytes, final int keyHashCode) throws IOException {
         requireNonNull(keyBytes);
-        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
-        // final int keyHashCode = keyBytes.hashCode();
+        final int keyHashCode = keyBytes.hashCode();
 
         // Check the cache first
         int cacheIndex = -1;
@@ -677,7 +662,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
 
         statisticsUpdater.countLeafKeyReads();
-        final long path = keyToPath.get(keyBytes, keyHashCode, INVALID_PATH);
+        final long path = keyToPath.get(keyBytes, INVALID_PATH);
 
         if (leafRecordCache != null) {
             // Path may be INVALID_PATH here. Still needs to be cached (negative result)
@@ -1166,7 +1151,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             final VirtualLeafBytes<?> leafBytes = dirtyIterator.next();
             final long path = leafBytes.path();
             // Update key to path index
-            keyToPath.put(leafBytes.keyBytes(), leafBytes.keyHashCode(), path);
+            keyToPath.put(leafBytes.keyBytes(), path);
             statisticsUpdater.countFlushLeafKeysWritten();
 
             // Update path to K/V store
@@ -1179,7 +1164,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             statisticsUpdater.countFlushLeavesWritten();
 
             // cache the record
-            invalidateReadCache(leafBytes.keyBytes(), leafBytes.keyHashCode());
+            invalidateReadCache(leafBytes.keyBytes());
         }
 
         // Iterate over leaf records to delete
@@ -1192,9 +1177,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             // deleteIfEqual() are used below rather than unconditional put() and delete() as for
             // dirtyLeaves stream above
             if (isReconnect) {
-                keyToPath.deleteIfEqual(leafBytes.keyBytes(), leafBytes.keyHashCode(), path);
+                keyToPath.deleteIfEqual(leafBytes.keyBytes(), path);
             } else {
-                keyToPath.delete(leafBytes.keyBytes(), leafBytes.keyHashCode());
+                keyToPath.delete(leafBytes.keyBytes());
             }
             statisticsUpdater.countFlushLeavesDeleted();
 
@@ -1205,7 +1190,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             // inserted at path X then the record is just updated to new leaf's data.
 
             // delete the record from the cache
-            invalidateReadCache(leafBytes.keyBytes(), leafBytes.keyHashCode());
+            invalidateReadCache(leafBytes.keyBytes());
         }
 
         // end writing
@@ -1229,12 +1214,11 @@ public final class MerkleDbDataSource implements VirtualDataSource {
      *
      * @param keyBytes virtual key
      */
-    private void invalidateReadCache(final Bytes keyBytes, final int keyHashCode) {
+    private void invalidateReadCache(final Bytes keyBytes) {
         if (leafRecordCache == null) {
             return;
         }
-        // FUTURE WORK: use keyBytes.hashCode() instead of legacy key hash code
-        // final int keyHashCode = keyBytes.hashCode();
+        final int keyHashCode = keyBytes.hashCode();
         final int cacheIndex = Math.abs(keyHashCode % leafRecordCacheSize);
         final VirtualLeafBytes<?> cached = leafRecordCache[cacheIndex];
         if ((cached != null) && keyBytes.equals(cached.keyBytes())) {

@@ -125,15 +125,10 @@ public class RecordAccessorImpl implements RecordAccessor {
      */
     @Override
     public VirtualLeafBytes findLeafRecord(final Bytes key) {
-        return findLeafRecord(key, key.hashCode());
-    }
-
-    @Deprecated
-    public VirtualLeafBytes findLeafRecord(final Bytes key, final int legacyKeyHashCode) {
         VirtualLeafBytes rec = cache.lookupLeafByKey(key);
         if (rec == null) {
             try {
-                rec = dataSource.loadLeafRecord(key, legacyKeyHashCode);
+                rec = dataSource.loadLeafRecord(key);
                 if (rec != null) {
                     assert rec.keyBytes().equals(key)
                             : "The key we found from the DB does not match the one we were looking for! key=" + key;
@@ -179,17 +174,12 @@ public class RecordAccessorImpl implements RecordAccessor {
      */
     @Override
     public long findKey(final Bytes key) {
-        return findKey(key, key.hashCode());
-    }
-
-    @Deprecated
-    public long findKey(final Bytes key, final int legacyKeyHashCode) {
         final VirtualLeafBytes rec = cache.lookupLeafByKey(key);
         if (rec != null) {
             return rec.path();
         }
         try {
-            return dataSource.findKey(key, legacyKeyHashCode);
+            return dataSource.findKey(key);
         } catch (final IOException ex) {
             throw new UncheckedIOException("Failed to find key in the data source", ex);
         }

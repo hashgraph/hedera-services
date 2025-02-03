@@ -74,11 +74,6 @@ public interface RecordAccessor {
      */
     VirtualLeafBytes findLeafRecord(final Bytes key);
 
-    @Deprecated
-    default VirtualLeafBytes findLeafRecord(final Bytes key, final int legacyKeyHashCode) {
-        return findLeafRecord(key);
-    }
-
     /**
      * Locates and returns a leaf node based on the path. If the leaf
      * node already exists in memory, then the same instance is returned each time.
@@ -101,11 +96,6 @@ public interface RecordAccessor {
      * @return The path or INVALID_PATH if the key is not found.
      */
     long findKey(final Bytes key);
-
-    @Deprecated
-    default long findKey(final Bytes key, final int legacyKeyHashCode) {
-        return findKey(key);
-    }
 
     /**
      * Gets the data source backed by this {@link RecordAccessor}

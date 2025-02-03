@@ -441,11 +441,6 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
         return root.containsKey(key);
     }
 
-    @Deprecated
-    public boolean containsKey(@NonNull final Bytes key, final int legacyKeyHashCode) {
-        return root.containsKey(key, legacyKeyHashCode);
-    }
-
     /**
      * Gets the value associated with the given key.
      *
@@ -455,12 +450,6 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
     @Nullable
     public <V> V get(@NonNull final Bytes key, @NonNull final Codec<V> valueCodec) {
         return root.get(key, valueCodec);
-    }
-
-    @Deprecated
-    @Nullable
-    public <V> V get(@NonNull final Bytes key, final int legacyKeyHashCode, @NonNull final Codec<V> valueCodec) {
-        return root.get(key, legacyKeyHashCode, valueCodec);
     }
 
     @Nullable
@@ -478,15 +467,6 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
      */
     public <V> void put(@NonNull final Bytes key, @Nullable final V value, @Nullable final Codec<V> valueCodec) {
         root.put(key, value, valueCodec);
-    }
-
-    @Deprecated
-    public <V> void put(
-            @NonNull final Bytes key,
-            final int legacyKeyHashCode,
-            @Nullable final V value,
-            @NonNull final Codec<V> valueCodec) {
-        root.put(key, legacyKeyHashCode, value, valueCodec);
     }
 
     public void putBytes(@NonNull final Bytes key, @Nullable final Bytes valueBytes) {
@@ -510,11 +490,6 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
         return root.remove(key, valueCodec);
     }
 
-    @Deprecated
-    public <V> V remove(@NonNull final Bytes key, final int legacyKeyHashCode, @Nullable final Codec<V> valueCodec) {
-        return root.remove(key, legacyKeyHashCode, valueCodec);
-    }
-
     /**
      * To speed up transaction processing for a given round, we can use OS page cache's help
      * Just by loading leaf record and internal records from disk
@@ -530,10 +505,5 @@ public final class VirtualMap extends PartialBinaryMerkleInternal
      */
     public void warm(@NonNull final Bytes key) {
         root.warm(key);
-    }
-
-    @Deprecated
-    public void warm(@NonNull final Bytes key, final int legacyKeyHashCode) {
-        root.warm(key, legacyKeyHashCode);
     }
 }
