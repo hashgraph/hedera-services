@@ -133,12 +133,10 @@ public class CryptoCreateForSuiteRunner extends HapiSuite {
                     // TODO Should be modified in a different way to avoid setting a
                     // static variable of
                     // other class
-                    SuiteRunner.setPayerId(String.format(
-                            "0.0.%s",
-                            spec.registry()
-                                    .getAccountInfo("payerAccountInfo")
-                                    .getAccountID()
-                                    .getAccountNum()));
+                    SuiteRunner.setPayerId(String.valueOf(spec.registry()
+                            .getAccountInfo("payerAccountInfo")
+                            .getAccountID()
+                            .getAccountNum()));
                 }));
     }
 
