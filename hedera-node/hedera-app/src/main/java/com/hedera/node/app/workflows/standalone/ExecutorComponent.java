@@ -66,9 +66,6 @@ public interface ExecutorComponent {
     @Component.Builder
     interface Builder {
         @BindsInstance
-        Builder hintsService(HintsService hintsService);
-
-        @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 
         @BindsInstance

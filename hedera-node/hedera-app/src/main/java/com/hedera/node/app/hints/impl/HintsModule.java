@@ -18,7 +18,6 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
@@ -59,10 +58,6 @@ public interface HintsModule {
     static ConcurrentMap<Bytes, HintsContext.Signing> providePendingSignatures() {
         return new ConcurrentHashMap<>();
     }
-
-    @Binds
-    @Singleton
-    HintsKeyAccessor bindHintsKeyAccessor(@NonNull HintsKeyAccessorImpl hintsKeyAccessorImpl);
 
     @Provides
     @Singleton

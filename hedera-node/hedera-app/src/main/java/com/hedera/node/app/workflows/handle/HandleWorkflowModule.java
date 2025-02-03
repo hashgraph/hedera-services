@@ -174,7 +174,7 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
                 hintsHandlers.keyPublicationHandler(),
-                hintsHandlers.aggregationVoteHandler(),
+                hintsHandlers.preprocessingVoteHandler(),
                 hintsHandlers.partialSignatureHandler(),
                 utilHandlers.prngHandler());
     }

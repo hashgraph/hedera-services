@@ -20,7 +20,6 @@ import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
-import com.hedera.node.app.hints.HintsKeyAccessor;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;

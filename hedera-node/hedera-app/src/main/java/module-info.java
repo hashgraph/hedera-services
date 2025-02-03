@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import com.hedera.node.app.config.ServicesConfigExtension;
+import com.swirlds.config.api.ConfigurationExtension;
+
 module com.hedera.node.app {
     requires transitive com.hedera.cryptography.bls;
     requires transitive com.hedera.cryptography.pairings.api;

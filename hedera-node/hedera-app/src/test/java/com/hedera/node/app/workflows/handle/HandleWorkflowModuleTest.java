@@ -278,12 +278,6 @@ class HandleWorkflowModuleTest {
     @Mock
     private HintsKeyPublicationHandler keyPublicationHandler;
 
-    @Mock
-    private HintsAggregationVoteHandler aggregationVoteHandler;
-
-    @Mock
-    private HintsPartialSignatureHandler partialSignatureHandler;
-
     @TempDir
     java.nio.file.Path tempDir;
 

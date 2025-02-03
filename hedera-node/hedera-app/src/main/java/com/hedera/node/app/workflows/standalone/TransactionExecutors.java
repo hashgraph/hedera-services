@@ -262,8 +262,6 @@ public enum TransactionExecutors {
         final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         final AtomicReference<ExecutorComponent> componentRef = new AtomicReference<>();
-        final var bootstrapConfigProvider = new BootstrapConfigProviderImpl();
-        final var bootstrapConfig = bootstrapConfigProvider.configuration();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(

@@ -25,8 +25,6 @@ import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
-import com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -269,13 +267,9 @@ public class HintsControllerImpl implements HintsController {
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
                     final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
                     final var preprocessedKeys = codec.decodePreprocessedKeys(output);
-                    final var body = HintsPreprocessingVoteTransactionBody.newBuilder()
-                            .constructionId(construction.constructionId())
-                            .vote(PreprocessingVote.newBuilder()
-                                    .preprocessedKeys(preprocessedKeys)
-                                    .build())
-                            .build();
-                    submissions.submitHintsVote(body).join();
+                    submissions
+                            .submitHintsVote(construction.constructionId(), preprocessedKeys)
+                            .join();
                 },
                 executor);
     }
@@ -324,8 +318,9 @@ public class HintsControllerImpl implements HintsController {
                     () -> {
                         final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
                         final var hintsKey = codec.encodeHintsKey(blsKeyPair.publicKey(), hints);
-                        final var body = new HintsKeyPublicationTransactionBody(selfPartyId, numParties, hintsKey);
-                        submissions.submitHintsKey(body).join();
+                        submissions
+                                .submitHintsKey(selfPartyId, numParties, hintsKey)
+                                .join();
                     },
                     executor);
         }
