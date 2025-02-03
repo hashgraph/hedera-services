@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("org.hiero.gradle.build") version "0.3.1" }
+plugins { id("org.hiero.gradle.build") version "0.3.3" }
 
 javaModules {
     // This "intermediate parent project" should be removed
