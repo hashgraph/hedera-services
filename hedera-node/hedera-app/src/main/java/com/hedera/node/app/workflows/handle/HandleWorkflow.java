@@ -344,7 +344,7 @@ public class HandleWorkflow {
 
         final var userTxn = userTxnFactory.createUserTxn(state, creator, txn, consensusNow, type);
         var lastRecordManagerTime = streamMode == RECORDS ? blockRecordManager.consTimeOfLastHandledTxn() : null;
-        final var handleOutput = executeTopLevel(userTxn, txnVersion);
+        final var handleOutput = executeTopLevel(userTxn, txnVersion, state);
         if (streamMode != BLOCKS) {
             final var records = ((LegacyListRecordSource) handleOutput.recordSourceOrThrow()).precomputedRecords();
             blockRecordManager.endUserTransaction(records.stream(), state);
@@ -516,11 +516,13 @@ public class HandleWorkflow {
      * just the transaction with a {@link ResponseCodeEnum#FAIL_INVALID} transaction result,
      * and no other side effects.
      *
-     * @param userTxn    the user transaction to execute
+     * @param userTxn the user transaction to execute
      * @param txnVersion the software version for the event containing the transaction
+     * @param state the state to commit any direct changes against
      * @return the stream output from executing the transaction
      */
-    private HandleOutput executeTopLevel(@NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion) {
+    private HandleOutput executeTopLevel(
+            @NonNull final UserTxn userTxn, @NonNull final SemanticVersion txnVersion, @NonNull final State state) {
         try {
             if (isOlderSoftwareEvent(txnVersion)) {
                 if (streamMode != BLOCKS) {
@@ -540,14 +542,28 @@ public class HandleWorkflow {
                 } else if (userTxn.type() == POST_UPGRADE_TRANSACTION) {
                     // Since we track node stake metadata separately from the future address book (FAB),
                     // we need to update that stake metadata from any node additions or deletions that
-                    // just took effect; it would be nice to unify the FAB and stake metadata in the future
-                    final var writableTokenStates = userTxn.stack().getWritableStates(TokenService.NAME);
-                    stakeInfoHelper.adjustPostUpgradeStakes(
-                            userTxn.tokenContextImpl(),
-                            networkInfo,
-                            userTxn.config(),
-                            new WritableStakingInfoStore(writableTokenStates),
-                            new WritableNetworkStakingRewardsStore(writableTokenStates));
+                    // just took effect; it would be nice to unify the FAB and stake metadata in the future.
+                    // IMPORTANT:
+                    //   (1) These K/V changes must be committed directly to the state instead of
+                    //   being accumulated in the user stack in case it is rolled back.
+                    //   (2) The K/V changes must also be written immediately in their own block item,
+                    //   instead of being added to the base builder state changes, because if there is
+                    //   a preceding NodeStakeUpdate added later in executeTopLevel(), *its* state changes
+                    //   will come before the base builder's changes in the block stream
+                    final var writableTokenStates = state.getWritableStates(TokenService.NAME);
+                    final int maxPrecedingRecords = userTxn.config()
+                            .getConfigData(ConsensusConfig.class)
+                            .handleMaxPrecedingRecords();
+                    doStreamingKVChanges(
+                            writableTokenStates,
+                            // Ensure that even if the user txn has preceding children, these state changes still have
+                            // an earlier consensus time; since in fact they are, in fact, committed first
+                            userTxn.consensusNow().minusNanos(maxPrecedingRecords + 1),
+                            () -> stakeInfoHelper.adjustPostUpgradeStakes(
+                                    networkInfo,
+                                    userTxn.config(),
+                                    new WritableStakingInfoStore(writableTokenStates),
+                                    new WritableNetworkStakingRewardsStore(writableTokenStates)));
                     if (streamMode == RECORDS) {
                         // Only update this if we are relying on RecordManager state for post-upgrade processing
                         blockRecordManager.markMigrationRecordsStreamed();

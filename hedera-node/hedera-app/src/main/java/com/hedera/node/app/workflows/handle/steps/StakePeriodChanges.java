@@ -117,11 +117,14 @@ public class StakePeriodChanges {
             final var config = tokenContext.configuration();
             try {
                 final var nodeStore = newWritableNodeStore(stack, config);
-                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> nodeStore.put(nodeStore
-                        .getForModify(nodeId)
-                        .copyBuilder()
-                        .weight(weight)
-                        .build());
+                final BiConsumer<Long, Integer> weightUpdates = (nodeId, weight) -> {
+                    final var node = nodeStore.getForModify(nodeId);
+                    if (node != null) {
+                        nodeStore.put(node.copyBuilder().weight(weight).build());
+                    } else {
+                        logger.warn("node{} had staking info but no DAB metadata", nodeId);
+                    }
+                };
                 final var streamBuilder = endOfStakingPeriodUpdater.updateNodes(
                         tokenContext, exchangeRateManager.exchangeRates(), weightUpdates);
                 if (streamBuilder != null) {

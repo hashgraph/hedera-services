@@ -113,7 +113,7 @@ class StakeInfoHelperTest {
         final var networkInfo = new FakeNetworkInfo();
 
         // Should update the state to mark node 1 and 3 as deleted
-        subject.adjustPostUpgradeStakes(tokenContext, networkInfo, DEFAULT_CONFIG, infoStore, rewardsStore);
+        subject.adjustPostUpgradeStakes(networkInfo, DEFAULT_CONFIG, infoStore, rewardsStore);
         final var updatedStates = newStates.get(STAKING_INFO_KEY);
         // marks nodes 1, 2 as deleted
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_1)).deleted()).isTrue();
