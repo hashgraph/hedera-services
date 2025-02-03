@@ -109,9 +109,8 @@ public interface HapiPropertySource {
         try {
             return asAccount(get("default.shard"), get("default.realm"), get(property));
         } catch (Exception ignore) {
-            throw new RuntimeException(ignore);
         }
-        // return AccountID.getDefaultInstance();
+        return AccountID.getDefaultInstance();
     }
 
     /**
