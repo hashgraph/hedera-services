@@ -16,6 +16,7 @@
 
 package com.swirlds.state.merkle;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
@@ -26,6 +27,7 @@ import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -75,6 +77,7 @@ import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -316,8 +319,16 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     }
 
     @Deprecated
-    public SortedMap<Long, Long> getPendingRewardSummary(@NonNull final ToLongFunction<Account> rewardCalculator) {
-        final var i = findNodeIndex("TokenService", "ACCOUNTS");
+    public Instant getLastConsensusTime() {
+        final int i = findNodeIndex("BlockStreamService", "BLOCK_STREAM_INFO");
+        final SingletonNode<BlockStreamInfo> infoNode = getChild(i);
+        final var info = requireNonNull(infoNode.getValue());
+        return asInstant(info.lastHandleTimeOrThrow());
+    }
+
+    @Deprecated
+    public SortedMap<Long, Long> getPendingRewards(@NonNull final ToLongFunction<Account> rewardCalculator) {
+        final int i = findNodeIndex("TokenService", "ACCOUNTS");
         final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> map = getChild(i);
         final ConcurrentMap<Long, Long> pendingRewards = new ConcurrentHashMap<>();
         try {
@@ -326,7 +337,9 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
                     map,
                     (final Pair<OnDiskKey<AccountID>, OnDiskValue<Account>> pair) -> {
                         final var account = pair.value().getValue();
-                        if (requireNonNull(account).hasStakedNodeId()) {
+                        if (requireNonNull(account).hasStakedNodeId()
+                                && account.stakedNodeIdOrThrow() >= 0L
+                                && !account.declineReward()) {
                             final long nodeId = account.stakedNodeIdOrThrow();
                             final long reward = rewardCalculator.applyAsLong(account);
                             pendingRewards.merge(nodeId, reward, Long::sum);
@@ -345,7 +358,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     @Deprecated
     public SortedMap<Long, StakingNodeInfo> getStakingNodeInfos() {
-        final var i = findNodeIndex("TokenService", "STAKING_INFOS");
+        final int i = findNodeIndex("TokenService", "STAKING_INFOS");
         final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> map = getChild(i);
         final ConcurrentMap<Long, StakingNodeInfo> stakingNodeInfos = new ConcurrentHashMap<>();
         try {

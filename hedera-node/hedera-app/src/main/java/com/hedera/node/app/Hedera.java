@@ -83,7 +83,11 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -446,7 +450,21 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         tssBaseService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
-                        new TokenServiceImpl(),
+                        new TokenServiceImpl(() -> {
+                            requireNonNull(initState);
+                            final var consensusTime =
+                                    ((MerkleStateRoot<?>) requireNonNull(initState)).getLastConsensusTime();
+                            final var stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
+                            stakePeriodManager.setCurrentStakePeriodFor(consensusTime);
+                            final var calculator = new StakeRewardCalculatorImpl(stakePeriodManager);
+                            final var infoStore =
+                                    new WritableStakingInfoStore(initState.getWritableStates(TokenServiceImpl.NAME));
+                            final var rewardsStore = new ReadableNetworkStakingRewardsStoreImpl(
+                                    initState.getWritableStates(TokenServiceImpl.NAME));
+                            return ((MerkleStateRoot<?>) requireNonNull(initState))
+                                    .getPendingRewards(account -> calculator.computePendingReward(
+                                            account, infoStore, rewardsStore, consensusTime));
+                        }),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),

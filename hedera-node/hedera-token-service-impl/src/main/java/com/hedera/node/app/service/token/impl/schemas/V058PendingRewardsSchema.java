@@ -48,6 +48,9 @@ public class V058PendingRewardsSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        if (ctx.isGenesis()) {
+            return;
+        }
         final long start = System.nanoTime();
         final var pending = pendingRewards.get();
         final long end = System.nanoTime();
@@ -60,8 +63,10 @@ public class V058PendingRewardsSchema extends Schema {
                 pending.values().stream().mapToLong(Long::longValue).sum();
         final var singletonState = ctx.newStates().<NetworkStakingRewards>getSingleton(STAKING_NETWORK_REWARDS_KEY);
         final var networkStakingRewards = requireNonNull(singletonState.get());
+        log.info("Existing network staking rewards: {}", networkStakingRewards);
         singletonState.put(
                 networkStakingRewards.copyBuilder().pendingRewards(totalPending).build());
+        log.info("Total pending rewards are now {}", totalPending);
 
         // Update the per-node pending rewards
         final var stakingInfos = ctx.newStates().<EntityNumber, StakingNodeInfo>get(STAKING_INFO_KEY);
@@ -73,7 +78,13 @@ public class V058PendingRewardsSchema extends Schema {
                 return;
             }
             stakingInfos.put(
-                    key, stakingInfo.copyBuilder().pendingRewards(rewards).build());
+                    key,
+                    stakingInfo
+                            .copyBuilder()
+                            .unclaimedStakeRewardStart(0L)
+                            .pendingRewards(rewards)
+                            .build());
+            log.info(" - node{} pending rewards are now {}", nodeId, rewards);
         });
     }
 }

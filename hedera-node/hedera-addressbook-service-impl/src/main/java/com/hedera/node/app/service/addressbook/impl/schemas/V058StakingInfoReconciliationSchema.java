@@ -58,6 +58,9 @@ public class V058StakingInfoReconciliationSchema extends Schema implements Addre
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
+        if (ctx.isGenesis()) {
+            return;
+        }
         final var nodes = ctx.newStates().<EntityNumber, Node>get(V053AddressBookSchema.NODES_KEY);
         stakingNodeInfos.get().forEach((number, info) -> {
             final var key = new EntityNumber(number);
