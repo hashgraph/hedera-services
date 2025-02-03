@@ -22,6 +22,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.swirlds.state.StateUtils.computeLabel;
+import static com.swirlds.state.StateUtils.stateIdFor;
+import static java.util.Objects.requireNonNull;
+
 /**
  * A base class for implementations of {@link ReadableKVState} and {@link WritableKVState}.
  *
@@ -29,6 +33,9 @@ import java.util.concurrent.ConcurrentMap;
  * @param <V> The value type
  */
 public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
+
+    private final String serviceName;
+
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -51,8 +58,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      *
      * @param stateKey The state key. Cannot be null.
      */
-    protected ReadableKVStateBase(@NonNull String stateKey) {
-        this.stateKey = Objects.requireNonNull(stateKey);
+    protected ReadableKVStateBase(@NonNull final String serviceName, @NonNull String stateKey) {
+        this.serviceName = requireNonNull(serviceName);
+        this.stateKey = requireNonNull(stateKey);
     }
 
     /** {@inheritDoc} */
@@ -60,6 +68,15 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     @NonNull
     public final String getStateKey() {
         return stateKey;
+    }
+
+    @Override
+    public final int getStateId() {
+        return stateIdFor(serviceName, stateKey);
+    }
+
+    protected String getLabel() {
+        return computeLabel(serviceName, stateKey);
     }
 
     /** {@inheritDoc} */

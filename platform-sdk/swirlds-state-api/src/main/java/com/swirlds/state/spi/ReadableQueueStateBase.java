@@ -16,10 +16,13 @@
 
 package com.swirlds.state.spi;
 
+import static com.swirlds.state.StateUtils.computeLabel;
+import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Iterator;
 
 /**
@@ -28,11 +31,16 @@ import java.util.Iterator;
  * @param <E> The type of the elements in this queue
  */
 public abstract class ReadableQueueStateBase<E> implements ReadableQueueState<E> {
+
+    private final String serviceName;
+
     private final String stateKey;
+
     private E peekedElement;
 
     /** Create a new instance */
-    protected ReadableQueueStateBase(@NonNull final String stateKey) {
+    protected ReadableQueueStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
+        this.serviceName = requireNonNull(serviceName);
         this.stateKey = requireNonNull(stateKey);
     }
 
@@ -40,6 +48,16 @@ public abstract class ReadableQueueStateBase<E> implements ReadableQueueState<E>
     @NonNull
     public final String getStateKey() {
         return stateKey;
+    }
+
+    @Override
+    public final int getStateId() {
+        return stateIdFor(serviceName, stateKey);
+    }
+
+    // TODO: refactor? (it is duplicated in WritableQueueStateBase)
+    protected String getLabel() {
+        return computeLabel(serviceName, stateKey);
     }
 
     @Nullable

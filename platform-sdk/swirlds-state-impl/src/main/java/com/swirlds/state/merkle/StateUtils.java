@@ -160,17 +160,6 @@ public final class StateUtils {
     }
 
     /**
-     * Computes the label for a merkle node given the service name and state key
-     *
-     * @param serviceName The service name
-     * @param stateKey The state key
-     * @return The computed label
-     */
-    public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
-        return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
-    }
-
-    /**
      * Given the inputs, compute the corresponding class ID.
      *
      * @param extra An extra string to bake into the class id

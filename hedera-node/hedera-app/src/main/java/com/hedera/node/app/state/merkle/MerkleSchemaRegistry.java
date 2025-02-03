@@ -48,6 +48,7 @@ import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.NewStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.queue.QueueNode;
@@ -205,8 +206,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (isSoOrdered(currentVersion, previousVersion)) {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
-        if (!(state instanceof MerkleStateRoot stateRoot)) {
-            throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
+        if (!(state instanceof NewStateRoot stateRoot)) {
+            throw new IllegalArgumentException("The state must be an instance of " + NewStateRoot.class.getName());
         }
         final long roundNumber = PLATFORM_STATE_SERVICE.roundOf(stateRoot);
         if (schemas.isEmpty()) {
@@ -274,7 +275,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 schema.restart(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
-            if (writableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
+            if (writableStates instanceof NewStateRoot.MerkleWritableStates mws) {
                 mws.commit();
                 migrationStateChanges.trackCommit();
             }
@@ -326,7 +327,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     } else if (!def.onDisk()) {
                         stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
-                            map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
+                            map.setLabel(com.swirlds.state.StateUtils.computeLabel(serviceName, stateKey));
                             return map;
                         });
                     } else {
@@ -342,7 +343,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             DigestType.SHA_384,
                                             def.maxKeysHint(),
                                             merkleDbConfig.hashesRamToDiskThreshold());
-                                    final var label = StateUtils.computeLabel(serviceName, stateKey);
+                                    final var label = com.swirlds.state.StateUtils.computeLabel(serviceName, stateKey);
                                     final var dsBuilder =
                                             new MerkleDbDataSourceBuilder(tableConfig, platformConfiguration);
                                     return new VirtualMap(label, dsBuilder, platformConfiguration);

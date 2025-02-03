@@ -45,7 +45,18 @@ public interface ReadableKVState<K, V> {
      *     instance of {@link ReadableKVState}.
      */
     @NonNull
-    String getStateKey();
+    String getStateKey();  // TODO: remove in favor of `getStateId` ?
+
+    /**
+     * Gets the "state id" that uniquely identifies this {@link ReadableKVState} within the
+     * {@link com.swirlds.state.lifecycle.Service} and {@link com.hedera.pbj.runtime.Schema}. It is globally unique.
+     *
+     * <p>The call is idempotent, always returning the same value. It must never return null.
+     *
+     * @return The state id. This will always be the same value for an
+     *     instance of {@link ReadableKVState}.
+     */
+    int getStateId();
 
     /**
      * Gets whether the given key exists in this {@link ReadableKVState}.

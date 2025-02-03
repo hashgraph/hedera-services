@@ -23,7 +23,7 @@ import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.MerkleStateRoot.CURRENT_VERSION;
-import static com.swirlds.state.merkle.StateUtils.computeLabel;
+import static com.swirlds.state.StateUtils.computeLabel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

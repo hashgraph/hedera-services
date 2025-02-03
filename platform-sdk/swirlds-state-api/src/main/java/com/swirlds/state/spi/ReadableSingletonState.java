@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param <T> The type of the state, such as an AddressBook or NetworkData.
  */
 public interface ReadableSingletonState<T> {
+
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableKVState} within the {@link
      * Schema} which are scoped to the service implementation. The key is therefore not globally
@@ -39,7 +40,18 @@ public interface ReadableSingletonState<T> {
      *     instance of {@link ReadableKVState}.
      */
     @NonNull
-    String getStateKey();
+    String getStateKey(); // TODO: remove in favor of `getStateId` ?
+
+    /**
+     * Gets the "state id" that uniquely identifies this {@link ReadableKVState} within the
+     * {@link com.swirlds.state.lifecycle.Service} and {@link Schema}. It is globally unique.
+     *
+     * <p>The call is idempotent, always returning the same value. It must never return null.
+     *
+     * @return The state id. This will always be the same value for an
+     *     instance of {@link ReadableKVState}.
+     */
+    int getStateId();
 
     /**
      * Gets the singleton value.

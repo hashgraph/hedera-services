@@ -17,29 +17,32 @@
 package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
-import java.util.function.Supplier;
+
+import static com.swirlds.state.StateUtils.computeLabel;
+import static com.swirlds.state.StateUtils.stateIdFor;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A convenient implementation of {@link ReadableSingletonStateBase}.
  *
  * @param <T> The type of the value
  */
-public class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> {
+public abstract class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> {
+
+    private final String serviceName;
+
     private final String stateKey;
-    private final Supplier<T> backingStoreAccessor;
+
     private boolean read = false;
 
     /**
      * Creates a new instance.
      *
-     * @param stateKey The state key for this instance
-     * @param backingStoreAccessor A {@link Supplier} that provides access to the value in the
-     *     backing store.
+     * @param stateKey The state key for this instance.
      */
-    public ReadableSingletonStateBase(@NonNull final String stateKey, @NonNull final Supplier<T> backingStoreAccessor) {
-        this.stateKey = Objects.requireNonNull(stateKey);
-        this.backingStoreAccessor = Objects.requireNonNull(backingStoreAccessor);
+    public ReadableSingletonStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
+        this.serviceName = requireNonNull(serviceName);
+        this.stateKey = requireNonNull(stateKey);
     }
 
     @Override
@@ -49,10 +52,28 @@ public class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> 
     }
 
     @Override
-    public T get() {
-        this.read = true;
-        return backingStoreAccessor.get();
+    public final int getStateId() {
+        return stateIdFor(serviceName, stateKey);
     }
+
+    protected String getLabel() {
+        return computeLabel(serviceName, stateKey);
+    }
+
+    @Override
+    public T get() {
+        var value = readFromDataSource();
+        this.read = true;
+        return value;
+    }
+
+    /**
+     * Reads the data from the underlying data source (which may be a merkle data structure, a
+     * fast-copyable data structure, or something else).
+     *
+     * @return The value read from the underlying data source. May be null.
+     */
+    protected abstract T readFromDataSource();
 
     @Override
     public boolean isRead() {

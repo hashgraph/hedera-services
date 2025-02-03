@@ -24,7 +24,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
-import com.swirlds.state.merkle.StateUtils;
+import com.swirlds.state.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

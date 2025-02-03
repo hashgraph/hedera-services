@@ -38,7 +38,18 @@ public interface ReadableQueueState<E> {
      *     instance of {@link ReadableQueueState}.
      */
     @NonNull
-    String getStateKey();
+    String getStateKey(); // TODO: remove in favor of `getStateId` ?
+
+    /**
+     * Gets the "state id" that uniquely identifies this {@link ReadableKVState} within the
+     * {@link com.swirlds.state.lifecycle.Service} and {@link Schema}. It is globally unique.
+     *
+     * <p>The call is idempotent, always returning the same value. It must never return null.
+     *
+     * @return The state id. This will always be the same value for an
+     *     instance of {@link ReadableKVState}.
+     */
+    int getStateId();
 
     /**
      * Retrieves but does not remove the element at the head of the queue, or returns null if the queue is empty.

@@ -22,10 +22,14 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -39,7 +43,8 @@ import java.util.Objects;
 public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
 
     /** The backing merkle data structure to use */
-    private final VirtualMap virtualMap;
+    @NonNull
+    private final VirtualMap megaMap;
 
     @NonNull
     private final Codec<K> keyCodec;
@@ -53,28 +58,28 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
      * @param stateKey
      * @param keyCodec
      * @param valueCodec
-     * @param virtualMap the backing merkle structure to use
+     * @param megaMap the backing merkle structure to use
      */
     public OnDiskReadableKVState(
-            String stateKey,
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
-            @NonNull final VirtualMap virtualMap) {
-        super(stateKey);
+            @NonNull final VirtualMap megaMap) {
+        super(serviceName, stateKey);
         this.keyCodec = requireNonNull(keyCodec);
         this.valueCodec = requireNonNull(valueCodec);
-        this.virtualMap = requireNonNull(virtualMap);
+        this.megaMap = requireNonNull(megaMap);
     }
 
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var kb = keyCodec.toBytes(key);
         // FUTURE work: remove legacy hash code
         final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        final var value = virtualMap.get(kb, legacyKeyHashCode, valueCodec);
+        final var value = megaMap.get(getMegaMapKey(key), legacyKeyHashCode, valueCodec);
         // Log to transaction state log, what was read
-        logMapGet(getStateKey(), key, value);
+        logMapGet(getLabel(), key, value);
         return value;
     }
 
@@ -83,24 +88,56 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getStateKey(), virtualMap, keyCodec);
-        return new OnDiskIterator<>(virtualMap, keyCodec);
+        logMapIterate(getLabel(), megaMap, keyCodec);
+        return new OnDiskIterator<>(megaMap, keyCodec);
     }
 
     /** {@inheritDoc} */
     @Override
     public long size() {
-        final var size = virtualMap.size();
+        final var size = megaMap.size();
         // Log to transaction state log, size of map
-        logMapGetSize(getStateKey(), size);
+        logMapGetSize(getLabel(), size);
         return size;
     }
 
     @Override
     public void warm(@NonNull final K key) {
-        final var kb = keyCodec.toBytes(key);
         // FUTURE work: remove legacy hash code
         final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        virtualMap.warm(kb, legacyKeyHashCode);
+        megaMap.warm(getMegaMapKey(key), legacyKeyHashCode);
+    }
+
+    // TODO: test this method
+    // TODO: refactor? (it is duplicated in OnDiskWritableKVState)
+    /**
+     * Generates a key for identifying an entry in the MegaMap data structure.
+     * <p>
+     * The key consists of:
+     * <ul>
+     *   <li>The first 2 bytes: the state ID (unsigned 16-bit, big-endian)</li>
+     *   <li>The remaining bytes: the serialized form of the provided key</li>
+     * </ul>
+     * The state ID must be within [0..65535].
+     * </p>
+     *
+     * @param key the key to serialize and append to the state ID
+     * @return a {@link Bytes} object containing the state ID followed by the serialized key
+     * @throws IllegalArgumentException if the state ID is outside [0..65535]
+     */
+    private Bytes getMegaMapKey(final K key) {
+        final int stateId = getStateId();
+
+        if (stateId < 0 || stateId > 65535) {
+            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
+        }
+
+        final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort((short) stateId);
+        final Bytes stateIdBytes = Bytes.wrap(buffer.array());
+
+        final Bytes keyBytes = keyCodec.toBytes(key);
+
+        return stateIdBytes.append(keyBytes);
     }
 }
