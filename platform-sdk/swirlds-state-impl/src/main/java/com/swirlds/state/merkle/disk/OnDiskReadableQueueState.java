@@ -36,7 +36,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-// TODO: double check if OnDiskValue<E> should be used as previously
 /**
  * An implementation of {@link ReadableQueueState} that uses a merkle {@link QueueNode} as the backing store.
  * @param <E> The type of elements in the queue.
