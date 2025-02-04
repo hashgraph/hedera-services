@@ -89,24 +89,18 @@ public class AtomicBatchHandler implements TransactionHandler {
             if (!set.add(transaction))
                 throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
 
-            TransactionBody innerTrxBody = null;
-            try {
-                //need to use from the new context same way as we did in pre handle and handle to use context and checker inside
-                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                        transaction.signedTransactionBytes().toReadableSequentialData());
-                innerTrxBody = TransactionBody.PROTOBUF.parse(signedTransaction.bodyBytes().toReadableSequentialData());
-                if(!innerTrxBody.hasBatchKey()){
-                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
-                }
+            final var innerTrxBody = context.bodyFromTransaction(transaction);
 
-                if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
-                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
-                }
-
-                //transaction checker parse and check - to check validity of the transaction expire
-            } catch (Exception e) {
+            if(!innerTrxBody.hasBatchKey()){
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
+
+            if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
+                throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            }
+
+            context.executeInnerPureCheck(innerTrxBody);
+
         }
     }
 

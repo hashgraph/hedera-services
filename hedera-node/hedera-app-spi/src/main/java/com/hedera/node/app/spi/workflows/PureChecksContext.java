@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Represents the context of a single {@code pureChecks()}-call.
@@ -41,4 +44,11 @@ public interface PureChecksContext {
      */
     @NonNull
     Configuration configuration();
+
+    @NonNull
+    void executeInnerPureCheck(@NonNull TransactionBody body)
+            throws PreCheckException;
+
+    @Nullable
+    TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException;
 }
