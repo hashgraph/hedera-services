@@ -161,20 +161,25 @@ public class AtomicBatchTest {
         public Stream<DynamicTest> maxInnerTxn() {
             final var payer = "payer";
             final var transferTxnId = "transferTxnId";
+            final var batchOperator = "batchOperator";
+
             return propertyPreservingHapiTest(
                     // set the maxInnerTxn to 2
                     List.of("atomicBatch.maxInnerTxn"),
                     overriding("atomicBatch.maxInnerTxn", "2"),
+                    cryptoCreate(batchOperator),
                     cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
                     newKeyNamed("bar"),
                     usableTxnIdNamed(transferTxnId).payerId(payer),
                     // create a batch with the maximum number of inner transactions
                     // even if we have 1 child transaction, the batch should succeed
                     atomicBatch(
-                                    cryptoCreate("foo").balance(ONE_HBAR),
+                                    cryptoCreate("foo").balance(ONE_HBAR).batchKey(batchOperator),
                                     cryptoTransfer(tinyBarsFromToWithAlias(payer, "bar", 10))
+                                            .batchKey(batchOperator)
                                             .txnId(transferTxnId)
                                             .payingWith(payer))
+                            .signedByPayerAnd(batchOperator)
                             .via("batchTxnId"),
 
                     // TODO: auto account creation should be child of the cryptoTransfer txn, not the batch!!!
@@ -188,23 +193,38 @@ public class AtomicBatchTest {
         @DisplayName("Bach contract call with the TPS limit")
         //  BATCH_02
         public Stream<DynamicTest> contractCallTPSLimit() {
+            final var batchOperator = "batchOperator";
             final var contract = "CalldataSize";
             final var function = "callme";
             final var payload = new byte[100];
             final var payer = "payer";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(payer).balance(ONE_HBAR),
                     uploadInitCode(contract),
                     contractCreate(contract),
                     overridingThrottles("testSystemFiles/artificial-limits.json"),
                     // create batch with 6 contract calls
                     atomicBatch(
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer))
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator)
                             .payingWith(payer));
         }
 
@@ -215,12 +235,17 @@ public class AtomicBatchTest {
             final var contract = "CalldataSize";
             final var function = "callme";
             final var payload = new byte[100];
+            final var batchOperator = "batchOperator";
             return propertyPreservingHapiTest(
                     List.of("contracts.maxGasPerSec"),
                     overriding("contracts.maxGasPerSec", "2000000"),
+                    cryptoCreate(batchOperator),
                     uploadInitCode(contract),
                     contractCreate(contract),
-                    atomicBatch(contractCall(contract, function, payload).gas(2000000)));
+                    atomicBatch(contractCall(contract, function, payload)
+                                    .gas(2000000)
+                                    .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator));
         }
 
         @HapiTest
@@ -231,10 +256,13 @@ public class AtomicBatchTest {
             final var function = "callme";
             // Adjust the payload size with 512 bytes, so the total size is just under 6kb
             final var payload = new byte[MAX_CALL_DATA_SIZE - 512];
+            final var batchOperator = "batchOperator";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     uploadInitCode(contract),
                     contractCreate(contract),
-                    atomicBatch(contractCall(contract, function, payload)));
+                    atomicBatch(contractCall(contract, function, payload).batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator));
         }
 
         @HapiTest
@@ -245,7 +273,9 @@ public class AtomicBatchTest {
             final var payer = "payer";
             final var firstTxnId = "firstTxnId";
             final var secondTxnId = "secondTxnId";
+            final var batchOperator = "batchOperator";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
                     usableTxnIdNamed(firstTxnId).payerId(payer),
                     usableTxnIdNamed(secondTxnId).payerId(payer),
@@ -253,9 +283,16 @@ public class AtomicBatchTest {
                     cryptoCreate("foo").txnId(firstTxnId).payingWith(payer),
                     // create a failing batch, containing duplicated transaction
                     atomicBatch(
-                                    cryptoCreate("foo").txnId(firstTxnId).payingWith(payer),
+                                    cryptoCreate("foo")
+                                            .txnId(firstTxnId)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
                                     // second inner txn will not be executed
-                                    cryptoCreate("bar").txnId(secondTxnId).payingWith(payer))
+                                    cryptoCreate("bar")
+                                            .txnId(secondTxnId)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
                     // create a successful batch, containing the second (non-executed) transaction
                     atomicBatch(cryptoCreate("bar").txnId(secondTxnId).payingWith(payer)));
@@ -287,7 +324,9 @@ public class AtomicBatchTest {
             final var function = "callme";
             final var payload = new byte[100];
             final var payer = "payer";
+            final var batchOperator = "batchOperator";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(payer).balance(ONE_HBAR),
                     uploadInitCode(contract),
                     contractCreate(contract),
@@ -296,27 +335,52 @@ public class AtomicBatchTest {
                     // create batch with 6 contract calls
                     atomicBatch(
                                     fileUpdate(THROTTLE_DEFS)
+                                            .batchKey(batchOperator)
                                             .noLogging()
                                             .payingWith(GENESIS)
                                             .contents(protoDefsFromResource("testSystemFiles/mainnet-throttles.json")
                                                     .toByteArray()),
                                     // call more than 6 times
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
-                                    contractCall(contract, function, payload).payingWith(payer),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
+                                    contractCall(contract, function, payload)
+                                            .payingWith(payer)
+                                            .batchKey(batchOperator),
                                     fileUpdate(THROTTLE_DEFS)
+                                            .batchKey(batchOperator)
                                             .noLogging()
                                             .payingWith(GENESIS)
                                             .contents(protoDefsFromResource("testSystemFiles/artificial-limits.json")
                                                     .toByteArray()))
+                            .signedByPayerAnd(batchOperator)
                             .payingWith(payer));
         }
 
