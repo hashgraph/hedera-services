@@ -164,8 +164,10 @@ public class AtomicBatchTest {
             final var scheduledTxnId = "scheduledTxnId";
             final var signTxnId = "signTxnId";
             final var secondInnerTxnId = "secondInnerTxnId";
+            final var batchOperator = "batchOperator";
 
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(sender).balance(ONE_HBAR),
                     cryptoCreate(receiver).balance(0L).receiverSigRequired(true),
                     // store txn ids in spec registry for later order validation
@@ -183,13 +185,16 @@ public class AtomicBatchTest {
                     // execute batch with schedule sign
                     atomicBatch(
                                     scheduleSign(schedule)
+                                            .batchKey(batchOperator)
                                             .txnId(signTxnId)
                                             .alsoSigningWith(receiver)
                                             .payingWith(sender),
                                     cryptoCreate("foo")
+                                            .batchKey(batchOperator)
                                             .txnId(secondInnerTxnId)
                                             .balance(1L)
                                             .payingWith(sender))
+                            .signedByPayerAnd(batchOperator)
                             // validate order of execution
                             .validateTxnOrder(
                                     signTxnId,
@@ -206,8 +211,10 @@ public class AtomicBatchTest {
             final var schedule = "scheduledXfer";
             final var signTxnId = "signTxnId";
             final var secondInnerTxnId = "secondInnerTxnId";
+            final var batchOperator = "batchOperator";
 
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(sender).balance(ONE_HBAR),
                     cryptoCreate(receiver).receiverSigRequired(true),
                     // store txn ids in spec registry for later order validation
@@ -218,13 +225,16 @@ public class AtomicBatchTest {
                     // execute batch with schedule sign
                     atomicBatch(
                                     scheduleSign(schedule)
+                                            .batchKey(batchOperator)
                                             .txnId(signTxnId)
                                             .alsoSigningWith(receiver)
                                             .payingWith(sender),
                                     cryptoCreate("foo")
+                                            .batchKey(batchOperator)
                                             .txnId(secondInnerTxnId)
                                             .balance(1L)
                                             .payingWith(sender))
+                            .signedByPayerAnd(batchOperator)
                             // validate order of execution
                             .validateTxnOrder(signTxnId, secondInnerTxnId),
                     // validate the result of the inner txn
@@ -239,7 +249,9 @@ public class AtomicBatchTest {
             final var sender = "sender";
             final var receiver = "receiver";
             final var schedule = "scheduledXfer";
+            final var batchOperator = "batchOperator";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(sender).balance(ONE_HBAR).via("createSender"),
                     cryptoCreate(receiver).balance(0L),
                     // create a failing scheduled transaction (transfer more than the balance)
@@ -250,7 +262,9 @@ public class AtomicBatchTest {
                             .via("scheduleCreate"),
                     sleepFor(8_000),
                     // trigger with failing batch
-                    atomicBatch(cryptoTransfer(tinyBarsFromTo(sender, receiver, ONE_HUNDRED_HBARS)))
+                    atomicBatch(cryptoTransfer(tinyBarsFromTo(sender, receiver, ONE_HUNDRED_HBARS))
+                                    .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
                     // validate the result of the schedule
                     getAccountBalance(receiver).hasTinyBars(10L));
@@ -264,12 +278,18 @@ public class AtomicBatchTest {
             final var batchTxnId = "batchTxnId";
             final var innerTxnId = "innerTxnId";
             final var beforeHour = -3_600L; // 1 hour in the past
+            final var batchOperator = "batchOperator";
 
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
                     usableTxnIdNamed(batchTxnId).modifyValidStart(beforeHour).payerId(payer),
                     usableTxnIdNamed(innerTxnId).payerId(payer),
-                    atomicBatch(cryptoCreate("foo").txnId(innerTxnId).payingWith(payer))
+                    atomicBatch(cryptoCreate("foo")
+                                    .txnId(innerTxnId)
+                                    .payingWith(payer)
+                                    .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator)
                             .txnId(batchTxnId)
                             .payingWith(payer)
                             .hasPrecheck(TRANSACTION_EXPIRED),
@@ -307,28 +327,39 @@ public class AtomicBatchTest {
                     atomicBatch(
                                     // Bob's txn is expired, so no inner txns should be executed
                                     cryptoCreate("foo")
+                                            .batchKey(alice)
                                             .balance(1L)
                                             .txnId(bobExpiredTxnId)
                                             .payingWith(bob),
                                     cryptoCreate("bar")
+                                            .batchKey(alice)
                                             .balance(1L)
                                             .txnId(daveInnerTxnId)
                                             .payingWith(dave),
                                     cryptoCreate("baz")
+                                            .batchKey(alice)
                                             .balance(1L)
                                             .txnId(carlInnerTxnId)
                                             .payingWith(carl))
+                            .signedByPayerAnd(alice)
                             .hasPrecheck(INNER_TRANSACTION_FAILED),
                     atomicBatch(
-                            cryptoCreate("foo").balance(1L).txnId(bobInnerTxnId).payingWith(bob),
-                            cryptoCreate("bar")
-                                    .balance(1L)
-                                    .txnId(daveInnerTxnId)
-                                    .payingWith(dave),
-                            cryptoCreate("baz")
-                                    .balance(1L)
-                                    .txnId(carlInnerTxnId)
-                                    .payingWith(carl)),
+                                    cryptoCreate("foo")
+                                            .batchKey(alice)
+                                            .balance(1L)
+                                            .txnId(bobInnerTxnId)
+                                            .payingWith(bob),
+                                    cryptoCreate("bar")
+                                            .batchKey(alice)
+                                            .balance(1L)
+                                            .txnId(daveInnerTxnId)
+                                            .payingWith(dave),
+                                    cryptoCreate("baz")
+                                            .batchKey(alice)
+                                            .balance(1L)
+                                            .txnId(carlInnerTxnId)
+                                            .payingWith(carl))
+                            .signedByPayerAnd(alice),
 
                     // validate inner transactions were successfully executed
                     getAccountBalance("foo").hasTinyBars(1L),
@@ -341,20 +372,25 @@ public class AtomicBatchTest {
         // BATCH_17
         final Stream<DynamicTest> submitBatchWithEthereumTxn() {
             final var receiver = "receiver";
+            final var batchOperator = "batchOperator";
             return hapiTest(
+                    cryptoCreate(batchOperator),
                     newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                     cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                     withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                     cryptoCreate(receiver).balance(0L),
                     // submit a batch with Hapi and Ethereum txns
                     atomicBatch(
-                            cryptoTransfer(tinyBarsFromTo(GENESIS, receiver, FIVE_HBARS)),
-                            ethereumCryptoTransfer(receiver, FIVE_HBARS)
-                                    .type(EthTxData.EthTransactionType.EIP2930)
-                                    .payingWith(SECP_256K1_SOURCE_KEY)
-                                    .nonce(0)
-                                    .gasPrice(0L)
-                                    .gasLimit(2_000_000L)),
+                                    cryptoTransfer(tinyBarsFromTo(GENESIS, receiver, FIVE_HBARS))
+                                            .batchKey(batchOperator),
+                                    ethereumCryptoTransfer(receiver, FIVE_HBARS)
+                                            .type(EthTxData.EthTransactionType.EIP2930)
+                                            .payingWith(SECP_256K1_SOURCE_KEY)
+                                            .nonce(0)
+                                            .gasPrice(0L)
+                                            .gasLimit(2_000_000L)
+                                            .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator),
                     getAccountBalance(receiver).hasTinyBars(FIVE_HBARS * 2));
         }
     }
