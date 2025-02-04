@@ -284,8 +284,6 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
                             .saveContractId(
                                     name,
                                     ContractID.newBuilder()
-                                            .setShardNum(1)
-                                            .setRealmNum(2)
                                             .setContractNum(newTokenNum)
                                             .build());
                 }));

@@ -307,10 +307,7 @@ public class CreateOperationSuite {
                     }
                     ctxLog.info("The created contract ID {}", contractIDString);
                     Assertions.assertNotEquals(
-                            ContractID.newBuilder()
-                                    .setShardNum(1)
-                                    .setRealmNum(2)
-                                    .getDefaultInstanceForType(),
+                            ContractID.newBuilder().getDefaultInstanceForType(),
                             TxnUtils.asContractId(contractIDString, spec),
                             "Created contract doesn't have valid Contract ID");
 

@@ -495,11 +495,7 @@ public class ConversionUtils {
      * @return the PBJ {@link ContractID}
      */
     public static ContractID asEvmContractId(@NonNull final Address address) {
-        return ContractID.newBuilder()
-                .realmNum(2)
-                .shardNum(1)
-                .evmAddress(tuweniToPbjBytes(address))
-                .build();
+        return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
     }
 
     /**
@@ -692,10 +688,8 @@ public class ConversionUtils {
         arraycopy(Ints.toByteArray((int) shard), 0, shardAndRealm, 0, 4);
         arraycopy(Longs.toByteArray(realm), 0, shardAndRealm, 4, 8);
 
-        for (int i = 0; i < 12; i++) {
-            // todo system contracts are build with zero realm and shard
-
-            if (explicit[i] != shardAndRealm[i] && explicit[i] != 0) {
+        for (int i = 0; i < NUM_LONG_ZEROS; i++) {
+            if (explicit[i] != shardAndRealm[i]) {
                 return false;
             }
         }

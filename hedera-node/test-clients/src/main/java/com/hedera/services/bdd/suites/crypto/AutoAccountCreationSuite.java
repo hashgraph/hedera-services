@@ -1070,13 +1070,11 @@ public class AutoAccountCreationSuite {
                 .build()
                 .toByteString();
         final var contractKeyAlias = Key.newBuilder()
-                .setContractID(
-                        ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(100L))
+                .setContractID(ContractID.newBuilder().setContractNum(100L))
                 .build()
                 .toByteString();
         final var delegateContractKeyAlias = Key.newBuilder()
-                .setDelegatableContractId(
-                        ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(100L))
+                .setDelegatableContractId(ContractID.newBuilder().setContractNum(100L))
                 .build()
                 .toByteString();
 

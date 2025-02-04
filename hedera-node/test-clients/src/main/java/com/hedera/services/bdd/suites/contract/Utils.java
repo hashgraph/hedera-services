@@ -302,19 +302,15 @@ public class Utils {
 
     public static Key aliasContractIdKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setContractID(ContractID.newBuilder()
-                        .setShardNum(1)
-                        .setRealmNum(2)
-                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setContractID(
+                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 
     public static Key aliasDelegateContractKey(final String hexedEvmAddress) {
         return Key.newBuilder()
-                .setDelegatableContractId(ContractID.newBuilder()
-                        .setShardNum(1)
-                        .setRealmNum(2)
-                        .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
+                .setDelegatableContractId(
+                        ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress))))
                 .build();
     }
 

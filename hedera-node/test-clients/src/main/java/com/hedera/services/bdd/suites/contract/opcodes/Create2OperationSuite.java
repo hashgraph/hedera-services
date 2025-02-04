@@ -391,8 +391,6 @@ public class Create2OperationSuite {
                 withOpContext((spec, opLog) -> {
                     final var parentId = spec.registry().getContractId(contract);
                     final var childId = ContractID.newBuilder()
-                            .setShardNum(1)
-                            .setRealmNum(2)
                             .setContractNum(parentId.getContractNum() + 2L)
                             .build();
                     mirrorLiteralId.set("0.0." + childId.getContractNum());
