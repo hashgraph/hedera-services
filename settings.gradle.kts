@@ -18,7 +18,7 @@ plugins { id("org.hiero.gradle.build") version "0.3.1" }
 
 dependencyResolutionManagement {
     versionCatalogs.register("additionalPlugins") {
-        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.16")
     }
 }
 
