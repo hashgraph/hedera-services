@@ -452,6 +452,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // it is necessary to use the statistics object from the previous instance of the state.
             statistics = new VirtualMapStatistics(state.getLabel());
         }
+        // VM size metric value is updated in add() and remove(). However, if no elements are added or
+        // removed, the metric may have a stale value for a long time. Update it explicitly here
+        statistics.setSize(size());
         // At this point in time the copy knows if it should be flushed or merged, and so it is safe
         // to register with the pipeline.
         if (pipeline == null) {
