@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         final Schedule wrongSchedule = writableSchedules.get(next.scheduleId());
         assertThat(wrongSchedule).isNull(); // shard and realm *should not* match here
         // get a corrected schedule ID.
-        final ScheduleID correctedId = adjustRealmShardForPayer(next, parentId);
+        final ScheduleID correctedId = adjustRealmShard(next);
         final Schedule resultSchedule = writableSchedules.get(correctedId);
         // verify the schedule was created ready for sign transactions
         assertThat(resultSchedule).isNotNull(); // shard and realm *should* match here
@@ -146,13 +146,8 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         assertThat(signedSchedule.resolutionTime()).isNull();
     }
 
-    protected static ScheduleID adjustRealmShardForPayer(final Schedule next, final TransactionID parentId) {
-        long correctRealm = parentId.accountID().realmNum();
-        long correctShard = parentId.accountID().shardNum();
-        final ScheduleID.Builder correctedBuilder = next.scheduleId().copyBuilder();
-        correctedBuilder.realmNum(correctRealm).shardNum(correctShard);
-        final ScheduleID correctedId = correctedBuilder.build();
-        return correctedId;
+    protected static ScheduleID adjustRealmShard(final Schedule next) {
+        return next.scheduleId().copyBuilder().shardNum(SHARD).realmNum(REALM).build();
     }
 
     protected Timestamp timestampFrom(final Instant valueToConvert) {

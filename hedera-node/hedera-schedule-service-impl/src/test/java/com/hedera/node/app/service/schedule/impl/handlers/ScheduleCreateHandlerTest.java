@@ -249,7 +249,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final Schedule wrongSchedule = writableSchedules.get(next.scheduleId());
         assertThat(wrongSchedule).isNull(); // shard and realm *should not* match here
         // get a corrected schedule ID.
-        final ScheduleID correctedId = adjustRealmShardForPayer(next, createId);
+        final ScheduleID correctedId = adjustRealmShard(next);
         final Schedule resultSchedule = writableSchedules.get(correctedId);
         // verify the schedule was created ready for sign transactions
         assertThat(resultSchedule).isNotNull(); // shard and realm *should* match here
