@@ -85,7 +85,7 @@ public class MiscCryptoSuite {
 
     @HapiTest
     final Stream<DynamicTest> sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-        String sysAccount = "1.2.977";
+        String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
         String randomAccountB = "randomAccountB";
         String firstKey = "firstKey";

@@ -250,10 +250,8 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
 
         final var effContract = contract.startsWith("0x") ? contract.substring(2) : contract;
         if (effContract.length() == HEXED_EVM_ADDRESS_LEN) {
-            opBuilder.setContractID(ContractID.newBuilder()
-                    .setShardNum(1)
-                    .setRealmNum(2)
-                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
+            opBuilder.setContractID(
+                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
         } else {
             opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
         }

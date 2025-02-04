@@ -688,8 +688,6 @@ public class LeakyCryptoTestsSuite {
                                                         .status(INSUFFICIENT_GAS)
                                                         .targetedContractId(
                                                                 ContractID.newBuilder()
-                                                                        .setShardNum(1)
-                                                                        .setRealmNum(2)
                                                                         .getDefaultInstanceForType()))
                                                 .andAllChildRecords()
                                                 .logged(),

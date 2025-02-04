@@ -755,15 +755,11 @@ public class LeakyContractTestsSuite {
                     final var expectedGrandChildContractAddress = contractAddress(expectedChildContractAddress, 1L);
 
                     final var childId = ContractID.newBuilder()
-                            .setShardNum(1)
-                            .setRealmNum(2)
                             .setContractNum(parentNum.getContractNum() + 1L)
                             .build();
                     childLiteralId.set(HapiPropertySource.asContractString(childId));
                     expectedChildAddress.set(ByteString.copyFrom(expectedChildContractAddress.toArray()));
                     final var grandChildId = ContractID.newBuilder()
-                            .setShardNum(1)
-                            .setRealmNum(2)
                             .setContractNum(parentNum.getContractNum() + 2L)
                             .build();
                     grandChildLiteralId.set(HapiPropertySource.asContractString(grandChildId));

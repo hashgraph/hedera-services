@@ -188,7 +188,7 @@ public class FileUpdateSuite {
     @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
     final Stream<DynamicTest> optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
-        final var specialFile = "1.2.159";
+        final var specialFile = "0.0.159";
         final var contents = randomUtf8Bytes(64 * BYTES_4K);
         final var specialFileContents = ByteString.copyFrom(contents);
         final byte[] expectedHash;

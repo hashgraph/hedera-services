@@ -246,7 +246,7 @@ public class TopicUpdateSuite {
                 cryptoCreate("autoRenewAccount"),
                 createTopic("testTopic").adminKeyName("adminKey").autoRenewAccountId("autoRenewAccount"),
                 updateTopic("testTopic").adminKey(EMPTY_KEY).hasKnownStatus(AUTORENEW_ACCOUNT_NOT_ALLOWED),
-                updateTopic("testTopic").adminKey(EMPTY_KEY).autoRenewAccountId("1.2.0"),
+                updateTopic("testTopic").adminKey(EMPTY_KEY).autoRenewAccountId("0.0.0"),
                 getTopicInfo("testTopic").hasNoAdminKey());
     }
 

@@ -296,8 +296,6 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
                             .saveContractId(
                                     name,
                                     com.hederahashgraph.api.proto.java.ContractID.newBuilder()
-                                            .setShardNum(1)
-                                            .setRealmNum(2)
                                             .setContractNum(newContractNum)
                                             .build());
                     siblingSpec.registry().saveContractInfo(name, contractCreate.infoOfCreatedContractOrThrow());

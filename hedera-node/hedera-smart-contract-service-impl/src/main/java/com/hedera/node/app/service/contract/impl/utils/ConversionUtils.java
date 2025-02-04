@@ -652,13 +652,7 @@ public class ConversionUtils {
      * @return its 20-byte EVM address
      */
     public static byte[] asEvmAddress(final long num) {
-        final byte[] solidityAddress = new byte[20];
-
-        arraycopy(Ints.toByteArray(1), 0, solidityAddress, 0, 4);
-        arraycopy(Longs.toByteArray(2), 0, solidityAddress, 4, 8);
-        arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
-
-        return solidityAddress;
+        return copyToLeftPaddedByteArray(num, new byte[20]);
     }
 
     /**

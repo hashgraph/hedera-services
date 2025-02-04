@@ -112,8 +112,6 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
         final ContractID resolvedTarget;
         if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
             resolvedTarget = ContractID.newBuilder()
-                    .setShardNum(1)
-                    .setRealmNum(2)
                     .setEvmAddress(ByteString.copyFrom(unhex(contract)))
                     .build();
         } else {

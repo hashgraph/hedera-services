@@ -400,8 +400,6 @@ public class Evm46ValidationSuite {
                             .saveContractId(
                                     "nonMirrorAddress",
                                     ContractID.newBuilder()
-                                            .setShardNum(1)
-                                            .setRealmNum(2)
                                             .setEvmAddress(senderAddress)
                                             .build());
                     spec.registry()

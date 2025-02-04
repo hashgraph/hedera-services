@@ -301,7 +301,7 @@ public class ContractCallSuite {
     final Stream<DynamicTest> lowLevelEcrecCallBehavior() {
         final var TEST_CONTRACT = "TestContract";
         final var somebody = "somebody";
-        final var account = "1.2.1";
+        final var account = "0.0.1";
         return hapiTest(
                 uploadInitCode(TEST_CONTRACT),
                 contractCreate(

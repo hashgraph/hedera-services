@@ -4000,8 +4000,6 @@ public class TraceabilitySuite {
                 withOpContext((spec, opLog) -> {
                     final var parentId = spec.registry().getContractId(contract);
                     final var childId = ContractID.newBuilder()
-                            .setShardNum(1)
-                            .setRealmNum(2)
                             .setContractNum(parentId.getContractNum() + 1L)
                             .build();
                     mirrorLiteralId.set("0.0." + childId.getContractNum());
@@ -4151,8 +4149,6 @@ public class TraceabilitySuite {
                                                     // 0x02
                                                     .setRecipientContract(
                                                             ContractID.newBuilder()
-                                                                    .setShardNum(1)
-                                                                    .setRealmNum(2)
                                                                     .setContractNum(2)
                                                                     .build())
                                                     .setGasUsed(72)
@@ -4170,8 +4166,6 @@ public class TraceabilitySuite {
                                                     // 0x167
                                                     .setRecipientContract(
                                                             ContractID.newBuilder()
-                                                                    .setShardNum(1)
-                                                                    .setRealmNum(2)
                                                                     .setContractNum(359)
                                                                     .build())
                                                     .setGasUsed(100)
@@ -4403,8 +4397,6 @@ public class TraceabilitySuite {
                                                 .setGas(960576)
                                                 .setGasUsed(960576)
                                                 .setRecipientContract(ContractID.newBuilder()
-                                                        .setShardNum(1)
-                                                        .setRealmNum(2)
                                                         .setContractNum(0)
                                                         .build())
                                                 .setOutput(EMPTY)
@@ -4590,8 +4582,6 @@ public class TraceabilitySuite {
                                                             spec.registry().getContractId(APPROVE_BY_DELEGATE))
                                                     .setRecipientContract(
                                                             ContractID.newBuilder()
-                                                                    .setShardNum(1)
-                                                                    .setRealmNum(2)
                                                                     .setContractNum(
                                                                             spec.registry()
                                                                                     .getTokenID(tokenInQuestion)
@@ -4619,8 +4609,6 @@ public class TraceabilitySuite {
                                                     .setCallOperationType(CallOperationType.OP_DELEGATECALL)
                                                     .setCallingContract(
                                                             ContractID.newBuilder()
-                                                                    .setShardNum(1)
-                                                                    .setRealmNum(2)
                                                                     .setContractNum(
                                                                             spec.registry()
                                                                                     .getTokenID(tokenInQuestion)
@@ -4628,8 +4616,6 @@ public class TraceabilitySuite {
                                                                     .build())
                                                     .setRecipientContract(
                                                             ContractID.newBuilder()
-                                                                    .setShardNum(1)
-                                                                    .setRealmNum(2)
                                                                     .setContractNum(359L)
                                                                     .build())
                                                     .setGas(940841)
