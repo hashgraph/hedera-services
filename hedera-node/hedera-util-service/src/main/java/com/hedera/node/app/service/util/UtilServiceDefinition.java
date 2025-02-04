@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ import java.util.Set;
 public final class UtilServiceDefinition implements RpcServiceDefinition {
     public static final UtilServiceDefinition INSTANCE = new UtilServiceDefinition();
 
-    private static final Set<RpcMethodDefinition<?, ?>> methods =
-            Set.of(new RpcMethodDefinition<>("prng", Transaction.class, TransactionResponse.class));
+    private static final Set<RpcMethodDefinition<?, ?>> methods = Set.of(
+            new RpcMethodDefinition<>("prng", Transaction.class, TransactionResponse.class),
+            new RpcMethodDefinition<>("atomicBatch", Transaction.class, TransactionResponse.class));
 
     private UtilServiceDefinition() {
         // Forbid instantiation

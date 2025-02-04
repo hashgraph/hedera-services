@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ApiPermissionConfig;
+import com.hedera.node.config.data.AtomicBatchConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
@@ -127,6 +128,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 TopicsConfig.class,
                 TraceabilityConfig.class,
                 UtilPrngConfig.class,
+                AtomicBatchConfig.class,
                 VersionConfig.class,
                 TssConfig.class);
     }

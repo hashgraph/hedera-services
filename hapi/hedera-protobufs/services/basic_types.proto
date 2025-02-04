@@ -1688,6 +1688,11 @@ enum HederaFunctionality {
      * Vote for a particular history proof.
      */
     HistoryProofVote = 106;
+
+    /**
+     * Submit a batch of transactions to run atomically
+     */
+    AtomicBatch = 107;
 }
 
 /**

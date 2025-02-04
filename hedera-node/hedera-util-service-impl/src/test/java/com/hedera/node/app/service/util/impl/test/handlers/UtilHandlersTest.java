@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.util.impl.handlers.AtomicBatchHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,17 +27,23 @@ import org.junit.jupiter.api.Test;
 
 class UtilHandlersTest {
     private UtilPrngHandler prngHandler;
+    private AtomicBatchHandler atomicBatchHandler;
 
     private UtilHandlers utilHandlers;
 
     @BeforeEach
     public void setUp() {
         prngHandler = mock(UtilPrngHandler.class);
-        utilHandlers = new UtilHandlers(prngHandler);
+        atomicBatchHandler = mock(AtomicBatchHandler.class);
+        utilHandlers = new UtilHandlers(prngHandler, atomicBatchHandler);
     }
 
     @Test
     void prngHandlerReturnsCorrectInstance() {
         assertEquals(prngHandler, utilHandlers.prngHandler(), "prngHandler does not return correct instance");
+        assertEquals(
+                atomicBatchHandler,
+                utilHandlers.atomicBatchHandler(),
+                "atomicBatchHandler does not return correct instance");
     }
 }
