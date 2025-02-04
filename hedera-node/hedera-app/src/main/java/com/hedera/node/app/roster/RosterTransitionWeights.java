@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * @param sourceNodeWeights the weights of the nodes in the source roster
  * @param targetNodeWeights the weights of the nodes in the target roster
  * @param sourceWeightThreshold the weight required for a strong minority in the source roster
- * @param targetWeightThreshold the weight required for a strong minority in the target roster
+ * @param targetWeightThreshold the weight required for >2/3 weight in the target roster
  */
 public record RosterTransitionWeights(
         @NonNull Map<Long, Long> sourceNodeWeights,

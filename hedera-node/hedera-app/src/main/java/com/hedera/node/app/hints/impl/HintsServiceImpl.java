@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
@@ -34,11 +36,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Placeholder implementation of the {@link HintsService}.
+ * Default implementation of the {@link HintsService}.
  */
 public class HintsServiceImpl implements HintsService {
+    private static final Logger logger = LogManager.getLogger(HintsServiceImpl.class);
+
     @Deprecated
     private final Configuration bootstrapConfig;
 
@@ -56,27 +62,50 @@ public class HintsServiceImpl implements HintsService {
                 .create(library, appContext, executor, metrics);
     }
 
+    @VisibleForTesting
+    public HintsServiceImpl(
+            @NonNull final HintsServiceComponent component, @NonNull final Configuration bootstrapConfig) {
+        this.component = requireNonNull(component);
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
+    }
+
     @Override
-    public void reconcile(
-            @NonNull final ActiveRosters activeRosters,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now,
-            @NonNull final TssConfig tssConfig) {
-        requireNonNull(activeRosters);
-        requireNonNull(hintsStore);
-        requireNonNull(now);
-        requireNonNull(tssConfig);
-        throw new UnsupportedOperationException();
+    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
+        if (!isReady()) {
+            throw new IllegalStateException("hinTS service not ready to sign block hash " + blockHash);
+        }
+        final var signing = component.signings().computeIfAbsent(blockHash, component.signingContext()::newSigning);
+        component.submissions().submitPartialSignature(blockHash).exceptionally(t -> {
+            logger.warn("Failed to submit partial signature for block hash {}", blockHash, t);
+            return null;
+        });
+        return signing.future();
+    }
+
+    @Override
+    public boolean isReady() {
+        return component.signingContext().isReady();
     }
 
     @Override
     public @NonNull Bytes activeVerificationKeyOrThrow() {
-        throw new UnsupportedOperationException();
+        return component.signingContext().verificationKeyOrThrow();
     }
 
     @Override
     public HintsHandlers handlers() {
         return component.handlers();
+    }
+
+    @Override
+    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
+        requireNonNull(hintsStore);
+        component.signingContext().setConstruction(requireNonNull(hintsStore.getNextConstruction()));
+    }
+
+    @Override
+    public void stop() {
+        // TODO
     }
 
     @Override
@@ -89,13 +118,33 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
-    public boolean isReady() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
-        requireNonNull(blockHash);
-        throw new UnsupportedOperationException();
+    public void reconcile(
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
+        requireNonNull(now);
+        requireNonNull(activeRosters);
+        requireNonNull(hintsStore);
+        requireNonNull(tssConfig);
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasHintsScheme()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
+                    controller.advanceConstruction(now, hintsStore);
+                }
+            }
+            case HANDOFF -> {
+                if (hintsStore.purgeStateAfterHandoff(activeRosters)) {
+                    // If there was out-of-date state to purge, this is the first round in
+                    // the handoff phase, and we should also update the signing context
+                    component
+                            .signingContext()
+                            .setConstruction(requireNonNull(hintsStore.getConstructionFor(activeRosters)));
+                }
+            }
+        }
     }
 }

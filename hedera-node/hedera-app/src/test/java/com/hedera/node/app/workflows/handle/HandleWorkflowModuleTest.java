@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,6 +274,9 @@ class HandleWorkflowModuleTest {
 
     @Mock
     private UtilPrngHandler utilPrngHandler;
+
+    @Mock
+    private HintsKeyPublicationHandler keyPublicationHandler;
 
     @TempDir
     java.nio.file.Path tempDir;

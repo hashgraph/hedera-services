@@ -287,6 +287,7 @@ public enum TransactionExecutors {
         final var component = DaggerExecutorComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
+                .hintsService(hintsService)
                 .fileServiceImpl(fileService)
                 .contractServiceImpl(contractService)
                 .scheduleServiceImpl(scheduleService)

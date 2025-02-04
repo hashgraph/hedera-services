@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
@@ -60,6 +61,16 @@ public class FakeHintsService implements HintsService {
     }
 
     @Override
+    public HintsHandlers handlers() {
+        return delegate.handlers();
+    }
+
+    @Override
+    public void stop() {
+        delegate.stop();
+    }
+
+    @Override
     public void reconcile(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final WritableHintsStore hintsStore,
@@ -69,8 +80,8 @@ public class FakeHintsService implements HintsService {
     }
 
     @Override
-    public HintsHandlers handlers() {
-        return delegate.handlers();
+    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
+        delegate.initSigningForNextScheme(hintsStore);
     }
 
     @Override

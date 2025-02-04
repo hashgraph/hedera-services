@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * Default implementation of {@link HintsLibrary}.
+ * Default implementation of {@link HintsLibrary} (all TODO).
  */
 public class HintsLibraryImpl implements HintsLibrary {
     @Override

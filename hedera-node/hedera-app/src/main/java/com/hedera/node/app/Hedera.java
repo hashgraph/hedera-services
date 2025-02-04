@@ -533,6 +533,15 @@ public final class Hedera
                                                                     initState.getReadableStates(HistoryService.NAME))
                                                             .isReadyToAdopt(rosterHash));
                                 },
+                                () -> {
+                                    requireNonNull(initState);
+                                    final var tssConfig =
+                                            configProvider.getConfiguration().getConfigData(TssConfig.class);
+                                    if (tssConfig.hintsEnabled()) {
+                                        hintsService.initSigningForNextScheme(new ReadableHintsStoreImpl(
+                                                initState.getReadableStates(HintsService.NAME)));
+                                    }
+                                },
                                 () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
