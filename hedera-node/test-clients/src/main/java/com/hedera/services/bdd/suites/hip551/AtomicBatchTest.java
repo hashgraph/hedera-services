@@ -59,8 +59,7 @@ public class AtomicBatchTest {
                 // use custom txn id so we can get the record
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
                 // create a batch txn
-                //                atomicBatch(innerTxn).payingWith(batchOperator).via("batchTxn"),
-                atomicBatch(innerTxn),
+                atomicBatch(innerTxn).payingWith(batchOperator).via("batchTxn"),
                 // get and log inner txn record
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result

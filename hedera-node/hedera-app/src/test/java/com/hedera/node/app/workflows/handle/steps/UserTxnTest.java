@@ -155,9 +155,6 @@ class UserTxnTest {
 
     private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = ServicesSoftwareVersion::new;
 
-    @Mock
-    private TransactionChecker transactionChecker;
-
     @BeforeEach
     void setUp() {
         given(preHandleWorkflow.getCurrentPreHandleResult(

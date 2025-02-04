@@ -256,9 +256,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private Predicate<Key> signatureTest;
 
-    @Mock
-    private TransactionChecker transactionChecker;
-
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
