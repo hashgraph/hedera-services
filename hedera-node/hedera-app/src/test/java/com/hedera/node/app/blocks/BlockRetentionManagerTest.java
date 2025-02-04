@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

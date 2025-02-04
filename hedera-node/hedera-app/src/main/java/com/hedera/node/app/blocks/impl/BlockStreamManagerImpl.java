@@ -73,7 +73,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -445,7 +444,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .siblingHashes(siblingHashes.stream().flatMap(List::stream).toList());
             final var proofItem = BlockItem.newBuilder().blockProof(proof).build();
             block.writer().writePbjItem(BlockItem.PROTOBUF.toBytes(proofItem));
-            if (streamWriterType == BlockStreamWriterMode.FILE || streamWriterType == BlockStreamWriterMode.GRPC) {
+            if (streamWriterType == BlockStreamWriterMode.FILE
+                    || streamWriterType == BlockStreamWriterMode.FILE_AND_GRPC) {
                 block.writer().closeBlock();
             }
             if (block.number() != blockNumber) {

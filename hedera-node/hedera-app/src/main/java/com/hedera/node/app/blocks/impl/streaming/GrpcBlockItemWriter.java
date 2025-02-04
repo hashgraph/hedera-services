@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.impl;
+package com.hedera.node.app.blocks.impl.streaming;
 
 import static java.util.Objects.requireNonNull;
 
@@ -22,7 +22,6 @@ import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 
 /**
  * Implements the bidirectional streaming RPC for the publishBlockStream rpc in BlockStreamService

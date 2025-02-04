@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks.impl;
+package com.hedera.node.app.blocks.impl.streaming;
 
 import static com.swirlds.state.lifecycle.HapiUtils.asAccountString;
 import static java.util.Objects.requireNonNull;

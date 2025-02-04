@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

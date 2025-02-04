@@ -1,22 +1,34 @@
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.services.bdd.junit.hedera.simulator;
 
-import com.hedera.hapi.block.BlockAcknowledgement;
-import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.hapi.block.protoc.PublishStreamResponse.Acknowledgement;
 import com.hedera.hapi.block.stream.protoc.BlockItem;
-import com.hedera.hapi.block.stream.protoc.BlockProof;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A simulated block node server that implements the block streaming gRPC service.
@@ -66,25 +78,37 @@ public class SimulatedBlockNodeServer {
             return new StreamObserver<>() {
                 @Override
                 public void onNext(PublishStreamRequest request) {
-                    log.info("Received block stream request with {} block items",
+                    log.info(
+                            "Received block stream request with {} block items",
                             request.getBlockItems().getBlockItemsCount());
 
                     if (request.getBlockItems().getBlockItemsList().stream().anyMatch(BlockItem::hasBlockProof)) {
-                        List<BlockItem> blockProofs = request.getBlockItems().getBlockItemsList().stream().filter(BlockItem::hasBlockProof).toList();
+                        List<BlockItem> blockProofs = request.getBlockItems().getBlockItemsList().stream()
+                                .filter(BlockItem::hasBlockProof)
+                                .toList();
                         if (blockProofs.size() > 1) {
                             log.error("Received more than one block proof in a single request. This is not expected.");
                         }
                         BlockItem blockProof = blockProofs.getFirst();
-                        log.info("Received block proof for block {} with signature {}",
+                        log.info(
+                                "Received block proof for block {} with signature {}",
                                 blockProof.getBlockProof().getBlock(),
                                 blockProof.getBlockProof().getBlockSignature());
 
-                        com.hedera.hapi.block.protoc.PublishStreamResponse.BlockAcknowledgement.Builder blockAcknowledgement =
-                                com.hedera.hapi.block.protoc.PublishStreamResponse.BlockAcknowledgement.newBuilder().setBlockNumber(blockProof.getBlockProof().getBlock()).setBlockAlreadyExists(false);
+                        com.hedera.hapi.block.protoc.PublishStreamResponse.BlockAcknowledgement.Builder
+                                blockAcknowledgement =
+                                        com.hedera.hapi.block.protoc.PublishStreamResponse.BlockAcknowledgement
+                                                .newBuilder()
+                                                .setBlockNumber(blockProof
+                                                        .getBlockProof()
+                                                        .getBlock())
+                                                .setBlockAlreadyExists(false);
 
                         // If this request contains a block proof, send an acknowledgement
                         responseObserver.onNext(PublishStreamResponse.newBuilder()
-                                .setAcknowledgement(Acknowledgement.newBuilder().setBlockAck(blockAcknowledgement).build())
+                                .setAcknowledgement(Acknowledgement.newBuilder()
+                                        .setBlockAck(blockAcknowledgement)
+                                        .build())
                                 .build());
                     }
                 }
@@ -101,4 +125,4 @@ public class SimulatedBlockNodeServer {
             };
         }
     }
-} 
+}

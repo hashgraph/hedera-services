@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.node.app.blocks.impl.BlockNodeConnectionManager;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
-import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
-import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
+import com.hedera.node.app.blocks.impl.streaming.BlockNodeConnectionManager;
+import com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter;
+import com.hedera.node.app.blocks.impl.streaming.GrpcBlockItemWriter;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -56,7 +56,7 @@ public class BlockStreamModule {
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         return switch (blockStreamConfig.writerMode()) {
             case FILE -> () -> new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem);
-            case GRPC -> () -> new GrpcBlockItemWriter(blockNodeConnectionManager);
+            case FILE_AND_GRPC -> () -> new GrpcBlockItemWriter(blockNodeConnectionManager);
         };
     }
 }

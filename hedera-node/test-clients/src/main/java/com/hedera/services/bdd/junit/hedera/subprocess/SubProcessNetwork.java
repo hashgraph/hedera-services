@@ -283,14 +283,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         container.getGrpcPort());
             } else if (blockNodeMode == BlockNodeMode.SIMULATOR) {
                 updateBlockNodesConfigForNodeWithSimulators(node, simulatedBlockNodes.get(i));
-                log.info(
-                        "Configured simulated block nodes for node {}",
-                        node.getNodeId());
-            } else if(blockNodeMode == BlockNodeMode.LOCAL_NODE && i == 0) {
+                log.info("Configured simulated block nodes for node {}", node.getNodeId());
+            } else if (blockNodeMode == BlockNodeMode.LOCAL_NODE && i == 0) {
                 updateSubProcessNodeOneConfigForLocalBlockNode(node);
-                log.info(
-                        "Configured local block nodes for node {}",
-                        node.getNodeId());
+                log.info("Configured local block nodes for node {}", node.getNodeId());
             } else {
                 log.info("Skipping block node for node {} as block nodes are disabled", node.getNodeId());
             }
@@ -304,18 +300,16 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         try {
             // Create block node config for this container
             List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
-                    1, // priority
+                    1, // considered as preferred block node since priority = 1
                     "127.0.0.1",
-                    8080,
-                    true // preferred since it's the only node
-            ));
+                    8080));
 
             BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
                     blockNodes,
                     3600, // 1 hour reselection interval
                     1, // only one connection needed, also not relevant for one preferred block node,
                     256 // default batch size
-            );
+                    );
 
             // Write the config to this node's block-nodes.json
             Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.json");
@@ -323,17 +317,23 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
             // Update application.properties with block stream settings
             Path appPropertiesPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("application.properties");
-            log.info("Attempting to update application.properties at path {} for node {}", appPropertiesPath, node.getNodeId());
+            log.info(
+                    "Attempting to update application.properties at path {} for node {}",
+                    appPropertiesPath,
+                    node.getNodeId());
 
             // First check if file exists and log current content
             if (Files.exists(appPropertiesPath)) {
                 String currentContent = Files.readString(appPropertiesPath);
                 log.info("Current application.properties content for node {}: {}", node.getNodeId(), currentContent);
             } else {
-                log.info("application.properties does not exist yet for node {}, will create new file", node.getNodeId());
+                log.info(
+                        "application.properties does not exist yet for node {}, will create new file",
+                        node.getNodeId());
             }
 
-            String blockStreamConfig = """
+            String blockStreamConfig =
+                    """
                     # Block stream configuration
                     blockStream.writerMode=GRPC
                     blockStream.streamToBlockNodes=true
@@ -341,13 +341,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     """;
 
             // Write the properties with CREATE and APPEND options
-            Files.writeString(appPropertiesPath, blockStreamConfig,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND);
+            Files.writeString(
+                    appPropertiesPath, blockStreamConfig, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 
             // Verify the file was updated
             String updatedContent = Files.readString(appPropertiesPath);
-            log.info("Verified application.properties content after update for node {}: {}", node.getNodeId(), updatedContent);
+            log.info(
+                    "Verified application.properties content after update for node {}: {}",
+                    node.getNodeId(),
+                    updatedContent);
 
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to update block node configuration for node " + node.getNodeId(), e);
@@ -358,11 +360,9 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         try {
             // Create block node config for this container
             List<BlockNodeConfig> blockNodes = List.of(new BlockNodeConfig(
-                    1, // priority
+                    1, // considered as preferred block node since priority = 1
                     container.getHost(),
-                    container.getGrpcPort(),
-                    true // preferred since it's the only node
-                    ));
+                    container.getGrpcPort()));
 
             BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
                     blockNodes,
@@ -389,18 +389,16 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             // Create block node config for simulator servers
             List<BlockNodeConfig> blockNodes = new ArrayList<>();
             blockNodes.add(new BlockNodeConfig(
-                    1, // priority
+                    1, // considered as preferred block node since priority = 1
                     "localhost",
-                    sim.getPort(),
-                    true // Preferred
-            ));
+                    sim.getPort()));
 
             BlockNodeConnectionInfo connectionInfo = new BlockNodeConnectionInfo(
                     blockNodes,
                     3600, // 1 hour reselection interval
                     2, // max simultaneous connections
                     256 // default batch size
-            );
+                    );
 
             // Write the config to this node's block-nodes.json
             Path configPath = node.getExternalPath(DATA_CONFIG_DIR).resolve("block-nodes.json");
@@ -431,8 +429,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
         // Stop simulated block nodes with grace period
         Duration shutdownTimeout = Duration.ofSeconds(30);
-        log.info("Gracefully stopping {} simulated block nodes with {} timeout", simulatedBlockNodes.size(), shutdownTimeout);
-        
+        log.info(
+                "Gracefully stopping {} simulated block nodes with {} timeout",
+                simulatedBlockNodes.size(),
+                shutdownTimeout);
+
         List<CompletableFuture<Void>> shutdownFutures = new ArrayList<>();
         for (SimulatedBlockNodeServer server : simulatedBlockNodes) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {

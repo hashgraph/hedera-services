@@ -1318,7 +1318,7 @@ public final class Hedera
     /**
      * Initializes block node connections and waits for at least one connection to be established.
      * This should be called before platform.start() to ensure we don't miss any blocks.
-     * 
+     *
      * @param timeout maximum time to wait for a connection
      */
     public void initializeBlockNodeConnections(Duration timeout) {

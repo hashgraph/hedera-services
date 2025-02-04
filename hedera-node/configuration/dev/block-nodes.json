@@ -3,11 +3,10 @@
     {
       "priority": 1,
       "address": "localhost",
-      "port": 8080,
-      "preferred": true,
-      "blockItemBatchSize": 256
+      "port": 8080
     }
   ],
   "nodeReselectionInterval": 3600,
-  "maxSimultaneousConnections": 1
+  "maxSimultaneousConnections": 1,
+  "blockItemBatchSize": 256
 }

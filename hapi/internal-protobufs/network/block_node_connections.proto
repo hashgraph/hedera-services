@@ -11,7 +11,6 @@ message BlockNodeConfig {
     int32 priority = 1;
     string address = 2;
     int32 port = 3;
-    bool preferred = 4;
 }
 
 // Overall connection configuration for block nodes
