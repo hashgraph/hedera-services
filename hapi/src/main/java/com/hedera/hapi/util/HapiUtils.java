@@ -234,14 +234,6 @@ public class HapiUtils {
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
-            case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
-            case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
-            case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
-            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
-            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
-            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
-            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
-            case STATE_SIGNATURE_TRANSACTION -> HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
             case HINTS_PREPROCESSING_VOTE -> HederaFunctionality.HINTS_PREPROCESSING_VOTE;
             case HINTS_KEY_PUBLICATION -> HederaFunctionality.HINTS_KEY_PUBLICATION;
             case HINTS_PARTIAL_SIGNATURE -> HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
