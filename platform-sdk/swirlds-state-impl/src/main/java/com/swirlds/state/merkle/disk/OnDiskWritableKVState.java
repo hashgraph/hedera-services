@@ -24,6 +24,7 @@ import static com.swirlds.state.merkle.logging.StateLogger.logMapRemove;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableKVStateBase;
@@ -31,8 +32,7 @@ import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -161,12 +161,20 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
             throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
         }
 
-        final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-        buffer.putShort((short) stateId);
-        final Bytes stateIdBytes = Bytes.wrap(buffer.array());
+        // Allocate a single byte array to hold the 2-byte state ID and the serialized key.
+        final byte[] bytes = new byte[Short.BYTES + keyCodec.measureRecord(key)];
+        final BufferedData writer = BufferedData.wrap(bytes);
 
-        final Bytes keyBytes = keyCodec.toBytes(key);
+        // Write the state ID in big-endian order by writing two bytes.
+        writer.writeByte((byte) ((stateId >>> 8) & 0xFF)); // High-order byte
+        writer.writeByte((byte) (stateId & 0xFF)); // Low-order byte
 
-        return stateIdBytes.append(keyBytes);
+        try {
+            keyCodec.write(key, writer);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return Bytes.wrap(bytes);
     }
 }
