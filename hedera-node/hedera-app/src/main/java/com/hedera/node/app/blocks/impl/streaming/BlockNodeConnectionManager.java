@@ -183,53 +183,46 @@ public class BlockNodeConnectionManager {
         logger.info("Connecting to block node {}:{}", node.address(), node.port());
 
         // Check if we're still in backoff period
-        connectionLock.lock();
-        try {
-            Instant now = Instant.now();
-            if (nextRetryTime.containsKey(node) && now.isBefore(nextRetryTime.get(node))) {
-                return;
-            }
-        } finally {
-            connectionLock.unlock();
-        }
-
-        try {
-            GrpcClient client = GrpcClient.builder()
-                    .tls(Tls.builder().enabled(false).build())
-                    .baseUri(new URI("http://" + node.address() + ":" + node.port()))
-                    .protocolConfig(GrpcClientProtocolConfig.builder()
-                            .abortPollTimeExpired(false)
-                            .build())
-                    .keepAlive(true)
-                    .build();
-
-            GrpcServiceClient grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
-                    .serviceName(BlockStreamServiceGrpc.SERVICE_NAME)
-                    .putMethod(
-                            GRPC_END_POINT,
-                            GrpcClientMethodDescriptor.bidirectional(
-                                            BlockStreamServiceGrpc.SERVICE_NAME, GRPC_END_POINT)
-                                    .requestType(PublishStreamRequest.class)
-                                    .responseType(PublishStreamResponse.class)
-                                    .build())
-                    .build());
-
-            BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient, this);
-
-            connectionLock.lock();
+        Instant now = Instant.now();
+        if (!nextRetryTime.containsKey(node) || now.isAfter(nextRetryTime.get(node))) {
             try {
-                activeConnections.put(node, connection);
-                retryAttempts.remove(node);
-                nextRetryTime.remove(node);
-                nodesInBackoff.remove(node);
-            } finally {
-                connectionLock.unlock();
-            }
+                GrpcClient client = GrpcClient.builder()
+                        .tls(Tls.builder().enabled(false).build())
+                        .baseUri(new URI("http://" + node.address() + ":" + node.port()))
+                        .protocolConfig(GrpcClientProtocolConfig.builder()
+                                .abortPollTimeExpired(false)
+                                .build())
+                        .keepAlive(true)
+                        .build();
 
-            logger.info("Successfully connected to block node {}:{}", node.address(), node.port());
-        } catch (URISyntaxException | RuntimeException e) {
-            handleConnectionFailure(node);
-            logger.error("Failed to connect to block node {}:{}", node.address(), node.port(), e);
+                GrpcServiceClient grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
+                        .serviceName(BlockStreamServiceGrpc.SERVICE_NAME)
+                        .putMethod(
+                                GRPC_END_POINT,
+                                GrpcClientMethodDescriptor.bidirectional(
+                                                BlockStreamServiceGrpc.SERVICE_NAME, GRPC_END_POINT)
+                                        .requestType(PublishStreamRequest.class)
+                                        .responseType(PublishStreamResponse.class)
+                                        .build())
+                        .build());
+
+                BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient, this);
+
+                connectionLock.lock();
+                try {
+                    activeConnections.put(node, connection);
+                    retryAttempts.remove(node);
+                    nextRetryTime.remove(node);
+                    nodesInBackoff.remove(node);
+                } finally {
+                    connectionLock.unlock();
+                }
+
+                logger.info("Successfully connected to block node {}:{}", node.address(), node.port());
+            } catch (URISyntaxException | RuntimeException e) {
+                handleConnectionFailure(node);
+                logger.error("Failed to connect to block node {}:{}", node.address(), node.port(), e);
+            }
         }
     }
 
