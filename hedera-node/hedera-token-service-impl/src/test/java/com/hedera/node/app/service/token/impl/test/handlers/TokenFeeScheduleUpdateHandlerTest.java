@@ -54,7 +54,6 @@ import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -93,9 +92,6 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private TokenBaseStreamBuilder recordBuilder;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private TransactionDispatcher transactionDispatcher;
@@ -195,8 +191,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .value(fungibleTokenId, tokenWithoutFeeScheduleKey)
                 .build();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore =
-                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))
@@ -209,8 +204,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     void rejectsInvalidTokenId() {
         writableTokenState = emptyWritableTokenState();
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
-        writableTokenStore =
-                new WritableTokenStore(writableStates, configuration, storeMetricsService, writableEntityCounters);
+        writableTokenStore = new WritableTokenStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
         assertThatThrownBy(() -> subject.handle(context))

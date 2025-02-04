@@ -1905,6 +1905,50 @@ public class UtilVerbs {
     }
 
     /**
+     * Validates that fee charged for a transaction is within the allowedPercentDiff of expected fee (taken
+     * from pricing calculator) without the charge for gas.
+     * @param txn txn to be validated
+     * @param expectedUsd expected fee in usd
+     * @param allowedPercentDiff allowed percentage difference
+     * @return
+     */
+    public static CustomSpecAssert validateChargedUsdWithoutGas(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsed(spec, txn);
+            final var gasCharged = getChargedGas(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged - gasCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee without gas (%s) more than %.2f percent different than expected!",
+                            sdec(actualUsdCharged - gasCharged, 4), txn, allowedPercentDiff));
+        });
+    }
+
+    /**
+     * Validates that the gas charge for a transaction is within the allowedPercentDiff of expected gas in USD.
+     * @param txn txn to be validated
+     * @param expectedUsdForGas expected gas charge in usd
+     * @param allowedPercentDiff allowed percentage difference
+     * @return
+     */
+    public static CustomSpecAssert validateChargedUsdForGasOnly(
+            String txn, double expectedUsdForGas, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var gasCharged = getChargedGas(spec, txn);
+            assertEquals(
+                    expectedUsdForGas,
+                    gasCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsdForGas,
+                    String.format(
+                            "%s gas charge (%s) more than %.2f percent different than expected!",
+                            sdec(expectedUsdForGas, 4), txn, allowedPercentDiff));
+        });
+    }
+
+    /**
      * Validates that an amount is within a certain percentage of an expected value.
      * @param expected expected value
      * @param actual actual value
@@ -2449,6 +2493,30 @@ public class UtilVerbs {
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    /**
+     * Returns the charged gas for a transaction in USD.
+     * The multiplier 71 is used to convert gas to tinybars. This multiplier comes from the feeScheduls.json file.
+     * See
+     * {@link com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues#topLevelTinybarGasPrice() topLevelTinybarGasPrice}
+     * for more information.
+     * @param spec the spec
+     * @param txn the transaction
+     * @return
+     */
+    private static double getChargedGas(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).logged();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        final var gasUsed = rcd.getContractCallResult().getGasUsed();
+        return (gasUsed * 71.0)
                 / ONE_HBAR
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
