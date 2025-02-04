@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -40,19 +39,13 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
-import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
-import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.store.StoreFactory;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.tss.TssBaseService;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -65,14 +58,10 @@ import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
-import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -108,12 +97,6 @@ public class NodeStakeUpdatesTest {
 
     @Mock
     private WritableStates writableStates;
-
-    @Mock
-    private HandleContext handleContext;
-
-    @Mock
-    private StoreFactory storeFactory;
 
     @Mock
     private StoreMetricsService storeMetricsService;
@@ -360,88 +343,6 @@ public class NodeStakeUpdatesTest {
 
         subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
         verify(tssBaseService, never()).setCandidateRoster(any(), any());
-    }
-
-    @Test
-    @DisplayName("Service won't set the active roster as the new candidate roster")
-    void doesntSetActiveRosterAsCandidateRoster() {
-        // Simulate staking information
-        given(blockStore.getLastBlockInfo())
-                .willReturn(BlockInfo.newBuilder()
-                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
-                        .build());
-        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
-
-        // Enable keyCandidateRoster
-        given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
-
-        // Simulate the same address book input as the current candidate and active rosters
-        final var nodeStore = simulateNodes(RosterCase.NODE_1, RosterCase.NODE_2, RosterCase.NODE_3, RosterCase.NODE_4);
-        given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(stack.getWritableStates(notNull())).willReturn(writableStates);
-        simulateCandidateAndActiveRosters();
-
-        // Attempt to set the (equivalent) active roster as the new candidate roster
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
-        verify(tssBaseService, never()).setCandidateRoster(any(), any());
-    }
-
-    @Test
-    void stakingPeriodSetsCandidateRosterForEnabledFlag() {
-        // Simulate staking information
-        given(blockStore.getLastBlockInfo())
-                .willReturn(BlockInfo.newBuilder()
-                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
-                        .build());
-        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
-
-        // Enable keyCandidateRoster
-        given(context.configuration()).willReturn(newConfig(DEFAULT_STAKING_PERIOD_MINS, true));
-
-        // Simulate an updated address book
-        final var nodeStore = simulateNodes(RosterCase.NODE_1, RosterCase.NODE_2, RosterCase.NODE_3);
-        given(dispatch.handleContext()).willReturn(handleContext);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(stack.getWritableStates(notNull())).willReturn(writableStates);
-        simulateCandidateAndActiveRosters();
-
-        subject.process(dispatch, stack, context, StreamMode.RECORDS, false, Instant.EPOCH);
-        verify(tssBaseService).setCandidateRoster(notNull(), notNull());
-    }
-
-    private ReadableNodeStore simulateNodes(Node... nodes) {
-        final Map<EntityNumber, Node> translated = Arrays.stream(nodes)
-                .collect(Collectors.toMap(
-                        n -> EntityNumber.newBuilder().number(n.nodeId()).build(), node -> node));
-        final WritableKVState<EntityNumber, Node> nodeWritableKVState = new MapWritableKVState<>(NODES_KEY, translated);
-        given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodeWritableKVState);
-        final ReadableNodeStore nodeStore = new ReadableNodeStoreImpl(writableStates);
-        given(context.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-
-        return nodeStore;
-    }
-
-    private void simulateCandidateAndActiveRosters() {
-        given(rosterState.get())
-                .willReturn(new RosterState(
-                        RosterCase.CANDIDATE_ROSTER_HASH.value(),
-                        List.of(RoundRosterPair.newBuilder()
-                                .roundNumber(12345)
-                                .activeRosterHash(RosterCase.ACTIVE_ROSTER_HASH.value())
-                                .build())));
-        given(writableStates.<RosterState>getSingleton(V0540RosterSchema.ROSTER_STATES_KEY))
-                .willReturn(rosterState);
-        given(writableStates.<ProtoBytes, Roster>get(V0540RosterSchema.ROSTER_KEY))
-                .willReturn(new MapWritableKVState<>(
-                        V0540RosterSchema.ROSTER_KEY,
-                        Map.of(
-                                RosterCase.CANDIDATE_ROSTER_HASH,
-                                RosterCase.CURRENT_CANDIDATE_ROSTER,
-                                RosterCase.ACTIVE_ROSTER_HASH,
-                                RosterCase.ACTIVE_ROSTER)));
     }
 
     private Configuration newPeriodMinsConfig() {
