@@ -76,7 +76,6 @@ public interface WritableHintsStore extends ReadableHintsStore {
 
     /**
      * Purges any state no longer needed after a given handoff.
-     * @return whether any state was purged
      */
-    boolean purgeStateAfterHandoff(@NonNull ActiveRosters activeRosters);
+    void updateForHandoff(@NonNull ActiveRosters activeRosters);
 }

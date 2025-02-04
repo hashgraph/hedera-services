@@ -41,6 +41,7 @@ import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
@@ -59,7 +60,7 @@ public class HintsControllerImpl implements HintsController {
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
     private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
-    private final Map<Long, PreprocessingVote> votes = new HashMap<>();
+    private final Map<Long, PreprocessingVote> votes = new ConcurrentHashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
 
     /**
@@ -111,7 +112,17 @@ public class HintsControllerImpl implements HintsController {
         this.codec = requireNonNull(codec);
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
-        publications.forEach(this::addHintsKeyPublication);
+        // Ensure we are up-to-date on any published hinTS keys we might need for this construction
+        if (!construction.hasHintsScheme()) {
+            final var cutoffTime = construction.hasPreprocessingStartTime()
+                    ? asInstant(construction.preprocessingStartTimeOrThrow())
+                    : Instant.MAX;
+            publications.forEach(publication -> {
+                if (!publication.adoptionTime().isAfter(cutoffTime)) {
+                    maybeUpdateForHintsKey(publication);
+                }
+            });
+        }
     }
 
     @Override
@@ -164,25 +175,13 @@ public class HintsControllerImpl implements HintsController {
     @Override
     public void addHintsKeyPublication(@NonNull final HintsKeyPublication publication) {
         requireNonNull(publication);
-        // Once the preprocessing start time (or scheme) is known, the party keys are fixed
+        // If grace period is over, we have either finished construction or already set the
+        // preprocessing time to something earlier than consensus now; so we will not use
+        // this key and can return immediately
         if (!construction.hasGracePeriodEndTime()) {
             return;
         }
-        final long nodeId = publication.nodeId();
-        // Ignore hinTS keys from nodes not in the target roster; though note this does not
-        // prevent the handler from storing them for use in future constructions
-        if (!weights.targetIncludes(nodeId)) {
-            return;
-        }
-        final int partyId = publication.partyId();
-        final int expectedPartyId = expectedPartyId(nodeId);
-        if (partyId != expectedPartyId) {
-            throw new IllegalArgumentException(
-                    "Expected party #" + expectedPartyId + " for node" + nodeId + "; but was party #" + partyId);
-        }
-        nodePartyIds.put(nodeId, partyId);
-        partyNodeIds.put(partyId, nodeId);
-        validationFutures.put(publication.adoptionTime(), validationFuture(partyId, publication.hintsKey()));
+        maybeUpdateForHintsKey(publication);
     }
 
     @Override
@@ -250,79 +249,17 @@ public class HintsControllerImpl implements HintsController {
     }
 
     /**
-     * Returns a future that completes to the aggregated hinTS keys for this construction for
-     * all valid published hinTS keys.
-     *
-     * @return the future
+     * If the publication is for the expected party id, update the node and party id mappings and
+     * start a validation future for the hinTS key.
+     * @param publication the publication
      */
-    private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
-        return CompletableFuture.runAsync(
-                () -> {
-                    final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
-                            .map(CompletableFuture::join)
-                            .filter(Validation::isValid)
-                            .collect(toMap(Validation::partyId, Validation::hintsKey));
-                    final var aggregatedWeights = nodePartyIds.entrySet().stream()
-                            .filter(entry -> hintKeys.containsKey(entry.getValue()))
-                            .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
-                    final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
-                    final var preprocessedKeys = codec.decodePreprocessedKeys(output);
-                    submissions
-                            .submitHintsVote(construction.constructionId(), preprocessedKeys)
-                            .join();
-                },
-                executor);
-    }
-
-    /**
-     * Returns the weight of the nodes in the target roster that have published valid hinTS keys up to the given time.
-     * This is blocking because if we are reduced to checking this, we have already exhausted the grace period waiting
-     * for hinTS key publications, and all the futures in this map are essentially guaranteed to be complete, meaning
-     * the once-per-round check is very cheap to do.
-     *
-     * @param now the time up to which to consider hinTS keys
-     * @return the weight of the nodes with valid hinTS keys
-     */
-    private long weightOfValidHintsKeysAt(@NonNull final Instant now) {
-        return validationFutures.headMap(now, true).values().stream()
-                .map(CompletableFuture::join)
-                .filter(Validation::isValid)
-                .mapToLong(validation -> weights.targetWeightOf(partyNodeIds.get(validation.partyId())))
-                .sum();
-    }
-
-    /**
-     * Returns a future that completes to a validation of the given hints key.
-     *
-     * @param partyId the party ID
-     * @param hintsKey the hints key
-     * @return the future
-     */
-    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final Bytes hintsKey) {
-        return CompletableFuture.supplyAsync(
-                () -> {
-                    final var isValid = library.validateHintsKey(hintsKey, partyId, numParties);
-                    return new Validation(partyId, hintsKey, isValid);
-                },
-                executor);
-    }
-
-    /**
-     * If this node is part of the target construction and has not yet published (and is not currently publishing) its
-     * hinTS key, then starts publishing it.
-     */
-    private void ensureHintsKeyPublished() {
-        if (publicationFuture != null && weights.targetIncludes(selfId) && !nodePartyIds.containsKey(selfId)) {
-            final int selfPartyId = expectedPartyId(selfId);
-            publicationFuture = CompletableFuture.runAsync(
-                    () -> {
-                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
-                        final var hintsKey = codec.encodeHintsKey(blsKeyPair.publicKey(), hints);
-                        submissions
-                                .submitHintsKey(selfPartyId, numParties, hintsKey)
-                                .join();
-                    },
-                    executor);
+    private void maybeUpdateForHintsKey(@NonNull final HintsKeyPublication publication) {
+        final int partyId = publication.partyId();
+        final long nodeId = publication.nodeId();
+        if (partyId == expectedPartyId(nodeId)) {
+            nodePartyIds.put(nodeId, partyId);
+            partyNodeIds.put(partyId, nodeId);
+            validationFutures.put(publication.adoptionTime(), validationFuture(partyId, publication.hintsKey()));
         }
     }
 
@@ -361,5 +298,98 @@ public class HintsControllerImpl implements HintsController {
                 .boxed()
                 .toList();
         return unusedPartyIds.get(unassignedNodeIds.indexOf(nodeId));
+    }
+
+    /**
+     * Returns a future that completes to a validation of the given hints key.
+     *
+     * @param partyId the party ID
+     * @param hintsKey the hints key
+     * @return the future
+     */
+    private CompletableFuture<Validation> validationFuture(final int partyId, @NonNull final Bytes hintsKey) {
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    final var isValid = library.validateHintsKey(hintsKey, partyId, numParties);
+                    return new Validation(partyId, hintsKey, isValid);
+                },
+                executor);
+    }
+
+    /**
+     * Returns the weight of the nodes in the target roster that have published valid hinTS keys up to the given time.
+     * This is blocking because if we are reduced to checking this, we have already exhausted the grace period waiting
+     * for hinTS key publications, and all the futures in this map are essentially guaranteed to be complete, meaning
+     * the once-per-round check is very cheap to do.
+     *
+     * @param now the time up to which to consider hinTS keys
+     * @return the weight of the nodes with valid hinTS keys
+     */
+    private long weightOfValidHintsKeysAt(@NonNull final Instant now) {
+        return validationFutures.headMap(now, true).values().stream()
+                .map(CompletableFuture::join)
+                .filter(Validation::isValid)
+                .mapToLong(validation -> weights.targetWeightOf(partyNodeIds.get(validation.partyId())))
+                .sum();
+    }
+
+    /**
+     * If this node is part of the target construction and has not yet published (and is not currently publishing) its
+     * hinTS key, then starts publishing it.
+     */
+    private void ensureHintsKeyPublished() {
+        if (publicationFuture == null && weights.targetIncludes(selfId) && !nodePartyIds.containsKey(selfId)) {
+            final int selfPartyId = expectedPartyId(selfId);
+            publicationFuture = CompletableFuture.runAsync(
+                    () -> {
+                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
+                        final var hintsKey = codec.encodeHintsKey(blsKeyPair.publicKey(), hints);
+                        submissions
+                                .submitHintsKey(selfPartyId, numParties, hintsKey)
+                                .join();
+                    },
+                    executor);
+        }
+    }
+
+    /**
+     * Returns a future that completes to the aggregated hinTS keys for this construction for
+     * all valid published hinTS keys.
+     *
+     * @return the future
+     */
+    private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
+        return CompletableFuture.runAsync(
+                () -> {
+                    // IMPORTANT: since we only start this future when we have a preprocessing start
+                    // time, there is no risk of CME with handle thread running addKeyPublication()
+                    final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
+                            .map(CompletableFuture::join)
+                            .filter(Validation::isValid)
+                            .collect(toMap(Validation::partyId, Validation::hintsKey));
+                    final var aggregatedWeights = nodePartyIds.entrySet().stream()
+                            .filter(entry -> hintKeys.containsKey(entry.getValue()))
+                            .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
+                    final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
+                    final var preprocessedKeys = codec.decodePreprocessedKeys(output);
+                    // Prefer to vote for a congruent node's preprocessed keys if one exists
+                    long congruentNodeId = -1;
+                    for (final var entry : votes.entrySet()) {
+                        if (entry.getValue().preprocessedKeysOrThrow().equals(preprocessedKeys)) {
+                            congruentNodeId = entry.getKey();
+                            break;
+                        }
+                    }
+                    if (congruentNodeId != -1) {
+                        submissions
+                                .submitHintsVote(construction.constructionId(), congruentNodeId)
+                                .join();
+                    } else {
+                        submissions
+                                .submitHintsVote(construction.constructionId(), preprocessedKeys)
+                                .join();
+                    }
+                },
+                executor);
     }
 }

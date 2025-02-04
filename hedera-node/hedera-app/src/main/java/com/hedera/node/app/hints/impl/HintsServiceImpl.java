@@ -63,10 +63,62 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @VisibleForTesting
-    public HintsServiceImpl(
-            @NonNull final HintsServiceComponent component, @NonNull final Configuration bootstrapConfig) {
-        this.component = requireNonNull(component);
+    HintsServiceImpl(@NonNull final Configuration bootstrapConfig, @NonNull final HintsServiceComponent component) {
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.component = requireNonNull(component);
+    }
+
+    @Override
+    public boolean isReady() {
+        return component.signingContext().isReady();
+    }
+
+    @Override
+    public void reconcile(
+            @NonNull final ActiveRosters activeRosters,
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now,
+            @NonNull final TssConfig tssConfig) {
+        requireNonNull(activeRosters);
+        requireNonNull(hintsStore);
+        requireNonNull(now);
+        requireNonNull(tssConfig);
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasHintsScheme()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
+                    controller.advanceConstruction(now, hintsStore);
+                }
+            }
+            case HANDOFF -> hintsStore.updateForHandoff(activeRosters);
+        }
+    }
+
+    @Override
+    public @NonNull Bytes activeVerificationKeyOrThrow() {
+        return component.signingContext().verificationKeyOrThrow();
+    }
+
+    @Override
+    public HintsHandlers handlers() {
+        return component.handlers();
+    }
+
+    @Override
+    public void registerSchemas(@NonNull final SchemaRegistry registry) {
+        requireNonNull(registry);
+        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            registry.register(new V059HintsSchema(component.signingContext()));
+        }
+    }
+
+    @Override
+    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
+        requireNonNull(hintsStore);
+        component.signingContext().setConstruction(requireNonNull(hintsStore.getNextConstruction()));
     }
 
     @Override
@@ -83,68 +135,7 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
-    public boolean isReady() {
-        return component.signingContext().isReady();
-    }
-
-    @Override
-    public @NonNull Bytes activeVerificationKeyOrThrow() {
-        return component.signingContext().verificationKeyOrThrow();
-    }
-
-    @Override
-    public HintsHandlers handlers() {
-        return component.handlers();
-    }
-
-    @Override
-    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
-        requireNonNull(hintsStore);
-        component.signingContext().setConstruction(requireNonNull(hintsStore.getNextConstruction()));
-    }
-
-    @Override
     public void stop() {
-        // TODO
-    }
-
-    @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        requireNonNull(registry);
-        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
-        if (tssConfig.hintsEnabled()) {
-            registry.register(new V059HintsSchema(component.signingContext()));
-        }
-    }
-
-    @Override
-    public void reconcile(
-            @NonNull final ActiveRosters activeRosters,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now,
-            @NonNull final TssConfig tssConfig) {
-        requireNonNull(now);
-        requireNonNull(activeRosters);
-        requireNonNull(hintsStore);
-        requireNonNull(tssConfig);
-        switch (activeRosters.phase()) {
-            case BOOTSTRAP, TRANSITION -> {
-                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
-                if (!construction.hasHintsScheme()) {
-                    final var controller =
-                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
-                    controller.advanceConstruction(now, hintsStore);
-                }
-            }
-            case HANDOFF -> {
-                if (hintsStore.purgeStateAfterHandoff(activeRosters)) {
-                    // If there was out-of-date state to purge, this is the first round in
-                    // the handoff phase, and we should also update the signing context
-                    component
-                            .signingContext()
-                            .setConstruction(requireNonNull(hintsStore.getConstructionFor(activeRosters)));
-                }
-            }
-        }
+        component.controllers().stop();
     }
 }
