@@ -354,7 +354,8 @@ public class BaseTranslator {
         if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
-        if (!followsUserRecord || parts.transactionIdOrThrow().scheduled()) {
+        if ((!followsUserRecord && !parts.body().hasBatchKey())
+                || parts.transactionIdOrThrow().scheduled()) {
             // Only preceding and user transactions get exchange rates in their receipts; note that
             // auto-account creations are always preceding dispatches and so get exchange rates
             receiptBuilder.exchangeRate(activeRates);

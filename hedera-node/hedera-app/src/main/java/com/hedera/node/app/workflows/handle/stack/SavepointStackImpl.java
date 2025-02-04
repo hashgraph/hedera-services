@@ -561,8 +561,12 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             if (i > indexOfTopLevelRecord) {
                 if (builder.category() != SCHEDULED) {
                     // Only set exchange rates on transactions preceding the user transaction, since
-                    // no subsequent child can change the exchange rate
-                    builder.parentConsensus(consensusTime).exchangeRate(null);
+                    // no subsequent child can change the exchange rate.
+                    if (!builder.transactionBody().hasBatchKey()) {
+                        // Don't set parent consensus to batch inner transactions
+                        builder.parentConsensus(consensusTime);
+                    }
+                    builder.exchangeRate(null);
                 } else {
                     // But for backward compatibility keep setting rates on scheduled receipts, c.f.
                     // https://github.com/hashgraph/hedera-services/issues/15393
