@@ -18,16 +18,20 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
+import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -58,11 +62,9 @@ class HintsControllerImplTest {
     private static final Bytes ENCODED_PREPROCESSED_KEYS = Bytes.wrap("EPK");
     private static final PreprocessedKeys PREPROCESSED_KEYS = new PreprocessedKeys(Bytes.wrap("AK"), Bytes.wrap("VK"));
     private static final TssKeyPair BLS_KEY_PAIR = new TssKeyPair(Bytes.EMPTY, Bytes.EMPTY);
-    private static final HintsKeyPublication KEY_PUBLICATION =
-            new HintsKeyPublication(1L, Bytes.EMPTY, 2, CONSENSUS_NOW);
     private static final HintsConstruction UNFINISHED_CONSTRUCTION = HintsConstruction.newBuilder()
             .constructionId(CONSTRUCTION_ID)
-            .gracePeriodEndTime(asTimestamp(CONSENSUS_NOW))
+            .gracePeriodEndTime(asTimestamp(CONSENSUS_NOW.plusSeconds(1)))
             .build();
     private static final HintsConstruction CONSTRUCTION_WITH_START_TIME = HintsConstruction.newBuilder()
             .constructionId(CONSTRUCTION_ID)
@@ -197,6 +199,144 @@ class HintsControllerImplTest {
 
         subject.advanceConstruction(CONSENSUS_NOW, store);
         assertTrue(scheduledTasks.isEmpty());
+
+        assertDoesNotThrow(() -> subject.cancelPendingWork());
+    }
+
+    @Test
+    void setsPreprocessingStartTimeWhenAllNodesHavePublished() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        given(weights.targetNodeWeights()).willReturn(TARGET_NODE_WEIGHTS);
+        given(weights.numTargetNodesInSource()).willReturn(2);
+        given(store.setPreprocessingStartTime(UNFINISHED_CONSTRUCTION.constructionId(), PREPROCESSING_START_TIME))
+                .willReturn(CONSTRUCTION_WITH_START_TIME);
+
+        subject.addHintsKeyPublication(EXPECTED_NODE_ONE_PUBLICATION);
+        subject.addHintsKeyPublication(TARDY_NODE_TWO_PUBLICATION);
+        given(library.validateHintsKey(any(), anyInt(), anyInt())).willReturn(true);
+        runScheduledTasks();
+
+        subject.advanceConstruction(PREPROCESSING_START_TIME, store);
+
+        // The vote future should have been started
+        final var task = requireNonNull(scheduledTasks.poll());
+        final Map<Integer, Bytes> expectedHintsKeys =
+                Map.of(EXPECTED_NODE_ONE_PUBLICATION.partyId(), EXPECTED_NODE_ONE_PUBLICATION.hintsKey());
+        final Map<Integer, Long> expectedWeights = Map.of(EXPECTED_NODE_ONE_PUBLICATION.partyId(), 8L);
+        given(library.preprocess(expectedHintsKeys, expectedWeights, EXPECTED_PARTY_SIZE))
+                .willReturn(ENCODED_PREPROCESSED_KEYS);
+        given(codec.decodePreprocessedKeys(ENCODED_PREPROCESSED_KEYS)).willReturn(PREPROCESSED_KEYS);
+        given(submissions.submitHintsVote(CONSTRUCTION_ID, PREPROCESSED_KEYS))
+                .willReturn(CompletableFuture.completedFuture(null));
+        given(weights.targetWeightOf(1L)).willReturn(TARGET_NODE_WEIGHTS.get(1L));
+        task.run();
+        verify(submissions).submitHintsVote(FINISHED_CONSTRUCTION.constructionId(), PREPROCESSED_KEYS);
+    }
+
+    @Test
+    void publishesHintsKeyIfNotDoneBeforeGracePeriodOver() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        given(weights.numTargetNodesInSource()).willReturn(2);
+        given(weights.targetNodeWeights()).willReturn(Map.of(SELF_ID, 1L));
+
+        subject.advanceConstruction(PREPROCESSING_START_TIME, store);
+        assertNull(scheduledTasks.poll());
+
+        given(weights.targetIncludes(SELF_ID)).willReturn(true);
+        subject.advanceConstruction(PREPROCESSING_START_TIME, store);
+        final var task = requireNonNull(scheduledTasks.poll());
+        final var hints = Bytes.wrap("HINTS");
+        final var hintsKey = Bytes.wrap("HK");
+        given(library.computeHints(BLS_KEY_PAIR.privateKey(), 0, EXPECTED_PARTY_SIZE))
+                .willReturn(hints);
+        given(codec.encodeHintsKey(BLS_KEY_PAIR.publicKey(), hints)).willReturn(hintsKey);
+        given(submissions.submitHintsKey(0, EXPECTED_PARTY_SIZE, hintsKey))
+                .willReturn(CompletableFuture.completedFuture(null));
+        task.run();
+        verify(submissions).submitHintsKey(0, EXPECTED_PARTY_SIZE, hintsKey);
+
+        subject.advanceConstruction(PREPROCESSING_START_TIME, store);
+        assertNull(scheduledTasks.poll());
+    }
+
+    @Test
+    void publishesHintsKeyIfNotDoneAfterGracePeriodOverWithoutAdequateWeightFromTarget() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        given(weights.numTargetNodesInSource()).willReturn(2);
+        given(weights.targetNodeWeights()).willReturn(Map.of(SELF_ID, 1L));
+        given(weights.targetWeightThreshold()).willReturn(1L);
+        given(weights.targetIncludes(SELF_ID)).willReturn(true);
+
+        subject.advanceConstruction(CONSENSUS_NOW.plusSeconds(2), store);
+
+        final var task = requireNonNull(scheduledTasks.poll());
+        final var hints = Bytes.wrap("HINTS");
+        final var hintsKey = Bytes.wrap("HK");
+        given(library.computeHints(BLS_KEY_PAIR.privateKey(), 0, EXPECTED_PARTY_SIZE))
+                .willReturn(hints);
+        given(codec.encodeHintsKey(BLS_KEY_PAIR.publicKey(), hints)).willReturn(hintsKey);
+        given(submissions.submitHintsKey(0, EXPECTED_PARTY_SIZE, hintsKey))
+                .willReturn(CompletableFuture.completedFuture(null));
+        task.run();
+        verify(submissions).submitHintsKey(0, EXPECTED_PARTY_SIZE, hintsKey);
+
+        assertDoesNotThrow(() -> subject.cancelPendingWork());
+    }
+
+    @Test
+    void canCancelFutures() {
+        setupWith(FINISHED_CONSTRUCTION);
+
+        assertDoesNotThrow(() -> subject.cancelPendingWork());
+    }
+
+    @Test
+    void addVoteIsNoopWhenComplete() {
+        setupWith(FINISHED_CONSTRUCTION);
+
+        assertFalse(subject.addPreprocessingVote(1L, PreprocessingVote.DEFAULT, store));
+    }
+
+    @Test
+    void setsSchemeAndActiveConstructionGivenWinningVote() {
+        setupWith(CONSTRUCTION_WITH_START_TIME);
+        final var keys = new PreprocessedKeys(Bytes.wrap("AK"), Bytes.wrap("VK"));
+        final var vote = PreprocessingVote.newBuilder().preprocessedKeys(keys).build();
+
+        given(weights.sourceWeightOf(1L)).willReturn(2L);
+        given(weights.sourceWeightThreshold()).willReturn(1L);
+        given(store.setHintsScheme(CONSTRUCTION_WITH_START_TIME.constructionId(), keys, Map.of()))
+                .willReturn(FINISHED_CONSTRUCTION);
+        given(store.getActiveConstruction()).willReturn(FINISHED_CONSTRUCTION);
+
+        assertTrue(subject.addPreprocessingVote(1L, vote, store));
+
+        verify(context).setConstruction(FINISHED_CONSTRUCTION);
+    }
+
+    @Test
+    void setsSchemeAndActiveConstructionGivenVoteAndWinningCongruence() {
+        setupWith(CONSTRUCTION_WITH_START_TIME);
+        final var keys = new PreprocessedKeys(Bytes.wrap("AK"), Bytes.wrap("VK"));
+        final var vote = PreprocessingVote.newBuilder().preprocessedKeys(keys).build();
+
+        given(weights.sourceWeightOf(1L)).willReturn(1L);
+        given(weights.sourceWeightThreshold()).willReturn(2L);
+
+        assertTrue(subject.addPreprocessingVote(1L, vote, store));
+        assertFalse(subject.addPreprocessingVote(1L, vote, store));
+
+        verifyNoInteractions(store);
+
+        given(weights.sourceWeightOf(2L)).willReturn(1L);
+        given(store.getActiveConstruction()).willReturn(HintsConstruction.DEFAULT);
+        final var congruentVote =
+                PreprocessingVote.newBuilder().congruentNodeId(1L).build();
+        given(store.setHintsScheme(CONSTRUCTION_WITH_START_TIME.constructionId(), keys, Map.of()))
+                .willReturn(FINISHED_CONSTRUCTION);
+        assertTrue(subject.addPreprocessingVote(2L, congruentVote, store));
+
+        verify(context, never()).setConstruction(any());
     }
 
     private void setupWith(@NonNull final HintsConstruction construction) {

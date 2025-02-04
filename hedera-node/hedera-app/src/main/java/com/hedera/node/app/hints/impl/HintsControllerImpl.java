@@ -19,6 +19,8 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -39,6 +41,7 @@ import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
@@ -57,7 +60,7 @@ public class HintsControllerImpl implements HintsController {
     private final Map<Long, Integer> nodePartyIds = new HashMap<>();
     private final Map<Integer, Long> partyNodeIds = new HashMap<>();
     private final RosterTransitionWeights weights;
-    private final Map<Long, PreprocessingVote> votes = new HashMap<>();
+    private final Map<Long, PreprocessingVote> votes = new ConcurrentHashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
 
     /**
@@ -150,7 +153,12 @@ public class HintsControllerImpl implements HintsController {
                         startPreprocessingVoteFuture(asInstant(construction.preprocessingStartTimeOrThrow()));
             }
         } else {
-            throw new AssertionError("Not implemented");
+            if (shouldStartPreprocessing(now)) {
+                construction = hintsStore.setPreprocessingStartTime(construction.constructionId(), now);
+                preprocessingVoteFuture = startPreprocessingVoteFuture(now);
+            } else {
+                ensureHintsKeyPublished();
+            }
         }
     }
 
@@ -181,12 +189,63 @@ public class HintsControllerImpl implements HintsController {
             final long nodeId, @NonNull final PreprocessingVote vote, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(vote);
         requireNonNull(hintsStore);
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!construction.hasHintsScheme() && !votes.containsKey(nodeId)) {
+            if (vote.hasPreprocessedKeys()) {
+                votes.put(nodeId, vote);
+            } else if (vote.hasCongruentNodeId()) {
+                final var congruentVote = votes.get(vote.congruentNodeIdOrThrow());
+                if (congruentVote != null && congruentVote.hasPreprocessedKeys()) {
+                    votes.put(nodeId, congruentVote);
+                }
+            }
+            final var outputWeights = votes.entrySet().stream()
+                    .collect(groupingBy(
+                            entry -> entry.getValue().preprocessedKeysOrThrow(),
+                            summingLong(entry -> weights.sourceWeightOf(entry.getKey()))));
+            final var maybeWinningOutputs = outputWeights.entrySet().stream()
+                    .filter(entry -> entry.getValue() >= weights.sourceWeightThreshold())
+                    .map(Map.Entry::getKey)
+                    .findFirst();
+            maybeWinningOutputs.ifPresent(keys -> {
+                construction = hintsStore.setHintsScheme(construction.constructionId(), keys, nodePartyIds);
+                // If this just completed the active construction, update the signing context
+                if (hintsStore.getActiveConstruction().constructionId() == construction.constructionId()) {
+                    context.setConstruction(construction);
+                }
+            });
+            return true;
+        }
+        return false;
     }
 
     @Override
     public void cancelPendingWork() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (publicationFuture != null) {
+            publicationFuture.cancel(true);
+        }
+        if (preprocessingVoteFuture != null) {
+            preprocessingVoteFuture.cancel(true);
+        }
+        validationFutures.values().forEach(future -> future.cancel(true));
+    }
+
+    /**
+     * Applies a deterministic policy to choose a preprocessing behavior at the given time.
+     *
+     * @param now the current consensus time
+     * @return the choice of preprocessing behavior
+     */
+    private boolean shouldStartPreprocessing(@NonNull final Instant now) {
+        // If every active node in the target roster has published a hinTS key,
+        // start preprocessing now; there is nothing else to wait for
+        if (validationFutures.size() == weights.numTargetNodesInSource()) {
+            return true;
+        }
+        if (now.isBefore(asInstant(construction.gracePeriodEndTimeOrThrow()))) {
+            return false;
+        } else {
+            return weightOfValidHintsKeysAt(now) >= weights.targetWeightThreshold();
+        }
     }
 
     /**
@@ -258,6 +317,42 @@ public class HintsControllerImpl implements HintsController {
     }
 
     /**
+     * Returns the weight of the nodes in the target roster that have published valid hinTS keys up to the given time.
+     * This is blocking because if we are reduced to checking this, we have already exhausted the grace period waiting
+     * for hinTS key publications, and all the futures in this map are essentially guaranteed to be complete, meaning
+     * the once-per-round check is very cheap to do.
+     *
+     * @param now the time up to which to consider hinTS keys
+     * @return the weight of the nodes with valid hinTS keys
+     */
+    private long weightOfValidHintsKeysAt(@NonNull final Instant now) {
+        return validationFutures.headMap(now, true).values().stream()
+                .map(CompletableFuture::join)
+                .filter(Validation::isValid)
+                .mapToLong(validation -> weights.targetWeightOf(partyNodeIds.get(validation.partyId())))
+                .sum();
+    }
+
+    /**
+     * If this node is part of the target construction and has not yet published (and is not currently publishing) its
+     * hinTS key, then starts publishing it.
+     */
+    private void ensureHintsKeyPublished() {
+        if (publicationFuture == null && weights.targetIncludes(selfId) && !nodePartyIds.containsKey(selfId)) {
+            final int selfPartyId = expectedPartyId(selfId);
+            publicationFuture = CompletableFuture.runAsync(
+                    () -> {
+                        final var hints = library.computeHints(blsKeyPair.privateKey(), selfPartyId, numParties);
+                        final var hintsKey = codec.encodeHintsKey(blsKeyPair.publicKey(), hints);
+                        submissions
+                                .submitHintsKey(selfPartyId, numParties, hintsKey)
+                                .join();
+                    },
+                    executor);
+        }
+    }
+
+    /**
      * Returns a future that completes to the aggregated hinTS keys for this construction for
      * all valid published hinTS keys.
      *
@@ -266,6 +361,8 @@ public class HintsControllerImpl implements HintsController {
     private CompletableFuture<Void> startPreprocessingVoteFuture(@NonNull final Instant cutoff) {
         return CompletableFuture.runAsync(
                 () -> {
+                    // IMPORTANT: since we only start this future when we have a preprocessing start
+                    // time, there is no risk of CME with handle thread running addKeyPublication()
                     final var hintKeys = validationFutures.headMap(cutoff, true).values().stream()
                             .map(CompletableFuture::join)
                             .filter(Validation::isValid)
@@ -275,9 +372,23 @@ public class HintsControllerImpl implements HintsController {
                             .collect(toMap(Map.Entry::getValue, entry -> weights.targetWeightOf(entry.getKey())));
                     final var output = library.preprocess(hintKeys, aggregatedWeights, numParties);
                     final var preprocessedKeys = codec.decodePreprocessedKeys(output);
-                    submissions
-                            .submitHintsVote(construction.constructionId(), preprocessedKeys)
-                            .join();
+                    // Prefer to vote for a congruent node's preprocessed keys if one exists
+                    long congruentNodeId = -1;
+                    for (final var entry : votes.entrySet()) {
+                        if (entry.getValue().preprocessedKeysOrThrow().equals(preprocessedKeys)) {
+                            congruentNodeId = entry.getKey();
+                            break;
+                        }
+                    }
+                    if (congruentNodeId != -1) {
+                        submissions
+                                .submitHintsVote(construction.constructionId(), congruentNodeId)
+                                .join();
+                    } else {
+                        submissions
+                                .submitHintsVote(construction.constructionId(), preprocessedKeys)
+                                .join();
+                    }
                 },
                 executor);
     }

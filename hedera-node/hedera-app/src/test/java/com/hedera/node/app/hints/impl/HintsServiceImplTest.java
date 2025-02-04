@@ -81,6 +81,25 @@ class HintsServiceImplTest {
     }
 
     @Test
+    void initsSigningBySettingNextConstruction() {
+        given(hintsStore.getNextConstruction()).willReturn(HintsConstruction.DEFAULT);
+        given(component.signingContext()).willReturn(context);
+
+        subject.initSigningForNextScheme(hintsStore);
+
+        verify(context).setConstruction(HintsConstruction.DEFAULT);
+    }
+
+    @Test
+    void stopsControllersWorkWhenAsked() {
+        given(component.controllers()).willReturn(controllers);
+
+        subject.stop();
+
+        verify(controllers).stop();
+    }
+
+    @Test
     void nothingSupportedExceptRegisteringSchemas() {
         assertThrows(UnsupportedOperationException.class, subject::isReady);
         assertThrows(UnsupportedOperationException.class, subject::activeVerificationKeyOrThrow);

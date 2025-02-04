@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
@@ -114,5 +115,16 @@ public class HintsServiceImpl implements HintsService {
     public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
+        requireNonNull(hintsStore);
+        component.signingContext().setConstruction(requireNonNull(hintsStore.getNextConstruction()));
+    }
+
+    @Override
+    public void stop() {
+        component.controllers().stop();
     }
 }
