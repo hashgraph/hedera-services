@@ -30,8 +30,13 @@ import java.util.List;
  */
 public abstract class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T> implements WritableSingletonState<T> {
 
+    /**
+     * A sentinel value to represent null in the backing store.
+     */
+    private static final Object NULL_VALUE = new Object();
+
     /** Modified value buffered in this mutable state */
-    private T modification;
+    private Object value;
 
     /** A list of listeners to be notified of changes to the state */
     private final List<SingletonChangeListener<T>> listeners = new ArrayList<>();
@@ -63,7 +68,7 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
         if (isModified()) {
-            return modification;
+            return currentValue();
         } else {
             return super.get();
         }
@@ -71,12 +76,12 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
 
     @Override
     public void put(T value) {
-        this.modification = value;
+        this.value = value == null ? NULL_VALUE : value;
     }
 
     @Override
     public boolean isModified() {
-        return modification != null;
+        return value != null;
     }
 
     /**
@@ -85,15 +90,21 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
      * it. Don't cast and commit unless you own the instance!
      */
     public void commit() {
-        if (modification == null) {
-            removeFromDataSource();
-        } else {
-            putIntoDataSource(modification);
+        if (isModified()) { // update data source
+            if (currentValue() != null) {
+                putIntoDataSource(currentValue());
+                //noinspection DataFlowIssue
+                listeners.forEach(l -> l.singletonUpdateChange(currentValue()));
+            } else {
+                removeFromDataSource();
+            }
         }
-
-        listeners.forEach(l -> l.singletonUpdateChange(modification));
-
         reset();
+    }
+
+    @SuppressWarnings("unchecked")
+    private T currentValue() {
+        return value == NULL_VALUE ? null : (T) value;
     }
 
     /**
@@ -103,7 +114,7 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
      */
     @Override
     public void reset() {
-        this.modification = null;
+        this.value = null;
         super.reset();
     }
 
