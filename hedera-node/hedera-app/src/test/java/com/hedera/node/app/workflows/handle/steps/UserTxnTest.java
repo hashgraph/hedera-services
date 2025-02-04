@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -148,6 +149,9 @@ class UserTxnTest {
 
     @Mock
     private ConfigProvider configProvider;
+
+    @Mock
+    private TransactionChecker transactionChecker;
 
     private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = ServicesSoftwareVersion::new;
 
@@ -262,6 +266,7 @@ class UserTxnTest {
                 blockRecordManager,
                 blockStreamManager,
                 childDispatchFactory,
-                softwareVersionFactory);
+                softwareVersionFactory,
+                transactionChecker);
     }
 }
