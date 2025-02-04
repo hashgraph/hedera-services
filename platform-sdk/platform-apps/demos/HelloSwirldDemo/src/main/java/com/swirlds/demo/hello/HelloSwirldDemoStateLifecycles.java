@@ -63,8 +63,9 @@ public class HelloSwirldDemoStateLifecycles implements StateLifecycles<HelloSwir
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull HelloSwirldDemoState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull HelloSwirldDemoState state) {
         // no-op
+        return true;
     }
 
     @Override

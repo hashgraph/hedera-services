@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.hints;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.blocks.BlockHashSigner;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -97,11 +101,16 @@ public interface HintsService extends Service, BlockHashSigner {
             @NonNull TssConfig tssConfig);
 
     /**
-     * Returns the current verification key for the active hinTS construction, or throws if it is incomplete.
+     * Returns the verification key for the active hinTS construction, or throws if it is incomplete.
      * @throws IllegalStateException if the active hinTS construction is incomplete
      */
     @NonNull
-    Bytes currentVerificationKeyOrThrow();
+    Bytes activeVerificationKeyOrThrow();
+
+    /**
+     * Returns the handlers for the {@link HintsService}.
+     */
+    HintsHandlers handlers();
 
     @Override
     default int migrationOrder() {
@@ -115,4 +124,27 @@ public interface HintsService extends Service, BlockHashSigner {
 
     @Override
     void registerSchemas(@NonNull SchemaRegistry registry);
+
+    /**
+     * Returns the party size for the given roster.
+     * @param roster the roster
+     */
+    static int partySizeForRoster(@NonNull final Roster roster) {
+        requireNonNull(roster);
+        return partySizeForRosterNodeCount(roster.rosterEntries().size());
+    }
+
+    /**
+     * Returns the unique party size {@code M=2^k} such that the given roster node count
+     * falls in the range {@code (2*(k-1), 2^k]}.
+     *
+     * @param n the roster node count
+     * @return the party size
+     */
+    static int partySizeForRosterNodeCount(final int n) {
+        if ((n & (n - 1)) == 0) {
+            return n;
+        }
+        return Integer.highestOneBit(n) << 1;
+    }
 }

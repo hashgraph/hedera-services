@@ -726,6 +726,12 @@ enum SubType {
      * containing a ContractCall.
      */
     SCHEDULE_CREATE_CONTRACT_CALL = 5;
+
+    /**
+     * The resource cost for the transaction type includes a TopicCreate
+     * with custom fees.
+     */
+    TOPIC_CREATE_WITH_CUSTOM_FEES = 6;
 }
 
 /**
@@ -1654,9 +1660,39 @@ enum HederaFunctionality {
     StateSignatureTransaction = 100;
 
     /**
+     * Publish a hinTS key to the network.
+     */
+    HintsKeyPublication = 101;
+
+    /**
+     * Vote for a particular preprocessing output of a hinTS construction.
+     */
+    HintsPreprocessingVote = 102;
+
+    /**
+     * Sign a partial signature for the active hinTS construction.
+     */
+    HintsPartialSignature = 103;
+
+    /**
+     * Sign a particular history assembly.
+     */
+    HistoryAssemblySignature = 104;
+
+    /**
+     * Publish a roster history proof key to the network.
+     */
+    HistoryProofKeyPublication = 105;
+
+    /**
+     * Vote for a particular history proof.
+     */
+    HistoryProofVote = 106;
+
+    /**
      * Submit a batch of transactions to run atomically
      */
-    AtomicBatch = 101;
+    AtomicBatch = 107;
 }
 
 /**

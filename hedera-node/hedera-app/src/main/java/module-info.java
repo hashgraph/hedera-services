@@ -90,7 +90,9 @@ module com.hedera.node.app {
     exports com.hedera.node.app.grpc;
     exports com.hedera.node.app.hints;
     exports com.hedera.node.app.hints.impl;
+    exports com.hedera.node.app.hints.handlers;
     exports com.hedera.node.app.history;
+    exports com.hedera.node.app.history.handlers;
     exports com.hedera.node.app.history.impl;
     exports com.hedera.node.app.metrics;
     exports com.hedera.node.app.authorization;
@@ -132,6 +134,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
     exports com.hedera.node.app.roster.schemas;
+    exports com.hedera.node.app.ids.schemas;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

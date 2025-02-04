@@ -1,10 +1,24 @@
-// SPDX-License-Identifier: Apache-2.0
-import com.github.jengelman.gradle.plugins.shadow.internal.DefaultDependencyFilter
+/*
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     id("org.hiero.gradle.module.application")
-    id("com.gradleup.shadow") version "8.3.0"
+    id("org.hiero.gradle.feature.shadow")
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -60,7 +74,7 @@ tasks.test {
     systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
     systemProperty(
         "junit.jupiter.testclass.order.default",
-        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
     )
     // Tell our launcher to target an embedded network whose mode is set per-class
     systemProperty("hapi.spec.embedded.mode", "per-class")
@@ -83,7 +97,7 @@ val prCheckTags =
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
         "hapiTestMisc" to
-            "!(INTEGRATION|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)"
+            "!(INTEGRATION|CRYPTO|TOKEN|RESTART|UPGRADE|SMART_CONTRACT|ND_RECONNECT|LONG_RUNNING)",
     )
 val prCheckStartPorts =
     mapOf(
@@ -94,7 +108,7 @@ val prCheckStartPorts =
         "hapiTestSmartContract" to "29000",
         "hapiTestNDReconnect" to "30000",
         "hapiTestTimeConsuming" to "31000",
-        "hapiTestMisc" to "32000"
+        "hapiTestMisc" to "32000",
     )
 
 tasks {
@@ -133,7 +147,7 @@ tasks.register<Test>("testSubprocess") {
     systemProperty(
         "hapi.spec.quiet.mode",
         System.getProperty("hapi.spec.quiet.mode")
-            ?: if (ciTagExpression.isNotBlank()) "true" else "false"
+            ?: if (ciTagExpression.isNotBlank()) "true" else "false",
     )
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
@@ -145,7 +159,7 @@ tasks.register<Test>("testSubprocess") {
     systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
     systemProperty(
         "junit.jupiter.testclass.order.default",
-        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
     )
 
     // Limit heap and number of processors
@@ -157,10 +171,7 @@ tasks.register<Test>("testSubprocess") {
     modularity.inferModulePath.set(false)
 }
 
-val prEmbeddedCheckTags =
-    mapOf(
-        "hapiEmbeddedMisc" to "EMBEDDED",
-    )
+val prEmbeddedCheckTags = mapOf("hapiEmbeddedMisc" to "EMBEDDED")
 
 tasks {
     prEmbeddedCheckTags.forEach { (taskName, _) ->
@@ -197,7 +208,7 @@ tasks.register<Test>("testEmbedded") {
     systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
     systemProperty(
         "junit.jupiter.testclass.order.default",
-        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
     )
     // Tell our launcher to target a concurrent embedded network
     systemProperty("hapi.spec.embedded.mode", "concurrent")
@@ -210,10 +221,7 @@ tasks.register<Test>("testEmbedded") {
     modularity.inferModulePath.set(false)
 }
 
-val prRepeatableCheckTags =
-    mapOf(
-        "hapiRepeatableMisc" to "REPEATABLE",
-    )
+val prRepeatableCheckTags = mapOf("hapiRepeatableMisc" to "REPEATABLE")
 
 tasks {
     prRepeatableCheckTags.forEach { (taskName, _) ->
@@ -246,7 +254,7 @@ tasks.register<Test>("testRepeatable") {
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty(
         "junit.jupiter.testclass.order.default",
-        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
     )
     // Tell our launcher to target a repeatable embedded network
     systemProperty("hapi.spec.embedded.mode", "repeatable")
@@ -259,26 +267,17 @@ tasks.register<Test>("testRepeatable") {
     modularity.inferModulePath.set(false)
 }
 
-tasks.withType<ShadowJar>().configureEach {
-    group = "shadow"
-    from(sourceSets.main.get().output)
-    mergeServiceFiles()
-
-    manifest { attributes("Multi-Release" to "true") }
-
-    // There is an issue in the shadow plugin that it automatically accesses the
-    // files in 'runtimeClasspath' while Gradle is building the task graph.
-    // See: https://github.com/GradleUp/shadow/issues/882
-    dependencyFilter = NoResolveDependencyFilter()
-}
-
 application.mainClass = "com.hedera.services.bdd.suites.SuiteRunner"
+
+// allow shadow Jar files to have more than 64k entries
+tasks.withType<ShadowJar>().configureEach { isZip64 = true }
 
 tasks.shadowJar { archiveFileName.set("SuiteRunner.jar") }
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+        from(sourceSets["main"].output)
         from(sourceSets["yahcli"].output)
         archiveClassifier.set("yahcli")
         configurations = listOf(project.configurations.getByName("yahcliRuntimeClasspath"))
@@ -301,7 +300,7 @@ val rcdiffJar =
 val validationJar =
     tasks.register<ShadowJar>("validationJar") {
         exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
-
+        from(sourceSets["main"].output)
         archiveFileName.set("ValidationScenarios.jar")
 
         manifest {
@@ -342,10 +341,4 @@ val cleanYahCli =
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
-}
-
-class NoResolveDependencyFilter : DefaultDependencyFilter(project) {
-    override fun resolve(configuration: FileCollection): FileCollection {
-        return configuration
-    }
 }
