@@ -51,7 +51,7 @@ public interface ReadableKVState<K, V> {
      * Gets the "state id" that uniquely identifies this {@link ReadableKVState} within the
      * {@link com.swirlds.state.lifecycle.Service} and {@link com.hedera.pbj.runtime.Schema}. It is globally unique.
      *
-     * <p>The call is idempotent, always returning the same value. It must never return null.
+     * <p>The call is idempotent, always returning the same value.
      *
      * @return The state id. This will always be the same value for an
      *     instance of {@link ReadableKVState}.
