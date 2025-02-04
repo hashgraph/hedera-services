@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
@@ -49,6 +50,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public class ScheduleNativeCall extends AbstractCall {
 
+    private final ContractID contractID;
     private final VerificationStrategy verificationStrategy;
     private final AccountID payerID;
     private final DispatchGasCalculator dispatchGasCalculator;
@@ -58,6 +60,7 @@ public class ScheduleNativeCall extends AbstractCall {
     private final HtsCallFactory htsCallFactory;
 
     public ScheduleNativeCall(
+            @NonNull final ContractID contractID,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final VerificationStrategy verificationStrategy,
@@ -68,6 +71,7 @@ public class ScheduleNativeCall extends AbstractCall {
             @NonNull final HtsCallFactory htsCallFactory,
             final boolean waitForExpiry) {
         super(gasCalculator, enhancement, false);
+        this.contractID = requireNonNull(contractID);
         this.verificationStrategy = requireNonNull(verificationStrategy);
         this.payerID = requireNonNull(payerID);
         this.dispatchGasCalculator = requireNonNull(dispatchGasCalculator);
@@ -81,7 +85,8 @@ public class ScheduleNativeCall extends AbstractCall {
     @NonNull
     public PricedResult execute(@NonNull final MessageFrame frame) {
         // Create the native call implied by the call data passed to scheduleNative()
-        final var nativeAttempt = htsCallFactory.createCallAttemptFrom(innerCallData, DIRECT_OR_PROXY_REDIRECT, frame);
+        final var nativeAttempt =
+                htsCallFactory.createCallAttemptFrom(contractID, innerCallData, DIRECT_OR_PROXY_REDIRECT, frame);
         final var call = requireNonNull(nativeAttempt.asExecutableCall());
         final var scheduleTransactionBody = call.asSchedulableDispatchIn();
         final var scheduleCreateTransactionBody = bodyForScheduleCreate(scheduleTransactionBody);

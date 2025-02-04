@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.hints.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.Test;
@@ -26,6 +26,7 @@ class HintsLibraryCodecTest {
 
     @Test
     void nothingSupportedYet() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.decodeCrsUpdate(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.encodeHintsKey(Bytes.EMPTY, Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.extractAggregationKey(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.extractVerificationKey(Bytes.EMPTY));
