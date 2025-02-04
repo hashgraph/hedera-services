@@ -65,7 +65,7 @@ dependencies.constraints {
     }
     api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
-    api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
+    api("com.github.spotbugs:spotbugs-annotations:4.9.0") {
         because("com.github.spotbugs.annotations")
     }
     api("com.google.auto.service:auto-service-annotations:$autoService") {
@@ -88,9 +88,9 @@ dependencies.constraints {
     api("io.grpc:grpc-protobuf:$grpc") { because("io.grpc.protobuf") }
     api("io.grpc:grpc-stub:$grpc") { because("io.grpc.stub") }
     api("com.esaulpaugh:headlong:12.3.3") { because("com.esaulpaugh.headlong") }
-    api("info.picocli:picocli:4.6.3") { because("info.picocli") }
+    api("info.picocli:picocli:4.7.6") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.179") { because("io.github.classgraph") }
-    api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
+    api("io.perfmark:perfmark-api:0.27.0") { because("io.perfmark") }
     api("io.prometheus:simpleclient:0.16.0") { because("io.prometheus.simpleclient") }
     api("io.prometheus:simpleclient_httpserver:0.16.0") {
         because("io.prometheus.simpleclient.httpserver")

@@ -135,8 +135,8 @@ public interface HintsService extends Service, BlockHashSigner {
     }
 
     /**
-     * Returns the party size {@code M=2^k} such that the given roster node count
-     * will fall inside the range {@code [2*(k-1), 2^k]}.
+     * Returns the unique party size {@code M=2^k} such that the given roster node count
+     * falls in the range {@code (2*(k-1), 2^k]}.
      *
      * @param n the roster node count
      * @return the party size
