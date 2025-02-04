@@ -96,6 +96,7 @@ public class AtomicBatchTest {
         final var innerTxnId2 = "innerId2";
         final var account1 = "foo1";
         final var account2 = "foo2";
+        final var atomicTxn = "atomicTxn";
 
         final var innerTxn1 = cryptoCreate(account1)
                 .balance(ONE_HBAR)
@@ -113,7 +114,8 @@ public class AtomicBatchTest {
                 cryptoCreate(innerTnxPayer).balance(ONE_HUNDRED_HBARS),
                 usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
                 usableTxnIdNamed(innerTxnId2).payerId(innerTnxPayer),
-                atomicBatch(innerTxn1, innerTxn2),
+                atomicBatch(innerTxn1, innerTxn2).via(atomicTxn),
+                getTxnRecord(atomicTxn).logged(),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged(),
                 getAccountBalance(account1).hasTinyBars(ONE_HBAR),
@@ -128,6 +130,7 @@ public class AtomicBatchTest {
         final var innerTxnId2 = "innerId2";
         final var account1 = "foo1";
         final var account2 = "foo2";
+        final var atomicTxn = "atomicTxn";
 
         final var innerTxn1 = cryptoCreate(account1)
                 .balance(ONE_HBAR)
@@ -145,7 +148,8 @@ public class AtomicBatchTest {
                 cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
                 usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
                 usableTxnIdNamed(innerTxnId2).payerId(innerTnxPayer),
-                atomicBatch(innerTxn1, innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED),
+                atomicBatch(innerTxn1, innerTxn2).via(atomicTxn).hasKnownStatus(INNER_TRANSACTION_FAILED),
+                getTxnRecord(atomicTxn).logged(),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
     }
