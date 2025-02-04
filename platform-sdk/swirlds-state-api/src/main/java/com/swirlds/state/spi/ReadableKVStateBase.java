@@ -75,7 +75,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
         return stateIdFor(serviceName, stateKey);
     }
 
-    protected String getLabel() {
+    @Override
+    @NonNull
+    public String getLabel() {
         return computeLabel(serviceName, stateKey);
     }
 

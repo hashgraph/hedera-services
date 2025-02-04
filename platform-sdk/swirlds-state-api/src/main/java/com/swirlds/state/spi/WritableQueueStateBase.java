@@ -132,7 +132,9 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     }
 
     // TODO: refactor? (it is duplicated in ReadableQueueStateBase)
-    protected String getLabel() {
+    @Override
+    @NonNull
+    public String getLabel() {
         return computeLabel(serviceName, stateKey);
     }
 

@@ -56,7 +56,9 @@ public abstract class ReadableSingletonStateBase<T> implements ReadableSingleton
         return stateIdFor(serviceName, stateKey);
     }
 
-    protected String getLabel() {
+    @NonNull
+    @Override
+    public String getLabel() {
         return computeLabel(serviceName, stateKey);
     }
 

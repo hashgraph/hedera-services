@@ -34,7 +34,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * An implementation of {@link WritableKVState} backed by a {@link VirtualMap}, resulting in a state
