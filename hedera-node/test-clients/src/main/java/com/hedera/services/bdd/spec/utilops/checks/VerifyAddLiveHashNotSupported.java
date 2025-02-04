@@ -42,16 +42,12 @@ public class VerifyAddLiveHashNotSupported extends UtilOp {
         final var txnId = TransactionID.newBuilder()
                 .setTransactionValidStart(validStart)
                 .setAccountID(AccountID.newBuilder()
-                        .setShardNum(1)
-                        .setRealmNum(2)
                         .setAccountNum(USER_PAYER_NUM)
                         .build())
                 .build();
         final var body = TransactionBody.newBuilder()
                 .setTransactionID(txnId)
                 .setNodeAccountID(AccountID.newBuilder()
-                        .setShardNum(1)
-                        .setRealmNum(2)
                         .setAccountNum(3)
                         .build())
                 .setTransactionValidDuration(

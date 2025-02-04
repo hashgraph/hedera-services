@@ -211,6 +211,7 @@ class FileUpdateTest extends FileTestBase {
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.payer())
                 .willReturn(AccountID.newBuilder().accountNum(1001L).build());
+
         subject.handle(handleContext);
 
         final var newFile = writableFileState.get(fileId);
@@ -334,7 +335,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         given(handleContext.payer())
                 .willReturn(AccountID.newBuilder().accountNum(1001L).build());
-
         when(handleContext.body()).thenReturn(txBody);
 
         // expect:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -315,8 +315,6 @@ public class TxnUtils {
         final var effS = s.startsWith("0x") ? s.substring(2) : s;
         if (effS.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
-                    .setShardNum(1)
-                    .setRealmNum(2)
                     .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effS)))
                     .build();
         }
@@ -349,7 +347,7 @@ public class TxnUtils {
         return ContractID.newBuilder()
                 .setContractNum(accountNum)
                 .setRealmNum(realm)
-                .setShardNum(1)
+            .setShardNum(0L)
                 .build();
     }
 
