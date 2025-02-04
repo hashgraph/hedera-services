@@ -79,9 +79,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        // FUTURE work: remove legacy hash code
-        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        final var value = megaMap.get(getMegaMapKey(key), legacyKeyHashCode, valueCodec);
+        final var value = megaMap.get(getMegaMapKey(key), valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getLabel(), key, value);
         return value;
@@ -101,12 +99,10 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         final Bytes kb = keyCodec.toBytes(key);
         assert kb != null;
-        // FUTURE work: remove legacy hash code
-        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
         // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
         // for now it just adds a call to measureRecord(), but benefits are unclear
         // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
-        megaMap.put(getMegaMapKey(key), legacyKeyHashCode, value, valueCodec);
+        megaMap.put(getMegaMapKey(key), value, valueCodec);
         // Log to transaction state log, what was put
         logMapPut(getLabel(), key, value);
     }
@@ -114,9 +110,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
-        // FUTURE work: remove legacy hash code
-        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        final var removed = megaMap.remove(getMegaMapKey(key), legacyKeyHashCode, valueCodec);
+        final var removed = megaMap.remove(getMegaMapKey(key), valueCodec);
         // Log to transaction state log, what was removed
         logMapRemove(getLabel(), key, removed);
     }

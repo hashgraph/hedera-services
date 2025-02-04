@@ -141,12 +141,6 @@ public interface VirtualDataSource {
     @Nullable
     VirtualLeafBytes loadLeafRecord(final Bytes keyBytes) throws IOException;
 
-    @Deprecated
-    @Nullable
-    default VirtualLeafBytes loadLeafRecord(final Bytes keyBytes, final int legacyKeyHashCode) throws IOException {
-        return loadLeafRecord(keyBytes);
-    }
-
     /**
      * Load virtual record bytes for a leaf node by path. If the path is outside the current
      * data source's leaf path range, this method returns {@code null}.
@@ -166,11 +160,6 @@ public interface VirtualDataSource {
      * @throws IOException if there was a problem locating the key
      */
     long findKey(final Bytes keyBytes) throws IOException;
-
-    @Deprecated
-    default long findKey(final Bytes keyBytes, final int legacyKeyHashCode) throws IOException {
-        return findKey(keyBytes);
-    }
 
     /**
      * Load a virtual node hash by path. If the path is outside [0, last leaf path] range, this

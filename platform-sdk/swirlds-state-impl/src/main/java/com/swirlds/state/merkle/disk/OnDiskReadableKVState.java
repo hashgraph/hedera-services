@@ -75,9 +75,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        // FUTURE work: remove legacy hash code
-        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        final var value = megaMap.get(getMegaMapKey(key), legacyKeyHashCode, valueCodec);
+        final var value = megaMap.get(getMegaMapKey(key), valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getLabel(), key, value);
         return value;
@@ -103,9 +101,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     @Override
     public void warm(@NonNull final K key) {
-        // FUTURE work: remove legacy hash code
-        final int legacyKeyHashCode = Objects.hash(key); // matches OnDiskKey.hashCode()
-        megaMap.warm(getMegaMapKey(key), legacyKeyHashCode);
+        megaMap.warm(getMegaMapKey(key));
     }
 
     // TODO: test this method

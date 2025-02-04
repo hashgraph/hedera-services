@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verify;
 
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -113,6 +112,6 @@ class OnDiskReadableStateTest extends MerkleTestBase {
     void warm(@Mock VirtualMap virtualMapMock) {
         final var state = new OnDiskReadableKVState<>(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, virtualMapMock);
         state.warm(A_KEY);
-        verify(virtualMapMock).warm(STRING_CODEC.toBytes(A_KEY), Objects.hash(A_KEY));
+        verify(virtualMapMock).warm(STRING_CODEC.toBytes(A_KEY));
     }
 }

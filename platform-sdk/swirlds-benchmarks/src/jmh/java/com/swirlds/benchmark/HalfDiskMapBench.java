@@ -72,7 +72,7 @@ public class HalfDiskMapBench extends BaseBench {
                 long id = nextAscKey();
                 long value = nextValue();
                 final Bytes key = BenchmarkKey.longToKey(id);
-                store.put(key, key.hashCode(), value);
+                store.put(key, value);
                 if (verify) map[(int) id] = value;
             }
             store.endWriting();
@@ -89,7 +89,7 @@ public class HalfDiskMapBench extends BaseBench {
             start = System.currentTimeMillis();
             for (int id = 0; id < map.length; ++id) {
                 final Bytes key = BenchmarkKey.longToKey(id);
-                long value = store.get(key, key.hashCode(), INVALID_PATH);
+                long value = store.get(key, INVALID_PATH);
                 if (value != map[id]) {
                     throw new RuntimeException("Bad value");
                 }

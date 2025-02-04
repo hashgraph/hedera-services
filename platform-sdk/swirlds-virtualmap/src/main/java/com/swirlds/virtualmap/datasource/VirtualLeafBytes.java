@@ -71,12 +71,6 @@ public class VirtualLeafBytes<V> {
     private final long path;
 
     private final Bytes keyBytes;
-    // Legacy key hash code. This code is needed to load leaf records from snapshots saved with previous
-    // versions, where key.hashCode() was used rather than keyBytes.hashCode(). This workaround will be
-    // removed in future versions, once all records are migrated to a new virtual map. Key bytes hash
-    // codes will be used after migration, since there will be no backwards compatibility requirements
-    @Deprecated
-    private final int keyHashCode;
 
     private V value;
     private Codec<V> valueCodec;
@@ -84,39 +78,21 @@ public class VirtualLeafBytes<V> {
 
     public VirtualLeafBytes(
             final long path, @NonNull final Bytes keyBytes, @Nullable final V value, @Nullable Codec<V> valueCodec) {
-        this(path, keyBytes, keyBytes.hashCode(), value, valueCodec, null);
-    }
-
-    @Deprecated
-    public VirtualLeafBytes(
-            final long path,
-            @NonNull final Bytes keyBytes,
-            final int keyHashCode,
-            @Nullable final V value,
-            @Nullable Codec<V> valueCodec) {
-        this(path, keyBytes, keyHashCode, value, valueCodec, null);
+        this(path, keyBytes, value, valueCodec, null);
     }
 
     public VirtualLeafBytes(final long path, @NonNull final Bytes keyBytes, @Nullable Bytes valueBytes) {
-        this(path, keyBytes, keyBytes.hashCode(), null, null, valueBytes);
-    }
-
-    @Deprecated
-    public VirtualLeafBytes(
-            final long path, @NonNull final Bytes keyBytes, final int keyHashCode, @Nullable Bytes valueBytes) {
-        this(path, keyBytes, keyHashCode, null, null, valueBytes);
+        this(path, keyBytes, null, null, valueBytes);
     }
 
     VirtualLeafBytes(
             final long path,
             @NonNull final Bytes keyBytes,
-            final int keyHashCode,
             @Nullable final V value,
             @Nullable final Codec<V> valueCodec,
             @Nullable final Bytes valueBytes) {
         this.path = path;
         this.keyBytes = Objects.requireNonNull(keyBytes);
-        this.keyHashCode = keyHashCode;
         this.value = value;
         this.valueCodec = valueCodec;
         this.valueBytes = valueBytes;
@@ -131,10 +107,6 @@ public class VirtualLeafBytes<V> {
 
     public Bytes keyBytes() {
         return keyBytes;
-    }
-
-    public int keyHashCode() {
-        return keyHashCode;
     }
 
     public V value(final Codec<V> valueCodec) {
@@ -182,15 +154,15 @@ public class VirtualLeafBytes<V> {
     }
 
     public VirtualLeafBytes<V> withPath(final long newPath) {
-        return new VirtualLeafBytes<>(newPath, keyBytes, keyHashCode(), value, valueCodec, valueBytes);
+        return new VirtualLeafBytes<>(newPath, keyBytes, value, valueCodec, valueBytes);
     }
 
     public VirtualLeafBytes<V> withValue(final V newValue, final Codec<V> newValueCodec) {
-        return new VirtualLeafBytes<>(path, keyBytes, keyHashCode(), newValue, newValueCodec);
+        return new VirtualLeafBytes<>(path, keyBytes, newValue, newValueCodec);
     }
 
     public VirtualLeafBytes<V> withValueBytes(final Bytes newValueBytes) {
-        return new VirtualLeafBytes<>(path, keyBytes, keyHashCode, newValueBytes);
+        return new VirtualLeafBytes<>(path, keyBytes, newValueBytes);
     }
 
     /**
