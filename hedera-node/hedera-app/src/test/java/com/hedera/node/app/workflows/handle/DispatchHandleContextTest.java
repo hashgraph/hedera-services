@@ -90,7 +90,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -107,6 +106,8 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -181,6 +182,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private FeeAccumulator feeAccumulator;
 
     @Mock
+    private TransactionChecker transactionChecker;
+
+    @Mock
     private NetworkInfo networkInfo;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
@@ -209,9 +213,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private ThrottleAdviser throttleAdviser;
-
-    @Mock
-    private StoreMetricsService storeMetricsService;
 
     @Mock
     private EntityNumGenerator entityNumGenerator;
@@ -286,20 +287,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             CRYPTO_TRANSFER,
             null);
 
-    private static final TransactionBody MISSING_PAYER_ID =
-            TransactionBody.newBuilder().transactionID(TransactionID.DEFAULT).build();
-
-    private static final AccountID PAYER_ID =
-            AccountID.newBuilder().accountNum(1_234L).build();
-    private static final TransactionBody WITH_PAYER_ID = TransactionBody.newBuilder()
-            .transactionID(TransactionID.newBuilder().accountID(PAYER_ID))
-            .build();
-
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-        readableStoreFactory = new ReadableStoreFactory(baseState);
-        apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
+        readableStoreFactory = new ReadableStoreFactory(baseState, ServicesSoftwareVersion::new);
+        apiFactory = new ServiceApiFactory(stack, configuration);
         storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
         subject = createContext(txBody);
 
@@ -399,7 +391,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             dispatchProcessor,
             throttleAdviser,
             feeAccumulator,
-            EMPTY_METADATA
+            EMPTY_METADATA,
+            transactionChecker
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -632,7 +625,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .build();
             doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
                     .when(dispatcher)
-                    .dispatchPureChecks(txBody);
+                    .dispatchPureChecks(any());
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
 
             contextDispatcher.accept(context);
@@ -787,7 +780,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatchProcessor,
                 throttleAdviser,
                 feeAccumulator,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                transactionChecker);
     }
 
     private void mockNeeded() {
