@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,9 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
  */
 public record ParsedItem(TransactionBody itemBody, TransactionRecord itemRecord) {
     private static final FileID PROPERTIES_FILE_ID =
-        FileID.newBuilder().setFileNum(121).build();
+            FileID.newBuilder().setFileNum(121).build();
     private static final FileID FEE_SCHEDULE_FILE_ID =
-        FileID.newBuilder().setFileNum(111).build();
+            FileID.newBuilder().setFileNum(111).build();
 
     public ResponseCodeEnum status() {
         return itemRecord.getReceipt().getStatus();
