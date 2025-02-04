@@ -19,7 +19,10 @@ package com.hedera.node.app.service.util.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -75,5 +78,15 @@ public class AtomicBatchHandler implements TransactionHandler {
                 .isEnabled()) {
             return;
         }
+    }
+
+    @Override
+    public @NonNull Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        calculator.resetUsage();
+        // adjust the price based on the number of signatures
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        return calculator.calculate();
     }
 }
