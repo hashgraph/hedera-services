@@ -1141,7 +1141,7 @@ public class BlockStreamBuilder
         if (functionality == CRYPTO_CREATE && accountId != null) {
             items.add(itemWith(TransactionOutput.newBuilder()
                     .accountCreate(CreateAccountOutput.newBuilder()
-                            .createdAccount(accountId)
+                            .createdAccountId(accountId)
                             .build())));
         }
     }

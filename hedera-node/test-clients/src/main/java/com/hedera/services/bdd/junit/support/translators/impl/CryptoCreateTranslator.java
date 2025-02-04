@@ -51,7 +51,7 @@ public class CryptoCreateTranslator implements BlockTransactionPartsTranslator {
             if (parts.status() == SUCCESS && parts.transactionOutputs() != null) {
                 Arrays.stream(parts.transactionOutputs())
                         .forEach(transactionOutput -> receiptBuilder.accountID(
-                                transactionOutput.accountCreate().createdAccount()));
+                                transactionOutput.accountCreate().createdAccountId()));
 
                 final var accountAlias = ((CryptoCreateTransactionBody)
                                 parts.transactionParts().body().data().value())
