@@ -76,6 +76,9 @@ public interface ReadableKVState<K, V> extends ReadableState {
 
     /**
      * Gets the number of keys in the {@link ReadableKVState}.
+     *
+     * @deprecated state sizes will be tracked using a different mechanism.
+     *
      * @return number of keys in the {@link ReadableKVState}.
      */
     long size();

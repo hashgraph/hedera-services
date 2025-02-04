@@ -91,6 +91,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated
     public long size() {
         final var size = megaMap.size();
         // Log to transaction state log, size of map
