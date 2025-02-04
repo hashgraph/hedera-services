@@ -16,6 +16,12 @@
 
 plugins { id("org.hiero.gradle.build") version "0.3.1" }
 
+dependencyResolutionManagement {
+    versionCatalogs.register("additionalPlugins") {
+        plugin("pbj", "com.hedera.pbj.pbj-compiler").version("0.9.2")
+    }
+}
+
 javaModules {
     // This "intermediate parent project" should be removed
     module("platform-sdk") { artifact = "swirlds-platform" }
