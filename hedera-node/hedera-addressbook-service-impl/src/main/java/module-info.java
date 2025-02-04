@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
-
 module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.hedera.node.app.service.addressbook;
     requires transitive com.hedera.node.app.spi;
@@ -18,9 +16,6 @@ module com.hedera.node.app.service.addressbook.impl {
     requires com.fasterxml.jackson.databind;
     requires static transitive java.compiler;
     requires static com.github.spotbugs.annotations;
-
-    provides com.hedera.node.app.service.addressbook.AddressBookService with
-            AddressBookServiceImpl;
 
     exports com.hedera.node.app.service.addressbook.impl;
     exports com.hedera.node.app.service.addressbook.impl.handlers;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V058PendingRewardsSchema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.ZoneId;
+import java.util.SortedMap;
+import java.util.function.Supplier;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
@@ -34,8 +37,10 @@ public class TokenServiceImpl implements TokenService {
     public static final long HBARS_TO_TINYBARS = 100_000_000L;
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
 
-    public TokenServiceImpl() {
-        // No-op
+    private final Supplier<SortedMap<Long, Long>> pendingRewards;
+
+    public TokenServiceImpl(@NonNull final Supplier<SortedMap<Long, Long>> pendingRewards) {
+        this.pendingRewards = requireNonNull(pendingRewards);
     }
 
     @Override
@@ -44,5 +49,6 @@ public class TokenServiceImpl implements TokenService {
         registry.register(new V0490TokenSchema(new SyntheticAccountCreator()));
         registry.register(new V0500TokenSchema());
         registry.register(new V0530TokenSchema());
+        registry.register(new V058PendingRewardsSchema(pendingRewards));
     }
 }

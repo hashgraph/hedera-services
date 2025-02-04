@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,11 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.AppContextImpl;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -446,7 +450,21 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         tssBaseService,
                         new FreezeServiceImpl(),
                         scheduleServiceImpl,
-                        new TokenServiceImpl(),
+                        new TokenServiceImpl(() -> {
+                            requireNonNull(initState);
+                            final var consensusTime =
+                                    ((MerkleStateRoot<?>) requireNonNull(initState)).getLastConsensusTime();
+                            final var stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
+                            stakePeriodManager.setCurrentStakePeriodFor(consensusTime);
+                            final var calculator = new StakeRewardCalculatorImpl(stakePeriodManager);
+                            final var infoStore =
+                                    new WritableStakingInfoStore(initState.getWritableStates(TokenServiceImpl.NAME));
+                            final var rewardsStore = new ReadableNetworkStakingRewardsStoreImpl(
+                                    initState.getWritableStates(TokenServiceImpl.NAME));
+                            return ((MerkleStateRoot<?>) requireNonNull(initState))
+                                    .getPendingRewards(account -> calculator.computePendingReward(
+                                            account, infoStore, rewardsStore, consensusTime));
+                        }),
                         new UtilServiceImpl(),
                         new RecordCacheService(),
                         new BlockRecordService(),
@@ -454,7 +472,8 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                         new FeeService(),
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
-                        new AddressBookServiceImpl(),
+                        new AddressBookServiceImpl(
+                                () -> ((MerkleStateRoot<?>) requireNonNull(initState)).getStakingNodeInfos()),
                         // FUTURE: a lambda that tests if a ReadableTssStore
                         // constructed from the migration state returns a
                         // RosterKeys with the ledger id for the given roster

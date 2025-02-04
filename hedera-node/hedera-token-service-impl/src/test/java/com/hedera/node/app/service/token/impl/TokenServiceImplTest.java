@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,25 +26,29 @@ import com.hedera.node.app.service.token.TokenServiceDefinition;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V058PendingRewardsSchema;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
+import java.util.SortedMap;
+import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class TokenServiceImplTest {
+    @Mock
+    private Supplier<SortedMap<Long, Long>> pendingRewards;
 
     private TokenServiceImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceImpl();
-    }
-
-    @Test
-    void defaultConstructor() {
-        assertThat(new TokenServiceImpl()).isNotNull();
+        subject = new TokenServiceImpl(pendingRewards);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -59,12 +63,13 @@ class TokenServiceImplTest {
 
         subject.registerSchemas(schemaRegistry);
         final var captor = ArgumentCaptor.forClass(Schema.class);
-        verify(schemaRegistry, times(3)).register(captor.capture());
+        verify(schemaRegistry, times(4)).register(captor.capture());
         final var schemas = captor.getAllValues();
-        assertThat(schemas).hasSize(3);
+        assertThat(schemas).hasSize(4);
         assertThat(schemas.getFirst()).isInstanceOf(V0490TokenSchema.class);
         assertThat(schemas.get(1)).isInstanceOf(V0500TokenSchema.class);
-        assertThat(schemas.getLast()).isInstanceOf(V0530TokenSchema.class);
+        assertThat(schemas.get(2)).isInstanceOf(V0530TokenSchema.class);
+        assertThat(schemas.getLast()).isInstanceOf(V058PendingRewardsSchema.class);
     }
 
     @Test

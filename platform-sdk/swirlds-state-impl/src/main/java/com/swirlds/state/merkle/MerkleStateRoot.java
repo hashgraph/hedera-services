@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.state.merkle;
 
+import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
@@ -24,7 +26,13 @@ import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.swirlds.base.time.Time;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -37,7 +45,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.merkle.memory.InMemoryReadableKVState;
 import com.swirlds.state.merkle.memory.InMemoryWritableKVState;
@@ -63,9 +73,11 @@ import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualMapMigration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,10 +85,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -156,7 +172,6 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
 
     /**
      * Create a new instance. This constructor must be used for all creations of this class.
-     *
      */
     public MerkleStateRoot() {
         this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
@@ -279,6 +294,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
         requireNonNull(listener);
         listeners.remove(listener);
     }
+
     /**
      * {@inheritDoc}
      */
@@ -300,6 +316,63 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
                     + " The minimum supported version is " + getMinimumSupportedVersion());
         }
         return this;
+    }
+
+    @Deprecated
+    public Instant getLastConsensusTime() {
+        final int i = findNodeIndex("BlockStreamService", "BLOCK_STREAM_INFO");
+        final SingletonNode<BlockStreamInfo> infoNode = getChild(i);
+        final var info = requireNonNull(infoNode.getValue());
+        return asInstant(info.lastHandleTimeOrThrow());
+    }
+
+    @Deprecated
+    public SortedMap<Long, Long> getPendingRewards(@NonNull final ToLongFunction<Account> rewardCalculator) {
+        final int i = findNodeIndex("TokenService", "ACCOUNTS");
+        final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> map = getChild(i);
+        final ConcurrentMap<Long, Long> pendingRewards = new ConcurrentHashMap<>();
+        try {
+            VirtualMapMigration.extractVirtualMapDataC(
+                    getStaticThreadManager(),
+                    map,
+                    (final Pair<OnDiskKey<AccountID>, OnDiskValue<Account>> pair) -> {
+                        final var account = pair.value().getValue();
+                        if (requireNonNull(account).hasStakedNodeId()
+                                && account.stakedNodeIdOrThrow() >= 0L
+                                && !account.declineReward()) {
+                            final long nodeId = account.stakedNodeIdOrThrow();
+                            final long reward = rewardCalculator.applyAsLong(account);
+                            pendingRewards.merge(nodeId, reward, Long::sum);
+                        }
+                    },
+                    32);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while extracting pending rewards", e);
+        }
+        return new TreeMap<>(pendingRewards);
+    }
+
+    /**
+     * Returns a sorted view of the node staking infos.
+     */
+    @Deprecated
+    public SortedMap<Long, StakingNodeInfo> getStakingNodeInfos() {
+        final int i = findNodeIndex("TokenService", "STAKING_INFOS");
+        final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> map = getChild(i);
+        final ConcurrentMap<Long, StakingNodeInfo> stakingNodeInfos = new ConcurrentHashMap<>();
+        try {
+            VirtualMapMigration.extractVirtualMapDataC(
+                    getStaticThreadManager(),
+                    map,
+                    (final Pair<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> pair) -> stakingNodeInfos.put(
+                            pair.key().getKey().number(), pair.value().getValue()),
+                    32);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while extracting staking node infos", e);
+        }
+        return new TreeMap<>(stakingNodeInfos);
     }
 
     /**
@@ -407,7 +480,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
 
     /**
      * Unregister a service without removing its nodes from the state.
-     *
+     * <p>
      * Services such as the PlatformStateService and RosterService may be registered
      * on a newly loaded (or received via Reconnect) SignedState object in order
      * to access the PlatformState and RosterState/RosterMap objects so that the code
@@ -419,10 +492,10 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      * {@code state.getReadableStates(PlatformStateService.NAME).isEmpty()} check.
      * So if this service has previously been initialized, then the States API
      * won't be initialized in full.
-     *
+     * <p>
      * To prevent this and to allow the system to initialize all the services,
      * we unregister the PlatformStateService and RosterService after the validation is performed.
-     *
+     * <p>
      * Note that unlike the MerkleStateRoot.removeServiceState() method below in this class,
      * the unregisterService() method will NOT remove the merkle nodes that store the states of
      * the services being unregistered. This is by design because these nodes will be used

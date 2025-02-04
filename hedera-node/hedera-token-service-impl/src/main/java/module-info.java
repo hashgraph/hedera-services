@@ -8,10 +8,10 @@ module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
     requires transitive com.swirlds.state.api;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.swirlds.base;
@@ -22,9 +22,6 @@ module com.hedera.node.app.service.token.impl {
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
     requires static java.compiler; // javax.annotation.processing.Generated
-
-    provides com.hedera.node.app.service.token.TokenService with
-            com.hedera.node.app.service.token.impl.TokenServiceImpl;
 
     exports com.hedera.node.app.service.token.impl.handlers;
     exports com.hedera.node.app.service.token.impl;
