@@ -351,7 +351,8 @@ public class BaseTranslator {
         final var receiptBuilder =
                 TransactionReceipt.newBuilder().status(parts.transactionResult().status());
         final boolean followsUserRecord = asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
-        if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()) {
+        if (followsUserRecord && !parts.transactionIdOrThrow().scheduled()
+                || parts.body().hasBatchKey()) {
             recordBuilder.parentConsensusTimestamp(asTimestamp(userTimestamp));
         }
         if (!followsUserRecord || parts.transactionIdOrThrow().scheduled()) {
