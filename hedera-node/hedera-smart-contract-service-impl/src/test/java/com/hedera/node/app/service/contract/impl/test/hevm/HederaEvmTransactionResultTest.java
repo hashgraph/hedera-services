@@ -57,7 +57,6 @@ import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -71,9 +70,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmTransactionResultTest {
     @Mock
     private MessageFrame frame;
-
-    @Mock
-    private Deque<MessageFrame> stack;
 
     @Mock
     private ProxyWorldUpdater proxyWorldUpdater;
@@ -101,6 +97,8 @@ class HederaEvmTransactionResultTest {
     @Test
     void finalStatusFromHaltUsesCorrespondingStatusIfFromStandard() {
         givenDefaultConfigInFrame(frame);
+        doReturn(accessTracker).when(frame).getContextVariable(TRACKER_CONTEXT_VARIABLE);
+
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame, null, tracer);

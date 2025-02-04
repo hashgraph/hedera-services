@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.tracers;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
@@ -58,7 +59,9 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
     @Override
     public void sanitizeTracedActions(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        actionStack.sanitizeFinalActionsAndLogAnomalies(frame, log, Level.WARN);
+        if (hasActionValidationEnabled(frame)) {
+            actionStack.sanitizeFinalActionsAndLogAnomalies(frame, log, Level.WARN);
+        }
     }
 
     @Override
@@ -70,7 +73,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         if (state == CODE_SUSPENDED) {
             actionStack.pushActionOfIntermediate(frame);
         } else if (state != CODE_EXECUTING) {
-            actionStack.finalizeLastAction(frame, ActionStack.Validation.ON);
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
     }
 
@@ -78,7 +81,7 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
     public void tracePrecompileResult(@NonNull final MessageFrame frame, @NonNull final ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
-        actionStack.finalizeLastStackActionAsPrecompile(frame, type, ActionStack.Validation.ON);
+        actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
     }
 
     @Override
@@ -100,7 +103,12 @@ public class EvmActionTracer implements ActionSidecarContentTracer {
         // code, and tracePostExecution() will never be called; so this is our only chance
         // to keep the action stack in sync with the message frame stack.
         if (haltReason.isPresent()) {
-            actionStack.finalizeLastAction(frame, ActionStack.Validation.ON);
+            actionStack.finalizeLastAction(frame, stackValidationChoice(frame));
         }
+    }
+
+    private ActionStack.Validation stackValidationChoice(@NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        return hasActionValidationEnabled(frame) ? ActionStack.Validation.ON : ActionStack.Validation.OFF;
     }
 }

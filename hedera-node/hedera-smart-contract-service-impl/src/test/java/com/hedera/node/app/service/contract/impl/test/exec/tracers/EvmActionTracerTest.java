@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.tracers;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.tracers.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Deque;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
@@ -63,7 +66,21 @@ class EvmActionTracerTest {
     }
 
     @Test
+    void customFinalizeNoopIfNotValidatingActions() {
+        givenSidecarsValidation(false);
+
+        initialiseStack();
+
+        subject.sanitizeTracedActions(frame);
+
+        verifyNoInteractions(actionStack);
+    }
+
+    @Test
     void customFinalizeSanitizesActionsIfValidating() {
+        givenSidecarsValidation(true);
+        initialiseStack();
+
         subject.sanitizeTracedActions(frame);
 
         verify(actionStack).sanitizeFinalActionsAndLogAnomalies(eq(frame), any(Logger.class), eq(Level.WARN));
@@ -89,11 +106,25 @@ class EvmActionTracerTest {
 
     @Test
     void postExecFinalizesIfNotSuspended() {
+        givenSidecarsValidation(true);
+        initialiseStack();
+
         given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_SUCCESS);
 
         subject.tracePostExecution(frame, new Operation.OperationResult(123, null));
 
         verify(actionStack).finalizeLastAction(frame, ActionStack.Validation.ON);
+    }
+
+    @Test
+    void systemPrecompileTraceIsStillTrackedEvenIfHalted() {
+        givenSidecarsValidation(false);
+        initialiseStack();
+
+        subject.tracePrecompileResult(frame, ContractActionType.SYSTEM);
+
+        verify(actionStack)
+                .finalizeLastStackActionAsPrecompile(frame, ContractActionType.SYSTEM, ActionStack.Validation.OFF);
     }
 
     @Test
@@ -105,8 +136,23 @@ class EvmActionTracerTest {
 
     @Test
     void accountCreationTraceFinalizesWithSidecarsAndHaltReason() {
+        givenSidecarsValidation(true);
+        initialiseStack();
+
         subject.traceAccountCreationResult(frame, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
         verify(actionStack).finalizeLastAction(frame, ActionStack.Validation.ON);
+    }
+
+    private void givenSidecarsValidation(final boolean validation) {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("contracts.sidecarValidationEnabled", validation ? "true" : "false")
+                .getOrCreateConfig();
+        given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
+    }
+
+    private void initialiseStack() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
     }
 }

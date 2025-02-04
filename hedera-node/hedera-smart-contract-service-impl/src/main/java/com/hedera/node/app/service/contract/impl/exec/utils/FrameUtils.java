@@ -66,6 +66,10 @@ public class FrameUtils {
         return configOf(frame).getConfigData(ContractsConfig.class);
     }
 
+    public static boolean hasActionValidationEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecarValidationEnabled();
+    }
+
     public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {
         return initialFrameOf(frame).getContextVariable(TRACKER_CONTEXT_VARIABLE);
     }
