@@ -154,29 +154,24 @@ public class MerkleHashBuilder {
 
         @Override
         protected boolean onExecute() {
-            try {
-                if (node == null || node.getHash() != null) {
-                    out.send();
-                } else if (node.isLeaf()) {
-                    merkleCryptography.digestSync(node.asLeaf(), MERKLE_DIGEST_TYPE);
+            if (node == null || node.getHash() != null) {
+                out.send();
+            } else if (node.isLeaf()) {
+                merkleCryptography.digestSync(node.asLeaf(), MERKLE_DIGEST_TYPE);
+                out.send();
+            } else {
+                MerkleInternal internal = node.asInternal();
+                int nChildren = internal.getNumberOfChildren();
+                if (nChildren == 0) {
+                    merkleCryptography.digestSync(internal, MERKLE_DIGEST_TYPE);
                     out.send();
                 } else {
-                    MerkleInternal internal = node.asInternal();
-                    int nChildren = internal.getNumberOfChildren();
-                    if (nChildren == 0) {
-                        merkleCryptography.digestSync(internal, MERKLE_DIGEST_TYPE);
-                        out.send();
-                    } else {
-                        ComputeTask compute = new ComputeTask(internal, nChildren, out);
-                        for (int childIndex = 0; childIndex < nChildren; childIndex++) {
-                            MerkleNode child = internal.getChild(childIndex);
-                            new TraverseTask(child, compute).send();
-                        }
+                    ComputeTask compute = new ComputeTask(internal, nChildren, out);
+                    for (int childIndex = 0; childIndex < nChildren; childIndex++) {
+                        MerkleNode child = internal.getChild(childIndex);
+                        new TraverseTask(child, compute).send();
                     }
                 }
-            } catch (Exception ex) {
-                out.completeExceptionally(ex);
-                return false;
             }
             return true;
         }

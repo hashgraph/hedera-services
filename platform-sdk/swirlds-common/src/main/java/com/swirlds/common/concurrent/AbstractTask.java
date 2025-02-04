@@ -93,7 +93,7 @@ public abstract class AbstractTask extends ForkJoinTask<Void> {
      *
      * @return true if this task is known to have been completed normally
      */
-    protected abstract boolean onExecute();
+    protected abstract boolean onExecute() throws Exception;
 
     @Override
     public final void completeExceptionally(final Throwable t) {

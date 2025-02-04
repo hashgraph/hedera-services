@@ -611,37 +611,31 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean onExecute() {
-            try {
-                BufferedData bucketData =
-                        fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
-                // The bucket will be closed by StoreBucketTask
-                final Bucket bucket = bucketPool.getBucket();
-                if (bucketData == null) {
-                    // An empty bucket
-                    bucket.setBucketIndex(bucketIndex);
-                } else {
-                    // Read from bytes
-                    bucket.readFrom(bucketData);
-                    if (bucketIndex != bucket.getBucketIndex()) {
-                        throw new RuntimeException(
-                                "Bucket index integrity check " + bucketIndex + " != " + bucket.getBucketIndex());
-                    }
+        protected boolean onExecute() throws IOException {
+            BufferedData bucketData = fileCollection.readDataItemUsingIndex(bucketIndexToBucketLocation, bucketIndex);
+            // The bucket will be closed by StoreBucketTask
+            final Bucket bucket = bucketPool.getBucket();
+            if (bucketData == null) {
+                // An empty bucket
+                bucket.setBucketIndex(bucketIndex);
+            } else {
+                // Read from bytes
+                bucket.readFrom(bucketData);
+                if (bucketIndex != bucket.getBucketIndex()) {
+                    throw new RuntimeException(
+                            "Bucket index integrity check " + bucketIndex + " != " + bucket.getBucketIndex());
                 }
-                // Apply all updates
-                keyUpdates.forEachKeyValue(bucket::putValue);
-                // Schedule a "store bucket" task for this bucket
-                createAndScheduleStoreTask(bucket);
-                return true;
-            } catch (final IOException z) {
-                logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket " + bucketIndex, z);
-                completeExceptionally(z);
-                return false;
             }
+            // Apply all updates
+            keyUpdates.forEachKeyValue(bucket::putValue);
+            // Schedule a "store bucket" task for this bucket
+            createAndScheduleStoreTask(bucket);
+            return true;
         }
 
         @Override
         protected void onException(final Throwable t) {
+            logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket " + bucketIndex, t);
             exceptionOccurred.set(t);
             // Make sure the writing thread is resumed
             notifyTaskRef.get().completeExceptionally(t);
@@ -675,7 +669,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
         }
 
         @Override
-        protected boolean onExecute() {
+        protected boolean onExecute() throws IOException {
             try (bucket) {
                 final int bucketIndex = bucket.getBucketIndex();
                 if (bucket.isEmpty()) {
@@ -689,9 +683,6 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                 }
                 next.send();
                 return true;
-            } catch (final IOException z) {
-                completeExceptionally(z);
-                return false;
             } finally {
                 // Let the current submit task know that a bucket is fully processed, and
                 // the task can be run
@@ -707,6 +698,7 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
 
         @Override
         protected void onException(final Throwable t) {
+            logger.error(MERKLE_DB.getMarker(), "Failed to write bucket " + bucket.getBucketIndex(), t);
             exceptionOccurred.set(t);
             // Make sure the writing thread is resumed
             notifyTaskRef.get().completeExceptionally(t);

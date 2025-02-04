@@ -90,8 +90,7 @@ class SequentialTask extends AbstractTask {
         busyTimer.activate();
         try {
             handler.accept(data);
-        } catch (final Throwable t) {
-            completeExceptionally(t);
+            return true;
         } finally {
             offRamp.offRamp();
             busyTimer.deactivate();
@@ -100,7 +99,6 @@ class SequentialTask extends AbstractTask {
             // method will cause the next task to be immediately eligible for execution.
             nextTask.send();
         }
-        return true;
     }
 
     /**

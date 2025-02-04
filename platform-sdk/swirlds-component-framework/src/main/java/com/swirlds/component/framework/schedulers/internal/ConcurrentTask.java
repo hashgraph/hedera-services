@@ -64,12 +64,10 @@ class ConcurrentTask extends AbstractTask {
     protected boolean onExecute() {
         try {
             handler.accept(data);
-        } catch (final Throwable t) {
-            completeExceptionally(t);
+            return true;
         } finally {
             offRamp.offRamp();
         }
-        return true;
     }
 
     /**
