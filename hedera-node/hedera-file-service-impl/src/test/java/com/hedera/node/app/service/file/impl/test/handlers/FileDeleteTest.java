@@ -182,11 +182,11 @@ class FileDeleteTest extends FileTestBase {
 
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
-        TransactionBody transactionBody = TransactionBody.newBuilder()
+        final TransactionBody transactionBody = TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
-        PreHandleContext realPreContext = new PreHandleContextImpl(
+        final PreHandleContext realPreContext = new PreHandleContextImpl(
                 mockStoreFactory, transactionBody, testConfig, mockDispatcher, transactionChecker);
 
         subject.preHandle(realPreContext);
@@ -292,7 +292,7 @@ class FileDeleteTest extends FileTestBase {
         assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
     }
 
-    private Key mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup() {
         return FileTestUtils.mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
     }
 

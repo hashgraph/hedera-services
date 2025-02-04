@@ -62,11 +62,13 @@ public class TransactionHandlerTester {
         platformState = new PlatformStateValueAccumulator();
 
         final PlatformMerkleStateRoot consensusState = mock(PlatformMerkleStateRoot.class);
-        stateLifecycles = mock(StateLifecycles.class);
-        ;
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
         when(consensusState.getWritablePlatformState()).thenReturn(platformState);
+
+        stateLifecycles = mock(StateLifecycles.class);
+        when(stateLifecycles.onSealConsensusRound(any(), any())).thenReturn(true);
+
         doAnswer(i -> {
                     handledRounds.add(i.getArgument(0));
                     return null;

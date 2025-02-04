@@ -60,7 +60,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.RealmID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ShardID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
@@ -70,7 +72,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
-import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -142,8 +143,6 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     private CryptoCreateHandler subject;
 
-    private CryptoCreateValidator cryptoCreateValidator;
-    private StakingValidator stakingValidator;
     private TransactionBody txn;
 
     private Configuration configuration;
@@ -165,10 +164,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
 
-        cryptoCreateValidator = new CryptoCreateValidator();
-        stakingValidator = new StakingValidator();
         given(handleContext.networkInfo()).willReturn(networkInfo);
-        subject = new CryptoCreateHandler(cryptoCreateValidator);
+        subject = new CryptoCreateHandler(new CryptoCreateValidator());
     }
 
     @Test
@@ -226,6 +223,51 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
+    }
+
+    @Test
+    @DisplayName("pureChecks succeeds when expected shardId is specified")
+    void validateNonZeroShardAndRealm() {
+        final long shard = 5;
+        final long realm = 10;
+        txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
+        given(handleContext.body()).willReturn(txn);
+
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
+        given(handleContext.payer()).willReturn(id);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("cryptoCreateWithAlias.enabled", true)
+                .withValue("ledger.maxAutoAssociations", 5000)
+                .withValue("entities.limitTokenAssociations", false)
+                .withValue("tokens.maxPerAccount", 1000)
+                .withValue("hedera.shard", shard)
+                .withValue("hedera.realm", realm)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(config);
+        setupExpiryValidator();
+
+        // newly created account is not modified.
+        assertFalse(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
+        assertDoesNotThrow(() -> subject.pureChecks(txn));
+        subject.handle(handleContext);
+
+        // newly created account and payer account are modified
+        assertTrue(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
+
+        // Validate created account exists and check record builder has created account recorded
+        final var createdAccount = writableStore.get(AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(1000L)
+                .build());
+        assertThat(createdAccount).isNotNull();
+        final var accountID = AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(1000L)
+                .build();
+        verify(recordBuilder).accountID(accountID);
     }
 
     @Test
@@ -795,6 +837,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         private AccountID proxyAccountId = null;
         private long stakedAccountId = 0;
         private long shardId = 0;
+        private long realmId = 0;
         private int maxAutoAssociations = -1;
 
         private Key key = otherKey;
@@ -808,6 +851,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                     TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
             final var createTxnBody = CryptoCreateTransactionBody.newBuilder()
                     .key(key)
+                    .shardID(ShardID.newBuilder().shardNum(shardId))
+                    .realmID(RealmID.newBuilder().shardNum(shardId).realmNum(realmId))
                     .receiverSigRequired(receiverSigReq)
                     .initialBalance(initialBalance)
                     .memo("Create Account")
@@ -901,6 +946,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         public CryptoCreateBuilder withShardId(final long id) {
             this.shardId = id;
+            return this;
+        }
+
+        public CryptoCreateBuilder withRealmId(final long id) {
+            this.realmId = id;
             return this;
         }
 

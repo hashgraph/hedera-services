@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Represents the context of a single {@code preHandle()}-call.
+ * Represents the context of a single {@code pureChecks()}-call.
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface PureChecksContext {

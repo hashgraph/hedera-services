@@ -48,9 +48,9 @@ import static com.hedera.hapi.node.base.HederaFunctionality.FILE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
-import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_AGGREGATION_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_KEY_PUBLICATION;
 import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_PARTIAL_SIGNATURE;
+import static com.hedera.hapi.node.base.HederaFunctionality.HINTS_PREPROCESSING_VOTE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
 import static com.hedera.hapi.node.base.HederaFunctionality.HISTORY_PROOF_VOTE;
@@ -268,7 +268,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsKeyPublication,
-        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsAggregationVote,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsPreprocessingVote,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange hintsPartialSignature,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssMessage,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange tssVote,
@@ -357,7 +357,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
         permissionKeys.put(STATE_SIGNATURE_TRANSACTION, c -> c.stateSignature);
         permissionKeys.put(HINTS_KEY_PUBLICATION, c -> c.hintsKeyPublication);
-        permissionKeys.put(HINTS_AGGREGATION_VOTE, c -> c.hintsAggregationVote);
+        permissionKeys.put(HINTS_PREPROCESSING_VOTE, c -> c.hintsPreprocessingVote);
         permissionKeys.put(HINTS_PARTIAL_SIGNATURE, c -> c.hintsPartialSignature);
         permissionKeys.put(HISTORY_PROOF_KEY_PUBLICATION, c -> c.historyProofKeyPublication);
         permissionKeys.put(HISTORY_ASSEMBLY_SIGNATURE, c -> c.historyAssemblySignature);

@@ -28,6 +28,9 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * Implementation of {@link PureChecksContext}.
+ */
 public class PureChecksContextImpl implements PureChecksContext {
     /**
      * The transaction body.
