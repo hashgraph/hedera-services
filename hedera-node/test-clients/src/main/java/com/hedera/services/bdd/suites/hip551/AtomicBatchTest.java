@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -60,10 +61,11 @@ public class AtomicBatchTest {
                 // use custom txn id so we can get the record
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
                 // create a batch txn
-                atomicBatch(innerTxn).payingWith(batchOperator),
+                atomicBatch(innerTxn).payingWith(batchOperator).via("batchTxn"),
                 // get and log inner txn record
                 getTxnRecord(innerTxnId).assertingNothingAboutHashes().logged(),
                 // validate the batch txn result
-                getAccountBalance("foo").hasTinyBars(ONE_HBAR));
+                getAccountBalance("foo").hasTinyBars(ONE_HBAR),
+                validateChargedUsd("batchTxn", 0.001));
     }
 }
