@@ -409,6 +409,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return creatorInfo;
     }
 
+    @NonNull
+    @Override
+    public DispatchMetadata dispatchMetadata() {
+        return dispatchMetaData;
+    }
+
     @Nullable
     @Override
     public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws HandleException {

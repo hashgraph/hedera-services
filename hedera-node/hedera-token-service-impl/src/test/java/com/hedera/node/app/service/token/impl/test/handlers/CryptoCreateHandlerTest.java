@@ -249,7 +249,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         // newly created account is not modified.
         assertFalse(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
-        assertDoesNotThrow(() -> subject.pureChecks(txn));
+        given(pureChecksContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
         subject.handle(handleContext);
 
         // newly created account and payer account are modified
