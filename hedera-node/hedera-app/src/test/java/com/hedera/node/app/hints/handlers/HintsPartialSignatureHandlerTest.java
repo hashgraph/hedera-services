@@ -18,11 +18,11 @@ package com.hedera.node.app.hints.handlers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +36,9 @@ class HintsPartialSignatureHandlerTest {
 
     @Mock
     private HintsLibrary library;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     @Mock
     private PreHandleContext preHandleContext;
@@ -52,7 +55,7 @@ class HintsPartialSignatureHandlerTest {
 
     @Test
     void pureChecksDoNothing() {
-        assertDoesNotThrow(() -> subject.pureChecks(TransactionBody.DEFAULT));
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
     }
 
     @Test

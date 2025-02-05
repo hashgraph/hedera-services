@@ -53,7 +53,9 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -95,6 +97,12 @@ class FileDeleteTest extends FileTestBase {
     @Mock
     protected FileFeeBuilder usageEstimator;
 
+    @Mock
+    private PureChecksContext context;
+
+    @Mock
+    private TransactionChecker transactionChecker;
+
     protected Configuration testConfig;
 
     @BeforeEach
@@ -114,27 +122,27 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("pureChecks throws exception when file id is null")
-    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+    void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         FileDeleteTransactionBody transactionBody = mock(FileDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
-        given(handleContext.body()).willReturn(transaction);
         given(transaction.fileDeleteOrThrow()).willReturn(transactionBody);
         given(transactionBody.fileID()).willReturn(null);
+        given(context.body()).willReturn(transaction);
 
-        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(context)).isInstanceOf(PreCheckException.class);
     }
 
     @Test
     @DisplayName("pureChecks does not throw exception when file id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
-        given(handleContext.body()).willReturn(newDeleteTxn());
+    void testPureChecksDoesNotThrowExceptionWhenFileIdIsNotNull() {
+        given(context.body()).willReturn(newDeleteTxn());
 
-        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(context)).doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("calculateFees method invocations")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         FeeContext feeContext = mock(FeeContext.class);
         FeeCalculatorFactory feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         FeeCalculator feeCalculator = mock(FeeCalculator.class);
@@ -155,7 +163,8 @@ class FileDeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+        final var context = new PreHandleContextImpl(
+                mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
@@ -173,16 +182,16 @@ class FileDeleteTest extends FileTestBase {
 
         final var txnId = TransactionID.newBuilder().accountID(payerId).build();
         final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
-        TransactionBody transactionBody = TransactionBody.newBuilder()
+        final TransactionBody transactionBody = TransactionBody.newBuilder()
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
+        final PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, transactionBody, testConfig, mockDispatcher, transactionChecker);
 
         subject.preHandle(realPreContext);
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(0);
+        assertThat(realPreContext.requiredNonPayerKeys()).isEmpty();
     }
 
     @Test
@@ -194,12 +203,12 @@ class FileDeleteTest extends FileTestBase {
         BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        PreHandleContext realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+        PreHandleContext realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher, transactionChecker);
 
         subject.preHandle(realPreContext);
 
-        assertThat(realPreContext.requiredNonPayerKeys().size()).isEqualTo(1);
+        assertThat(realPreContext.requiredNonPayerKeys()).hasSize(1);
         assertThat(realPreContext
                         .requiredNonPayerKeys()
                         .toArray(Key[]::new)[0]
@@ -248,7 +257,7 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())
@@ -259,9 +268,9 @@ class FileDeleteTest extends FileTestBase {
 
         final var changedFile = writableStore.get(fileId);
 
-        assertThat(changedFile.isPresent()).isTrue();
+        assertThat(changedFile).isPresent();
         assertThat(changedFile.get().deleted()).isTrue();
-        assertThat(Bytes.EMPTY).isEqualTo(changedFile.get().contents());
+        assertThat(changedFile.get().contents()).isEqualTo(Bytes.EMPTY);
     }
 
     @Test
@@ -273,7 +282,7 @@ class FileDeleteTest extends FileTestBase {
         final var txn = newDeleteTxn().fileDeleteOrThrow();
 
         final var existingFile = writableStore.get(fileId);
-        assertThat(existingFile.isPresent()).isTrue();
+        assertThat(existingFile).isPresent();
         assertThat(existingFile.get().deleted()).isFalse();
 
         given(handleContext.body())
@@ -283,7 +292,7 @@ class FileDeleteTest extends FileTestBase {
         assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
     }
 
-    private Key mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup() {
         return FileTestUtils.mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
     }
 
