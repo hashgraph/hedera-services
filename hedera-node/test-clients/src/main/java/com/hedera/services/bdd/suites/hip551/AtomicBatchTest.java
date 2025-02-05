@@ -150,13 +150,16 @@ public class AtomicBatchTest {
         @DisplayName("Batch should finalize hollow account")
         final Stream<DynamicTest> batchFinalizeHollowAccount() {
             final var alias = "alias";
+            final var batchOperator = "batchOperator";
             return hapiTest(flattened(
+                    cryptoCreate(batchOperator),
                     newKeyNamed(alias).shape(SECP_256K1_SHAPE),
                     createHollowAccountFrom(alias),
                     getAliasedAccountInfo(alias).isHollow(),
-                    atomicBatch(cryptoCreate("foo").payingWith(alias))
+                    atomicBatch(cryptoCreate("foo").payingWith(alias).batchKey(batchOperator))
                             .payingWith(alias)
-                            .sigMapPrefixes(uniqueWithFullPrefixesFor(alias)),
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
+                            .signedBy(alias, batchOperator),
                     getAliasedAccountInfo(alias).isNotHollow()));
         }
 
@@ -165,15 +168,24 @@ public class AtomicBatchTest {
         @DisplayName("Failing batch should finalize hollow account")
         final Stream<DynamicTest> failingBatchShouldFinalizeHollowAccount() {
             final var alias = "alias";
+            final var batchOperator = "batchOperator";
             return hapiTest(flattened(
+                    cryptoCreate(batchOperator),
                     newKeyNamed(alias).shape(SECP_256K1_SHAPE),
                     createHollowAccountFrom(alias),
                     getAliasedAccountInfo(alias).isHollow(),
                     atomicBatch(
-                                    cryptoCreate("foo").payingWith(alias),
-                                    cryptoCreate("bar").alias(ByteString.EMPTY).payingWith(alias))
+                                    cryptoCreate("foo")
+                                            .payingWith(alias)
+                                            .batchKey(batchOperator)
+                                            .batchKey(batchOperator),
+                                    cryptoCreate("bar")
+                                            .alias(ByteString.EMPTY)
+                                            .payingWith(alias)
+                                            .batchKey(batchOperator))
                             .payingWith(alias)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
+                            .signedBy(alias, batchOperator)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
                     getAliasedAccountInfo(alias).isNotHollow()));
         }
@@ -194,7 +206,25 @@ public class AtomicBatchTest {
                     atomicBatch(
                                     cryptoCreate("foo").batchKey(threshBatchKey),
                                     cryptoCreate("bar").batchKey(threshBatchKey))
-                            .payingWith(alis));
+                            .signedByPayerAnd(alis));
+        }
+
+        @HapiTest
+        // BATCH_25 BATCH_28 BATCH_29 BATCH_30
+        // This cases all are very similar and can be combined into one
+        @DisplayName("Payer is different from batch operator")
+        final Stream<DynamicTest> payWithDifferentAccount() {
+            final var alis = "alis";
+            final var bob = "bob";
+
+            return hapiTest(
+                    cryptoCreate(alis).balance(FIVE_HBARS),
+                    cryptoCreate(bob),
+                    atomicBatch(
+                                    cryptoCreate("foo").batchKey(bob),
+                                    cryptoCreate("bar").batchKey(bob))
+                            .payingWith(alis)
+                            .signedBy(alis, bob));
         }
     }
 }
