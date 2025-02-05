@@ -1665,9 +1665,9 @@ enum HederaFunctionality {
     HintsKeyPublication = 101;
 
     /**
-     * Vote for a particular aggregation of hinTS keys.
+     * Vote for a particular preprocessing output of a hinTS construction.
      */
-    HintsAggregationVote = 102;
+    HintsPreprocessingVote = 102;
 
     /**
      * Sign a partial signature for the active hinTS construction.

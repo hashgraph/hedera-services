@@ -33,6 +33,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -58,6 +59,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -72,12 +74,16 @@ class TokenUnfreezeAccountHandlerTest {
             AccountID.newBuilder().accountNum(13257L).build();
     private TokenUnfreezeAccountHandler subject;
 
+    @Mock(strictness = LENIENT)
+    private PureChecksContext pureChecksContext;
+
     @BeforeEach
     void setUp() {
         subject = new TokenUnfreezeAccountHandler();
     }
 
     @Nested
+    @ExtendWith(MockitoExtension.class)
     class PreHandleTests {
         private ReadableAccountStore accountStore;
         private ReadableTokenStore tokenStore;
@@ -102,16 +108,15 @@ class TokenUnfreezeAccountHandlerTest {
         }
 
         @Test
-        void tokenUnfreezeWithNoAccount() throws PreCheckException {
+        void tokenUnfreezeWithNoAccount() {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
                     .tokenUnfreeze(TokenUnfreezeAccountTransactionBody.newBuilder()
                             .token(TokenID.newBuilder().tokenNum(123L)))
                     .build();
+            given(pureChecksContext.body()).willReturn(theTxn);
 
-            final var context = new FakePreHandleContext(accountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, tokenStore);
-            Assertions.assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
+            Assertions.assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_ACCOUNT_ID);
         }
     }
 

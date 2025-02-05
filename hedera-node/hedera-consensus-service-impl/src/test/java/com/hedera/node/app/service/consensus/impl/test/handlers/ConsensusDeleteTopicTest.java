@@ -49,6 +49,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -63,6 +64,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusDeleteTopicTest extends ConsensusTestBase {
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -88,8 +92,9 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
     @DisplayName("pureChecks fails if topic ID is missing")
     void failsIfMissTopicId() {
         givenValidTopic();
-        final var txn = newDeleteTxnMissTopicId();
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_TOPIC_ID);
+        given(pureChecksContext.body()).willReturn(newDeleteTxnMissTopicId());
+
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_TOPIC_ID);
     }
 
     @Test
