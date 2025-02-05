@@ -531,9 +531,9 @@ class ReadableFreezeUpgradeActionsTest {
         final var pemFile4 = readCertificatePemFile(pemFilePath4);
 
         final String configContents = new StringBuilder()
-                .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 1.2.3\n")
-                .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 1.2.4\n")
-                .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 1.2.8\n")
+                .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();
@@ -656,9 +656,9 @@ class ReadableFreezeUpgradeActionsTest {
         final var pemFile3 = readCertificatePemFile(pemFilePath3);
 
         final String configContents = new StringBuilder()
-                .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 1.2.3\n")
-                .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 1.2.4\n")
-                .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 1.2.6\n")
+                .append("address, 0, 0, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 1, 1, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 2, 2, node3, 20, 127.0.0.3, 1245, 35.186.191.235, 50221, 0.0.6\n")
                 .toString();
         final byte[] pemFile1Bytes = pemFile1.getEncoded();
         final byte[] pemFile2Bytes = pemFile2.getEncoded();

@@ -73,7 +73,7 @@ public class LogsSuite {
                                                 .noData()
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log1(uint256)"),
-                                                        parsedToByteString(1, 2, 15)))))
+                                                        parsedToByteString(0, 0, 15)))))
                                         .gasUsed(22_787))));
     }
 
@@ -92,8 +92,8 @@ public class LogsSuite {
                                                 .noData()
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log2(uint256,uint256)"),
-                                                        parsedToByteString(1, 2, 1),
-                                                        parsedToByteString(1, 2, 2)))))
+                                                        parsedToByteString(0, 0, 1),
+                                                        parsedToByteString(0, 0, 2)))))
                                         .gasUsed(23_456))));
     }
 
@@ -112,9 +112,9 @@ public class LogsSuite {
                                                 .noData()
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log3(uint256,uint256,uint256)"),
-                                                        parsedToByteString(1, 2, 1),
-                                                        parsedToByteString(1, 2, 2),
-                                                        parsedToByteString(1, 2, 3)))))
+                                                        parsedToByteString(0, 0, 1),
+                                                        parsedToByteString(0, 0, 2),
+                                                        parsedToByteString(0, 0, 3)))))
                                         .gasUsed(24_122))));
     }
 
@@ -139,9 +139,9 @@ public class LogsSuite {
                                                 .longValue(4)
                                                 .withTopicsInOrder(List.of(
                                                         eventSignatureOf("Log4(uint256,uint256,uint256," + "uint256)"),
-                                                        parsedToByteString(1, 2, 1),
-                                                        parsedToByteString(1, 2, 2),
-                                                        parsedToByteString(1, 2, 3)))))
+                                                        parsedToByteString(0, 0, 1),
+                                                        parsedToByteString(0, 0, 2),
+                                                        parsedToByteString(0, 0, 3)))))
                                         .gasUsed(24_918))));
     }
 }

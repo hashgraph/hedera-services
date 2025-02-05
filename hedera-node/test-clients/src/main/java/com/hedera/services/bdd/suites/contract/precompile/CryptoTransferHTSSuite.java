@@ -808,7 +808,10 @@ public class CryptoTransferHTSSuite {
                                                                     receiver.getShardNum(),
                                                                     receiver.getRealmNum(),
                                                                     receiver.getAccountNum()),
-                                                            parsedToByteString(1, 2, 2L)))))))
+                                                            parsedToByteString(
+                                                                    sender.getShardNum(),
+                                                                    sender.getRealmNum(),
+                                                                    2L)))))))
                             .andAllChildRecords()
                             .logged();
                     allRunFor(spec, txnRecord);

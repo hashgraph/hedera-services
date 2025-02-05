@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ class CustomCallOperationTest {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
             given(frame.isStatic()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            mockWorldUpdater();
 
             final var expected =
                     new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
@@ -113,6 +114,7 @@ class CustomCallOperationTest {
             given(addressChecks.isPresent(EIP_1014_ADDRESS, frame)).willReturn(true);
             given(frame.isStatic()).willReturn(true);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            mockWorldUpdater();
 
             final var expected =
                     new Operation.OperationResult(REQUIRED_GAS, ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
@@ -128,6 +130,8 @@ class CustomCallOperationTest {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
+        mockWorldUpdater();
+
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
 
@@ -139,6 +143,7 @@ class CustomCallOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(0L, TestHelpers.EIP_1014_ADDRESS, 2L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            mockWorldUpdater();
             frameUtils
                     .when(() -> FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags))
                     .thenReturn(true);
@@ -158,6 +163,8 @@ class CustomCallOperationTest {
             given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(2l)));
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
 
+            mockWorldUpdater();
+
             final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
             final var actual = subject.execute(frame, evm);
 
@@ -170,6 +177,7 @@ class CustomCallOperationTest {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(1L, TestHelpers.EIP_1014_ADDRESS, 2L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
+            mockWorldUpdater();
             frameUtils
                     .when(() -> FrameUtils.contractRequired(frame, TestHelpers.EIP_1014_ADDRESS, featureFlags))
                     .thenReturn(true);
@@ -210,5 +218,11 @@ class CustomCallOperationTest {
                         eq(to),
                         anyBoolean()))
                 .willReturn(REQUIRED_GAS);
+    }
+
+    private void mockWorldUpdater() {
+        given(frame.getWorldUpdater()).willReturn(updater);
+        given(updater.getShardNum()).willReturn(0L);
+        given(updater.getRealmNum()).willReturn(0L);
     }
 }

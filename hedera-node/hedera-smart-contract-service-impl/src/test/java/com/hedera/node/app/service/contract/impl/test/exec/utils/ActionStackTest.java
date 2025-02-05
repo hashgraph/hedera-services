@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,6 +234,7 @@ class ActionStackTest {
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
+        mockWorldUpdater();
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, SYSTEM, ActionStack.Validation.ON);
 
@@ -265,6 +266,7 @@ class ActionStackTest {
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
         given(helper.isValid(any())).willReturn(true);
+        mockWorldUpdater();
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON);
 
@@ -585,6 +587,7 @@ class ActionStackTest {
         given(childFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
+        mockWorldUpdater();
 
         subject.pushActionOfIntermediate(parentFrame);
 
@@ -615,5 +618,11 @@ class ActionStackTest {
     private void givenPresentEvmAddress() {
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
+    }
+
+    private void mockWorldUpdater() {
+        given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getShardNum()).willReturn(0L);
+        given(worldUpdater.getRealmNum()).willReturn(0L);
     }
 }

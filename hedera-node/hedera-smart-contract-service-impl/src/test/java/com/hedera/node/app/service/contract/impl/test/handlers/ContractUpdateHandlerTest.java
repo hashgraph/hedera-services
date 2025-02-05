@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -239,6 +240,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         ContractUpdateTransactionBody.newBuilder().contractID(targetContract))
                 .transactionID(transactionID)
                 .build();
+        var mockConfiguration = mock(Configuration.class);
+        given(context.configuration()).willReturn(mockConfiguration);
+
         when(context.body()).thenReturn(txn);
 
         assertFailsWith(INVALID_CONTRACT_ID, () -> subject.handle(context));
@@ -299,6 +303,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .expirationTime(Timestamp.newBuilder().seconds(expirationTime)))
                 .transactionID(transactionID)
                 .build();
+        var mockConfiguration = mock(Configuration.class);
+        given(context.configuration()).willReturn(mockConfiguration);
 
         when(context.body()).thenReturn(txn);
 
@@ -317,6 +323,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .adminKey(adminKey))
                 .transactionID(transactionID)
                 .build();
+        var mockConfiguration = mock(Configuration.class);
+        given(context.configuration()).willReturn(mockConfiguration);
 
         when(context.body()).thenReturn(txn);
 
@@ -342,6 +350,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .expirationTime(Timestamp.newBuilder().seconds(expirationTime)))
                 .transactionID(transactionID)
                 .build();
+        var mockConfiguration = mock(Configuration.class);
+        given(context.configuration()).willReturn(mockConfiguration);
 
         when(context.body()).thenReturn(txn);
 
@@ -363,6 +373,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        mockHederaConfig();
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -397,6 +408,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .maxAutomaticTokenAssociations(-1))
                 .transactionID(transactionID)
                 .build();
+        mockHederaConfig();
 
         when(context.body()).thenReturn(txn);
 
@@ -423,6 +435,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .maxAutomaticTokenAssociations(-5))
                 .transactionID(transactionID)
                 .build();
+        mockHederaConfig();
 
         when(context.body()).thenReturn(txn);
 
@@ -453,6 +466,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                         .maxAutomaticTokenAssociations(maxAutomaticTokenAssociations))
                 .transactionID(transactionID)
                 .build();
+        mockHederaConfig();
 
         when(context.body()).thenReturn(txn);
 
@@ -476,6 +490,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(accountStore.getContractById(targetContract)).thenReturn(contract);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        mockHederaConfig();
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
                         .contractID(targetContract)
@@ -511,6 +526,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.body()).thenReturn(txn);
         when(context.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
+        mockHederaConfig();
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.savepointStack()).thenReturn(stack);
@@ -742,6 +758,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.body()).thenReturn(txn);
         when(context.configuration()).thenReturn(configuration);
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
+        mockHederaConfig();
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.savepointStack()).thenReturn(stack);
@@ -754,5 +771,10 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .assertValidStakingElectionForUpdate(anyBoolean(), anyBoolean(), any(), any(), any(), any(), any());
         verify(tokenServiceApi, times(1)).updateContract(any());
         verify(recordBuilder, times(1)).contractID(any());
+    }
+
+    private void mockHederaConfig() {
+        var mockHederaConfig = mock(HederaConfig.class);
+        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
     }
 }

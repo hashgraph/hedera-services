@@ -96,8 +96,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateFT", scheduleID);
             assertScheduleAndSign(spec, "scheduledCreateFT");
@@ -116,8 +116,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateFTDesignatedPayer", scheduleID);
             assertScheduleAndSign(spec, "scheduledCreateFTDesignatedPayer");
@@ -136,8 +136,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateNFT", scheduleID);
             assertScheduleAndSign(spec, "scheduledCreateNFT");
@@ -156,8 +156,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledCreateNFTDesignatedPayer", scheduleID);
             assertScheduleAndSign(spec, "scheduledCreateNFTDesignatedPayer");
@@ -184,8 +184,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledUpdateToken", scheduleID);
             assertScheduleAndSign(spec, "scheduledUpdateToken");
@@ -215,8 +215,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             spec.registry().saveScheduleId("scheduledUpdateToken", scheduleID);
             assertScheduleAndSign(spec, "scheduledUpdateToken");
@@ -235,8 +235,8 @@ public class ScheduleCreateTokenTest {
                             .gas(1_000_000L)
                             .exposingResultTo(res -> scheduleAddress.set((Address) res[1])));
             final var scheduleID = ConversionUtils.asScheduleId(
-                    spec.startupProperties().getLong("default.shard"),
-                    spec.startupProperties().getLong("default.realm"),
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
                     scheduleAddress.get());
             final var scheduleNum = "0.0." + scheduleID.getScheduleNum();
             spec.registry().saveScheduleId("scheduledCreateFTWithEOA", scheduleID);

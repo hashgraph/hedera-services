@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -150,7 +149,6 @@ class HtsCallAttemptTest extends CallTestBase {
                 systemContractMethodRegistry,
                 false);
         assertNull(subject.redirectToken());
-        verifyNoInteractions(nativeOperations);
     }
 
     @Test

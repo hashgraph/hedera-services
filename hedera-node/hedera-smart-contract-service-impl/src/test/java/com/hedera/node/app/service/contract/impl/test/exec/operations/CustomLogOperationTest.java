@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,6 +151,10 @@ class CustomLogOperationTest {
         }
         final var expectedLog =
                 new Log(NON_SYSTEM_LONG_ZERO_ADDRESS, pbjToTuweniBytes(TestHelpers.LOG_DATA), builder.build());
+
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getShardNum()).willReturn(0L);
+        given(worldUpdater.getRealmNum()).willReturn(0L);
 
         final var subject = new CustomLogOperation(2, gasCalculator);
         final var result = subject.execute(frame, evm);

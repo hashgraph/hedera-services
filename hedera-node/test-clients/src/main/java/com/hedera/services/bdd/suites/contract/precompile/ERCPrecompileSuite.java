@@ -2733,7 +2733,10 @@ public class ERCPrecompileSuite {
                                                                     receiver.getShardNum(),
                                                                     receiver.getRealmNum(),
                                                                     receiver.getAccountNum()),
-                                                            parsedToByteString(1, 2, 1L)))))))
+                                                            parsedToByteString(
+                                                                    sender.getShardNum(),
+                                                                    sender.getRealmNum(),
+                                                                    1L)))))))
                             .andAllChildRecords()
                             .logged();
                     allRunFor(spec, txnRecord);

@@ -854,7 +854,7 @@ public class ContractBurnHTSV2SecurityModelSuite {
                                 .contractCallResult(resultWith()
                                         .logs(inOrder(logWith()
                                                 .noData()
-                                                .withTopicsInOrder(List.of(parsedToByteString(1, 2, 49))))))),
+                                                .withTopicsInOrder(List.of(parsedToByteString(0, 0, 49))))))),
                 getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 49),
                 childRecordsCheck(
                         "burn",

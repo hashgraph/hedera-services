@@ -206,13 +206,8 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(state);
         final var store = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
-        ;
-        final AccountID invalidRealmAccountId = AccountID.newBuilder()
-                .shardNum(1)
-                .realmNum(2)
-                .accountNum(5)
-                .realmNum(-1L)
-                .build();
+        final AccountID invalidRealmAccountId =
+                AccountID.newBuilder().accountNum(5).realmNum(-1L).build();
 
         final var query = createGetAccountBalanceQueryWithInvalidHeader(invalidRealmAccountId.accountNumOrThrow());
         when(context.query()).thenReturn(query);
@@ -250,8 +245,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
-        ;
-
         final var query = createGetAccountBalanceQuery(deleteAccountNum);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
@@ -514,11 +507,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQuery(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(accountId)
-                        .build())
+                .accountID(AccountID.newBuilder().accountNum(accountId).build())
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
@@ -527,11 +516,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQueryWithInvalidHeader(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder()
-                        .shardNum(1)
-                        .realmNum(2)
-                        .accountNum(accountId)
-                        .build())
+                .accountID(AccountID.newBuilder().accountNum(accountId).build())
                 .header((QueryHeader) null)
                 .build();
 

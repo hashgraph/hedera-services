@@ -184,7 +184,7 @@ public class ERC20ContractInteractions {
                                                                                                     eventSignatureOf(
                                                                                                             TRANSFER_ADDRESS_ADDRESS_UINT_256),
                                                                                                     parsedToByteString(
-                                                                                                            1, 2, 0),
+                                                                                                            0, 0, 0),
                                                                                                     ByteString.copyFrom(
                                                                                                             asAddressInTopic(
                                                                                                                     unhex(
