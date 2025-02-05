@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.PeerProtocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -45,9 +45,9 @@ import org.hiero.consensus.gossip.FallenBehindManager;
 /**
  * Implements the reconnect protocol over a bidirectional network
  */
-public class ReconnectProtocol implements Protocol {
+public class ReconnectPeerProtocol implements PeerProtocol {
 
-    private static final Logger logger = LogManager.getLogger(ReconnectProtocol.class);
+    private static final Logger logger = LogManager.getLogger(ReconnectPeerProtocol.class);
 
     private final NodeId peerId;
     private final ReconnectThrottle teacherThrottle;
@@ -100,7 +100,7 @@ public class ReconnectProtocol implements Protocol {
      * @param configuration           platform configuration
      * @param time                    the time object to use
      */
-    public ReconnectProtocol(
+    public ReconnectPeerProtocol(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId peerId,
