@@ -33,15 +33,15 @@ dependencies {
 val autoService = "1.1.1"
 val besu = "24.3.3"
 val bouncycastle = "1.79"
-val dagger = "2.42"
+val dagger = "2.55"
 val eclipseCollections = "11.1.0"
 val grpc = "1.69.0"
 val hederaCryptography = "0.1.1-SNAPSHOT"
 val helidon = "4.1.6"
 val jackson = "2.18.2"
-val junit5 = "5.10.2"
+val junit5 = "5.10.3!!" // no updates beyond 5.10.3 until #17125 is resolved
 val log4j = "2.21.1"
-val mockito = "5.8.0"
+val mockito = "5.15.2"
 val protobuf = "4.28.2"
 val testContainers = "1.20.4"
 val tuweni = "2.4.2"
@@ -65,7 +65,7 @@ dependencies.constraints {
     }
     api("com.github.ben-manes.caffeine:caffeine:3.1.8") { because("com.github.benmanes.caffeine") }
     api("com.github.docker-java:docker-java-api:3.2.13") { because("com.github.dockerjava.api") }
-    api("com.github.spotbugs:spotbugs-annotations:4.8.6") {
+    api("com.github.spotbugs:spotbugs-annotations:4.9.0") {
         because("com.github.spotbugs.annotations")
     }
     api("com.google.auto.service:auto-service-annotations:$autoService") {
@@ -88,9 +88,9 @@ dependencies.constraints {
     api("io.grpc:grpc-protobuf:$grpc") { because("io.grpc.protobuf") }
     api("io.grpc:grpc-stub:$grpc") { because("io.grpc.stub") }
     api("com.esaulpaugh:headlong:12.3.3") { because("com.esaulpaugh.headlong") }
-    api("info.picocli:picocli:4.6.3") { because("info.picocli") }
+    api("info.picocli:picocli:4.7.6") { because("info.picocli") }
     api("io.github.classgraph:classgraph:4.8.179") { because("io.github.classgraph") }
-    api("io.perfmark:perfmark-api:0.25.0") { because("io.perfmark") }
+    api("io.perfmark:perfmark-api:0.27.0") { because("io.perfmark") }
     api("io.prometheus:simpleclient:0.16.0") { because("io.prometheus.simpleclient") }
     api("io.prometheus:simpleclient_httpserver:0.16.0") {
         because("io.prometheus.simpleclient.httpserver")

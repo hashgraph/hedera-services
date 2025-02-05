@@ -67,23 +67,21 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
     public static final int FUNCTION_SELECTOR_LENGTH = 4;
 
     private final CallFactory callFactory;
-    private final ContractID contractID;
     private final ContractMetrics contractMetrics;
 
     protected AbstractNativeSystemContract(
             @NonNull String name,
             @NonNull CallFactory callFactory,
-            @NonNull ContractID contractID,
             @NonNull GasCalculator gasCalculator,
             @NonNull ContractMetrics contractMetrics) {
         super(name, gasCalculator);
         this.callFactory = requireNonNull(callFactory);
-        this.contractID = requireNonNull(contractID);
         this.contractMetrics = requireNonNull(contractMetrics);
     }
 
     @Override
-    public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
+    public FullResult computeFully(
+            @NonNull ContractID contractID, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var callType = callTypeOf(frame);
@@ -94,7 +92,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
         AbstractCallAttempt<?> attempt = null;
         try {
             validateTrue(input.size() >= FUNCTION_SELECTOR_LENGTH, INVALID_TRANSACTION_BODY);
-            attempt = callFactory.createCallAttemptFrom(input, callType, frame);
+            attempt = callFactory.createCallAttemptFrom(contractID, input, callType, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
                 // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
@@ -121,7 +119,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
             // reason, halts the frame and consumes all remaining gas
             return haltResult(INVALID_OPERATION, frame.getRemainingGas());
         }
-        return resultOfExecuting(attempt, call, input, frame, this.contractID);
+        return resultOfExecuting(attempt, call, input, frame, contractID);
     }
 
     @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.

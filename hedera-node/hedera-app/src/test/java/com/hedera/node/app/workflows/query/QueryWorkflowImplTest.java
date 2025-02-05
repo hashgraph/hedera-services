@@ -597,7 +597,9 @@ class QueryWorkflowImplTest extends AppTestBase {
                                 .header(ResponseHeader.newBuilder().build())
                                 .build())
                         .build());
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+                .when(queryChecker)
+                .validateCryptoTransfer(eq(transactionInfo), any());
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -821,7 +823,9 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE)).when(queryChecker).validateCryptoTransfer(transactionInfo);
+        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+                .when(queryChecker)
+                .validateCryptoTransfer(eq(transactionInfo), any());
         final var responseBuffer = newEmptyBuffer();
 
         // when
