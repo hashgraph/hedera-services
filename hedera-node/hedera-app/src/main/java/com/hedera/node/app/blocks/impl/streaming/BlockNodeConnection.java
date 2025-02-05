@@ -22,20 +22,33 @@ import com.hedera.node.internal.network.BlockNodeConfig;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.helidon.webclient.grpc.GrpcServiceClient;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class BlockNodeConnection {
     private static final Logger logger = LogManager.getLogger(BlockNodeConnection.class);
-    private final BlockNodeConfig config;
+    private static final int MAX_RETRY_ATTEMPTS = 5;
+    private static final Duration INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
+    private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private final BlockNodeConfig node;
     private final GrpcServiceClient grpcServiceClient;
     private final BlockNodeConnectionManager manager;
     private StreamObserver<PublishStreamRequest> requestObserver;
+
     private volatile boolean isActive = true;
+    private int retryAttempts = 0;
+    private Instant nextRetryTime = Instant.now();
 
     public BlockNodeConnection(
-            BlockNodeConfig config, GrpcServiceClient grpcServiceClient, BlockNodeConnectionManager manager) {
-        this.config = config;
+            BlockNodeConfig nodeConfig, GrpcServiceClient grpcServiceClient, BlockNodeConnectionManager manager) {
+        this.node = nodeConfig;
         this.grpcServiceClient = grpcServiceClient;
         this.manager = manager;
         establishStream();
@@ -56,14 +69,13 @@ public class BlockNodeConnection {
                     @Override
                     public void onError(Throwable t) {
                         Status status = Status.fromThrowable(t);
-                        logger.error(
-                                "Error in block node stream {}:{}: {}", config.address(), config.port(), status, t);
+                        logger.error("Error in block node stream {}:{}: {}", node.address(), node.port(), status, t);
                         handleStreamFailure();
                     }
 
                     @Override
                     public void onCompleted() {
-                        logger.info("Stream completed for block node {}:{}", config.address(), config.port());
+                        logger.info("Stream completed for block node {}:{}", node.address(), node.port());
                         handleStreamFailure();
                     }
                 });
@@ -71,18 +83,60 @@ public class BlockNodeConnection {
 
     private void handleStreamFailure() {
         isActive = false;
-        manager.handleConnectionError(config);
+        removeFromActiveConnections(node);
+        scheduleReconnect();
+    }
+
+    private void scheduleReconnect() {
+        if (retryAttempts < MAX_RETRY_ATTEMPTS) {
+            long delayMillis =
+                    (long) (INITIAL_RETRY_DELAY.toMillis() * Math.pow(RETRY_BACKOFF_MULTIPLIER, retryAttempts));
+            nextRetryTime = Instant.now().plusMillis(delayMillis);
+            retryAttempts++;
+
+            logger.info(
+                    "Scheduling retry attempt {} for node {}:{} in {} ms",
+                    retryAttempts,
+                    node.address(),
+                    node.port(),
+                    delayMillis);
+            scheduler.schedule(this::reconnect, delayMillis, TimeUnit.MILLISECONDS);
+        } else {
+            logger.error(
+                    "Max retry attempts ({}) reached for node {}:{}. Giving up.",
+                    MAX_RETRY_ATTEMPTS,
+                    node.address(),
+                    node.port());
+            addNodeInBackoff(node);
+        }
+    }
+
+    private void reconnect() {
+        if (Instant.now().isAfter(nextRetryTime)) {
+            logger.info("Attempting retry {} for node {}:{}", retryAttempts, node.address(), node.port());
+            establishStream();
+        }
+    }
+
+    private void addNodeInBackoff(BlockNodeConfig node) {
+        manager.addNodeInBackoff(node);
+    }
+
+    private void removeFromActiveConnections(BlockNodeConfig node) {
+        manager.handleConnectionError(node);
     }
 
     public void sendRequest(PublishStreamRequest request) {
-        if (!isActive) return;
-        requestObserver.onNext(request);
+        if (isActive) {
+            requestObserver.onNext(request);
+        }
     }
 
     public void close() {
         if (isActive) {
             isActive = false;
             requestObserver.onCompleted();
+            scheduler.shutdown();
         }
     }
 
@@ -90,7 +144,7 @@ public class BlockNodeConnection {
         return isActive;
     }
 
-    public BlockNodeConfig getConfig() {
-        return config;
+    public BlockNodeConfig getNodeConfig() {
+        return node;
     }
 }

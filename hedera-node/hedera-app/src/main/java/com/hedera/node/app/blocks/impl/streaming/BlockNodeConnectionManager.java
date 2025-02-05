@@ -61,19 +61,14 @@ public class BlockNodeConnectionManager {
     private static final Logger logger = LogManager.getLogger(BlockNodeConnectionManager.class);
     private static final String GRPC_END_POINT =
             BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName();
-    private static final int MAX_RETRY_ATTEMPTS = 5;
-    private static final Duration INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
-    private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
 
     private final Map<BlockNodeConfig, BlockNodeConnection> activeConnections;
-    private final Map<BlockNodeConfig, Integer> retryAttempts;
-    private final Map<BlockNodeConfig, Instant> nextRetryTime;
     private final Set<BlockNodeConfig> nodesInBackoff;
-    private final ScheduledExecutorService scheduler;
-    private int availableNonPreferredSlots;
     private BlockNodeConfigExtractor blockNodeConfigurations;
 
     private final ReentrantLock connectionLock = new ReentrantLock();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private int availableNonPreferredSlots = 0;
 
     // Track the current block state
     private static class BlockState {
@@ -97,11 +92,7 @@ public class BlockNodeConnectionManager {
     public BlockNodeConnectionManager(@NonNull final ConfigProvider configProvider) {
         requireNonNull(configProvider);
         this.activeConnections = new ConcurrentHashMap<>();
-        this.retryAttempts = new ConcurrentHashMap<>();
-        this.nextRetryTime = new ConcurrentHashMap<>();
         this.nodesInBackoff = ConcurrentHashMap.newKeySet();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
-        this.availableNonPreferredSlots = 0;
 
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (!blockStreamConfig.streamToBlockNodes()) {
@@ -171,7 +162,6 @@ public class BlockNodeConnectionManager {
         for (BlockNodeConfig node : nonPreferredConnections) {
             disconnectFromNode(node);
         }
-
         // Reset available slots for non-preferred nodes
         availableNonPreferredSlots = blockNodeConfigurations.getMaxSimultaneousConnections();
 
@@ -181,48 +171,38 @@ public class BlockNodeConnectionManager {
 
     private void connectToNode(BlockNodeConfig node) {
         logger.info("Connecting to block node {}:{}", node.address(), node.port());
+        try {
+            GrpcClient client = GrpcClient.builder()
+                    .tls(Tls.builder().enabled(false).build())
+                    .baseUri(new URI("http://" + node.address() + ":" + node.port()))
+                    .protocolConfig(GrpcClientProtocolConfig.builder()
+                            .abortPollTimeExpired(false)
+                            .build())
+                    .keepAlive(true)
+                    .build();
 
-        // Check if we're still in backoff period
-        Instant now = Instant.now();
-        if (!nextRetryTime.containsKey(node) || now.isAfter(nextRetryTime.get(node))) {
+            GrpcServiceClient grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
+                    .serviceName(BlockStreamServiceGrpc.SERVICE_NAME)
+                    .putMethod(
+                            GRPC_END_POINT,
+                            GrpcClientMethodDescriptor.bidirectional(
+                                            BlockStreamServiceGrpc.SERVICE_NAME, GRPC_END_POINT)
+                                    .requestType(PublishStreamRequest.class)
+                                    .responseType(PublishStreamResponse.class)
+                                    .build())
+                    .build());
+
+            BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient, this);
+            connectionLock.lock();
             try {
-                GrpcClient client = GrpcClient.builder()
-                        .tls(Tls.builder().enabled(false).build())
-                        .baseUri(new URI("http://" + node.address() + ":" + node.port()))
-                        .protocolConfig(GrpcClientProtocolConfig.builder()
-                                .abortPollTimeExpired(false)
-                                .build())
-                        .keepAlive(true)
-                        .build();
-
-                GrpcServiceClient grpcServiceClient = client.serviceClient(GrpcServiceDescriptor.builder()
-                        .serviceName(BlockStreamServiceGrpc.SERVICE_NAME)
-                        .putMethod(
-                                GRPC_END_POINT,
-                                GrpcClientMethodDescriptor.bidirectional(
-                                                BlockStreamServiceGrpc.SERVICE_NAME, GRPC_END_POINT)
-                                        .requestType(PublishStreamRequest.class)
-                                        .responseType(PublishStreamResponse.class)
-                                        .build())
-                        .build());
-
-                BlockNodeConnection connection = new BlockNodeConnection(node, grpcServiceClient, this);
-
-                connectionLock.lock();
-                try {
-                    activeConnections.put(node, connection);
-                    retryAttempts.remove(node);
-                    nextRetryTime.remove(node);
-                    nodesInBackoff.remove(node);
-                } finally {
-                    connectionLock.unlock();
-                }
-
-                logger.info("Successfully connected to block node {}:{}", node.address(), node.port());
-            } catch (URISyntaxException | RuntimeException e) {
-                handleConnectionFailure(node);
-                logger.error("Failed to connect to block node {}:{}", node.address(), node.port(), e);
+                activeConnections.put(node, connection);
+                nodesInBackoff.remove(node);
+            } finally {
+                connectionLock.unlock();
             }
+            logger.info("Successfully connected to block node {}:{}", node.address(), node.port());
+        } catch (URISyntaxException | RuntimeException e) {
+            logger.error("Failed to connect to block node {}:{}", node.address(), node.port(), e);
         }
     }
 
@@ -236,53 +216,6 @@ public class BlockNodeConnectionManager {
         connectionLock.lock();
         try {
             activeConnections.remove(node); // Remove the failed connection
-            handleConnectionFailure(node); // Schedule reconnection attempt
-        } finally {
-            connectionLock.unlock();
-        }
-    }
-
-    private void handleConnectionFailure(BlockNodeConfig node) {
-        connectionLock.lock();
-        try {
-            int attempts = retryAttempts.getOrDefault(node, 0) + 1;
-            retryAttempts.put(node, attempts);
-            nodesInBackoff.add(node);
-
-            if (attempts <= MAX_RETRY_ATTEMPTS) {
-                // Calculate next retry time with exponential backoff
-                long delayMillis =
-                        (long) (INITIAL_RETRY_DELAY.toMillis() * Math.pow(RETRY_BACKOFF_MULTIPLIER, attempts - 1));
-                Instant nextRetry = Instant.now().plusMillis(delayMillis);
-                nextRetryTime.put(node, nextRetry);
-
-                logger.info(
-                        "Scheduling retry attempt {} for node {}:{} in {} ms",
-                        attempts,
-                        node.address(),
-                        node.port(),
-                        delayMillis);
-
-                // Schedule the retry attempt
-                scheduler.schedule(
-                        () -> {
-                            logger.info("Attempting retry {} for node {}:{}", attempts, node.address(), node.port());
-                            connectToNode(node);
-                        },
-                        delayMillis,
-                        TimeUnit.MILLISECONDS);
-            } else {
-                logger.error(
-                        "Max retry attempts ({}) reached for node {}:{}. Removing from connection pool.",
-                        MAX_RETRY_ATTEMPTS,
-                        node.address(),
-                        node.port());
-                retryAttempts.remove(node);
-                nextRetryTime.remove(node);
-                nodesInBackoff.remove(node);
-                availableNonPreferredSlots++; // Free up the slot for another node
-                establishConnections(); // Try to establish connection with another node
-            }
         } finally {
             connectionLock.unlock();
         }
@@ -297,10 +230,6 @@ public class BlockNodeConnectionManager {
             }
             logger.info("Disconnected from block node {}:{}", node.address(), node.port());
         }
-
-        // Also clean up any retry state
-        retryAttempts.remove(node);
-        nextRetryTime.remove(node);
         nodesInBackoff.remove(node);
     }
 
@@ -419,6 +348,7 @@ public class BlockNodeConnectionManager {
 
             // Stream prepared batches to each connection
             for (BlockNodeConnection connection : connectionsToStream) {
+                final var connectionNodeConfig = connection.getNodeConfig();
                 try {
                     for (PublishStreamRequest request : batchRequests) {
                         connection.sendRequest(request);
@@ -426,14 +356,14 @@ public class BlockNodeConnectionManager {
                     logger.info(
                             "Successfully streamed block {} to {}:{}",
                             blockNumber,
-                            connection.getConfig().address(),
-                            connection.getConfig().port());
+                            connectionNodeConfig.address(),
+                            connectionNodeConfig.port());
                 } catch (Exception e) {
                     logger.error(
                             "Failed to stream block {} to {}:{}",
                             blockNumber,
-                            connection.getConfig().address(),
-                            connection.getConfig().port(),
+                            connectionNodeConfig.address(),
+                            connectionNodeConfig.port(),
                             e);
                 }
             }
@@ -463,6 +393,13 @@ public class BlockNodeConnectionManager {
             }
         }
         return false;
+    }
+
+    /**
+     * @param node the node that failed to connect and rescheduled for retry
+     */
+    public void addNodeInBackoff(BlockNodeConfig node) {
+        nodesInBackoff.add(node);
     }
 
     /**
