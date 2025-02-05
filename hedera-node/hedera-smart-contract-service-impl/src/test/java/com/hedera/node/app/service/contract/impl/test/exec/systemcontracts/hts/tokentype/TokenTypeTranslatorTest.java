@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.tokentype;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_16C_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator.BURN_TOKEN_V2;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_HEADLONG_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelector;
+import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHtsAttemptWithSelectorWithContractID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -105,5 +108,35 @@ class TokenTypeTranslatorTest {
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(TokenTypeCall.class);
+    }
+
+    @Test
+    void validateMatchingContractIDTest() {
+        attempt = prepareHtsAttemptWithSelectorWithContractID(
+                HTS_167_CONTRACT_ID,
+                TOKEN_TYPE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                systemContractMethodRegistry);
+
+        assertThat(attempt.isMethod(TOKEN_TYPE)).isPresent();
+    }
+
+    @Test
+    void validateNonMatchingContractIDTest() {
+        attempt = prepareHtsAttemptWithSelectorWithContractID(
+                HTS_16C_CONTRACT_ID,
+                TOKEN_TYPE,
+                subject,
+                enhancement,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                systemContractMethodRegistry);
+
+        assertThat(attempt.isMethod(TOKEN_TYPE)).isNotPresent();
     }
 }
