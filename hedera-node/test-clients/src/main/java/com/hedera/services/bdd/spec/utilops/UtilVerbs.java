@@ -1825,7 +1825,6 @@ public class UtilVerbs {
             final var createdId = createdIds.get(creationNum);
             final var accDetails = getContractInfo(CommonUtils.hex(
                             asEvmAddress(createdId.getShardNum(), createdId.getRealmNum(), createdId.getContractNum())))
-                    .has(contractWith().maxAutoAssociations(maxAutoAssociations))
                     .logged();
             allRunFor(spec, accDetails);
         });

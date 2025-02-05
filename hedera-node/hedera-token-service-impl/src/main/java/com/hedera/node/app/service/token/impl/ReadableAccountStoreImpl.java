@@ -20,6 +20,8 @@ import static com.hedera.hapi.node.base.AccountID.AccountOneOfType.ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAliasOrElse;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.service.token.AliasUtils.extractIdFromAddressAlias;
+import static com.hedera.node.app.service.token.AliasUtils.extractRealmFromAddressAlias;
+import static com.hedera.node.app.service.token.AliasUtils.extractShardFromAddressAlias;
 import static com.hedera.node.app.service.token.AliasUtils.isEntityNumAlias;
 import static java.util.Objects.requireNonNull;
 
@@ -75,7 +77,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      */
     private final ReadableKVState<ProtoBytes, AccountID> aliases;
 
-    private ReadableEntityCounters entityCounters;
+    private final ReadableEntityCounters entityCounters;
 
     /**
      * Create a new {@link ReadableAccountStoreImpl} instance.
@@ -210,6 +212,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
                 final Bytes alias = accountOneOf.as();
                 if (isEntityNumAlias(alias, id.shardNum(), id.realmNum())) {
                     yield id.copyBuilder()
+                            .shardNum(extractShardFromAddressAlias(alias))
+                            .realmNum(extractRealmFromAddressAlias(alias))
                             .accountNum(extractIdFromAddressAlias(alias))
                             .build();
                 }

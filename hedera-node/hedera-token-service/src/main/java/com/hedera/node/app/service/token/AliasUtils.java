@@ -17,8 +17,11 @@
 package com.hedera.node.app.service.token;
 
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -35,16 +38,6 @@ import java.util.HexFormat;
  * A collection of static utility methods for working with aliases on {@link Account}s.
  */
 public final class AliasUtils {
-    /**
-     * The first 12 bytes of an "entity num alias". See {@link #isEntityNumAlias(Bytes)}.
-     *
-     * <p>FUTURE: The actual shard and realm are defined in config, and we should use that. However, the config can only
-     * be read dynamically, not statically. But, the shard and realm *cannot change* once a node has been started with
-     * a given state. So we really could have some static way to get the shard and realm, based on bootstrap config,
-     * or based on state as it has been loaded. This detail has not been worked out, and on all networks today shard
-     * and realm are 0, so we just let this byte array be all zeros for now.
-     */
-    private static final byte[] ENTITY_NUM_ALIAS_PREFIX = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2};
     /** All EVM addresses are 20 bytes long, and key-encoded keys are not. */
     private static final int EVM_ADDRESS_SIZE = 20;
     /** All valid ECDSA protobuf encoded keys have this prefix. */
@@ -100,7 +93,7 @@ public final class AliasUtils {
 
     /**
      * Given some alias, determine whether it is an "entity num alias". If the alias is exactly 20 bytes long, and
-     * if its initial bytes match the {@link #ENTITY_NUM_ALIAS_PREFIX}, then it is an entity num alias.
+     * if its initial bytes match the entity prefix, then it is an entity num alias.
      *
      * <p>Every entity in the system (accounts, tokens, etc.) may be represented within ethereum with a 20-byte EVM
      * address. This address can be explicit (as part of the alias), or it can be based on the entity ID number. When
@@ -112,20 +105,11 @@ public final class AliasUtils {
      * @return True if the alias is an entity num alias
      */
     public static boolean isEntityNumAlias(final Bytes alias, final long shard, final long realm) {
-        // Create a 12-byte array for the prefix
         final byte[] entityNumAliasPrefix = new byte[12];
 
-        // Populate the first 4 bytes with the shard (big-endian order)
-        for (int i = 0; i < 4; i++) {
-            entityNumAliasPrefix[3 - i] = (byte) (shard >> (i * 8));
-        }
+        arraycopy(Ints.toByteArray((int) shard), 0, entityNumAliasPrefix, 0, 4);
+        arraycopy(Longs.toByteArray(realm), 0, entityNumAliasPrefix, 4, 8);
 
-        // Populate the last 8 bytes with the realm (big-endian order)
-        for (int i = 0; i < 8; i++) {
-            entityNumAliasPrefix[11 - i] = (byte) (realm >> (i * 8));
-        }
-
-        // Check if alias is of the correct size and matches the prefix
         return isOfEvmAddressSize(alias) && alias.matchesPrefix(entityNumAliasPrefix);
     }
 
@@ -188,6 +172,25 @@ public final class AliasUtils {
             // documentation for ReadableStreamingData as well as the parse method for all the various exceptions.
             return false;
         }
+    }
+
+    /**
+     * A utility method that, given an address alias, extracts the shard (skipping shard and ID number).
+     *
+     * @param addressAlias The address alias, where the 0.0.1234 style address has been encoded into 20 bytes
+     * @return The shard of the account or contract.
+     */
+    public static Integer extractShardFromAddressAlias(final Bytes addressAlias) {
+        return addressAlias.getInt(0);
+    }
+
+    /**
+     * A utility method that, given an address alias, extracts the realm (skipping shard and ID number).
+     * @param addressAlias The address alias, where the 0.0.1234 style address has been encoded into 20 bytes
+     * @return The realm of the account or contract
+     */
+    public static Long extractRealmFromAddressAlias(final Bytes addressAlias) {
+        return addressAlias.getLong(4);
     }
 
     /**
