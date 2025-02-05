@@ -510,13 +510,8 @@ public class PreHandleContextImpl implements PreHandleContext {
             throws PreCheckException {
         // Throws PreCheckException if the payer account does not exist
         final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
-        try {
-            // Accumulate all required keys in the context
-            dispatcher.dispatchPreHandle(context);
-        } catch (final PreCheckException ignored) {
-            // Translate all prehandle failures to unresolvable required signers
-            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
-        }
+        dispatcher.dispatchPreHandle(context);
+
     }
 
     @Override
