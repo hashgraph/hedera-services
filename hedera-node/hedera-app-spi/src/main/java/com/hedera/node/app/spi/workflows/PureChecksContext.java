@@ -49,6 +49,6 @@ public interface PureChecksContext {
     void executeInnerPureCheck(@NonNull TransactionBody body)
             throws PreCheckException;
 
-    @Nullable
+    @NonNull
     TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException;
 }

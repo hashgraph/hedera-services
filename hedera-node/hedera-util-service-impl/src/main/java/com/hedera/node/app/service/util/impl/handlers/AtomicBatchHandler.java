@@ -65,7 +65,9 @@ public class AtomicBatchHandler implements TransactionHandler {
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {}
+    public AtomicBatchHandler() {
+        // exists for Dagger injection
+    }
 
     /**
      * Performs checks independent of state or context.
@@ -73,8 +75,47 @@ public class AtomicBatchHandler implements TransactionHandler {
      * @param context the pure checks context
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
-        // TODO
+    public void pureChecks(@NonNull PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final TransactionBody txn = context.body();
+        requireNonNull(txn);
+        final AtomicBatchTransactionBody transactionBody = txn.atomicBatchOrThrow();
+
+        final List<Transaction> transactions = transactionBody.transactions();
+        requireNonNull(transactions);
+
+        if (transactions.isEmpty()) {
+            throw new PreCheckException(BATCH_LIST_EMPTY);
+        }
+
+        // verify that the atomic batch transaction body supposed or not supposed to have a btach key
+        if(txn.hasBatchKey()){
+            throw new PreCheckException(BATCH_LIST_EMPTY);
+        }
+
+        Set<Transaction> set = new HashSet<>();
+        for( final Transaction transaction : transactions) {
+            if (transaction == null) {
+                throw new PreCheckException(BATCH_LIST_CONTAINS_NULL_VALUES);
+            }
+
+            if (!set.add(transaction))
+                throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
+
+            try {
+                final var innerTrxBody = context.bodyFromTransaction(transaction);
+                if(!innerTrxBody.hasBatchKey()){
+                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                }
+
+                if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
+                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                }
+                //transaction checker parse and check - to check validity of the transaction expire
+            } catch (Exception e) {
+                throw new PreCheckException(INVALID_TRANSACTION_BODY);
+            }
+        }
     }
 
     /**

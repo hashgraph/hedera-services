@@ -26,6 +26,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,15 +74,14 @@ public class PureChecksContextImpl implements PureChecksContext {
         return configuration;
     }
 
-    @NonNull
+    @NotNull
     @Override
     public void executeInnerPureCheck(@NonNull TransactionBody body) throws PreCheckException {
-        final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
-        dispatcher.dispatchPureChecks(pureChecksContext);
-    }
 
+    }
+    @NotNull
     @Override
-    public @Nullable TransactionBody bodyFromTransaction(@NonNull Transaction tx) throws PreCheckException {
+    public @NonNull TransactionBody bodyFromTransaction(@NonNull Transaction tx) throws PreCheckException {
         final var transactionInfo = transactionChecker.check(tx, null);
         return transactionInfo.txBody();
     }
