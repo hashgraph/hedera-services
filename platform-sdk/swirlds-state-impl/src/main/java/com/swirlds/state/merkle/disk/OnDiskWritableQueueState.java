@@ -23,7 +23,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.merkle.queue.QueueCodec;
 import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.queue.QueueState;
 import com.swirlds.state.spi.WritableQueueStateBase;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,14 +50,6 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
     @NonNull
     private final Codec<E> valueCodec;
 
-    // Queue head index. This is the index at which the next element is retrieved from
-    // a queue. If equal to tail, the queue is empty
-    private long head = 1;
-
-    // Queue tail index. This is the index at which the next element will be added to
-    // a queue. Queue size therefore is tail - head
-    private long tail = 1;
-
     public OnDiskWritableQueueState(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
@@ -67,28 +61,21 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
         this.megaMap = Objects.requireNonNull(megaMap);
     }
 
-    @NonNull
-    @Override
-    protected Iterator<E> iterateOnDataSource() {
-        final QueueIterator it = new QueueIterator(head, tail);
-        // Log to transaction state log, what was iterated
-        logQueueIterate(getLabel(), tail - head, it);
-        it.reset();
-        return it;
-    }
-
     @Override
     protected void addToDataSource(@NonNull E element) {
-        megaMap.put(getMegaMapKey(tail++), element, valueCodec);
+        final QueueState state = getState();
+        megaMap.put(getMegaMapKey(state.getTailAndIncrement()), element, valueCodec);
         // Log to transaction state log, what was added
         logQueueAdd(getLabel(), element);
     }
 
     @Override
     protected void removeFromDataSource() {
-        if (!isEmpty()) {
-            final var valueToRemove = getFromStore(head);
-            megaMap.remove(getMegaMapKey(head++));
+        final QueueState state = getState();
+        if (!state.isEmpty()) {
+            // TODO: double check VirtualMap#remove return type
+            final var valueToRemove = getFromStore(state.getHead());
+            megaMap.remove(getMegaMapKey(state.getHeadAndIncrement()));
             // Log to transaction state log, what was added
             logQueueRemove(getLabel(), valueToRemove);
         } else {
@@ -98,6 +85,18 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
         }
     }
 
+    /** Iterate over all elements */
+    @NonNull
+    @Override
+    protected Iterator<E> iterateOnDataSource() {
+        final QueueState state = getState();
+        final QueueIterator it = new QueueIterator(state.getHead(), state.getTail());
+        // Log to transaction state log, what was iterated
+        logQueueIterate(getLabel(), state.getTail() - state.getHead(), it);
+        it.reset();
+        return it;
+    }
+
     @NonNull
     private E getFromStore(final long index) {
         final var value = megaMap.get(getMegaMapKey(index), valueCodec);
@@ -105,6 +104,22 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
             throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
         }
         return value;
+    }
+
+    // TODO: refactor
+    private QueueState getState() {
+        final int stateId = getStateId();
+
+        if (stateId < 0 || stateId > 65535) {
+            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
+        }
+
+        final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort((short) stateId);
+
+        final Bytes stateIdBytes = Bytes.wrap(buffer.array());
+
+        return megaMap.get(stateIdBytes, QueueCodec.INSTANCE);
     }
 
     // TODO: test this method
@@ -134,12 +149,6 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
         return Bytes.wrap(buffer.array());
     }
 
-    /**
-     * Returns if this queue node state is empty, i.e. if the head and tail indexes are equal.
-     */
-    public boolean isEmpty() {
-        return head == tail;
-    }
 
     /**
      * A tiny utility class to iterate over the queue node.

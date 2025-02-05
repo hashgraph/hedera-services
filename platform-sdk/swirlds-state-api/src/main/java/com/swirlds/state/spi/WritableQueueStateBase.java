@@ -17,6 +17,7 @@
 package com.swirlds.state.spi;
 
 import static com.swirlds.state.StateUtils.computeLabel;
+import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -123,6 +124,11 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
         addedElements.clear();
         peekedElement = null;
         dsIterator = null;
+    }
+
+    @Override
+    public final int getStateId() {
+        return stateIdFor(serviceName, stateKey);
     }
 
     @NonNull

@@ -22,7 +22,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.merkle.queue.QueueCodec;
 import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.queue.QueueState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableQueueStateBase;
 import com.swirlds.virtualmap.VirtualMap;
@@ -48,14 +50,6 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
     @NonNull
     private final Codec<E> valueCodec;
 
-    // Queue head index. This is the index at which the next element is retrieved from
-    // a queue. If equal to tail, the queue is empty
-    private long head = 1;
-
-    // Queue tail index. This is the index at which the next element will be added to
-    // a queue. Queue size therefore is tail - head
-    private long tail = 1;
-
     /** Create a new instance */
     public OnDiskReadableQueueState(
             @NonNull final String serviceName,
@@ -71,10 +65,24 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
     @Nullable
     @Override
     protected E peekOnDataSource() {
-        final var value = isEmpty() ? null : getFromStore(head);
+        final QueueState state = getState();
+        final E value =
+                state.isEmpty() ? null : getFromStore(getState().getHead());
         // Log to transaction state log, what was peeked
         logQueuePeek(getLabel(), value);
         return value;
+    }
+
+    /** Iterate over all elements */
+    @NonNull
+    @Override
+    protected Iterator<E> iterateOnDataSource() {
+        final QueueState state = getState();
+        final QueueIterator it = new QueueIterator(state.getHead(), state.getTail());
+        // Log to transaction state log, what was iterated
+        logQueueIterate(getLabel(), state.getTail() - state.getHead(), it);
+        it.reset();
+        return it;
     }
 
     @NonNull
@@ -86,14 +94,20 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
         return value;
     }
 
-    @NonNull
-    @Override
-    protected Iterator<E> iterateOnDataSource() {
-        final QueueIterator it = new QueueIterator(head, tail);
-        // Log to transaction state log, what was iterated
-        logQueueIterate(getLabel(), tail - head, it);
-        it.reset();
-        return it;
+    // TODO: refactor
+    private QueueState getState() {
+        final int stateId = getStateId();
+
+        if (stateId < 0 || stateId > 65535) {
+            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
+        }
+
+        final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort((short) stateId);
+
+        final Bytes stateIdBytes = Bytes.wrap(buffer.array());
+
+        return megaMap.get(stateIdBytes, QueueCodec.INSTANCE);
     }
 
     // TODO: test this method
@@ -121,13 +135,6 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
         buffer.putLong(index);
 
         return Bytes.wrap(buffer.array());
-    }
-
-    /**
-     * Returns if this queue node state is empty, i.e. if the head and tail indexes are equal.
-     */
-    public boolean isEmpty() {
-        return head == tail;
     }
 
     /**
