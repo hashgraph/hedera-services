@@ -103,4 +103,6 @@ public class StatsDemoState extends PlatformMerkleStateRoot {
     public int getMinimumSupportedVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
     }
+
+
 }

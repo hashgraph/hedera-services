@@ -32,10 +32,14 @@ import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.Console;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -44,20 +48,32 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.NoOpStateLifecycles;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateService;
+import com.swirlds.platform.state.service.WritablePlatformStateStore;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
+import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.Event;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.IllegalFormatException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.function.Consumer;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -326,7 +342,62 @@ public class StatsDemoMain implements SwirldMain<StatsDemoState> {
     @NonNull
     @Override
     public StateLifecycles newStateLifecycles() {
-        return NoOpStateLifecycles.NO_OP_STATE_LIFECYCLES;
+        return new StateLifecycles() {
+            @Override
+            public void onPreHandle(@NonNull final Event event, @NonNull final MerkleStateRoot state,
+                    @NonNull final Consumer stateSignatureTransactionCallback) {
+
+            }
+
+            @Override
+            public void onHandleConsensusRound(@NonNull final Round round, @NonNull final MerkleStateRoot state,
+                    @NonNull final Consumer stateSignatureTransactionCallback) {
+                final WritablePlatformStateStore ps = new WritablePlatformStateStore(
+                        state.getWritableStates(PlatformStateService.NAME));
+
+                round.forEachEventTransaction((e, t)->{
+                    if(t.getApplicationTransaction().length() != 100){
+                        try {
+                            stateSignatureTransactionCallback.accept(
+                                    new ScopedSystemTransaction<>(
+                                            e.getCreatorId(),
+                                            e.getSoftwareVersion(),
+                                            StateSignatureTransaction.PROTOBUF.parse(t.getApplicationTransaction()
+                                    ))
+                            );
+                        } catch (ParseException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                    if(ps.getFreezeTime() == null){
+                        ps.setFreezeTime(round.getConsensusTimestamp().plus(Duration.ofSeconds(30)));
+                    }
+                });
+            }
+
+            @Override
+            public boolean onSealConsensusRound(@NonNull final Round round, @NonNull final MerkleStateRoot state) {
+                return false;
+            }
+
+            @Override
+            public void onStateInitialized(@NonNull final MerkleStateRoot state, @NonNull final Platform platform,
+                    @NonNull final InitTrigger trigger, @Nullable final SoftwareVersion previousVersion) {
+
+            }
+
+            @Override
+            public void onUpdateWeight(@NonNull final MerkleStateRoot state,
+                    @NonNull final AddressBook configAddressBook,
+                    @NonNull final PlatformContext context) {
+
+            }
+
+            @Override
+            public void onNewRecoveredState(@NonNull final MerkleStateRoot recoveredState) {
+
+            }
+        };
     }
 
     /**
@@ -335,5 +406,10 @@ public class StatsDemoMain implements SwirldMain<StatsDemoState> {
     @Override
     public BasicSoftwareVersion getSoftwareVersion() {
         return softwareVersion;
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(@NonNull final StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }
