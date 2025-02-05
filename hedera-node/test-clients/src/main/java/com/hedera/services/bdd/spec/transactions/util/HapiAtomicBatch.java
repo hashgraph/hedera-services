@@ -51,11 +51,21 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private final List<HapiTxnOp<?>> operationsToBatch;
+    private List<HapiTxnOp<?>> operationsToBatch = null;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
+
+    private boolean useRawTransactions = false;
+    private List<Transaction> transactionsToBatch;
+
+    public HapiAtomicBatch() {}
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
         this.operationsToBatch = Arrays.stream(ops).toList();
+    }
+
+    public HapiAtomicBatch(Transaction... transactions) {
+        useRawTransactions = true;
+        this.transactionsToBatch = Arrays.stream(transactions).toList();
     }
 
     @Override
@@ -86,21 +96,25 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
         final AtomicBatchTransactionBody opBody = spec.txns()
                 .<AtomicBatchTransactionBody, AtomicBatchTransactionBody.Builder>body(
                         AtomicBatchTransactionBody.class, b -> {
-                            for (HapiTxnOp<?> op : operationsToBatch) {
-                                try {
-                                    // set node account id to 0.0.0 if not set
-                                    if (op.getNode().isEmpty()) {
-                                        op.setNode(DEFAULT_NODE_ACCOUNT_ID);
+                            if (useRawTransactions) {
+                                b.addAllTransactions(transactionsToBatch);
+                            } else {
+                                for (HapiTxnOp<?> op : operationsToBatch) {
+                                    try {
+                                        // set node account id to 0.0.0 if not set
+                                        if (op.getNode().isEmpty()) {
+                                            op.setNode(DEFAULT_NODE_ACCOUNT_ID);
+                                        }
+                                        // create a transaction for each operation
+                                        final var transaction = op.signedTxnFor(spec);
+                                        // save transaction id
+                                        final var txnId = extractTxnId(transaction);
+                                        operationsMap.put(txnId, op);
+                                        // add the transaction to the batch
+                                        b.addTransactions(transaction);
+                                    } catch (Throwable e) {
+                                        throw new RuntimeException(e);
                                     }
-                                    // create a transaction for each operation
-                                    final var transaction = op.signedTxnFor(spec);
-                                    // save transaction id
-                                    final var txnId = extractTxnId(transaction);
-                                    operationsMap.put(txnId, op);
-                                    // add the transaction to the batch
-                                    b.addTransactions(transaction);
-                                } catch (Throwable e) {
-                                    throw new RuntimeException(e);
                                 }
                             }
                         });
