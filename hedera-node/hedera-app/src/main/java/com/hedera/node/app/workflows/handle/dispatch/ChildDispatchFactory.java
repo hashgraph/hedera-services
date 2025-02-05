@@ -73,6 +73,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -83,6 +84,7 @@ import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -122,6 +124,7 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ExchangeRateManager exchangeRateManager;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public ChildDispatchFactory(
@@ -132,6 +135,7 @@ public class ChildDispatchFactory {
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TransactionChecker transactionChecker,
             @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
@@ -141,6 +145,7 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -285,7 +290,8 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser,
                 childFeeAccumulator,
-                dispatchMetadata);
+                dispatchMetadata,
+                transactionChecker);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
@@ -354,9 +360,10 @@ public class ChildDispatchFactory {
             @NonNull final Configuration config,
             @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
-            dispatcher.dispatchPureChecks(txBody);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher);
+            final var pureChecksContext = new PureChecksContextImpl(txBody, config, dispatcher, transactionChecker);
+            dispatcher.dispatchPureChecks(pureChecksContext);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory, txBody, syntheticPayerId, config, dispatcher, transactionChecker);
             dispatcher.dispatchPreHandle(preHandleContext);
             return new PreHandleResult(
                     null,
