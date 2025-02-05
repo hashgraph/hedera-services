@@ -73,6 +73,7 @@ import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -93,6 +94,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Mock
     private ReadableAccountStore accountStore;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     @Mock(answer = RETURNS_SELF)
     private ConsensusSubmitMessageStreamBuilder recordBuilder;
@@ -151,7 +155,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     @Test
     @DisplayName("pureChecks fails if submit message missing topic ID")
     void topicWithoutIdNotFound() {
-        assertThrowsPreCheck(() -> subject.pureChecks(newDefaultSubmitMessageTxn()), INVALID_TOPIC_ID);
+        given(pureChecksContext.body()).willReturn(newDefaultSubmitMessageTxn());
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_TOPIC_ID);
     }
 
     @Test
@@ -159,7 +164,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     void failsIfMessageIsEmpty() {
         givenValidTopic();
         final var txn = newSubmitMessageTxn(topicEntityNum, "");
-        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_TOPIC_MESSAGE);
+        given(pureChecksContext.body()).willReturn(txn);
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_TOPIC_MESSAGE);
     }
 
     @Test
@@ -167,7 +173,8 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
     void pureCheckWorksAsExpexcted() {
         givenValidTopic();
         final var txn = newDefaultSubmitMessageTxn(topicEntityNum);
-        assertDoesNotThrow(() -> subject.pureChecks(txn));
+        given(pureChecksContext.body()).willReturn(txn);
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
     }
 
     @Test
