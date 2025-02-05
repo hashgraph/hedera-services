@@ -191,7 +191,6 @@ public class ConcurrentIntegrationTests {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // This is the post-upgrade transaction
                 cryptoCreate("secondUser"),
                 // Trigger block closure to ensure block is closed

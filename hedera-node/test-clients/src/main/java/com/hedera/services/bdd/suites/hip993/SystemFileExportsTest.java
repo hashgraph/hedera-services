@@ -151,7 +151,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 cryptoCreate("secondUser").via("addressBookExport"));
     }
 
@@ -176,7 +175,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 cryptoCreate("secondUser").via("addressBookExport"));
     }
 
@@ -236,7 +234,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Verify the new fee schedules (which include a subtype for scheduled contract fees) are in effect
                 uploadInitCode("SimpleUpdate"),
                 withOpContext((spec, opLog) -> spec.tryReinitializingFees()),
@@ -275,7 +272,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Then verify the new throttles are in effect
                 cryptoCreate("civilian"),
                 tokenCreate("nft").supplyKey("civilian"),
@@ -311,7 +307,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Then verify the new properties are in effect
                 tokenCreate("nft").supplyKey(DEFAULT_PAYER),
                 mintToken(
@@ -342,7 +337,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Then verify the previous override properties are cleared
                 tokenCreate("nft").supplyKey(DEFAULT_PAYER),
                 mintToken(
@@ -378,7 +372,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Then verify the new permissions are in effect
                 cryptoCreate("civilian"),
                 tokenCreate("nft").supplyKey("civilian"),
@@ -422,7 +415,6 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                waitUntilNextBlock().withBackgroundTraffic(true),
                 // Then verify the new admin keys are in effect
                 cryptoCreate("civilian"),
                 // We cannot update 0 or 3 because the admin keys have changed
