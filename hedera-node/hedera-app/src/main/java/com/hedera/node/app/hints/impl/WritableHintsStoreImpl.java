@@ -187,7 +187,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .nextContributingNodeId(firstNodeId)
                 .contributionEndTime(nextContributionTimeEnd)
                 .build();
-        this.crsState.put(crsState);
+        setCRSState(crsState);
     }
 
     @Override
@@ -199,7 +199,17 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .nextContributingNodeId(nextContributingNodeId)
                 .contributionEndTime(nextContributionTimeEnd)
                 .build();
-        this.crsState.put(newCrsState);
+        setCRSState(newCrsState);
+    }
+
+    @Override
+    public void moveToNextNodeContribution(final long nextNodeIdFromRoster, final Timestamp nextContributionTimeEnd) {
+        final var crsState = requireNonNull(this.crsState.get());
+        final var newCrsState = crsState.copyBuilder()
+                .nextContributingNodeId(nextNodeIdFromRoster)
+                .contributionEndTime(nextContributionTimeEnd)
+                .build();
+        setCRSState(newCrsState);
     }
 
     /**

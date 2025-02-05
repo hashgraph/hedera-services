@@ -111,4 +111,6 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @param nextContributionTimeEnd the end of the time window for the next contribution
      */
     void updateCrs(Bytes updatedCrs, long nextContributingNodeId, Timestamp nextContributionTimeEnd);
+
+    void moveToNextNodeContribution(long nextNodeIdFromRoster, Timestamp timestamp);
 }

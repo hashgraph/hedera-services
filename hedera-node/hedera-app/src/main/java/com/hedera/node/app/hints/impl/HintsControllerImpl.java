@@ -29,7 +29,6 @@ import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.services.auxiliary.hints.CRSUpdate;
-import com.hedera.node.app.hints.CRSSetup;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -90,9 +89,11 @@ public class HintsControllerImpl implements HintsController {
     @Nullable
     private CompletableFuture<Void> publicationFuture;
 
-    private boolean isInitialCRSSubmitted;
+    @Nullable
+    private CompletableFuture<Void> crsPublicationFuture;
 
-    private CRSSetup crsSetup;
+    @Nullable
+    private CompletableFuture<Void> updatedCrsPublicationFuture;
 
     /**
      * A party's validated hinTS key, including the key itself and whether it is valid.
@@ -181,22 +182,43 @@ public class HintsControllerImpl implements HintsController {
         }
     }
 
+    /**
+     * Performs the work needed to advance the CRS process. This includes:
+     * * <ul>
+     * <li>If all nodes have contributed, do nothing. Move to the next stage of collecting Hints Keys </li>
+     * <li>If there is no initial CRS for the network and if the current node has not submitted one yet,
+     * generate one and submit it</li>
+     * <li>If the current node is next in line to contribute for updating CRS based on old CRS, generate
+     * an updated CRS and submit it</li>
+     * </ul>
+     *
+     * @param now the current consensus time
+     * @param hintsStore the writable hints store
+     */
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         final var crsState = hintsStore.getCrsState();
-        if (isWaitingForInitialCRS(crsState, hintsStore)) {
-            submissions.submitInitialCRS(
-                    library.newCrs(weights.sourceNodeWeights().size()));
-            isInitialCRSSubmitted = true;
-        } else if (allNodesContributed(crsState)) {
-            final var updatedState =
-                    crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
-            hintsStore.setCRSState(updatedState);
-        } else if (isWaitingForCurrentNodeContribution(crsState)) {
-            if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
-                moveToNextNode(now, hintsStore, crsState);
-                return;
+        switch (crsState.stage()) {
+            case COMPLETED -> {
+                // Do nothing
             }
-            submitUpdatedCRS(hintsStore);
+            case WAITING_FOR_INITIAL_CRS -> {
+                if (crsPublicationFuture == null) {
+                    final var initialCrs =
+                            library.newCrs(weights.sourceNodeWeights().size());
+                    crsPublicationFuture = submissions.submitInitialCRS(initialCrs);
+                }
+            }
+            case GATHERING_CONTRIBUTIONS -> {
+                if (allNodesContributed(crsState)) {
+                    final var updatedState =
+                            crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
+                    hintsStore.setCRSState(updatedState);
+                } else if (crsState.nextContributingNodeId() == selfId && updatedCrsPublicationFuture == null) {
+                    submitUpdatedCRS(hintsStore);
+                } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
+                    moveToNextNode(now, hintsStore, crsState);
+                }
+            }
         }
     }
 
@@ -206,13 +228,9 @@ public class HintsControllerImpl implements HintsController {
 
     private void moveToNextNode(
             final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore, final CRSState crsState) {
-        final var nextNodeIdFromRoster =
-                nextNodeIdFromRoster(weights.sourceNodeIds(), crsState.nextContributingNodeId());
-        final var updatedState = crsState.copyBuilder()
-                .nextContributingNodeId(nextNodeIdFromRoster)
-                .contributionEndTime(asTimestamp(now.plusSeconds(CONTRIBUTION_DURATION_PER_NODE_SECS)))
-                .build();
-        hintsStore.setCRSState(updatedState);
+        final var nextNodeId = nextNodeId(weights.sourceNodeIds(), crsState.nextContributingNodeId());
+        hintsStore.moveToNextNodeContribution(
+                nextNodeId, asTimestamp(now.plusSeconds(CONTRIBUTION_DURATION_PER_NODE_SECS)));
     }
 
     private void submitUpdatedCRS(final @NonNull WritableHintsStore hintsStore) {
@@ -221,7 +239,7 @@ public class HintsControllerImpl implements HintsController {
         final var newCRS = codec.decodeCrsUpdate(updatedCRS);
         final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
         if (isValidCrs) {
-            submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
+            updatedCrsPublicationFuture = submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
         }
     }
 
@@ -232,21 +250,11 @@ public class HintsControllerImpl implements HintsController {
      * @param currentNodeId the current node id
      * @return the immediate next node id from the roster after the current node id
      */
-    private long nextNodeIdFromRoster(final Set<Long> nodeIds, final long currentNodeId) {
+    private long nextNodeId(final Set<Long> nodeIds, final long currentNodeId) {
         return nodeIds.stream()
                 .filter(nodeId -> nodeId > currentNodeId)
                 .findFirst()
                 .orElse(-1L);
-    }
-
-    private boolean isWaitingForCurrentNodeContribution(final CRSState crsState) {
-        return crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS && selfId == crsState.nextContributingNodeId();
-    }
-
-    private boolean isWaitingForInitialCRS(final CRSState crsState, final WritableHintsStore hintsStore) {
-        return crsState.stage() == CRSStage.WAITING_FOR_INITIAL_CRS
-                && !hintsStore.hasInitialCrs()
-                && !isInitialCRSSubmitted;
     }
 
     /**
@@ -325,6 +333,9 @@ public class HintsControllerImpl implements HintsController {
         }
         if (preprocessingVoteFuture != null) {
             preprocessingVoteFuture.cancel(true);
+        }
+        if (crsPublicationFuture != null) {
+            crsPublicationFuture.cancel(true);
         }
         validationFutures.values().forEach(future -> future.cancel(true));
     }
