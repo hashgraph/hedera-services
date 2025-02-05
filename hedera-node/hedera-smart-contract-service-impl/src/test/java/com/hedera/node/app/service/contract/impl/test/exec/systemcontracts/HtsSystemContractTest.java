@@ -160,7 +160,7 @@ class HtsSystemContractTest {
                 .thenReturn(FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT);
         given(attempt.asExecutableCall()).willThrow(new HandleException(CONTRACT_REVERT_EXECUTED));
         final var expected = revertResult(CONTRACT_REVERT_EXECUTED, frame.getRemainingGas());
-        final var result = subject.computeFully(validInput, frame);
+        final var result = subject.computeFully(HTS_167_CONTRACT_ID, validInput, frame);
         assertSamePrecompileResult(expected, result);
     }
 
