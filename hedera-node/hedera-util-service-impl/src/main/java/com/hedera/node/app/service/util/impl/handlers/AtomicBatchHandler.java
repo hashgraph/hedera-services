@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_DUPLICATES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
@@ -37,10 +40,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.hapi.node.util.AtomicBatchTransactionBody;
 import com.hedera.node.app.service.util.records.AtomicBatchStreamBuilder;
 import com.hedera.node.app.spi.workflows.*;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
@@ -60,9 +65,7 @@ public class AtomicBatchHandler implements TransactionHandler {
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {
-        // exists for Dagger injection
-    }
+    public AtomicBatchHandler() {}
 
     /**
      * Performs checks independent of state or context.
@@ -70,7 +73,7 @@ public class AtomicBatchHandler implements TransactionHandler {
      * @param context the pure checks context
      */
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         // TODO
     }
 
@@ -109,15 +112,22 @@ public class AtomicBatchHandler implements TransactionHandler {
         final var batchConfig = context.configuration().getConfigData(AtomicBatchConfig.class);
         final var op = context.body().atomicBatchOrThrow();
         if (batchConfig.isEnabled()) {
-            List<Transaction> transactions = op.transactions();
-            if (transactions.size() > context.configuration().getConfigData(AtomicBatchConfig.class).maxNumberOfTransactions()) {
-                throw new HandleException(BATCH_SIZE_LIMIT_EXCEEDED);
-            }
+            final var transactions = op.transactions();
             for (final var transaction : transactions) {
-                final var body = context.bodyFromTransaction(transaction);
+                TransactionBody body;
+                try {
+                    body = context.bodyFromTransaction(transaction);
+                } catch (HandleException e) {
+                    // we should have validated the inner transaction in preChecks already, so this should not happen.
+                    throw new HandleException(INNER_TRANSACTION_FAILED);
+                }
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
-                final var dispatchOptions = atomicBatchDispatch(payerId, body, AtomicBatchStreamBuilder.class);
-                context.dispatch(dispatchOptions);
+                // all the inner transactions' keys are verified in PreHandleWorkflow
+                final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
+                final var streamBuilder = context.dispatch(dispatchOptions);
+                if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
+                    throw new HandleException(INNER_TRANSACTION_FAILED);
+                }
             }
         }
     }
