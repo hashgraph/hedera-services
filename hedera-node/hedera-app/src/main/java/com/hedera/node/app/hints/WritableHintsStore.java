@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -42,11 +43,11 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * Includes the given hints key for the given node and party IDs relative to a party size, assigning
      * the given adoption time if the key is immediately in use.
      *
-     * @param nodeId the node ID
-     * @param partyId the party ID
+     * @param nodeId     the node ID
+     * @param partyId    the party ID
      * @param numParties the number of parties
-     * @param hintsKey the hints key to include
-     * @param now the adoption time
+     * @param hintsKey   the hints key to include
+     * @param now        the adoption time
      * @return whether the key was immediately in use
      */
     boolean setHintsKey(long nodeId, int partyId, int numParties, @NonNull Bytes hintsKey, @NonNull final Instant now);
@@ -59,6 +60,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
     /**
      * Sets the consensus preprocessing output for the construction with the given ID and returns the
      * updated construction.
+     *
      * @return the updated construction
      */
     HintsConstruction setHintsScheme(
@@ -66,8 +68,9 @@ public interface WritableHintsStore extends ReadableHintsStore {
 
     /**
      * Sets the preprocessing start time for the construction with the given ID and returns the updated construction.
+     *
      * @param constructionId the construction ID
-     * @param now the aggregation time
+     * @param now            the aggregation time
      * @return the updated construction
      */
     HintsConstruction setPreprocessingStartTime(long constructionId, @NonNull Instant now);
@@ -77,7 +80,35 @@ public interface WritableHintsStore extends ReadableHintsStore {
      */
     void updateForHandoff(@NonNull ActiveRosters activeRosters);
 
+    /**
+     * Sets the {@link CRSState} for the network.
+     *
+     * @param crsState the {@link CRSState} to set
+     */
     void setCRSState(@NonNull CRSState crsState);
 
+    /**
+     * Returns whether the network has an initial CRS set in {@link CRSState}.
+     *
+     * @return true if the network has an initial CRS set, false otherwise
+     */
     boolean hasInitialCrs();
+
+    /**
+     * Sets the initial CRS for the network.
+     *
+     * @param initialCrs              the initial CRS
+     * @param firstContributingNodeId the ID of the first contributing node for updating CRS
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void putInitialCrs(Bytes initialCrs, long firstContributingNodeId, Timestamp nextContributionTimeEnd);
+
+    /**
+     * Updates the CRS for the network. This is called after the CRS to be updated is validated.
+     *
+     * @param updatedCrs              the updated CRS
+     * @param nextContributingNodeId  the ID of the next contributing node for updating CRS
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void updateCrs(Bytes updatedCrs, long nextContributingNodeId, Timestamp nextContributionTimeEnd);
 }

@@ -57,6 +57,7 @@ import java.util.stream.IntStream;
  */
 public class HintsControllerImpl implements HintsController {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    public static final int CONTRIBUTION_DURATION_PER_NODE_SECS = 10;
 
     private final int numParties;
     private final long selfId;
@@ -157,6 +158,7 @@ public class HintsControllerImpl implements HintsController {
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(now);
         requireNonNull(hintsStore);
+
         if (!isCRSSetup(hintsStore.getCrsState())) {
             doCRSWork(now, hintsStore);
             return;
@@ -181,20 +183,20 @@ public class HintsControllerImpl implements HintsController {
 
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         final var crsState = hintsStore.getCrsState();
-        if (isWaitingForInitialCRS(crsState)) {
+        if (isWaitingForInitialCRS(crsState, hintsStore)) {
             submissions.submitInitialCRS(
                     library.newCrs(weights.sourceNodeWeights().size()));
             isInitialCRSSubmitted = true;
+        } else if (allNodesContributed(crsState)) {
+            final var updatedState =
+                    crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
+            hintsStore.setCRSState(updatedState);
         } else if (isWaitingForCurrentNodeContribution(crsState)) {
             if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
                 moveToNextNode(now, hintsStore, crsState);
                 return;
             }
             submitUpdatedCRS(hintsStore);
-        } else if (allNodesContributed(crsState)) {
-            final var updatedState =
-                    crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
-            hintsStore.setCRSState(updatedState);
         }
     }
 
@@ -208,7 +210,7 @@ public class HintsControllerImpl implements HintsController {
                 nextNodeIdFromRoster(weights.sourceNodeIds(), crsState.nextContributingNodeId());
         final var updatedState = crsState.copyBuilder()
                 .nextContributingNodeId(nextNodeIdFromRoster)
-                .contributionEndTime(asTimestamp(now.plusSeconds(10)))
+                .contributionEndTime(asTimestamp(now.plusSeconds(CONTRIBUTION_DURATION_PER_NODE_SECS)))
                 .build();
         hintsStore.setCRSState(updatedState);
     }
@@ -241,8 +243,10 @@ public class HintsControllerImpl implements HintsController {
         return crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS && selfId == crsState.nextContributingNodeId();
     }
 
-    private boolean isWaitingForInitialCRS(final CRSState crsState) {
-        return crsState.stage() == CRSStage.WAITING_FOR_INITIAL_CRS && !isInitialCRSSubmitted;
+    private boolean isWaitingForInitialCRS(final CRSState crsState, final WritableHintsStore hintsStore) {
+        return crsState.stage() == CRSStage.WAITING_FOR_INITIAL_CRS
+                && !hintsStore.hasInitialCrs()
+                && !isInitialCRSSubmitted;
     }
 
     /**

@@ -27,6 +27,7 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -175,14 +176,37 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     @Override
     public boolean hasInitialCrs() {
         final var crs = requireNonNull(this.crsState.get());
-        return crs.stage() == CRSStage.GATHERING_CONTRIBUTIONS && crs.crs().length() > 0;
+        return crs.stage() != CRSStage.WAITING_FOR_INITIAL_CRS && crs.crs().length() > 0;
+    }
+
+    @Override
+    public void putInitialCrs(final Bytes initialCrs, final long firstNodeId, final Timestamp nextContributionTimeEnd) {
+        final var crsState = CRSState.newBuilder()
+                .crs(initialCrs)
+                .stage(CRSStage.GATHERING_CONTRIBUTIONS)
+                .nextContributingNodeId(firstNodeId)
+                .contributionEndTime(nextContributionTimeEnd)
+                .build();
+        this.crsState.put(crsState);
+    }
+
+    @Override
+    public void updateCrs(
+            final Bytes updatedCrs, final long nextContributingNodeId, final Timestamp nextContributionTimeEnd) {
+        final var crsState = requireNonNull(this.crsState.get());
+        final var newCrsState = crsState.copyBuilder()
+                .crs(updatedCrs)
+                .nextContributingNodeId(nextContributingNodeId)
+                .contributionEndTime(nextContributionTimeEnd)
+                .build();
+        this.crsState.put(newCrsState);
     }
 
     /**
      * Updates the construction with the given ID using the given spec.
      *
      * @param constructionId the construction ID
-     * @param spec the spec
+     * @param spec           the spec
      * @return the updated construction
      */
     private HintsConstruction updateOrThrow(
@@ -202,11 +226,12 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     /**
      * Updates the store for a new construction.
+     *
      * @param sourceRosterHash the source roster hash
      * @param targetRosterHash the target roster hash
-     * @param lookup the roster lookup
-     * @param now the current time
-     * @param gracePeriod the grace period
+     * @param lookup           the roster lookup
+     * @param now              the current time
+     * @param gracePeriod      the grace period
      * @return the new construction
      */
     private HintsConstruction updateForNewConstruction(
@@ -253,7 +278,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
      * Purges the votes for the given construction relative to the given roster lookup.
      *
      * @param construction the construction
-     * @param lookup the roster lookup
+     * @param lookup       the roster lookup
      */
     private void purgeVotes(
             @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
@@ -265,9 +290,10 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     /**
      * Purges any hinTS keys for the given construction if it was not for the given party size.
-     * @param m the party size
+     *
+     * @param m            the party size
      * @param construction the construction
-     * @param lookup the roster lookup
+     * @param lookup       the roster lookup
      */
     private void purgeHintsKeysIfNotForPartySize(
             final int m, @NonNull final HintsConstruction construction, @NonNull final Function<Bytes, Roster> lookup) {
@@ -293,6 +319,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     /**
      * Internal helper to convert a map of node IDs to party IDs to a list of node party IDs.
+     *
      * @param nodePartyIds the map
      * @return the list
      */
