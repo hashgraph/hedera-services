@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package com.swirlds.platform.test.network.communication;
 
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.PeerProtocol;
 import com.swirlds.platform.network.protocol.ProtocolRunnable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Assertions;
 
-public class TestProtocol implements Protocol {
+public class TestPeerProtocol implements PeerProtocol {
     private final AtomicInteger timesRan;
     private final AtomicInteger initiateTrue;
     private final AtomicInteger acceptTrue;
@@ -35,11 +35,11 @@ public class TestProtocol implements Protocol {
     private boolean acceptOnSimultaneousInitiate;
     private boolean acceptFailed;
 
-    public TestProtocol() {
+    public TestPeerProtocol() {
         this(false, false, false);
     }
 
-    public TestProtocol(
+    public TestPeerProtocol(
             final boolean shouldInitiate, final boolean shouldAccept, final boolean acceptOnSimultaneousInitiate) {
         this.shouldInitiate = shouldInitiate;
         this.shouldAccept = shouldAccept;
@@ -50,8 +50,8 @@ public class TestProtocol implements Protocol {
         this.failedCalled = new AtomicInteger(0);
     }
 
-    public TestProtocol copy() {
-        return new TestProtocol(this.shouldInitiate(), this.shouldAccept(), this.acceptOnSimultaneousInitiate());
+    public TestPeerProtocol copy() {
+        return new TestPeerProtocol(this.shouldInitiate(), this.shouldAccept(), this.acceptOnSimultaneousInitiate());
     }
 
     public void reset() {
@@ -64,7 +64,7 @@ public class TestProtocol implements Protocol {
         acceptOnSimultaneousInitiate = false;
     }
 
-    public TestProtocol setShouldInitiate(final boolean shouldInitiate) {
+    public TestPeerProtocol setShouldInitiate(final boolean shouldInitiate) {
         this.shouldInitiate = shouldInitiate;
         return this;
     }
@@ -81,17 +81,17 @@ public class TestProtocol implements Protocol {
         return acceptFailed;
     }
 
-    public TestProtocol setShouldAccept(final boolean shouldAccept) {
+    public TestPeerProtocol setShouldAccept(final boolean shouldAccept) {
         this.shouldAccept = shouldAccept;
         return this;
     }
 
-    public TestProtocol setAcceptOnSimultaneousInitiate(final boolean acceptOnSimultaneousInitiate) {
+    public TestPeerProtocol setAcceptOnSimultaneousInitiate(final boolean acceptOnSimultaneousInitiate) {
         this.acceptOnSimultaneousInitiate = acceptOnSimultaneousInitiate;
         return this;
     }
 
-    public TestProtocol setRunProtocol(final ProtocolRunnable runProtocol) {
+    public TestPeerProtocol setRunProtocol(final ProtocolRunnable runProtocol) {
         this.runProtocol = runProtocol;
         return this;
     }

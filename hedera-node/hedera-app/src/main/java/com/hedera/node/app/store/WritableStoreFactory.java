@@ -18,6 +18,9 @@ package com.hedera.node.app.store;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.impl.WritableHintsStoreImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.roster.RosterService;
@@ -112,6 +115,10 @@ public class WritableStoreFactory {
         newMap.put(
                 WritableRosterStore.class,
                 new StoreEntry(RosterService.NAME, (states, entityCounters) -> new WritableRosterStore(states)));
+        // HintsService
+        newMap.put(
+                WritableHintsStore.class,
+                new StoreEntry(HintsService.NAME, (states, entityCounters) -> new WritableHintsStoreImpl(states)));
         return Collections.unmodifiableMap(newMap);
     }
 

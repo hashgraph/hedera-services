@@ -93,6 +93,9 @@ class V0540RosterSchemaTest {
     private Function<WritableStates, WritableRosterStore> rosterStoreFactory;
 
     @Mock
+    private Runnable onAdopt;
+
+    @Mock
     private Predicate<Roster> canAdopt;
 
     @Mock
@@ -112,7 +115,7 @@ class V0540RosterSchemaTest {
 
     @BeforeEach
     void setUp() {
-        subject = new V0540RosterSchema(canAdopt, rosterStoreFactory, this::getState);
+        subject = new V0540RosterSchema(onAdopt, canAdopt, rosterStoreFactory, this::getState);
     }
 
     @Test
