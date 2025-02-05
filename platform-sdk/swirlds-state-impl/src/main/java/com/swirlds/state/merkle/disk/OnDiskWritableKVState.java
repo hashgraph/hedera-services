@@ -45,7 +45,7 @@ import java.util.Iterator;
 public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     /** The backing merkle data structure */
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<K> keyCodec;
@@ -61,24 +61,24 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
      * @param stateKey     the state key
      * @param keyCodec     the codec for the key
      * @param valueCodec   the codec for the value
-     * @param megaMap   the backing merkle data structure to use
+     * @param virtualMap   the backing merkle data structure to use
      */
     public OnDiskWritableKVState(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
         this.keyCodec = keyCodec;
         this.valueCodec = valueCodec;
-        this.megaMap = requireNonNull(megaMap);
+        this.virtualMap = requireNonNull(virtualMap);
     }
 
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var value = megaMap.get(getMegaMapKey(key), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(key), valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getLabel(), key, value);
         return value;
@@ -89,8 +89,8 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getLabel(), megaMap, keyCodec);
-        return new OnDiskIterator<>(megaMap, keyCodec);
+        logMapIterate(getLabel(), virtualMap, keyCodec);
+        return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
         // for now it just adds a call to measureRecord(), but benefits are unclear
         // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
-        megaMap.put(getMegaMapKey(key), value, valueCodec);
+        virtualMap.put(getVirtualMapKey(key), value, valueCodec);
         // Log to transaction state log, what was put
         logMapPut(getLabel(), key, value);
     }
@@ -109,7 +109,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
-        final var removed = megaMap.remove(getMegaMapKey(key), valueCodec);
+        final var removed = virtualMap.remove(getVirtualMapKey(key), valueCodec);
         // Log to transaction state log, what was removed
         logMapRemove(getLabel(), key, removed);
     }
@@ -117,7 +117,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     public long sizeOfDataSource() {
-        final var size = megaMap.size();
+        final var size = virtualMap.size();
         // Log to transaction state log, size of map
         logMapGetSize(getLabel(), size);
         return size;
@@ -140,7 +140,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     // TODO: test this method
     // TODO: refactor? (it is duplicated in OnDiskReadableKVState)
     /**
-     * Generates a key for identifying an entry in the MegaMap data structure.
+     * Generates a key for identifying an entry in the Virtual Map.
      * <p>
      * The key consists of:
      * <ul>
@@ -154,7 +154,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
      * @return a {@link Bytes} object containing the state ID followed by the serialized key
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    private Bytes getMegaMapKey(final K key) {
+    private Bytes getVirtualMapKey(final K key) {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {

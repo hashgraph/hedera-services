@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<T> {
 
     @NonNull
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<T> valueCodec;
@@ -43,18 +43,18 @@ public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<T> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
 
         this.valueCodec = requireNonNull(valueCodec);
-        this.megaMap = Objects.requireNonNull(megaMap);
+        this.virtualMap = Objects.requireNonNull(virtualMap);
     }
 
     // TODO: refactor? is is duplicated in OnDiskReadableSingletonState
     /** {@inheritDoc} */
     @Override
     protected T readFromDataSource() {
-        final var value = megaMap.get(getMegaMapKey(), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(), valueCodec);
         // Log to transaction state log, what was read
         logSingletonRead(getLabel(), value);
         return value;
@@ -63,7 +63,7 @@ public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<
     /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull T value) {
-        megaMap.put(getMegaMapKey(), value, valueCodec);
+        virtualMap.put(getVirtualMapKey(), value, valueCodec);
         // Log to transaction state log, what was put
         logSingletonWrite(getLabel(), value);
     }
@@ -71,7 +71,7 @@ public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource() {
-        final var removed = megaMap.remove(getMegaMapKey(), valueCodec);
+        final var removed = virtualMap.remove(getVirtualMapKey(), valueCodec);
         // Log to transaction state log, what was removed
         logSingletonRemove(getLabel(), removed);
     }
@@ -79,7 +79,7 @@ public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<
     // TODO: refactor? is is duplicated in OnDiskReadableSingletonState
     // TODO: test this method
     /**
-     * Generates a 2-byte big-endian key identifying this singleton state in the Mega Map.
+     * Generates a 2-byte big-endian key identifying this singleton state in the Virtual Map.
      * <p>
      * The underlying state ID (unsigned 16-bit) must be in [0..65535], and is written in big-endian order.
      * </p>
@@ -87,7 +87,7 @@ public class OnDiskWritableSingletonState<T> extends WritableSingletonStateBase<
      * @return a {@link Bytes} object containing exactly 2 bytes in big-endian order
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    private Bytes getMegaMapKey() {
+    private Bytes getVirtualMapKey() {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {

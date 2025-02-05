@@ -43,7 +43,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     /** The backing merkle data structure to use */
     @NonNull
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<K> keyCodec;
@@ -57,24 +57,24 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
      * @param stateKey
      * @param keyCodec
      * @param valueCodec
-     * @param megaMap the backing merkle structure to use
+     * @param virtualMap the backing merkle structure to use
      */
     public OnDiskReadableKVState(
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
         this.keyCodec = requireNonNull(keyCodec);
         this.valueCodec = requireNonNull(valueCodec);
-        this.megaMap = requireNonNull(megaMap);
+        this.virtualMap = requireNonNull(virtualMap);
     }
 
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var value = megaMap.get(getMegaMapKey(key), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(key), valueCodec);
         // Log to transaction state log, what was read
         logMapGet(getLabel(), key, value);
         return value;
@@ -85,15 +85,15 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getLabel(), megaMap, keyCodec);
-        return new OnDiskIterator<>(megaMap, keyCodec);
+        logMapIterate(getLabel(), virtualMap, keyCodec);
+        return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
     /** {@inheritDoc} */
     @Override
     @Deprecated
     public long size() {
-        final var size = megaMap.size();
+        final var size = virtualMap.size();
         // Log to transaction state log, size of map
         logMapGetSize(getLabel(), size);
         return size;
@@ -101,13 +101,13 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
 
     @Override
     public void warm(@NonNull final K key) {
-        megaMap.warm(getMegaMapKey(key));
+        virtualMap.warm(getVirtualMapKey(key));
     }
 
     // TODO: test this method
     // TODO: refactor? (it is duplicated in OnDiskWritableKVState)
     /**
-     * Generates a key for identifying an entry in the MegaMap data structure.
+     * Generates a key for identifying an entry in the Virtual Map.
      * <p>
      * The key consists of:
      * <ul>
@@ -121,7 +121,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
      * @return a {@link Bytes} object containing the state ID followed by the serialized key
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    private Bytes getMegaMapKey(final K key) {
+    private Bytes getVirtualMapKey(final K key) {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {

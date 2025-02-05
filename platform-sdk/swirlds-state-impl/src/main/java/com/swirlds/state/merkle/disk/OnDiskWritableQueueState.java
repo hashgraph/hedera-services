@@ -45,7 +45,7 @@ import java.util.Objects;
 public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
 
     @NonNull
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<E> valueCodec;
@@ -54,17 +54,17 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<E> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
 
         this.valueCodec = requireNonNull(valueCodec);
-        this.megaMap = Objects.requireNonNull(megaMap);
+        this.virtualMap = Objects.requireNonNull(virtualMap);
     }
 
     @Override
     protected void addToDataSource(@NonNull E element) {
         final QueueState state = getState();
-        megaMap.put(getMegaMapKey(state.getTailAndIncrement()), element, valueCodec);
+        virtualMap.put(getVirtualMapKey(state.getTailAndIncrement()), element, valueCodec);
         // Log to transaction state log, what was added
         logQueueAdd(getLabel(), element);
     }
@@ -75,7 +75,7 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
         if (!state.isEmpty()) {
             // TODO: double check VirtualMap#remove return type
             final var valueToRemove = getFromStore(state.getHead());
-            megaMap.remove(getMegaMapKey(state.getHeadAndIncrement()));
+            virtualMap.remove(getVirtualMapKey(state.getHeadAndIncrement()));
             // Log to transaction state log, what was added
             logQueueRemove(getLabel(), valueToRemove);
         } else {
@@ -99,7 +99,7 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
 
     @NonNull
     private E getFromStore(final long index) {
-        final var value = megaMap.get(getMegaMapKey(index), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(index), valueCodec);
         if (value == null) {
             throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
         }
@@ -119,13 +119,13 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
 
         final Bytes stateIdBytes = Bytes.wrap(buffer.array());
 
-        return megaMap.get(stateIdBytes, QueueCodec.INSTANCE);
+        return virtualMap.get(stateIdBytes, QueueCodec.INSTANCE);
     }
 
     // TODO: test this method
     // TODO: refactor? (it is duplicated in OnDiskReadableQueueState)
     /**
-     * Generates a 10-byte big-endian key identifying an element in the Mega Map.
+     * Generates a 10-byte big-endian key identifying an element in the Virtual Map.
      * <ul>
      *   <li>The first 2 bytes store the unsigned 16-bit state ID</li>
      *   <li>The next 8 bytes store the {@code index}</li>
@@ -135,7 +135,7 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
      * @return a {@link Bytes} object containing exactly 10 bytes in big-endian order
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    private Bytes getMegaMapKey(final long index) {
+    private Bytes getVirtualMapKey(final long index) {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {

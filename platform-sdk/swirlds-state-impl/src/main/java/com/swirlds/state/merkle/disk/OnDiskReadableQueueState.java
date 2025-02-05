@@ -45,7 +45,7 @@ import java.util.Objects;
 public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
 
     @NonNull
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<E> valueCodec;
@@ -55,11 +55,11 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<E> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
 
         this.valueCodec = requireNonNull(valueCodec);
-        this.megaMap = Objects.requireNonNull(megaMap);
+        this.virtualMap = Objects.requireNonNull(virtualMap);
     }
 
     @Nullable
@@ -87,7 +87,7 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
 
     @NonNull
     private E getFromStore(final long index) {
-        final var value = megaMap.get(getMegaMapKey(index), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(index), valueCodec);
         if (value == null) {
             throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
         }
@@ -107,13 +107,13 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
 
         final Bytes stateIdBytes = Bytes.wrap(buffer.array());
 
-        return megaMap.get(stateIdBytes, QueueCodec.INSTANCE);
+        return virtualMap.get(stateIdBytes, QueueCodec.INSTANCE);
     }
 
     // TODO: test this method
     // TODO: refactor? (it is duplicated in OnDiskWritableQueueState)
     /**
-     * Generates a 10-byte big-endian key identifying an element in the Mega Map.
+     * Generates a 10-byte big-endian key identifying an element in the Virtual Map.
      * <ul>
      *   <li>The first 2 bytes store the unsigned 16-bit state ID</li>
      *   <li>The next 8 bytes store the {@code index}</li>
@@ -123,7 +123,7 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
      * @return a {@link Bytes} object containing exactly 10 bytes in big-endian order
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    private Bytes getMegaMapKey(final long index) {
+    private Bytes getVirtualMapKey(final long index) {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {

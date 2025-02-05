@@ -93,7 +93,7 @@ public class NewStateRoot implements State {
      */
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
-    private VirtualMap megaMap;
+    private VirtualMap virtualMap;
 
     // not sure if it is needed though!
     /**
@@ -102,7 +102,7 @@ public class NewStateRoot implements State {
      * @param from The other state to fast-copy from. Cannot be null.
      */
     protected NewStateRoot(@NonNull final NewStateRoot from) {
-        this.megaMap = from.megaMap.copy(); // not sure in this
+        this.virtualMap = from.virtualMap.copy(); // not sure in this
 
         this.listeners.addAll(from.listeners);
 
@@ -166,7 +166,7 @@ public class NewStateRoot implements State {
     @Override
     public NewStateRoot copy() {
         // TODO: double check
-        /* megaMap handles this:
+        /* this.virtualMap handles this:
         throwIfImmutable();
         throwIfDestroyed();
         setImmutable(true);
@@ -188,7 +188,7 @@ public class NewStateRoot implements State {
             return;
         }
         try {
-            merkleCryptography.digestTreeAsync(megaMap).get(); // TODO: double check
+            merkleCryptography.digestTreeAsync(virtualMap).get(); // TODO: double check
         } catch (final ExecutionException e) {
             logger.error(EXCEPTION.getMarker(), "Exception occurred during hashing", e);
         } catch (final InterruptedException e) {
@@ -207,7 +207,7 @@ public class NewStateRoot implements State {
         throwIfMutable();
         throwIfDestroyed();
         final long startTime = time.currentTimeMillis();
-        MerkleTreeSnapshotWriter.createSnapshot(megaMap, targetPath, getCurrentRound()); // TODO: double check
+        MerkleTreeSnapshotWriter.createSnapshot(virtualMap, targetPath, getCurrentRound()); // TODO: double check
         snapshotMetrics.updateWriteStateToDiskTimeMetric(time.currentTimeMillis() - startTime);
     }
 
@@ -257,14 +257,14 @@ public class NewStateRoot implements State {
     // Clean up
 
     /**
-     * To be called ONLY at node shutdown -- attempts to gracefully close the Mega Map.
+     * To be called ONLY at node shutdown -- attempts to gracefully close the Virtual Map.
      */
     public void close() {
         logger.info("Closing NewStateRoot"); // TODO: update class name
         try {
-            megaMap.getDataSource().close();
+            virtualMap.getDataSource().close();
         } catch (IOException e) {
-            logger.warn("Unable to close data source for the Mega Map", e);
+            logger.warn("Unable to close data source for the Virtual Map", e);
         }
     }
 
@@ -481,7 +481,7 @@ public class NewStateRoot implements State {
                     extractStateKey(md),
                     Objects.requireNonNull(md.stateDefinition().keyCodec()),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
         }
 
         @Override
@@ -491,7 +491,7 @@ public class NewStateRoot implements State {
                     md.serviceName(),
                     extractStateKey(md),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
         }
 
         @NonNull
@@ -501,7 +501,7 @@ public class NewStateRoot implements State {
                     md.serviceName(),
                     extractStateKey(md),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
         }
     }
 
@@ -532,13 +532,13 @@ public class NewStateRoot implements State {
          */
         public void copyAndReleaseVirtualMap(@NonNull final String stateKey) {
             final var md = stateMetadata.get(stateKey);
-            final var mutableCopy = megaMap.copy();
+            final var mutableCopy = virtualMap.copy();
             if (metrics != null) {
                 mutableCopy.registerMetrics(metrics);
             }
-            megaMap.release();
+            virtualMap.release();
 
-            megaMap = mutableCopy; // so createReadableKVState below will do the job with updated map (copy)
+            virtualMap = mutableCopy; // so createReadableKVState below will do the job with updated map (copy)
             kvInstances.put(stateKey, createReadableKVState(md));
         }
 
@@ -568,7 +568,7 @@ public class NewStateRoot implements State {
                     extractStateKey(md),
                     Objects.requireNonNull(md.stateDefinition().keyCodec()),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
             listeners.forEach(listener -> {
                 if (listener.stateTypes().contains(MAP)) {
                     registerKVListener(md.serviceName(), state, listener);
@@ -584,7 +584,7 @@ public class NewStateRoot implements State {
                     md.serviceName(),
                     extractStateKey(md),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
             listeners.forEach(listener -> {
                 if (listener.stateTypes().contains(SINGLETON)) {
                     registerSingletonListener(md.serviceName(), state, listener);
@@ -600,7 +600,7 @@ public class NewStateRoot implements State {
                     md.serviceName(),
                     extractStateKey(md),
                     md.stateDefinition().valueCodec(),
-                    megaMap);
+                    virtualMap);
             listeners.forEach(listener -> {
                 if (listener.stateTypes().contains(QUEUE)) {
                     registerQueueListener(md.serviceName(), state, listener);

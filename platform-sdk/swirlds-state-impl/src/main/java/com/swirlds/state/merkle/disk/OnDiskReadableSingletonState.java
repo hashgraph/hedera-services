@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class OnDiskReadableSingletonState<T> extends ReadableSingletonStateBase<T> {
 
     @NonNull
-    private final VirtualMap megaMap;
+    private final VirtualMap virtualMap;
 
     @NonNull
     private final Codec<T> valueCodec;
@@ -40,18 +40,18 @@ public class OnDiskReadableSingletonState<T> extends ReadableSingletonStateBase<
             @NonNull final String serviceName,
             @NonNull final String stateKey,
             @NonNull final Codec<T> valueCodec,
-            @NonNull final VirtualMap megaMap) {
+            @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
 
         this.valueCodec = requireNonNull(valueCodec);
-        this.megaMap = requireNonNull(megaMap);
+        this.virtualMap = requireNonNull(virtualMap);
     }
 
     // TODO: refactor? is is duplicated in OnDiskWritableSingletonState
     /** {@inheritDoc} */
     @Override
     protected T readFromDataSource() {
-        final var value = megaMap.get(getMegaMapKey(), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(), valueCodec);
         // Log to transaction state log, what was read
         logSingletonRead(getLabel(), value);
         return value;
@@ -60,7 +60,7 @@ public class OnDiskReadableSingletonState<T> extends ReadableSingletonStateBase<
     // TODO: refactor? is is duplicated in OnDiskWritableSingletonState
     // TODO: test this method
     /**
-     * Generates a 2-byte big-endian key identifying this singleton state in the Mega Map.
+     * Generates a 2-byte big-endian key identifying this singleton state in the Virtual Map.
      * <p>
      * The underlying state ID (unsigned 16-bit) must be in [0..65535], and is written in big-endian order.
      * </p>
@@ -68,7 +68,7 @@ public class OnDiskReadableSingletonState<T> extends ReadableSingletonStateBase<
      * @return a {@link Bytes} object containing exactly 2 bytes in big-endian order
      * @throws IllegalArgumentException if the state ID is outside [0..65535]
      */
-    protected Bytes getMegaMapKey() {
+    protected Bytes getVirtualMapKey() {
         final int stateId = getStateId();
 
         if (stateId < 0 || stateId > 65535) {
