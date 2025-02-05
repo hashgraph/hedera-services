@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.network.protocol;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.gossip.modular.SyncGossipSharedProtocolState;
 import com.swirlds.platform.gossip.permits.SyncPermitProvider;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
-import com.swirlds.platform.gossip.sync.protocol.SyncProtocol;
+import com.swirlds.platform.gossip.sync.protocol.SyncPeerProtocol;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,7 +36,7 @@ import org.hiero.consensus.gossip.FallenBehindManager;
 /**
  * Implementation of a factory for sync protocol
  */
-public class SyncProtocolFactory implements ProtocolFactory {
+public class SyncProtocol implements Protocol {
 
     private final PlatformContext platformContext;
     private final ShadowgraphSynchronizer synchronizer;
@@ -59,7 +61,7 @@ public class SyncProtocolFactory implements ProtocolFactory {
      * @param syncMetrics            metrics tracking syncing
      * @param platformStatusSupplier provides the current platform status
      */
-    public SyncProtocolFactory(
+    public SyncProtocol(
             @NonNull final PlatformContext platformContext,
             @NonNull final ShadowgraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
@@ -82,12 +84,50 @@ public class SyncProtocolFactory implements ProtocolFactory {
     }
 
     /**
+     * Utility method for creating SyncProtocol from shared state, while staying compatible with pre-refactor code
+     * @param platformContext       the platform context
+     * @param sharedState           temporary class to share state between various protocols in modularized gossip, to be removed
+     * @param intakeEventCounter    keeps track of how many events have been received from each peer
+     * @param roster                the current roster
+     * @return constructed SyncProtocol
+     */
+    public static SyncProtocol create(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final SyncGossipSharedProtocolState sharedState,
+            @NonNull final IntakeEventCounter intakeEventCounter,
+            @NonNull final Roster roster) {
+
+        final SyncMetrics syncMetrics = new SyncMetrics(platformContext.getMetrics());
+
+        var syncShadowgraphSynchronizer = new ShadowgraphSynchronizer(
+                platformContext,
+                sharedState.shadowgraph(),
+                roster.rosterEntries().size(),
+                syncMetrics,
+                event -> sharedState.receivedEventHandler().accept(event),
+                sharedState.syncManager(),
+                intakeEventCounter,
+                sharedState.shadowgraphExecutor());
+
+        return new SyncProtocol(
+                platformContext,
+                syncShadowgraphSynchronizer,
+                sharedState.syncManager(),
+                sharedState.syncPermitProvider(),
+                intakeEventCounter,
+                sharedState.gossipHalted()::get,
+                Duration.ZERO,
+                syncMetrics,
+                sharedState.currentPlatformStatus()::get);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @NonNull
     @Override
-    public SyncProtocol build(@NonNull final NodeId peerId) {
-        return new SyncProtocol(
+    public SyncPeerProtocol createPeerInstance(@NonNull final NodeId peerId) {
+        return new SyncPeerProtocol(
                 platformContext,
                 Objects.requireNonNull(peerId),
                 synchronizer,
