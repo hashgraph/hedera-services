@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextAdhocPeriod;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilNextBlock;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -158,7 +158,7 @@ public class RecordsSuite {
                 uploadInitCode(contract),
                 contractCreate(contract),
                 // Ensure we submit these two transactions in the same block
-                waitUntilStartOfNextAdhocPeriod(2_000),
+                waitUntilNextBlock(),
                 ethereumCall(contract, LOG_NOW)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -234,7 +234,7 @@ public class RecordsSuite {
                 getTxnRecord(AUTO_ACCOUNT).andAllChildRecords(),
                 uploadInitCode(contract),
                 contractCreate(contract),
-                waitUntilStartOfNextAdhocPeriod(2_000L),
+                waitUntilNextBlock(),
                 ethereumCall(contract, LOG_NOW)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -246,7 +246,7 @@ public class RecordsSuite {
                         .deferStatusResolution()
                         .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                 // Make sure we submit the next transaction in the next block
-                waitUntilStartOfNextAdhocPeriod(2_000L),
+                waitUntilNextBlock(),
                 ethereumCall(contract, LOG_NOW)
                         .type(EthTxData.EthTransactionType.EIP1559)
                         .signingWith(SECP_256K1_SOURCE_KEY)
@@ -317,13 +317,13 @@ public class RecordsSuite {
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                 withOpContext((spec, opLog) -> {
                     doNTransfers(spec, 256);
-                    waitUntilStartOfNextAdhocPeriod(2_000L);
+                    waitUntilNextBlock();
                     final var ethCall = ethereumCall(contract, "getAllBlockHashes")
                             .logged()
                             .gasLimit(4_000_000L)
                             .via("blockHashes");
                     final var blockHashRes = getTxnRecord("blockHashes").logged();
-                    allRunFor(spec, ethCall, waitUntilStartOfNextAdhocPeriod(2_000L), blockHashRes);
+                    allRunFor(spec, ethCall, waitUntilNextBlock(), blockHashRes);
                     assertTrue(blockHashRes
                             .getResponseRecord()
                             .getContractCallResult()

@@ -216,7 +216,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * @return the 36-character string padded with leading zeros
      */
     @NonNull
-    private static String longToFileName(final long value) {
+    public static String longToFileName(final long value) {
         // Convert the signed long to an unsigned long using BigInteger for correct representation
         BigInteger unsignedValue =
                 BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));
