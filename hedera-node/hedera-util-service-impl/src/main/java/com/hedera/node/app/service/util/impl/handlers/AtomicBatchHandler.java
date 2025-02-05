@@ -16,15 +16,8 @@
 
 package com.hedera.node.app.service.util.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_DUPLICATES;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_EMPTY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
 
@@ -105,11 +98,11 @@ public class AtomicBatchHandler implements TransactionHandler {
             try {
                 final var innerTrxBody = context.bodyFromTransaction(transaction);
                 if(!innerTrxBody.hasBatchKey()){
-                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                    throw new PreCheckException(MISSING_BATCH_KEY);
                 }
 
                 if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
-                    throw new PreCheckException(INVALID_TRANSACTION_BODY);
+                    throw new PreCheckException(INVALID_NODE_ACCOUNT_ID);
                 }
                 //transaction checker parse and check - to check validity of the transaction expire
             } catch (Exception e) {
