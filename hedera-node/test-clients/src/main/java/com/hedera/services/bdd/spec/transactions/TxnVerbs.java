@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.defaultContractsRoot;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
@@ -652,14 +653,28 @@ public class TxnVerbs {
      * @param contractsNames the name(s) of the contract(s), which are to be deployed
      */
     public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
-        return uploadInitCode(Optional.empty(), contractsNames);
+        return uploadInitCode("", Optional.empty(), contractsNames);
     }
 
-    public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
+    public static HapiSpecOperation uploadInitCode(
+            final String variant, final Optional<String> payer, final String... contractsNames) {
+        return uploadInitCode(payer, variant, contractsNames);
+    }
+
+    /**
+     * This method enables the developer to upload one or many contract(s) bytecode(s) specifying a payer and
+     * potentially a variant location for the contract(s)
+     *
+     * @param payer the payer of the file transaction
+     * @param variant the variant location of the contract(s)
+     * @param contractsNames the name(s) of the contract(s), which are to be deployed
+     */
+    public static HapiSpecOperation uploadInitCode(
+            final Optional<String> payer, final String variant, final String... contractsNames) {
         return withOpContext((spec, ctxLog) -> {
             final List<SpecOperation> ops = new ArrayList<>();
             for (String contractName : contractsNames) {
-                final var path = getResourcePath(contractName, ".bin");
+                final var path = getResourcePath(defaultContractsRoot(variant), contractName, ".bin");
                 final var file = new HapiFileCreate(contractName);
                 final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, extractByteCode(path));
                 ops.add(file);

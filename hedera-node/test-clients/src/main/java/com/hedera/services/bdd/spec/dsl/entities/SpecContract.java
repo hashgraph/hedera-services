@@ -60,12 +60,15 @@ import org.bouncycastle.util.encoders.Hex;
 public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         implements OwningEntity, EvmAddressableEntity {
     private static final int MAX_INLINE_INITCODE_SIZE = 4096;
+    public static final String VARIANT_16C = "16c";
 
     private final long creationGas;
     private final String contractName;
     private final boolean immutable;
     private final int maxAutoAssociations;
     private final Account.Builder builder = Account.newBuilder();
+    private final String variant;
+
     /**
      * The constructor arguments for the contract's creation call; if the arguments are
      * not constant values, must be set imperatively within the HapiTest context instead
@@ -85,7 +88,8 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
                 annotation.contract(),
                 annotation.creationGas(),
                 annotation.isImmutable(),
-                annotation.maxAutoAssociations());
+                annotation.maxAutoAssociations(),
+                annotation.variant());
     }
 
     private SpecContract(
@@ -93,12 +97,14 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
             @NonNull final String contractName,
             final long creationGas,
             final boolean immutable,
-            final int maxAutoAssociations) {
+            final int maxAutoAssociations,
+            final String variant) {
         super(name);
         this.immutable = immutable;
         this.creationGas = creationGas;
         this.contractName = requireNonNull(contractName);
         this.maxAutoAssociations = maxAutoAssociations;
+        this.variant = variant;
     }
 
     /**
@@ -234,7 +240,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     @Override
     protected Creation<SpecOperation, Account> newCreation(@NonNull final HapiSpec spec) {
         final var model = builder.build();
-        final var initcode = getInitcodeOf(contractName);
+        final var initcode = getInitcodeOf(contractName, variant);
         final SpecOperation op;
         constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {

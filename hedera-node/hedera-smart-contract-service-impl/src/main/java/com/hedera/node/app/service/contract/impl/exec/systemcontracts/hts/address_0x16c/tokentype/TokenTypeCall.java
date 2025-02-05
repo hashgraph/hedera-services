@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.tokentype;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
@@ -34,15 +33,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
-    private final boolean isStaticCall;
 
     public TokenTypeCall(
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final HederaWorldUpdater.Enhancement enhancement,
-            final boolean isStaticCall,
             @Nullable final Token token) {
         super(gasCalculator, enhancement, token);
-        this.isStaticCall = isStaticCall;
     }
 
     /**
@@ -68,10 +64,6 @@ public class TokenTypeCall extends AbstractNonRevertibleTokenViewCall {
 
     private @NonNull FullResult fullResultsFor(
             @NonNull final ResponseCodeEnum status, final long gasRequirement, final int tokenType) {
-        // For backwards compatibility, we need to revert here per issue #8746.
-        if (isStaticCall && status != SUCCESS) {
-            return revertResult(status, gasRequirement);
-        }
         return successResult(
                 TOKEN_TYPE.getOutputs().encode(Tuple.of(status.protoOrdinal(), tokenType)), gasRequirement);
     }

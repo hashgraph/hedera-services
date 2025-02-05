@@ -81,7 +81,8 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class Utils {
-    public static final String RESOURCE_PATH = "src/main/resources/contract/contracts/%1$s/%1$s%2$s";
+    public static final String RESOURCE_PATH = "src/main/resources/contract/%1$s/%2$s/%2$s%3$s";
+    public static final String DEFAULT_CONTRACTS_ROOT = "contracts";
 
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
@@ -137,12 +138,13 @@ public class Utils {
      * Returns the bytecode of the contract by the name of the contract from the classpath resource.
      *
      * @param contractName the name of the contract
+     * @param variant the variant system contract if any
      * @return the bytecode of the contract
      * @throws IllegalArgumentException if the contract is not found
      * @throws UncheckedIOException if an I/O error occurs
      */
-    public static ByteString getInitcodeOf(@NonNull final String contractName) {
-        final var path = getResourcePath(contractName, ".bin");
+    public static ByteString getInitcodeOf(@NonNull final String contractName, @NonNull final String variant) {
+        final var path = getResourcePath(defaultContractsRoot(variant), contractName, ".bin");
         try {
             final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
             return ByteString.copyFrom(bytes);
@@ -239,8 +241,18 @@ public class Utils {
      * @param extension the type of the desired contract resource (.bin or .json)
      */
     public static String getResourcePath(String resourceName, final String extension) {
+        return getResourcePath(DEFAULT_CONTRACTS_ROOT, resourceName, extension);
+    }
+
+    /**
+     * Generates a path to a desired contract resource
+     *
+     * @param resourceName the name of the contract
+     * @param extension the type of the desired contract resource (.bin or .json)
+     */
+    public static String getResourcePath(String rootDirectory, String resourceName, final String extension) {
         resourceName = resourceName.replaceAll("\\d*$", "");
-        final var path = String.format(RESOURCE_PATH, resourceName, extension);
+        final var path = String.format(RESOURCE_PATH, rootDirectory, resourceName, extension);
         final var file = relocatedIfNotPresentInWorkingDir(new File(path));
         if (!file.exists()) {
             throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
@@ -442,5 +454,10 @@ public class Utils {
             assertEquals(0L, contractCallResult.getAmount(), "Result not expected to externalize amount");
             assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
         });
+    }
+
+    @NonNull
+    public static String defaultContractsRoot(String variant) {
+        return variant.isEmpty() ? DEFAULT_CONTRACTS_ROOT : DEFAULT_CONTRACTS_ROOT + "_" + variant;
     }
 }

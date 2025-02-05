@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +43,8 @@ public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     public static final SystemContractMethod TOKEN_TYPE = SystemContractMethod.declare(
                     "getTokenType(address)", ReturnTypes.RESPONSE_CODE_INT32)
             .withModifier(Modifier.VIEW)
-            .withCategory(Category.TOKEN_QUERY);
+            .withCategory(Category.TOKEN_QUERY)
+            .withSupportedAddress(HTS_167_CONTRACT_ID);
 
     /**
      * Default constructor for injection.
