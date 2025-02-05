@@ -30,7 +30,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.address.AddressBook;
@@ -96,7 +95,6 @@ class DefaultTransactionHandlerTests {
                 roster,
                 events,
                 keystone,
-                new Generations(),
                 EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD),
                 SyntheticSnapshot.GENESIS_SNAPSHOT,
                 pcesRound,
