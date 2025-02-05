@@ -27,6 +27,7 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
@@ -64,7 +65,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
-    private final WritableSingletonState<CRSState> crs;
+    private final WritableSingletonState<CRSState> crsState;
 
     public WritableHintsStoreImpl(@NonNull final WritableStates states) {
         super(states);
@@ -72,7 +73,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         this.nextConstruction = states.getSingleton(NEXT_HINT_CONSTRUCTION_KEY);
         this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
-        this.crs = states.getSingleton(CRS_STATE_KEY);
+        this.crsState = states.getSingleton(CRS_STATE_KEY);
     }
 
     @NonNull
@@ -166,8 +167,15 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         }
     }
 
-    public void setCrsState(@NonNull final CRSState state) {
-        crs.put(state);
+    @Override
+    public void setCRSState(@NonNull final CRSState crsState) {
+        this.crsState.put(crsState);
+    }
+
+    @Override
+    public boolean hasInitialCrs() {
+        final var crs = requireNonNull(this.crsState.get());
+        return crs.stage() == CRSStage.GATHERING_CONTRIBUTIONS && crs.crs().length() > 0;
     }
 
     /**

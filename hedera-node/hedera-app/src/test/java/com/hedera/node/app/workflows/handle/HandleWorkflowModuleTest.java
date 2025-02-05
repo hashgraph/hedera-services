@@ -345,9 +345,8 @@ class HandleWorkflowModuleTest {
         given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
         given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
 
-        final var hintsHandlers =
-                new HintsHandlers(hintsKeyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler,
-                        crsPublicationHandler);
+        final var hintsHandlers = new HintsHandlers(
+                hintsKeyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler, crsPublicationHandler);
         final var handlers = HandleWorkflowModule.provideTransactionHandlers(
                 networkAdminHandlers,
                 consensusHandlers,

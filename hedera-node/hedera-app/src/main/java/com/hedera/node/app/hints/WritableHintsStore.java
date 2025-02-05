@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -75,4 +76,8 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * Purges any state no longer needed after a given handoff.
      */
     void updateForHandoff(@NonNull ActiveRosters activeRosters);
+
+    void setCRSState(@NonNull CRSState crsState);
+
+    boolean hasInitialCrs();
 }

@@ -18,6 +18,7 @@ package com.hedera.node.app.hints;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -33,6 +34,7 @@ import java.util.Set;
  * Gives read access to the primary and secondary hinTS service states.
  */
 public interface ReadableHintsStore {
+
     /**
      * The full record of a hinTS key publication, including the key, the time it was adopted, the submitting node id,
      * and the party id the node claimed to have for the construction. (For validating its submission.)
@@ -103,4 +105,6 @@ public interface ReadableHintsStore {
      */
     @NonNull
     List<HintsKeyPublication> getHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
+
+    CRSState getCrsState();
 }

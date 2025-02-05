@@ -17,14 +17,19 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
+import com.hedera.hapi.node.state.hints.CRSStage;
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.services.auxiliary.hints.CRSUpdate;
+import com.hedera.node.app.hints.CRSSetup;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -33,12 +38,14 @@ import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +56,8 @@ import java.util.stream.IntStream;
  * Manages the process objects and work needed to advance toward completion of a hinTS construction.
  */
 public class HintsControllerImpl implements HintsController {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final int numParties;
     private final long selfId;
     private final Executor executor;
@@ -80,12 +89,16 @@ public class HintsControllerImpl implements HintsController {
     @Nullable
     private CompletableFuture<Void> publicationFuture;
 
+    private boolean isInitialCRSSubmitted;
+
+    private CRSSetup crsSetup;
+
     /**
      * A party's validated hinTS key, including the key itself and whether it is valid.
      *
-     * @param partyId the party ID
+     * @param partyId  the party ID
      * @param hintsKey the hinTS key
-     * @param isValid whether the key is valid
+     * @param isValid  whether the key is valid
      */
     private record Validation(int partyId, @NonNull Bytes hintsKey, boolean isValid) {}
 
@@ -144,6 +157,10 @@ public class HintsControllerImpl implements HintsController {
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(now);
         requireNonNull(hintsStore);
+        if (!isCRSSetup(hintsStore.getCrsState())) {
+            doCRSWork(now, hintsStore);
+            return;
+        }
         if (construction.hasHintsScheme()) {
             return;
         }
@@ -160,6 +177,85 @@ public class HintsControllerImpl implements HintsController {
                 ensureHintsKeyPublished();
             }
         }
+    }
+
+    private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
+        final var crsState = hintsStore.getCrsState();
+        if (isWaitingForInitialCRS(crsState)) {
+            submissions.submitInitialCRS(
+                    library.newCrs(weights.sourceNodeWeights().size()));
+            isInitialCRSSubmitted = true;
+        } else if (isWaitingForCurrentNodeContribution(crsState)) {
+            if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
+                moveToNextNode(now, hintsStore, crsState);
+                return;
+            }
+            submitUpdatedCRS(hintsStore);
+        } else if (allNodesContributed(crsState)) {
+            final var updatedState =
+                    crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
+            hintsStore.setCRSState(updatedState);
+        }
+    }
+
+    private boolean allNodesContributed(final CRSState crsState) {
+        return crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS && crsState.nextContributingNodeId() == -1;
+    }
+
+    private void moveToNextNode(
+            final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore, final CRSState crsState) {
+        final var nextNodeIdFromRoster =
+                nextNodeIdFromRoster(weights.sourceNodeIds(), crsState.nextContributingNodeId());
+        final var updatedState = crsState.copyBuilder()
+                .nextContributingNodeId(nextNodeIdFromRoster)
+                .contributionEndTime(asTimestamp(now.plusSeconds(10)))
+                .build();
+        hintsStore.setCRSState(updatedState);
+    }
+
+    private void submitUpdatedCRS(final @NonNull WritableHintsStore hintsStore) {
+        final var oldCRS = hintsStore.getCrsState().crs();
+        final var updatedCRS = library.updateCrs(oldCRS, generateEntropy());
+        final var newCRS = codec.decodeCrsUpdate(updatedCRS);
+        final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
+        if (isValidCrs) {
+            submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
+        }
+    }
+
+    /**
+     * Returns the immediate next node id from the roster after the current node id.
+     *
+     * @param nodeIds       the node ids in the roster
+     * @param currentNodeId the current node id
+     * @return the immediate next node id from the roster after the current node id
+     */
+    private long nextNodeIdFromRoster(final Set<Long> nodeIds, final long currentNodeId) {
+        return nodeIds.stream()
+                .filter(nodeId -> nodeId > currentNodeId)
+                .findFirst()
+                .orElse(-1L);
+    }
+
+    private boolean isWaitingForCurrentNodeContribution(final CRSState crsState) {
+        return crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS && selfId == crsState.nextContributingNodeId();
+    }
+
+    private boolean isWaitingForInitialCRS(final CRSState crsState) {
+        return crsState.stage() == CRSStage.WAITING_FOR_INITIAL_CRS && !isInitialCRSSubmitted;
+    }
+
+    /**
+     * Generates secure 128-bit entropy.
+     */
+    public Bytes generateEntropy() {
+        byte[] entropyBytes = new byte[16];
+        SECURE_RANDOM.nextBytes(entropyBytes);
+        return Bytes.wrap(entropyBytes);
+    }
+
+    private boolean isCRSSetup(final CRSState crsState) {
+        return crsState.stage() == CRSStage.COMPLETED;
     }
 
     @Override
@@ -251,6 +347,7 @@ public class HintsControllerImpl implements HintsController {
     /**
      * If the publication is for the expected party id, update the node and party id mappings and
      * start a validation future for the hinTS key.
+     *
      * @param publication the publication
      */
     private void maybeUpdateForHintsKey(@NonNull final HintsKeyPublication publication) {
@@ -286,6 +383,7 @@ public class HintsControllerImpl implements HintsController {
      *     <Li>{@code (0, 2, 3)}</Li>
      * </ul>
      * And no matter which node publishes their key next, they still the same id as expected.
+     *
      * @throws IndexOutOfBoundsException if the node id has already been assigned a party id
      */
     private int expectedPartyId(final long nodeId) {
@@ -303,7 +401,7 @@ public class HintsControllerImpl implements HintsController {
     /**
      * Returns a future that completes to a validation of the given hints key.
      *
-     * @param partyId the party ID
+     * @param partyId  the party ID
      * @param hintsKey the hints key
      * @return the future
      */

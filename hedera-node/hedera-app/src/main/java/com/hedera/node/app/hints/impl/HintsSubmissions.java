@@ -79,7 +79,8 @@ public class HintsSubmissions extends TssSubmissions {
      */
     public CompletableFuture<Void> submitInitialCRS(@NonNull final Bytes crs) {
         requireNonNull(crs);
-        final var op = CrsPublicationTransactionBody.newBuilder().initialCrs(crs).build();
+        final var op =
+                CrsPublicationTransactionBody.newBuilder().initialCrs(crs).build();
         return submit(b -> b.crsPublication(op), onFailure);
     }
 

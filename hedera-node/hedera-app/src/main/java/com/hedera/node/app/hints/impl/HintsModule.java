@@ -67,6 +67,7 @@ public interface HintsModule {
             @NonNull final HintsPreprocessingVoteHandler preprocessingVoteHandler,
             @NonNull final HintsPartialSignatureHandler partialSignatureHandler,
             @NonNull final CrsPublicationHandler crsPublicationHandler) {
-        return new HintsHandlers(keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler, crsPublicationHandler);
+        return new HintsHandlers(
+                keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler, crsPublicationHandler);
     }
 }

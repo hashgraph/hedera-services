@@ -47,7 +47,9 @@ class HintsModuleTest {
         assertInstanceOf(
                 HintsHandlers.class,
                 HintsModule.provideHintsHandlers(
-                        keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler,
+                        keyPublicationHandler,
+                        preprocessingVoteHandler,
+                        partialSignatureHandler,
                         crsPublicationHandler));
     }
 }
