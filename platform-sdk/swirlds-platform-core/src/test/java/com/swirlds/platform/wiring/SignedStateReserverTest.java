@@ -58,10 +58,10 @@ class SignedStateReserverTest {
                 false);
 
         final WiringModel model = WiringModelBuilder.create(platformContext).build();
-        final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
+        final TaskScheduler<ReservedSignedState> taskScheduler = model.<ReservedSignedState>schedulerBuilder(
+                        "scheduler")
                 .withType(TaskSchedulerType.DIRECT)
-                .build()
-                .cast();
+                .build();
         final OutputWire<ReservedSignedState> outputWire =
                 taskScheduler.getOutputWire().buildAdvancedTransformer(new SignedStateReserver("reserver"));
         final BindableInputWire<ReservedSignedState, ReservedSignedState> inputWire =

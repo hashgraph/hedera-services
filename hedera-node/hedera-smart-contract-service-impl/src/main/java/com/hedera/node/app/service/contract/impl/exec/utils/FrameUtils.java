@@ -356,4 +356,13 @@ public class FrameUtils {
         return isLongZero(recipient)
                 && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
+
+    public static boolean isPrecompileEnabled(
+            @NonNull final Address precompileAddress, @NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).disabledPrecompiles().stream()
+                .map(Address::precompiled)
+                .filter(precompileAddress::equals)
+                .findAny()
+                .isEmpty();
+    }
 }

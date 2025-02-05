@@ -45,7 +45,6 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -77,7 +76,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     @Test
     void preHandleVanilla() throws PreCheckException {
         realPreContext = new PreHandleContextImpl(
-                mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
+                mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher, mockTransactionChecker);
         subject.preHandle(realPreContext);
 
         assertThat(realPreContext).isNotNull();
@@ -95,7 +94,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void preHandleVanillaNoAdmin() throws PreCheckException {
         final TransactionBody transactionToTest = ScheduledTransactionFactory.scheduleCreateTransactionWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, transactionToTest, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, transactionToTest, testConfig, mockDispatcher, mockTransactionChecker);
         subject.preHandle(realPreContext);
 
         assertThat(realPreContext).isNotNull();
@@ -108,8 +108,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     void preHandleUsesCreatePayerIfScheduledPayerNotSet() throws PreCheckException {
-        realPreContext =
-                new PreHandleContextImpl(mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher, mockTransactionChecker);
         subject.preHandle(realPreContext);
 
         assertThat(realPreContext).isNotNull();
@@ -126,7 +126,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         accountsMapById.put(payer, null);
 
         final TransactionBody createBody = scheduleCreateTransaction(payer);
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, createBody, testConfig, mockDispatcher);
+        realPreContext = new PreHandleContextImpl(
+                mockStoreFactory, createBody, testConfig, mockDispatcher, mockTransactionChecker);
         Assertions.assertThrowsPreCheck(() -> subject.preHandle(realPreContext), ACCOUNT_ID_DOES_NOT_EXIST);
     }
 
@@ -139,7 +140,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final SchedulableTransactionBody child = next.scheduledTransaction();
             final DataOneOfType transactionType = child.data().kind();
             final HederaFunctionality functionType = HandlerUtility.functionalityForType(transactionType);
-            realPreContext = new PreHandleContextImpl(mockStoreFactory, createTransaction, testConfig, mockDispatcher);
+            realPreContext = new PreHandleContextImpl(
+                    mockStoreFactory, createTransaction, testConfig, mockDispatcher, mockTransactionChecker);
             if (configuredWhitelist.contains(functionType)) {
                 subject.preHandle(realPreContext);
                 assertThat(realPreContext.payerKey()).isNotNull().isEqualTo(schedulerKey);
@@ -215,7 +217,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 scheduleConfig.whitelist().functionalitySet();
         int successCount = 0;
         // make sure we have at least four items in the whitelist to test.
-        assertThat(configuredWhitelist.size()).isGreaterThan(4);
+        assertThat(configuredWhitelist).hasSizeGreaterThan(4);
         given(throttleFactory.newThrottle(anyInt(), any())).willReturn(throttle);
         given(throttle.allow(any(), any(), any(), any())).willReturn(true);
         given(throttle.usageSnapshots()).willReturn(ThrottleUsageSnapshots.DEFAULT);
@@ -245,7 +247,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             final Schedule next, final TransactionID createId, final int startCount) {
         commit(writableById); // commit changes so we can inspect the underlying map
         // should be a new schedule in the map
-        assertThat(scheduleMapById.size()).isEqualTo(startCount + 1);
+        assertThat(scheduleMapById).hasSize(startCount + 1);
         // verifying that the handle really ran and created the new schedule
         final Schedule wrongSchedule = writableSchedules.get(next.scheduleId());
         assertThat(wrongSchedule).isNull(); // shard and realm *should not* match here
@@ -270,7 +272,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
         final EntityNumGenerator entityNumGenerator = mock(EntityNumGenerator.class);
         given(mockContext.body()).willReturn(createTransaction);
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);
-        given(entityNumGenerator.newEntityNum(EntityType.SCHEDULE)).willReturn(nextEntityId);
+        given(entityNumGenerator.newEntityNum()).willReturn(nextEntityId);
         given(mockContext.allKeysForTransaction(any(), any())).willReturn(testChildKeys);
         // This is how you get side effects replicated, by having the "Answer" called in place of the real method.
         given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))

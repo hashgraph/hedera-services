@@ -22,6 +22,7 @@ import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchem
 import static com.swirlds.platform.state.service.schemas.V0540RosterBaseSchema.ROSTER_STATES_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -64,7 +65,6 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -88,7 +88,6 @@ import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -98,9 +97,8 @@ class PlatformTestingToolStateTest {
     private static final String DEFAULT_CONFIG = "configs/FCM1KForTest.json";
     private static final String CONFIG_WITHOUT_APPEND_SIG = "configs/FCM1KForTestWithoutAppendSig.json";
     private static final byte[] EMPTY_ARRAY = new byte[] {};
-    private static PlatformTestingToolStateLifecycles stateLifecycles;
-    private static PlatformTestingToolState state;
-    private static MockedStatic<ParameterProvider> parameterProvider;
+    private PlatformTestingToolState state;
+    private MockedStatic<ParameterProvider> parameterProvider;
     private Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer;
     private List<ScopedSystemTransaction<StateSignatureTransaction>> consumedSystemTransactions;
     private StateSignatureTransaction stateSignatureTransaction;
@@ -112,21 +110,13 @@ class PlatformTestingToolStateTest {
     private Roster roster;
     private EventWindow eventWindow;
 
-    @BeforeAll
-    static void createState() {
-        final PayloadCfgSimple payloadConfig = mock(PayloadCfgSimple.class);
-        when(payloadConfig.isAppendSig()).thenReturn(true);
-
-        state = mock(PlatformTestingToolState.class);
-
-        final ExpectedFCMFamily expectedFCMFamily = mock(ExpectedFCMFamily.class);
-        when(state.getStateExpectedMap()).thenReturn(expectedFCMFamily);
-
-        stateLifecycles = new PlatformTestingToolStateLifecycles();
-    }
-
     @BeforeEach
     void setUp() throws KeyStoreException, KeyGeneratingException, NoSuchAlgorithmException, NoSuchProviderException {
+        final PayloadCfgSimple payloadConfig = mock(PayloadCfgSimple.class);
+        when(payloadConfig.isAppendSig()).thenReturn(true);
+        state = mock(PlatformTestingToolState.class);
+        final ExpectedFCMFamily expectedFCMFamily = mock(ExpectedFCMFamily.class);
+        when(state.getStateExpectedMap()).thenReturn(expectedFCMFamily);
         main = new PlatformTestingToolMain();
         random = new Random();
         roster = new Roster(Collections.EMPTY_LIST);
@@ -172,7 +162,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(Bytes.wrap(testTransactionWrapper.toByteArray()));
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -188,7 +178,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -204,7 +194,7 @@ class PlatformTestingToolStateTest {
         when(transaction.getApplicationTransaction()).thenReturn(stateSignatureTransactionBytes);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -237,14 +227,13 @@ class PlatformTestingToolStateTest {
                 roster,
                 List.of(platformEvent),
                 platformEvent,
-                new Generations(),
                 eventWindow,
                 new ConsensusSnapshot(),
                 false,
                 Instant.now());
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(3);
@@ -263,7 +252,7 @@ class PlatformTestingToolStateTest {
         when(transaction.isSystem()).thenReturn(true);
 
         // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
+        main.stateLifecycles.onHandleConsensusRound(round, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -286,7 +275,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
@@ -308,7 +297,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(1);
@@ -337,7 +326,7 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).hasSize(3);
@@ -349,6 +338,7 @@ class PlatformTestingToolStateTest {
         givenInitState(DEFAULT_CONFIG);
         givenRoundAndEvent();
         when(transaction.isSystem()).thenReturn(true);
+        doReturn(true).when(transaction).isSystem();
 
         final byte[] transactionBytes = new byte[300];
         random.nextBytes(transactionBytes);
@@ -362,10 +352,23 @@ class PlatformTestingToolStateTest {
         platformEvent = new PlatformEvent(gossipEvent);
 
         // When
-        stateLifecycles.onPreHandle(platformEvent, state, consumer);
+        main.stateLifecycles.onPreHandle(platformEvent, state, consumer);
 
         // Then
         assertThat(consumedSystemTransactions).isEmpty();
+    }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given
+        givenInitState(DEFAULT_CONFIG);
+        givenRoundAndEvent();
+
+        // When
+        final boolean result = main.stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
     }
 
     private void givenRoundAndEvent() {
@@ -379,7 +382,6 @@ class PlatformTestingToolStateTest {
                 roster,
                 List.of(platformEvent),
                 platformEvent,
-                new Generations(),
                 eventWindow,
                 new ConsensusSnapshot(),
                 false,
@@ -419,7 +421,7 @@ class PlatformTestingToolStateTest {
         when(parameterProviderInstance.getParameters()).thenReturn(new String[] {config});
 
         state.initChildren();
-        stateLifecycles.onStateInitialized(state, platform, initTrigger, new BasicSoftwareVersion(1));
+        main.stateLifecycles.onStateInitialized(state, platform, initTrigger, new BasicSoftwareVersion(1));
         main.init(platform, nodeId);
     }
 

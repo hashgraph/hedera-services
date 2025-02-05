@@ -53,7 +53,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
     requires com.swirlds.base;
-    requires com.swirlds.component.framework;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
@@ -91,7 +90,9 @@ module com.hedera.node.app {
     exports com.hedera.node.app.grpc;
     exports com.hedera.node.app.hints;
     exports com.hedera.node.app.hints.impl;
+    exports com.hedera.node.app.hints.handlers;
     exports com.hedera.node.app.history;
+    exports com.hedera.node.app.history.handlers;
     exports com.hedera.node.app.history.impl;
     exports com.hedera.node.app.metrics;
     exports com.hedera.node.app.authorization;
@@ -133,6 +134,7 @@ module com.hedera.node.app {
     exports com.hedera.node.app.tss.schemas;
     exports com.hedera.node.app.blocks.schemas;
     exports com.hedera.node.app.roster.schemas;
+    exports com.hedera.node.app.ids.schemas;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

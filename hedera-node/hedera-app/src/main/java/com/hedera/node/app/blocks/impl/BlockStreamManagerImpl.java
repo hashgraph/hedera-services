@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.node.config.types.DiskNetworkExport;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.component.framework.tasks.AbstractTask;
+import com.swirlds.common.concurrent.AbstractTask;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -372,7 +372,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             writer = null;
             blockHashSigner
                     .signFuture(blockHash)
-                    .thenAccept(signature -> finishProofWithSignature(blockHash, signature));
+                    .thenAcceptAsync(signature -> finishProofWithSignature(blockHash, signature));
 
             final var exportNetworkToDisk =
                     switch (diskNetworkExport) {
@@ -570,7 +570,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         @Override
-        protected boolean exec() {
+        protected boolean onExecute() {
             Bytes bytes = BlockItem.PROTOBUF.toBytes(item);
 
             final var kind = item.item().kind();
@@ -605,7 +605,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         @Override
-        protected boolean exec() {
+        protected boolean onExecute() {
             final var kind = item.item().kind();
             switch (kind) {
                 case EVENT_HEADER, EVENT_TRANSACTION, ROUND_HEADER -> inputTreeHasher.addLeaf(hash);

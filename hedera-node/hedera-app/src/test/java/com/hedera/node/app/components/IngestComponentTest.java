@@ -42,6 +42,7 @@ import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.info.NodeInfoImpl;
+import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -121,10 +122,15 @@ class IngestComponentTest {
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
                 throttleFactory);
-        final var hintsService =
-                new HintsServiceImpl(NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class));
+        final var hintsService = new HintsServiceImpl(
+                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class), DEFAULT_CONFIG);
         final var historyService = new HistoryServiceImpl(
-                NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HistoryLibraryImpl(), HISTORY_LIBRARY_CODEC);
+                NO_OP_METRICS,
+                ForkJoinPool.commonPool(),
+                appContext,
+                new HistoryLibraryImpl(),
+                HISTORY_LIBRARY_CODEC,
+                DEFAULT_CONFIG);
         app = DaggerHederaInjectionComponent.builder()
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
@@ -142,7 +148,8 @@ class IngestComponentTest {
                 .softwareVersion(mock(SemanticVersion.class))
                 .metrics(metrics)
                 .kvStateChangeListener(new KVStateChangeListener())
-                .boundaryStateChangeListener(new BoundaryStateChangeListener())
+                .boundaryStateChangeListener(new BoundaryStateChangeListener(
+                        new StoreMetricsServiceImpl(metrics), () -> configProvider.getConfiguration()))
                 .migrationStateChanges(List.of())
                 .initialStateHash(new InitialStateHash(completedFuture(Bytes.EMPTY), 0))
                 .networkInfo(mock(NetworkInfo.class))

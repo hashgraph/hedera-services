@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
@@ -38,12 +37,12 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -71,11 +70,11 @@ public class FileCreateHandler implements TransactionHandler {
     /**
      * Performs checks independent of state or context.
      *
-     * @param txn the transaction to check
+     * @param context the {@link PureChecksContext} which collects all information
      */
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
-        final FileCreateTransactionBody transactionBody = txn.fileCreateOrThrow();
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        final FileCreateTransactionBody transactionBody = context.body().fileCreateOrThrow();
 
         if (!transactionBody.hasExpirationTime()) {
             throw new PreCheckException(INVALID_EXPIRATION_TIME);
@@ -93,7 +92,6 @@ public class FileCreateHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
         final var transactionBody = context.body().fileCreateOrThrow();
 
         validateAndAddRequiredKeys(null, transactionBody.keys(), context);
@@ -140,7 +138,7 @@ public class FileCreateHandler implements TransactionHandler {
             final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
             builder.keys(fileCreateTransactionBody.keys());
             final var fileId = FileID.newBuilder()
-                    .fileNum(handleContext.entityNumGenerator().newEntityNum(EntityType.FILE))
+                    .fileNum(handleContext.entityNumGenerator().newEntityNum())
                     .shardNum(
                             fileCreateTransactionBody.hasShardID()
                                     ? fileCreateTransactionBody.shardIDOrThrow().shardNum()
@@ -155,7 +153,7 @@ public class FileCreateHandler implements TransactionHandler {
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
-            fileStore.put(file);
+            fileStore.putAndIncrementCount(file);
 
             handleContext
                     .savepointStack()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
@@ -51,7 +52,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -61,6 +61,7 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -73,18 +74,21 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
+import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -93,7 +97,6 @@ import javax.inject.Singleton;
 public class UserTxnFactory {
 
     private final ConfigProvider configProvider;
-    private final StoreMetricsService storeMetricsService;
     private final KVStateChangeListener kvStateChangeListener;
     private final BoundaryStateChangeListener boundaryStateChangeListener;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -106,14 +109,15 @@ public class UserTxnFactory {
     private final TransactionDispatcher dispatcher;
     private final NetworkUtilizationManager networkUtilizationManager;
     private final StreamMode streamMode;
+    private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
     private final BlockRecordManager blockRecordManager;
     private final BlockStreamManager blockStreamManager;
     private final ChildDispatchFactory childDispatchFactory;
+    private final TransactionChecker transactionChecker;
 
     @Inject
     public UserTxnFactory(
             @NonNull final ConfigProvider configProvider,
-            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
@@ -127,9 +131,10 @@ public class UserTxnFactory {
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final BlockStreamManager blockStreamManager,
-            @NonNull final ChildDispatchFactory childDispatchFactory) {
+            @NonNull final ChildDispatchFactory childDispatchFactory,
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory,
+            @NonNull final TransactionChecker transactionChecker) {
         this.configProvider = requireNonNull(configProvider);
-        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.boundaryStateChangeListener = requireNonNull(boundaryStateChangeListener);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -148,6 +153,8 @@ public class UserTxnFactory {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.softwareVersionFactory = softwareVersionFactory;
+        this.transactionChecker = requireNonNull(transactionChecker);
     }
 
     /**
@@ -173,11 +180,16 @@ public class UserTxnFactory {
         requireNonNull(type);
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, softwareVersionFactory);
         final var preHandleResult =
                 preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+        final var tokenContext = new TokenContextImpl(
+                config,
+                stack,
+                consensusNow,
+                new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME)),
+                softwareVersionFactory);
         return new UserTxn(
                 type,
                 txnInfo.functionality(),
@@ -217,10 +229,12 @@ public class UserTxnFactory {
         requireNonNull(body);
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, softwareVersionFactory);
         final var functionality = functionOfTxn(body);
         final var preHandleResult = preHandleSyntheticTransaction(body, payerId, config, readableStoreFactory);
-        final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
+        final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
+        final var tokenContext =
+                new TokenContextImpl(config, stack, consensusNow, entityIdStore, softwareVersionFactory);
         return new UserTxn(
                 type,
                 functionality,
@@ -286,17 +300,16 @@ public class UserTxnFactory {
         final var consensusNow = userTxn.consensusNow();
         final var creatorInfo = userTxn.creatorInfo();
         final var tokenContextImpl = userTxn.tokenContextImpl();
+        final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
 
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
-        final var writableStoreFactory = new WritableStoreFactory(
-                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
-        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var readableStoreFactory = new ReadableStoreFactory(stack, softwareVersionFactory);
+        final var entityNumGenerator = new EntityNumGeneratorImpl(entityIdStore);
+        final var writableStoreFactory =
+                new WritableStoreFactory(stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), entityIdStore);
+        final var serviceApiFactory = new ServiceApiFactory(stack, config);
         final var priceCalculator =
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
-        final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow);
         final var feeAccumulator =
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeStreamBuilder) baseBuilder);
@@ -322,7 +335,9 @@ public class UserTxnFactory {
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor,
-                feeAccumulator);
+                feeAccumulator,
+                HandleContext.DispatchMetadata.EMPTY_METADATA,
+                transactionChecker);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         if (streamMode != RECORDS) {
             final var congestionMultiplier = feeManager.congestionMultiplierFor(
@@ -385,9 +400,10 @@ public class UserTxnFactory {
             @NonNull final Configuration config,
             @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
-            dispatcher.dispatchPureChecks(body);
-            final var preHandleContext =
-                    new PreHandleContextImpl(readableStoreFactory, body, syntheticPayerId, config, dispatcher);
+            final var pureChecksContext = new PureChecksContextImpl(body, config, dispatcher, transactionChecker);
+            dispatcher.dispatchPureChecks(pureChecksContext);
+            final var preHandleContext = new PreHandleContextImpl(
+                    readableStoreFactory, body, syntheticPayerId, config, dispatcher, transactionChecker);
             dispatcher.dispatchPreHandle(preHandleContext);
             final var txInfo = getTxnInfoFrom(syntheticPayerId, body);
             return new PreHandleResult(

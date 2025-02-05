@@ -49,7 +49,6 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -59,11 +58,11 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -99,7 +98,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var body = context.body();
         requireNonNull(body);
         validateTruePreCheck(body.hasScheduleCreate(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleCreateOrThrow();
@@ -221,7 +222,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var scheduleId = ScheduleID.newBuilder()
                 .shardNum(schedulerId.shardNum())
                 .realmNum(schedulerId.realmNum())
-                .scheduleNum(context.entityNumGenerator().newEntityNum(EntityType.SCHEDULE))
+                .scheduleNum(context.entityNumGenerator().newEntityNum())
                 .build();
         var schedule = provisionalSchedule
                 .copyBuilder()
@@ -232,7 +233,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
             schedule = markedExecuted(schedule, consensusNow);
         }
-        scheduleStore.put(schedule);
+        scheduleStore.putAndIncrementCount(schedule);
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)
                 .scheduleID(schedule.scheduleId())

@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromRound;
 import static com.swirlds.platform.state.SwirldStateManagerUtils.fastCopy;
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +35,7 @@ import com.swirlds.platform.uptime.UptimeTracker;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -135,25 +134,21 @@ public class SwirldStateManager implements FreezePeriodChecker {
      *
      * @param round the round to handle
      */
-    public List<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
+    public Queue<ScopedSystemTransaction<StateSignatureTransaction>> handleConsensusRound(final ConsensusRound round) {
         final PlatformMerkleStateRoot state = stateRef.get();
 
         uptimeTracker.handleRound(round);
-        transactionHandler.handleRound(round, stateLifecycles, state);
-
-        // TODO update this logic to return the transactions from the callback consumer passed in
-        // stateLifecycles.onHandleConsensusRound, when it is implemented
-        return extractFromRound(round, StateSignatureTransaction.class);
+        return transactionHandler.handleRound(round, stateLifecycles, state);
     }
 
     /**
      * Seals the platform's state changes for the given round.
      * @param round the round to seal
      */
-    public void sealConsensusRound(@NonNull final Round round) {
+    public boolean sealConsensusRound(@NonNull final Round round) {
         requireNonNull(round);
         final PlatformMerkleStateRoot state = stateRef.get();
-        stateLifecycles.onSealConsensusRound(round, state);
+        return stateLifecycles.onSealConsensusRound(round, state);
     }
 
     /**

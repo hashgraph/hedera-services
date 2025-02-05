@@ -50,8 +50,8 @@ import com.swirlds.platform.wiring.PlatformSchedulersConfig;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -273,28 +273,34 @@ public class DefaultTransactionHandler implements TransactionHandler {
     @NonNull
     private StateAndRound createSignedState(
             @NonNull final ConsensusRound consensusRound,
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions)
+            @NonNull final Queue<ScopedSystemTransaction<StateSignatureTransaction>> systemTransactions)
             throws InterruptedException {
         if (freezeRoundReceived) {
             // Let the swirld state manager know we are about to write the saved state for the freeze period
             swirldStateManager.savedStateInFreezePeriod();
         }
-        swirldStateManager.sealConsensusRound(consensusRound);
 
-        handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
-        final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
+        final boolean isBoundary = swirldStateManager.sealConsensusRound(consensusRound);
+        final ReservedSignedState reservedSignedState;
+        if (isBoundary || freezeRoundReceived) {
+            handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
+            final PlatformMerkleStateRoot immutableStateCons = swirldStateManager.getStateForSigning();
 
-        handlerMetrics.setPhase(CREATING_SIGNED_STATE);
-        final SignedState signedState = new SignedState(
-                platformContext.getConfiguration(),
-                CryptoStatic::verifySignature,
-                immutableStateCons,
-                "TransactionHandler.createSignedState()",
-                freezeRoundReceived,
-                true,
-                consensusRound.isPcesRound());
+            handlerMetrics.setPhase(CREATING_SIGNED_STATE);
+            final SignedState signedState = new SignedState(
+                    platformContext.getConfiguration(),
+                    CryptoStatic::verifySignature,
+                    immutableStateCons,
+                    "TransactionHandler.createSignedState()",
+                    freezeRoundReceived,
+                    true,
+                    consensusRound.isPcesRound());
 
-        final ReservedSignedState reservedSignedState = signedState.reserve("transaction handler output");
+            reservedSignedState = signedState.reserve("transaction handler output");
+        } else {
+            reservedSignedState = null;
+        }
+
         return new StateAndRound(reservedSignedState, consensusRound, systemTransactions);
     }
 }
