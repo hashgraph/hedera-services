@@ -1198,7 +1198,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public boolean flush() {
+    public void flush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1209,25 +1209,19 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
-        // Prepare the cache for flush. It may affect cache's estimated size
-        cache.prepareForFlush();
-        if (shouldBeFlushed()) {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
-            final long start = System.currentTimeMillis();
-            flush(cache, state, dataSource);
-            cache.release();
-            final long end = System.currentTimeMillis();
-            flushed.set(true);
-            flushLatch.countDown();
-            statistics.recordFlush(end - start);
-            logger.debug(
-                    VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
-            return true;
-        } else {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
-            cache.garbageCollect();
-            return false;
-        }
+        final long start = System.currentTimeMillis();
+        flush(cache, state, dataSource);
+        cache.release();
+        final long end = System.currentTimeMillis();
+        flushed.set(true);
+        flushLatch.countDown();
+        statistics.recordFlush(end - start);
+        logger.debug(
+                VIRTUAL_MERKLE_STATS.getMarker(),
+                "Flushed {} {} in {} ms",
+                state.getLabel(),
+                cache.getFastCopyVersion(),
+                end - start);
     }
 
     private void flush(VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource ds) {
@@ -1481,7 +1475,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, true);
         try {
             final VirtualNodeCache<K, V> cacheSnapshot = cache.snapshot();
-            cacheSnapshot.prepareForFlush();
             flush(cacheSnapshot, state, dataSourceCopy);
             dataSourceBuilder.snapshot(destination, dataSourceCopy);
         } finally {
@@ -1552,7 +1545,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // will NEVER be updated again.
             assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
             final VirtualNodeCache<K, V> snapshotCache = originalMap.cache.snapshot();
-            snapshotCache.prepareForFlush();
             flush(snapshotCache, originalMap.state, this.dataSource);
 
             // I assume an empty node cache can be used below rather than snapshotCache, since all the
@@ -1821,7 +1813,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         statistics.setSize(state.size());
 
         final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, key, value);
-        cache.putLeaf(newLeaf, true);
+        cache.putLeaf(newLeaf);
     }
 
     /**
