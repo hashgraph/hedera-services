@@ -19,6 +19,7 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.CRS_STATE_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
@@ -26,6 +27,7 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
@@ -62,6 +64,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
+    private final WritableSingletonState<CRSState> crs;
 
     public WritableHintsStoreImpl(@NonNull final WritableStates states) {
         super(states);
@@ -69,6 +72,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         this.nextConstruction = states.getSingleton(NEXT_HINT_CONSTRUCTION_KEY);
         this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
+        this.crs = states.getSingleton(CRS_STATE_KEY);
     }
 
     @NonNull
@@ -162,6 +166,10 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             return true;
         }
         return false;
+    }
+
+    public void setCrsState(@NonNull final CRSState state) {
+        crs.put(state);
     }
 
     /**

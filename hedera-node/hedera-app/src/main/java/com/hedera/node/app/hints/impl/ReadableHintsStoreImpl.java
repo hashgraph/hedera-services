@@ -18,11 +18,13 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.CRS_STATE_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
@@ -50,6 +52,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     private final ReadableSingletonState<HintsConstruction> nextConstruction;
     private final ReadableSingletonState<HintsConstruction> activeConstruction;
     private final ReadableKVState<PreprocessingVoteId, PreprocessingVote> votes;
+    private final ReadableSingletonState<CRSState> crs;
 
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
@@ -57,6 +60,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
         this.nextConstruction = states.getSingleton(NEXT_HINT_CONSTRUCTION_KEY);
         this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
+        this.crs = states.getSingleton(CRS_STATE_KEY);
     }
 
     @Override
@@ -123,6 +127,10 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
             }
         }
         return publications;
+    }
+
+    public @NonNull CRSState getCrsState() {
+        return requireNonNull(crs.get());
     }
 
     private boolean constructionIsFor(
