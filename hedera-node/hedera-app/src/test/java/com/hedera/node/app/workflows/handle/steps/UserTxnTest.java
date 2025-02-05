@@ -17,12 +17,14 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -193,6 +195,16 @@ class UserTxnTest {
         assertNotNull(subject.config());
 
         assertThat(subject.baseBuilder()).isInstanceOf(PairedStreamBuilder.class);
+    }
+
+    @Test
+    void returnsNullForStateSignatureTxn() {
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(BLOCKS_CONFIG, 1));
+        given(txnInfo.functionality()).willReturn(STATE_SIGNATURE_TRANSACTION);
+
+        final var factory = createUserTxnFactory();
+        assertNull(factory.createUserTxn(
+                state, creatorInfo, PLATFORM_TXN, CONSENSUS_NOW, GENESIS_TRANSACTION, stateSignatureTxnCallback));
     }
 
     @Test

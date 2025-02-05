@@ -191,7 +191,6 @@ public class UserTxnFactory {
                 creatorInfo, platformTxn, readableStoreFactory, stateSignatureTxnCallback);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         if (txnInfo.functionality() == STATE_SIGNATURE_TRANSACTION) {
-            stateSignatureTxnCallback.accept(preHandleResult.txInfo().txBody().stateSignatureTransactionOrThrow());
             return null;
         }
         final var tokenContext = new TokenContextImpl(
