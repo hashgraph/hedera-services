@@ -19,15 +19,14 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.CRS_STATE_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
+import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -180,34 +179,37 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public void putInitialCrs(final Bytes initialCrs, final long firstNodeId, final Timestamp nextContributionTimeEnd) {
+    public void putInitialCrs(
+            @NonNull final Bytes initialCrs, final long firstNodeId, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = CRSState.newBuilder()
                 .crs(initialCrs)
                 .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                 .nextContributingNodeId(firstNodeId)
-                .contributionEndTime(nextContributionTimeEnd)
+                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
         setCRSState(crsState);
     }
 
     @Override
     public void updateCrs(
-            final Bytes updatedCrs, final long nextContributingNodeId, final Timestamp nextContributionTimeEnd) {
+            @NonNull final Bytes updatedCrs,
+            final long nextContributingNodeId,
+            @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = requireNonNull(this.crsState.get());
         final var newCrsState = crsState.copyBuilder()
                 .crs(updatedCrs)
                 .nextContributingNodeId(nextContributingNodeId)
-                .contributionEndTime(nextContributionTimeEnd)
+                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
         setCRSState(newCrsState);
     }
 
     @Override
-    public void moveToNextNodeContribution(final long nextNodeIdFromRoster, final Timestamp nextContributionTimeEnd) {
+    public void moveToNextNode(final long nextNodeIdFromRoster, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = requireNonNull(this.crsState.get());
         final var newCrsState = crsState.copyBuilder()
                 .nextContributingNodeId(nextNodeIdFromRoster)
-                .contributionEndTime(nextContributionTimeEnd)
+                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
         setCRSState(newCrsState);
     }

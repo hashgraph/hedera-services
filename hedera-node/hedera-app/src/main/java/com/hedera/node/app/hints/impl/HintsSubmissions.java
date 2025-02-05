@@ -77,18 +77,6 @@ public class HintsSubmissions extends TssSubmissions {
      * @param crs the updated CRS
      * @return a future that completes when the update has been submitted
      */
-    public CompletableFuture<Void> submitInitialCRS(@NonNull final Bytes crs) {
-        requireNonNull(crs);
-        final var op =
-                CrsPublicationTransactionBody.newBuilder().initialCrs(crs).build();
-        return submit(b -> b.crsPublication(op), onFailure);
-    }
-
-    /**
-     * Attempts to submit a CRS update to the network.
-     * @param crs the updated CRS
-     * @return a future that completes when the update has been submitted
-     */
     public CompletableFuture<Void> submitUpdateCRS(@NonNull final CRSUpdate crs) {
         requireNonNull(crs);
         final var op = CrsPublicationTransactionBody.newBuilder().crsUpdate(crs).build();

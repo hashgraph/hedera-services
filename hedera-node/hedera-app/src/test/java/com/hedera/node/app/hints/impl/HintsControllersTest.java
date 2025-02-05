@@ -25,6 +25,7 @@ import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterTransitionWeights;
 import com.hedera.node.app.tss.TssKeyPair;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.util.concurrent.Executor;
@@ -79,8 +80,15 @@ class HintsControllersTest {
 
     @BeforeEach
     void setUp() {
-        subject =
-                new HintsControllers(executor, keyAccessor, library, codec, submissions, context, selfNodeInfoSupplier);
+        subject = new HintsControllers(
+                executor,
+                keyAccessor,
+                library,
+                codec,
+                submissions,
+                context,
+                selfNodeInfoSupplier,
+                HederaTestConfigBuilder::createConfig);
     }
 
     @Test

@@ -16,11 +16,8 @@
 
 package com.hedera.node.app.hints.handlers;
 
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
-import static com.hedera.node.app.hints.impl.HintsControllerImpl.CONTRIBUTION_DURATION_PER_NODE_SECS;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -31,8 +28,10 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TssConfig;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,13 +61,16 @@ public class CrsPublicationHandler implements TransactionHandler {
         final var op = context.body().crsPublicationOrThrow();
         final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
+        final var crsUpdateContributionTime = context.configuration()
+                .getConfigData(TssConfig.class)
+                .crsUpdateContributionTime()
+                .toSeconds();
         final var activeRosterNodeIds = requireNonNull(rosterStore.getActiveRoster()).rosterEntries().stream()
                 .map(RosterEntry::nodeId)
                 .sorted()
                 .toList();
 
-        final var nextContributionTimeEnd =
-                asTimestamp(context.consensusNow().plusSeconds(CONTRIBUTION_DURATION_PER_NODE_SECS));
+        final var nextContributionTimeEnd = context.consensusNow().plusSeconds(crsUpdateContributionTime);
         final var selfNodeId = context.networkInfo().selfNodeInfo().nodeId();
         if (isFirstInitialCRS(op, hintsStore)) {
             putInitialCrs(activeRosterNodeIds, hintsStore, op, nextContributionTimeEnd);
@@ -82,7 +84,7 @@ public class CrsPublicationHandler implements TransactionHandler {
             @NonNull final List<Long> activeRosterNodeIds,
             @NonNull final WritableHintsStore hintsStore,
             @NonNull final CrsPublicationTransactionBody op,
-            @NonNull final Timestamp nextContributionTimeEnd) {
+            @NonNull final Instant nextContributionTimeEnd) {
         final var nextNodeId = activeRosterNodeIds.stream()
                 .filter(id -> id > selfNodeId)
                 .findFirst()
@@ -99,7 +101,7 @@ public class CrsPublicationHandler implements TransactionHandler {
             @NonNull final List<Long> activeRosterNodeIds,
             @NonNull final WritableHintsStore hintsStore,
             @NonNull final CrsPublicationTransactionBody op,
-            @NonNull final Timestamp nextContributionTimeEnd) {
+            @NonNull final Instant nextContributionTimeEnd) {
         final var firstNodeId = activeRosterNodeIds.stream().findFirst().orElse(-1L);
         if (op.initialCrsOrThrow().length() > 0) {
             hintsStore.putInitialCrs(op.initialCrsOrThrow(), firstNodeId, nextContributionTimeEnd);

@@ -17,7 +17,6 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRosterNodeCount;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
@@ -34,7 +33,9 @@ import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.RosterTransitionWeights;
 import com.hedera.node.app.tss.TssKeyPair;
+import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SecureRandom;
@@ -49,6 +50,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 /**
@@ -56,7 +58,6 @@ import java.util.stream.IntStream;
  */
 public class HintsControllerImpl implements HintsController {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    public static final int CONTRIBUTION_DURATION_PER_NODE_SECS = 10;
 
     private final int numParties;
     private final long selfId;
@@ -92,8 +93,7 @@ public class HintsControllerImpl implements HintsController {
     @Nullable
     private CompletableFuture<Void> crsPublicationFuture;
 
-    @Nullable
-    private CompletableFuture<Void> updatedCrsPublicationFuture;
+    private final Supplier<Configuration> configurationSupplier;
 
     /**
      * A party's validated hinTS key, including the key itself and whether it is valid.
@@ -115,7 +115,8 @@ public class HintsControllerImpl implements HintsController {
             @NonNull final Map<Long, PreprocessingVote> votes,
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final HintsSubmissions submissions,
-            @NonNull final HintsContext context) {
+            @NonNull final HintsContext context,
+            @NonNull final Supplier<Configuration> configuration) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);
@@ -127,6 +128,7 @@ public class HintsControllerImpl implements HintsController {
         this.codec = requireNonNull(codec);
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
+        this.configurationSupplier = requireNonNull(configuration);
         // Ensure we are up-to-date on any published hinTS keys we might need for this construction
         if (!construction.hasHintsScheme()) {
             final var cutoffTime = construction.hasPreprocessingStartTime()
@@ -192,7 +194,7 @@ public class HintsControllerImpl implements HintsController {
      * an updated CRS and submit it</li>
      * </ul>
      *
-     * @param now the current consensus time
+     * @param now        the current consensus time
      * @param hintsStore the writable hints store
      */
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
@@ -202,18 +204,19 @@ public class HintsControllerImpl implements HintsController {
                 // Do nothing
             }
             case WAITING_FOR_INITIAL_CRS -> {
-                if (crsPublicationFuture == null) {
-                    final var initialCrs =
-                            library.newCrs(weights.sourceNodeWeights().size());
-                    crsPublicationFuture = submissions.submitInitialCRS(initialCrs);
-                }
+                final var tssConfig = configurationSupplier.get().getConfigData(TssConfig.class);
+                final var initialCrs = library.newCrs(tssConfig.initialCrsParties());
+                hintsStore.putInitialCrs(
+                        initialCrs,
+                        selfId,
+                        now.plusSeconds(tssConfig.crsUpdateContributionTime().toSeconds()));
             }
             case GATHERING_CONTRIBUTIONS -> {
                 if (allNodesContributed(crsState)) {
                     final var updatedState =
                             crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
                     hintsStore.setCRSState(updatedState);
-                } else if (crsState.nextContributingNodeId() == selfId && updatedCrsPublicationFuture == null) {
+                } else if (crsState.nextContributingNodeId() == selfId && crsPublicationFuture == null) {
                     submitUpdatedCRS(hintsStore);
                 } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
                     moveToNextNode(now, hintsStore, crsState);
@@ -228,19 +231,25 @@ public class HintsControllerImpl implements HintsController {
 
     private void moveToNextNode(
             final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore, final CRSState crsState) {
+        final var tssConfig = configurationSupplier.get().getConfigData(TssConfig.class);
         final var nextNodeId = nextNodeId(weights.sourceNodeIds(), crsState.nextContributingNodeId());
-        hintsStore.moveToNextNodeContribution(
-                nextNodeId, asTimestamp(now.plusSeconds(CONTRIBUTION_DURATION_PER_NODE_SECS)));
+        hintsStore.moveToNextNode(
+                nextNodeId,
+                now.plusSeconds(tssConfig.crsUpdateContributionTime().toSeconds()));
     }
 
     private void submitUpdatedCRS(final @NonNull WritableHintsStore hintsStore) {
         final var oldCRS = hintsStore.getCrsState().crs();
-        final var updatedCRS = library.updateCrs(oldCRS, generateEntropy());
-        final var newCRS = codec.decodeCrsUpdate(updatedCRS);
-        final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
-        if (isValidCrs) {
-            updatedCrsPublicationFuture = submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
-        }
+        crsPublicationFuture = CompletableFuture.runAsync(
+                () -> {
+                    final var updatedCRS = library.updateCrs(oldCRS, generateEntropy());
+                    final var newCRS = codec.decodeCrsUpdate(updatedCRS);
+                    final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
+                    if (isValidCrs) {
+                        submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
+                    }
+                },
+                executor);
     }
 
     /**

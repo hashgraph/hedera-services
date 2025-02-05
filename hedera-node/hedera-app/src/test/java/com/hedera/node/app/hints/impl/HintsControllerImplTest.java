@@ -37,6 +37,7 @@ import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.RosterTransitionWeights;
 import com.hedera.node.app.tss.TssKeyPair;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -357,7 +358,8 @@ class HintsControllerImplTest {
                 Map.of(),
                 publications,
                 submissions,
-                context);
+                context,
+                HederaTestConfigBuilder::createConfig);
     }
 
     private void runScheduledTasks() {

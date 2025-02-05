@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.hints;
 
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -101,7 +100,8 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @param firstContributingNodeId the ID of the first contributing node for updating CRS
      * @param nextContributionTimeEnd the end of the time window for the next contribution
      */
-    void putInitialCrs(Bytes initialCrs, long firstContributingNodeId, Timestamp nextContributionTimeEnd);
+    void putInitialCrs(
+            @NonNull Bytes initialCrs, long firstContributingNodeId, @NonNull Instant nextContributionTimeEnd);
 
     /**
      * Updates the CRS for the network. This is called after the CRS to be updated is validated.
@@ -110,7 +110,14 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @param nextContributingNodeId  the ID of the next contributing node for updating CRS
      * @param nextContributionTimeEnd the end of the time window for the next contribution
      */
-    void updateCrs(Bytes updatedCrs, long nextContributingNodeId, Timestamp nextContributionTimeEnd);
+    void updateCrs(@NonNull Bytes updatedCrs, long nextContributingNodeId, @NonNull Instant nextContributionTimeEnd);
 
-    void moveToNextNodeContribution(long nextNodeIdFromRoster, Timestamp timestamp);
+    /**
+     * Moves the CRS contribution to be done by the next node in the roster. This is called when the
+     * current node did not contribute the CRS in time.
+     *
+     * @param nextNodeIdFromRoster    the ID of the next node in the roster
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void moveToNextNode(long nextNodeIdFromRoster, @NonNull Instant nextContributionTimeEnd);
 }

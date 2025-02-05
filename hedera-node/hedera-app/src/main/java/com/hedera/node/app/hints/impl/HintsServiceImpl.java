@@ -25,6 +25,7 @@ import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
+import com.hedera.node.app.hints.schemas.V060HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
@@ -103,6 +104,7 @@ public class HintsServiceImpl implements HintsService {
         final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
         if (tssConfig.hintsEnabled()) {
             registry.register(new V059HintsSchema(component.signingContext()));
+            registry.register(new V060HintsSchema(component.signingContext()));
         }
     }
 

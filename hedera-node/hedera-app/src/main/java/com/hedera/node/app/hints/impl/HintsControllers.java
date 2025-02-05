@@ -24,6 +24,7 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -51,6 +52,7 @@ public class HintsControllers {
     private final HintsSubmissions submissions;
     private final HintsContext context;
     private final Supplier<NodeInfo> selfNodeInfoSupplier;
+    private Supplier<Configuration> configurationSupplier;
 
     /**
      * May be null if the node has just started, or if the network has completed the most up-to-date
@@ -67,7 +69,8 @@ public class HintsControllers {
             @NonNull final HintsLibraryCodec codec,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext context,
-            @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier) {
+            @NonNull final Supplier<NodeInfo> selfNodeInfoSupplier,
+            @NonNull final Supplier<Configuration> configurationSupplier) {
         this.executor = requireNonNull(executor);
         this.keyAccessor = requireNonNull(keyAccessor);
         this.codec = requireNonNull(codec);
@@ -75,6 +78,7 @@ public class HintsControllers {
         this.library = requireNonNull(library);
         this.submissions = requireNonNull(submissions);
         this.selfNodeInfoSupplier = requireNonNull(selfNodeInfoSupplier);
+        this.configurationSupplier = requireNonNull(configurationSupplier);
     }
 
     /**
@@ -164,7 +168,8 @@ public class HintsControllers {
                     votes,
                     publications,
                     submissions,
-                    context);
+                    context,
+                    configurationSupplier);
         }
     }
 

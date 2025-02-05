@@ -19,7 +19,6 @@ package com.hedera.node.app.hints.schemas;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
@@ -60,7 +59,6 @@ public class V059HintsSchema extends Schema {
     public static final String ACTIVE_HINT_CONSTRUCTION_KEY = "ACTIVE_HINT_CONSTRUCTION";
     public static final String NEXT_HINT_CONSTRUCTION_KEY = "NEXT_HINT_CONSTRUCTION";
     public static final String PREPROCESSING_VOTES_KEY = "PREPROCESSING_VOTES";
-    public static final String CRS_STATE_KEY = "CRS_STATE";
 
     private final HintsContext signingContext;
 
@@ -79,8 +77,7 @@ public class V059HintsSchema extends Schema {
                         PREPROCESSING_VOTES_KEY,
                         PreprocessingVoteId.PROTOBUF,
                         PreprocessingVote.PROTOBUF,
-                        MAX_PREPROCESSING_VOTES),
-                StateDefinition.singleton(CRS_STATE_KEY, CRSState.PROTOBUF));
+                        MAX_PREPROCESSING_VOTES));
     }
 
     @Override
