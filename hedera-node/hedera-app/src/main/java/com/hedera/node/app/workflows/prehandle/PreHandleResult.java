@@ -73,16 +73,6 @@ public record PreHandleResult(
         long configVersion) {
 
     /**
-     * Returns the {@link TransactionInfo} of this result, assuming it could be parsed.
-     *
-     * @return the {@link TransactionInfo} of this result
-     * @throws NullPointerException if the transaction was not parseable
-     */
-    public TransactionInfo txnInfoOrThrow() {
-        return requireNonNull(txInfo);
-    }
-
-    /**
      * Returns whether this result's verification results are valid for the given context. This is <b>only</b>
      * true if all keys linked to the transaction are exactly the same as those determined to be necessary
      * in the given context.
