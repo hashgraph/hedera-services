@@ -70,6 +70,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -115,7 +116,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final TransactionBody txn = context.body();
         final ConsensusSubmitMessageTransactionBody op = txn.consensusSubmitMessageOrThrow();
         // Validate the duplication of payer custom fee limits
         validateDuplicationFeeLimits(txn.maxCustomFees());

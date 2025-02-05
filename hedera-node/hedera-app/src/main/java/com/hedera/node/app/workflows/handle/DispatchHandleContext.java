@@ -69,6 +69,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -271,9 +272,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     public TransactionKeys allKeysForTransaction(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        dispatcher.dispatchPureChecks(nestedTxn);
+        final var nestedPureChecksContext =
+                new PureChecksContextImpl(nestedTxn, configuration(), dispatcher, transactionChecker);
+        dispatcher.dispatchPureChecks(nestedPureChecksContext);
         final var nestedContext = new PreHandleContextImpl(
-                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher);
+                storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher, transactionChecker);
         try {
             dispatcher.dispatchPreHandle(nestedContext);
         } catch (final PreCheckException ignored) {
