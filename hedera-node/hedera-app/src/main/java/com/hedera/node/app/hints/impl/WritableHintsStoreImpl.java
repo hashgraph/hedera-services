@@ -150,7 +150,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
+    public void updateForHandoff(@NonNull final ActiveRosters activeRosters) {
         if (activeRosters.phase() != HANDOFF) {
             throw new IllegalArgumentException("Not in handoff phase");
         }
@@ -163,9 +163,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                     newActiveSize, requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
-            return true;
         }
-        return false;
     }
 
     public void setCrsState(@NonNull final CRSState state) {

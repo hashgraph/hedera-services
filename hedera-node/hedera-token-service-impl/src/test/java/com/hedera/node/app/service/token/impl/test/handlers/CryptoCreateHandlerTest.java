@@ -245,11 +245,12 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withValue("hedera.realm", realm)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
+        given(pureChecksContext.body()).willReturn(txn);
         setupExpiryValidator();
 
         // newly created account is not modified.
         assertFalse(writableStore.modifiedAccountsInState().contains(accountIDWithShardAndRealm(1000L, shard, realm)));
-        assertDoesNotThrow(() -> subject.pureChecks(txn));
+        assertDoesNotThrow(() -> subject.pureChecks(pureChecksContext));
         subject.handle(handleContext);
 
         // newly created account and payer account are modified
