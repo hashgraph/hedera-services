@@ -1725,5 +1725,10 @@ enum ResponseCodeEnum {
     /**
     * The list of batch transactions contains null values
     */
-  BATCH_LIST_CONTAINS_NULL_VALUES = 390;
+    BATCH_LIST_CONTAINS_NULL_VALUES = 390;
+
+    /**
+     * The inner transaction failed
+     */
+    INNER_TRANSACTION_FAILED = 391;
 }
