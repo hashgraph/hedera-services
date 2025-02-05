@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.callTypeOf;
@@ -39,6 +41,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.spi.workflows.HandleException;
 import java.nio.ByteBuffer;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -138,6 +141,18 @@ class HtsSystemContractTest {
     void testComputeFullyWithEmptyBytes() {
         final var expected = haltResult(ExceptionalHaltReason.INVALID_OPERATION, frame.getRemainingGas());
         final var result = subject.computeFully(Bytes.EMPTY, frame);
+        assertSamePrecompileResult(expected, result);
+    }
+
+    @Test
+    void testComputeFullyWithHandleExceptionFromSystemContract() {
+        givenValidCallAttempt();
+        frameUtils
+                .when(() -> callTypeOf(frame, EntityType.TOKEN))
+                .thenReturn(FrameUtils.CallType.DIRECT_OR_PROXY_REDIRECT);
+        given(attempt.asExecutableCall()).willThrow(new HandleException(CONTRACT_REVERT_EXECUTED));
+        final var expected = revertResult(CONTRACT_REVERT_EXECUTED, frame.getRemainingGas());
+        final var result = subject.computeFully(validInput, frame);
         assertSamePrecompileResult(expected, result);
     }
 
