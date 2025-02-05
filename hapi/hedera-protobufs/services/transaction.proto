@@ -31,6 +31,7 @@ package proto;
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 import "basic_types.proto";
@@ -126,7 +127,6 @@ import "auxiliary/history/history_proof_vote.proto";
  * The four deprecated fields will be removed and reserved in a future release.
  */
 message Transaction {
-    // <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
     /**
      * Replaced with `signedTransactionBytes`.<br/>
      * The body of the transaction.
@@ -176,7 +176,7 @@ message Transaction {
  */
 message TransactionBody {
     // <<<pbj.java_package = "com.hedera.hapi.node.transaction">>> This comment is special code for setting PBJ Compiler java package
-    reserved 30, 61, 62, 63, 64;
+  reserved 30, 61, 62, 63, 64, 66, 67, 68;
 
     reserved "tssMessage", "tssVote", "tssShareSignature", "tssEncryptionKey";
 
@@ -250,13 +250,15 @@ message TransactionBody {
      * (default 100) bytes when encoded as UTF-8.
      */
     string memo = 6;
+
     /**
-    * The <b>entire public key</b> of the trusted batch assembler.
-    *
-    * Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
-    */
-    Key batchKey = 73;
-  // The fields here are ordered in strictly ascending field ordinal
+     * The <b>entire public key</b> of the trusted batch assembler.
+     *
+     * Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
+     */
+    Key batchKey = 72;
+
+    // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
     oneof data {
         /**
@@ -653,7 +655,7 @@ message TransactionBody {
          */
         com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
 
-        AtomicBatchTransactionBody atomicBatch = 72;
+        AtomicBatchTransactionBody atomicBatch = 73;
     }
 
     /**
@@ -665,7 +667,6 @@ message TransactionBody {
      */
     repeated CustomFeeLimit max_custom_fees = 1001;
 }
-
 
 /**
  * Create an atomic batch.

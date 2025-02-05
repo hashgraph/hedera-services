@@ -27,9 +27,17 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.hapi.node.util.AtomicBatchTransactionBody;
 import com.hedera.node.app.service.util.records.AtomicBatchStreamBuilder;
 import com.hedera.node.app.spi.workflows.*;
@@ -62,46 +70,8 @@ public class AtomicBatchHandler implements TransactionHandler {
      * @param context the pure checks context
      */
     @Override
-    public void pureChecks(@NonNull PureChecksContext context) throws PreCheckException {
-        requireNonNull(context);
-        final TransactionBody txn = context.body();
-        requireNonNull(txn);
-        final AtomicBatchTransactionBody transactionBody = txn.atomicBatchOrThrow();
-
-        final List<Transaction> transactions = transactionBody.transactions();
-        requireNonNull(transactions);
-
-        if (transactions.isEmpty()) {
-            throw new PreCheckException(BATCH_LIST_EMPTY);
-        }
-
-        // verify that the atomic batch transaction body supposed or not supposed to have a btach key
-        if(txn.hasBatchKey()){
-            throw new PreCheckException(BATCH_LIST_EMPTY);
-        }
-
-        Set<Transaction> set = new HashSet<>();
-        for( final Transaction transaction : transactions) {
-            if (transaction == null) {
-                throw new PreCheckException(BATCH_LIST_CONTAINS_NULL_VALUES);
-            }
-
-            if (!set.add(transaction))
-                throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
-
-            final var innerTrxBody = context.bodyFromTransaction(transaction);
-
-            if(!innerTrxBody.hasBatchKey()){
-                throw new PreCheckException(INVALID_TRANSACTION_BODY);
-            }
-
-            if(!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)){
-                throw new PreCheckException(INVALID_TRANSACTION_BODY);
-            }
-
-            context.executeInnerPureCheck(innerTrxBody);
-
-        }
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        // TODO
     }
 
     /**
@@ -150,5 +120,15 @@ public class AtomicBatchHandler implements TransactionHandler {
                 context.dispatch(dispatchOptions);
             }
         }
+    }
+
+    @Override
+    public @NonNull Fees calculateFees(@NonNull final FeeContext feeContext) {
+        requireNonNull(feeContext);
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        calculator.resetUsage();
+        // adjust the price based on the number of signatures
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        return calculator.calculate();
     }
 }

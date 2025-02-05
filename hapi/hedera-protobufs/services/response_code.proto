@@ -1715,15 +1715,15 @@ enum ResponseCodeEnum {
     /**
     * The list of batch transactions is empty
     */
-  BATCH_LIST_EMPTY = 388;
+    BATCH_LIST_EMPTY = 388;
 
     /**
     * The list of batch transactions contains duplicated transactions
     */
-  BATCH_LIST_CONTAINS_DUPLICATES = 389;
+    BATCH_LIST_CONTAINS_DUPLICATES = 389;
 
     /**
     * The list of batch transactions contains null values
     */
-  BATCH_LIST_CONTAINS_NULL_VALUES = 390;
+    BATCH_LIST_CONTAINS_NULL_VALUES = 390;
 }
