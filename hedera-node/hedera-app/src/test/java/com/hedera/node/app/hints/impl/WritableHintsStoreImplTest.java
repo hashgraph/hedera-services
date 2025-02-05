@@ -298,15 +298,15 @@ class WritableHintsStoreImplTest {
     }
 
     @Test
-    void purgingStateAfterExactlyHandoffIsFalseIfNothingHappened() {
+    void purgingStateThrowsExceptAfterExactlyHandoff() {
         given(activeRosters.phase()).willReturn(TRANSITION);
-        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        assertThrows(IllegalArgumentException.class, () -> subject.updateForHandoff(activeRosters));
         given(activeRosters.phase()).willReturn(BOOTSTRAP);
-        assertThrows(IllegalArgumentException.class, () -> subject.purgeStateAfterHandoff(activeRosters));
+        assertThrows(IllegalArgumentException.class, () -> subject.updateForHandoff(activeRosters));
         given(activeRosters.phase()).willReturn(HANDOFF);
         given(activeRosters.currentRosterHash()).willReturn(Bytes.wrap("NA"));
 
-        assertFalse(subject.purgeStateAfterHandoff(activeRosters));
+        assertDoesNotThrow(() -> subject.updateForHandoff(activeRosters));
     }
 
     @Test
@@ -333,7 +333,7 @@ class WritableHintsStoreImplTest {
         final var publicationsBefore = subject.getHintsKeyPublications(Set.of(0L), partySizeForRoster(A_ROSTER));
         assertEquals(1, publicationsBefore.size());
 
-        subject.purgeStateAfterHandoff(activeRosters);
+        subject.updateForHandoff(activeRosters);
 
         assertSame(nextConstruction, constructionNow(ACTIVE_HINT_CONSTRUCTION_KEY));
 

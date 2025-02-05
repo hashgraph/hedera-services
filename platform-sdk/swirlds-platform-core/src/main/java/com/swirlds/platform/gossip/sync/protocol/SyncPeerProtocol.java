@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.PeerProtocol;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -46,7 +46,7 @@ import org.hiero.consensus.gossip.FallenBehindManager;
  * <p>
  * This object will be instantiated once per peer, and is bidirectional
  */
-public class SyncProtocol implements Protocol {
+public class SyncPeerProtocol implements PeerProtocol {
     /**
      * The id of the peer being synced with in this protocol
      */
@@ -112,7 +112,7 @@ public class SyncProtocol implements Protocol {
      * @param syncMetrics            metrics tracking syncing
      * @param platformStatusSupplier provides the current platform status
      */
-    public SyncProtocol(
+    public SyncPeerProtocol(
             @NonNull final PlatformContext platformContext,
             @NonNull final NodeId peerId,
             @NonNull final ShadowgraphSynchronizer synchronizer,

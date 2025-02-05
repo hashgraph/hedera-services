@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,11 @@
 package com.swirlds.platform.network.protocol;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.heartbeats.HeartbeatProtocol;
+import com.swirlds.platform.gossip.modular.SyncGossipSharedProtocolState;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.heartbeats.HeartbeatPeerProtocol;
 import com.swirlds.platform.network.NetworkMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -27,7 +30,7 @@ import java.util.Objects;
 /**
  * Implementation of a factory for heartbeat protocol
  */
-public class HeartbeatProtocolFactory implements ProtocolFactory {
+public class HeartbeatProtocol implements Protocol {
 
     /**
      * The period at which the heartbeat protocol should be executed
@@ -44,7 +47,7 @@ public class HeartbeatProtocolFactory implements ProtocolFactory {
      */
     private final Time time;
 
-    public HeartbeatProtocolFactory(
+    public HeartbeatProtocol(
             @NonNull final Duration heartbeatPeriod,
             @NonNull final NetworkMetrics networkMetrics,
             @NonNull final Time time) {
@@ -55,11 +58,25 @@ public class HeartbeatProtocolFactory implements ProtocolFactory {
     }
 
     /**
+     * Utility method for creating HeartbeatProtocol from shared state, while staying compatible with pre-refactor code
+     * @param platformContext   the platform context
+     * @param sharedState       temporary class to share state between various protocols in modularized gossip, to be removed
+     * @return constructed HeartbeatProtocol
+     */
+    public static HeartbeatProtocol create(PlatformContext platformContext, SyncGossipSharedProtocolState sharedState) {
+        var syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        return new HeartbeatProtocol(
+                Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()),
+                sharedState.networkMetrics(),
+                platformContext.getTime());
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     @NonNull
-    public HeartbeatProtocol build(@NonNull final NodeId peerId) {
-        return new HeartbeatProtocol(Objects.requireNonNull(peerId), heartbeatPeriod, networkMetrics, time);
+    public HeartbeatPeerProtocol createPeerInstance(@NonNull final NodeId peerId) {
+        return new HeartbeatPeerProtocol(Objects.requireNonNull(peerId), heartbeatPeriod, networkMetrics, time);
     }
 }
