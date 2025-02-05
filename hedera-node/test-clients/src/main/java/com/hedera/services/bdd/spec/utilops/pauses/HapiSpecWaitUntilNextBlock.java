@@ -17,7 +17,11 @@
 package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_DIR;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -27,6 +31,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +43,14 @@ public class HapiSpecWaitUntilNextBlock extends UtilOp {
     private static final String COMPRESSED_BLOCK_FILE_EXTENSION = BLOCK_FILE_EXTENSION + ".gz";
     private static final String MARKER_FILE_EXTENSION = ".mf";
     private static final Duration POLL_INTERVAL = Duration.ofMillis(100);
+    private static final Duration BACKGROUND_TRAFFIC_INTERVAL = Duration.ofMillis(1000);
+
+    private boolean backgroundTraffic;
+
+    public HapiSpecWaitUntilNextBlock withBackgroundTraffic(final boolean backgroundTraffic) {
+        this.backgroundTraffic = backgroundTraffic;
+        return this;
+    }
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
@@ -50,12 +64,43 @@ public class HapiSpecWaitUntilNextBlock extends UtilOp {
 
         log.info("Waiting for block {} to appear (current block is {})", targetBlock, currentBlock);
 
-        while (true) {
-            if (isBlockComplete(blockDir, targetBlock)) {
-                log.info("Block {} has been created and completed", targetBlock);
-                return false;
+        // Start background traffic if configured
+        final var stopTraffic = new AtomicBoolean(false);
+        CompletableFuture<?> trafficFuture = null;
+        if (backgroundTraffic) {
+            trafficFuture = CompletableFuture.runAsync(() -> {
+                while (!stopTraffic.get()) {
+                    try {
+                        // Execute the background traffic operation
+                        allRunFor(
+                                spec,
+                                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+                                        .deferStatusResolution()
+                                        .noLogging()
+                                        .hasAnyStatusAtAll());
+                        // Advance consensus time after successful execution
+                        spec.sleepConsensusTime(BACKGROUND_TRAFFIC_INTERVAL);
+                    } catch (Exception e) {
+                        // Log but continue trying
+                        log.info("Background traffic iteration failed", e);
+                    }
+                }
+            });
+        }
+
+        try {
+            while (true) {
+                if (isBlockComplete(blockDir, targetBlock)) {
+                    log.info("Block {} has been created and completed", targetBlock);
+                    return false;
+                }
+                spec.sleepConsensusTime(POLL_INTERVAL);
             }
-            doIfNotInterrupted(() -> Thread.sleep(POLL_INTERVAL.toMillis()));
+        } finally {
+            if (trafficFuture != null) {
+                stopTraffic.set(true);
+                trafficFuture.join();
+            }
         }
     }
 
