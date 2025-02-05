@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,8 @@ import java.util.List;
  * <p>
  * This class presents a map-like interface for getting and putting values. These values are stored
  * in the leaf nodes of this node's sub-tree. The map-like methods {@link #get(VirtualKey)},
- * {@link #put(VirtualKey, VirtualValue)}, {@link #replace(VirtualKey, VirtualValue)}, and {@link #remove(VirtualKey)}
- * can be used as a fast and convenient way to read, add, modify, or delete the corresponding leaf nodes and
+ * {@link #put(VirtualKey, VirtualValue)}, and {@link #remove(VirtualKey)} can be used as a
+ * fast and convenient way to read, add, modify, or delete the corresponding leaf nodes and
  * internal nodes. Indeed, you <strong>MUST NOT</strong> modify the tree structure directly, only
  * through the map-like methods.
  *
@@ -489,24 +489,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     public void put(final K key, final V value) {
         root.put(key, value);
-    }
-
-    /**
-     * Replace the given key with the given value. Only has an effect if the key already exists
-     * in the map. Returns the value on success. Throws an IllegalStateException if the key doesn't
-     * exist in the map.
-     *
-     * @param key
-     * 		The key. Cannot be null.
-     * @param value
-     * 		The value. May be null.
-     * @return the previous value associated with {@code key}, or {@code null} if there was no mapping for {@code key}.
-     * 		(A {@code null} return can also indicate that the map previously associated {@code null} with {@code key}.)
-     * @throws IllegalStateException
-     * 		if an attempt is made to replace a value that didn't already exist
-     */
-    public V replace(final K key, final V value) {
-        return root.replace(key, value);
     }
 
     /**

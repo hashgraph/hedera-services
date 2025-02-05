@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,7 +197,7 @@ class VirtualMapTests extends VirtualTestBase {
 
         // Perform some combination of add, remove, replace and leaving alone
         final VirtualMap<TestKey, TestValue> copy = fcm.copy();
-        copy.replace(A_KEY, AARDVARK);
+        copy.put(A_KEY, AARDVARK);
         copy.remove(C_KEY);
         copy.put(D_KEY, DOG);
         copy.put(E_KEY, EMU);
@@ -237,8 +237,8 @@ class VirtualMapTests extends VirtualTestBase {
         assertEquals(3, fcm.size(), "Unexpected size");
 
         // replace a couple elements (out of order even!)
-        fcm.replace(B_KEY, BEAR);
-        fcm.replace(A_KEY, AARDVARK);
+        fcm.put(B_KEY, BEAR);
+        fcm.put(A_KEY, AARDVARK);
         assertEquals(3, fcm.size(), "Unexpected size");
 
         // Loop and add a million items and make sure the size is matching
@@ -351,27 +351,6 @@ class VirtualMapTests extends VirtualTestBase {
     }
 
     @Test
-    @DisplayName("Replace of non-existent key throws an exception")
-    void replaceOfNonExistentKey() {
-        final VirtualMap<TestKey, TestValue> fcm = createMap();
-        assertThrows(IllegalStateException.class, () -> fcm.replace(A_KEY, APPLE), "Expected ISE");
-
-        fcm.put(A_KEY, APPLE);
-        fcm.put(B_KEY, BANANA);
-        assertThrows(IllegalStateException.class, () -> fcm.replace(C_KEY, CUTTLEFISH), "Expected ISE");
-        fcm.release();
-    }
-
-    @Test
-    @DisplayName("Replace throws exception on null key")
-    void replaceThrowsExceptionOnNullKey() {
-        final VirtualMap<TestKey, TestValue> fcm = createMap();
-        assertThrows(NullPointerException.class, () -> fcm.replace(null, BANANA), "Null keys are not allowed");
-
-        fcm.release();
-    }
-
-    @Test
     @DisplayName("Replace many and get many")
     void replaceManyAndGetMany() {
         final VirtualMap<TestKey, TestValue> original = createMap();
@@ -381,7 +360,8 @@ class VirtualMapTests extends VirtualTestBase {
 
         final VirtualMap<TestKey, TestValue> fcm = original.copy();
         for (int i = 1000; i < 2000; i++) {
-            fcm.replace(new TestKey((i - 1000)), new TestValue("value" + i));
+            assertTrue(fcm.containsKey(new TestKey(i - 1000)), "Key " + (i - 1000) + " is missing");
+            fcm.put(new TestKey((i - 1000)), new TestValue("value" + i));
         }
 
         for (int i = 1000; i < 2000; i++) {
@@ -689,7 +669,7 @@ class VirtualMapTests extends VirtualTestBase {
         fcm = copyAndRelease(fcm);
 
         // Both of these are on different parents, but the same grandparent.
-        fcm.replace(D_KEY, DOG);
+        fcm.put(D_KEY, DOG);
         fcm.put(B_KEY, BEAR);
 
         // This hash iterator should visit MapState, B, <internal>, D, <internal>, <internal (root)>, fcm
