@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.simulatePostUpgradeTransaction;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -151,7 +152,9 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                cryptoCreate("secondUser").via("addressBookExport"));
+                cryptoCreate("secondUser").via("addressBookExport"),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -175,7 +178,9 @@ public class SystemFileExportsTest {
                 waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
-                cryptoCreate("secondUser").via("addressBookExport"));
+                cryptoCreate("secondUser").via("addressBookExport"),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -247,7 +252,9 @@ public class SystemFileExportsTest {
                                         .fee(ONE_HBAR))
                         .payingWith("civilian")
                         .via("contractCall"),
-                validateChargedUsdWithin("contractCall", 0.1, 3.0));
+                validateChargedUsdWithin("contractCall", 0.1, 3.0),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -280,7 +287,9 @@ public class SystemFileExportsTest {
                         .deferStatusResolution(),
                 mintToken("nft", List.of(ByteString.copyFromUtf8("NO")))
                         .payingWith("civilian")
-                        .hasPrecheck(BUSY));
+                        .hasPrecheck(BUSY),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -315,7 +324,9 @@ public class SystemFileExportsTest {
                                         ByteString.copyFromUtf8("ONE"),
                                         ByteString.copyFromUtf8("TOO"),
                                         ByteString.copyFromUtf8("MANY")))
-                        .hasKnownStatus(BATCH_SIZE_LIMIT_EXCEEDED));
+                        .hasKnownStatus(BATCH_SIZE_LIMIT_EXCEEDED),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -345,7 +356,9 @@ public class SystemFileExportsTest {
                                 ByteString.copyFromUtf8("ONCE"),
                                 ByteString.copyFromUtf8("AGAIN"),
                                 ByteString.copyFromUtf8("OK"))),
-                getFileContents(APP_PROPERTIES).hasContents(ignore -> new byte[0]));
+                getFileContents(APP_PROPERTIES).hasContents(ignore -> new byte[0]),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -382,7 +395,9 @@ public class SystemFileExportsTest {
                                         ByteString.copyFromUtf8("TO"),
                                         ByteString.copyFromUtf8("BE")))
                         .payingWith("civilian")
-                        .hasKnownStatus(UNAUTHORIZED));
+                        .hasKnownStatus(UNAUTHORIZED),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
@@ -430,7 +445,9 @@ public class SystemFileExportsTest {
                 nodeUpdate("3")
                         .payingWith(GENESIS)
                         .signedBy(GENESIS, "node3AdminKey")
-                        .description("C"));
+                        .description("C"),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest

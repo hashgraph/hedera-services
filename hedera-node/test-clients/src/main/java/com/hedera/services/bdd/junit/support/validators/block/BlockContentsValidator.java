@@ -31,16 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * Validates the structure of blocks. Each block consists of:
- * 1. A block header
- * 2. One or more rounds, where each round consists of:
- *    - A round header
- *    - One or more event headers or state changes
- *    - Zero or more transaction groups, where each group consists of:
- *      a. An event transaction
- *      b. A transaction result
- *      c. Zero or more transaction outputs
- * 3. A block proof
+ * Validates the structure of blocks.
  */
 public class BlockContentsValidator implements BlockStreamValidator {
     private static final Logger logger = LogManager.getLogger(BlockContentsValidator.class);
@@ -82,14 +73,17 @@ public class BlockContentsValidator implements BlockStreamValidator {
             Assertions.fail("Block is empty");
         }
 
-        validateBlockHeader(items.getFirst());
-        validateBlockProof(items.getLast());
-
         if (items.size() <= 2) {
             Assertions.fail("Block contains only header and proof with no rounds");
         }
 
+        // A block SHALL start with a `block_header`.
+        validateBlockHeader(items.getFirst());
+
         validateRounds(items.subList(1, items.size() - 1));
+
+        // A block SHALL end with a `block_proof`.
+        validateBlockProof(items.getLast());
     }
 
     private static void validateBlockHeader(BlockItem item) {

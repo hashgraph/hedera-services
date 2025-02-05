@@ -187,6 +187,7 @@ class BlockStreamManagerImplTest {
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(
                                         SemanticVersion.newBuilder().major(1).build())
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
                                 .build(),
                         CREATION_VERSION));
     }
@@ -198,6 +199,7 @@ class BlockStreamManagerImplTest {
                 BlockStreamManagerImpl.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(CREATION_VERSION)
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
                                 .build(),
                         CREATION_VERSION));
     }
@@ -210,6 +212,7 @@ class BlockStreamManagerImplTest {
                         BlockStreamInfo.newBuilder()
                                 .postUpgradeWorkDone(true)
                                 .creationSoftwareVersion(CREATION_VERSION)
+                                .lastIntervalProcessTime(new Timestamp(1234567, 890))
                                 .build(),
                         CREATION_VERSION));
     }
