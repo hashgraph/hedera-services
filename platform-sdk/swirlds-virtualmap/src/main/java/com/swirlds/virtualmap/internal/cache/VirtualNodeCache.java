@@ -43,6 +43,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -58,7 +60,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * A cache for virtual merkel trees.
+ * A cache for virtual merkle trees.
  * <p>
  * At genesis, a virtual merkel tree has an empty {@link VirtualNodeCache} and no data on disk. As values
  * are added to the tree, corresponding {@link VirtualLeafRecord}s are added to the cache. When the round
@@ -194,6 +196,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private final AtomicLong fastCopyVersion = new AtomicLong(0L);
 
+    /**
+     * If this cache copy is merged, the version indicates the oldest version merged into
+     * this copy. If not merged, it's equal to {@link #fastCopyVersion}.
+     */
+    private final AtomicLong mergedCopyOldestVersion = new AtomicLong(0L);
+
     // Pointers to the next and previous versions of VirtualNodeCache. When released,
     // the pointers are fixed so that next and prev point to each other instead of this
     // instance. The only time that these can be changed is during merge or release.
@@ -248,7 +256,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
     /**
      * Indicates whether this cache has been prepared for flush by calling its {@link
-     * #prepareForFlush()} method. In most cases counters like {@link #filteredLeavesCount},
+     * #filterMutations()} method. In most cases counters like {@link #filteredLeavesCount},
      * {@link #filteredLeafPathsCount}, and {@link #filteredHashesCount} are expected
      * to be greater than zero after the method is called, but sometimes they are all
      * zeroes, and therefore a separate flag is used.
@@ -284,7 +292,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private volatile ConcurrentArray<Mutation<K, VirtualLeafRecord<K, V>>> dirtyLeaves = new ConcurrentArray<>();
 
     /**
-     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, AtomicLong, VirtualMapConfig)},
+     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, VirtualMapConfig)},
      * this field stores the number of filtered mutations in {@link #dirtyLeaves}. This number
      * affects cache's estimated size.
      */
@@ -301,7 +309,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private volatile ConcurrentArray<Mutation<Long, K>> dirtyLeafPaths = new ConcurrentArray<>();
 
     /**
-     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, AtomicLong, VirtualMapConfig)},
+     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, VirtualMapConfig)},
      * this field stores the number of filtered mutations in {@link #dirtyLeafPaths}. This number
      * affects cache's estimated size.
      */
@@ -318,7 +326,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     private volatile ConcurrentArray<Mutation<Long, Hash>> dirtyHashes = new ConcurrentArray<>();
 
     /**
-     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, AtomicLong, VirtualMapConfig)},
+     * When the cache is filtered using {@link #filterMutations(ConcurrentArray, Map, long, long, VirtualMapConfig)},
      * this field stores the number of filtered mutations in {@link #dirtyHashes}. This number
      * affects cache's estimated size.
      */
@@ -383,6 +391,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
         this.fastCopyVersion.set(fastCopyVersion);
+        this.mergedCopyOldestVersion.set(fastCopyVersion);
         this.virtualMapConfig = requireNonNull(virtualMapConfig);
     }
 
@@ -399,7 +408,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     @SuppressWarnings("CopyConstructorMissesField")
     private VirtualNodeCache(final VirtualNodeCache<K, V> source) {
         // Make sure this version is exactly 1 greater than source
-        this.fastCopyVersion.set(source.fastCopyVersion.get() + 1);
+        final long version = source.fastCopyVersion.get() + 1;
+        this.fastCopyVersion.set(version);
+        this.mergedCopyOldestVersion.set(version);
 
         // Get a reference to the shared data structures
         this.keyToDirtyLeafIndex = source.keyToDirtyLeafIndex;
@@ -450,6 +461,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
+     * Returns if this cache copy contains mutations from multiple cache versions.
+     */
+    public boolean isMergedCopy() {
+        return mergedCopy.get();
+    }
+
+    /**
      * {@inheritDoc}
      *
      * May be called on one cache in the chain while another copy is being made. Do not call
@@ -494,9 +512,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Fire off the cleaning threads to go and clear out data in the indexes that doesn't need
         // to be there anymore.
-        purge(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
-        purge(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
-        purge(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
+        purgeForFlush(dirtyLeaves, keyToDirtyLeafIndex, virtualMapConfig);
+        purgeForFlush(dirtyLeafPaths, pathToDirtyLeafIndex, virtualMapConfig);
+        purgeForFlush(dirtyHashes, pathToDirtyHashIndex, virtualMapConfig);
 
         dirtyLeaves = null;
         dirtyLeafPaths = null;
@@ -542,6 +560,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             p.dirtyLeaves.merge(dirtyLeaves);
             p.dirtyLeafPaths.merge(dirtyLeafPaths);
             p.dirtyHashes.merge(dirtyHashes);
+            p.mergedCopyOldestVersion.set(mergedCopyOldestVersion.get());
+            p.filteredHashesCount.addAndGet(filteredHashesCount.get());
+            p.filteredLeafPathsCount.addAndGet(filteredLeafPathsCount.get());
+            p.filteredLeavesCount.addAndGet(filteredLeavesCount.get());
+            p.preparedForFlush.set(false);
             p.mergedCopy.set(true);
 
             // Remove this cache from the chain and wire the prev and next caches together.
@@ -556,7 +579,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                         "Merged version {}, {} dirty leaves, {} dirty internals",
                         fastCopyVersion,
                         dirtyLeaves.size(),
-                        dirtyHashes.seal());
+                        dirtyHashes.size());
             }
         }
     }
@@ -603,7 +626,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @param leaf
      * 		The leaf to put. Must not be null. Must have the correct key and path.
-     * @param newRecord
+     * @param newInMap
      *      Indicates if this leaf update is to insert a new entity rather than to update
      *      an existing one
      * @throws NullPointerException
@@ -611,7 +634,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @throws MutabilityException
      * 		if the cache is immutable for leaf changes
      */
-    public VirtualLeafRecord<K, V> putLeaf(final VirtualLeafRecord<K, V> leaf, boolean newRecord) {
+    public VirtualLeafRecord<K, V> putLeaf(final VirtualLeafRecord<K, V> leaf, boolean newInMap) {
         throwIfLeafImmutable();
         requireNonNull(leaf);
 
@@ -625,7 +648,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Get the first data element (mutation) in the list based on the key,
         // and then create or update the associated mutation.
-        return keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, newRecord, mutations)).value;
+        return keyToDirtyLeafIndex.compute(key, (k, mutations) -> mutate(leaf, newInMap, mutations)).value;
     }
 
     /**
@@ -821,8 +844,6 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * Returns a stream of dirty leaves from this cache instance to flush this virtual map copy and all
      * previous copies merged into this one to disk.
      *
-     * <p>{@link #prepareForFlush()} must be called before this method.
-     *
      * @param firstLeafPath
      * 		The first leaf path to include to the stream
      * @param lastLeafPath
@@ -831,9 +852,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *      A stream of dirty leaves for flushes
      */
     public Stream<VirtualLeafRecord<K, V>> dirtyLeavesForFlush(final long firstLeafPath, final long lastLeafPath) {
-        if (!preparedForFlush.get()) {
-            throw new IllegalStateException("This cache has not been prepared for flush");
-        }
+        filterMutations();
         return dirtyLeaves(firstLeafPath, lastLeafPath);
     }
 
@@ -880,8 +899,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @return Estimated number of dirty leaf nodes
      */
-    public long estimatedDirtyLeavesCount() {
-        return (dirtyLeaves == null) ? 0 : (dirtyLeaves.size() - filteredLeavesCount.get());
+    public long dirtyLeavesCount() {
+        return (dirtyLeaves == null) ? 0 : dirtyLeaves.size();
+    }
+
+    public long filteredDirtyLeavesCount() {
+        assert preparedForFlush.get();
+        return filteredLeavesCount.get();
     }
 
     /**
@@ -1034,7 +1058,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * <p>This method may be called concurrently from multiple threads (although in practice, this should
      * never happen).
      *
-     * <p>{@link #prepareForFlush()} must be called before this method.
+     * <p>{@link #filterMutations()} must be called before this method.
      *
      * @param lastLeafPath
      * 		The last leaf path at and above which no node results should be returned. It is possible,
@@ -1047,9 +1071,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         if (!dirtyHashes.isImmutable()) {
             throw new MutabilityException("Cannot get the dirty internal records for a non-sealed cache.");
         }
-        if (!preparedForFlush.get()) {
-            throw new IllegalStateException("This cache has not been prepared for flush");
-        }
+        filterMutations();
         return dirtyHashes.stream()
                 .filter(mutation -> mutation.key <= lastLeafPath)
                 .filter(mutation -> !mutation.isFiltered())
@@ -1063,7 +1085,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * <p>This method and similar methods about leaves are called multiple times. First,
      * the method is used to estimate this cache copy size to make a decision whether to
      * flush the copy to disk or to merge it to a newer copy. If the copy is selected to
-     * flush, its {@link #prepareForFlush()} method is called, it may mark some mutations
+     * flush, its {@link #filterMutations()} method is called, it may mark some mutations
      * as filtered, which affects the estimated size. After that this method is called
      * again, it takes filtered mutations into consideration. If the updated estimated
      * size is lower than flush threshold, the copy is not flushed to disk, but rather
@@ -1072,8 +1094,13 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @return
      *        Estimated number of dirty hashes
      */
-    public long estimatedHashesCount() {
-        return (dirtyHashes == null) ? 0 : (dirtyHashes.size() - filteredHashesCount.get());
+    public long hashesCount() {
+        return (dirtyHashes == null) ? 0 : dirtyHashes.size();
+    }
+
+    public long filteredHashesCount() {
+        assert preparedForFlush.get();
+        return filteredHashesCount.get();
     }
 
     /**
@@ -1088,28 +1115,39 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      *
      * @throws MutabilityException if called on a non-sealed cache instance.
      */
-    public void prepareForFlush() {
+    public void filterMutations() {
         if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
             throw new MutabilityException("Cannot prepare for flushing for a non-sealed cache");
         }
         if (preparedForFlush.getAndSet(true)) {
-            throw new IllegalStateException("This cache has been already prepared for flush");
+            return; // This cache has been already prepared for flush
+        }
+        if (!isMergedCopy()) {
+            return; // nothing to filter
         }
         // Mark obsolete mutations to filter later and update "filtered" counters. These
         // counters will affect the estimated size
-        final long version = getFastCopyVersion();
-        final long lastReleasedVersion = lastReleased.get();
-        filterMutations(
-                dirtyHashes, pathToDirtyHashIndex, version, lastReleasedVersion, filteredHashesCount, virtualMapConfig);
-        filterMutations(
+        final long numFilteredHashes = filterMutations(
+                dirtyHashes,
+                pathToDirtyHashIndex,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
+                virtualMapConfig);
+        filteredHashesCount.set(numFilteredHashes);
+        final long numFilteredLeafPaths = filterMutations(
                 dirtyLeafPaths,
                 pathToDirtyLeafIndex,
-                version,
-                lastReleasedVersion,
-                filteredLeafPathsCount,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
                 virtualMapConfig);
-        filterMutations(
-                dirtyLeaves, keyToDirtyLeafIndex, version, lastReleasedVersion, filteredLeavesCount, virtualMapConfig);
+        filteredLeafPathsCount.set(numFilteredLeafPaths);
+        final long numFilteredLeaves = filterMutations(
+                dirtyLeaves,
+                keyToDirtyLeafIndex,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
+                virtualMapConfig);
+        filteredLeavesCount.set(numFilteredLeaves);
     }
 
     /**
@@ -1125,23 +1163,41 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         if (!hashesAreImmutable.get() || !leafIndexesAreImmutable.get()) {
             throw new MutabilityException("Cannot run garbage collection for a non-sealed cache");
         }
-        final Stream<Mutation<Long, Hash>> filteredHashes = dirtyHashes.stream()
-                .filter(mutation -> !mutation.isFiltered())
-                // Leave only the latest mutation for every hash path by setting next to null
-                .peek(mutation -> mutation.next = null);
-        dirtyHashes = new ConcurrentArray<>(filteredHashes);
+        // Delete mutations from dirty hashes index
+        purgeForMerge(
+                dirtyHashes,
+                pathToDirtyHashIndex,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
+                virtualMapConfig);
+        // Delete mutations from dirty hashes array
+        final Stream<Mutation<Long, Hash>> filteredDirtyHashes =
+                dirtyHashes.stream().filter(m -> !m.isFiltered());
+        dirtyHashes = new ConcurrentArray<>(filteredDirtyHashes);
         filteredHashesCount.set(0);
-        final Stream<Mutation<Long, K>> filteredLeafPaths = dirtyLeafPaths.stream()
-                .filter(mutation -> !mutation.isFiltered())
-                // Leave only the latest mutation for every leaf path by setting next to null
-                .peek(mutation -> mutation.next = null);
-        dirtyLeafPaths = new ConcurrentArray<>(filteredLeafPaths);
+        // Delete mutations from dirty leaf paths index
+        purgeForMerge(
+                dirtyLeafPaths,
+                pathToDirtyLeafIndex,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
+                virtualMapConfig);
+        // Delete mutations from dirty leaf paths array
+        final Stream<Mutation<Long, K>> filteredDirtyLeafPaths =
+                dirtyLeafPaths.stream().filter(m -> !m.isFiltered());
+        dirtyLeafPaths = new ConcurrentArray<>(filteredDirtyLeafPaths);
         filteredLeafPathsCount.set(0);
-        final Stream<Mutation<K, VirtualLeafRecord<K, V>>> filteredLeaves = dirtyLeaves.stream()
-                .filter(mutation -> !mutation.isFiltered())
-                // Leave only the latest mutation for every leaf by setting next to null
-                .peek(mutation -> mutation.next = null);
-        dirtyLeaves = new ConcurrentArray<>(filteredLeaves);
+        // Delete mutations from dirty leaves index
+        purgeForMerge(
+                dirtyLeaves,
+                keyToDirtyLeafIndex,
+                fastCopyVersion.get(),
+                mergedCopyOldestVersion.get(),
+                virtualMapConfig);
+        // Delete mutations from dirty leaves array
+        final Stream<Mutation<K, VirtualLeafRecord<K, V>>> filteredDirtyLeaves =
+                dirtyLeaves.stream().filter(m -> !m.isFiltered());
+        dirtyLeaves = new ConcurrentArray<>(filteredDirtyLeaves);
         filteredLeavesCount.set(0);
     }
 
@@ -1389,7 +1445,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @return The mutation for this leaf.
      */
     private Mutation<K, VirtualLeafRecord<K, V>> mutate(
-            final VirtualLeafRecord<K, V> leaf, final boolean isNew, Mutation<K, VirtualLeafRecord<K, V>> mutation) {
+            final VirtualLeafRecord<K, V> leaf, final boolean newInMap, Mutation<K, VirtualLeafRecord<K, V>> mutation) {
 
         // We only create a new mutation if one of the following is true:
         //  - There is no mutation in the cache (mutation == null)
@@ -1401,7 +1457,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             // Create a new mutation
             final Mutation<K, VirtualLeafRecord<K, V>> newerMutation =
                     new Mutation<>(mutation, leaf.getKey(), leaf, fastCopyVersion.get());
-            if (isNew) {
+            if (newInMap) {
                 newerMutation.setNew();
             }
             dirtyLeaves.add(newerMutation);
@@ -1434,14 +1490,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> StandardFuture<Void> purge(
+    private static <K, V> StandardFuture<Void> purgeForFlush(
             final ConcurrentArray<Mutation<K, V>> array,
             final Map<K, Mutation<K, V>> index,
             @NonNull final VirtualMapConfig virtualMapConfig) {
         return array.parallelTraverse(getCleaningPool(virtualMapConfig), element -> {
-            if (element.isFiltered()) {
-                return;
-            }
             index.compute(element.key, (key, mutation) -> {
                 if (mutation == null || element.equals(mutation)) {
                     // Already removed for a more recent mutation
@@ -1458,102 +1511,117 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         });
     }
 
+    private static <K, V> void purgeKeyMutationsForMerge(
+            final Map<K, Mutation<K, V>> index, final K key, final long newestVersion, final long oldestVersion) {
+        index.compute(key, (k, latest) -> {
+            assert latest != null;
+            Mutation<K, V> prev = latest;
+            Mutation<K, V> m = latest.next;
+            while ((m != null) && (m.version >= oldestVersion)) {
+                if (!m.isFiltered()) {
+                    prev.next = m;
+                    prev = m;
+                }
+                m = m.next;
+            }
+            prev.next = m;
+            if (latest.isFiltered()) {
+                assert latest.version <= newestVersion;
+                assert latest.version >= oldestVersion;
+                assert latest.next == null || latest.next.version < oldestVersion || latest.next.isDeleted();
+                return latest.next; // may be null
+            } else {
+                return latest;
+            }
+        });
+    }
+
+    private static <K, V> void purgeForMerge(
+            final ConcurrentArray<Mutation<K, V>> array,
+            final Map<K, Mutation<K, V>> index,
+            final long newestVersion,
+            final long oldestVersion,
+            @NonNull final VirtualMapConfig virtualMapConfig) {
+        assert oldestVersion < newestVersion;
+        final Executor cleaningPool = getCleaningPool(virtualMapConfig);
+        final Set<K> keys = ConcurrentHashMap.newKeySet();
+        try {
+            array.parallelTraverse(cleaningPool, mutation -> {
+                        if (keys.add(mutation.key)) {
+                            purgeKeyMutationsForMerge(index, mutation.key, newestVersion, oldestVersion);
+                        }
+                    })
+                    .getAndRethrow();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Node cache contains lists of hash and leaf mutations for every cache version. When caches
      * are merged, the lists are merged, too. To make merges very fast, duplicates aren't removed
      * from the lists on merge. On flush / hash, no duplicates are allowed, so duplicated entries
      * need to be removed.
      *
-     * <p>This method iterates over the given list of mutations and marks all obsolete mutations
-     * as filtered. Later all marked mutations can be easily removed. A mutation is considered
-     * obsolete, if there is a newer mutation for the same key.
+     * <p>This method iterates over the given list of mutations, marks all obsolete mutations
+     * as filtered, and removes them from the index. Later all marked mutations are also removed
+     * from the concurrent array. A mutation is considered obsolete, if there is a newer mutation for
+     * the same key.
      *
-     * BE AWARE: this method is called from the other NON-static method with providing the configuration.
+     * <p>BE AWARE: this method is called from the other NON-static method with providing the configuration.
      *
      * @param array the list of mutations to process
-     * @param index the corresponding index, it's used to look up the newest mutations
-     *              for a key
-     * @param newestVersion the newest version of all mutations in the array
-     * @param lastReleasedVersion the latest flushed version
+     * @param oldestVersion the oldest version of all mutations in the array
      * @param <K>
      * 		The key type used in the index
      * @param <V>
      * 		The value type referenced by the mutation list
      */
-    private static <K, V> void filterMutations(
+    private static <K, V> long filterMutations(
             final ConcurrentArray<Mutation<K, V>> array,
             final Map<K, Mutation<K, V>> index,
-            final long newestVersion,
-            final long lastReleasedVersion,
-            final AtomicLong filteredCounter,
+            final long newsetVersion,
+            final long oldestVersion,
             @NonNull final VirtualMapConfig virtualMapConfig) {
-        filteredCounter.set(0);
+        final LongAdder count = new LongAdder();
+        final Set<K> keys = ConcurrentHashMap.newKeySet();
         final Consumer<Mutation<K, V>> action = mutation -> {
-            // local variable is required because mutation.next can be changed by another thread to null
-            // see https://github.com/hashgraph/hedera-services/issues/7046 for the context
-            final Mutation<K, V> nextMutation = mutation.next;
-            if (nextMutation == null) {
+            if (!keys.add(mutation.key)) {
+                // The key is already processed
                 return;
             }
-            mutation.next = null;
-            assert !nextMutation.isFiltered();
-            // There may be older mutations being purged in parallel, they should not contribute
-            // to the "filtered" counter
-            if (!nextMutation.isFiltered() && (nextMutation.version > lastReleasedVersion)) {
-                nextMutation.setFiltered();
-                filteredCounter.incrementAndGet();
-            }
-            if (!nextMutation.isNew()) {
-                return;
-            }
-            // nextMutation is to put a new element into a virtual map. The element doesn't
-            // exist in the data source. If this mutation is filtered, there must be a newer
-            // mutation for the same key. If that newer mutation has the "deleted" flag, the
-            // element should never be flushed to disk
-            final Mutation<K, V> latestMutation = index.get(mutation.key);
-            // If latestMutation is null, lookup() can handle it just fine
-            final Mutation<K, V> latestMutationUpToVersion = lookup(latestMutation, newestVersion);
-            if (latestMutationUpToVersion == null) {
-                // Mutations are processed on many threads, see array.parallelTraverse() call
-                // below. The key may be removed from the index or the latest mutation up to
-                // newestVersion may be removed in parallel on a different thread
-                return;
-            }
-            assert !latestMutationUpToVersion.isFiltered();
-            if (latestMutationUpToVersion.isDeleted()) {
-                if (!latestMutationUpToVersion.isFiltered()) {
-                    latestMutationUpToVersion.setFiltered();
-                    filteredCounter.incrementAndGet();
+            index.compute(mutation.key, (k, latest) -> {
+                Mutation<K, V> m = latest;
+                boolean inVersions = false;
+                Mutation<K, V> lastDeletedInVersions = null;
+                while ((m != null) && (m.version >= oldestVersion)) {
+                    if (inVersions) {
+                        if ((m.isNew() || m.isDeleted()) && (lastDeletedInVersions != null)) {
+                            lastDeletedInVersions.setFiltered();
+                            count.increment();
+                            lastDeletedInVersions = null;
+                        }
+                        if (!m.isDeleted()) {
+                            m.setFiltered();
+                            count.increment();
+                        }
+                    }
+                    if (m.version <= newsetVersion) {
+                        inVersions = true;
+                        if (m.isDeleted()) {
+                            assert lastDeletedInVersions == null;
+                            lastDeletedInVersions = m;
+                        }
+                    }
+                    m = m.next;
                 }
-                // If the latest mutation up to newestVersion is "deleted", and there are no
-                // newer mutations, the whole entry for the key can be removed from the index.
-                // It's safe to do so here, as there are no references to copies older than
-                // newestVersion and there are no mutations in versions newer than newestVersion
-                index.compute(mutation.key, (k, v) -> {
-                    assert v != null;
-                    if (v == latestMutationUpToVersion) {
-                        return null;
-                    }
-                    Mutation<K, V> m = v;
-                    while ((m != null) && (m.next != latestMutationUpToVersion)) {
-                        m = m.next;
-                    }
-                    // m may be null, if latestMutationUpToVersion was removed from the list of
-                    // mutations in a parallel thread
-                    if (m != null) {
-                        assert !m.isFiltered();
-                        assert m.version > newestVersion;
-                        m.next = null;
-                    }
-                    return v;
-                });
-            } else {
-                // Propagate the "new" flag to the newer mutation
-                latestMutationUpToVersion.setNew();
-            }
+                return latest;
+            });
         };
         try {
             array.parallelTraverse(getCleaningPool(virtualMapConfig), action).getAndRethrow();
+            return count.sum();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -1647,7 +1715,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             final long key = in.readLong();
             final long mutationVersion = in.readLong();
             final byte flags = in.readByte();
-            final boolean isNew = Mutation.getFlag(flags, Mutation.FLAG_BIT_NEW);
+            // No need to check isNew flag, since it isn't used for path to hash mutations
             final boolean isDeleted = Mutation.getFlag(flags, Mutation.FLAG_BIT_DELETED);
             Hash hash = null;
             if (!isDeleted) {
@@ -1658,9 +1726,6 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 hash = in.readSerializable();
             }
             final Mutation<Long, Hash> mutation = new Mutation<>(null, key, hash, mutationVersion);
-            if (isNew) {
-                mutation.setNew();
-            }
             mutation.setDeleted(isDeleted);
             map.put(key, mutation);
             dirtyHashes.add(mutation);
@@ -1690,7 +1755,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
             out.writeSerializable(mutation.value, true);
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.isDeleted());
+            out.writeByte(mutation.getFlags());
         }
     }
 
@@ -1711,10 +1776,12 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             final Long path = in.readLong();
             final K key = in.readSerializable();
             final long mutationVersion = in.readLong();
-            final boolean deleted = in.readBoolean();
+            final byte flags = in.readByte();
+            // No need to check isNew flag, since it isn't used for path to leaf mutations
+            final boolean isDeleted = Mutation.getFlag(flags, Mutation.FLAG_BIT_DELETED);
 
             final Mutation<Long, K> mutation = new Mutation<>(null, path, key, mutationVersion);
-            mutation.setDeleted(deleted);
+            mutation.setDeleted(isDeleted);
             map.put(path, mutation);
             dirtyLeafPaths.add(mutation);
         }
@@ -1744,7 +1811,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             final VirtualLeafRecord<K, V> leaf = mutation.value;
             out.writeSerializable(leaf, false);
             out.writeLong(mutation.version);
-            out.writeBoolean(mutation.isDeleted());
+            out.writeByte(mutation.getFlags());
         }
     }
 
@@ -1771,10 +1838,15 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 in.readSerializable();
             }
             final long mutationVersion = in.readLong();
-            final boolean deleted = in.readBoolean();
+            final byte flags = in.readByte();
+            final boolean isNew = Mutation.getFlag(flags, Mutation.FLAG_BIT_NEW);
+            final boolean isDeleted = Mutation.getFlag(flags, Mutation.FLAG_BIT_DELETED);
             final Mutation<K, VirtualLeafRecord<K, V>> mutation =
                     new Mutation<>(null, leafRecord.getKey(), leafRecord, mutationVersion);
-            mutation.setDeleted(deleted);
+            mutation.setDeleted(isDeleted);
+            if (isNew) {
+                mutation.setNew();
+            }
             map.put(leafRecord.getKey(), mutation);
             dirtyLeaves.add(mutation);
         }
@@ -1817,7 +1889,8 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // into resulting stream of dirty hashes / leaves
         private static final int FLAG_BIT_FILTERED = 1;
         // A bit in the flags field, which indicates whether this mutation is to insert a new
-        // entry to the map. It's only used for dirtyLeaves mutations
+        // entry to the map. If an entry was deleted and re-added, such a mutation is not
+        // marked as new. The flag is only used for dirtyLeaves mutations
         private static final int FLAG_BIT_NEW = 2;
 
         Mutation(Mutation<K, V> next, K key, V value, long version) {

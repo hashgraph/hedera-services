@@ -1155,8 +1155,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             return true;
         }
         // Otherwise check its size and compare against flush threshold
+        return estimatedSizeExceedsFlushThreshold(true, 100.0);
+    }
+
+    private boolean estimatedSizeExceedsFlushThreshold(final boolean allMutations, double percentThreshold) {
         final long threshold = flushThreshold.get();
-        return (threshold > 0) && (estimatedSize() >= threshold);
+        return (threshold > 0) && (estimatedSize(allMutations) >= threshold * percentThreshold / 100);
     }
 
     /**
@@ -1198,7 +1202,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public boolean flush() {
+    public void flush() {
         if (!isImmutable()) {
             throw new IllegalStateException("mutable copies can not be flushed");
         }
@@ -1209,25 +1213,20 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             throw new IllegalStateException("a merged copy can not be flushed");
         }
 
-        // Prepare the cache for flush. It may affect cache's estimated size
-        cache.prepareForFlush();
-        if (shouldBeFlushed()) {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To flush {}", cache.getFastCopyVersion());
-            final long start = System.currentTimeMillis();
-            flush(cache, state, dataSource);
-            cache.release();
-            final long end = System.currentTimeMillis();
-            flushed.set(true);
-            flushLatch.countDown();
-            statistics.recordFlush(end - start);
-            logger.debug(
-                    VIRTUAL_MERKLE_STATS.getMarker(), "Flushed {} in {} ms", cache.getFastCopyVersion(), end - start);
-            return true;
-        } else {
-            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "To GC {}", cache.getFastCopyVersion());
-            cache.garbageCollect();
-            return false;
-        }
+        logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "Flush {} v{}", state.getLabel(), cache.getFastCopyVersion());
+        final long start = System.currentTimeMillis();
+        flush(cache, state, dataSource);
+        cache.release();
+        final long end = System.currentTimeMillis();
+        flushed.set(true);
+        flushLatch.countDown();
+        statistics.recordFlush(end - start);
+        logger.debug(
+                VIRTUAL_MERKLE_STATS.getMarker(),
+                "Flushed {} v{} in {} ms",
+                state.getLabel(),
+                cache.getFastCopyVersion(),
+                end - start);
     }
 
     private void flush(VirtualNodeCache<K, V> cacheToFlush, VirtualStateAccessor stateToUse, VirtualDataSource ds) {
@@ -1261,19 +1260,58 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     @Override
     public long estimatedSize() {
-        final long estimatedDirtyLeavesCount = cache.estimatedDirtyLeavesCount();
-        final long estimatedLeavesSize = estimatedDirtyLeavesCount
+        return estimatedSize(true);
+    }
+
+    private long estimatedSize(final boolean allMutations) {
+        final long dirtyLeavesCount = cache.dirtyLeavesCount();
+        final long filteredDirtyLeavesCount = allMutations ? 0 : cache.filteredDirtyLeavesCount();
+        final long estimatedLeavesSize = (dirtyLeavesCount - filteredDirtyLeavesCount)
                 * (Long.BYTES // path
                         + DigestType.SHA_384.digestLength() // hash
                         + keySerializer.getTypicalSerializedSize() // key
                         + valueSerializer.getTypicalSerializedSize()); // value
 
-        final long estimatedInternalsCount = cache.estimatedHashesCount();
-        final long estimatedInternalsSize = estimatedInternalsCount
+        final long internalsCount = cache.hashesCount();
+        final long filteredInternalsCount = allMutations ? 0 : cache.filteredHashesCount();
+        final long estimatedInternalsSize = (internalsCount - filteredInternalsCount)
                 * (Long.BYTES // path
                         + DigestType.SHA_384.digestLength()); // hash
 
         return estimatedInternalsSize + estimatedLeavesSize;
+    }
+
+    @Override
+    public boolean shouldBeCompacted() {
+        if (shouldBeFlushed.get()) {
+            return false;
+        }
+        return estimatedSizeExceedsFlushThreshold(true, 100.0);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void garbageCollect() {
+        if (!isImmutable()) {
+            throw new IllegalStateException("mutable copies can not be compacted");
+        }
+        if (flushed.get() || merged.get()) {
+            throw new IllegalStateException("This virtual root has already been flushed or merged");
+        }
+        if (!cache.isMergedCopy()) {
+            // cache.prepareForFlush() only makes sense for merged caches
+            return;
+        }
+        cache.filterMutations();
+        // Exclude filtered mutations
+        if (!estimatedSizeExceedsFlushThreshold(false, virtualMapConfig.percentCopyFlushAfterGCThreshold())) {
+            logger.debug(VIRTUAL_MERKLE_STATS.getMarker(), "GC {} v{}", state.getLabel(), cache.getFastCopyVersion());
+            cache.garbageCollect();
+        } else {
+            // this copy will be eventually flushed to disk
+        }
     }
 
     // Serialization implementation
@@ -1481,7 +1519,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final VirtualDataSource dataSourceCopy = dataSourceBuilder.copy(dataSource, false, true);
         try {
             final VirtualNodeCache<K, V> cacheSnapshot = cache.snapshot();
-            cacheSnapshot.prepareForFlush();
             flush(cacheSnapshot, state, dataSourceCopy);
             dataSourceBuilder.snapshot(destination, dataSourceCopy);
         } finally {
@@ -1552,7 +1589,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             // will NEVER be updated again.
             assert originalMap.isHashed() : "The system should have made sure this was hashed by this point!";
             final VirtualNodeCache<K, V> snapshotCache = originalMap.cache.snapshot();
-            snapshotCache.prepareForFlush();
             flush(snapshotCache, originalMap.state, this.dataSource);
 
             // I assume an empty node cache can be used below rather than snapshotCache, since all the
