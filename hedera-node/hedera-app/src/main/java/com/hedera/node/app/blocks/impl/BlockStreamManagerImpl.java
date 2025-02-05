@@ -235,16 +235,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             freezeRoundNumber = round.getRoundNum();
         }
 
-        // Check for pending work at the start of each round
-        final var blockStreamInfo = blockStreamInfoFrom(state);
-        pendingWork = classifyPendingWork(blockStreamInfo, version);
-
         // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
             consensusTimeFirstEventInBlock = round.iterator().next().getConsensusTimestamp();
             boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
 
+            final var blockStreamInfo = blockStreamInfoFrom(state);
+            pendingWork = classifyPendingWork(blockStreamInfo, version);
             lastHandleTime = asInstant(blockStreamInfo.lastHandleTimeOrElse(EPOCH));
             lastIntervalProcessTime = asInstant(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH));
             blockHashManager.startBlock(blockStreamInfo, lastBlockHash);
@@ -282,31 +280,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     @Override
-    public void confirmPendingWorkFinished(@NonNull final State state) {
+    public void confirmPendingWorkFinished() {
         if (pendingWork == NONE) {
             // Should never happen but throwing IllegalStateException might make the situation even worse, so just log
             log.error("HandleWorkflow confirmed finished work but none was pending");
-        } else if (pendingWork == POST_UPGRADE_WORK) {
-            final var blockStreamInfo = blockStreamInfoFrom(state);
-            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
-                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            blockStreamInfoState.put(blockStreamInfo
-                    .copyBuilder()
-                    .postUpgradeWorkDone(true)
-                    .creationSoftwareVersion(version)
-                    .build());
-            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
-        } else if (pendingWork == GENESIS_WORK) {
-            final var blockStreamInfo = blockStreamInfoFrom(state);
-            final var blockStreamInfoState = state.getWritableStates(BlockStreamService.NAME)
-                    .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
-            blockStreamInfoState.put(blockStreamInfo
-                    .copyBuilder()
-                    .genesisWorkDone(true)
-                    .postUpgradeWorkDone(true)
-                    .creationSoftwareVersion(version)
-                    .build());
-            ((CommittableWritableStates) state.getWritableStates(BlockStreamService.NAME)).commit();
         }
         pendingWork = NONE;
     }
@@ -376,8 +353,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     pendingWork != POST_UPGRADE_WORK,
                     version,
                     asTimestamp(lastIntervalProcessTime),
-                    asTimestamp(lastHandleTime),
-                    pendingWork != GENESIS_WORK));
+                    asTimestamp(lastHandleTime)));
             ((CommittableWritableStates) writableState).commit();
 
             worker.addItem(boundaryStateChangeListener.flushChanges());
@@ -530,8 +506,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final SemanticVersion version) {
         requireNonNull(version);
         requireNonNull(blockStreamInfo);
-        if (!blockStreamInfo.genesisWorkDone()) {
-            // If we have not completed the genesis work, we must do it before anything else
+        if (EPOCH.equals(blockStreamInfo.lastIntervalProcessTimeOrElse(EPOCH))) {
+            // If we have never processed any time-based events, we must be at genesis
             return GENESIS_WORK;
         } else if (impliesPostUpgradeWorkPending(blockStreamInfo, version)) {
             return POST_UPGRADE_WORK;

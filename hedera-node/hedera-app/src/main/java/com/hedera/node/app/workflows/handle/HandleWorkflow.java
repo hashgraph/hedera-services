@@ -667,7 +667,7 @@ public class HandleWorkflow {
                     // Only for 0.59.0 we need to update the entity ID store entity counts
                     systemSetup.initializeEntityCounts(dispatch);
                     if (streamMode != RECORDS) {
-                        blockStreamManager.confirmPendingWorkFinished(userTxn.state());
+                        blockStreamManager.confirmPendingWorkFinished();
                     }
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);

@@ -187,7 +187,6 @@ class BlockStreamManagerImplTest {
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(
                                         SemanticVersion.newBuilder().major(1).build())
-                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -199,7 +198,6 @@ class BlockStreamManagerImplTest {
                 BlockStreamManagerImpl.classifyPendingWork(
                         BlockStreamInfo.newBuilder()
                                 .creationSoftwareVersion(CREATION_VERSION)
-                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -212,7 +210,6 @@ class BlockStreamManagerImplTest {
                         BlockStreamInfo.newBuilder()
                                 .postUpgradeWorkDone(true)
                                 .creationSoftwareVersion(CREATION_VERSION)
-                                .genesisWorkDone(true)
                                 .build(),
                         CREATION_VERSION));
     }
@@ -274,10 +271,10 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
         assertTrue(subject.hasLedgerId());
         assertSame(POST_UPGRADE_WORK, subject.pendingWork());
-        subject.confirmPendingWorkFinished(state);
+        subject.confirmPendingWorkFinished();
         assertSame(NONE, subject.pendingWork());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
-        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished(state));
+        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished());
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -326,8 +323,7 @@ class BlockStreamManagerImplTest {
                 true,
                 SemanticVersion.DEFAULT,
                 CONSENSUS_THEN,
-                BlockRecordService.EPOCH,
-                true);
+                BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
@@ -406,10 +402,10 @@ class BlockStreamManagerImplTest {
         subject.startRound(round, state);
         assertTrue(subject.hasLedgerId());
         assertSame(POST_UPGRADE_WORK, subject.pendingWork());
-        subject.confirmPendingWorkFinished(state);
+        subject.confirmPendingWorkFinished();
         assertSame(NONE, subject.pendingWork());
         // We don't fail hard on duplicate calls to confirm post-upgrade work
-        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished(state));
+        assertDoesNotThrow(() -> subject.confirmPendingWorkFinished());
 
         // Assert the internal state of the subject has changed as expected and the writer has been opened
         verify(boundaryStateChangeListener).setBoundaryTimestamp(CONSENSUS_NOW);
@@ -550,8 +546,7 @@ class BlockStreamManagerImplTest {
                 false,
                 SemanticVersion.DEFAULT,
                 CONSENSUS_THEN,
-                BlockRecordService.EPOCH,
-                true);
+                BlockRecordService.EPOCH);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
@@ -881,7 +876,6 @@ class BlockStreamManagerImplTest {
                 .trailingOutputHashes(resultHashes)
                 .lastIntervalProcessTime(CONSENSUS_THEN)
                 .blockTime(asTimestamp(CONSENSUS_NOW.minusSeconds(5))) // Add block time to track last block creation
-                .genesisWorkDone(true)
                 .build();
     }
 
