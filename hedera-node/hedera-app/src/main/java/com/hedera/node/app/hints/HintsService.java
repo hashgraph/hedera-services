@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.blocks.BlockHashSigner;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -106,6 +107,11 @@ public interface HintsService extends Service, BlockHashSigner {
     @NonNull
     Bytes activeVerificationKeyOrThrow();
 
+    /**
+     * Returns the handlers for the {@link HintsService}.
+     */
+    HintsHandlers handlers();
+
     @Override
     default int migrationOrder() {
         return MIGRATION_ORDER;
@@ -129,8 +135,8 @@ public interface HintsService extends Service, BlockHashSigner {
     }
 
     /**
-     * Returns the party size {@code M=2^k} such that the given roster node count
-     * will fall inside the range {@code [2*(k-1), 2^k]}.
+     * Returns the unique party size {@code M=2^k} such that the given roster node count
+     * falls in the range {@code (2*(k-1), 2^k]}.
      *
      * @param n the roster node count
      * @return the party size
