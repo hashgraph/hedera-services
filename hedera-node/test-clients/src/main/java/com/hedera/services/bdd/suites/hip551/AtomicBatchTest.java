@@ -304,7 +304,6 @@ public class AtomicBatchTest {
         }
 
         @HapiTest
-        @Disabled // TODO: enable when we have throttle definitions
         @DisplayName("Deleted account key as batch key")
         //  BATCH_07
         public Stream<DynamicTest> deletedAccountKeyAsBatchKey() {
@@ -390,7 +389,6 @@ public class AtomicBatchTest {
         }
 
         @HapiTest
-        @Disabled // TODO: enable when we have throttle definitions
         @DisplayName("Sign batch with additional keys")
         //  BATCH_09
         public Stream<DynamicTest> signBatchWithAdditionalKeys() {
