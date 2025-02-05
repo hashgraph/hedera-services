@@ -28,10 +28,12 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -424,6 +426,19 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     @Override
     public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @NonNull
+    @Override
+    public void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull AccountID payerId)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Nullable
+    @Override
+    public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

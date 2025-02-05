@@ -30,10 +30,12 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -502,6 +504,16 @@ public class PreHandleContextImpl implements PreHandleContext {
         return context;
     }
 
+    @NonNull
+    @Override
+    public void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull final AccountID payerId)
+            throws PreCheckException {
+        // Throws PreCheckException if the payer account does not exist
+        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
+        dispatcher.dispatchPreHandle(context);
+
+    }
+
     @Override
     public String toString() {
         return "PreHandleContextImpl{" + "accountStore="
@@ -529,5 +541,12 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
             throw new PreCheckException(responseCode);
         }
+    }
+
+    @Nullable
+    @Override
+    public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException {
+            final var transactionInfo = transactionChecker.check(tx, null);
+            return transactionInfo.txBody();
     }
 }
