@@ -91,6 +91,10 @@ wire definitions. The actual soldering of the wires can be executed in a `build(
 
 Building a `PlatformWiring` for testing purposes can be done via calling additional builder methods that register output wires
 on top of the production ones and solder them to the components that we are interested in. This will happen before calling the `build()` method
-without adding conditional statements or changing the production code itself.
+without adding conditional statements or changing the production code itself. The output wires will stream to a test container that will serve
+as an aggregator for the objects that are going to be asserted. There won't be extra complexity such as a test container wired to another test container.
+The container may or may not assert the incoming objects and periodically clean up the collected data.
 
 This approach will be a flexible way to configure the wiring for testing purposes and will allow adding more test output wires in the future.
+
+![PlatformWiringChanges](PlatformWiringChanges.png)
