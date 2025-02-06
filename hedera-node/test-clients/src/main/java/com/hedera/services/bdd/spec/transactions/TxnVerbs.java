@@ -504,6 +504,21 @@ public class TxnVerbs {
      * This method allows the developer to invoke a contract function by the name of the called
      * contract and the name of the desired function
      *
+     * @param variant the variant root directory for the contract
+     * @param contract the name of the contract
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiContractCall contractCall(
+            String variant, String contract, String functionName, Object... params) {
+        return contractCall(
+                variant.isEmpty() ? Optional.empty() : Optional.of(variant), contract, functionName, params);
+    }
+
+    /**
+     * This method allows the developer to invoke a contract function by the name of the called
+     * contract and the name of the desired function
+     *
      * This overload allows for a variant root directory for the contract
      *
      * @param variant the optional variant root directory for the contract
