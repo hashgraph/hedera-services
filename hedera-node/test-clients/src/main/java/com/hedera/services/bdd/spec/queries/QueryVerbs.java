@@ -43,6 +43,7 @@ import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -138,7 +139,7 @@ public class QueryVerbs {
      */
     public static HapiContractCallLocal contractCallLocal(
             final String contract, final String functionName, final Object... params) {
-        return contractCallLocal(VARIANT_NONE, contract, functionName, params);
+        return contractCallLocal(Optional.empty(), contract, functionName, params);
     }
 
     /**
@@ -151,8 +152,8 @@ public class QueryVerbs {
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCallLocal contractCallLocal(
-            final String variant, final String contract, final String functionName, final Object... params) {
-        final var abi = getABIFor(variant, FUNCTION, functionName, contract);
+            final Optional<String> variant, final String contract, final String functionName, final Object... params) {
+        final var abi = getABIFor(variant.orElse(VARIANT_NONE), FUNCTION, functionName, contract);
         return new HapiContractCallLocal(abi, contract, params);
     }
 

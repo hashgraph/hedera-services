@@ -497,7 +497,7 @@ public class TxnVerbs {
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-        return contractCall(VARIANT_NONE, contract, functionName, params);
+        return contractCall(Optional.empty(), contract, functionName, params);
     }
 
     /**
@@ -506,13 +506,14 @@ public class TxnVerbs {
      *
      * This overload allows for a variant root directory for the contract
      *
+     * @param variant the optional variant root directory for the contract
      * @param contract the name of the contract
      * @param functionName the name of the function
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCall contractCall(
-            final String variant, final String contract, final String functionName, final Object... params) {
-        final var abi = getABIFor(variant, FUNCTION, functionName, contract);
+            final Optional<String> variant, final String contract, final String functionName, final Object... params) {
+        final var abi = getABIFor(variant.orElse(VARIANT_NONE), FUNCTION, functionName, contract);
         return new HapiContractCall(abi, contract, params);
     }
 

@@ -80,26 +80,26 @@ public class TokenAndTypeCheckSuite {
                 withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCallLocal(
-                                        VARIANT_167,
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         IS_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .logged()
                                 .has(resultWith()
                                         .resultViaFunctionName(
-                                                VARIANT_167,
+                                                Optional.of(VARIANT_167),
                                                 IS_TOKEN,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                 isLiteralResult(new Object[] {Boolean.TRUE}))),
                         contractCallLocal(
-                                        VARIANT_167,
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .logged()
                                 .has(resultWith()
                                         .resultViaFunctionName(
-                                                VARIANT_167,
+                                                Optional.of(VARIANT_167),
                                                 GET_TOKEN_TYPE,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                 isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))));
@@ -125,7 +125,7 @@ public class TokenAndTypeCheckSuite {
                 withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
-                                        VARIANT_167,
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         IS_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))
@@ -133,7 +133,7 @@ public class TokenAndTypeCheckSuite {
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
-                                        VARIANT_167,
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))

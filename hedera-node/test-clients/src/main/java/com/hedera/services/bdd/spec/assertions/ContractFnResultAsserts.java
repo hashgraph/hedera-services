@@ -213,7 +213,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
             final String functionName,
             final String contractName,
             final Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
-        return resultViaFunctionName(VARIANT_NONE, functionName, contractName, provider);
+        return resultViaFunctionName(Optional.empty(), functionName, contractName, provider);
     }
 
     /*  Note:
@@ -221,11 +221,11 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
      and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
     */
     public ContractFnResultAsserts resultViaFunctionName(
-            final String variant,
+            final Optional<String> variant,
             final String functionName,
             final String contractName,
             final Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
-        final var abi = Utils.getABIFor(variant, FUNCTION, functionName, contractName);
+        final var abi = Utils.getABIFor(variant.orElse(VARIANT_NONE), FUNCTION, functionName, contractName);
         registerProvider((spec, o) -> {
             Object[] actualObjs = viaAbi(
                     abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
