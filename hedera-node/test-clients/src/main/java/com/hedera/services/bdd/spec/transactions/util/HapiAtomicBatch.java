@@ -52,10 +52,8 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private List<HapiTxnOp<?>> operationsToBatch = null;
+    private final List<HapiTxnOp<?>> operationsToBatch;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
-
-    public HapiAtomicBatch() {}
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
         this.operationsToBatch = Arrays.stream(ops).toList();
