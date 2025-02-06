@@ -33,6 +33,8 @@ sourceSets {
     val protoApiSrc = "../hedera-protobuf-java-api/src/main/proto"
     main {
         pbj.srcDir(layout.projectDirectory.dir(protoApiSrc))
+        // The below should be replaced with a 'requires com.hedera.protobuf.java.api'
+        // in testFixtures scope - #14026
         proto.srcDir(layout.projectDirectory.dir(protoApiSrc))
     }
 }
