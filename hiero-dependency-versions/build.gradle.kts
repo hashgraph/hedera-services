@@ -133,7 +133,7 @@ dependencies.constraints {
     api("org.junit-pioneer:junit-pioneer:2.3.0") { because("org.junitpioneer") }
     api("org.mockito:mockito-core:$mockito") { because("org.mockito") }
     api("org.mockito:mockito-junit-jupiter:$mockito") { because("org.mockito.junit.jupiter") }
-    api("org.opentest4j:opentest4j:1.2.0") { because("org.opentest4j") }
+    api("org.opentest4j:opentest4j:1.3.0") { because("org.opentest4j") }
     api("org.testcontainers:testcontainers:$testContainers") { because("org.testcontainers") }
     api("org.testcontainers:junit-jupiter:$testContainers") {
         because("org.testcontainers.junit.jupiter")
