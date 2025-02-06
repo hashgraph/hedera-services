@@ -42,7 +42,7 @@ val jackson = "2.18.2"
 val junit5 = "5.10.3!!" // no updates beyond 5.10.3 until #17125 is resolved
 val log4j = "2.24.3"
 val mockito = "5.15.2"
-val protobuf = "4.28.2"
+val protobuf = "4.29.3"
 val testContainers = "1.20.4"
 val tuweni = "2.4.2"
 val webcompare = "2.1.7"
@@ -147,7 +147,7 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:$webcompare") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
-    api("com.google.protobuf:protoc:3.25.4")
+    api("com.google.protobuf:protoc:$protobuf")
     api("io.grpc:protoc-gen-grpc-java:$grpc")
 
     api("com.hedera.cryptography:hedera-cryptography-pairings-api:$hederaCryptography") {
