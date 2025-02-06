@@ -204,7 +204,6 @@ public class PlatformStateFacade {
         return readablePlatformStateStore(state).getPreviousAddressBook();
     }
 
-
     /**
      * Get writable platform state. Works only on mutable {@link State}.
      * Call this method only if you need to modify the platform state.
@@ -292,5 +291,4 @@ public class PlatformStateFacade {
     public String getInfoString(@NonNull final State state, final int hashDepth) {
         return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), state);
     }
-
 }

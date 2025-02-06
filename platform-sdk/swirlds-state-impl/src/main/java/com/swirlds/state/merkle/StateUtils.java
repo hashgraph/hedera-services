@@ -71,10 +71,10 @@ public final class StateUtils {
             @NonNull final OutputStream out, @NonNull final Codec<T> codec, @Nullable final T object)
             throws IOException {
         final var stream = new WritableStreamingData(out);
-        if (object == null) {
-            stream.writeInt(-1); // Marker for null value
-            return Integer.BYTES;
-        }
+        //        if (object == null) {
+        //            stream.writeInt(-1); // Marker for null value
+        //            return Integer.BYTES;
+        //        }
 
         final var byteStream = new ByteArrayOutputStream();
         codec.write(object, new WritableStreamingData(byteStream));
@@ -99,9 +99,9 @@ public final class StateUtils {
             throws IOException {
         final var stream = new ReadableStreamingData(in);
         final var size = stream.readInt();
-        if (size == -1) {
-            return null; // Return null explicitly if the marker is found
-        }
+        //        if (size == -1) {
+        //            return null; // Return null explicitly if the marker is found
+        //        }
 
         stream.limit((long) size + Integer.BYTES); // +4 for the size
         try {
