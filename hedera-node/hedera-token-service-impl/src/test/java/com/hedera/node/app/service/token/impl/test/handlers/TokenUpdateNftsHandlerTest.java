@@ -65,6 +65,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -118,6 +119,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private Key supplyKey;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
@@ -238,9 +242,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         final var txn = new TokenUpdateNftBuilder()
                 .newNftUpdateTransactionBody(TOKEN_123, Bytes.EMPTY, serialNumbers.toArray(new Long[0]));
-        final var context = keyMockContext(txn);
+        given(pureChecksContext.body()).willReturn(txn);
 
-        assertThatCode(() -> subject.pureChecks(context.body())).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(pureChecksContext)).doesNotThrowAnyException();
     }
 
     @Test

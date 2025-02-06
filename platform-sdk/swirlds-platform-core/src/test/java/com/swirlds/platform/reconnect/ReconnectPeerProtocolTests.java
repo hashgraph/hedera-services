@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.protocol.PeerProtocol;
 import com.swirlds.platform.network.protocol.Protocol;
-import com.swirlds.platform.network.protocol.ProtocolFactory;
-import com.swirlds.platform.network.protocol.ReconnectProtocolFactory;
+import com.swirlds.platform.network.protocol.ReconnectProtocol;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -69,9 +69,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests for the {@link ReconnectProtocol}
+ * Tests for the {@link ReconnectPeerProtocol}
  */
-class ReconnectProtocolTests {
+class ReconnectPeerProtocolTests {
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private static final NodeId PEER_ID = NodeId.of(1L);
 
@@ -165,7 +165,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 mock(ReconnectThrottle.class),
@@ -180,7 +180,7 @@ class ReconnectProtocolTests {
 
         assertEquals(
                 params.shouldInitiate,
-                reconnectProtocolFactory.build(PEER_ID).shouldInitiate(),
+                reconnectProtocol.createPeerInstance(PEER_ID).shouldInitiate(),
                 "unexpected initiation result");
     }
 
@@ -208,7 +208,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 teacherThrottle,
@@ -223,7 +223,7 @@ class ReconnectProtocolTests {
 
         assertEquals(
                 params.shouldAccept(),
-                reconnectProtocolFactory.build(PEER_ID).shouldAccept(),
+                reconnectProtocol.createPeerInstance(PEER_ID).shouldAccept(),
                 "unexpected protocol acceptance");
     }
 
@@ -242,7 +242,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 mock(ReconnectThrottle.class),
@@ -271,7 +271,7 @@ class ReconnectProtocolTests {
         reconnectController.cancelLearnerPermit();
 
         assertFalse(
-                reconnectProtocolFactory.build(PEER_ID).shouldInitiate(),
+                reconnectProtocol.createPeerInstance(PEER_ID).shouldInitiate(),
                 "we expect that a reconnect should not be initiated because of FallenBehindManager");
         assertTrue(reconnectController.acquireLearnerPermit(), "a permit should still be available for other peers");
     }
@@ -292,7 +292,7 @@ class ReconnectProtocolTests {
 
         final NodeId node1 = NodeId.of(1L);
         final NodeId node2 = NodeId.of(2L);
-        final ReconnectProtocol peer1 = new ReconnectProtocol(
+        final ReconnectPeerProtocol peer1 = new ReconnectPeerProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 node1,
@@ -313,7 +313,7 @@ class ReconnectProtocolTests {
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
-        final ReconnectProtocol peer2 = new ReconnectProtocol(
+        final ReconnectPeerProtocol peer2 = new ReconnectPeerProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 node2,
@@ -359,7 +359,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 mock(ReconnectThrottle.class),
@@ -371,9 +371,9 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertTrue(protocol.shouldInitiate());
-        protocol.initiateFailed();
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertTrue(peerProtocol.shouldInitiate());
+        peerProtocol.initiateFailed();
 
         assertTrue(permitCancelled.getValue(), "permit should have been cancelled");
     }
@@ -403,7 +403,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 reconnectThrottle,
@@ -416,9 +416,9 @@ class ReconnectProtocolTests {
                 () -> ACTIVE,
                 configuration);
 
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertTrue(protocol.shouldAccept());
-        protocol.acceptFailed();
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertTrue(peerProtocol.shouldAccept());
+        peerProtocol.acceptFailed();
 
         assertTrue(throttleReleased.getValue(), "throttle should be released");
         assertEquals(-1, signedState.getReservationCount(), "state should be released");
@@ -441,7 +441,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 reconnectThrottle,
@@ -453,8 +453,8 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertFalse(protocol.shouldAccept());
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertFalse(peerProtocol.shouldAccept());
     }
 
     @Test
@@ -471,7 +471,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 teacherThrottle,
@@ -483,8 +483,8 @@ class ReconnectProtocolTests {
                 fallenBehindManager,
                 () -> PlatformStatus.CHECKING,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertFalse(protocol.shouldAccept());
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertFalse(peerProtocol.shouldAccept());
     }
 
     @Test
@@ -497,7 +497,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 teacherThrottle,
@@ -509,23 +509,23 @@ class ReconnectProtocolTests {
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertTrue(protocol.shouldAccept());
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertTrue(peerProtocol.shouldAccept());
 
         verify(reconnectController, times(1)).blockLearnerPermit();
         verify(reconnectController, times(0)).cancelLearnerPermit();
 
-        protocol.acceptFailed();
+        peerProtocol.acceptFailed();
 
         verify(reconnectController, times(1)).blockLearnerPermit();
         verify(reconnectController, times(1)).cancelLearnerPermit();
 
-        assertTrue(protocol.shouldAccept());
+        assertTrue(peerProtocol.shouldAccept());
 
         verify(reconnectController, times(2)).blockLearnerPermit();
         verify(reconnectController, times(1)).cancelLearnerPermit();
 
-        assertThrows(Exception.class, () -> protocol.runProtocol(mock(Connection.class)));
+        assertThrows(Exception.class, () -> peerProtocol.runProtocol(mock(Connection.class)));
 
         verify(reconnectController, times(2)).blockLearnerPermit();
         verify(reconnectController, times(2)).cancelLearnerPermit();
@@ -543,7 +543,7 @@ class ReconnectProtocolTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final ProtocolFactory reconnectProtocolFactory = new ReconnectProtocolFactory(
+        final Protocol reconnectProtocol = new ReconnectProtocol(
                 platformContext,
                 getStaticThreadManager(),
                 teacherThrottle,
@@ -555,8 +555,8 @@ class ReconnectProtocolTests {
                 mock(FallenBehindManager.class),
                 () -> ACTIVE,
                 configuration);
-        final Protocol protocol = reconnectProtocolFactory.build(NodeId.of(0));
-        assertFalse(protocol.shouldAccept());
+        final PeerProtocol peerProtocol = reconnectProtocol.createPeerInstance(NodeId.of(0));
+        assertFalse(peerProtocol.shouldAccept());
 
         verify(reconnectController, times(1)).blockLearnerPermit();
         verify(reconnectController, times(0)).cancelLearnerPermit();

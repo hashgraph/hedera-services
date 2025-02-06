@@ -64,6 +64,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -227,7 +228,8 @@ public final class IngestChecker {
         }
 
         // 4a. Run pure checks
-        dispatcher.dispatchPureChecks(txBody);
+        final var pureChecksContext = new PureChecksContextImpl(txBody, configuration, dispatcher, transactionChecker);
+        dispatcher.dispatchPureChecks(pureChecksContext);
 
         // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state, softwareVersionFactory);

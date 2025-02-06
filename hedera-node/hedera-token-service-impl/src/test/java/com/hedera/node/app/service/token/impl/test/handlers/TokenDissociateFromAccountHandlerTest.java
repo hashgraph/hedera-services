@@ -62,6 +62,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import java.time.Instant;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -78,6 +79,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
 
     private static final AccountID ACCOUNT_1339 =
             AccountID.newBuilder().accountNum(MISC_ACCOUNT.getAccountNum()).build();
@@ -100,8 +104,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void pureChecksRejectsDissociateWithMissingAccount() {
             final var txn = newDissociateTxn(null, List.of(TOKEN_555_ID));
+            given(pureChecksContext.body()).willReturn(txn);
 
-            assertThatThrownBy(() -> subject.pureChecks(txn))
+            assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
@@ -109,8 +114,9 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         @Test
         void pureChecksRejectsDissociateWithRepeatedTokenId() {
             final var txn = newDissociateTxn(ACCOUNT_1339, List.of(TOKEN_555_ID, TOKEN_666_ID, TOKEN_555_ID));
+            given(pureChecksContext.body()).willReturn(txn);
 
-            assertThatThrownBy(() -> subject.pureChecks(txn))
+            assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(TOKEN_ID_REPEATED_IN_TOKEN_LIST));
         }

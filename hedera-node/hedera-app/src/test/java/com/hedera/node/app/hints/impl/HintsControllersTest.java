@@ -110,5 +110,8 @@ class HintsControllersTest {
         final var controller = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore);
 
         assertInstanceOf(HintsControllerImpl.class, controller);
+
+        assertDoesNotThrow(() -> subject.stop());
+        assertDoesNotThrow(() -> subject.stop());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkMetrics;
 import com.swirlds.platform.network.NetworkProtocolException;
-import com.swirlds.platform.network.protocol.Protocol;
+import com.swirlds.platform.network.protocol.PeerProtocol;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
@@ -34,7 +34,7 @@ import java.util.Objects;
 /**
  * Sends a heartbeat to the other node and measures the time it takes to receive a response.
  */
-public class HeartbeatProtocol implements Protocol {
+public class HeartbeatPeerProtocol implements PeerProtocol {
     /**
      * ID of the peer
      */
@@ -68,7 +68,7 @@ public class HeartbeatProtocol implements Protocol {
      * @param networkMetrics  Network metrics, for recording roundtrip heartbeat time
      * @param time            Source of time
      */
-    public HeartbeatProtocol(
+    public HeartbeatPeerProtocol(
             @NonNull final NodeId peerId,
             @NonNull final Duration heartbeatPeriod,
             @NonNull final NetworkMetrics networkMetrics,

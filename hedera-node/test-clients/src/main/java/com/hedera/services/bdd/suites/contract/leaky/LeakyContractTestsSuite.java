@@ -743,8 +743,8 @@ public class LeakyContractTestsSuite {
                 withOpContext((spec, opLog) -> {
                     final var parentNum = spec.registry().getContractId(contract);
 
-                    final var expectedParentContractAddress = asHeadlongAddress(
-                                    asEvmAddress(parentNum.getContractNum()))
+                    final var expectedParentContractAddress = asHeadlongAddress(asEvmAddress(
+                                    parentNum.getShardNum(), parentNum.getShardNum(), parentNum.getContractNum()))
                             .toString()
                             .toLowerCase()
                             .substring(2);

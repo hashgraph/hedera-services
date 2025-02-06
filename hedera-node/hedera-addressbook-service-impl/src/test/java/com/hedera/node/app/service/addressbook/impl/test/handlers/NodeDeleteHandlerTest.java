@@ -54,6 +54,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
@@ -81,6 +82,9 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     private HandleContext handleContext;
 
     @Mock
+    private PureChecksContext pureChecksContext;
+
+    @Mock
     private NodeDeleteHandler subject;
 
     protected Configuration testConfig;
@@ -102,21 +106,21 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         NodeDeleteTransactionBody transactionBody = mock(NodeDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
-        given(handleContext.body()).willReturn(transaction);
+        given(pureChecksContext.body()).willReturn(transaction);
         given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
         given(transactionBody.nodeId()).willReturn(-1L);
 
-        assertThatThrownBy(() -> subject.pureChecks(handleContext.body())).isInstanceOf(PreCheckException.class);
-        var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(handleContext.body()));
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
         assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
     @DisplayName("pureChecks does not throw exception when node id is not null")
     void testPureChecksDoesNotThrowExceptionWhenNodeIdIsNotNull() {
-        given(handleContext.body()).willReturn(newDeleteTxn());
+        given(pureChecksContext.body()).willReturn(newDeleteTxn());
 
-        assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
+        assertThatCode(() -> subject.pureChecks(pureChecksContext)).doesNotThrowAnyException();
     }
 
     @Test

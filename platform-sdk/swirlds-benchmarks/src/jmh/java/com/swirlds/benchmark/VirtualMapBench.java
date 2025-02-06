@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,67 +260,5 @@ public class VirtualMapBench extends VirtualMapBaseBench {
                 System.currentTimeMillis() - start);
 
         afterTest(true);
-    }
-
-    @Benchmark
-    public void queueMode() throws Exception {
-        beforeTest("queueMode");
-
-        final long[] map = new long[verify ? maxKey : 0];
-        VirtualMap<BenchmarkKey, BenchmarkValue> virtualMap = createMap(map);
-
-        final int roundsPerCopy = maxKey / numFiles;
-        for (int i = 0; i < maxKey; i++) {
-            // Add
-            int index = i;
-            final BenchmarkKey keyToAdd = new BenchmarkKey(index);
-            long val = nextValue();
-            virtualMap.put(keyToAdd, new BenchmarkValue(val));
-            if (verify) {
-                map[index] = val;
-            }
-            // Update
-            if (i >= numRecords / 2) {
-                index = i - numRecords / 2;
-                final BenchmarkKey keyToUpdate = new BenchmarkKey(index);
-                val = nextValue();
-                virtualMap.put(keyToUpdate, new BenchmarkValue(val));
-                if (verify) {
-                    map[index] = val;
-                }
-            }
-            // Remove
-            if (i >= numRecords) {
-                index = i - numRecords;
-                final BenchmarkKey keyToRemove = new BenchmarkKey(index);
-                virtualMap.remove(keyToRemove);
-                if (verify) {
-                    map[index] = 0;
-                }
-            }
-
-            if (i % roundsPerCopy == 0) {
-                virtualMap = copyMap(virtualMap);
-            }
-        }
-
-        // Ensure the map is done with hashing/merging/flushing
-        final var finalMap = flushMap(virtualMap);
-
-        verifyMap(map, finalMap);
-
-        afterTest(true, () -> {
-            finalMap.release();
-            finalMap.getDataSource().close();
-        });
-    }
-
-    public static void main(String[] args) throws Exception {
-        final VirtualMapBench bench = new VirtualMapBench();
-        bench.setup();
-        bench.beforeTest();
-        bench.queueMode();
-        bench.afterTest();
-        bench.destroy();
     }
 }

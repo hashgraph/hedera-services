@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -73,6 +74,9 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected TransactionDispatcher mockDispatcher;
 
+    @Mock
+    protected TransactionChecker mockTransactionChecker;
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext mockContext;
 
@@ -85,6 +89,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
     protected final TransactionKeys testChildKeys =
             createChildKeys(adminKey, schedulerKey, payerKey, optionKey, otherKey);
 
+    @Override
     protected void setUpBase() throws PreCheckException, InvalidKeyException {
         super.setUpBase();
         setUpContext();
@@ -100,7 +105,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
             final Schedule next, final TransactionID parentId, final int startCount) {
         commit(writableById); // commit changes so we can inspect the underlying map
         // should be a new schedule in the map
-        assertThat(scheduleMapById.size()).isEqualTo(startCount + 1);
+        assertThat(scheduleMapById).hasSize(startCount + 1);
         // verifying that the handle really ran and created the new schedule
         final Schedule wrongSchedule = writableSchedules.get(next.scheduleId());
         assertThat(wrongSchedule).isNull(); // shard and realm *should not* match here
@@ -116,11 +121,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         assertThat(resultSchedule.resolutionTime()).isEqualTo(timestampFrom(testConsensusTime));
     }
 
-    protected void verifySignHandleSucceededAndExecuted(
-            final Schedule next, final TransactionID parentId, final int startCount) {
+    protected void verifySignHandleSucceededAndExecuted(final Schedule next, final int startCount) {
         commit(writableById); // commit changes so we can inspect the underlying map
         // should be a new schedule in the map
-        assertThat(scheduleMapById.size()).isEqualTo(startCount + 1);
+        assertThat(scheduleMapById).hasSize(startCount + 1);
         // verifying that the handle really ran and created the new schedule
         final Schedule signedSchedule = writableSchedules.get(next.scheduleId());
         assertThat(signedSchedule).isNotNull(); // shard and realm *should* match here
@@ -131,11 +135,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         assertThat(signedSchedule.resolutionTime()).isEqualTo(timestampFrom(testConsensusTime));
     }
 
-    protected void verifySignHandleSucceededNoExecution(
-            final Schedule next, final TransactionID parentId, final int startCount) {
+    protected void verifySignHandleSucceededNoExecution(final Schedule next, final int startCount) {
         commit(writableById); // commit changes so we can inspect the underlying map
         // should be a new schedule in the map
-        assertThat(scheduleMapById.size()).isEqualTo(startCount + 1);
+        assertThat(scheduleMapById).hasSize(startCount + 1);
         // verifying that the handle really ran and created the new schedule
         final Schedule signedSchedule = writableSchedules.get(next.scheduleId());
         assertThat(signedSchedule).isNotNull(); // shard and realm *should* match here
@@ -151,8 +154,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         long correctShard = parentId.accountID().shardNum();
         final ScheduleID.Builder correctedBuilder = next.scheduleId().copyBuilder();
         correctedBuilder.realmNum(correctRealm).shardNum(correctShard);
-        final ScheduleID correctedId = correctedBuilder.build();
-        return correctedId;
+        return correctedBuilder.build();
     }
 
     protected Timestamp timestampFrom(final Instant valueToConvert) {
