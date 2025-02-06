@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -150,7 +149,6 @@ class HtsCallAttemptTest extends CallTestBase {
                 systemContractMethodRegistry,
                 false);
         assertNull(subject.redirectToken());
-        verifyNoInteractions(nativeOperations);
     }
 
     @Test
@@ -386,7 +384,8 @@ class HtsCallAttemptTest extends CallTestBase {
                                 BigInteger.ONE)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 HTS_167_CONTRACT_ID,
@@ -418,7 +417,8 @@ class HtsCallAttemptTest extends CallTestBase {
                                 BigInteger.TWO)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 HTS_167_CONTRACT_ID,
@@ -447,7 +447,8 @@ class HtsCallAttemptTest extends CallTestBase {
                         .encodeCallWithArgs(asHeadlongAddress(NON_SYSTEM_LONG_ZERO_ADDRESS), BigInteger.TWO)
                         .array(),
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 HTS_167_CONTRACT_ID,
@@ -482,7 +483,8 @@ class HtsCallAttemptTest extends CallTestBase {
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
         // receiverSigRequired on; in which case the sender will need to activate a contract id key
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         if (AssociationsTranslator.ASSOCIATE_ONE.selectorHex().equals(selectorHex)) {
             given(associationsDecoder.decodeAssociateOne(any())).willReturn(TransactionBody.DEFAULT);
@@ -546,7 +548,8 @@ class HtsCallAttemptTest extends CallTestBase {
         final var selectorHex = hexedSelector.substring(2);
         // Even the approval-based transfers need a verification strategy since the receiver could have
         // receiverSigRequired on; in which case the sender will need to activate a contract id key
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, true, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, true, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         if (ClassicTransfersTranslator.CRYPTO_TRANSFER.selectorHex().equals(selectorHex)) {
             given(classicTransfersDecoder.decodeCryptoTransfer(any(), any())).willReturn(TransactionBody.DEFAULT);
@@ -603,7 +606,8 @@ class HtsCallAttemptTest extends CallTestBase {
         "0xe0f4059a,NON_FUNGIBLE",
     })
     void constructsMints(String hexedSelector, LinkedTokenType linkedTokenType) {
-        given(verificationStrategies.activatingOnlyContractKeysFor(EIP_1014_ADDRESS, false, nativeOperations))
+        given(verificationStrategies.activatingOnlyContractKeysFor(
+                        EIP_1014_ADDRESS, false, nativeOperations, DEFAULT_CONFIG))
                 .willReturn(strategy);
         given(addressIdConverter.convertSender(EIP_1014_ADDRESS)).willReturn(A_NEW_ACCOUNT_ID);
         lenient()

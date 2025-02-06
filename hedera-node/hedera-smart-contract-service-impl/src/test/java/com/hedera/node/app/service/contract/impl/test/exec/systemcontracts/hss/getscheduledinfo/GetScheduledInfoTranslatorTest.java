@@ -21,9 +21,11 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHssAttemptWithSelectorAndCustomConfig;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.HssCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hss.getscheduledinfo.GetScheduledFungibleTokenCreateCall;
@@ -138,6 +140,11 @@ class GetScheduledInfoTranslatorTest {
         given(attempt.enhancement()).willReturn(enhancement);
         given(attempt.configuration()).willReturn(DEFAULT_CONFIG);
 
+        var mockHederaOperations = mock(HederaOperations.class);
+        given(enhancement.operations()).willReturn(mockHederaOperations);
+        given(mockHederaOperations.getShard()).willReturn(0L);
+        given(mockHederaOperations.getRealm()).willReturn(0L);
+
         var result = subject.callFrom(attempt);
 
         assertInstanceOf(GetScheduledFungibleTokenCreateCall.class, result);
@@ -147,6 +154,10 @@ class GetScheduledInfoTranslatorTest {
     void createsNonFungibleTokenCall() {
         given(attempt.isSelector(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO))
                 .willReturn(false);
+        var mockHederaOperations = mock(HederaOperations.class);
+        given(enhancement.operations()).willReturn(mockHederaOperations);
+        given(mockHederaOperations.getShard()).willReturn(0L);
+        given(mockHederaOperations.getRealm()).willReturn(0L);
         given(attempt.inputBytes())
                 .willReturn(GetScheduledInfoTranslator.GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO
                         .encodeCallWithArgs(ConversionUtils.headlongAddressOf(CALLED_SCHEDULE_ID))

@@ -55,8 +55,10 @@ public class EvmAddressAliasCall extends AbstractCall {
     public @NonNull PricedResult execute() {
         final var explicitAddress = explicitFromHeadlong(address);
 
+        final var shard = enhancement.nativeOperations().getShardNum();
+        final var realm = enhancement.nativeOperations().getRealmNum();
         // If the address is not a long zero then return fail
-        if (!isLongZeroAddress(explicitAddress)) {
+        if (!isLongZeroAddress(shard, realm, explicitAddress)) {
             return gasOnly(fullResultsFor(INVALID_ACCOUNT_ID, ZERO_ADDRESS), INVALID_ACCOUNT_ID, true);
         }
 

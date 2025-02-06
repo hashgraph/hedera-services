@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,8 @@ public class SyntheticIds {
         final var accountNum = accountNumberForEvmReference(address, nativeOperations);
         if (accountNum == MISSING_ENTITY_NUMBER) {
             final var explicit = explicitFromHeadlong(address);
-            if (isLongZeroAddress(explicit)) {
+
+            if (isLongZeroAddress(nativeOperations.getShardNum(), nativeOperations.getRealmNum(), explicit)) {
                 // References to missing long-zero addresses are synthesized as aliases for
                 // credits and numeric ids for debits
                 return isCredit ? aliasIdWith(explicit) : numericIdWith(numberOfLongZero(explicit));

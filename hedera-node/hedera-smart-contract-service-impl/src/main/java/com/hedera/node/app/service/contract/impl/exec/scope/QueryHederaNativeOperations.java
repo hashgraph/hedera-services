@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -163,5 +164,21 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     @Override
     public TransactionID getTransactionID() {
         throw new UnsupportedOperationException("Cannot get top level transaction ID in query context");
+    }
+
+    /**
+     * Returns the number of the shard from HederaConfig.
+     * @return the shard number
+     */
+    public long getShardNum() {
+        return context.configuration().getConfigData(HederaConfig.class).shard();
+    }
+
+    /**
+     * Returns the number of the realm from HederaConfig.
+     * @return the realm number
+     */
+    public long getRealmNum() {
+        return context.configuration().getConfigData(HederaConfig.class).realm();
     }
 }

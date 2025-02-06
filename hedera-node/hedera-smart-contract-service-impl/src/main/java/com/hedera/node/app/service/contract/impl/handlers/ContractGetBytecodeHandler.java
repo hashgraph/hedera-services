@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -125,7 +126,13 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     private Bytes bytecodeFrom(@NonNull final QueryContext context, @NonNull Account contract) {
         final var store = context.createStore(ContractStateStore.class);
         var contractNumber = contract.accountIdOrThrow().accountNumOrThrow();
-        var contractId = ContractID.newBuilder().contractNum(contractNumber).build();
+        var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+
+        var contractId = ContractID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .contractNum(contractNumber)
+                .build();
         final var bytecode = store.getBytecode(contractId);
         return bytecode.code();
     }

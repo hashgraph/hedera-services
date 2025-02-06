@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
@@ -99,7 +100,9 @@ public class CustomCallOperation extends CallOperation {
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
-        return !isLongZero(toAddress)
+        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
+        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
+        return !isLongZero(shard, realm, toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
                 && !addressChecks.isPresent(toAddress, frame);
     }

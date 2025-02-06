@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,6 +136,7 @@ class FrameRunnerTest {
         final var inOrder = Mockito.inOrder(frame, childFrame, tracer, messageCallProcessor, contractCreationProcessor);
 
         givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        mockWorldUpdater();
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -155,6 +156,7 @@ class FrameRunnerTest {
 
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
+        mockWorldUpdater();
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -175,6 +177,7 @@ class FrameRunnerTest {
 
         givenBaseReceiverSigCheckHaltWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INVALID_SIGNATURE));
+        mockWorldUpdater();
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -195,6 +198,7 @@ class FrameRunnerTest {
 
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATION));
+        mockWorldUpdater();
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -217,6 +221,8 @@ class FrameRunnerTest {
 
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(INSUFFICIENT_CHILD_RECORDS));
+
+        mockWorldUpdater();
 
         final var result = subject.runToCompletion(
                 GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
@@ -317,5 +323,11 @@ class FrameRunnerTest {
                 * Math.min(frame.getSelfDestructs().size(), nominalUsage / gasCalculator.getMaxRefundQuotient());
         nominalUsage -= (selfDestructRefund + frame.getGasRefund());
         return Math.max(nominalUsage, GAS_LIMIT - GAS_LIMIT * HEDERA_MAX_REFUND_PERCENTAGE / 100);
+    }
+
+    private void mockWorldUpdater() {
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getShardNum()).willReturn(0L);
+        given(worldUpdater.getRealmNum()).willReturn(0L);
     }
 }

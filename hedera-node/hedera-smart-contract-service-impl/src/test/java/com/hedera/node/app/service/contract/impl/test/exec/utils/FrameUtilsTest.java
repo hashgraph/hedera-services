@@ -368,6 +368,7 @@ class FrameUtilsTest {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        mockWorldUpdater();
         assertTrue(FrameUtils.contractRequired(frame, EIP_1014_ADDRESS, featureFlags));
         verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
@@ -377,6 +378,7 @@ class FrameUtilsTest {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        mockWorldUpdater();
         assertTrue(FrameUtils.contractRequired(frame, NON_SYSTEM_BUT_IS_LONG_ZERO_ADDRESS, featureFlags));
         verify(featureFlags)
                 .isAllowCallsToNonContractAccountsEnabled(
@@ -391,6 +393,7 @@ class FrameUtilsTest {
         givenNonInitialFrame();
         given(frame.getMessageFrameStack()).willReturn(stack);
         given(initialFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
+        mockWorldUpdater();
         assertTrue(FrameUtils.contractRequired(frame, Address.fromHexString("0xFFFFFFFFFFFFFFFF"), featureFlags));
         verify(featureFlags).isAllowCallsToNonContractAccountsEnabled(DEFAULT_CONTRACTS_CONFIG, null);
     }
@@ -458,5 +461,11 @@ class FrameUtilsTest {
             Assertions.fail(String.format(UNEXPECTED_THROW, e, clazz));
         }
         Assertions.fail(String.format(NO_THROW, clazz));
+    }
+
+    private void mockWorldUpdater() {
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(proxyWorldUpdater.getShardNum()).willReturn(0L);
+        given(proxyWorldUpdater.getRealmNum()).willReturn(0L);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ma
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -44,13 +46,20 @@ public class DefaultVerificationStrategies implements VerificationStrategies {
     public VerificationStrategy activatingOnlyContractKeysFor(
             @NonNull final Address sender,
             final boolean requiresDelegatePermission,
-            @NonNull final HederaNativeOperations nativeOperations) {
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final Configuration configuration) {
         final var contractNum = maybeMissingNumberOf(sender, nativeOperations);
         if (contractNum == MISSING_ENTITY_NUMBER) {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
+
+        var hederaConfig = configuration.getConfigData(HederaConfig.class);
         return new ActiveContractVerificationStrategy(
-                ContractID.newBuilder().contractNum(contractNum).build(),
+                ContractID.newBuilder()
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
+                        .contractNum(contractNum)
+                        .build(),
                 tuweniToPbjBytes(sender),
                 requiresDelegatePermission,
                 ActiveContractVerificationStrategy.UseTopLevelSigs.NO);

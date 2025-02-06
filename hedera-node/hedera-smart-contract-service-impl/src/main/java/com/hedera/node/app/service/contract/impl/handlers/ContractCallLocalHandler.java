@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -99,6 +100,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
     @Override
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var query = context.query();
         final ContractCallLocalQuery op = query.contractCallLocalOrThrow();
         final var requestedGas = op.gas();
@@ -125,7 +127,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
             // For convenience also translate a long-zero address to a token ID
             if (contractID.hasEvmAddress()) {
                 final var evmAddress = contractID.evmAddressOrThrow().toByteArray();
-                if (isLongZeroAddress(evmAddress)) {
+                if (isLongZeroAddress(hederaConfig.shard(), hederaConfig.realm(), evmAddress)) {
                     tokenNum = numberOfLongZero(evmAddress);
                 }
             }
