@@ -78,7 +78,7 @@ public class PlatformStateFacade {
     }
 
     public boolean isGenesisStateOf(@NonNull final State state) {
-        return getReadablePlatformStateOf(state).getRound() == GENESIS_ROUND;
+        return readablePlatformStateStore(state).getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -114,7 +114,7 @@ public class PlatformStateFacade {
     @Nullable
     public SoftwareVersion creationSoftwareVersionOf(@NonNull final State state) {
         requireNonNull(state);
-        return readablePlatformStateOf(state).getCreationSoftwareVersion();
+        return readablePlatformStateStore(state).getCreationSoftwareVersion();
     }
 
     /**
@@ -147,16 +147,16 @@ public class PlatformStateFacade {
 
     @Nullable
     public Hash legacyRunningEventHashOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getLegacyRunningEventHash();
+        return readablePlatformStateStore(root).getLegacyRunningEventHash();
     }
 
     public long ancientThresholdOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getAncientThreshold();
+        return readablePlatformStateStore(root).getAncientThreshold();
     }
 
     @Nullable
     public com.swirlds.platform.consensus.ConsensusSnapshot consensusSnapshotOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getSnapshot();
+        return readablePlatformStateStore(root).getSnapshot();
     }
 
     protected PlatformStateAccessor getReadablePlatformStateOf(@NonNull final State root) {
@@ -165,29 +165,45 @@ public class PlatformStateFacade {
 
     @Nullable
     public SoftwareVersion firstVersionInBirthRoundModeOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getFirstVersionInBirthRoundMode();
+        return readablePlatformStateStore(root).getFirstVersionInBirthRoundMode();
     }
 
     public long lastRoundBeforeBirthRoundModeOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getLastRoundBeforeBirthRoundMode();
+        return readablePlatformStateStore(root).getLastRoundBeforeBirthRoundMode();
     }
 
     public long lowestJudgeGenerationBeforeBirthRoundModeOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getLowestJudgeGenerationBeforeBirthRoundMode();
+        return readablePlatformStateStore(root).getLowestJudgeGenerationBeforeBirthRoundMode();
     }
 
     @Nullable
     public Instant consensusTimestampOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getConsensusTimestamp();
+        return readablePlatformStateStore(root).getConsensusTimestamp();
     }
 
     public Instant freezeTimeOf(@NonNull final State root) {
-        return getReadablePlatformStateOf(root).getFreezeTime();
+        return readablePlatformStateStore(root).getFreezeTime();
     }
 
     public void updateLastFrozenTime(@NonNull final State root) {
         getWritablePlatformStateOf(root).setLastFrozenTime(freezeTimeOf(root));
     }
+
+    @Nullable
+    public Instant lastFrozenTimeOf(State state) {
+        return readablePlatformStateStore(state).getLastFrozenTime();
+    }
+
+    @Nullable
+    public AddressBook addressBookOf(State state) {
+        return readablePlatformStateStore(state).getAddressBook();
+    }
+
+    @Nullable
+    public AddressBook previousAddressBookOf(State state) {
+        return readablePlatformStateStore(state).getPreviousAddressBook();
+    }
+
 
     /**
      * Get writable platform state. Works only on mutable {@link State}.
@@ -255,17 +271,6 @@ public class PlatformStateFacade {
         writablePlatformStateStore(state).setAllFrom(accessor);
     }
 
-    /**
-     * Get readable platform state.
-     * Works on both - mutable and immutable {@link State} and, therefore, this method should be preferred.
-     *
-     * @return immutable platform state
-     */
-    @NonNull
-    protected PlatformStateAccessor readablePlatformStateOf(@NonNull final State state) {
-        return readablePlatformStateStore(state);
-    }
-
     private PlatformStateAccessor readablePlatformStateStore(@NonNull final State state) {
         ReadableStates readableStates = state.getReadableStates(NAME);
         if (readableStates.isEmpty()) {
@@ -285,21 +290,7 @@ public class PlatformStateFacade {
      */
     @NonNull
     public String getInfoString(@NonNull final State state, final int hashDepth) {
-        return createInfoString(hashDepth, readablePlatformStateOf(state), state.getHash(), state);
+        return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), state);
     }
 
-    @Nullable
-    public Instant lastFrozenTimeOf(State state) {
-        return readablePlatformStateStore(state).getLastFrozenTime();
-    }
-
-    @Nullable
-    public AddressBook addressBookOf(State state) {
-        return readablePlatformStateStore(state).getAddressBook();
-    }
-
-    @Nullable
-    public AddressBook previousAddressBookOf(State state) {
-        return readablePlatformStateStore(state).getPreviousAddressBook();
-    }
 }
