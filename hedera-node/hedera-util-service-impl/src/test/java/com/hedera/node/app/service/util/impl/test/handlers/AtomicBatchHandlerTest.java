@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.util.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -45,6 +46,8 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,10 +87,22 @@ class AtomicBatchHandlerTest {
     }
 
     @Test
+    // BATCH_38
+    void batchWithNoTransactionsShouldFail() {
+        final var txns = new ArrayList<Transaction>();
+        txns.add(null);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, txns);
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        willThrow(new HandleException(BATCH_LIST_CONTAINS_NULL_VALUES))
+                .given(handleContext)
+                .bodyFromTransaction(txnBody.atomicBatch().transactions().get(0));
+    }
+
+    @Test
     void cannotParseInnerTransactionFailed() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         willThrow(new HandleException(INVALID_TRANSACTION_BODY))
@@ -100,10 +115,9 @@ class AtomicBatchHandlerTest {
 
     @Test
     void innerTransactionFailed() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
@@ -116,10 +130,9 @@ class AtomicBatchHandlerTest {
 
     @Test
     void handleDispatched() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
@@ -138,12 +151,12 @@ class AtomicBatchHandlerTest {
         final var batchKey = SIMPLE_KEY_A;
         final var transaction1 = mock(Transaction.class);
         final var transaction2 = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction1, transaction2);
-        final var innerTxnBody1 = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction1, transaction2);
+        final var innerTxnBody1 = newTxnBodyBuilder(payerId2, consensusTimestamp, batchKey)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
-        final var innerTxnBody2 = newTxnBodyBuilder(payerId3, consensusTimestamp)
+        final var innerTxnBody2 = newTxnBodyBuilder(payerId3, consensusTimestamp, batchKey)
                 .consensusDeleteTopic(
                         ConsensusDeleteTopicTransactionBody.newBuilder().build())
                 .build();
@@ -161,20 +174,32 @@ class AtomicBatchHandlerTest {
         verify(handleContext).dispatch(dispatchOptions2);
     }
 
+    // create atomic batch body
     private TransactionBody newAtomicBatch(
-            AccountID payerId, Timestamp consensusTimestamp, Key batchKey, Transaction... transactions) {
+            AccountID payerId, Timestamp consensusTimestamp, List<Transaction> transactions) {
         final var atomicBatchBuilder = AtomicBatchTransactionBody.newBuilder().transactions(transactions);
-        return newTxnBodyBuilder(payerId, consensusTimestamp)
-                .batchKey(batchKey)
-                .atomicBatch(atomicBatchBuilder)
-                .build();
-    }
-
-    private TransactionBody.Builder newTxnBodyBuilder(AccountID payerId, Timestamp consensusTimestamp) {
         final var txnId = TransactionID.newBuilder()
                 .accountID(payerId)
                 .transactionValidStart(consensusTimestamp)
                 .build();
-        return TransactionBody.newBuilder().transactionID(txnId);
+
+        return TransactionBody.newBuilder()
+                .atomicBatch(atomicBatchBuilder)
+                .transactionID(txnId)
+                .build();
+    }
+
+    private TransactionBody newAtomicBatch(
+            AccountID payerId, Timestamp consensusTimestamp, Transaction... transactions) {
+        return newAtomicBatch(payerId, consensusTimestamp, List.of(transactions));
+    }
+
+    // create inner txn body with a batch key
+    private TransactionBody.Builder newTxnBodyBuilder(AccountID payerId, Timestamp consensusTimestamp, Key batchKey) {
+        final var txnId = TransactionID.newBuilder()
+                .accountID(payerId)
+                .transactionValidStart(consensusTimestamp)
+                .build();
+        return TransactionBody.newBuilder().transactionID(txnId).batchKey(batchKey);
     }
 }

@@ -23,14 +23,23 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_LIST_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
@@ -131,5 +140,57 @@ public class AtomicBatchTest {
                 getTxnRecord(atomicTxn).logged(),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
+    }
+
+    @Nested
+    @DisplayName("Batch Constraints - NEGATIVE")
+    class BatchConstraintsNegative {
+
+        @HapiTest
+        @DisplayName("Empty batch should fail")
+        // BATCH_37
+        public Stream<DynamicTest> submitEmptyBatch() {
+            return hapiTest(atomicBatch().hasPrecheck(BATCH_LIST_EMPTY));
+        }
+
+        @HapiTest
+        @DisplayName("Batch with invalid duration should fail")
+        // BATCH_39
+        public Stream<DynamicTest> batchWithInvalidDurationShouldFail() {
+            return hapiTest(
+                    cryptoCreate("batchOperator").balance(FIVE_HBARS),
+                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                            .validDurationSecs(-5)
+                            .payingWith("batchOperator")
+                    .hasPrecheck(INVALID_TRANSACTION_DURATION));
+        }
+
+        @HapiTest
+        @DisplayName("Batch containing inner txn with invalid duration should fail")
+        // BATCH_41
+        @Disabled // TODO: Enable after adding time box validations on inner transactions
+        public Stream<DynamicTest> innerTxnWithInvalidDuration() {
+            return hapiTest(
+                    cryptoCreate("batchOperator").balance(FIVE_HBARS),
+                    atomicBatch(cryptoCreate("foo").validDurationSecs(-1).batchKey("batchOperator"))
+                            .payingWith("batchOperator")
+                            .hasPrecheck(INVALID_TRANSACTION_DURATION));
+        }
+
+        @HapiTest
+        @DisplayName("Submit same batch twice should fail")
+        // BATCH_42
+        public Stream<DynamicTest> submitSameBatch() {
+            return hapiTest(
+                    cryptoCreate("batchOperator").balance(FIVE_HBARS),
+                    usableTxnIdNamed("batchId").payerId("batchOperator"),
+                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                            .txnId("batchId")
+                            .payingWith("batchOperator"),
+                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                            .txnId("batchId")
+                            .payingWith("batchOperator")
+                            .hasPrecheck(DUPLICATE_TRANSACTION));
+        }
     }
 }
