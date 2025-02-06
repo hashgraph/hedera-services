@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -176,7 +176,7 @@ class HevmStaticTransactionFactoryTest {
                             b.functionParameters(CALL_DATA);
                         }))
                         .build(),
-                new HandleException(ResponseCodeEnum.INVALID_CONTRACT_ID));
+                new WorkflowException(ResponseCodeEnum.INVALID_CONTRACT_ID));
 
         assertThat(transaction.senderId()).isEqualTo(SENDER_ID);
         assertThat(transaction.relayerId()).isNull();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,7 +40,7 @@ public record HederaEvmTransaction(
         long offeredGasPrice,
         long maxGasAllowance,
         @Nullable ContractCreateTransactionBody hapiCreation,
-        @Nullable HandleException exception) {
+        @Nullable WorkflowException exception) {
     public static final long NOT_APPLICABLE = -1L;
 
     public boolean hasExpectedNonce() {
@@ -131,7 +131,7 @@ public record HederaEvmTransaction(
     /**
      * @return a copy of this transaction with the given {@code exception}
      */
-    public HederaEvmTransaction withException(@NonNull final HandleException exception) {
+    public HederaEvmTransaction withException(@NonNull final WorkflowException exception) {
         return new HederaEvmTransaction(
                 this.senderId,
                 this.relayerId,

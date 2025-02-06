@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFixedFeeAssessor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFractionalFeeAssessor;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.math.BigInteger;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -325,7 +325,7 @@ public class CustomFractionalFeeAssessorTest {
                 withCustomToken(List.of(firstFractionalCustomFee, secondFractionalCustomFee), FUNGIBLE_COMMON);
 
         assertThatThrownBy(() -> subject.assessFractionalFees(token, payer, result))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE));
 
         // This is not Net of transfers fee, so it is not assessed
@@ -347,7 +347,7 @@ public class CustomFractionalFeeAssessorTest {
         final Token token = withCustomToken(List.of(nonsenseCustomFee, secondFractionalCustomFee), FUNGIBLE_COMMON);
 
         assertThatThrownBy(() -> subject.assessFractionalFees(token, payer, result))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE));
 
         // This is not Net of transfers fee, so it is not assessed
@@ -365,7 +365,7 @@ public class CustomFractionalFeeAssessorTest {
         final Token token = withCustomToken(List.of(nonsenseCustomFee, secondFractionalCustomFee), FUNGIBLE_COMMON);
 
         assertThatThrownBy(() -> subject.assessFractionalFees(token, payer, result))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
@@ -378,7 +378,7 @@ public class CustomFractionalFeeAssessorTest {
         final Token token = withCustomToken(List.of(), FUNGIBLE_COMMON);
 
         assertThatThrownBy(() -> subject.assessFractionalFees(token, payer, result))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(CUSTOM_FEE_MUST_BE_POSITIVE));
     }
 

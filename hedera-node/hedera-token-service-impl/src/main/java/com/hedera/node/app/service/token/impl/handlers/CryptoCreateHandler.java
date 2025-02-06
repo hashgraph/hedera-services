@@ -54,10 +54,10 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -78,11 +78,11 @@ import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
@@ -230,7 +230,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * the transaction fee.
      *
      * @throws NullPointerException if one of the arguments is {@code null}
-     * @throws HandleException      if the transaction is not successful due to payer account being deleted or has
+     * @throws WorkflowException      if the transaction is not successful due to payer account being deleted or has
      *                              insufficient balance or the account is not created due to the usage of a price
      *                              regime
      */
@@ -322,14 +322,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         // We have a limit on the total maximum number of entities that can be created on the network, for different
         // types of entities. We need to verify that creating a new account won't exceed that number.
         if (accountStore.getNumberOfAccounts() + 1 > accountConfig.maxNumber()) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+            throw new WorkflowException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
         // Aliases are fully supported in mainnet, but we still have this feature flag. If it is disabled, then
         // you cannot create an account with an alias. FUTURE: We may be able to remove this flag.
         final var hasAlias = alias.length() > 0;
         if (hasAlias && !cryptoCreateWithAliasConfig.enabled()) {
-            throw new HandleException(NOT_SUPPORTED);
+            throw new WorkflowException(NOT_SUPPORTED);
         }
 
         // We have to check the memo, which may be too long or in some other way be invalid.
@@ -391,10 +391,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     private void validatePayer(@NonNull final Account payer, final long newPayerBalance) {
         // If the payer account is deleted, throw an exception
         if (payer.deleted()) {
-            throw new HandleException(ACCOUNT_DELETED);
+            throw new WorkflowException(ACCOUNT_DELETED);
         }
         if (newPayerBalance < 0) {
-            throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+            throw new WorkflowException(INSUFFICIENT_PAYER_BALANCE);
         }
         // FUTURE: check if payer account is detached when we have started expiring accounts ?
     }

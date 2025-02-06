@@ -55,9 +55,9 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -327,7 +327,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 return Fees.FREE;
             }
         } catch (UnknownHederaFunctionality ex) {
-            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
 
         return dispatcher.dispatchComputeFees(new ChildFeeContextImpl(

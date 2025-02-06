@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRe
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -153,7 +153,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);
 
         assertThatThrownBy(() -> adjustHbarChangesStep.doIn(transferContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE));
     }
 
@@ -184,7 +184,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         assertThat(receiverAccount.tinybarBalance()).isEqualTo(10000L);
 
         assertThatThrownBy(() -> adjustHbarChangesStep.doIn(transferContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE));
     }
 

@@ -77,7 +77,7 @@ public interface TransactionHandler {
      *
      * @param context the {@link HandleContext} which collects all information
      * @throws NullPointerException if {@code context} is {@code null}
-     * @throws HandleException if an expected failure occurred
+     * @throws WorkflowException if an expected failure occurred
      */
-    void handle(@NonNull final HandleContext context) throws HandleException;
+    void handle(@NonNull final HandleContext context) throws WorkflowException;
 }

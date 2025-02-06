@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,9 +47,9 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -81,16 +81,16 @@ public abstract class AbstractScheduleHandler {
      * @param schedule the schedule
      * @param fn the function to get required keys by category
      * @return the schedule's signing requirements
-     * @throws HandleException if the signing requirements cannot be determined
+     * @throws WorkflowException if the signing requirements cannot be determined
      */
     protected @NonNull TransactionKeys getTransactionKeysOrThrow(
-            @NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn) throws HandleException {
+            @NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn) throws WorkflowException {
         requireNonNull(schedule);
         requireNonNull(fn);
         try {
             return getRequiredKeys(schedule, fn);
         } catch (final PreCheckException e) {
-            throw new HandleException(e.responseCode());
+            throw new WorkflowException(e.responseCode());
         }
     }
 

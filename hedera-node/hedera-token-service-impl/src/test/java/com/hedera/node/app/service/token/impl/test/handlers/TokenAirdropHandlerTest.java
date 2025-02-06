@@ -61,9 +61,9 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
@@ -432,7 +432,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.tryToChargePayer(anyLong())).willReturn(true);
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -503,12 +503,12 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
 
         givenAirdropTxn(false, zeroAccountId, NFT_AIRDROP);
         Assertions.assertThatThrownBy(() -> tokenAirdropHandler.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
@@ -522,7 +522,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     void calculateFeesNotSupportedOperation() {
         setupAirdropMocks(TokenAirdropTransactionBody.DEFAULT, false);
 
-        final var exception = assertThrows(HandleException.class, () -> tokenAirdropHandler.calculateFees(feeContext));
+        final var exception =
+                assertThrows(WorkflowException.class, () -> tokenAirdropHandler.calculateFees(feeContext));
         assertEquals(ResponseCodeEnum.NOT_SUPPORTED, exception.getStatus());
     }
 

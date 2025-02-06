@@ -70,9 +70,9 @@ import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import org.assertj.core.api.Assertions;
@@ -212,7 +212,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
@@ -225,7 +225,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
 
@@ -244,7 +244,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
         }
 
@@ -260,7 +260,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
         }
 
@@ -279,7 +279,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_WAS_DELETED));
         }
 
@@ -298,7 +298,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_IS_PAUSED));
         }
 
@@ -319,7 +319,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_HAS_NO_WIPE_KEY));
         }
 
@@ -337,7 +337,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
 
@@ -354,7 +354,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT));
         }
 
@@ -381,7 +381,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
@@ -410,7 +410,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
@@ -506,7 +506,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_NFT_ID));
         }
 
@@ -531,7 +531,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(ACCOUNT_DOES_NOT_OWN_WIPED_NFT));
         }
 
@@ -558,7 +558,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
@@ -584,7 +584,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 

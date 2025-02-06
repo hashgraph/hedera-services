@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeysForDelete;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -35,11 +35,11 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -102,12 +102,12 @@ public class FileDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+    public void handle(@NonNull final HandleContext handleContext) throws WorkflowException {
         requireNonNull(handleContext);
 
         final var fileDeleteTransactionBody = handleContext.body().fileDeleteOrThrow();
         if (!fileDeleteTransactionBody.hasFileID()) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 

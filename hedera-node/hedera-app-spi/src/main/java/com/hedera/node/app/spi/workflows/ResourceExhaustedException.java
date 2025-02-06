@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@link HandleException} specialization that indicates that a resource limit has been exceeded.
+ * A {@link WorkflowException} specialization that indicates that a resource limit has been exceeded.
  */
-public class ResourceExhaustedException extends HandleException {
+public class ResourceExhaustedException extends WorkflowException {
     public ResourceExhaustedException(@NonNull final ResponseCodeEnum status) {
         super(requireNonNull(status));
     }

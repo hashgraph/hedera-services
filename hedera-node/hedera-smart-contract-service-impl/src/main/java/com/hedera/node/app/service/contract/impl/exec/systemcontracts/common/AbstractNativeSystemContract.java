@@ -27,7 +27,7 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
 import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.successResultOf;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
@@ -41,7 +41,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -157,8 +157,8 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
                             contractID);
                 }
             }
-        } catch (final HandleException handleException) {
-            final var fullResult = haltHandleException(handleException, frame.getRemainingGas());
+        } catch (final WorkflowException workflowException) {
+            final var fullResult = haltWorkflowException(workflowException, frame.getRemainingGas());
             reportToMetrics(call, fullResult);
             return fullResult;
         } catch (final Exception internal) {
@@ -195,12 +195,12 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
     }
 
     // potentially other cases could be handled here if necessary
-    private static FullResult haltHandleException(
-            @NonNull final HandleException handleException, final long remainingGas) {
-        if (handleException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
+    private static FullResult haltWorkflowException(
+            @NonNull final WorkflowException workflowException, final long remainingGas) {
+        if (workflowException.getStatus().equals(MAX_CHILD_RECORDS_EXCEEDED)) {
             return haltResult(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS, remainingGas);
         }
-        throw handleException;
+        throw workflowException;
     }
 
     //

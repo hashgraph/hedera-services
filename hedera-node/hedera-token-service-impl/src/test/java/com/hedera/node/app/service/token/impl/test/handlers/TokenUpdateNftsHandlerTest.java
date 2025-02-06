@@ -62,10 +62,10 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -207,7 +207,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .newNftUpdateTransactionBody(nonFungibleTokenId, null, serialNumbers.toArray(new Long[0]));
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext), "Invalid NFT serial number")
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_NFT_SERIAL_NUMBER));
     }
 
@@ -219,7 +219,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
                 .newNftUpdateTransactionBody(nonFungibleTokenId, null, serialNumbers.toArray(new Long[0]));
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext), "Non-existing NFT serial number")
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_NFT_ID));
     }
 
@@ -387,7 +387,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_NFT_ID));
     }
 

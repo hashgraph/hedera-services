@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -97,7 +97,7 @@ class TokenHandlerHelperTest {
 
         Assertions.assertThatThrownBy(() ->
                         TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
@@ -112,7 +112,7 @@ class TokenHandlerHelperTest {
 
         Assertions.assertThatThrownBy(() ->
                         TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
 
@@ -130,7 +130,7 @@ class TokenHandlerHelperTest {
                 .willReturn(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         Assertions.assertThatThrownBy(() ->
                         TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -149,7 +149,7 @@ class TokenHandlerHelperTest {
 
         Assertions.assertThatThrownBy(() ->
                         TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -168,7 +168,7 @@ class TokenHandlerHelperTest {
 
         Assertions.assertThatThrownBy(() ->
                         TokenHandlerHelper.getIfUsable(ACCT_2300, accountStore, expiryValidator, INVALID_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -222,7 +222,7 @@ class TokenHandlerHelperTest {
         given(tokenStore.get(notNull())).willReturn(null);
 
         Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
@@ -236,7 +236,7 @@ class TokenHandlerHelperTest {
                         .build());
 
         Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_WAS_DELETED));
     }
 
@@ -250,7 +250,7 @@ class TokenHandlerHelperTest {
                         .build());
 
         Assertions.assertThatThrownBy(() -> getIfUsable(TOKEN_ID_45, tokenStore))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_IS_PAUSED));
     }
 
@@ -283,7 +283,7 @@ class TokenHandlerHelperTest {
     @Test
     void tokenRel_getIfUsable_notFound() {
         Assertions.assertThatThrownBy(() -> getIfUsable(ACCT_2300, TOKEN_ID_45, tokenRelStore))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
@@ -325,7 +325,7 @@ class TokenHandlerHelperTest {
                         .build());
 
         Assertions.assertThatThrownBy(() -> getIfUsable(NFT_ID, nftStore))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_NFT_ID));
     }
 }

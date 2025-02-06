@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextI
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -121,10 +121,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
         given(handleContext.savepointStack()).willReturn(stack);
         given(stack.getBaseBuilder(any())).willReturn(builder);
-        given(builder.isUserDispatch()).willThrow(new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        given(builder.isUserDispatch()).willThrow(new WorkflowException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
 
         AssertionsForClassTypes.assertThatThrownBy(() -> subjectWithApproval.doIn(transferContext))
-                .isInstanceOf(HandleException.class);
+                .isInstanceOf(WorkflowException.class);
     }
 
     @Test
@@ -143,7 +143,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(builder.isUserDispatch()).willReturn(true);
 
         AssertionsForClassTypes.assertThatThrownBy(() -> subjectNFTWithApproval.doIn(transferContext))
-                .isInstanceOf(HandleException.class);
+                .isInstanceOf(WorkflowException.class);
     }
 
     @Test
@@ -163,7 +163,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.savepointStack()).willReturn(stack);
 
         AssertionsForClassTypes.assertThatThrownBy(() -> subjectNFTWithApproval.doIn(transferContext))
-                .isInstanceOf(HandleException.class);
+                .isInstanceOf(WorkflowException.class);
     }
 
     void givenValidTxn() {

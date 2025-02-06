@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.stack.savepoints;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -136,7 +136,7 @@ public class BuilderSinkImpl implements BuilderSink {
     public void addPrecedingOrThrow(@NonNull final StreamBuilder builder) {
         requireNonNull(builder);
         if (precedingCapacity() == 0) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+            throw new WorkflowException(MAX_CHILD_RECORDS_EXCEEDED);
         }
         precedingBuilders.add(builder);
     }
@@ -145,7 +145,7 @@ public class BuilderSinkImpl implements BuilderSink {
     public void addFollowingOrThrow(@NonNull final StreamBuilder builder) {
         requireNonNull(builder);
         if (followingCapacity() == 0) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+            throw new WorkflowException(MAX_CHILD_RECORDS_EXCEEDED);
         }
         followingBuilders.add(builder);
     }

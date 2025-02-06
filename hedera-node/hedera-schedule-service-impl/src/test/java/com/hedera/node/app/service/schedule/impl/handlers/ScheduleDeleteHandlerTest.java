@@ -108,13 +108,13 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         assertThat(beforeDelete.deleted()).isFalse();
         prepareContext(scheduleDeleteTransaction(testScheduleID));
         given(keyVerifier.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, false));
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.UNAUTHORIZED);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.UNAUTHORIZED);
         final Schedule afterDelete = scheduleStore.get(testScheduleID);
         assertThat(afterDelete.deleted()).isFalse();
     }
 
     @Test
-    void verifyHandleExceptionsForDelete() throws PreCheckException {
+    void verifyWorkflowExceptionsForDelete() throws PreCheckException {
         final Schedule beforeDelete = scheduleStore.get(testScheduleID);
         assertThat(beforeDelete.deleted()).isFalse();
         final TransactionBody baseDelete = scheduleDeleteTransaction(testScheduleID);
@@ -130,19 +130,19 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         writableSchedules.put(noAdmin);
         failures = baseDelete.scheduleDelete().copyBuilder().scheduleID(noAdmin.scheduleId());
         prepareContext(nextFailure.scheduleDelete(failures).build());
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE);
 
         final Schedule deleted = failBase.copyBuilder().deleted(true).build();
         writableSchedules.put(deleted);
         failures = baseDelete.scheduleDelete().copyBuilder().scheduleID(deleted.scheduleId());
         prepareContext(nextFailure.scheduleDelete(failures).build());
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
 
         final Schedule executed = failBase.copyBuilder().executed(true).build();
         writableSchedules.put(executed);
         failures = baseDelete.scheduleDelete().copyBuilder().scheduleID(executed.scheduleId());
         prepareContext(nextFailure.scheduleDelete(failures).build());
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED);
     }
 
     private TransactionBody scheduleDeleteTransaction(final ScheduleID idToDelete) {

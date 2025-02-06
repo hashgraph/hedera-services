@@ -57,9 +57,9 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -280,9 +280,9 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
+                .willThrow(new WorkflowException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
-        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
     }
 
@@ -299,11 +299,11 @@ class FileCreateTest extends FileTestBase {
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
 
-        doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
+        doThrow(new WorkflowException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
                 .validateMemo(txBody.fileCreate().memo());
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertTrue(fileStore.get(FileID.newBuilder().fileNum(1234L).build()).isEmpty());
     }
 
@@ -325,7 +325,7 @@ class FileCreateTest extends FileTestBase {
         config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, new LongPair(150L, 159L), 1L, 1L, 1);
         given(configuration.getConfigData(any())).willReturn(config);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, this.fileStore.modifiedFiles().size());
     }

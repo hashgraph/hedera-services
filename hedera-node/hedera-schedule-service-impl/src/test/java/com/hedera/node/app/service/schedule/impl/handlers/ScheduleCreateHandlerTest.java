@@ -45,9 +45,9 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.InstantSource;
@@ -156,11 +156,11 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     void handleRejectsDuplicateTransaction() throws PreCheckException {
         final TransactionBody createTransaction = otherScheduleInState.originalCreateTransaction();
         prepareContext(createTransaction, otherScheduleInState.scheduleId().scheduleNum() + 1);
-        throwsHandleException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
+        throwsWorkflowException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
     }
 
     @Test
-    void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
+    void handleRejectsNonWhitelist() throws WorkflowException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
@@ -179,13 +179,13 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 subject.handle(mockContext);
                 verifyHandleSucceededForWhitelist(next, createId, startCount);
             } else {
-                throwsHandleException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                throwsWorkflowException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
 
     @Test
-    void handleRefusesToExceedCreationLimit() throws HandleException, PreCheckException {
+    void handleRefusesToExceedCreationLimit() throws WorkflowException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         assertThat(configuredWhitelist).hasSizeGreaterThan(4);
@@ -205,14 +205,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             if (configuredWhitelist.contains(functionType)) {
-                throwsHandleException(
+                throwsWorkflowException(
                         () -> subject.handle(mockContext), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
             }
         }
     }
 
     @Test
-    void handleExecutesImmediateIfPossible() throws HandleException, PreCheckException {
+    void handleExecutesImmediateIfPossible() throws WorkflowException, PreCheckException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         int successCount = 0;

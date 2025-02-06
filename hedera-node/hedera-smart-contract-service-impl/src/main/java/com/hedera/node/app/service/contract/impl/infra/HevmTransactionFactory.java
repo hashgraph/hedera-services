@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,8 +41,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.re
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
@@ -71,7 +71,7 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -258,7 +258,7 @@ public class HevmTransactionFactory {
      * @return the  {@link HederaEvmTransaction} containing the exception
      */
     public HederaEvmTransaction fromContractTxException(
-            @NonNull final TransactionBody body, @NonNull final HandleException exception) {
+            @NonNull final TransactionBody body, @NonNull final WorkflowException exception) {
         final var gasPrice =
                 switch (body.data().kind()) {
                     case CONTRACT_CREATE_INSTANCE -> body.contractCreateInstanceOrThrow()
@@ -288,7 +288,7 @@ public class HevmTransactionFactory {
     private @NonNull EthTxData assertValidEthTx(@NonNull final EthereumTransactionBody body) {
         validateTrue(body.maxGasAllowance() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
         if (!requireNonNull(hydratedEthTxData).isAvailable()) {
-            throw new HandleException(hydratedEthTxData.status());
+            throw new WorkflowException(hydratedEthTxData.status());
         }
         final var ethTxData = requireNonNull(hydratedEthTxData.ethTxData());
         validateTrue(ethTxData.matchesChainId(Integers.toBytes(contractsConfig.chainId())), WRONG_CHAIN_ID);
@@ -342,8 +342,8 @@ public class HevmTransactionFactory {
         if (!isEmpty(effectiveKey)) {
             try {
                 attributeValidator.validateKey(body.adminKeyOrElse(Key.DEFAULT));
-            } catch (HandleException | NullPointerException ignore) {
-                throw new HandleException(SERIALIZATION_FAILED);
+            } catch (WorkflowException | NullPointerException ignore) {
+                throw new WorkflowException(SERIALIZATION_FAILED);
             }
         }
         expiryValidator.resolveCreationAttempt(
@@ -367,7 +367,7 @@ public class HevmTransactionFactory {
                 return Bytes.fromHex(
                         hexedInitcode + body.constructorParameters().toHex());
             } catch (IllegalArgumentException | NullPointerException ignore) {
-                throw new HandleException(ERROR_DECODING_BYTESTRING);
+                throw new WorkflowException(ERROR_DECODING_BYTESTRING);
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -122,7 +122,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         // Ensure that if this is an EthereumTransaction, we have a valid EthTxData
         assertEthTxDataValidIfApplicable();
 
-        // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
+        // Try to translate the HAPI operation to a Hedera EVM transaction, throw WorkflowException on failure
         // if an exception occurs during a ContractCall, charge fees to the sender and return a CallOutcome reflecting
         // the error.
         final var hevmTransaction = safeCreateHevmTransaction();
@@ -160,7 +160,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             }
             return CallOutcome.fromResultsWithMaybeSidecars(
                     result.asProtoResultOf(ethTxDataIfApplicable(), rootProxyWorldUpdater), result);
-        } catch (HandleException e) {
+        } catch (WorkflowException e) {
             final var sender = rootProxyWorldUpdater.getHederaAccount(hevmTransaction.senderId());
             final var senderId = sender != null ? sender.hederaId() : hevmTransaction.senderId();
 
@@ -175,7 +175,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     private HederaEvmTransaction safeCreateHevmTransaction() {
         try {
             return hevmTransactionFactory.fromHapiTransaction(context.body(), context.payer());
-        } catch (HandleException e) {
+        } catch (WorkflowException e) {
             // Return a HederaEvmTransaction that represents the error in order to charge fees to the sender
             return hevmTransactionFactory.fromContractTxException(context.body(), e);
         }
@@ -230,7 +230,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     private void assertEthTxDataValidIfApplicable() {
         if (hydratedEthTxData != null && !hydratedEthTxData.isAvailable()) {
-            throw new HandleException(hydratedEthTxData.status());
+            throw new WorkflowException(hydratedEthTxData.status());
         }
     }
 

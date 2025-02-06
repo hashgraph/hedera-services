@@ -30,8 +30,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXE
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
@@ -53,11 +53,11 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -178,11 +178,11 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
                     handleContext.savepointStack().getBaseBuilder(ConsensusCreateTopicStreamBuilder.class);
 
             recordBuilder.topicID(topic.topicId());
-        } catch (final HandleException e) {
+        } catch (final WorkflowException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason TopicCreateTransactionBody does not have an expiration time,
                 // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
-                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                throw new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
         }

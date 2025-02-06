@@ -98,9 +98,9 @@ import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -314,7 +314,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Test
     void dispatchComputeThrowsWithMissingBody() {
         Assertions.assertThatThrownBy(() -> subject.dispatchComputeFees(MISSING_FUNCTION_TXN_BODY, PAYER_ACCOUNT_ID))
-                .isInstanceOf(HandleException.class);
+                .isInstanceOf(WorkflowException.class);
     }
 
     @Test

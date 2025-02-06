@@ -57,12 +57,12 @@ import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -197,7 +197,7 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
+    public void handle(@NonNull final HandleContext context) throws WorkflowException {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoTransferOrThrow();
@@ -252,7 +252,7 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
         boolean triedAndFailedToUseCustomFees = false;
         try {
             assessedCustomFees = customFeeAssessor.assessNumberOfCustomFees(feeContext);
-        } catch (HandleException ignore) {
+        } catch (WorkflowException ignore) {
             final var status = ignore.getStatus();
             // If the transaction tried and failed to use custom fees, enable this flag.
             // This is used to charge a different canonical fees.

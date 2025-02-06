@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferE
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -44,9 +44,9 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LazyCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -246,14 +246,14 @@ public class TransferExecutor extends BaseTokenHandler {
      * @param context the given handle context
      * @param validator crypto transfer validator
      * @return the replaced transaction body with all aliases replaced with its account ids
-     * @throws HandleException if any error occurs during the process
+     * @throws WorkflowException if any error occurs during the process
      */
     private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
             @NonNull final TransactionBody txn,
             @NonNull final TransferContextImpl transferContext,
             @NonNull final HandleContext context,
             @NonNull final CryptoTransferValidator validator)
-            throws HandleException {
+            throws WorkflowException {
         final var op = txn.cryptoTransferOrThrow();
 
         // ensure all aliases exist, if not create then if receivers
@@ -269,7 +269,7 @@ public class TransferExecutor extends BaseTokenHandler {
         try {
             validator.pureChecks(replacedOp);
         } catch (PreCheckException e) {
-            throw new HandleException(e.responseCode());
+            throw new WorkflowException(e.responseCode());
         }
         return replacedOp;
     }

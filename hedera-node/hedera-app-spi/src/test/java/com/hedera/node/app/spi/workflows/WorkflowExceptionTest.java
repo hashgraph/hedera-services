@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,23 +21,23 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-class HandleExceptionTest {
+class WorkflowExceptionTest {
     @Test
     void reportsItsGivenStatus() {
-        final var ex = new HandleException(MEMO_TOO_LONG);
+        final var ex = new WorkflowException(MEMO_TOO_LONG);
 
         assertEquals(MEMO_TOO_LONG, ex.getStatus());
     }
 
     @Test
     void trueIsntProblematic() {
-        assertDoesNotThrow(() -> HandleException.validateTrue(true, MEMO_TOO_LONG));
+        assertDoesNotThrow(() -> WorkflowException.validateTrue(true, MEMO_TOO_LONG));
     }
 
     @Test
     void falseIsProblem() {
         final var failure =
-                assertThrows(HandleException.class, () -> HandleException.validateTrue(false, MEMO_TOO_LONG));
+                assertThrows(WorkflowException.class, () -> WorkflowException.validateTrue(false, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
@@ -45,13 +45,13 @@ class HandleExceptionTest {
     @Test
     void trueIsProblemFromOtherPerspective() {
         final var failure =
-                assertThrows(HandleException.class, () -> HandleException.validateFalse(true, MEMO_TOO_LONG));
+                assertThrows(WorkflowException.class, () -> WorkflowException.validateFalse(true, MEMO_TOO_LONG));
 
         assertEquals(MEMO_TOO_LONG, failure.getStatus());
     }
 
     @Test
     void falseIsOkFromOtherPerspective() {
-        assertDoesNotThrow(() -> HandleException.validateFalse(false, MEMO_TOO_LONG));
+        assertDoesNotThrow(() -> WorkflowException.validateFalse(false, MEMO_TOO_LONG));
     }
 }

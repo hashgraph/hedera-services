@@ -51,10 +51,10 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
@@ -157,7 +157,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
-        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        WorkflowException thrown = (WorkflowException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
@@ -177,7 +177,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        WorkflowException thrown = (WorkflowException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
@@ -319,8 +319,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     private static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
         assertThatThrownBy(something::run)
-                .isInstanceOf(HandleException.class)
-                .extracting(ex -> ((HandleException) ex).getStatus())
+                .isInstanceOf(WorkflowException.class)
+                .extracting(ex -> ((WorkflowException) ex).getStatus())
                 .isEqualTo(status);
     }
 }

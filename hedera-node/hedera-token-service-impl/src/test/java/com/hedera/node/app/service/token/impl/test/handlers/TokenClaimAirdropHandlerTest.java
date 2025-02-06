@@ -38,10 +38,10 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -281,7 +281,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenClaimAirdrop(airdrops);
         given(handleContext.storeFactory()).willReturn(storeFactory);
 
-        final var msg = assertThrows(HandleException.class, () -> tokenClaimAirdropHandler.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> tokenClaimAirdropHandler.handle(handleContext));
         assertEquals(ResponseCodeEnum.PENDING_AIRDROP_ID_LIST_TOO_LONG, msg.getStatus());
     }
 
