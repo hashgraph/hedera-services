@@ -16,21 +16,31 @@
 
 package com.hedera.services.bdd.suites.hip551;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
@@ -131,5 +141,47 @@ public class AtomicBatchTest {
                 getTxnRecord(atomicTxn).logged(),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
+    }
+
+    @Nested
+    @DisplayName("Privileged Transactions - POSITIVE")
+    class PrivilegedTransactionsPositive {
+
+        @LeakyHapiTest(requirement = {THROTTLE_OVERRIDES})
+        @DisplayName("Batch containing only privileged transactions")
+        public Stream<DynamicTest> batchContainingOnlyPrivilegedTxn() {
+            final var batchOperator = "batchOperator";
+
+            return hapiTest(
+                    cryptoCreate(batchOperator).balance(FIVE_HBARS),
+                    atomicBatch(fileUpdate(THROTTLE_DEFS)
+                                    .batchKey(batchOperator)
+                                    .noLogging()
+                                    .payingWith(GENESIS)
+                                    .contents(protoDefsFromResource("testSystemFiles/mainnet-throttles.json")
+                                            .toByteArray()))
+                            .payingWith(batchOperator));
+        }
+    }
+
+    @Nested
+    @DisplayName("Fees - POSITIVE")
+    class FeesPositive {
+
+        @HapiTest
+        @Disabled // TODO: enable this, when the fee calculation of inner transactions is implemented
+        @DisplayName("Payer was charged for all transactions")
+        public Stream<DynamicTest> payerWasCharged() {
+            final var batchOperator = "batchOperator";
+            return hapiTest(
+                    cryptoCreate(batchOperator).balance(ONE_HUNDRED_HBARS),
+                    atomicBatch(
+                                    cryptoCreate("foo").batchKey(batchOperator).payingWith(batchOperator),
+                                    cryptoCreate("bar").batchKey(batchOperator).payingWith(batchOperator))
+                            .payingWith(batchOperator)
+                            .via("batchTxn"),
+                    // add cryptoCreate fee twice to the expected fee
+                    validateChargedUsd("batchTxn", 0.001 + 0.05 + 0.05));
+        }
     }
 }
