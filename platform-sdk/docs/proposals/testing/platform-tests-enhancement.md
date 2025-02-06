@@ -79,3 +79,18 @@ This wire will be used only for testing purposes. Additionally, the assertion lo
 This will be a light-weight option to get real objects from the platform execution.  The wiring will look like this:
 
 ![ConsensusEngineProposedWiring](ConsensusEngineProposedWiring.png)
+
+### Platform wiring adaptation
+
+In order to allow plugging test output wires to the production setup, the `PlatformWiring` component should be adapted.
+
+One easy approach might be converting it to use a `Builder` pattern and construct different instances - for production and for testing.
+
+We can create a method called `getProductionInstance()` that initializes all of the wires using the default production components and
+wire definitions. The actual soldering of the wires can be executed in a `build()` method that finalizes the component.
+
+Building a `PlatformWiring` for testing purposes can be done via calling additional builder methods that register output wires
+on top of the production ones and solder them to the components that we are interested in. This will happen before calling the `build()` method
+without adding conditional statements or changing the production code itself.
+
+This approach will be a flexible way to configure the wiring for testing purposes and will allow adding more test output wires in the future.
