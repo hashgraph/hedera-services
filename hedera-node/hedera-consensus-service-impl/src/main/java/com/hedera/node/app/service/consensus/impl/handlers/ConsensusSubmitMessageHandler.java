@@ -34,7 +34,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
-import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
+import static com.hedera.node.app.spi.workflows.HandleContext.MetaDataKey.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -50,6 +50,7 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
@@ -67,6 +68,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -182,7 +184,10 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
 
             // dispatch transfers to pay the fees, but suppress any child records.
-            for (final var syntheticBody : syntheticBodies) {
+            for (Map.Entry<FixedCustomFee, CryptoTransferTransactionBody> entry : syntheticBodies.entrySet()) {
+                final var fee = entry.getKey();
+                final var syntheticBody = entry.getValue();
+                // dispatch the transfer
                 final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
                         handleContext.payer(),
                         TransactionBody.newBuilder()
@@ -190,7 +195,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                                 .build(),
                         CryptoTransferStreamBuilder.class,
                         SUPPRESSING_TRANSACTION_CUSTOMIZER,
-                        new HandleContext.DispatchMetadata(Map.of(TRANSACTION_FIXED_FEE, true))));
+                        new DispatchMetadata(TRANSACTION_FIXED_FEE, fee)));
+                // validate response and collect assessed fees
                 validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
                 assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
             }
