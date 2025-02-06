@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.swirlds.state.merkle.StateUtils.readFromStream;
 import static com.swirlds.state.merkle.StateUtils.writeToStream;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.codec.BlockInfoProtoCodec;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -30,10 +29,9 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
 
 /**
  * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link
@@ -86,9 +84,12 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec, @Nullable final T value) {
         this(singletonClassId, codec);
         this.val = value;
-        if(val == null && codec instanceof BlockInfoProtoCodec) {
+        if (val == null && codec instanceof BlockInfoProtoCodec) {
             // FIXME: remove this log after fixing JRS failure
-            logger.info(STARTUP.getMarker(), "ValueLeaf created with null value for BlockInfoProtoCode. Call trace: {}", getCallTrace());
+            logger.info(
+                    STARTUP.getMarker(),
+                    "ValueLeaf created with null value for BlockInfoProtoCode. Call trace: {}",
+                    getCallTrace());
         }
     }
 
@@ -105,8 +106,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
                     element.getClassName(),
                     element.getMethodName(),
                     element.getFileName(),
-                    element.getLineNumber()
-            ));
+                    element.getLineNumber()));
         }
 
         return traceBuilder.toString();
