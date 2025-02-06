@@ -23,7 +23,7 @@ syntax = "proto3";
 
 package com.hedera.hapi.block.stream.output;
 
-import "custom_fees.proto";
+import "services/custom_fees.proto";
 
 /*
  * Copyright (C) 2024 Hedera Hashgraph, LLC

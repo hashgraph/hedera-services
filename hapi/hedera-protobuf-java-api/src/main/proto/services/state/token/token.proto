@@ -29,8 +29,8 @@ package proto;
  * limitations under the License.
  */
 
-import "basic_types.proto";
-import "custom_fees.proto";
+import "services/basic_types.proto";
+import "services/custom_fees.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.token">>> This comment is special code for setting PBJ Compiler java package

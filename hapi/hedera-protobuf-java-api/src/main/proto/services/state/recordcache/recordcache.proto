@@ -30,9 +30,9 @@ package proto;
  * limitations under the License.
  */
 
-import "basic_types.proto";
-import "transaction_record.proto";
-import "response_code.proto";
+import "services/basic_types.proto";
+import "services/transaction_record.proto";
+import "services/response_code.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.recordcache">>> This comment is special code for setting PBJ Compiler java package

@@ -32,24 +32,8 @@ tasks.withType<JavaCompile>().configureEach {
 sourceSets {
     val protoApiSrc = "../hedera-protobuf-java-api/src/main/proto"
     main {
-        pbj.setSrcDirs(
-            listOf(
-                layout.projectDirectory.dir("${protoApiSrc}/services"),
-                layout.projectDirectory.dir("${protoApiSrc}/streams"),
-                layout.projectDirectory.dir("${protoApiSrc}/block"),
-                layout.projectDirectory.dir("${protoApiSrc}/platform"),
-                layout.projectDirectory.dir("src/main/proto/network"),
-            )
-        )
-        proto.setSrcDirs(
-            listOf(
-                layout.projectDirectory.dir("${protoApiSrc}/services"),
-                layout.projectDirectory.dir("${protoApiSrc}/streams"),
-                layout.projectDirectory.dir("${protoApiSrc}/block"),
-                layout.projectDirectory.dir("${protoApiSrc}/platform"),
-                layout.projectDirectory.dir("src/main/proto/network"),
-            )
-        )
+        pbj.srcDir(layout.projectDirectory.dir(protoApiSrc))
+        proto.srcDir(layout.projectDirectory.dir(protoApiSrc))
     }
 }
 

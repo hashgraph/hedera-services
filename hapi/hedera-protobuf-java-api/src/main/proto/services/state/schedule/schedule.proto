@@ -28,10 +28,10 @@ package proto;
  * limitations under the License.
  */
 
-import "basic_types.proto";
-import "timestamp.proto";
-import "schedulable_transaction_body.proto";
-import "transaction.proto";
+import "services/basic_types.proto";
+import "services/timestamp.proto";
+import "services/schedulable_transaction_body.proto";
+import "services/transaction.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.schedule">>> This comment is special code for setting PBJ Compiler java package
