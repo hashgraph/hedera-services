@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.hapi.util;
+module com.hedera.node.hapi.test.fixtures {
+    exports com.hedera.node.hapi.fixtures;
 
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.TransactionBody;
-
-/**
- * Exception raised when mapping from {@link TransactionBody} or {@link Query} to {@link HederaFunctionality}
- * when there is no known mapping. This should NEVER happen and means there is a new functionality that is
- * not yet supported in the code.
- */
-public class UnknownHederaFunctionality extends Exception {}
+    requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.pbj.runtime;
+    requires static com.github.spotbugs.annotations;
+}
