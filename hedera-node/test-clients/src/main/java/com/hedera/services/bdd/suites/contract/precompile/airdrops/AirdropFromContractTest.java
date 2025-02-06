@@ -19,19 +19,25 @@ package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.FEE_SCHEDULE_KEY;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForBalances;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.checkForEmptyBalance;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareAccountAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareContractAddresses;
 import static com.hedera.services.bdd.suites.contract.precompile.airdrops.SystemContractAirdropHelper.prepareTokenAddresses;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -51,6 +57,7 @@ import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
@@ -291,5 +298,41 @@ public class AirdropFromContractTest {
                     receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10L)),
                     receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(nft.name(), 1L)));
         }));
+    }
+
+    @Nested
+    class AirdropFromContractNegativeCases {
+
+        @HapiTest
+        @DisplayName("Airdrop token with custom fees while the sender cannot pay the fees")
+        public Stream<DynamicTest> airdropFromContractWhileTheSenderCannotPayTheCustomFees(
+                @NonNull @Account(maxAutoAssociations = 10, tinybarBalance = 100L) final SpecAccount receiver,
+                @Contract(contract = "EmptyOne", creationGas = 10_000_000L) final SpecContract sender,
+                @NonNull
+                        @FungibleToken(
+                                initialSupply = 1_000_000L,
+                                name = "airdropToken",
+                                keys = {ADMIN_KEY, FEE_SCHEDULE_KEY})
+                        final SpecFungibleToken token,
+                @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken tokenForFee) {
+            return hapiTest(withOpContext((spec, opLog) -> {
+                allRunFor(
+                        spec,
+                        sender.associateTokens(token, tokenForFee),
+                        tokenAssociate(GENESIS, tokenForFee.name()),
+                        sender.authorizeContract(airdropContract),
+                        token.treasury().transferUnitsTo(sender, 500_000L, token),
+                        tokenFeeScheduleUpdate(token.name()).withCustom(fixedHtsFee(5L, tokenForFee.name(), GENESIS)));
+                allRunFor(
+                        spec,
+                        airdropContract
+                                .call("tokenAirdrop", token, sender, receiver, 10L)
+                                .sending(85_000_000L)
+                                .gas(1_500_000L)
+                                .via("AirdropTxn")
+                                .andAssert(txn -> txn.hasKnownStatuses(
+                                        CONTRACT_REVERT_EXECUTED, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE)));
+            }));
+        }
     }
 }
