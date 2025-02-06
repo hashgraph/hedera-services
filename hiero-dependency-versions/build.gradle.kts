@@ -35,12 +35,12 @@ val besu = "24.3.3"
 val bouncycastle = "1.79"
 val dagger = "2.55"
 val eclipseCollections = "11.1.0"
-val grpc = "1.69.0"
+val grpc = "1.70.0"
 val hederaCryptography = "0.1.1-SNAPSHOT"
 val helidon = "4.1.6"
 val jackson = "2.18.2"
 val junit5 = "5.11.4"
-val log4j = "2.21.1"
+val log4j = "2.24.3"
 val mockito = "5.15.2"
 val protobuf = "4.28.2"
 val testContainers = "1.20.4"
@@ -148,7 +148,7 @@ dependencies.constraints {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
     api("com.google.protobuf:protoc:3.25.4")
-    api("io.grpc:protoc-gen-grpc-java:1.69.0")
+    api("io.grpc:protoc-gen-grpc-java:$grpc")
 
     api("com.hedera.cryptography:hedera-cryptography-pairings-api:$hederaCryptography") {
         because("com.hedera.cryptography.pairings.api")
