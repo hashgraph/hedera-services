@@ -16,9 +16,11 @@
 
 package com.hedera.node.app.hints;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -41,11 +43,11 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * Includes the given hints key for the given node and party IDs relative to a party size, assigning
      * the given adoption time if the key is immediately in use.
      *
-     * @param nodeId the node ID
-     * @param partyId the party ID
+     * @param nodeId     the node ID
+     * @param partyId    the party ID
      * @param numParties the number of parties
-     * @param hintsKey the hints key to include
-     * @param now the adoption time
+     * @param hintsKey   the hints key to include
+     * @param now        the adoption time
      * @return whether the key was immediately in use
      */
     boolean setHintsKey(long nodeId, int partyId, int numParties, @NonNull Bytes hintsKey, @NonNull final Instant now);
@@ -58,6 +60,7 @@ public interface WritableHintsStore extends ReadableHintsStore {
     /**
      * Sets the consensus preprocessing output for the construction with the given ID and returns the
      * updated construction.
+     *
      * @return the updated construction
      */
     HintsConstruction setHintsScheme(
@@ -65,8 +68,9 @@ public interface WritableHintsStore extends ReadableHintsStore {
 
     /**
      * Sets the preprocessing start time for the construction with the given ID and returns the updated construction.
+     *
      * @param constructionId the construction ID
-     * @param now the aggregation time
+     * @param now            the aggregation time
      * @return the updated construction
      */
     HintsConstruction setPreprocessingStartTime(long constructionId, @NonNull Instant now);
@@ -75,4 +79,46 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * Purges any state no longer needed after a given handoff.
      */
     void updateForHandoff(@NonNull ActiveRosters activeRosters);
+
+    /**
+     * Sets the {@link CRSState} for the network.
+     *
+     * @param crsState the {@link CRSState} to set
+     */
+    void setCRSState(@NonNull CRSState crsState);
+
+    /**
+     * Sets the initial CRS for the network.
+     *
+     * @param initialCrs              the initial CRS
+     * @param firstContributingNodeId the ID of the first contributing node for updating CRS
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void putInitialCrs(
+            @NonNull Bytes initialCrs, long firstContributingNodeId, @NonNull Instant nextContributionTimeEnd);
+
+    /**
+     * Updates the CRS for the network. This is called after the CRS to be updated is validated.
+     *
+     * @param updatedCrs              the updated CRS
+     * @param nextContributingNodeId  the ID of the next contributing node for updating CRS
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void updateCrs(@NonNull Bytes updatedCrs, long nextContributingNodeId, @NonNull Instant nextContributionTimeEnd);
+
+    /**
+     * Moves the CRS contribution to be done by the next node in the roster. This is called when the
+     * current node did not contribute the CRS in time.
+     *
+     * @param nextNodeIdFromRoster    the ID of the next node in the roster
+     * @param nextContributionTimeEnd the end of the time window for the next contribution
+     */
+    void moveToNextNode(long nextNodeIdFromRoster, @NonNull Instant nextContributionTimeEnd);
+
+    /**
+     * Adds a CRS publication to the store.
+     * @param nodeId the node ID
+     * @param crsPublication the CRS publication
+     */
+    void addCrsPublication(long nodeId, @NonNull CrsPublicationTransactionBody crsPublication);
 }
