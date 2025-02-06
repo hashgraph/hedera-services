@@ -55,6 +55,7 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
+import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.StringLeaf;
 import com.swirlds.state.spi.CommittableWritableStates;
@@ -174,7 +175,7 @@ public enum FakeStateLifecycles implements StateLifecycles {
                         merkleStateRoot.putServiceStateIfAbsent(md, () -> {
                             final var tableConfig =
                                     new MerkleDbTableConfig((short) 1, DigestType.SHA_384, def.maxKeysHint(), 16);
-                            final var label = com.swirlds.state.StateUtils.computeLabel(RosterStateId.NAME, def.stateKey());
+                            final var label = StateUtils.computeLabel(RosterStateId.NAME, def.stateKey());
                             final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
                             final var virtualMap = new VirtualMap(label, dsBuilder, CONFIGURATION);
                             return virtualMap;

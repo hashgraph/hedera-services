@@ -119,7 +119,7 @@ class StateUtilsTest extends MerkleTestBase {
     @DisplayName("`computeLabel` with a null service name throws")
     void computeLabel_nullServiceNameThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> com.swirlds.state.StateUtils.computeLabel(null, FRUIT_STATE_KEY))
+        assertThatThrownBy(() -> StateUtils.computeLabel(null, FRUIT_STATE_KEY))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -127,7 +127,7 @@ class StateUtilsTest extends MerkleTestBase {
     @DisplayName("`computeLabel` with a null state key throws")
     void computeLabel_nullStateKeyThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> StateUtils.computeLabel(FIRST_SERVICE, null)).isInstanceOf(NullPointerException.class);
     }
 
     /**
@@ -139,7 +139,7 @@ class StateUtilsTest extends MerkleTestBase {
     @Test
     @DisplayName("`computeLabel` is always serviceName.stateKey")
     void computeLabel() {
-        assertThat(com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY))
+        assertThat(StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY))
                 .isEqualTo(FIRST_SERVICE + "." + FRUIT_STATE_KEY);
     }
 

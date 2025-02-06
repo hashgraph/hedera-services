@@ -22,8 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.swirlds.state.StateUtils.computeLabel;
-import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -33,11 +31,6 @@ import static java.util.Objects.requireNonNull;
  * @param <V> The value type
  */
 public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V> {
-
-    private final String serviceName;
-
-    /** The state key, which cannot be null */
-    private final String stateKey;
 
     /**
      * A cache of all values read from this {@link ReadableKVState}. If the same value is read
@@ -52,6 +45,11 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     private final Set<K> unmodifiableReadKeys = Collections.unmodifiableSet(readCache.keySet());
 
     private static final Object marker = new Object();
+
+    protected final String serviceName;
+
+    /** The state key, which cannot be null */
+    protected final String stateKey;
 
     /**
      * Create a new StateBase.
@@ -68,17 +66,6 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     @NonNull
     public final String getStateKey() {
         return stateKey;
-    }
-
-    @Override
-    public final int getStateId() {
-        return stateIdFor(serviceName, stateKey);
-    }
-
-    @Override
-    @NonNull
-    public String getLabel() {
-        return computeLabel(serviceName, stateKey);
     }
 
     /** {@inheritDoc} */

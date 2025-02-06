@@ -16,8 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import static com.swirlds.state.StateUtils.computeLabel;
-import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,11 +31,6 @@ import java.util.function.Predicate;
  * @param <E> The type of element in the queue.
  */
 public abstract class WritableQueueStateBase<E> implements WritableQueueState<E> {
-
-    private final String serviceName;
-
-    /** The state key. */
-    private final String stateKey;
 
     /** Each element that has been read. At the moment these are not exposed, but could be. */
     private final List<E> readElements = new ArrayList<>();
@@ -62,6 +55,11 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
 
     /** The cached most recent peeked element */
     private E peekedElement = null;
+
+    protected final String serviceName;
+
+    /** The state key. */
+    protected final String stateKey;
 
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
@@ -126,22 +124,10 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
         dsIterator = null;
     }
 
-    @Override
-    public final int getStateId() {
-        return stateIdFor(serviceName, stateKey);
-    }
-
     @NonNull
     @Override
     public String getStateKey() {
         return stateKey;
-    }
-
-    // TODO: refactor? (it is duplicated in ReadableQueueStateBase)
-    @Override
-    @NonNull
-    public String getLabel() {
-        return computeLabel(serviceName, stateKey);
     }
 
     @Nullable

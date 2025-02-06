@@ -16,13 +16,10 @@
 
 package com.swirlds.state.merkle.disk;
 
-import static com.swirlds.state.merkle.logging.StateLogger.logQueueIterate;
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
 import static com.swirlds.state.merkle.logging.StateLogger.logQueuePeek;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.merkle.queue.QueueCodec;
 import com.swirlds.state.merkle.queue.QueueNode;
 import com.swirlds.state.merkle.queue.QueueState;
 import com.swirlds.state.spi.ReadableQueueState;
@@ -31,12 +28,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 
 /**
  * An implementation of {@link ReadableQueueState} that uses a merkle {@link QueueNode} as the backing store.
@@ -45,10 +37,7 @@ import java.util.Objects;
 public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
 
     @NonNull
-    private final VirtualMap virtualMap;
-
-    @NonNull
-    private final Codec<E> valueCodec;
+    private final OnDiskQueueHelper<E> queueHelper;
 
     /** Create a new instance */
     public OnDiskReadableQueueState(
@@ -57,19 +46,16 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
             @NonNull final Codec<E> valueCodec,
             @NonNull final VirtualMap virtualMap) {
         super(serviceName, stateKey);
-
-        this.valueCodec = requireNonNull(valueCodec);
-        this.virtualMap = Objects.requireNonNull(virtualMap);
+        this.queueHelper = new OnDiskQueueHelper<>(serviceName, stateKey, virtualMap, valueCodec);
     }
 
     @Nullable
     @Override
     protected E peekOnDataSource() {
-        final QueueState state = getState();
-        final E value =
-                state.isEmpty() ? null : getFromStore(getState().getHead());
+        final QueueState state = queueHelper.getState();
+        final E value = state.isEmpty() ? null : queueHelper.getFromStore(queueHelper.getState().getHead());
         // Log to transaction state log, what was peeked
-        logQueuePeek(getLabel(), value);
+        logQueuePeek(computeLabel(serviceName, stateKey), value);
         return value;
     }
 
@@ -77,106 +63,6 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
     @NonNull
     @Override
     protected Iterator<E> iterateOnDataSource() {
-        final QueueState state = getState();
-        final QueueIterator it = new QueueIterator(state.getHead(), state.getTail());
-        // Log to transaction state log, what was iterated
-        logQueueIterate(getLabel(), state.getTail() - state.getHead(), it);
-        it.reset();
-        return it;
-    }
-
-    @NonNull
-    private E getFromStore(final long index) {
-        final var value = virtualMap.get(getVirtualMapKey(index), valueCodec);
-        if (value == null) {
-            throw new IllegalStateException("Can't find queue element at index " + index + " in the store");
-        }
-        return value;
-    }
-
-    // TODO: refactor
-    private QueueState getState() {
-        final int stateId = getStateId();
-
-        if (stateId < 0 || stateId > 65535) {
-            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
-        }
-
-        final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN);
-        buffer.putShort((short) stateId);
-
-        final Bytes stateIdBytes = Bytes.wrap(buffer.array());
-
-        return virtualMap.get(stateIdBytes, QueueCodec.INSTANCE);
-    }
-
-    // TODO: test this method
-    // TODO: refactor? (it is duplicated in OnDiskWritableQueueState)
-    /**
-     * Generates a 10-byte big-endian key identifying an element in the Virtual Map.
-     * <ul>
-     *   <li>The first 2 bytes store the unsigned 16-bit state ID</li>
-     *   <li>The next 8 bytes store the {@code index}</li>
-     * </ul>
-     *
-     * @param index the element index within this queue
-     * @return a {@link Bytes} object containing exactly 10 bytes in big-endian order
-     * @throws IllegalArgumentException if the state ID is outside [0..65535]
-     */
-    private Bytes getVirtualMapKey(final long index) {
-        final int stateId = getStateId();
-
-        if (stateId < 0 || stateId > 65535) {
-            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
-        }
-
-        final ByteBuffer buffer = ByteBuffer.allocate(10).order(ByteOrder.BIG_ENDIAN);
-        buffer.putShort((short) stateId);
-        buffer.putLong(index);
-
-        return Bytes.wrap(buffer.array());
-    }
-
-    /**
-     * A tiny utility class to iterate over the queue node.
-     */
-    private class QueueIterator implements Iterator<E> {
-
-        // Queue position to start from, inclusive
-        private final long start;
-
-        // Queue position to iterate up to, exclusive
-        private final long limit;
-
-        // The current iterator position, start <= current < limit
-        private long current;
-
-        // Start (inc), limit (exc)
-        public QueueIterator(final long start, final long limit) {
-            this.start = start;
-            this.limit = limit;
-            reset();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return current < limit;
-        }
-
-        @Override
-        public E next() {
-            if (current == limit) {
-                throw new NoSuchElementException();
-            }
-            try {
-                return getFromStore(current++);
-            } catch (final IllegalStateException e) {
-                throw new ConcurrentModificationException(e);
-            }
-        }
-
-        void reset() {
-            current = start;
-        }
+        return queueHelper.iterateOnDataSource();
     }
 }

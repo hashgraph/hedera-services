@@ -18,8 +18,6 @@ package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import static com.swirlds.state.StateUtils.computeLabel;
-import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -29,11 +27,11 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class ReadableSingletonStateBase<T> implements ReadableSingletonState<T> {
 
-    private final String serviceName;
-
-    private final String stateKey;
-
     private boolean read = false;
+
+    protected final String serviceName;
+
+    protected final String stateKey;
 
     /**
      * Creates a new instance.
@@ -49,17 +47,6 @@ public abstract class ReadableSingletonStateBase<T> implements ReadableSingleton
     @NonNull
     public final String getStateKey() {
         return stateKey;
-    }
-
-    @Override
-    public final int getStateId() {
-        return stateIdFor(serviceName, stateKey);
-    }
-
-    @NonNull
-    @Override
-    public String getLabel() {
-        return computeLabel(serviceName, stateKey);
     }
 
     @Override

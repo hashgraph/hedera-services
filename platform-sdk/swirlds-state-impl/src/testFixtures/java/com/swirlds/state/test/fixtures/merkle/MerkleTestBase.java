@@ -40,6 +40,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
+import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.memory.InMemoryKey;
 import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.merkle.queue.QueueNode;
@@ -157,13 +158,13 @@ public class MerkleTestBase extends StateTestBase {
 
     /** Sets up the "Fruit" merkle map, label, and metadata. */
     protected void setupFruitMerkleMap() {
-        fruitLabel = com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
+        fruitLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitMerkleMap = createMerkleMap(fruitLabel);
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
     protected void setupFruitVirtualMap() {
-        fruitVirtualLabel = com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
+        fruitVirtualLabel = StateUtils.computeLabel(FIRST_SERVICE, FRUIT_STATE_KEY);
         fruitVirtualMap = createVirtualMap(fruitVirtualLabel);
     }
 
@@ -181,18 +182,18 @@ public class MerkleTestBase extends StateTestBase {
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
     protected void setupAnimalMerkleMap() {
-        animalLabel = com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
+        animalLabel = StateUtils.computeLabel(FIRST_SERVICE, ANIMAL_STATE_KEY);
         animalMerkleMap = createMerkleMap(animalLabel);
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
     protected void setupSpaceMerkleMap() {
-        spaceLabel = com.swirlds.state.StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
+        spaceLabel = StateUtils.computeLabel(SECOND_SERVICE, SPACE_STATE_KEY);
         spaceMerkleMap = createMerkleMap(spaceLabel);
     }
 
     protected void setupSingletonCountry() {
-        countryLabel = com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
+        countryLabel = StateUtils.computeLabel(FIRST_SERVICE, COUNTRY_STATE_KEY);
         countrySingleton = new SingletonNode<>(
                 FIRST_SERVICE,
                 COUNTRY_STATE_KEY,
@@ -202,7 +203,7 @@ public class MerkleTestBase extends StateTestBase {
     }
 
     protected void setupSteamQueue() {
-        steamLabel = com.swirlds.state.StateUtils.computeLabel(FIRST_SERVICE, STEAM_STATE_KEY);
+        steamLabel = StateUtils.computeLabel(FIRST_SERVICE, STEAM_STATE_KEY);
         steamQueue = new QueueNode<>(
                 FIRST_SERVICE,
                 STEAM_STATE_KEY,

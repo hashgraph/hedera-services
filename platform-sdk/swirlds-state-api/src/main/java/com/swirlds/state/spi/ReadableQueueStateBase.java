@@ -16,8 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import static com.swirlds.state.StateUtils.computeLabel;
-import static com.swirlds.state.StateUtils.stateIdFor;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,11 +30,11 @@ import java.util.Iterator;
  */
 public abstract class ReadableQueueStateBase<E> implements ReadableQueueState<E> {
 
-    private final String serviceName;
-
-    private final String stateKey;
-
     private E peekedElement;
+
+    protected final String serviceName;
+
+    protected final String stateKey;
 
     /** Create a new instance */
     protected ReadableQueueStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
@@ -48,18 +46,6 @@ public abstract class ReadableQueueStateBase<E> implements ReadableQueueState<E>
     @NonNull
     public final String getStateKey() {
         return stateKey;
-    }
-
-    @Override
-    public final int getStateId() {
-        return stateIdFor(serviceName, stateKey);
-    }
-
-    // TODO: refactor? (it is duplicated in WritableQueueStateBase)
-    @Override
-    @NonNull
-    public String getLabel() {
-        return computeLabel(serviceName, stateKey);
     }
 
     @Nullable

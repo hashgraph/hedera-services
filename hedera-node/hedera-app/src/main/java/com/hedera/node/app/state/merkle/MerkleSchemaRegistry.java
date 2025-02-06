@@ -327,7 +327,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     } else if (!def.onDisk()) {
                         stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
-                            map.setLabel(com.swirlds.state.StateUtils.computeLabel(serviceName, stateKey));
+                            map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                             return map;
                         });
                     } else {
@@ -343,7 +343,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                             DigestType.SHA_384,
                                             def.maxKeysHint(),
                                             merkleDbConfig.hashesRamToDiskThreshold());
-                                    final var label = com.swirlds.state.StateUtils.computeLabel(serviceName, stateKey);
+                                    final var label = StateUtils.computeLabel(serviceName, stateKey);
                                     final var dsBuilder =
                                             new MerkleDbDataSourceBuilder(tableConfig, platformConfiguration);
                                     return new VirtualMap(label, dsBuilder, platformConfiguration);

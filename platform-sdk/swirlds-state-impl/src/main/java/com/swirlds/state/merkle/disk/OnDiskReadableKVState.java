@@ -16,20 +16,19 @@
 
 package com.swirlds.state.merkle.disk;
 
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
+import static com.swirlds.state.merkle.StateUtils.getVirtualMapKey;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGet;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGetSize;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableKVStateBase;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -74,9 +73,9 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var value = virtualMap.get(getVirtualMapKey(key), valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(serviceName, stateKey, key, keyCodec), valueCodec);
         // Log to transaction state log, what was read
-        logMapGet(getLabel(), key, value);
+        logMapGet(computeLabel(serviceName, stateKey), key, value);
         return value;
     }
 
@@ -85,7 +84,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getLabel(), virtualMap, keyCodec);
+        logMapIterate(computeLabel(serviceName, stateKey), virtualMap, keyCodec);
         return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
@@ -95,53 +94,12 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     public long size() {
         final var size = virtualMap.size();
         // Log to transaction state log, size of map
-        logMapGetSize(getLabel(), size);
+        logMapGetSize(computeLabel(serviceName, stateKey), size);
         return size;
     }
 
     @Override
     public void warm(@NonNull final K key) {
-        virtualMap.warm(getVirtualMapKey(key));
-    }
-
-    // TODO: test this method
-    // TODO: refactor? (it is duplicated in OnDiskWritableKVState)
-    /**
-     * Generates a key for identifying an entry in the Virtual Map.
-     * <p>
-     * The key consists of:
-     * <ul>
-     *   <li>The first 2 bytes: the state ID (unsigned 16-bit, big-endian)</li>
-     *   <li>The remaining bytes: the serialized form of the provided key</li>
-     * </ul>
-     * The state ID must be within [0..65535].
-     * </p>
-     *
-     * @param key the key to serialize and append to the state ID
-     * @return a {@link Bytes} object containing the state ID followed by the serialized key
-     * @throws IllegalArgumentException if the state ID is outside [0..65535]
-     */
-    private Bytes getVirtualMapKey(final K key) {
-        final int stateId = getStateId();
-
-        if (stateId < 0 || stateId > 65535) {
-            throw new IllegalArgumentException("State ID " + stateId + " must fit in [0..65535]");
-        }
-
-        // Allocate a single byte array to hold the 2-byte state ID and the serialized key.
-        final byte[] bytes = new byte[Short.BYTES + keyCodec.measureRecord(key)];
-        final BufferedData writer = BufferedData.wrap(bytes);
-
-        // Write the state ID in big-endian order by writing two bytes.
-        writer.writeByte((byte) ((stateId >>> 8) & 0xFF)); // High-order byte
-        writer.writeByte((byte) (stateId & 0xFF)); // Low-order byte
-
-        try {
-            keyCodec.write(key, writer);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return Bytes.wrap(bytes);
+        virtualMap.warm(getVirtualMapKey(serviceName, stateKey, key, keyCodec));
     }
 }
