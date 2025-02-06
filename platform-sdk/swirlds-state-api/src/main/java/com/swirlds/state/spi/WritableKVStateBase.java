@@ -29,11 +29,11 @@ import java.util.*;
  * @param <V> The value type
  */
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
+
     /** A map of all modified values buffered in this mutable state */
     private final Map<K, V> modifications = new LinkedHashMap<>();
-    /**
-     * A list of listeners to be notified of changes to the state.
-     */
+
+    /** A list of listeners to be notified of changes to the state */
     private final List<KVChangeListener<K, V>> listeners = new ArrayList<>();
 
     /**
@@ -41,14 +41,15 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      *
      * @param stateKey The state key. Cannot be null.
      */
-    protected WritableKVStateBase(@NonNull final String stateKey) {
-        super(stateKey);
+    protected WritableKVStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
+        super(serviceName, stateKey);
     }
 
     /**
      * Register a listener to be notified of changes to the state on {@link #commit()}. We do not support unregistering
      * a listener, as the lifecycle of a {@link WritableKVState} is scoped to the set of mutations made to a state in a
      * round; and there is no use case where an application would only want to be notified of a subset of those changes.
+     *
      * @param listener the listener to register
      */
     public void registerListener(@NonNull final KVChangeListener<K, V> listener) {
@@ -84,8 +85,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     @Override
     public final void reset() {
-        super.reset();
         modifications.clear();
+        super.reset();
     }
 
     /** {@inheritDoc} */

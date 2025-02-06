@@ -43,6 +43,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.merkle.StateUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -138,7 +139,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
 
     @Override
     public int stateIdFor(@NonNull final String serviceName, @NonNull final String stateKey) {
-        return BlockImplUtils.stateIdFor(serviceName, stateKey);
+        return StateUtils.stateIdFor(serviceName, stateKey);
     }
 
     @Override

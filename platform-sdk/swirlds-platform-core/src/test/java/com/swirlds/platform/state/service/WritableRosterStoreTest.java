@@ -37,7 +37,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
+import com.swirlds.state.merkle.disk.OnDiskWritableSingletonState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -75,7 +75,7 @@ class WritableRosterStoreTest {
                 .thenReturn(rosters);
         when(writableStates.<RosterState>getSingleton(WritableRosterStore.ROSTER_STATES_KEY))
                 .thenReturn(
-                        new WritableSingletonStateImpl<>(WritableRosterStore.ROSTER_STATES_KEY, rosterStateSingleton));
+                        new OnDiskWritableSingletonState<>(WritableRosterStore.ROSTER_STATES_KEY, rosterStateSingleton));
 
         readableRosterStore = new ReadableRosterStoreImpl(writableStates);
         writableRosterStore = new WritableRosterStore(writableStates);

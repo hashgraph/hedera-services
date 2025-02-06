@@ -34,6 +34,7 @@ import java.util.Set;
  * @param <V> The type of the value
  */
 public interface ReadableKVState<K, V> {
+
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableKVState} within the
      * {@link Schema} which are scoped to the service implementation. The key is therefore not globally
@@ -88,6 +89,9 @@ public interface ReadableKVState<K, V> {
 
     /**
      * Gets the number of keys in the {@link ReadableKVState}.
+     *
+     * @deprecated state sizes will be tracked using a different mechanism.
+     *
      * @return number of keys in the {@link ReadableKVState}.
      */
     long size();

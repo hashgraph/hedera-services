@@ -31,6 +31,8 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.Iterator;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -39,6 +41,7 @@ import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO: double check methods -- some accept `Objects` and other `T`
 /**
  * This utility class provides convenient methods for logging state operations for different types of state types.
  */
@@ -58,9 +61,23 @@ public class StateLogger {
      * @param value The value of the singleton
      * @param <T> The type of the singleton
      */
+    @SuppressWarnings("LoggingSimilarMessage") // TODO: remove this outdated method
     public static <T> void logSingletonRead(@NonNull final String label, @Nullable final ValueLeaf<T> value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      READ singleton {} value {}", label, value == null ? "null" : value.getValue());
+        }
+    }
+
+    /**
+     * Log the read of a singleton.
+     *
+     * @param label The label of the singleton
+     * @param value The value of the singleton
+     * @param <T> The type of the singleton
+     */
+    public static <T> void logSingletonRead(@NonNull final String label, @Nullable final T value) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
+            logger.debug("      READ singleton {} value {}", label, value == null ? "null" : value.toString());
         }
     }
 
@@ -70,9 +87,22 @@ public class StateLogger {
      * @param label The label of the singleton
      * @param value The value of the singleton
      */
-    public static void logSingletonWrite(@NonNull final String label, @Nullable final Object value) {
+    public static <T> void logSingletonWrite(@NonNull final String label, @Nullable final T value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      WRITTEN singleton {} value {}", label, value == null ? "null" : value.toString());
+        }
+    }
+
+    /**
+     * Log when a value is removed from a singleton.
+     *
+     * @param label The label of the singleton
+     * @param value The value of the singleton
+     * @param <T> The type of the singleton
+     */
+    public static <T> void logSingletonRemove(@NonNull final String label, @Nullable final T value) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
+            logger.debug("      REMOVE from singleton {} value {}", label, value == null ? "null" : value.toString());
         }
     }
 
@@ -112,6 +142,7 @@ public class StateLogger {
         }
     }
 
+    // TODO: remove?
     /**
      * Log the iteration over a queue.
      *
@@ -129,6 +160,32 @@ public class StateLogger {
                         label,
                         queue.size(),
                         queue.stream()
+                                .map(leaf -> leaf == null ? "null" : leaf.toString())
+                                .collect(Collectors.joining(",\n")));
+            }
+        }
+    }
+
+    /**
+     * Log the iteration over a queue.
+     *
+     * @param label The label of the queue
+     * @param size The queue size
+     * @param it The queue elements iterator
+     * @param <K> The type of the queue values
+     */
+    public static <K> void logQueueIterate(
+            @NonNull final String label, final long size, @NonNull final Iterator<K> it) {
+        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
+            if (size == 0) {
+                logger.debug("      ITERATE queue {} size 0 values:EMPTY", label);
+            } else {
+                final Iterable<K> iterable = () -> it;
+                logger.debug(
+                        "      ITERATE queue {} size {} values:\n{}",
+                        label,
+                        size,
+                        StreamSupport.stream(iterable.spliterator(), false)
                                 .map(leaf -> leaf == null ? "null" : leaf.toString())
                                 .collect(Collectors.joining(",\n")));
             }
@@ -224,6 +281,7 @@ public class StateLogger {
         }
     }
 
+    // TODO: remove
     /**
      * Log the get of an entry from a map for modification.
      *
