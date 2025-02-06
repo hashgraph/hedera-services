@@ -60,7 +60,9 @@ import org.bouncycastle.util.encoders.Hex;
 public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         implements OwningEntity, EvmAddressableEntity {
     private static final int MAX_INLINE_INITCODE_SIZE = 4096;
+    public static final String VARIANT_NONE = "";
     public static final String VARIANT_16C = "16c";
+    public static final String VARIANT_167 = "167";
 
     private final long creationGas;
     private final String contractName;
@@ -98,13 +100,13 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
             final long creationGas,
             final boolean immutable,
             final int maxAutoAssociations,
-            final String variant) {
+            @NonNull final String variant) {
         super(name);
         this.immutable = immutable;
         this.creationGas = creationGas;
         this.contractName = requireNonNull(contractName);
         this.maxAutoAssociations = maxAutoAssociations;
-        this.variant = variant;
+        this.variant = requireNonNull(variant);
     }
 
     /**

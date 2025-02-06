@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.addre
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeTranslator.TOKEN_TYPE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x167.tokentype.TokenTypeTranslator.TOKEN_TYPE;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;

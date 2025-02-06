@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecContract.VARIANT_NONE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -496,7 +497,22 @@ public class TxnVerbs {
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-        final var abi = getABIFor(FUNCTION, functionName, contract);
+        return contractCall(VARIANT_NONE, contract, functionName, params);
+    }
+
+    /**
+     * This method allows the developer to invoke a contract function by the name of the called
+     * contract and the name of the desired function
+     *
+     * This overload allows for a variant root directory for the contract
+     *
+     * @param contract the name of the contract
+     * @param functionName the name of the function
+     * @param params the arguments (if any) passed to the contract's function
+     */
+    public static HapiContractCall contractCall(
+            final String variant, final String contract, final String functionName, final Object... params) {
+        final var abi = getABIFor(variant, FUNCTION, functionName, contract);
         return new HapiContractCall(abi, contract, params);
     }
 
@@ -653,12 +669,7 @@ public class TxnVerbs {
      * @param contractsNames the name(s) of the contract(s), which are to be deployed
      */
     public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
-        return uploadInitCode("", Optional.empty(), contractsNames);
-    }
-
-    public static HapiSpecOperation uploadInitCode(
-            final String variant, final Optional<String> payer, final String... contractsNames) {
-        return uploadInitCode(payer, variant, contractsNames);
+        return uploadInitCode(Optional.empty(), VARIANT_NONE, contractsNames);
     }
 
     /**

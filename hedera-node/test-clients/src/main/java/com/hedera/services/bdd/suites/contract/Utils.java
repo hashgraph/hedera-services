@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.keys.KeyUtils.relocatedIfNotPresent
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.realm;
 import static com.hedera.services.bdd.spec.HapiPropertySource.shard;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecContract.VARIANT_NONE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -30,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -184,8 +186,26 @@ public class Utils {
      * @param contractName the name of the contract
      */
     public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
+        return getABIFor(VARIANT_NONE, type, functionName, contractName);
+    }
+
+    /**
+     * This method extracts the function ABI by the name of the desired function and the name of the
+     * respective contract. Depending on the desired function type, it can deliver either a
+     * constructor ABI, or function ABI from the contract ABI
+     *
+     * This overloaded method allows for a variant contract root folder
+     *
+     * @param variant variant contract root folder
+     * @param type accepts {@link FunctionType} - enum, either CONSTRUCTOR, or FUNCTION
+     * @param functionName the name of the function. If the desired function is constructor, the
+     *     function name must be EMPTY ("")
+     * @param contractName the name of the contract
+     */
+    public static String getABIFor(
+            final String variant, final FunctionType type, final String functionName, final String contractName) {
         try {
-            final var path = getResourcePath(contractName, JSON_EXTENSION);
+            final var path = getResourcePath(defaultContractsRoot(variant), contractName, JSON_EXTENSION);
             try (final var input = new FileInputStream(path)) {
                 return getFunctionAbiFrom(input, functionName, type);
             }
@@ -457,7 +477,7 @@ public class Utils {
     }
 
     @NonNull
-    public static String defaultContractsRoot(String variant) {
-        return variant.isEmpty() ? DEFAULT_CONTRACTS_ROOT : DEFAULT_CONTRACTS_ROOT + "_" + variant;
+    public static String defaultContractsRoot(@NonNull final String variant) {
+        return variant.isEmpty() ? DEFAULT_CONTRACTS_ROOT : DEFAULT_CONTRACTS_ROOT + "_" + requireNonNull(variant);
     }
 }
