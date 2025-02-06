@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.mod.QueryMutation;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -255,7 +256,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         if (expectedCostAnswerPrecheck() != OK || expectedAnswerOnlyPrecheck() != OK) {
             return false;
         }
-        txnSubmitted = payment;
+        txnSubmitted = TxnUtils.normalizeTransaction(payment);
         return true;
     }
 
@@ -302,7 +303,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             if (expectedCostAnswerPrecheck() != OK) {
                 return Transaction.getDefaultInstance();
             }
-            txnSubmitted = payment;
+            txnSubmitted = TxnUtils.normalizeTransaction(payment);
             if (!loggingOff) {
                 final String message = String.format(
                         "%s--> Node payment for %s is %s tinyBars.", spec.logPrefix(), this, realNodePayment);

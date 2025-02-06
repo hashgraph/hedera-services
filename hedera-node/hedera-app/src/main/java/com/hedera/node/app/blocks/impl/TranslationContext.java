@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionRecord;
@@ -51,10 +50,10 @@ public interface TranslationContext {
     TransactionID txnId();
 
     /**
-     * Returns the transaction itself.
-     * @return the transaction
+     * Returns the serialized transaction.
+     * @return the serialized transaction
      */
-    Transaction transaction();
+    Bytes serializedTransaction();
 
     /**
      * Returns the functionality of the transaction.
@@ -67,13 +66,6 @@ public interface TranslationContext {
      * @return the hash
      */
     default Bytes transactionHash() {
-        final Bytes transactionBytes;
-        final var txn = transaction();
-        if (txn.signedTransactionBytes().length() > 0) {
-            transactionBytes = txn.signedTransactionBytes();
-        } else {
-            transactionBytes = Transaction.PROTOBUF.toBytes(txn);
-        }
-        return Bytes.wrap(noThrowSha384HashOf(transactionBytes.toByteArray()));
+        return Bytes.wrap(noThrowSha384HashOf(serializedTransaction().toByteArray()));
     }
 }

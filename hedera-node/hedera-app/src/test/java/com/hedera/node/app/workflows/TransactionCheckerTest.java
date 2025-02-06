@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,10 +129,6 @@ final class TransactionCheckerTest extends AppTestBase {
         return SignatureMap.newBuilder().sigPair(sigPair, sigPair2);
     }
 
-    private SignedTransaction.Builder signedTxBuilder(TransactionBody.Builder txBody, SignatureMap.Builder sigMap) {
-        return signedTxBuilder(txBody.build(), sigMap.build());
-    }
-
     private SignedTransaction.Builder signedTxBuilder(TransactionBody txBody, SignatureMap sigMap) {
         // Create the signed transaction object. We hold a reference to it to make sure after
         // we parseStrict the object we get the same thing back.
@@ -140,13 +136,12 @@ final class TransactionCheckerTest extends AppTestBase {
         return SignedTransaction.newBuilder().bodyBytes(bodyBytes).sigMap(sigMap);
     }
 
-    private Transaction.Builder txBuilder(SignedTransaction.Builder signedTx) {
-        return txBuilder(signedTx.build());
+    private Transaction.Builder txBuilder(TransactionBody.Builder txBody, SignatureMap.Builder signatureMap) {
+        return txBuilder(txBody.build(), signatureMap.build());
     }
 
-    private Transaction.Builder txBuilder(SignedTransaction signedTx) {
-        final var signedTransactionBytes = asBytes(SignedTransaction.PROTOBUF, signedTx);
-        return Transaction.newBuilder().signedTransactionBytes(signedTransactionBytes);
+    private Transaction.Builder txBuilder(TransactionBody txBody, SignatureMap signatureMap) {
+        return Transaction.newBuilder().body(txBody).sigMap(signatureMap);
     }
 
     /**
@@ -159,7 +154,7 @@ final class TransactionCheckerTest extends AppTestBase {
         txBody = bodyBuilder(txIdBuilder()).build();
         signatureMap = sigMapBuilder().build();
         signedTx = signedTxBuilder(txBody, signatureMap).build();
-        tx = txBuilder(signedTx).build();
+        tx = txBuilder(txBody, signatureMap).build();
         inputBuffer = Bytes.wrap(asByteArray(tx));
 
         // Set up the properties
@@ -200,13 +195,20 @@ final class TransactionCheckerTest extends AppTestBase {
      * These tests focus on parsing behavior, but not on validity itself.
      */
     @Nested
-    @DisplayName("Tests for Parsing")
-    class ParseTest {
+    @DisplayName("Tests for Parsing and Checking")
+    class ParseAndCheckTest {
+        @Test
+        @SuppressWarnings("ConstantConditions")
+        @DisplayName("`parse` requires Bytes")
+        void parse() {
+            assertThatThrownBy(() -> checker.parse(null)).isInstanceOf(NullPointerException.class);
+        }
+
         @Test
         @SuppressWarnings("ConstantConditions")
         @DisplayName("`parseAndCheck` requires Bytes")
         void parseAndCheck() {
-            assertThatThrownBy(() -> checker.parse(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> checker.parseAndCheck(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -236,7 +238,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
         /**
          * This test verifies that, given a valid transaction encoded as bytes, the {@link TransactionChecker} will
-         * parse it correctly. The transaction in this case is using the "signed transaction bytes" fields.
+         * parse it correctly. The transaction in this case is using the "body" field.
          *
          * @throws PreCheckException Not throw by this test if all goes well
          */
@@ -259,13 +261,45 @@ final class TransactionCheckerTest extends AppTestBase {
 
         /**
          * This test is the same as {@link #happyPath()} except that instead of
-         * using "signed transaction bytes" in the transaction, it uses the deprecated fields.
+         * using body in the transaction, it uses the deprecated "signed transaction bytes".
          *
          * @throws PreCheckException Not throw by this test if all goes well
          */
         @Test
         @DisplayName("A transaction with deprecated fields passes parse and check")
-        void happyDeprecatedPath() throws PreCheckException {
+        void happyDeprecatedSignatureTxnPath() throws PreCheckException {
+            // Given a transaction using the deprecated fields
+            final var localTx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+            inputBuffer = Bytes.wrap(asByteArray(localTx));
+
+            // When we parseStrict and check
+            final var transaction = checker.parse(inputBuffer);
+            final var info = checker.check(transaction, null);
+
+            // Then everything works because the deprecated fields are supported
+            assertThat(info.transaction().body()).isEqualTo(txBody);
+            assertThat(info.transaction().sigMap()).isEqualTo(signatureMap);
+            assertThat(info.txBody()).isEqualTo(txBody);
+            assertThat(info.signatureMap()).isEqualTo(signatureMap);
+            assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
+
+            // And the deprecation counter has been incremented
+            assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
+            // But the super deprecation counter has not
+            assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
+        }
+
+        /**
+         * This test is the same as {@link #happyPath()} except that instead of
+         * using body in the transaction, it uses the deprecated "signed transaction bytes".
+         *
+         * @throws PreCheckException Not throw by this test if all goes well
+         */
+        @Test
+        @DisplayName("A transaction with deprecated fields passes parse and check")
+        void happyDeprecatedBodyBytesPath() throws PreCheckException {
             // Given a transaction using the deprecated fields
             final var localTx = Transaction.newBuilder()
                     .bodyBytes(signedTx.bodyBytes())
@@ -278,7 +312,8 @@ final class TransactionCheckerTest extends AppTestBase {
             final var info = checker.check(transaction, null);
 
             // Then everything works because the deprecated fields are supported
-            assertThat(info.transaction()).isEqualTo(localTx);
+            assertThat(info.transaction().body()).isEqualTo(txBody);
+            assertThat(info.transaction().sigMap()).isEqualTo(signatureMap);
             assertThat(info.txBody()).isEqualTo(txBody);
             assertThat(info.signatureMap()).isEqualTo(signatureMap);
             assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
@@ -287,30 +322,6 @@ final class TransactionCheckerTest extends AppTestBase {
             assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
             // But the super deprecation counter has not
             assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
-        }
-
-        @Test
-        @DisplayName("A transaction with super deprecated fields alone will throw")
-        @SuppressWarnings("deprecation")
-        void parseAndCheckWithSuperDeprecatedFields() throws PreCheckException {
-            // Given a transaction using the super deprecated fields
-            final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
-            final var localTx = Transaction.newBuilder()
-                    .body(txBody)
-                    .sigs(SignatureList.newBuilder().sigs(sig).build())
-                    .build();
-            inputBuffer = Bytes.wrap(asByteArray(localTx));
-
-            // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
-            final var transaction = checker.parse(inputBuffer);
-            assertThatThrownBy(() -> checker.check(transaction, null))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(INVALID_TRANSACTION_BODY));
-
-            // And the super deprecation counter has been incremented
-            assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
-            // But the deprecation counter has not
-            assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
         }
 
         @Test
@@ -339,8 +350,7 @@ final class TransactionCheckerTest extends AppTestBase {
     }
 
     /**
-     * These tests and nested tests cover all the validation checks EXCEPT FOR bytes length, which was
-     * covered in the {@link ParseTest} tests.
+     * These tests and nested tests cover all the validation checks.
      */
     @Nested
     @DisplayName("Check Tests")
@@ -353,92 +363,19 @@ final class TransactionCheckerTest extends AppTestBase {
         }
 
         @Nested
-        @DisplayName("Happy Paths")
-        class HappyPaths {
-            /**
-             * This test verifies that, given a valid transaction, the {@link TransactionChecker} will succeed in
-             * checking a valid transaction.
-             *
-             * @throws PreCheckException Not throw by this test if all goes well
-             */
-            @Test
-            @DisplayName("A valid transaction passes parseAndCheck with a BufferedData")
-            void happyPath() throws PreCheckException {
-                // Given a valid serialized transaction, when we parse and check
-                final var info = checker.check(tx, null);
-
-                // Then the parsed data is as we expected
-                assertThat(info.transaction()).isEqualTo(tx);
-                assertThat(info.txBody()).isEqualTo(txBody);
-                assertThat(info.signatureMap()).isEqualTo(signatureMap);
-                assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
-                // And neither deprecation counter has been incremented
-                assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
-                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
-            }
-
-            /**
-             * This test is the same as {@link #happyPath()} but with deprecated fields.
-             *
-             * @throws PreCheckException Not throw by this test if all goes well
-             */
-            @Test
-            @DisplayName("A transaction with deprecated fields passes check")
-            void happyWithDeprecatedFields() throws PreCheckException {
-                // Given a transaction using the deprecated fields
-                final var localTx = Transaction.newBuilder()
-                        .bodyBytes(signedTx.bodyBytes())
-                        .sigMap(signedTx.sigMap())
-                        .build();
-
-                // When we parse and check
-                final var info = checker.check(localTx, null);
-
-                // Then everything works because the deprecated fields are supported
-                assertThat(info.transaction()).isEqualTo(localTx);
-                assertThat(info.txBody()).isEqualTo(txBody);
-                assertThat(info.signatureMap()).isEqualTo(signatureMap);
-                assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
-
-                // And the deprecation counter has been incremented
-                assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
-                // But the super deprecation counter has not
-                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
-            }
+        @DisplayName("Super Deprecated Fields")
+        class SuperDeprecatedTests {
 
             @Test
-            @DisplayName("A transaction with super deprecated fields alone will throw")
+            @DisplayName("A transaction with super deprecated fields and body ignores super deprecated fields")
             @SuppressWarnings("deprecation")
-            void happyWithSuperDeprecatedFields() {
-                // Given a transaction using the super deprecated fields
-                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
-                final var localTx = Transaction.newBuilder()
-                        .body(txBody)
-                        .sigs(SignatureList.newBuilder().sigs(sig).build())
-                        .build();
-
-                // When we check, then we get a PreCheckException with INVALID_TRANSACTION_BODY
-                assertThatThrownBy(() -> checker.check(localTx, null))
-                        .isInstanceOf(PreCheckException.class)
-                        .has(responseCode(INVALID_TRANSACTION_BODY));
-
-                // And the super deprecation counter has been incremented
-                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
-                // But the deprecation counter has not
-                assertThat(counterMetric("DeprTxnsRcv").get()).isZero();
-            }
-
-            @Test
-            @DisplayName(
-                    "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
-            @SuppressWarnings("deprecation")
-            void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
+            void checkWithSuperDeprecatedFieldsAndBody() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
                         .body(txBody)
+                        .sigMap(signatureMap)
                         .sigs(SignatureList.newBuilder().sigs(sig).build())
-                        .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                         .build();
 
                 // When we check
@@ -455,13 +392,36 @@ final class TransactionCheckerTest extends AppTestBase {
 
             @Test
             @DisplayName(
-                    "A transaction with super deprecated fields and deprecated fields ignores super deprecated fields")
+                    "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
+            @SuppressWarnings("deprecation")
+            void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
+                // Given a transaction using the super deprecated fields and signedTransactionBytes
+                final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
+                final var localTx = Transaction.newBuilder()
+                        .sigs(SignatureList.newBuilder().sigs(sig).build())
+                        .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                        .build();
+
+                // When we check
+                final var info = checker.check(localTx, null);
+                // Then the parsed data is as we expected
+                assertThat(info.transaction().body()).isEqualTo(txBody);
+                assertThat(info.transaction().sigMap()).isEqualTo(signatureMap);
+                assertThat(info.txBody()).isEqualTo(txBody);
+                assertThat(info.signatureMap()).isEqualTo(signatureMap);
+                assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
+                // And the super-deprecated counter is incremented, but not the deprecated counter
+                assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isEqualTo(1);
+            }
+
+            @Test
+            @DisplayName("A transaction with super deprecated fields and bodyBytes ignores super deprecated fields")
             @SuppressWarnings("deprecation")
             void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
-                        .body(txBody)
                         .sigs(SignatureList.newBuilder().sigs(sig).build())
                         .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
                         .sigMap(signatureMap)
@@ -470,7 +430,8 @@ final class TransactionCheckerTest extends AppTestBase {
                 // When we check
                 final var info = checker.check(localTx, null);
                 // Then the parsed data is as we expected
-                assertThat(info.transaction()).isEqualTo(localTx);
+                assertThat(info.transaction().body()).isEqualTo(txBody);
+                assertThat(info.transaction().sigMap()).isEqualTo(signatureMap);
                 assertThat(info.txBody()).isEqualTo(txBody);
                 assertThat(info.signatureMap()).isEqualTo(signatureMap);
                 assertThat(info.functionality()).isEqualTo(CONSENSUS_CREATE_TOPIC);
@@ -481,8 +442,48 @@ final class TransactionCheckerTest extends AppTestBase {
         }
 
         @Nested
-        @DisplayName("Deprecated Fields tests")
-        class DeprecatedFields {
+        @DisplayName("Invalid combinations")
+        class InvalidCombinations {
+            @Test
+            @DisplayName("A transaction using both body and signed bytes is invalid")
+            void badTransactionWithBodyAndSignedBytes() {
+                // Given a transaction using both signed bytes and body bytes
+                final var localTx = Transaction.newBuilder()
+                        .body(txBody)
+                        .sigMap(signatureMap)
+                        .signedTransactionBytes(CONTENT)
+                        .build();
+
+                // When we check the transaction, then we find it is invalid
+                assertThatThrownBy(() -> checker.check(localTx, null))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(INVALID_TRANSACTION));
+
+                // And the deprecation counter is incremented, but not the super-deprecation counter
+                assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
+            }
+
+            @Test
+            @DisplayName("A transaction using both body and body bytes is invalid")
+            void badTransactionWithBodyAndBodyBytes() {
+                // Given a transaction using both signed bytes and body bytes
+                final var localTx = Transaction.newBuilder()
+                        .body(txBody)
+                        .bodyBytes(CONTENT)
+                        .sigMap(signatureMap)
+                        .build();
+
+                // When we check the transaction, then we find it is invalid
+                assertThatThrownBy(() -> checker.check(localTx, null))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(INVALID_TRANSACTION));
+
+                // And the deprecation counter is incremented, but not the super-deprecation counter
+                assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
+                assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
+            }
+
             @Test
             @DisplayName("A transaction using both signed bytes and body bytes is invalid")
             void badTransactionWithSignedBytesAndBodyBytes() {
@@ -490,6 +491,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var tx = Transaction.newBuilder()
                         .signedTransactionBytes(CONTENT)
                         .bodyBytes(CONTENT)
+                        .sigMap(signatureMap)
                         .build();
 
                 // When we check the transaction, then we find it is invalid
@@ -562,8 +564,7 @@ final class TransactionCheckerTest extends AppTestBase {
                                         .build())
                                 .collect(toList()))
                         .build();
-                final var localTx =
-                        txBuilder(signedTxBuilder(txBody, localSignatureMap)).build();
+                final var localTx = txBuilder(txBody, localSignatureMap).build();
 
                 // When we check the transaction, we find it is invalid due to duplicate prefixes
                 assertThatThrownBy(() -> checker.check(localTx, null))
@@ -654,7 +655,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void testCheckTransactionBodyWithoutTransactionIDFails() {
                 // Given a transaction body without a transaction ID
                 final var body = bodyBuilder((TransactionID) null);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -669,7 +670,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var payerId =
                         AccountID.newBuilder().alias(Bytes.wrap("alias")).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 assertThatThrownBy(() -> checker.check(tx, null))
                         .isInstanceOf(PreCheckException.class)
@@ -683,7 +684,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Given a transaction ID with an account number that is not valid (0 is not a valid number)
                 final var payerId = AccountID.newBuilder().accountNum(account).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -699,7 +700,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var payerId =
                         AccountID.newBuilder().shardNum(shard).accountNum(10L).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -715,7 +716,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 final var payerId =
                         AccountID.newBuilder().realmNum(realm).accountNum(10L).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -727,7 +728,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName("A scheduled transaction should fail")
             void testScheduledTransactionFails() {
                 final var body = bodyBuilder(txIdBuilder().scheduled(true));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -739,7 +740,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName("An internal transaction should fail")
             void testInternalTransactionFails() {
                 final var body = bodyBuilder(txIdBuilder().nonce(1));
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -753,7 +754,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Given a transaction body with a memo that is too large
                 final var memo = randomString(MAX_MEMO_SIZE + 1);
                 final var body = bodyBuilder(txIdBuilder()).memo(memo);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -769,7 +770,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void testCheckTransactionBodyWithZeroByteMemoFails(final String memo) {
                 // Given a transaction body with a memo that contains a zero byte
                 final var body = bodyBuilder(txIdBuilder()).memo(memo);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx, null))
@@ -787,7 +788,7 @@ final class TransactionCheckerTest extends AppTestBase {
             void testCheckTransactionBodyWithInvalidFeeFails(final long fee) {
                 // Given a transaction body with a negative fee
                 final var body = bodyBuilder(txIdBuilder()).transactionFee(fee);
-                final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
+                final var tx = txBuilder(body, sigMapBuilder()).build();
 
                 // When we check the transaction body
                 assertThatThrownBy(() -> checker.check(tx, null))

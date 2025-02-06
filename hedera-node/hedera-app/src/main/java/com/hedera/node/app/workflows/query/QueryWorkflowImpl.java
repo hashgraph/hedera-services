@@ -256,7 +256,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
 
                         // 3.vi Submit payment to platform
-                        final var txBytes = Transaction.PROTOBUF.toBytes(allegedPayment);
+                        final var txBytes = Transaction.PROTOBUF.toBytes(transactionInfo.transaction());
                         submissionManager.submit(txBody, txBytes);
                     }
                 } else {
