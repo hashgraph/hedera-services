@@ -50,7 +50,6 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFeeLimit;
 import com.hedera.hapi.node.transaction.FixedCustomFee;
@@ -184,7 +183,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
 
             // dispatch transfers to pay the fees, but suppress any child records.
-            for (Map.Entry<FixedCustomFee, CryptoTransferTransactionBody> entry : syntheticBodies.entrySet()) {
+            for (var entry : syntheticBodies.entrySet()) {
                 final var fee = entry.getKey();
                 final var syntheticBody = entry.getValue();
                 // dispatch the transfer

@@ -234,15 +234,6 @@ public class CustomFeeAssessmentStep {
                     numUniqueAdjustmentsIn(assessedTxns) <= maxBalanceChanges,
                     CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
         }
-
-        // if this was a dispatch for paying transaction fixed fee,
-        // we need to convert the toplevel transfer in to assessed fees too.
-        //        if (isTxnFixedFee) {
-        //            final var assessmentResult = new AssessmentResult(emptyList(), emptyList());
-        //            customFeeAssessor.setTransactionFeesAsAssessed(op, assessmentResult);
-        //            customFeesAssessed.addAll(assessmentResult.getAssessedCustomFees());
-        //        }
-
         return new CustomFeeAssessmentResult(assessedTxns, customFeesAssessed);
     }
 
