@@ -849,31 +849,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     /**
-     * Gets the value associated with the given key such that any changes to the
-     * value will be used in calculating hashes and eventually saved to disk. If the
-     * value is actually never modified, some work will be wasted computing hashes
-     * and saving data that has not actually changed.
-     *
-     * @param key
-     * 		The key. This must not be null.
-     * @return The value. The value may be null.
-     */
-    public V getForModify(final K key) {
-        throwIfImmutable();
-        requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
-        assert currentModifyingThreadRef.compareAndSet(null, Thread.currentThread());
-        try {
-            final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
-            statistics.countUpdatedEntities();
-            return rec == null ? null : rec.getValue();
-        } finally {
-            assert currentModifyingThreadRef.compareAndSet(Thread.currentThread(), null);
-        }
-    }
-
-    /**
-     * Gets the value associated with the given key. The returned value *WILL BE* immutable.
-     * To modify the value, use call {@link #getForModify(VirtualKey)}.
+     * Gets the value associated with the given key.
      *
      * @param key
      * 		The key. This must not be null.

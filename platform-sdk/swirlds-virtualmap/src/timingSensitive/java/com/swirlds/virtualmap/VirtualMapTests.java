@@ -637,15 +637,15 @@ class VirtualMapTests extends VirtualTestBase {
     }
 
     @Test
-    @DisplayName("GetForModify should not mutate old copies")
-    void checkGetForModifyMutation() throws InterruptedException {
+    @DisplayName("put should not mutate old copies")
+    void checkPutMutation() throws InterruptedException {
         final VirtualMap<TestKey, TestValue> vm = createMap();
         vm.put(A_KEY, APPLE);
-        final TestValue value = vm.getForModify(A_KEY);
-        final VirtualMap<TestKey, TestValue> vm2 = vm.copy();
+        final TestValue value = vm.get(A_KEY);
 
-        final TestValue value2 = vm2.getForModify(A_KEY);
-        value2.setValue("Mutant2");
+        final VirtualMap<TestKey, TestValue> vm2 = vm.copy();
+        vm2.put(A_KEY, new TestValue("Mutant2"));
+        final TestValue value2 = vm2.get(A_KEY);
 
         final TestValue value3 = vm.get(A_KEY);
 

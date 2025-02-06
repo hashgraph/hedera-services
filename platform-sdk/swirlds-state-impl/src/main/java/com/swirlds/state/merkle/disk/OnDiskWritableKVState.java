@@ -96,12 +96,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
-        final var existing = virtualMap.getForModify(k);
-        if (existing != null) {
-            existing.setValue(value);
-        } else {
-            virtualMap.put(k, new OnDiskValue<>(valueClassId, valueCodec, value));
-        }
+        virtualMap.put(k, new OnDiskValue<>(valueClassId, valueCodec, value));
         // Log to transaction state log, what was put
         logMapPut(getStateKey(), key, value);
     }

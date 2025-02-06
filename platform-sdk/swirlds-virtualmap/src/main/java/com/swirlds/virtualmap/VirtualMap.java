@@ -82,7 +82,7 @@ import java.util.List;
  * for any existing versions going back to the oldest version that is still in memory (typically, a dozen
  * or so). If we have a cache miss there, then we go to disk, read an object, and place it in the cache,
  * if it will be modified later or is being modified now. We do not cache into memory records that are
- * only read. See {@link #getForModify(VirtualKey)}.
+ * only read.
  * <p>
  * One important optimization is avoiding accessing internal nodes during transaction handling. If a leaf
  * is added, we will need to create a new internal node, but we do not need to "walk up the tree" making
@@ -452,22 +452,7 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
     }
 
     /**
-     * Gets the value associated with the given key such that any changes to the
-     * value will be used in calculating hashes and eventually saved to disk. If the
-     * value is actually never modified, some work will be wasted computing hashes
-     * and saving data that has not actually changed.
-     *
-     * @param key
-     * 		The key. This must not be null.
-     * @return The value. The value may be null.
-     */
-    public V getForModify(final K key) {
-        return root.getForModify(key);
-    }
-
-    /**
-     * Gets the value associated with the given key. The returned value *WILL BE* immutable.
-     * To modify the value, use call {@link #getForModify(VirtualKey)}.
+     * Gets the value associated with the given key.
      *
      * @param key
      * 		The key. This must not be null.

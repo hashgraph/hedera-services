@@ -456,36 +456,6 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         }
 
         /**
-         * If the key was previously "getForModify" and is then removed, it MUST be present in both
-         * the "readKeys" and "modified" keys.
-         *
-         * <p>On commit, the remove method MUST be called on the backing store.
-         */
-        @Test
-        @DisplayName("Remove a known key after getForModify")
-        void removeAfterGetForModify() {
-            // Initially everything is clean
-            assertThat(state.readKeys()).isEmpty();
-            assertThat(state.modifiedKeys()).isEmpty();
-
-            // Remove a known key after getting it
-            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
-            state.remove(A_KEY);
-
-            // "readKeys" is now populated, and "modifiedKeys" has the key
-            assertThat(state.readKeys()).hasSize(1);
-            assertThat(state.modifiedKeys()).hasSize(1);
-            assertThat(state.readKeys()).contains(A_KEY);
-            assertThat(state.modifiedKeys()).contains(A_KEY);
-
-            // Commit should cause the value to be removed but not "put"
-            state.commit();
-            verify(state, Mockito.never()).putIntoDataSource(anyString(), anyString());
-            verify(state, Mockito.times(1)).removeFromDataSource(anyString());
-            verify(state, Mockito.times(1)).removeFromDataSource(A_KEY);
-        }
-
-        /**
          * If the key was previously "put" and is then removed, it MUST be present in only
          * "modified" keys.
          *

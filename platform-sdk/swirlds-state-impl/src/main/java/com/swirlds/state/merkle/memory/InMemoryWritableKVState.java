@@ -92,12 +92,7 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         final var k = new InMemoryKey<>(key);
-        final var existing = merkle.getForModify(k);
-        if (existing != null) {
-            existing.setValue(value);
-        } else {
-            merkle.put(k, new InMemoryValue<>(inMemoryValueClassId, keyCodec, valueCodec, k, value));
-        }
+        merkle.put(k, new InMemoryValue<>(inMemoryValueClassId, keyCodec, valueCodec, k, value));
         // Log to transaction state log, what was put
         logMapPut(getStateKey(), key, value);
     }
