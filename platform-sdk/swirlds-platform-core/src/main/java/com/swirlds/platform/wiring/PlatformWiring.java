@@ -630,7 +630,7 @@ public class PlatformWiring {
                         "system transactions",
                         StateAndRound::systemTransactions);
 
-        hashedStateAndRoundOutputWire.solderTo(stateAndRoundTransformer.getInputWire());
+        stateHasherWiring.getOutputWire().solderTo(stateAndRoundTransformer.getInputWire());
         transactionHandlerWiring.getOutputWire().solderTo(stateAndRoundTransformer.getInputWire());
 
         stateAndRoundTransformer
