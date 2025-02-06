@@ -46,7 +46,6 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
@@ -100,7 +99,6 @@ import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.handle.steps.UserTxnFactory;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -377,18 +375,14 @@ public class HandleWorkflow {
             final boolean userTxnHandled) {
         final var handleStart = System.nanoTime();
 
-        // Temporary check until we can deprecate StateSignatureTransaction
-        if (stateSignatureTransactionEncountered(txn, stateSignatureTxnCallback)) {
-            return false;
-        }
-
         // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
         final var consensusNow = txn.getConsensusTimestamp();
         var type = ORDINARY_TRANSACTION;
         stakePeriodManager.setCurrentStakePeriodFor(consensusNow);
+        boolean startsNewRecordFile = false;
         if (streamMode != BLOCKS) {
-            final var isBoundary = blockRecordManager.startUserTransaction(consensusNow, state);
-            if (streamMode == RECORDS && isBoundary) {
+            startsNewRecordFile = blockRecordManager.willOpenNewBlock(consensusNow, state);
+            if (streamMode == RECORDS && startsNewRecordFile) {
                 type = typeOfBoundary(state);
             }
         }
@@ -399,7 +393,14 @@ public class HandleWorkflow {
                 default -> ORDINARY_TRANSACTION;};
         }
 
-        final var userTxn = userTxnFactory.createUserTxn(state, creator, txn, consensusNow, type);
+        final var userTxn =
+                userTxnFactory.createUserTxn(state, creator, txn, consensusNow, type, stateSignatureTxnCallback);
+        if (userTxn == null) {
+            return false;
+        } else if (streamMode != BLOCKS && startsNewRecordFile) {
+            blockRecordManager.startUserTransaction(consensusNow, state);
+        }
+
         var lastRecordManagerTime = streamMode == RECORDS ? blockRecordManager.consTimeOfLastHandledTxn() : null;
         final var handleOutput = executeTopLevel(userTxn, txnVersion);
         if (streamMode != BLOCKS) {
@@ -443,18 +444,6 @@ public class HandleWorkflow {
             }
         }
         return true;
-    }
-
-    private boolean stateSignatureTransactionEncountered(
-            @NonNull final ConsensusTransaction txn,
-            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
-        if (txn.getMetadata() instanceof PreHandleResult preHandleResult
-                && preHandleResult.txInfo() != null
-                && preHandleResult.txInfo().functionality() == HederaFunctionality.STATE_SIGNATURE_TRANSACTION) {
-            stateSignatureTxnCallback.accept(preHandleResult.txInfo().txBody().stateSignatureTransactionOrThrow());
-            return true;
-        }
-        return false;
     }
 
     /**
