@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleStreamBuilder;
@@ -101,8 +100,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                 .hasFieldOrPropertyWithValue("status", expectedError);
     }
 
-    protected void verifyHandleSucceededAndExecuted(
-            final Schedule next, final TransactionID parentId, final int startCount) {
+    protected void verifyHandleSucceededAndExecuted(final Schedule next, final int startCount) {
         commit(writableById); // commit changes so we can inspect the underlying map
         // should be a new schedule in the map
         assertThat(scheduleMapById).hasSize(startCount + 1);
