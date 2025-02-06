@@ -237,6 +237,14 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     }
 
     /**
+     * Returns the variant of the contract.
+     * @return the variant a\
+     */
+    public String variant() {
+        return variant;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
