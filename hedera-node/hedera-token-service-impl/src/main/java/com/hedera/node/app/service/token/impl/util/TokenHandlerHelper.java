@@ -358,8 +358,7 @@ public class TokenHandlerHelper {
      * @param responseCode the response code to throw if the key is empty
      * @throws PreCheckException if the key is empty
      */
-    public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         if (EMPTY_KEY_LIST.equals(key)) {
             throw new PreCheckException(responseCode);
         }

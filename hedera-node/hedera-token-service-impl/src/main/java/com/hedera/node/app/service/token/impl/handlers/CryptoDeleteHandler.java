@@ -59,7 +59,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoDeleteOrThrow();
@@ -74,7 +74,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.body().cryptoDeleteOrThrow();
         final var deleteAccountId = op.deleteAccountIDOrElse(AccountID.DEFAULT);

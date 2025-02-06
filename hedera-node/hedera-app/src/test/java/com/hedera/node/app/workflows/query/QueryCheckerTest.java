@@ -209,7 +209,7 @@ class QueryCheckerTest extends AppTestBase {
     }
 
     @Test
-    void testValidateCryptoTransferWithFailingValidation() throws PreCheckException {
+    void testValidateCryptoTransferWithFailingValidation() {
         // given
         final var txBody = TransactionBody.newBuilder()
                 .transactionID(
@@ -309,7 +309,7 @@ class QueryCheckerTest extends AppTestBase {
         }
 
         @Test
-        void testSolvencyCheckFails() throws PreCheckException {
+        void testSolvencyCheckFails() {
             // given
             final var amount = 8L;
             final var txInfo = createPaymentInfo(

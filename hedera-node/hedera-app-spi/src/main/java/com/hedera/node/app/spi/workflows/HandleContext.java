@@ -216,8 +216,7 @@ public interface HandleContext {
      * @throws PreCheckException If there is a problem with the nested transaction
      */
     @NonNull
-    TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
-            throws PreCheckException;
+    TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested);
 
     /**
      * Returns the {@link KeyVerifier} which can be used to verify signatures.

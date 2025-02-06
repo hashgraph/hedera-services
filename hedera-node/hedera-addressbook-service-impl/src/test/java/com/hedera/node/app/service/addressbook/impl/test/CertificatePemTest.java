@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ class CertificatePemTest {
     }
 
     @Test
-    void getSameCertificateFromPemEncodingAndPemBytes() throws IOException, CertificateException, PreCheckException {
+    void getSameCertificateFromPemEncodingAndPemBytes() throws IOException, CertificateException {
         final var pemFileName = "goodX509.pem";
         final var pemFilePath = loadResourceFile(pemFileName);
         final var cert = readCertificatePemFile(pemFilePath);
@@ -157,7 +157,7 @@ class CertificatePemTest {
      * @param certBytes the Bytes to validate
      * @throws PreCheckException if the certificate is invalid
      */
-    private static X509Certificate getX509Certificate(@NonNull Bytes certBytes) throws PreCheckException {
+    private static X509Certificate getX509Certificate(@NonNull Bytes certBytes) {
         X509Certificate cert;
         try {
             cert = (X509Certificate) CertificateFactory.getInstance("X.509")

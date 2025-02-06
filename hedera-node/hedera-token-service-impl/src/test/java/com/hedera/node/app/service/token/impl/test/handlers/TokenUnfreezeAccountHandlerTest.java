@@ -57,7 +57,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +94,7 @@ class TokenUnfreezeAccountHandlerTest {
         }
 
         @Test
-        void tokenUnfreezeWithNoToken() throws PreCheckException {
+        void tokenUnfreezeWithNoToken() {
             final var theTxn = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_13257))
                     .tokenUnfreeze(

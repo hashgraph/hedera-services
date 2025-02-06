@@ -143,7 +143,7 @@ public class AddressBookValidator {
      * @param key The key to validate
      * @throws PreCheckException if the key is invalid
      */
-    public void validateAdminKey(@Nullable Key key) throws PreCheckException {
+    public void validateAdminKey(@Nullable Key key) {
         final var keyEmpty = isEmpty(key);
         validateFalsePreCheck(keyEmpty, KEY_REQUIRED);
         validateTruePreCheck(isValid(key), INVALID_ADMIN_KEY);
@@ -155,7 +155,7 @@ public class AddressBookValidator {
      * @param accountId The account ID to validate
      * @throws PreCheckException if the account ID is invalid
      */
-    public void validateAccountId(@Nullable AccountID accountId) throws PreCheckException {
+    public void validateAccountId(@Nullable AccountID accountId) {
         validateAccountID(accountId, INVALID_NODE_ACCOUNT_ID);
         validateFalsePreCheck(
                 !requireNonNull(accountId).hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
@@ -180,7 +180,7 @@ public class AddressBookValidator {
      * @param x509CertBytes the bytes to validate
      * @throws PreCheckException if the certificate is invalid
      */
-    public static void validateX509Certificate(@NonNull final Bytes x509CertBytes) throws PreCheckException {
+    public static void validateX509Certificate(@NonNull final Bytes x509CertBytes) {
         try {
             // Serialize the given bytes to a PEM file just as we would on a PREPARE_UPGRADE
             final var baos = new ByteArrayOutputStream();

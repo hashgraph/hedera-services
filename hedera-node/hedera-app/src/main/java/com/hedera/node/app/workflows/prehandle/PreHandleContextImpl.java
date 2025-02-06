@@ -112,8 +112,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final TransactionBody txn,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionChecker transactionChecker)
-            throws PreCheckException {
+            @NonNull final TransactionChecker transactionChecker) {
         this(
                 storeFactory,
                 txn,
@@ -130,8 +129,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final AccountID payer,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionChecker transactionChecker)
-            throws PreCheckException {
+            @NonNull final TransactionChecker transactionChecker) {
         this(storeFactory, txn, payer, configuration, dispatcher, false, transactionChecker);
     }
 
@@ -146,8 +144,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
             final boolean isUserTx,
-            @NonNull final TransactionChecker transactionChecker)
-            throws PreCheckException {
+            @NonNull final TransactionChecker transactionChecker) {
         this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.payerId = requireNonNull(payerId, "payer must not be null!");
@@ -205,7 +202,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException {
+    public PreHandleContext optionalKey(@NonNull final Key key) {
         // Verify this key isn't for an immutable account
         verifyNotEmptyKey(key, ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
@@ -217,7 +214,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException {
+    public PreHandleContext optionalKeys(@NonNull final Set<Key> keys) {
         for (final Key nextKey : keys) {
             optionalKey(nextKey);
         }
@@ -269,8 +266,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @SuppressWarnings(
             "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
     // false positive because of the !isValid(key) check
-    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (!isValid(key)) {
             throw new PreCheckException(responseCode);
@@ -284,8 +280,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
 
         return requireKey(accountID, responseCode, false);
@@ -297,8 +292,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
     // false positive because of the !isValid(key) check
     public PreHandleContext requireAliasedKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         return requireKey(accountID, responseCode, true);
     }
@@ -306,8 +300,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     private @NonNull PreHandleContext requireKey(
             final @Nullable AccountID accountID,
             final @NonNull ResponseCodeEnum responseCode,
-            final boolean allowAliasedIds)
-            throws PreCheckException {
+            final boolean allowAliasedIds) {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
@@ -349,8 +342,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (accountID == null) {
             throw new PreCheckException(responseCode);
@@ -380,8 +372,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
@@ -420,8 +411,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (contractID == null) {
@@ -484,8 +474,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @NonNull
     @Override
-    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId)
-            throws PreCheckException {
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId) {
         // Throws PreCheckException if the transaction body is structurally invalid
         final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(pureChecksContext);
@@ -522,8 +511,7 @@ public class PreHandleContextImpl implements PreHandleContext {
      * @throws PreCheckException if the account is considered immutable
      */
     private void verifyNotStakingAccounts(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         final var accountNum = accountID != null ? accountID.accountNum() : 0;
         final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
         if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {

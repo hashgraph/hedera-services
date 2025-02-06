@@ -51,8 +51,7 @@ public class PureChecksContextImpl implements PureChecksContext {
             @NonNull final TransactionBody txn,
             @NonNull final Configuration configuration,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final TransactionChecker transactionChecker)
-            throws PreCheckException {
+            @NonNull final TransactionChecker transactionChecker) {
         this.txn = requireNonNull(txn, "txn must not be null!");
         this.configuration = requireNonNull(configuration, "configuration must not be null!");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");

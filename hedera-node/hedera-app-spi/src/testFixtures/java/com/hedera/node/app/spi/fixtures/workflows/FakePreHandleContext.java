@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,8 +92,7 @@ public class FakePreHandleContext implements PreHandleContext {
      * @param txn the transaction body
      * @throws PreCheckException if the payer account ID is invalid or the key is null
      */
-    public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
-            throws PreCheckException {
+    public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn) {
         this(
                 accountStore,
                 txn,
@@ -104,8 +103,7 @@ public class FakePreHandleContext implements PreHandleContext {
     public FakePreHandleContext(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
-            @NonNull final Configuration configuration)
-            throws PreCheckException {
+            @NonNull final Configuration configuration) {
         this(accountStore, txn);
         this.configuration = configuration;
     }
@@ -115,8 +113,7 @@ public class FakePreHandleContext implements PreHandleContext {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            final boolean userTransaction)
-            throws PreCheckException {
+            final boolean userTransaction) {
         this.accountStore = requireNonNull(accountStore, "The supplied argument 'accountStore' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
@@ -247,8 +244,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @SuppressWarnings(
             "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
     // false positive because of the !isValid(key) check
-    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (!isValid(key)) {
             throw new PreCheckException(responseCode);
@@ -259,8 +255,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     @Override
     public PreHandleContext requireAliasedKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         return requireKey(accountID, responseCode, true);
     }
@@ -268,15 +263,13 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         return requireKey(accountID, responseCode, false);
     }
 
     private @NonNull PreHandleContext requireKey(
-            final @Nullable AccountID accountID, final @NonNull ResponseCodeEnum responseCode, boolean allowAliases)
-            throws PreCheckException {
+            final @Nullable AccountID accountID, final @NonNull ResponseCodeEnum responseCode, boolean allowAliases) {
         if (accountID == null) {
             throw new PreCheckException(responseCode);
         }
@@ -306,8 +299,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (accountID == null) {
             throw new PreCheckException(responseCode);
@@ -331,8 +323,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
@@ -365,8 +356,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (contractID == null) {
@@ -451,7 +441,7 @@ public class FakePreHandleContext implements PreHandleContext {
      * @throws PreCheckException if the account is considered immutable
      */
     private static void verifyIsNotImmutableAccount(
-            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         if (EMPTY_KEY_LIST.equals(key)) {
             throw new PreCheckException(responseCode);
         }

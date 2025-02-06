@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("Submission of the transaction to the platform is a success")
-        void submittingToPlatformSucceeds() throws PreCheckException {
+        void submittingToPlatformSucceeds() {
             // Given a platform that will succeed in taking bytes
             when(platform.createTransaction(any())).thenReturn(true);
 
@@ -158,7 +158,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("Submitting the same transaction twice in close succession rejects the duplicate")
-        void testSubmittingDuplicateTransactionsCloseTogether() throws PreCheckException {
+        void testSubmittingDuplicateTransactionsCloseTogether() {
             // Given a platform that will succeed in taking bytes
             when(platform.createTransaction(any())).thenReturn(true);
             when(deduplicationCache.contains(txBody.transactionIDOrThrow()))
@@ -222,7 +222,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("An unchecked transaction not in PROD mode can be submitted")
-        void testSuccessWithUncheckedSubmit() throws PreCheckException {
+        void testSuccessWithUncheckedSubmit() {
             // Given a platform that will succeed in taking the *unchecked* bytes
             when(platform.createTransaction(uncheckedBytes)).thenReturn(true);
 

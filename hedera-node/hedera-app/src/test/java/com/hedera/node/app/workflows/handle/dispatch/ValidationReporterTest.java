@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void invalidTransactionDurationIsCreatorError() throws PreCheckException {
+    void invalidTransactionDurationIsCreatorError() {
         givenCreatorInfo();
         givenUserDispatch();
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
@@ -147,7 +147,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void invalidPayerSigIsCreatorError() throws PreCheckException {
+    void invalidPayerSigIsCreatorError() {
         givenCreatorInfo();
         givenUserDispatch();
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
@@ -161,7 +161,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void solvencyCheckDoesNotLookAtOfferedFeesForPrecedingDispatch() throws PreCheckException {
+    void solvencyCheckDoesNotLookAtOfferedFeesForPrecedingDispatch() {
         givenCreatorInfo();
         givenPreceding();
         givenSolvencyCheckSetup();
@@ -183,7 +183,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void hollowUserDoesNotRequireSig() throws PreCheckException {
+    void hollowUserDoesNotRequireSig() {
         givenCreatorInfo();
         givenUserDispatch();
         givenNonDuplicate();
@@ -208,7 +208,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void otherNodeDuplicateUserIsPayerError() throws PreCheckException {
+    void otherNodeDuplicateUserIsPayerError() {
         givenCreatorInfo();
         givenUserDispatch();
         givenOtherNodeDuplicate();
@@ -254,7 +254,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void userPreHandleFailureIsPayerError() throws PreCheckException {
+    void userPreHandleFailureIsPayerError() {
         givenCreatorInfo();
         givenUserDispatch();
         givenNonDuplicate();
@@ -285,7 +285,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void precedingInsufficientServiceFeeIsPayerError() throws PreCheckException {
+    void precedingInsufficientServiceFeeIsPayerError() {
         givenCreatorInfo();
         givenChildDispatch();
         givenSolvencyCheckSetup();
@@ -315,7 +315,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void scheduledNonFeeDebitsFeeIsPayerError() throws PreCheckException {
+    void scheduledNonFeeDebitsFeeIsPayerError() {
         givenCreatorInfo();
         givenScheduledDispatch();
         givenValidPayerSig();
@@ -346,7 +346,7 @@ class ValidationReporterTest {
     }
 
     @Test
-    void insufficientNetworkFeeIsCreatorError() throws PreCheckException {
+    void insufficientNetworkFeeIsCreatorError() {
         givenCreatorInfo();
         givenUserDispatch();
         givenValidPayerSig();

@@ -120,7 +120,7 @@ class PreHandleContextListUpdatesTest {
     private PreHandleContext subject;
 
     @Test
-    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() throws PreCheckException {
+    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() {
         // Given an account with a key, and a transaction using that account as the payer
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -139,7 +139,7 @@ class PreHandleContextListUpdatesTest {
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void nullInputToBuilderArgumentsThrows() throws PreCheckException {
+    void nullInputToBuilderArgumentsThrows() {
         // Given an account with a key, and a transaction using that account as the payer
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -174,7 +174,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void requireSomeOtherKey() throws PreCheckException {
+    void requireSomeOtherKey() {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -190,7 +190,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void requireSomeOtherKeyTwice() throws PreCheckException {
+    void requireSomeOtherKeyTwice() {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -207,7 +207,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void payerIsIgnoredWhenRequired() throws PreCheckException {
+    void payerIsIgnoredWhenRequired() {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -223,7 +223,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void failsWhenPayerKeyDoesntExist() throws PreCheckException {
+    void failsWhenPayerKeyDoesntExist() {
         // Given an account ID that does not exist
         final var txn = createAccountTransaction();
         given(accountStore.getAccountById(payer)).willReturn(null);
@@ -236,7 +236,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void returnsIfGivenKeyIsPayer() throws PreCheckException {
+    void returnsIfGivenKeyIsPayer() {
         // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -257,7 +257,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void returnsIfGivenKeyIsInvalidAccountId() throws PreCheckException {
+    void returnsIfGivenKeyIsInvalidAccountId() {
         // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -271,7 +271,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void addsContractIdKey() throws PreCheckException {
+    void addsContractIdKey() {
         // Given an account with a key, and a transaction using that account as the payer,
         // and a contract account with a key, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
@@ -292,7 +292,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void doesntFailForAliasedAccount() throws PreCheckException {
+    void doesntFailForAliasedAccount() {
         // Given an account that can be looked up by number or alias and a PreHandleContext
         final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(accountStore.getAccountById(alias)).willReturn(account);
@@ -312,7 +312,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void doesntFailForAliasedContract() throws PreCheckException {
+    void doesntFailForAliasedContract() {
         final var alias = ContractID.newBuilder().evmAddress(Bytes.wrap("test")).build();
         given(accountStore.getContractById(alias)).willReturn(contractAccount);
         given(contractAccount.key()).willReturn(otherKey);
@@ -331,7 +331,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void failsForInvalidAlias() throws PreCheckException {
+    void failsForInvalidAlias() {
         final var alias = AccountID.newBuilder().alias(Bytes.wrap("test")).build();
         given(accountStore.getAccountById(alias)).willReturn(null);
         given(accountStore.getAccountById(payer)).willReturn(account);

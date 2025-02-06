@@ -87,7 +87,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoDeleteAllowanceVanilla() throws PreCheckException {
+    void cryptoDeleteAllowanceVanilla() {
         final var txn = cryptoDeleteAllowanceTransaction(payerId);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);
@@ -97,7 +97,7 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() throws PreCheckException {
+    void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
         final var txn = cryptoDeleteAllowanceTransaction(ownerId);
         final var context = new FakePreHandleContext(readableAccountStore, txn);
         subject.preHandle(context);

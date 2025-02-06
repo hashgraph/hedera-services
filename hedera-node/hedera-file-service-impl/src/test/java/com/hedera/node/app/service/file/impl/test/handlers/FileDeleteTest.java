@@ -159,7 +159,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("File not found returns error")
-    void fileIdNotFound() throws PreCheckException {
+    void fileIdNotFound() {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
@@ -172,7 +172,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+    void preHandleWorksAsExpectedImmutable() {
         file = createFileEmptyMemoAndKeys();
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -196,7 +196,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
+    void preHandleWorksAsExpected() {
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
         BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);

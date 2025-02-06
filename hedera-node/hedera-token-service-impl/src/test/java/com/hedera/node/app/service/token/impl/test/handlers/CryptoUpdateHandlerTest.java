@@ -158,7 +158,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void cryptoUpdateVanilla() throws PreCheckException {
+    void cryptoUpdateVanilla() {
         final var txn = new CryptoUpdateBuilder().build();
 
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
@@ -172,7 +172,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void cryptoUpdateMissingAccountID() throws PreCheckException {
+    void cryptoUpdateMissingAccountID() {
         final var txn = new CryptoUpdateBuilder().withTarget(null).build();
 
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(false);
@@ -183,7 +183,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void cryptoUpdateNewSignatureKeyWaivedVanilla() throws PreCheckException {
+    void cryptoUpdateNewSignatureKeyWaivedVanilla() {
         final var txn = new CryptoUpdateBuilder().withKey(key).build();
 
         given(waivers.isNewKeySignatureWaived(txn, id)).willReturn(true);
@@ -197,7 +197,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void cryptoUpdateTargetSignatureKeyWaivedVanilla() throws PreCheckException {
+    void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
         final var newKey = B_COMPLEX_KEY;
         final var txn = new CryptoUpdateBuilder().withKey(newKey).build();
         given(waivers.isNewKeySignatureWaived(any(), any())).willReturn(false);
@@ -212,7 +212,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void cryptoUpdateUpdateAccountMissingFails() throws PreCheckException {
+    void cryptoUpdateUpdateAccountMissingFails() {
         final var txn = new CryptoUpdateBuilder().build();
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
@@ -227,7 +227,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void proxySetFailsInPureChecks() throws PreCheckException {
+    void proxySetFailsInPureChecks() {
         final var txn =
                 new CryptoUpdateBuilder().withProxyAccountNum(id.accountNum()).build();
         givenTxnWith(txn);

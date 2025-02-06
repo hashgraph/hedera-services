@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext requireKey(@NonNull final Key key) throws PreCheckException;
+    PreHandleContext requireKey(@NonNull final Key key);
 
     /**
      * Adds the given key to optional non-payer keys.
@@ -128,7 +128,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKey(@NonNull final Key key) throws PreCheckException;
+    PreHandleContext optionalKey(@NonNull final Key key);
 
     /**
      * Adds the given set of keys to optional non-payer keys.
@@ -141,7 +141,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException if the key is not accepted
      */
     @NonNull
-    PreHandleContext optionalKeys(@NonNull final Set<Key> keys) throws PreCheckException;
+    PreHandleContext optionalKeys(@NonNull final Set<Key> keys);
 
     /**
      * Adds the given hollow account to the optional signing set.
@@ -169,8 +169,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException if the key is null or empty
      */
     @NonNull
-    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException;
+    PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
@@ -187,7 +186,7 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireAliasedKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
@@ -204,7 +203,7 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * The same as {@link #requireKeyOrThrow(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -217,8 +216,7 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireKeyOrThrow(
-            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException;
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
@@ -233,7 +231,7 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException;
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
@@ -245,8 +243,7 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @NonNull
     PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException;
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode);
 
     /**
      * Adds the given hollow account to the required signing set. If the account has already been added, then
@@ -282,6 +279,5 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException If there is a problem with the nested transaction
      */
     @NonNull
-    TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId)
-            throws PreCheckException;
+    TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId);
 }

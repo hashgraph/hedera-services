@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ public final class Validations {
      * @throws PreCheckException If the subject is null, a {@link PreCheckException} is thrown with the given
      * {@link ResponseCodeEnum}.
      */
-    public static <T> T mustExist(@Nullable final T subject, @NonNull final ResponseCodeEnum code)
-            throws PreCheckException {
+    public static <T> T mustExist(@Nullable final T subject, @NonNull final ResponseCodeEnum code) {
         if (subject == null) {
             throw new PreCheckException(code);
         }
@@ -63,7 +62,7 @@ public final class Validations {
      */
     @NonNull
     public static AccountID validateAccountID(
-            @Nullable final AccountID subject, @Nullable ResponseCodeEnum responseCodeEnum) throws PreCheckException {
+            @Nullable final AccountID subject, @Nullable ResponseCodeEnum responseCodeEnum) {
         AccountID result = null;
         try {
             result = validateNullableAccountID(subject);
@@ -91,7 +90,7 @@ public final class Validations {
      * be thrown.
      */
     @Nullable
-    public static AccountID validateNullableAccountID(@Nullable final AccountID subject) throws PreCheckException {
+    public static AccountID validateNullableAccountID(@Nullable final AccountID subject) {
         // We'll permit it to be null.
         if (subject == null) {
             return null;

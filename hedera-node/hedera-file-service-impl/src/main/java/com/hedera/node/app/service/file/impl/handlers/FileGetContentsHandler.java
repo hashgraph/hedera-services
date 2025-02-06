@@ -86,7 +86,7 @@ public class FileGetContentsHandler extends FileQueryBase {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         final var query = context.query();
         final FileGetContentsQuery op = query.fileGetContentsOrThrow();
         if (!op.hasFileID()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,7 +225,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("A transaction with no bytes at all fails")
-        void parseAndCheckWithNoBytes() throws PreCheckException {
+        void parseAndCheckWithNoBytes() {
             // Given a transaction with no bytes at all
             // Then the checker should throw a PreCheckException
             final var transaction = checker.parse(Bytes.EMPTY);
@@ -242,7 +242,7 @@ final class TransactionCheckerTest extends AppTestBase {
          */
         @Test
         @DisplayName("A valid transaction passes parse and check")
-        void happyPath() throws PreCheckException {
+        void happyPath() {
             // Given a valid serialized transaction, when we parseStrict and check
             final var transaction = checker.parse(inputBuffer);
             final var info = checker.check(transaction, null);
@@ -265,7 +265,7 @@ final class TransactionCheckerTest extends AppTestBase {
          */
         @Test
         @DisplayName("A transaction with deprecated fields passes parse and check")
-        void happyDeprecatedPath() throws PreCheckException {
+        void happyDeprecatedPath() {
             // Given a transaction using the deprecated fields
             final var localTx = Transaction.newBuilder()
                     .bodyBytes(signedTx.bodyBytes())
@@ -292,7 +292,7 @@ final class TransactionCheckerTest extends AppTestBase {
         @Test
         @DisplayName("A transaction with super deprecated fields alone will throw")
         @SuppressWarnings("deprecation")
-        void parseAndCheckWithSuperDeprecatedFields() throws PreCheckException {
+        void parseAndCheckWithSuperDeprecatedFields() {
             // Given a transaction using the super deprecated fields
             final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
             final var localTx = Transaction.newBuilder()
@@ -363,7 +363,7 @@ final class TransactionCheckerTest extends AppTestBase {
              */
             @Test
             @DisplayName("A valid transaction passes parseAndCheck with a BufferedData")
-            void happyPath() throws PreCheckException {
+            void happyPath() {
                 // Given a valid serialized transaction, when we parse and check
                 final var info = checker.check(tx, null);
 
@@ -384,7 +384,7 @@ final class TransactionCheckerTest extends AppTestBase {
              */
             @Test
             @DisplayName("A transaction with deprecated fields passes check")
-            void happyWithDeprecatedFields() throws PreCheckException {
+            void happyWithDeprecatedFields() {
                 // Given a transaction using the deprecated fields
                 final var localTx = Transaction.newBuilder()
                         .bodyBytes(signedTx.bodyBytes())
@@ -432,7 +432,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName(
                     "A transaction with super deprecated fields and signedTransactionBytes ignores super deprecated fields")
             @SuppressWarnings("deprecation")
-            void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() throws PreCheckException {
+            void checkWithSuperDeprecatedFieldsAndSignedTransactionBytes() {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
@@ -457,7 +457,7 @@ final class TransactionCheckerTest extends AppTestBase {
             @DisplayName(
                     "A transaction with super deprecated fields and deprecated fields ignores super deprecated fields")
             @SuppressWarnings("deprecation")
-            void checkWithSuperDeprecatedFieldsAndDeprecatedFields() throws PreCheckException {
+            void checkWithSuperDeprecatedFieldsAndDeprecatedFields() {
                 // Given a transaction using the super deprecated fields and signedTransactionBytes
                 final var sig = Signature.newBuilder().ed25519(randomBytes(64)).build();
                 final var localTx = Transaction.newBuilder()
@@ -664,7 +664,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
             @Test
             @DisplayName("Aliased Payer accountID should be rejected")
-            void testCheckTransactionBodyWithAliasAsPayer() throws PreCheckException {
+            void testCheckTransactionBodyWithAliasAsPayer() {
                 // Given a transaction ID with an alias as the payer
                 final var payerId =
                         AccountID.newBuilder().alias(Bytes.wrap("alias")).build();

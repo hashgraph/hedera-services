@@ -289,7 +289,7 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleCachesTheSignaturesIfDataCanBeHydrated() throws PreCheckException {
+    void preHandleCachesTheSignaturesIfDataCanBeHydrated() {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();
@@ -305,7 +305,7 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleTranslatesIseAsInvalidEthereumTransaction() throws PreCheckException {
+    void preHandleTranslatesIseAsInvalidEthereumTransaction() {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();

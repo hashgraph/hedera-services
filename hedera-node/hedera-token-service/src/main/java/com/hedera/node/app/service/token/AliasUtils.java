@@ -235,7 +235,7 @@ public final class AliasUtils {
      * @throws PreCheckException if the alias is not a valid key
      */
     @NonNull
-    public static Key asKeyFromAliasPreCheck(@NonNull final Bytes alias) throws PreCheckException {
+    public static Key asKeyFromAliasPreCheck(@NonNull final Bytes alias) {
         requireNonNull(alias);
         final var key = asKeyFromAliasOrElse(alias, null);
         if (key == null) throw new PreCheckException(ResponseCodeEnum.INVALID_ALIAS_KEY);

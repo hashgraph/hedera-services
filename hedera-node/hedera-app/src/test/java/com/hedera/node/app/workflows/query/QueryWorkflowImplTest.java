@@ -165,7 +165,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     private Function<SemanticVersion, SoftwareVersion> softwareVersionFactory = v -> new ServicesSoftwareVersion();
 
     @BeforeEach
-    void setup(@Mock FeeCalculator feeCalculator) throws ParseException, PreCheckException {
+    void setup(@Mock FeeCalculator feeCalculator) throws ParseException {
         setupStandardStates();
 
         when(stateAccessor.apply(any())).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
@@ -580,7 +580,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testSuccessIfPaymentRequiredAndNotProvided() throws ParseException, PreCheckException {
+    void testSuccessIfPaymentRequiredAndNotProvided() throws ParseException {
         final var queryHeader =
                 QueryHeader.newBuilder().payment((Transaction) null).build();
         final var query = Query.newBuilder()
@@ -694,7 +694,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testInvalidNodeFails() throws PreCheckException, ParseException {
+    void testInvalidNodeFails() throws ParseException {
         // given
         doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).verifyPlatformActive();
         final var responseBuffer = newEmptyBuffer();
@@ -798,7 +798,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInvalidTransactionFails() throws PreCheckException, ParseException {
+    void testPaidQueryWithInvalidTransactionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
@@ -820,7 +820,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInvalidCryptoTransferFails() throws PreCheckException, ParseException {
+    void testPaidQueryWithInvalidCryptoTransferFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
@@ -842,7 +842,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryForSuperUserDoesNotSubmitCryptoTransfer() throws PreCheckException, ParseException {
+    void testPaidQueryForSuperUserDoesNotSubmitCryptoTransfer() throws ParseException {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
@@ -871,7 +871,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInsufficientPermissionFails() throws PreCheckException, ParseException {
+    void testPaidQueryWithInsufficientPermissionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(NOT_SUPPORTED))
@@ -893,7 +893,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithInsufficientBalanceFails() throws PreCheckException, ParseException {
+    void testPaidQueryWithInsufficientBalanceFails() throws ParseException {
         // given
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(1L, 20L, 300L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
@@ -960,7 +960,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testQuerySpecificValidationFails() throws PreCheckException, ParseException {
+    void testQuerySpecificValidationFails() throws ParseException {
         final var captor = ArgumentCaptor.forClass(QueryContext.class);
         // given
         doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
@@ -984,7 +984,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     }
 
     @Test
-    void testPaidQueryWithFailingSubmissionFails() throws PreCheckException, ParseException {
+    void testPaidQueryWithFailingSubmissionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))

@@ -224,7 +224,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenExistingAdminKeyValid() throws PreCheckException {
+    void preHandleWorksWhenExistingAdminKeyValid() {
         givenValidNodeWithAdminKey(anotherKey);
         refreshStoresWithCurrentNodeInReadable();
 
@@ -237,7 +237,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
+    void preHandleFailedWhenAdminKeyInValid() {
         givenValidNodeWithAdminKey(invalidKey);
         refreshStoresWithCurrentNodeInReadable();
         final var txn = newDeleteTxnWithNodeId(nodeId.number());
@@ -246,7 +246,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenTreasureSign() throws PreCheckException {
+    void preHandleWorksWhenTreasureSign() {
         final var txn = newDeleteTxn();
         final var context = setupPreHandlePayerKey(txn, payerId, anotherKey);
         subject.preHandle(context);
@@ -256,7 +256,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenSysAdminSign() throws PreCheckException {
+    void preHandleWorksWhenSysAdminSign() {
         final var accountID = AccountID.newBuilder().accountNum(50).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
@@ -267,7 +267,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenAddressBookAdminSign() throws PreCheckException {
+    void preHandleWorksWhenAddressBookAdminSign() {
         final var accountID = AccountID.newBuilder().accountNum(55).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
@@ -304,8 +304,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .build();
     }
 
-    private PreHandleContext setupPreHandlePayerKey(TransactionBody txn, AccountID contextPayerId, Key key)
-            throws PreCheckException {
+    private PreHandleContext setupPreHandlePayerKey(TransactionBody txn, AccountID contextPayerId, Key key) {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("accounts.treasury", 2)
                 .withValue("accounts.systemAdmin", 50)

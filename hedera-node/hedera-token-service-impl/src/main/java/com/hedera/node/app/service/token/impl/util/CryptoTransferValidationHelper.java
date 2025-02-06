@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,7 @@ public class CryptoTransferValidationHelper {
             final AccountID senderId,
             final NftTransfer nftTransfer,
             final PreHandleContext meta,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
+            final ReadableAccountStore accountStore) {
 
         // Lookup the sender account and verify it.
         final var senderAccount = accountStore.getAliasedAccountById(senderId);
@@ -79,8 +78,7 @@ public class CryptoTransferValidationHelper {
             final ReadableTokenStore.TokenMetadata tokenMeta,
             @Nullable final CryptoTransferTransactionBody op,
             final ReadableAccountStore accountStore,
-            final TransferExecutor.OptionalKeyCheck receiverKeyCheck)
-            throws PreCheckException {
+            final TransferExecutor.OptionalKeyCheck receiverKeyCheck) {
 
         // Lookup the receiver account and verify it.
         final var receiverAccount = accountStore.getAliasedAccountById(receiverId);

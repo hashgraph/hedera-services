@@ -64,7 +64,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
      * Performs checks independent of state or context.
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn);
@@ -79,7 +79,7 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final var op = context.body().tokenFreezeOrThrow();

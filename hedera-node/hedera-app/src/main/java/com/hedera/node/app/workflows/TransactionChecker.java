@@ -147,7 +147,7 @@ public class TransactionChecker {
      * @throws PreCheckException If parsing fails or any of the checks fail.
      */
     @NonNull
-    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) throws PreCheckException {
+    public TransactionInfo parseAndCheck(@NonNull final Bytes buffer) {
         final var tx = parse(buffer);
         return check(tx, buffer);
     }
@@ -164,7 +164,7 @@ public class TransactionChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
-    public Transaction parse(@NonNull final Bytes buffer) throws PreCheckException {
+    public Transaction parse(@NonNull final Bytes buffer) {
         // Fail fast if there are too many transaction bytes
         if (buffer.length() > maxSignedTxnSize) {
             throw new PreCheckException(TRANSACTION_OVERSIZE);
@@ -209,7 +209,7 @@ public class TransactionChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @NonNull
-    public TransactionInfo check(@NonNull final Transaction tx, @Nullable Bytes serializedTx) throws PreCheckException {
+    public TransactionInfo check(@NonNull final Transaction tx, @Nullable Bytes serializedTx) {
         // NOTE: Since we've already parsed the transaction, we assume that the
         // transaction was not too many bytes. This is a safe assumption because
         // the code that receives the transaction bytes and parses/ the transaction
@@ -251,7 +251,7 @@ public class TransactionChecker {
         return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality, serializedTx));
     }
 
-    public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) throws PreCheckException {
+    public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) {
         try {
             checkPrefixMismatch(txInfo.signatureMap().sigPair());
             checkTransactionBody(txInfo.txBody(), txInfo.functionality());
@@ -269,7 +269,7 @@ public class TransactionChecker {
      * @throws PreCheckException If the transaction is using both deprecated and non-deprecated fields
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    private void checkTransactionDeprecation(@NonNull final Transaction tx) throws PreCheckException {
+    private void checkTransactionDeprecation(@NonNull final Transaction tx) {
         // There are three ways a transaction can be used. Two of these are deprecated. One is not supported:
         //   1. body & sigs. DEPRECATED, NOT SUPPORTED
         //   2. sigMap & bodyBytes. DEPRECATED, SUPPORTED
@@ -314,8 +314,7 @@ public class TransactionChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    private void checkTransactionBody(@NonNull final TransactionBody txBody, HederaFunctionality functionality)
-            throws PreCheckException {
+    private void checkTransactionBody(@NonNull final TransactionBody txBody, HederaFunctionality functionality) {
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         checkTransactionID(txBody.transactionIDOrThrow());
         checkMemo(txBody.memo(), config.transactionMaxMemoUtf8Bytes());
@@ -349,8 +348,7 @@ public class TransactionChecker {
     public void checkTimeBox(
             @NonNull final TransactionBody txBody,
             @NonNull final Instant consensusTime,
-            @NonNull final RequireMinValidLifetimeBuffer requireMinValidLifetimeBuffer)
-            throws PreCheckException {
+            @NonNull final RequireMinValidLifetimeBuffer requireMinValidLifetimeBuffer) {
         requireNonNull(txBody, "txBody must not be null");
 
         // At this stage the txBody should have been checked already. We simply throw if a mandatory field is missing.
@@ -389,7 +387,7 @@ public class TransactionChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    private void checkTransactionID(@NonNull final TransactionID txnId) throws PreCheckException {
+    private void checkTransactionID(@NonNull final TransactionID txnId) {
         // Determines whether the given {@link AccountID} can possibly be valid. This method does not refer to state,
         // it simply looks at the {@code accountID} itself to determine whether it might be valid. An ID is valid if
         // the shard and realm match the shard and realm of this node, AND if the account number is positive
@@ -420,7 +418,7 @@ public class TransactionChecker {
      * @param memo The memo to check.
      * @throws PreCheckException if the memo is too long, or otherwise fails the check.
      */
-    private void checkMemo(@Nullable final String memo, final int maxMemoUtf8Bytes) throws PreCheckException {
+    private void checkMemo(@Nullable final String memo, final int maxMemoUtf8Bytes) {
         if (memo == null) return; // Nothing to do, a null memo is valid.
         // Verify the number of bytes does not exceed the maximum allowed.
         // Note that these bytes are counted in UTF-8.
@@ -436,8 +434,7 @@ public class TransactionChecker {
         }
     }
 
-    private void checkMaxCustomFee(List<CustomFeeLimit> maxCustomFeeList, HederaFunctionality functionality)
-            throws PreCheckException {
+    private void checkMaxCustomFee(List<CustomFeeLimit> maxCustomFeeList, HederaFunctionality functionality) {
         if (!FUNCTIONALITIES_WITH_MAX_CUSTOM_FEES.contains(functionality) && !maxCustomFeeList.isEmpty()) {
             throw new PreCheckException(ResponseCodeEnum.MAX_CUSTOM_FEES_IS_NOT_SUPPORTED);
         }
@@ -501,8 +498,7 @@ public class TransactionChecker {
      */
     @NonNull
     private <T extends Record> T parseStrict(
-            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
-            throws PreCheckException {
+            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode) {
         try {
             return codec.parseStrict(data);
         } catch (ParseException e) {
@@ -527,7 +523,7 @@ public class TransactionChecker {
      * @param sigPairs The list of signature pairs to check. Cannot be null.
      * @throws PreCheckException if the list contains duplicate prefixes or prefixes that could apply to the same key
      */
-    private void checkPrefixMismatch(@NonNull final List<SignaturePair> sigPairs) throws PreCheckException {
+    private void checkPrefixMismatch(@NonNull final List<SignaturePair> sigPairs) {
         final var sortedList = sort(sigPairs);
         if (sortedList.size() > 1) {
             var prev = sortedList.get(0);

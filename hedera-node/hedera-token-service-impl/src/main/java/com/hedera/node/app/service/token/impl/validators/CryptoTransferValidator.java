@@ -73,7 +73,7 @@ public class CryptoTransferValidator {
      * @param op the crypto transfer transaction body
      * @throws PreCheckException if any of the checks fail
      */
-    public void pureChecks(@NonNull final CryptoTransferTransactionBody op) throws PreCheckException {
+    public void pureChecks(@NonNull final CryptoTransferTransactionBody op) {
         final var acctAmounts = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         validateTruePreCheck(isNetZeroAdjustment(acctAmounts), INVALID_ACCOUNT_AMOUNTS);
 
@@ -167,8 +167,7 @@ public class CryptoTransferValidator {
     }
 
     public static void validateTokenTransfers(
-            final List<TokenTransferList> tokenTransfers, final AllowanceStrategy allowanceStrategy)
-            throws PreCheckException {
+            final List<TokenTransferList> tokenTransfers, final AllowanceStrategy allowanceStrategy) {
         // Validate token transfers
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {
@@ -194,8 +193,7 @@ public class CryptoTransferValidator {
     public static void validateFungibleTransfers(
             final List<AccountAmount> fungibleTransfers,
             final Set<Pair<AccountID, Boolean>> uniqueTokenAcctIds,
-            final AllowanceStrategy allowanceStrategy)
-            throws PreCheckException {
+            final AllowanceStrategy allowanceStrategy) {
         validateTruePreCheck(isNetZeroAdjustment(fungibleTransfers), TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN);
         boolean nonZeroFungibleValueFound = false;
         for (final AccountAmount acctAmount : fungibleTransfers) {
@@ -213,8 +211,7 @@ public class CryptoTransferValidator {
     }
 
     public static void validateNftTransfers(
-            final List<NftTransfer> nftTransfers, final Set<Long> nftIds, final AllowanceStrategy allowanceStrategy)
-            throws PreCheckException {
+            final List<NftTransfer> nftTransfers, final Set<Long> nftIds, final AllowanceStrategy allowanceStrategy) {
         for (final NftTransfer nftTransfer : nftTransfers) {
             if (allowanceStrategy.equals(AllowanceStrategy.ALLOWANCES_REJECTED)) {
                 validateFalsePreCheck(nftTransfer.isApproval(), NOT_SUPPORTED);

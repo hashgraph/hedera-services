@@ -63,7 +63,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
      * @param context the context to check
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var transactionBody = txn.systemUndeleteOrThrow();
@@ -83,7 +83,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
      * @throws PreCheckException if any issue happens on the pre handle level
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final var transactionBody = context.body().systemUndeleteOrThrow();

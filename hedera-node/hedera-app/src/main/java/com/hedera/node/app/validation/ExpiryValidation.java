@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class ExpiryValidation {
      * @param account the {@link Account} to check
      * @throws PreCheckException if the account is expired
      */
-    public void checkAccountExpiry(@NonNull final Account account) throws PreCheckException {
+    public void checkAccountExpiry(@NonNull final Account account) {
         if (account.tinybarBalance() > 0 || !account.expiredAndPendingRemoval()) {
             return;
         }

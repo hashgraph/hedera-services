@@ -48,14 +48,14 @@ public class ContractSystemDeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         // this will never actually get called
         // because pureChecks will always throw
         throw new PreCheckException(NOT_SUPPORTED);
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         throw new PreCheckException(NOT_SUPPORTED);
     }
 

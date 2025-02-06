@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,8 +89,8 @@ public class SolvencyPreCheck {
      * @throws PreCheckException if the payer account is invalid
      */
     @NonNull
-    public Account getPayerAccount(@NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID)
-            throws PreCheckException {
+    public Account getPayerAccount(
+            @NonNull final ReadableStoreFactory storeFactory, @NonNull final AccountID accountID) {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var account = accountStore.getAccountById(accountID);
 
@@ -125,8 +125,7 @@ public class SolvencyPreCheck {
             @NonNull final Fees fees,
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
-            @NonNull final WorkflowCheck workflowCheck)
-            throws PreCheckException {
+            @NonNull final WorkflowCheck workflowCheck) {
         checkSolvency(
                 txInfo.txBody(),
                 txInfo.payerID(),
@@ -161,8 +160,7 @@ public class SolvencyPreCheck {
             // This is to match mono and pass HapiTest. Should reconsider later.
             // FUTURE ('#9550')
             @NonNull final WorkflowCheck workflowCheck,
-            @NonNull OfferedFeeCheck offeredFeeCheck)
-            throws PreCheckException {
+            @NonNull OfferedFeeCheck offeredFeeCheck) {
         final var isIngest = workflowCheck.equals(INGEST);
         final var checkOfferedFee = offeredFeeCheck.equals(CHECK_OFFERED_FEE);
         // Skip solvency check for privileged transactions or superusers

@@ -72,7 +72,7 @@ public class TokenAirdropValidator {
      * @param op the token airdrop transaction body
      * @throws PreCheckException if any of the checks fail
      */
-    public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
+    public void pureChecks(@NonNull final TokenAirdropTransactionBody op) {
         final var tokenTransfers = op.tokenTransfers();
         validateTruePreCheck(!tokenTransfers.isEmpty(), EMPTY_TOKEN_TRANSFER_BODY);
         // If there is not exactly one debit we throw an exception

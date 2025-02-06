@@ -160,7 +160,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("File not found returns error")
-    void fileIdNotFound() throws PreCheckException {
+    void fileIdNotFound() {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
@@ -253,7 +253,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         assertThat(changedFile.get().deleted()).isFalse();
     }
 
-    private Key mockPayerLookup() throws PreCheckException {
+    private Key mockPayerLookup() {
         return FileTestUtils.mockPayerLookup(A_COMPLEX_KEY, payerId, accountStore);
     }
 

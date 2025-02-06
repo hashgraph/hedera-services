@@ -96,7 +96,7 @@ class PreHandleContextImplTest implements Scenarios {
     private PreHandleContextImpl subject;
 
     @BeforeEach
-    void setup() throws PreCheckException {
+    void setup() {
         given(storeFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -141,7 +141,7 @@ class PreHandleContextImplTest implements Scenarios {
 
         @SuppressWarnings("ConstantConditions")
         @Test
-        void testAllKeysForTransactionWithInvalidParameters() throws PreCheckException {
+        void testAllKeysForTransactionWithInvalidParameters() {
             // given
             final var bob = BOB.accountID();
 
@@ -152,7 +152,7 @@ class PreHandleContextImplTest implements Scenarios {
         }
 
         @Test
-        void testAllKeysForTransactionSuccess() throws PreCheckException {
+        void testAllKeysForTransactionSuccess() {
             // given
             doAnswer(invocation -> {
                         final var innerContext = invocation.getArgument(0, PreHandleContext.class);
@@ -175,7 +175,7 @@ class PreHandleContextImplTest implements Scenarios {
         }
 
         @Test
-        void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
+        void testAllKeysForTransactionWithFailingPureCheck() {
             // given
             doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
                     .when(dispatcher)
@@ -188,7 +188,7 @@ class PreHandleContextImplTest implements Scenarios {
         }
 
         @Test
-        void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
+        void testAllKeysForTransactionWithFailingPreHandle() {
             // given
             doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
                     .when(dispatcher)

@@ -261,7 +261,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void preHandle_WhenTokenHasMetadataKeySerialsOutsideTreasury() throws PreCheckException {
+    void preHandle_WhenTokenHasMetadataKeySerialsOutsideTreasury() {
         when(preHandleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
         when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
@@ -299,7 +299,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void preHandle_WhenTokenHasMetadataKeyAndSupplyKey() throws PreCheckException {
+    void preHandle_WhenTokenHasMetadataKeyAndSupplyKey() {
         when(preHandleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
         when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
@@ -314,7 +314,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void preHandle_WhenTokenHasMetadataKeyOnly() throws PreCheckException {
+    void preHandle_WhenTokenHasMetadataKeyOnly() {
         when(preHandleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
         when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
@@ -329,7 +329,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void preHandle_WhenTokenHasSupplyKeyOnly() throws PreCheckException {
+    void preHandle_WhenTokenHasSupplyKeyOnly() {
         when(preHandleContext.body()).thenReturn(transactionBody);
         when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
         when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);

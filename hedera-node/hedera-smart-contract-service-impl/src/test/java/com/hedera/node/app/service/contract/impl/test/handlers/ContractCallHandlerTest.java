@@ -155,7 +155,7 @@ class ContractCallHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("Succeeds for valid payer account")
-    void validPayer() throws PreCheckException {
+    void validPayer() {
         final var txn = contractCallTransaction();
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);

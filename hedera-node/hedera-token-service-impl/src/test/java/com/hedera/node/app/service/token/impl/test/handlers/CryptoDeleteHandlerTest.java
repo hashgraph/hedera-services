@@ -132,7 +132,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void preHandlesCryptoDeleteIfNoReceiverSigRequired() throws PreCheckException {
+    void preHandlesCryptoDeleteIfNoReceiverSigRequired() {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         final var context = new FakePreHandleContext(readableStore, txn);
@@ -144,7 +144,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() throws PreCheckException {
+    void preHandlesCryptoDeleteIfReceiverSigRequiredVanilla() {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         final var context = new FakePreHandleContext(readableStore, txn);
@@ -156,7 +156,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() throws PreCheckException {
+    void doesntAddBothKeysAccountsSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         updateReadableStore(Map.of(
@@ -177,7 +177,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
+    void doesntAddTransferKeyIfAccountSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(deleteAccountId, id);
 
         updateReadableStore(
@@ -193,7 +193,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() throws PreCheckException {
+    void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
         final var txn = deleteAccountTransaction(id, transferAccountId);
 
         final var context = new FakePreHandleContext(readableStore, txn);
@@ -205,7 +205,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() throws PreCheckException {
+    void failsWithResponseCodeIfAnyAccountMissingForCryptoDelete() {
         /* ------ payerAccount missing, so deleteAccount and transferAccount will not be added  ------ */
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         updateReadableStore(Map.of());
@@ -226,7 +226,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void doesntExecuteIfAccountIdIsDefaultInstance() throws PreCheckException {
+    void doesntExecuteIfAccountIdIsDefaultInstance() {
         final var txn = deleteAccountTransaction(deleteAccountId, AccountID.DEFAULT);
 
         final var context = new FakePreHandleContext(readableStore, txn);
@@ -239,7 +239,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void pureChecksFailWhenTargetSameAsBeneficiary() throws PreCheckException {
+    void pureChecksFailWhenTargetSameAsBeneficiary() {
         final var txn = deleteAccountTransaction(deleteAccountId, deleteAccountId);
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -376,7 +376,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void failsIfEitherDeleteOrTransferAccountDoesntExist() throws PreCheckException {
+    void failsIfEitherDeleteOrTransferAccountDoesntExist() {
         var txn = deleteAccountTransaction(null, transferAccountId);
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))

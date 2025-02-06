@@ -82,7 +82,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenBurnOrThrow();
@@ -90,7 +90,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenBurnOrThrow();
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);

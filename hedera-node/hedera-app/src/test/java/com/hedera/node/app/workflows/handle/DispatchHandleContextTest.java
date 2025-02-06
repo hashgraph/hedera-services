@@ -450,7 +450,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         @Test
-        void testAllKeysForTransactionSuccess() throws PreCheckException {
+        void testAllKeysForTransactionSuccess() {
             doAnswer(invocation -> {
                         final var innerContext = invocation.getArgument(0, PreHandleContext.class);
                         innerContext.requireKey(BOB.account().key());
@@ -469,7 +469,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         @Test
-        void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
+        void testAllKeysForTransactionWithFailingPureCheck() {
             doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
                     .when(dispatcher)
                     .dispatchPureChecks(any());
@@ -479,7 +479,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
 
         @Test
-        void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
+        void testAllKeysForTransactionWithFailingPreHandle() {
             doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
                     .when(dispatcher)
                     .dispatchPreHandle(any());
@@ -618,7 +618,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
         @ParameterizedTest
         @MethodSource("createContextDispatchers")
-        void testDispatchPreHandleFails(final Consumer<HandleContext> contextDispatcher) throws PreCheckException {
+        void testDispatchPreHandleFails(final Consumer<HandleContext> contextDispatcher) {
             final var txBody = TransactionBody.newBuilder()
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)

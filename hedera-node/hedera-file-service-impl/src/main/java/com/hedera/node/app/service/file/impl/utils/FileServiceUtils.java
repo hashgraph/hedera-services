@@ -74,8 +74,7 @@ public class FileServiceUtils {
     public static void preValidate(
             @NonNull final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
-            @NonNull final PreHandleContext context)
-            throws PreCheckException {
+            @NonNull final PreHandleContext context) {
         requireNonNull(context);
         requireNonNull(fileId);
         // System files are created as a side effect of handling the genesis transaction, so by the time any
@@ -93,8 +92,9 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final File file, @Nullable final KeyList transactionKeys, @NonNull final PreHandleContext context)
-            throws PreCheckException {
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 
@@ -120,7 +120,7 @@ public class FileServiceUtils {
      * @param context the prehandle context for the transaction.
      */
     public static void validateAndAddRequiredKeysForDelete(
-            @Nullable final File file, @NonNull final PreHandleContext context) throws PreCheckException {
+            @Nullable final File file, @NonNull final PreHandleContext context) {
         if (file != null) {
             KeyList fileKeyList = file.keys();
 

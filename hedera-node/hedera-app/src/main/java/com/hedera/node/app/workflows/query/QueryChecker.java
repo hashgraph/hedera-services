@@ -103,8 +103,7 @@ public class QueryChecker {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public void validateCryptoTransfer(
-            @NonNull final TransactionInfo transactionInfo, @NonNull final Configuration config)
-            throws PreCheckException {
+            @NonNull final TransactionInfo transactionInfo, @NonNull final Configuration config) {
         requireNonNull(transactionInfo);
         if (transactionInfo.functionality() != CRYPTO_TRANSFER) {
             throw new PreCheckException(INSUFFICIENT_TX_FEE);
@@ -129,8 +128,7 @@ public class QueryChecker {
             @NonNull final TransactionInfo txInfo,
             @NonNull final Account payer,
             final long nodePayment,
-            final long transferTxnFee)
-            throws PreCheckException {
+            final long transferTxnFee) {
         requireNonNull(accountStore);
         requireNonNull(txInfo);
         requireNonNull(payer);
@@ -199,8 +197,7 @@ public class QueryChecker {
      * @throws PreCheckException if permissions are not sufficient
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void checkPermissions(@NonNull final AccountID payer, @NonNull final HederaFunctionality functionality)
-            throws PreCheckException {
+    public void checkPermissions(@NonNull final AccountID payer, @NonNull final HederaFunctionality functionality) {
         requireNonNull(payer);
         requireNonNull(functionality);
 

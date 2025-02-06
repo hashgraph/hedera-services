@@ -50,7 +50,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -88,7 +87,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var txn = context.body();
 
@@ -110,7 +109,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         tokenCreateValidator.pureChecks(txn.tokenCreationOrThrow());
@@ -372,8 +371,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param customFeesList list with the custom fees
      */
     private void addCustomFeeCollectorKeys(
-            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList)
-            throws PreCheckException {
+            @NonNull final PreHandleContext context, @NonNull final List<CustomFee> customFeesList) {
 
         for (final var customFee : customFeesList) {
             final var collector = customFee.feeCollectorAccountIdOrElse(AccountID.DEFAULT);
@@ -419,8 +417,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * @param alwaysAdd if true, will always add the key
      */
     private void addAccount(
-            @NonNull final PreHandleContext context, @NonNull final AccountID collector, final boolean alwaysAdd)
-            throws PreCheckException {
+            @NonNull final PreHandleContext context, @NonNull final AccountID collector, final boolean alwaysAdd) {
         if (alwaysAdd) {
             context.requireKeyOrThrow(collector, INVALID_CUSTOM_FEE_COLLECTOR);
         } else {

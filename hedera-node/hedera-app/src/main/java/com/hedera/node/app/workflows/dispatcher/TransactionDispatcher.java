@@ -66,7 +66,7 @@ public class TransactionDispatcher {
      * @param context the {@link PureChecksContext} to be validated
      * @throws NullPointerException if {@code context} is {@code null}
      */
-    public void dispatchPureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void dispatchPureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
         try {
             final var handler = getHandler(context.body());
@@ -83,7 +83,7 @@ public class TransactionDispatcher {
      * @param context the context of the pre-handle workflow
      * @throws NullPointerException if {@code context} is {@code null}
      */
-    public void dispatchPreHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void dispatchPreHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         try {

@@ -71,7 +71,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn);
@@ -81,7 +81,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenUpdateNftsOrThrow();
@@ -182,8 +182,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
             @NonNull final AccountID treasuryAccount,
             @NonNull final List<Long> serialNumbers,
             @NonNull final ReadableNftStore nftStore,
-            @NonNull final TokenID tokenId)
-            throws PreCheckException {
+            @NonNull final TokenID tokenId) {
         boolean serialNumbersInTreasury = true;
         for (final Long serialNumber : serialNumbers) {
             final Nft nft = nftStore.get(NftID.newBuilder()

@@ -92,7 +92,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     private PureChecksContext pureChecksContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setUp() {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(payerKey);
         subject = new TokenUnpauseHandler();
@@ -171,7 +171,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void validatesTokenExistsInPreHandle() throws PreCheckException {
+    void validatesTokenExistsInPreHandle() {
         givenInvalidTokenInTxn();
         preHandleContext = new FakePreHandleContext(accountStore, tokenUnpauseTxn);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
@@ -180,7 +180,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void failsInPreCheckIfTxnBodyHasNoToken() throws PreCheckException {
+    void failsInPreCheckIfTxnBodyHasNoToken() {
         final var txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenUnpause(TokenUnpauseTransactionBody.newBuilder())
@@ -191,7 +191,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void preHandleAddsPauseKeyToContext() throws PreCheckException {
+    void preHandleAddsPauseKeyToContext() {
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(preHandleContext);
 
@@ -199,7 +199,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
+    void preHandleSetsStatusWhenTokenMissing() {
         givenInvalidTokenInTxn();
         preHandleContext = new FakePreHandleContext(accountStore, tokenUnpauseTxn);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
@@ -207,7 +207,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void doesntAddAnyKeyIfPauseKeyMissing() throws PreCheckException {
+    void doesntAddAnyKeyIfPauseKeyMissing() {
         final var copy = token.copyBuilder().pauseKey(Key.DEFAULT).build();
         readableTokenState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(tokenId, copy)

@@ -248,7 +248,7 @@ class SolvencyPreCheckTest extends AppTestBase {
         }
 
         @Test
-        void testInsufficientBalanceOfExpiredAccountFails() throws PreCheckException {
+        void testInsufficientBalanceOfExpiredAccountFails() {
             // given
             final var txInfo = createTransactionInfo(
                     0,

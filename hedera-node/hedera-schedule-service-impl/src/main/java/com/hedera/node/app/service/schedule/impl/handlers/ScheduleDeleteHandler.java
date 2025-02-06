@@ -68,7 +68,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var body = context.body();
         requireNonNull(body);
@@ -78,7 +78,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var scheduleStore = context.createStore(ReadableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);

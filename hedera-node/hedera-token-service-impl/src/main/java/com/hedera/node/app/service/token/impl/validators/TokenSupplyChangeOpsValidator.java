@@ -100,8 +100,7 @@ public class TokenSupplyChangeOpsValidator {
             final long fungibleAmount,
             final @NonNull List<Long> serialNums,
             final boolean hasToken,
-            @NonNull final ResponseCodeEnum invalidAmountResponseCode)
-            throws PreCheckException {
+            @NonNull final ResponseCodeEnum invalidAmountResponseCode) {
         validateTruePreCheck(hasToken, INVALID_TOKEN_ID);
 
         // If a positive fungible fungibleAmount is present, the NFT serial numbers must be empty

@@ -64,7 +64,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -175,7 +174,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("All non-null key inputs required")
-    void nonNullKeyInputsRequired() throws PreCheckException {
+    void nonNullKeyInputsRequired() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var adminKey = SIMPLE_KEY_A;
@@ -192,7 +191,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Non-payer admin key is added")
-    void differentAdminKey() throws PreCheckException {
+    void differentAdminKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var adminKey = SIMPLE_KEY_A;
@@ -208,7 +207,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Non-payer submit key is added")
-    void createAddsDifferentSubmitKey() throws PreCheckException {
+    void createAddsDifferentSubmitKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var submitKey = SIMPLE_KEY_B;
@@ -224,7 +223,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Payer key can be added as admin")
-    void createAddsPayerAsAdmin() throws PreCheckException {
+    void createAddsPayerAsAdmin() {
         // given:
         final var protoPayerKey = SIMPLE_KEY_A;
         final var payerKey = mockPayerLookup(protoPayerKey);
@@ -240,7 +239,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Payer key can be added as submitter")
-    void createAddsPayerAsSubmitter() throws PreCheckException {
+    void createAddsPayerAsSubmitter() {
         // given:
         final var protoPayerKey = SIMPLE_KEY_B;
         final var payerKey = mockPayerLookup(protoPayerKey);
@@ -256,7 +255,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Fails if auto account is returned with a null key")
-    void autoRenewAccountKeyIsNull() throws PreCheckException {
+    void autoRenewAccountKeyIsNull() {
         // given:
         mockPayerLookup(key);
         given(accountStore.getAccountById(autoRenewId)).willReturn(null);
@@ -274,7 +273,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Only payer key is always required")
-    void requiresPayerKey() throws PreCheckException {
+    void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, null, false));

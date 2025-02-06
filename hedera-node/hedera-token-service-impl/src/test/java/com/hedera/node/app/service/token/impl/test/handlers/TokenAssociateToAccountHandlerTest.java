@@ -116,7 +116,7 @@ class TokenAssociateToAccountHandlerTest {
         }
 
         @Test
-        void txnWithoutAccountThrows() throws PreCheckException {
+        void txnWithoutAccountThrows() {
             final var txn = newAssociateTxn(null, List.of(TOKEN_300));
             final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
 
@@ -126,7 +126,7 @@ class TokenAssociateToAccountHandlerTest {
         }
 
         @Test
-        void txnWithRepeatedTokenIdsThrows() throws PreCheckException {
+        void txnWithRepeatedTokenIdsThrows() {
             final var txn = newAssociateTxn(ACCOUNT_888, List.of(TOKEN_300, TOKEN_400, TOKEN_300));
             given(pureChecksContext.body()).willReturn(txn);
 
@@ -136,7 +136,7 @@ class TokenAssociateToAccountHandlerTest {
         }
 
         @Test
-        void txnWithEmptyTokenIdsSucceeds() throws PreCheckException {
+        void txnWithEmptyTokenIdsSucceeds() {
             final var txn = newAssociateTxn(ACCOUNT_888, Collections.emptyList());
             final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
 

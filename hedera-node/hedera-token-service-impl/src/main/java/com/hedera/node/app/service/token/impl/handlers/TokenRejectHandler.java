@@ -96,7 +96,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenRejectOrThrow();
@@ -120,8 +120,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
     private void verifyOwnerAndRequireKey(
             @NonNull final AccountID ownerId,
             @NonNull final PreHandleContext context,
-            @NonNull final ReadableAccountStore accountStore)
-            throws PreCheckException {
+            @NonNull final ReadableAccountStore accountStore) {
 
         final var ownerAccount = accountStore.getAliasedAccountById(ownerId);
         validateTruePreCheck(ownerAccount != null, INVALID_OWNER_ID);
@@ -136,7 +135,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
     @SuppressWarnings("java:S2259")
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn, "Transaction body cannot be null");

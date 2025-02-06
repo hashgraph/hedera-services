@@ -144,7 +144,7 @@ class FileAppendHandlerTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
+    void preHandleWorksAsExpected() {
         refreshStoresWithCurrentFileOnlyInReadable();
 
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -170,7 +170,7 @@ class FileAppendHandlerTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+    void preHandleWorksAsExpectedImmutable() {
         file = createFileEmptyMemoAndKeys();
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);

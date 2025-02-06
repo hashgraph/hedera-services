@@ -199,7 +199,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void rejectsBothAmountAndMetadataFields() throws PreCheckException {
+    void rejectsBothAmountAndMetadataFields() {
         final var txn = givenMintTxn(fungibleTokenId, List.of(metadata1), 2L);
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -209,7 +209,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void allowsTxnBodyWithNoProps() throws PreCheckException {
+    void allowsTxnBodyWithNoProps() {
         final var txn = givenMintTxn(fungibleTokenId, null, null);
         refreshReadableStores();
         final var context = new FakePreHandleContext(readableAccountStore, txn);

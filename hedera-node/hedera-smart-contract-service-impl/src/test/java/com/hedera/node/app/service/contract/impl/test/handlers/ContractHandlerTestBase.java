@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
         assertThat(context.requiredNonPayerKeys()).hasSize(nonPayerKeySize);
     }
 
-    protected void setUpPayer() throws PreCheckException {
+    protected void setUpPayer() {
         lenient().when(accountStore.getAccountById(payer)).thenReturn(payerAccount);
         lenient().when(payerAccount.key()).thenReturn(payerKey);
     }

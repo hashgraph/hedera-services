@@ -100,7 +100,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final var query = context.query();
         final var topicStore = context.createStore(ReadableTopicStore.class);

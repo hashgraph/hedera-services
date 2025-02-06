@@ -92,7 +92,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         // Ignore the return value; we just want to cache the signature for use in handle()
         computeEthTxSigsFor(
@@ -102,7 +102,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         try {
             final var txn = context.body();
@@ -219,8 +219,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
     private EthTxSigs computeEthTxSigsFor(
             @NonNull final EthereumTransactionBody op,
             @NonNull final ReadableFileStore fileStore,
-            @NonNull final Configuration config)
-            throws PreCheckException {
+            @NonNull final Configuration config) {
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var hydratedTx = callDataHydration.tryToHydrate(op, fileStore, hederaConfig.firstUserEntity());
         validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());

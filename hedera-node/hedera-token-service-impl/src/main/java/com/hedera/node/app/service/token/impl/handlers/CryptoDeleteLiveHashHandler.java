@@ -47,13 +47,13 @@ public class CryptoDeleteLiveHashHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext txn) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext txn) {
         // nothing to do
     }
 

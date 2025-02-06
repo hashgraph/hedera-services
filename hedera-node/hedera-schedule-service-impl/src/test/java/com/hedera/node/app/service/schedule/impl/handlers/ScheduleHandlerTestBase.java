@@ -47,7 +47,6 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -90,7 +89,7 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
             createChildKeys(adminKey, schedulerKey, payerKey, optionKey, otherKey);
 
     @Override
-    protected void setUpBase() throws PreCheckException, InvalidKeyException {
+    protected void setUpBase() throws InvalidKeyException {
         super.setUpBase();
         setUpContext();
     }

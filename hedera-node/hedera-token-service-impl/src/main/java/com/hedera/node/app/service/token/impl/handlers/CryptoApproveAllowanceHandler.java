@@ -101,7 +101,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @throws PreCheckException if the transaction is invalid for any reason
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn);
@@ -139,7 +139,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var payerId = context.payer();

@@ -144,7 +144,7 @@ class FileCreateTest extends FileTestBase {
 
     @Test
     @DisplayName("Non-payer keys is added")
-    void differentKeys() throws PreCheckException {
+    void differentKeys() {
         // given:
         final var payerKey = mockPayerLookup();
         final var keys = anotherKeys;
@@ -160,7 +160,7 @@ class FileCreateTest extends FileTestBase {
 
     @Test
     @DisplayName("empty keys are added")
-    void createWithEmptyKeys() throws PreCheckException {
+    void createWithEmptyKeys() {
         // given:
         final var payerKey = mockPayerLookup();
 
@@ -174,7 +174,7 @@ class FileCreateTest extends FileTestBase {
 
     @Test
     @DisplayName("no expiration time is added")
-    void createAddsDifferentSubmitKey() throws PreCheckException {
+    void createAddsDifferentSubmitKey() {
         // given:
         final var payerKey = mockPayerLookup();
         final var keys = anotherKeys;
@@ -191,7 +191,7 @@ class FileCreateTest extends FileTestBase {
 
     @Test
     @DisplayName("Only payer key is always required")
-    void requiresPayerKey() throws PreCheckException {
+    void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup();
         final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, expirationTime));

@@ -163,7 +163,7 @@ public final class IngestChecker {
      *
      * @throws PreCheckException if the node is unable to process HAPI operations
      */
-    public void verifyPlatformActive() throws PreCheckException {
+    public void verifyPlatformActive() {
         if (currentPlatformStatus.get() != ACTIVE) {
             throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
@@ -174,7 +174,7 @@ public final class IngestChecker {
      *
      * @throws PreCheckException if the node is unable to process HAPI operations
      */
-    public void verifyReadyForTransactions() throws PreCheckException {
+    public void verifyReadyForTransactions() {
         verifyPlatformActive();
         if (!blockStreamManager.hasLedgerId()) {
             throw new PreCheckException(WAITING_FOR_LEDGER_ID);
@@ -191,8 +191,7 @@ public final class IngestChecker {
      * @throws PreCheckException if a check fails
      */
     public TransactionInfo runAllChecks(
-            @NonNull final State state, @NonNull final Transaction tx, @NonNull final Configuration configuration)
-            throws PreCheckException {
+            @NonNull final State state, @NonNull final Transaction tx, @NonNull final Configuration configuration) {
         // During ingest we approximate consensus time with wall clock time
         final var consensusTime = instantSource.instant();
 
@@ -267,8 +266,7 @@ public final class IngestChecker {
     }
 
     private void assertThrottlingPreconditions(
-            @NonNull final TransactionInfo txInfo, @NonNull final Configuration configuration)
-            throws PreCheckException {
+            @NonNull final TransactionInfo txInfo, @NonNull final Configuration configuration) {
         if (UNSUPPORTED_TRANSACTIONS.contains(txInfo.functionality())) {
             throw new PreCheckException(NOT_SUPPORTED);
         }
@@ -290,8 +288,7 @@ public final class IngestChecker {
     private void verifyPayerSignature(
             @NonNull final TransactionInfo txInfo,
             @NonNull final Account payer,
-            @NonNull final Configuration configuration)
-            throws PreCheckException {
+            @NonNull final Configuration configuration) {
         final var payerKey = payer.key();
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
         final var sigPairs = txInfo.signatureMap().sigPair();

@@ -72,7 +72,7 @@ public abstract class AbstractScheduleHandler {
 
     @FunctionalInterface
     protected interface TransactionKeysFn {
-        TransactionKeys apply(@NonNull TransactionBody body, @NonNull AccountID payerId) throws PreCheckException;
+        TransactionKeys apply(@NonNull TransactionBody body, @NonNull AccountID payerId);
     }
 
     /**
@@ -103,8 +103,7 @@ public abstract class AbstractScheduleHandler {
      * @throws PreCheckException if the signing requirements cannot be determined
      */
     @NonNull
-    protected TransactionKeys getRequiredKeys(@NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn)
-            throws PreCheckException {
+    protected TransactionKeys getRequiredKeys(@NonNull final Schedule schedule, @NonNull final TransactionKeysFn fn) {
         requireNonNull(schedule);
         requireNonNull(fn);
         final var body = childAsOrdinary(schedule);
@@ -176,8 +175,7 @@ public abstract class AbstractScheduleHandler {
     protected Schedule getValidated(
             @NonNull final ScheduleID scheduleId,
             @NonNull final ReadableScheduleStore scheduleStore,
-            final boolean isLongTermEnabled)
-            throws PreCheckException {
+            final boolean isLongTermEnabled) {
         requireNonNull(scheduleId);
         requireNonNull(scheduleStore);
         final var schedule = scheduleStore.get(scheduleId);

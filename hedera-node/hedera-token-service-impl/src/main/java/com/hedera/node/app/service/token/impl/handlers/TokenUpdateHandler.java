@@ -98,7 +98,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn);
@@ -120,7 +120,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var op = context.body().tokenUpdateOrThrow();
         final var token = context.createStore(ReadableTokenStore.class).get(op.tokenOrThrow());
@@ -416,8 +416,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param token original token
      */
     private void addRequiredSigners(
-            @NonNull PreHandleContext context, @NonNull final TokenUpdateTransactionBody op, @NonNull final Token token)
-            throws PreCheckException {
+            @NonNull PreHandleContext context,
+            @NonNull final TokenUpdateTransactionBody op,
+            @NonNull final Token token) {
         // Since we de-duplicate all the keys in the PreHandleContext,
         // we can safely add one key multiple times for the transaction to keep the logic simple.
 
@@ -486,8 +487,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @throws PreCheckException if the token is immutable
      */
     private void requireAdminOrRole(
-            @NonNull final PreHandleContext context, @NonNull final Token token, @NonNull final TokenKey roleKey)
-            throws PreCheckException {
+            @NonNull final PreHandleContext context, @NonNull final Token token, @NonNull final TokenKey roleKey) {
         requireAdminOrRole(context, token, roleKey, null);
     }
 
@@ -507,8 +507,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final PreHandleContext context,
             @NonNull final Token token,
             @NonNull final TokenKey roleKey,
-            @Nullable final Key replacementKey)
-            throws PreCheckException {
+            @Nullable final Key replacementKey) {
         final var maybeRoleKey = roleKey.getFromToken(token);
         // Prioritize TOKEN_IS_IMMUTABLE for completely immutable tokens
         mustExist(maybeRoleKey, token.hasAdminKey() ? roleKey.tokenHasNoKeyStatus() : TOKEN_IS_IMMUTABLE);
@@ -531,8 +530,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param originalToken original token
      * @throws PreCheckException if the token is immutable
      */
-    private void requireAdmin(@NonNull final PreHandleContext context, @NonNull final Token originalToken)
-            throws PreCheckException {
+    private void requireAdmin(@NonNull final PreHandleContext context, @NonNull final Token originalToken) {
         validateTruePreCheck(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         context.requireKey(originalToken.adminKeyOrThrow());
     }

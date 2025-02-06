@@ -162,7 +162,7 @@ class IngestCheckerTest extends AppTestBase {
     private IngestChecker subject;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setUp() {
         setupStandardStates();
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
 
@@ -320,7 +320,7 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "TransactionChecker fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
-        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws PreCheckException {
+        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) {
             // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
             when(transactionChecker.check(any(), eq(null))).thenThrow(new PreCheckException(failureReason));
 
@@ -333,7 +333,7 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from TransactionChecker, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() {
             // Given a WorkflowOnset that will throw a RuntimeException
             when(transactionChecker.check(any(), eq(null))).thenThrow(new RuntimeException("check exception"));
 
@@ -382,7 +382,7 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("Unsupported transaction functionality should throw NOT_SUPPORTED")
-        void unsupportedTransactionFunctionality() throws PreCheckException {
+        void unsupportedTransactionFunctionality() {
             final TransactionBody cryptoAddLiveHashTxBody = TransactionBody.newBuilder()
                     .cryptoAddLiveHash(
                             CryptoAddLiveHashTransactionBody.newBuilder().build())
@@ -415,7 +415,7 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("Privileged transaction functionality should throw NOT_SUPPORTED for non-privileged accounts")
-        void privilegedTransactionFunctionality() throws PreCheckException {
+        void privilegedTransactionFunctionality() {
             final TransactionBody freezeTxBody = TransactionBody.newBuilder()
                     .freeze(FreezeTransactionBody.newBuilder().build())
                     .transactionID(TransactionID.newBuilder()
@@ -466,7 +466,7 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "Check of account status fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
-        void payerAccountStatusFails(ResponseCodeEnum failureReason) throws PreCheckException {
+        void payerAccountStatusFails(ResponseCodeEnum failureReason) {
             doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
@@ -477,7 +477,7 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from account status check, the exception is bubbled up")
-        void randomException() throws PreCheckException {
+        void randomException() {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             doThrow(new RuntimeException("checkPayerAccountStatus exception"))
                     .when(solvencyPreCheck)
@@ -493,7 +493,7 @@ class IngestCheckerTest extends AppTestBase {
         // NOTE: This should never happen in real life, but we need to code defensively for it anyway.
         @Test
         @DisplayName("No key for payer in state")
-        void noKeyForPayer() throws PreCheckException {
+        void noKeyForPayer() {
             // The tx payer is ALICE. We remove her key from state
             final var account = ALICE.account().copyBuilder().key((Key) null).build();
             when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(account);
@@ -521,7 +521,7 @@ class IngestCheckerTest extends AppTestBase {
         @MethodSource("failureReasons")
         @DisplayName("If the payer has insufficient funds, the transaction should be rejected")
         void payerAccountStatusFails(ResponseCodeEnum failureReason)
-                throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+                throws ExecutionException, InterruptedException, TimeoutException {
             givenValidPayerSignature();
             doThrow(new InsufficientBalanceException(failureReason, 123L))
                     .when(solvencyPreCheck)
@@ -536,7 +536,7 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         @DisplayName("If some random exception is thrown from checking solvency, the exception is bubbled up")
-        void randomException() throws PreCheckException, ExecutionException, InterruptedException, TimeoutException {
+        void randomException() throws ExecutionException, InterruptedException, TimeoutException {
             // Given an IngestChecker that will throw a RuntimeException from checkPayerSignature
             givenValidPayerSignature();
             doThrow(new RuntimeException("checkSolvency exception"))

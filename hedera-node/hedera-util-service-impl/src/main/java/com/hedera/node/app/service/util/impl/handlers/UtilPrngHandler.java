@@ -59,12 +59,12 @@ public class UtilPrngHandler implements TransactionHandler {
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         // nothing to do
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         // Negative ranges are not allowed
         if (context.body().utilPrngOrThrow().range() < 0) {
             throw new PreCheckException(ResponseCodeEnum.INVALID_PRNG_RANGE);

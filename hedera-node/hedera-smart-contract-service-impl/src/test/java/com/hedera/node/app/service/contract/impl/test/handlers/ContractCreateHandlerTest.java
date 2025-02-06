@@ -159,7 +159,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("Adds valid admin key")
-    void validAdminKey() throws PreCheckException {
+    void validAdminKey() {
         final var txn = contractCreateTransaction(adminKey, null);
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -172,7 +172,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("admin key with contractID is not added")
-    void adminKeyWithContractID() throws PreCheckException {
+    void adminKeyWithContractID() {
         final var txn = contractCreateTransaction(adminContractKey, null);
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -183,7 +183,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("autoRenew account key is added")
-    void autoRenewAccountIdAdded() throws PreCheckException {
+    void autoRenewAccountIdAdded() {
         final var txn = contractCreateTransaction(adminContractKey, autoRenewAccountId);
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -195,7 +195,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("autoRenew account key is not added when it is sentinel value")
-    void autoRenewAccountIdAsSentinelNotAdded() throws PreCheckException {
+    void autoRenewAccountIdAsSentinelNotAdded() {
         final var txn = contractCreateTransaction(adminContractKey, asAccount("0.0.0"));
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);
@@ -207,7 +207,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
 
     @Test
     @DisplayName("autoRenew account and adminKey both added")
-    void autoRenewAccountIdAndAdminBothAdded() throws PreCheckException {
+    void autoRenewAccountIdAndAdminBothAdded() {
         final var txn = contractCreateTransaction(adminKey, autoRenewAccountId);
         final var context = new FakePreHandleContext(accountStore, txn);
         subject.preHandle(context);

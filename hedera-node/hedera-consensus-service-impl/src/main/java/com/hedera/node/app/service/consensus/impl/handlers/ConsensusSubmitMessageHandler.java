@@ -67,7 +67,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -116,7 +115,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final TransactionBody txn = context.body();
         final ConsensusSubmitMessageTransactionBody op = txn.consensusSubmitMessageOrThrow();
@@ -127,7 +126,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final var op = context.body().consensusSubmitMessageOrThrow();
@@ -477,8 +476,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         }
     }
 
-    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> allCustomFeeLimits)
-            throws PreCheckException {
+    private void validateDuplicationFeeLimits(@NonNull final List<CustomFeeLimit> allCustomFeeLimits) {
         // Validate that there are no duplicated account ids in the max custom fee list
         final var accounts =
                 allCustomFeeLimits.stream().map(CustomFeeLimit::accountId).toList();

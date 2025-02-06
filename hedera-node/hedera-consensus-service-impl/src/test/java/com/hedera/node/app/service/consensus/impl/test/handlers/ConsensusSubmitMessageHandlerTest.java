@@ -71,7 +71,6 @@ import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -179,7 +178,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Topic submission key sig required")
-    void submissionKeySigRequired() throws PreCheckException {
+    void submissionKeySigRequired() {
         readableStore = mock(ReadableTopicStore.class);
         // given:
         final var payerKey = mockPayerLookup();
@@ -197,7 +196,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Topic not found returns error")
-    void topicIdNotFound() throws PreCheckException {
+    void topicIdNotFound() {
         mockPayerLookup();
         readableTopicState = emptyReadableTopicState();
         given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
@@ -210,7 +209,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Topic without submit key does not error")
-    void noTopicSubmitKey() throws PreCheckException {
+    void noTopicSubmitKey() {
         readableStore = mock(ReadableTopicStore.class);
         mockPayerLookup();
         mockTopicLookup(null);

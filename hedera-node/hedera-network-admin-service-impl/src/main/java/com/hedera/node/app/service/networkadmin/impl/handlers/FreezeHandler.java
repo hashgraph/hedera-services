@@ -89,7 +89,7 @@ public class FreezeHandler implements TransactionHandler {
      * @see <a href="https://hashgraph.github.io/hedera-protobufs/#freeze.proto">Protobuf freeze documentation</a>
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final FreezeTransactionBody freezeTxn = context.body().freezeOrThrow();
@@ -110,7 +110,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check startHour, startMin, endHour, endMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final TransactionBody txn = context.body();
 
@@ -143,8 +143,7 @@ public class FreezeHandler implements TransactionHandler {
         }
     }
 
-    private static @NonNull FreezeTransactionBody getFreezeTransactionBody(final TransactionBody txn)
-            throws PreCheckException {
+    private static @NonNull FreezeTransactionBody getFreezeTransactionBody(final TransactionBody txn) {
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
@@ -253,8 +252,7 @@ public class FreezeHandler implements TransactionHandler {
      * @throws PreCheckException if startTime is not in the future
      */
     private static void verifyFreezeStartTimeIsInFuture(
-            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull Timestamp curConsensusTime)
-            throws PreCheckException {
+            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull Timestamp curConsensusTime) {
         requireNonNull(freezeTxn);
         requireNonNull(curConsensusTime);
         final Timestamp freezeStartTime = freezeTxn.startTime();
@@ -281,8 +279,7 @@ public class FreezeHandler implements TransactionHandler {
     private static void verifyUpdateFile(
             final @NonNull FreezeTransactionBody freezeTxn,
             final @NonNull ReadableUpgradeFileStore upgradeStore,
-            final LongPair softwareUpdateRange)
-            throws PreCheckException {
+            final LongPair softwareUpdateRange) {
         requireNonNull(freezeTxn);
         requireNonNull(upgradeStore);
 

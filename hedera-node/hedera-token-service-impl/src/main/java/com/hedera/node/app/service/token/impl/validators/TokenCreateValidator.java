@@ -74,7 +74,7 @@ public class TokenCreateValidator {
      * @param op token create transaction body
      * @throws PreCheckException if any of the validations fail
      */
-    public void pureChecks(@NonNull final TokenCreateTransactionBody op) throws PreCheckException {
+    public void pureChecks(@NonNull final TokenCreateTransactionBody op) {
         requireNonNull(op);
         final var initialSupply = op.initialSupply();
         final var maxSupply = op.maxSupply();
@@ -146,8 +146,7 @@ public class TokenCreateValidator {
      * @param decimals decimals
      * @throws PreCheckException if validation fails
      */
-    private void validateTokenType(@NonNull final TokenType type, final long initialSupply, final int decimals)
-            throws PreCheckException {
+    private void validateTokenType(@NonNull final TokenType type, final long initialSupply, final int decimals) {
         validateTruePreCheck(type == FUNGIBLE_COMMON || type == NON_FUNGIBLE_UNIQUE, NOT_SUPPORTED);
         if (type == FUNGIBLE_COMMON) {
             validateTruePreCheck(initialSupply >= 0, INVALID_TOKEN_INITIAL_SUPPLY);
@@ -164,7 +163,7 @@ public class TokenCreateValidator {
      * @param maxSupply max supply
      * @throws PreCheckException if validation fails
      */
-    private void validateSupplyType(final TokenSupplyType supplyType, final long maxSupply) throws PreCheckException {
+    private void validateSupplyType(final TokenSupplyType supplyType, final long maxSupply) {
         validateTruePreCheck(supplyType == INFINITE || supplyType == FINITE, NOT_SUPPORTED);
         if (supplyType == INFINITE) {
             validateTruePreCheck(maxSupply == 0, INVALID_TOKEN_MAX_SUPPLY);

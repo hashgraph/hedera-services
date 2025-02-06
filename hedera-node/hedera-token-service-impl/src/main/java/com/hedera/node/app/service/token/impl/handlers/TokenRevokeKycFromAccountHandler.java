@@ -73,7 +73,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final var op = context.body().tokenRevokeKycOrThrow();
@@ -116,7 +116,7 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
      * Performs checks independent of state or context.
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.tokenRevokeKycOrThrow();

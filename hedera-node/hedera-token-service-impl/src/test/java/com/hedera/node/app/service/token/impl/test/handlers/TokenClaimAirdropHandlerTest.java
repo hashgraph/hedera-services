@@ -213,7 +213,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void preHandleAccountNotExistPath() throws PreCheckException {
+    void preHandleAccountNotExistPath() {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         final var token9754 = asToken(9754);
         pendingAirdropIds.add(PendingAirdropId.newBuilder()

@@ -99,7 +99,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     @Override
     // contract.deleted() won't throw NPE since we are checking it for null the line before
     @SuppressWarnings("java:S2259")
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final var query = context.query();
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -113,8 +113,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         }
     }
 
-    private void validateContractId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
-            throws PreCheckException {
+    private void validateContractId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore) {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
         final ContractID contractId = (ContractID) op.balanceSource().value();
         validateTruePreCheck(contractId.shardNum() == hederaConfig.shard(), INVALID_CONTRACT_ID);
@@ -128,8 +127,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
     }
 
-    private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore)
-            throws PreCheckException {
+    private void validateAccountId(CryptoGetAccountBalanceQuery op, ReadableAccountStore accountStore) {
         AccountID accountId = (AccountID) op.balanceSource().value();
         validateTruePreCheck(accountId.shardNum() == hederaConfig.shard(), INVALID_ACCOUNT_ID);
         validateTruePreCheck(accountId.realmNum() == hederaConfig.realm(), INVALID_ACCOUNT_ID);

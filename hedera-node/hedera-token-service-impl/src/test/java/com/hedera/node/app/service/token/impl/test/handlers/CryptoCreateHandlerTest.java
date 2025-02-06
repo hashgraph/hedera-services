@@ -187,7 +187,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("preHandle works when there is a receiverSigRequired")
-    void preHandleCryptoCreateVanilla() throws PreCheckException {
+    void preHandleCryptoCreateVanilla() {
         final var context = new FakePreHandleContext(readableStore, txn);
         given(pureChecksContext.body()).willReturn(txn);
         subject.pureChecks(pureChecksContext);
@@ -283,7 +283,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("pureChecks fail when negative send record threshold is specified")
-    void sendRecordThresholdIsNegative() throws PreCheckException {
+    void sendRecordThresholdIsNegative() {
         txn = new CryptoCreateBuilder().withSendRecordThreshold(-1).build();
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -293,7 +293,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("pureChecks fail when negative receive record threshold is specified")
-    void receiveRecordThresholdIsNegative() throws PreCheckException {
+    void receiveRecordThresholdIsNegative() {
         txn = new CryptoCreateBuilder().withReceiveRecordThreshold(-1).build();
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -303,7 +303,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("pureChecks fail when proxy accounts id is specified")
-    void whenProxyAccountIdIsSpecified() throws PreCheckException {
+    void whenProxyAccountIdIsSpecified() {
         txn = new CryptoCreateBuilder().withProxyAccountNum(1).build();
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -313,7 +313,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("preHandle succeeds when initial balance is zero")
-    void preHandleWorksWhenInitialBalanceIsZero() throws PreCheckException {
+    void preHandleWorksWhenInitialBalanceIsZero() {
         txn = new CryptoCreateBuilder().withInitialBalance(0L).build();
         given(pureChecksContext.body()).willReturn(txn);
 
@@ -327,7 +327,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("preHandle succeeds when has non zero evm alias")
-    void preHandleWorksWhenHasEvmAlias() throws PreCheckException {
+    void preHandleWorksWhenHasEvmAlias() {
         final byte[] evmAddress = CommonUtils.unhex("6aeb3773ea468a814d954e6dec795bfee7d76e26");
         txn = new CryptoCreateBuilder()
                 .withAlias(Bytes.wrap(evmAddress))
@@ -342,7 +342,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("preHandle fails when invalid alias key")
-    void preHandleWorksWhenHasAlias() throws PreCheckException {
+    void preHandleWorksWhenHasAlias() {
         final Bytes SENDER_ALIAS =
                 Bytes.fromHex("3a21030edcc130e13fb5102e7c883535af8c2b0a5a617231f77fd127ce5f3b9a620591");
         txn = new CryptoCreateBuilder()
@@ -357,7 +357,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("preHandle works when there is no receiverSigRequired")
-    void noReceiverSigRequiredPreHandleCryptoCreate() throws PreCheckException {
+    void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var noReceiverSigTxn =
                 new CryptoCreateBuilder().withReceiverSigReq(false).build();
         final var expected = new FakePreHandleContext(readableStore, noReceiverSigTxn);

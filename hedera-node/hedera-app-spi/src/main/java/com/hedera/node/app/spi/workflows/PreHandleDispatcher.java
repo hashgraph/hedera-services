@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,5 +33,5 @@ public interface PreHandleDispatcher {
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      * @throws PreCheckException if the transaction within the context is invalid
      */
-    void dispatch(@NonNull PreHandleContext context) throws PreCheckException;
+    void dispatch(@NonNull PreHandleContext context);
 }

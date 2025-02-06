@@ -64,7 +64,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
      * @param context the {@link PureChecksContext} which collects all information
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var transactionBody = txn.systemDeleteOrThrow();
@@ -84,7 +84,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
      * @throws NullPointerException if any of the arguments are {@code null}
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final var transactionBody = context.body().systemDeleteOrThrow();

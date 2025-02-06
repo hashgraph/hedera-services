@@ -49,7 +49,6 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -123,7 +122,7 @@ class FileUpdateTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
+    void preHandleWorksAsExpected() {
         refreshStoresWithCurrentFileOnlyInReadable();
 
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -141,7 +140,7 @@ class FileUpdateTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+    void preHandleWorksAsExpectedImmutable() {
         file = createFileEmptyMemoAndKeys();
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);

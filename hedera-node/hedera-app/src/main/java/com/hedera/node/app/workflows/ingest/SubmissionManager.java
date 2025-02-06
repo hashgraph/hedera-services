@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ public class SubmissionManager {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException    if the transaction could not be submitted
      */
-    public void submit(@NonNull final TransactionBody txBody, @NonNull final Bytes txBytes) throws PreCheckException {
+    public void submit(@NonNull final TransactionBody txBody, @NonNull final Bytes txBytes) {
         requireNonNull(txBody);
         requireNonNull(txBytes);
 

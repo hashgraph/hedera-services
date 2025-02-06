@@ -79,15 +79,14 @@ public class TransferExecutor extends BaseTokenHandler {
      * @param op transaction body
      * @throws PreCheckException if any error occurs during the process
      */
-    protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) throws PreCheckException {
+    protected void preHandle(PreHandleContext context, CryptoTransferTransactionBody op) {
         preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED);
     }
 
     private void preHandle(
             @NonNull final PreHandleContext context,
             @NonNull final CryptoTransferTransactionBody op,
-            @NonNull final OptionalKeyCheck receiverKeyCheck)
-            throws PreCheckException {
+            @NonNull final OptionalKeyCheck receiverKeyCheck) {
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenTransfers = op.tokenTransfers();
@@ -111,8 +110,7 @@ public class TransferExecutor extends BaseTokenHandler {
      * @param op transaction body
      * @throws PreCheckException if any error occurs during the process
      */
-    protected void preHandleWithOptionalReceiverSignature(PreHandleContext context, CryptoTransferTransactionBody op)
-            throws PreCheckException {
+    protected void preHandleWithOptionalReceiverSignature(PreHandleContext context, CryptoTransferTransactionBody op) {
         preHandle(context, op, OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL);
     }
 
@@ -347,8 +345,7 @@ public class TransferExecutor extends BaseTokenHandler {
             @NonNull final List<AccountAmount> transfers,
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore,
-            final boolean hbarTransfer)
-            throws PreCheckException {
+            final boolean hbarTransfer) {
         checkFungibleTokenTransfers(transfers, ctx, accountStore, hbarTransfer, RECEIVER_KEY_IS_REQUIRED);
     }
 
@@ -369,8 +366,7 @@ public class TransferExecutor extends BaseTokenHandler {
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore,
             final boolean hbarTransfer,
-            @NonNull final OptionalKeyCheck receiverKeyCheck)
-            throws PreCheckException {
+            @NonNull final OptionalKeyCheck receiverKeyCheck) {
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of hbar INTO a single account or OUT of a
         // single account.
@@ -441,8 +437,7 @@ public class TransferExecutor extends BaseTokenHandler {
             final ReadableTokenStore.TokenMetadata tokenMeta,
             final CryptoTransferTransactionBody op,
             final ReadableAccountStore accountStore,
-            final OptionalKeyCheck receiverKeyCheck)
-            throws PreCheckException {
+            final OptionalKeyCheck receiverKeyCheck) {
         for (final var nftTransfer : nftTransfersList) {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(senderId, null);

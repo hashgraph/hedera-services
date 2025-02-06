@@ -269,8 +269,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public TransactionKeys allKeysForTransaction(
-            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
-            throws PreCheckException {
+            @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) {
         final var nestedPureChecksContext =
                 new PureChecksContextImpl(nestedTxn, configuration(), dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(nestedPureChecksContext);

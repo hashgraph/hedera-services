@@ -54,7 +54,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.BeforeEach;
@@ -487,7 +486,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("payer key as admin key is allowed")
-    void noneOfFieldsSetHaveNoRequiredKeys() throws PreCheckException {
+    void noneOfFieldsSetHaveNoRequiredKeys() {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
@@ -506,7 +505,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Missing topicId from ReadableTopicStore fails")
-    void missingTopicFails() throws PreCheckException {
+    void missingTopicFails() {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
@@ -520,7 +519,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Update a deleted topic ID fails")
-    void rejectsDeletedTopic() throws PreCheckException {
+    void rejectsDeletedTopic() {
         givenValidTopic(payerId, true);
         refreshStoresWithCurrentTopicInBothReadableAndWritable();
 
@@ -538,7 +537,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Update admin key in preHandle as expected")
-    void adminKeyAndOpAdminKeyAdded() throws PreCheckException {
+    void adminKeyAndOpAdminKeyAdded() {
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
 
@@ -560,7 +559,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Update autoRenewAccount in preHandle as expected")
-    void autoRenewAccountKeyAdded() throws PreCheckException {
+    void autoRenewAccountKeyAdded() {
         given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
         given(autoRenewAccount.key()).willReturn(autoRenewKey);
         given(accountStore.getAccountById(payerId)).willReturn(account);
@@ -579,7 +578,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Missing autoRenewAccount update fails")
-    void missingAutoRenewAccountFails() throws PreCheckException {
+    void missingAutoRenewAccountFails() {
         given(accountStore.getAccountById(autoRenewId)).willReturn(null);
         given(accountStore.getAccountById(payerId)).willReturn(account);
         given(account.key()).willReturn(adminKey);
