@@ -86,4 +86,8 @@ message EntityCounts {
    * The number of contract bytecodes in the network.
    */
   uint64 num_contract_bytecodes = 13;
+  /**
+   * The number of lambdas in the network.
+   */
+  uint64 num_lambdas = 14;
 }

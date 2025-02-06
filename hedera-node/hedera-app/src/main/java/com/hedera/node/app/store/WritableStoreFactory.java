@@ -30,6 +30,7 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.WritableLambdaStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
@@ -105,6 +106,7 @@ public class WritableStoreFactory {
         newMap.put(
                 WritableContractStateStore.class,
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
+        newMap.put(WritableLambdaStore.class, new StoreEntry(ContractService.NAME, WritableLambdaStore::new));
         // EntityIdService
         newMap.put(
                 WritableEntityIdStore.class,

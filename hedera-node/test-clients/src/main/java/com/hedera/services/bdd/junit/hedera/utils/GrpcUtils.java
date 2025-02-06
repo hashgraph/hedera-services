@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,6 +120,8 @@ public class GrpcUtils {
                     .deleteContract(transaction);
             case EthereumTransaction -> clients.getScSvcStub(nodeAccountId, false, false)
                     .callEthereum(transaction);
+            case LambdaSStore -> clients.getScSvcStub(nodeAccountId, false, false)
+                    .lambdaSStore(transaction);
             case CryptoAddLiveHash -> clients.getCryptoSvcStub(nodeAccountId, false, false)
                     .addLiveHash(transaction);
             case CryptoApproveAllowance -> clients.getCryptoSvcStub(nodeAccountId, false, false)

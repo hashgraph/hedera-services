@@ -118,7 +118,8 @@ public class ReadableEntityIdStoreImpl implements ReadableEntityIdStore {
     }
 
     @Override
-    public long getCounterFor(final EntityType entityType) {
+    public long getCounterFor(@NonNull final EntityType entityType) {
+        requireNonNull(entityType);
         final var entityState = requireNonNull(entityCountsState.get());
         return switch (entityType) {
             case ACCOUNT -> entityState.numAccounts();
@@ -134,6 +135,7 @@ public class ReadableEntityIdStoreImpl implements ReadableEntityIdStore {
             case SCHEDULE -> entityState.numSchedules();
             case AIRDROP -> entityState.numAirdrops();
             case STAKING_INFO -> entityState.numStakingInfos();
+            case LAMBDA -> entityState.numLambdas();
         };
     }
 

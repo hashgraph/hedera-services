@@ -33,6 +33,8 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHa
 import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
+import com.hedera.node.app.service.contract.impl.handlers.LambdaDispatchHandler;
+import com.hedera.node.app.service.contract.impl.handlers.LambdaSStoreHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
@@ -91,6 +93,8 @@ public record TransactionHandlers(
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
         @NonNull EthereumTransactionHandler ethereumTransactionHandler,
+        @NonNull LambdaSStoreHandler lambdaSStoreHandler,
+        @NonNull LambdaDispatchHandler lambdaDispatchHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,

@@ -448,6 +448,7 @@ public final class Hedera
         requireNonNull(constructableRegistry);
         requireNonNull(hintsServiceFactory);
         requireNonNull(historyServiceFactory);
+        requireNonNull(blockHashSignerFactory);
         this.metrics = requireNonNull(metrics);
         this.serviceMigrator = requireNonNull(migrator);
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);

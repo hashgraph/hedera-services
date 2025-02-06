@@ -152,7 +152,7 @@ public class IterableStorageManager {
      * @return the new first key in the linked list of storage for the given contract
      */
     @NonNull
-    private Bytes removeAccessedValue(
+    public static Bytes removeAccessedValue(
             @NonNull final ContractStateStore store,
             @NonNull Bytes firstContractKey,
             @NonNull final ContractID contractID,
@@ -196,7 +196,7 @@ public class IterableStorageManager {
      * @return the new first key in the linked list of storage for the given contract
      */
     @NonNull
-    private Bytes insertAccessedValue(
+    public static Bytes insertAccessedValue(
             @NonNull final ContractStateStore store,
             @NonNull final Bytes firstContractKey,
             @NonNull final Bytes newValue,
@@ -221,20 +221,20 @@ public class IterableStorageManager {
         return newKey;
     }
 
-    private void updatePrevFor(
+    private static void updatePrevFor(
             @NonNull final SlotKey key, @NonNull final Bytes newPrevKey, @NonNull final ContractStateStore store) {
         final var value = slotValueFor(store, true, key, "Missing next key ");
         store.putSlot(key, value.copyBuilder().previousKey(newPrevKey).build());
     }
 
-    private void updateNextFor(
+    private static void updateNextFor(
             @NonNull final SlotKey key, @NonNull final Bytes newNextKey, @NonNull final ContractStateStore store) {
         final var value = slotValueFor(store, true, key, "Missing prev key ");
         store.putSlot(key, value.copyBuilder().nextKey(newNextKey).build());
     }
 
     @NonNull
-    private SlotValue slotValueFor(
+    private static SlotValue slotValueFor(
             @NonNull final ContractStateStore store,
             final boolean forModify,
             @NonNull final SlotKey slotKey,
