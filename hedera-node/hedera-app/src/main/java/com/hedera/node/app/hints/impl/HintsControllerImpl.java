@@ -23,7 +23,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -73,8 +72,8 @@ public class HintsControllerImpl implements HintsController {
     private final Map<Long, PreprocessingVote> votes = new ConcurrentHashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
     private final NavigableMap<Long, CompletableFuture<Void>> crsFutures = new TreeMap<>();
-    private final Bytes lastComputedCrs;
-    private long lastCrsNodeIdFutureVerified = -1;
+    private Bytes lastComputedCrs;
+    private long lastCrsNodeIdFutureSubmitted = -1;
 
     /**
      * The ongoing construction, updated each time the controller advances the construction in state.
@@ -167,7 +166,7 @@ public class HintsControllerImpl implements HintsController {
         requireNonNull(now);
         requireNonNull(hintsStore);
 
-        if (!isCRSComplete(hintsStore.getCrsState())) {
+        if (hintsStore.getCrsState().isGatheringContributions()) {
             doCRSWork(now, hintsStore);
             return;
         }
@@ -204,34 +203,18 @@ public class HintsControllerImpl implements HintsController {
      */
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         final var crsState = hintsStore.getCrsState();
-        switch (crsState.stage()) {
-            case COMPLETED -> {
-                // Do nothing
-            }
-            case WAITING_FOR_INITIAL_CRS -> {
-                final var tssConfig = configurationSupplier.get().getConfigData(TssConfig.class);
-                final var initialCrs = library.newCrs(tssConfig.initialCrsParties());
-                hintsStore.putInitialCrs(
-                        initialCrs,
-                        selfId,
-                        now.plusSeconds(tssConfig.crsUpdateContributionTime().toSeconds()));
-            }
-            case GATHERING_CONTRIBUTIONS -> {
-                if (allNodesContributed(crsState)) {
-                    final var updatedState =
-                            crsState.copyBuilder().stage(CRSStage.COMPLETED).build();
-                    hintsStore.setCRSState(updatedState);
-                } else if (crsState.nextContributingNodeId() == selfId && crsPublicationFuture == null) {
-                    submitUpdatedCRS(hintsStore);
-                } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
-                    moveToNextNode(now, hintsStore, crsState);
-                }
+        if (crsState.isGatheringContributions()) {
+            // If all nodes have contributed
+            if (crsState.nextContributingNodeId() == -1) {
+                final var updatedState =
+                        crsState.copyBuilder().isGatheringContributions(false).build();
+                hintsStore.setCRSState(updatedState);
+            } else if (crsState.nextContributingNodeId() == selfId && crsPublicationFuture == null) {
+                submitUpdatedCRS(hintsStore);
+            } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
+                moveToNextNode(now, hintsStore, crsState);
             }
         }
-    }
-
-    private boolean allNodesContributed(final CRSState crsState) {
-        return crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS && crsState.nextContributingNodeId() == -1;
     }
 
     private void moveToNextNode(
@@ -249,10 +232,7 @@ public class HintsControllerImpl implements HintsController {
                 () -> {
                     final var updatedCRS = library.updateCrs(oldCRS, generateEntropy());
                     final var newCRS = codec.decodeCrsUpdate(updatedCRS);
-                    final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
-                    if (isValidCrs) {
-                        submissions.submitUpdateCRS(newCRS.crs(), newCRS.proof());
-                    }
+                    submissions.submitUpdateCRS(newCRS.crs(), newCRS.proof());
                 },
                 executor);
     }
@@ -278,10 +258,6 @@ public class HintsControllerImpl implements HintsController {
         byte[] entropyBytes = new byte[16];
         SECURE_RANDOM.nextBytes(entropyBytes);
         return Bytes.wrap(entropyBytes);
-    }
-
-    private boolean isCRSComplete(final CRSState crsState) {
-        return crsState.stage() == CRSStage.COMPLETED;
     }
 
     @Override
@@ -363,30 +339,22 @@ public class HintsControllerImpl implements HintsController {
 
     private CompletableFuture<Void> validationFuture(
             final long nodeId, final CrsPublicationTransactionBody publication) {
-        final var previousFutureEntry = crsFutures.lastEntry();
-        final CompletableFuture<Void> previousFuture = (previousFutureEntry != null)
-                ? previousFutureEntry.getValue()
-                : CompletableFuture.completedFuture(null);
-
+        final var previousFuture = crsFutures.get(lastCrsNodeIdFutureSubmitted);
+        lastCrsNodeIdFutureSubmitted = nodeId;
         // Chain the new future execution
         return previousFuture
                 .thenCompose(unused -> CompletableFuture.supplyAsync(
                         () -> {
+                            final var newCrs = codec.decodeCrsUpdate(publication.newCrs());
                             final var isValid =
                                     library.verifyCrsUpdate(lastComputedCrs, publication.newCrs(), publication.proof());
                             if (isValid) {
-                                // Update last verified node
-                                lastCrsNodeIdFutureVerified = nodeId;
+                                lastComputedCrs = newCrs.crs();
                             }
-                            return isValid ? nodeId : null;
+                            return null;
                         },
                         executor))
-                .thenAccept(validNodeId -> {
-                    if (validNodeId != null) {
-                        // Store completion future
-                        crsFutures.put(validNodeId, CompletableFuture.completedFuture(null));
-                    }
-                });
+                .thenAccept(unused -> {});
     }
 
     /**

@@ -47,6 +47,8 @@ public class HintsServiceImpl implements HintsService {
 
     private final HintsServiceComponent component;
 
+    private final HintsLibrary library;
+
     public HintsServiceImpl(
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
@@ -54,15 +56,20 @@ public class HintsServiceImpl implements HintsService {
             @NonNull final HintsLibrary library,
             @NonNull final Configuration bootstrapConfig) {
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.library = requireNonNull(library);
         // Fully qualified for benefit of javadoc
         this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
                 .create(library, appContext, executor, metrics);
     }
 
     @VisibleForTesting
-    HintsServiceImpl(@NonNull final Configuration bootstrapConfig, @NonNull final HintsServiceComponent component) {
+    HintsServiceImpl(
+            @NonNull final Configuration bootstrapConfig,
+            @NonNull final HintsServiceComponent component,
+            @NonNull final HintsLibrary library) {
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.component = requireNonNull(component);
+        this.library = requireNonNull(library);
     }
 
     @Override
@@ -104,7 +111,7 @@ public class HintsServiceImpl implements HintsService {
         final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
         if (tssConfig.hintsEnabled()) {
             registry.register(new V059HintsSchema(component.signingContext()));
-            registry.register(new V060HintsSchema(component.signingContext()));
+            registry.register(new V060HintsSchema(component.signingContext(), library));
         }
     }
 

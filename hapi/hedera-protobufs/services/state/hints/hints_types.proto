@@ -180,25 +180,7 @@ message HintsConstruction {
     HintsScheme hints_scheme = 6;
   }
 }
-/**
- * The stage of a CRS construction.
- */
-enum CRSStage {
-  /**
-   * The network is waiting for the initial CRS to be published. This is
-   * the first stage of the CRS construction, which is used to generate the
-   * final CRS.
-   */
-  WAITING_FOR_INITIAL_CRS = 0;
-  /**
-   * The network is gathering contributions to the CRS from all nodes.
-   */
-  GATHERING_CONTRIBUTIONS = 1;
-  /**
-   * The network has completed the CRS construction.
-   */
-  COMPLETED = 2;
-}
+
 /**
  * The state of a CRS construction.
  */
@@ -209,9 +191,10 @@ message CRSState {
    */
   bytes crs = 1;
   /**
-   * The stage of the CRS construction.
+   * If true, the network is still gathering contributions for the CRS. If false,
+   * the network has finalized the CRS.
    */
-  CRSStage stage = 2;
+  bool is_gathering_contributions = 2;
   /**
    * The id of the next node that should contribute to the CRS. This is used
    * to ensure that all nodes contribute to the CRS in a round-robin fashion.

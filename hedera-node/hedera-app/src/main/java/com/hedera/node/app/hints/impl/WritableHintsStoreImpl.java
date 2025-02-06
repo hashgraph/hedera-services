@@ -29,7 +29,6 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
@@ -182,7 +181,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             @NonNull final Bytes initialCrs, final long firstNodeId, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = CRSState.newBuilder()
                 .crs(initialCrs)
-                .stage(CRSStage.GATHERING_CONTRIBUTIONS)
+                .isGatheringContributions(true)
                 .nextContributingNodeId(firstNodeId)
                 .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
