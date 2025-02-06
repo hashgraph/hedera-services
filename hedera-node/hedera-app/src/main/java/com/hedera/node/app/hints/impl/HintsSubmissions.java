@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.hints.CRSUpdate;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody;
@@ -77,9 +76,12 @@ public class HintsSubmissions extends TssSubmissions {
      * @param crs the updated CRS
      * @return a future that completes when the update has been submitted
      */
-    public CompletableFuture<Void> submitUpdateCRS(@NonNull final CRSUpdate crs) {
+    public CompletableFuture<Void> submitUpdateCRS(@NonNull final Bytes crs, @NonNull final Bytes proof) {
         requireNonNull(crs);
-        final var op = CrsPublicationTransactionBody.newBuilder().crsUpdate(crs).build();
+        final var op = CrsPublicationTransactionBody.newBuilder()
+                .newCrs(crs)
+                .proof(proof)
+                .build();
         return submit(b -> b.crsPublication(op), onFailure);
     }
 

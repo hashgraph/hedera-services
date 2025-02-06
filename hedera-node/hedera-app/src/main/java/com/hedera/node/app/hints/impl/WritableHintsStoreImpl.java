@@ -22,11 +22,13 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONS
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
+import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_PUBLICATIONS_KEY;
 import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -38,6 +40,7 @@ import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
@@ -65,6 +68,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
+    private final WritableKVState<EntityNumber, CrsPublicationTransactionBody> crsPublications;
     private final WritableSingletonState<CRSState> crsState;
 
     public WritableHintsStoreImpl(@NonNull final WritableStates states) {
@@ -74,6 +78,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
         this.crsState = states.getSingleton(CRS_STATE_KEY);
+        this.crsPublications = states.get(CRS_PUBLICATIONS_KEY);
     }
 
     @NonNull
@@ -173,12 +178,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public boolean hasInitialCrs() {
-        final var crs = requireNonNull(this.crsState.get());
-        return crs.stage() != CRSStage.WAITING_FOR_INITIAL_CRS && crs.crs().length() > 0;
-    }
-
-    @Override
     public void putInitialCrs(
             @NonNull final Bytes initialCrs, final long firstNodeId, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = CRSState.newBuilder()
@@ -212,6 +211,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                 .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
         setCRSState(newCrsState);
+    }
+
+    @Override
+    public void addCrsPublication(final long nodeId, @NonNull final CrsPublicationTransactionBody crsPublication) {
+        crsPublications.put(new EntityNumber(nodeId), crsPublication);
     }
 
     /**

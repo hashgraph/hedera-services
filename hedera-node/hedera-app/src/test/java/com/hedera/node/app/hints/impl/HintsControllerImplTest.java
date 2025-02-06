@@ -359,7 +359,8 @@ class HintsControllerImplTest {
                 publications,
                 submissions,
                 context,
-                HederaTestConfigBuilder::createConfig);
+                HederaTestConfigBuilder::createConfig,
+                Bytes.wrap("test"));
     }
 
     private void runScheduledTasks() {

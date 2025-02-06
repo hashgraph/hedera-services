@@ -28,8 +28,6 @@ package com.hedera.hapi.services.auxiliary.hints;
  * limitations under the License.
  */
 
-import "state/hints/hints_types.proto";
-
 option java_package = "com.hedera.hapi.services.auxiliary.hints.legacy";
 // <<<pbj.java_package = "com.hedera.hapi.services.auxiliary.hints">>> This comment is special code for setting PBJ Compiler java package
 
@@ -37,35 +35,15 @@ option java_multiple_files = true;
 
 /**
  * A transaction body to publish a node's Common Reference String (CRS) to the network. This is used
- * to generate the initial CRS or when node wants to update to reach the final CRS for network to use
- * the hinTS protocol.
+ * when node wants to update to reach the final CRS for network to use the hinTS protocol
  */
 message CrsPublicationTransactionBody {
-  /**
-   * The party's generated random CRS.
-   */
-  oneof publication {
     /**
-      * The initial CRS for the network.
+     * The party's generated random CRS.
      */
-    bytes initial_crs = 1;
+    bytes new_crs = 1;
     /**
-     * The updated CRS submitted by the node to reach the final CRS.
+     * The party's proof of the CRS update.
      */
-    CRSUpdate crs_update = 2;
-  }
-}
-/**
- * The CRS update submitted by the node. This is used when the node wants to update
-  * the initial CRS to reach the final CRS. This contains the CRS update and the proof of the update.
- */
-message CRSUpdate {
-  /**
-   * The party's generated random CRS.
-   */
-  bytes new_crs = 1;
-  /**
-   * The party's proof of the CRS update.
-   */
-  bytes proof = 2;
+    bytes proof = 2;
 }

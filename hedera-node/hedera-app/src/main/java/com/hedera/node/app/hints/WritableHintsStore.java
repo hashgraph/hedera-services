@@ -20,6 +20,7 @@ import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -87,13 +88,6 @@ public interface WritableHintsStore extends ReadableHintsStore {
     void setCRSState(@NonNull CRSState crsState);
 
     /**
-     * Returns whether the network has an initial CRS set in {@link CRSState}.
-     *
-     * @return true if the network has an initial CRS set, false otherwise
-     */
-    boolean hasInitialCrs();
-
-    /**
      * Sets the initial CRS for the network.
      *
      * @param initialCrs              the initial CRS
@@ -120,4 +114,11 @@ public interface WritableHintsStore extends ReadableHintsStore {
      * @param nextContributionTimeEnd the end of the time window for the next contribution
      */
     void moveToNextNode(long nextNodeIdFromRoster, @NonNull Instant nextContributionTimeEnd);
+
+    /**
+     * Adds a CRS publication to the store.
+     * @param nodeId the node ID
+     * @param crsPublication the CRS publication
+     */
+    void addCrsPublication(long nodeId, @NonNull CrsPublicationTransactionBody crsPublication);
 }

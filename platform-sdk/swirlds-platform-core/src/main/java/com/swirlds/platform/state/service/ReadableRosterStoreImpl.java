@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -136,5 +137,14 @@ public class ReadableRosterStoreImpl implements ReadableRosterStore {
                 .map(RosterState::candidateRosterHash)
                 .filter(bytes -> bytes.length() > 0)
                 .orElse(null);
+    }
+
+    @Override
+    public long nextNodeId(final long nodeId) {
+        return requireNonNull(getActiveRoster()).rosterEntries().stream()
+                .map(RosterEntry::nodeId)
+                .filter(id -> id > nodeId)
+                .findFirst()
+                .orElse(-1L);
     }
 }

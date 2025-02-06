@@ -157,6 +157,7 @@ public class HintsControllers {
             final var votes = hintsStore.getVotes(construction.constructionId(), weights.sourceNodeIds());
             final var selfId = selfNodeInfoSupplier.get().nodeId();
             final var blsKeyPair = keyAccessor.getOrCreateBlsKeyPair(construction.constructionId());
+            final var initialCrs = hintsStore.getCrsState().crs();
             return new HintsControllerImpl(
                     selfId,
                     blsKeyPair,
@@ -169,7 +170,8 @@ public class HintsControllers {
                     publications,
                     submissions,
                     context,
-                    configurationSupplier);
+                    configurationSupplier,
+                    initialCrs);
         }
     }
 

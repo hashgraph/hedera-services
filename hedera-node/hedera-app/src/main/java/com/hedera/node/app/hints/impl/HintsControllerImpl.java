@@ -27,7 +27,7 @@ import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.services.auxiliary.hints.CRSUpdate;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -72,6 +72,9 @@ public class HintsControllerImpl implements HintsController {
     private final RosterTransitionWeights weights;
     private final Map<Long, PreprocessingVote> votes = new ConcurrentHashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
+    private final NavigableMap<Long, CompletableFuture<Void>> crsFutures = new TreeMap<>();
+    private final Bytes lastComputedCrs;
+    private long lastCrsNodeIdFutureVerified = -1;
 
     /**
      * The ongoing construction, updated each time the controller advances the construction in state.
@@ -116,7 +119,8 @@ public class HintsControllerImpl implements HintsController {
             @NonNull final List<HintsKeyPublication> publications,
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext context,
-            @NonNull final Supplier<Configuration> configuration) {
+            @NonNull final Supplier<Configuration> configuration,
+            @NonNull final Bytes initialCrs) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);
@@ -129,6 +133,7 @@ public class HintsControllerImpl implements HintsController {
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
         this.configurationSupplier = requireNonNull(configuration);
+        this.lastComputedCrs = requireNonNull(initialCrs);
         // Ensure we are up-to-date on any published hinTS keys we might need for this construction
         if (!construction.hasHintsScheme()) {
             final var cutoffTime = construction.hasPreprocessingStartTime()
@@ -162,7 +167,7 @@ public class HintsControllerImpl implements HintsController {
         requireNonNull(now);
         requireNonNull(hintsStore);
 
-        if (!isCRSSetup(hintsStore.getCrsState())) {
+        if (!isCRSComplete(hintsStore.getCrsState())) {
             doCRSWork(now, hintsStore);
             return;
         }
@@ -246,7 +251,7 @@ public class HintsControllerImpl implements HintsController {
                     final var newCRS = codec.decodeCrsUpdate(updatedCRS);
                     final var isValidCrs = library.verifyCrsUpdate(oldCRS, newCRS.crs(), newCRS.proof());
                     if (isValidCrs) {
-                        submissions.submitUpdateCRS(new CRSUpdate(newCRS.crs(), newCRS.proof()));
+                        submissions.submitUpdateCRS(newCRS.crs(), newCRS.proof());
                     }
                 },
                 executor);
@@ -275,7 +280,7 @@ public class HintsControllerImpl implements HintsController {
         return Bytes.wrap(entropyBytes);
     }
 
-    private boolean isCRSSetup(final CRSState crsState) {
+    private boolean isCRSComplete(final CRSState crsState) {
         return crsState.stage() == CRSStage.COMPLETED;
     }
 
@@ -346,7 +351,42 @@ public class HintsControllerImpl implements HintsController {
         if (crsPublicationFuture != null) {
             crsPublicationFuture.cancel(true);
         }
+        crsFutures.values().forEach(future -> future.cancel(true));
         validationFutures.values().forEach(future -> future.cancel(true));
+    }
+
+    @Override
+    public void addCrsPublication(final long nodeId, @NonNull final CrsPublicationTransactionBody publication) {
+        requireNonNull(publication);
+        crsFutures.put(nodeId, validationFuture(nodeId, publication));
+    }
+
+    private CompletableFuture<Void> validationFuture(
+            final long nodeId, final CrsPublicationTransactionBody publication) {
+        final var previousFutureEntry = crsFutures.lastEntry();
+        final CompletableFuture<Void> previousFuture = (previousFutureEntry != null)
+                ? previousFutureEntry.getValue()
+                : CompletableFuture.completedFuture(null);
+
+        // Chain the new future execution
+        return previousFuture
+                .thenCompose(unused -> CompletableFuture.supplyAsync(
+                        () -> {
+                            final var isValid =
+                                    library.verifyCrsUpdate(lastComputedCrs, publication.newCrs(), publication.proof());
+                            if (isValid) {
+                                // Update last verified node
+                                lastCrsNodeIdFutureVerified = nodeId;
+                            }
+                            return isValid ? nodeId : null;
+                        },
+                        executor))
+                .thenAccept(validNodeId -> {
+                    if (validNodeId != null) {
+                        // Store completion future
+                        crsFutures.put(validNodeId, CompletableFuture.completedFuture(null));
+                    }
+                });
     }
 
     /**

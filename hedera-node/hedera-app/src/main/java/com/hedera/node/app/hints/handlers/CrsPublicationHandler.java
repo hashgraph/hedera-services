@@ -18,31 +18,26 @@ package com.hedera.node.app.hints.handlers;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.RosterEntry;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
-import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.impl.HintsControllers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.TssConfig;
 import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class CrsPublicationHandler implements TransactionHandler {
-    private final HintsLibrary library;
+    private final HintsControllers controllers;
 
     @Inject
-    public CrsPublicationHandler(final HintsLibrary library) {
-        this.library = requireNonNull(library);
+    public CrsPublicationHandler(final HintsControllers controllers) {
+        this.controllers = requireNonNull(controllers);
     }
 
     @Override
@@ -61,55 +56,15 @@ public class CrsPublicationHandler implements TransactionHandler {
         final var op = context.body().crsPublicationOrThrow();
         final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
         final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-        final var crsUpdateContributionTime = context.configuration()
-                .getConfigData(TssConfig.class)
-                .crsUpdateContributionTime()
-                .toSeconds();
-        final var activeRosterNodeIds = requireNonNull(rosterStore.getActiveRoster()).rosterEntries().stream()
-                .map(RosterEntry::nodeId)
-                .sorted()
-                .toList();
+        final var numNodes =
+                requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size();
 
-        final var nextContributionTimeEnd = context.consensusNow().plusSeconds(crsUpdateContributionTime);
-        final var selfNodeId = context.networkInfo().selfNodeInfo().nodeId();
-        if (isFirstInitialCRS(op, hintsStore)) {
-            putInitialCrs(activeRosterNodeIds, hintsStore, op, nextContributionTimeEnd);
-        } else if (op.hasCrsUpdate()) {
-            updateCrs(selfNodeId, activeRosterNodeIds, hintsStore, op, nextContributionTimeEnd);
-        }
-    }
-
-    private void updateCrs(
-            final long selfNodeId,
-            @NonNull final List<Long> activeRosterNodeIds,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final CrsPublicationTransactionBody op,
-            @NonNull final Instant nextContributionTimeEnd) {
-        final var nextNodeId = activeRosterNodeIds.stream()
-                .filter(id -> id > selfNodeId)
-                .findFirst()
-                .orElse(-1L);
-        final var oldCrs = hintsStore.getCrsState().crs();
-        final var isValid = library.verifyCrsUpdate(
-                oldCrs, op.crsUpdateOrThrow().newCrs(), op.crsUpdateOrThrow().proof());
-        if (isValid) {
-            hintsStore.updateCrs(op.crsUpdateOrThrow().newCrs(), nextNodeId, nextContributionTimeEnd);
-        }
-    }
-
-    private void putInitialCrs(
-            @NonNull final List<Long> activeRosterNodeIds,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final CrsPublicationTransactionBody op,
-            @NonNull final Instant nextContributionTimeEnd) {
-        final var firstNodeId = activeRosterNodeIds.stream().findFirst().orElse(-1L);
-        if (op.initialCrsOrThrow().length() > 0) {
-            hintsStore.putInitialCrs(op.initialCrsOrThrow(), firstNodeId, nextContributionTimeEnd);
-        }
-    }
-
-    private boolean isFirstInitialCRS(
-            @NonNull final CrsPublicationTransactionBody op, @NonNull final WritableHintsStore hintsStore) {
-        return op.hasInitialCrs() && !hintsStore.hasInitialCrs();
+        final var creatorId = context.creatorInfo().nodeId();
+        controllers.getInProgressForNumParties(numNodes).ifPresent(controller -> {
+            if (creatorId == hintsStore.getCrsState().nextContributingNodeId()) {
+                hintsStore.addCrsPublication(creatorId, op);
+                controller.addCrsPublication(creatorId, op);
+            }
+        });
     }
 }
