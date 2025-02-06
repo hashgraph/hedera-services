@@ -26,8 +26,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.getEffectiveOwner;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -47,11 +47,11 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;
@@ -111,7 +111,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
+    public void handle(@NonNull final HandleContext context) throws WorkflowException {
         final var payer = context.payer();
 
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
@@ -135,13 +135,13 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
      * @param context handle context
      * @param payer payer for the transaction
      * @param accountStore account store
-     * @throws HandleException if any of the nft serials are not owned by owner
+     * @throws WorkflowException if any of the nft serials are not owned by owner
      */
     private void deleteAllowance(
             @NonNull final HandleContext context,
             @NonNull final Account payer,
             @NonNull final WritableAccountStore accountStore)
-            throws HandleException {
+            throws WorkflowException {
         requireNonNull(context);
         requireNonNull(payer);
         requireNonNull(accountStore);
@@ -172,7 +172,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
             final WritableTokenStore tokenStore,
             final WritableNftStore nftStore,
             @NonNull final ExpiryValidator expiryValidator)
-            throws HandleException {
+            throws WorkflowException {
         if (nftAllowances.isEmpty()) {
             return;
         }

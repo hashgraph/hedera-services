@@ -46,11 +46,11 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -298,7 +298,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
             } catch (PreCheckException e) {
                 response = createErrorResponse(handler, responseType, e.responseCode(), 0L);
-            } catch (HandleException e) {
+            } catch (WorkflowException e) {
                 // Conceptually, this should never happen, because we should use PreCheckException only for queries
                 // But we catch it here to play it safe
                 response = createErrorResponse(handler, responseType, e.getStatus(), 0L);

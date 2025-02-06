@@ -36,10 +36,10 @@ import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableK
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -64,11 +64,11 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -286,12 +286,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             try {
                 return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta, false);
-            } catch (final HandleException e) {
+            } catch (final WorkflowException e) {
                 if (e.getStatus() == INVALID_RENEWAL_PERIOD) {
                     // Tokens throw INVALID_EXPIRATION_TIME, but for topic it's expected currently to throw
                     // AUTORENEW_DURATION_NOT_IN_RANGE
                     // future('8906')
-                    throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                    throw new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE);
                 }
                 throw e;
             }

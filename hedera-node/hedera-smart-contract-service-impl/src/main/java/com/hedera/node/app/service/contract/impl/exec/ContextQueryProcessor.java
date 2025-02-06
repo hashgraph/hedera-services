@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,7 +83,7 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
     @Override
     public CallOutcome call() {
         try {
-            // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
+            // Try to translate the HAPI operation to a Hedera EVM transaction, throw WorkflowException on failure
             final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQuery(context.query());
 
             final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
@@ -96,7 +96,7 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
 
             // Return the outcome (which cannot include sidecars to be externalized, since this is a query)
             return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
-        } catch (final HandleException e) {
+        } catch (final WorkflowException e) {
             final var op = context.query().contractCallLocalOrThrow();
             final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : context.payer();
 

@@ -31,11 +31,11 @@ import com.hedera.node.app.service.file.impl.utils.FileServiceUtils;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -93,12 +93,12 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+    public void handle(@NonNull final HandleContext handleContext) throws WorkflowException {
         requireNonNull(handleContext);
 
         final var systemUndeleteTransactionBody = handleContext.body().systemUndeleteOrThrow();
         if (!systemUndeleteTransactionBody.hasFileID()) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
         var fileId = systemUndeleteTransactionBody.fileIDOrThrow();
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);

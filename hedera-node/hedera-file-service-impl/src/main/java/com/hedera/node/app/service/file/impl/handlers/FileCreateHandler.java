@@ -39,11 +39,11 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,7 +98,7 @@ public class FileCreateHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+    public void handle(@NonNull final HandleContext handleContext) throws WorkflowException {
         requireNonNull(handleContext);
 
         final var builder = new File.Builder();
@@ -114,7 +114,7 @@ public class FileCreateHandler implements TransactionHandler {
         /* Validate if the current file can be created */
         final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         if (fileStore.sizeOfState() >= fileServiceConfig.maxNumber()) {
-            throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+            throw new WorkflowException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
 
         var expiry = fileCreateTransactionBody.hasExpirationTime()
@@ -159,10 +159,10 @@ public class FileCreateHandler implements TransactionHandler {
                     .savepointStack()
                     .getBaseBuilder(CreateFileStreamBuilder.class)
                     .fileID(fileId);
-        } catch (final HandleException e) {
+        } catch (final WorkflowException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // (FUTURE) Remove this translation done for mono-service fidelity
-                throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
+                throw new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;
         }

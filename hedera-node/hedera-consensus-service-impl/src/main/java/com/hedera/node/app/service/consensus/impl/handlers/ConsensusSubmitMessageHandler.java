@@ -35,9 +35,9 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
 import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
 
@@ -67,11 +67,11 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -210,12 +210,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
                     .topicRunningHashVersion(RUNNING_HASH_VERSION);
         } catch (IOException e) {
-            throw new HandleException(INVALID_TRANSACTION);
+            throw new WorkflowException(INVALID_TRANSACTION);
         }
     }
 
     /**
-     * Validates te transaction body. Throws {@link HandleException} if any of the validations fail.
+     * Validates te transaction body. Throws {@link WorkflowException} if any of the validations fail.
      *
      * @param txn the {@link TransactionBody} of the active transaction
      * @param config the {@link ConsensusConfig}
@@ -232,12 +232,12 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
         /* Check if the message submitted is greater than acceptable size */
         if (msgLen > config.messageMaxBytesAllowed()) {
-            throw new HandleException(MESSAGE_SIZE_TOO_LARGE);
+            throw new WorkflowException(MESSAGE_SIZE_TOO_LARGE);
         }
 
         /* Check if the topic exists */
         if (topic == null) {
-            throw new HandleException(INVALID_TOPIC_ID);
+            throw new WorkflowException(INVALID_TOPIC_ID);
         }
         // If the message is too large, user will be able to submit the message fragments in chunks
         // Validate if chunk info is correct
@@ -246,7 +246,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
     /**
      * If the message is too large, user will be able to submit the message fragments in chunks. Validates the chunk
-     * info in the transaction body. Throws {@link HandleException} if any of the validations fail.
+     * info in the transaction body. Throws {@link WorkflowException} if any of the validations fail.
      *
      * @param txnId the {@link TransactionID} of the active transaction
      * @param payer the {@link AccountID} of the payer
@@ -259,7 +259,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
 
             /* Validate chunk number */
             if (!(1 <= chunkInfo.number() && chunkInfo.number() <= chunkInfo.total())) {
-                throw new HandleException(INVALID_CHUNK_NUMBER);
+                throw new WorkflowException(INVALID_CHUNK_NUMBER);
             }
 
             /* Validate the initial chunk transaction payer is the same payer for the current transaction*/
@@ -267,7 +267,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                     .initialTransactionIDOrElse(TransactionID.DEFAULT)
                     .accountIDOrElse(AccountID.DEFAULT)
                     .equals(payer)) {
-                throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
+                throw new WorkflowException(INVALID_CHUNK_TRANSACTION_ID);
             }
 
             // Validate if the transaction is submitting initial chunk
@@ -276,7 +276,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                     && !chunkInfo
                             .initialTransactionIDOrElse(TransactionID.DEFAULT)
                             .equals(txnId)) {
-                throw new HandleException(INVALID_CHUNK_TRANSACTION_ID);
+                throw new WorkflowException(INVALID_CHUNK_TRANSACTION_ID);
             }
         }
     }
@@ -422,7 +422,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             final var payerHbarLimit = payerLimits.stream()
                     .filter(maxCustomFee -> !maxCustomFee.hasDenominatingTokenId())
                     .findFirst()
-                    .orElseThrow(() -> new HandleException(NO_VALID_MAX_CUSTOM_FEE));
+                    .orElseThrow(() -> new WorkflowException(NO_VALID_MAX_CUSTOM_FEE));
             validateTrue(payerHbarLimit.amount() >= hbarFee.get(), MAX_CUSTOM_FEE_LIMIT_EXCEEDED);
         }
     }

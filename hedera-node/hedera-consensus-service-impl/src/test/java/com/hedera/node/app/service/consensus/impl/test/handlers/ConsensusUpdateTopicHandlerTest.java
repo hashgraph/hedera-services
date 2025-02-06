@@ -54,9 +54,9 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -134,7 +134,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
                 .build();
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
+        willThrow(new WorkflowException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
 
         // expect:
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
@@ -171,7 +171,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         given(handleContext.body())
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
-        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
+        doThrow(new WorkflowException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
 
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
 
@@ -209,7 +209,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        doThrow(new HandleException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
+        doThrow(new WorkflowException(BAD_ENCODING)).when(attributeValidator).validateKey(any());
         given(handleContext.body())
                 .willReturn(
                         TransactionBody.newBuilder().consensusUpdateTopic(op).build());
@@ -230,7 +230,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
+        willThrow(new WorkflowException(BAD_ENCODING)).given(attributeValidator).validateKey(key);
 
         // expect:
         assertFailsWith(BAD_ENCODING, () -> subject.handle(handleContext));
@@ -263,7 +263,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         final var txn = TransactionBody.newBuilder().consensusUpdateTopic(op).build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
+        willThrow(new WorkflowException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(op.memo());
 
@@ -300,7 +300,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(123L, NA, null);
-        willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
+        willThrow(new WorkflowException(ResponseCodeEnum.INVALID_EXPIRATION_TIME))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
@@ -343,7 +343,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, 123L, null);
-        willThrow(new HandleException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new WorkflowException(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
@@ -383,7 +383,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
         final var impliedMeta = new ExpiryMeta(NA, NA, autoRenewId);
-        willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT))
+        willThrow(new WorkflowException(INVALID_AUTORENEW_ACCOUNT))
                 .given(expiryValidator)
                 .resolveUpdateAttempt(currentExpiryMeta, impliedMeta, false);
 
@@ -593,7 +593,7 @@ class ConsensusUpdateTopicHandlerTest extends ConsensusTestBase {
     }
 
     private void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
+        final var ex = assertThrows(WorkflowException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 

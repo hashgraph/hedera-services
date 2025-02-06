@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package com.hedera.node.app.spi.fixtures.workflows;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
@@ -34,7 +34,7 @@ public class ExceptionConditions {
 
     /**
      * Returns a {@link Condition} that asserts that the {@link PreCheckException} or
-     * {@link HandleException} has the given {@link ResponseCodeEnum}.
+     * {@link WorkflowException} has the given {@link ResponseCodeEnum}.
      * <p>
      * The type of the {@link Condition} is {@link Throwable} because
      * {@link org.assertj.core.api.Assertions#assertThatThrownBy(ThrowingCallable)} expects a
@@ -54,7 +54,7 @@ public class ExceptionConditions {
             if (e instanceof PreCheckException exception) {
                 return exception.responseCode() == responseCode;
             }
-            if (e instanceof HandleException exception) {
+            if (e instanceof WorkflowException exception) {
                 return exception.getStatus() == responseCode;
             }
             return false;

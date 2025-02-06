@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -103,21 +103,21 @@ class TokenAttributesValidatorTest {
     void failsMetadataForVeryLongValue() {
         byte[] randomLongBytes = randomUtf8Bytes(101);
         assertThatThrownBy(() -> subject.validateTokenMetadata(Bytes.wrap(randomLongBytes), tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(METADATA_TOO_LONG));
     }
 
     @Test
     void failsForZeroLengthSymbol() {
         assertThatThrownBy(() -> subject.validateTokenSymbol("", tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MISSING_TOKEN_SYMBOL));
     }
 
     @Test
     void failsForNullSymbol() {
         assertThatThrownBy(() -> subject.validateTokenSymbol(null, tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MISSING_TOKEN_SYMBOL));
     }
 
@@ -126,21 +126,21 @@ class TokenAttributesValidatorTest {
         assertThatThrownBy(() -> subject.validateTokenSymbol(
                         "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
                         tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_SYMBOL_TOO_LONG));
     }
 
     @Test
     void failsForZeroByteInSymbol() {
         assertThatThrownBy(() -> subject.validateTokenSymbol("\0", tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     @Test
     void failsForZeroByteInName() {
         assertThatThrownBy(() -> subject.validateTokenName("\0", tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
     }
 
@@ -152,14 +152,14 @@ class TokenAttributesValidatorTest {
         final var tokensConfig = configuration.getConfigData(TokensConfig.class);
 
         assertThatThrownBy(() -> subject.validateTokenName("", tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MISSING_TOKEN_NAME));
     }
 
     @Test
     void failsForNullName() {
         assertThatThrownBy(() -> subject.validateTokenName(null, tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MISSING_TOKEN_NAME));
     }
 
@@ -168,7 +168,7 @@ class TokenAttributesValidatorTest {
         assertThatThrownBy(() -> subject.validateTokenName(
                         "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
                         tokensConfig))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_NAME_TOO_LONG));
     }
 
@@ -191,7 +191,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -210,7 +210,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_KYC_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -229,7 +229,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -248,7 +248,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -267,7 +267,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -286,7 +286,7 @@ class TokenAttributesValidatorTest {
                         A_COMPLEX_KEY,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
         assertThatThrownBy(() -> subject.validateTokenKeys(
                         true,
@@ -305,7 +305,7 @@ class TokenAttributesValidatorTest {
                         Key.DEFAULT,
                         true,
                         A_COMPLEX_KEY))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
     }
 

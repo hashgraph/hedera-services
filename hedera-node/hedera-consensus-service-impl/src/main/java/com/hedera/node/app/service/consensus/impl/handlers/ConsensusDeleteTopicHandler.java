@@ -36,11 +36,11 @@ import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -100,7 +100,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         /* Topics without adminKeys can't be deleted.*/
         if (topic.adminKey() == null) {
-            throw new HandleException(UNAUTHORIZED);
+            throw new WorkflowException(UNAUTHORIZED);
         }
 
         /* Copy all the fields from existing topic and change deleted flag */

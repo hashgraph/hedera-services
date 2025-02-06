@@ -84,9 +84,9 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
@@ -543,7 +543,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertFalse(writableStore.modifiedAccountsInState().contains(accountID(id.accountNum())));
         assertEquals(payerBalance, writableStore.get(id).tinybarBalance());
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INSUFFICIENT_PAYER_BALANCE, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());
@@ -561,7 +561,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         changeAccountToDeleted();
         setupConfig();
         setupExpiryValidator();
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ACCOUNT_DELETED, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());
@@ -582,7 +582,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_PAYER_ACCOUNT_ID, msg.getStatus());
 
         verify(recordBuilder, never()).accountID(any());
@@ -632,10 +632,10 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .withMemo("some long memo that is too long")
                 .build();
         given(handleContext.body()).willReturn(txn);
-        doThrow(new HandleException(MEMO_TOO_LONG)).when(attributeValidator).validateMemo(any());
+        doThrow(new WorkflowException(MEMO_TOO_LONG)).when(attributeValidator).validateMemo(any());
         setupConfig();
         setupExpiryValidator();
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(MEMO_TOO_LONG, msg.getStatus());
     }
 
@@ -678,7 +678,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
     }
 
@@ -696,7 +696,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.configuration()).willReturn(config);
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(NOT_SUPPORTED, msg.getStatus());
     }
 
@@ -716,7 +716,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.configuration()).willReturn(config);
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
     }
 
@@ -750,7 +750,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
     }
 
@@ -770,20 +770,20 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         writableStore = new WritableAccountStore(writableStates, entityCounters);
         when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ALIAS_ALREADY_ASSIGNED, msg.getStatus());
     }
 
     @Test
     void validateAutoRenewPeriod() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
-        doThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+        doThrow(new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE))
                 .when(attributeValidator)
                 .validateAutoRenewPeriod(anyLong());
         given(handleContext.body()).willReturn(txn);
         setupConfig();
         setupExpiryValidator();
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, msg.getStatus());
     }
 
@@ -797,7 +797,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         setupConfig();
         setupExpiryValidator();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED, msg.getStatus());
     }
 

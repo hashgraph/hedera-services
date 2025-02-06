@@ -28,10 +28,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.InvalidKeyException;
@@ -99,7 +99,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         // verify a bad schedule ID fails correctly
         TransactionBody signTransaction = scheduleSignTransaction(badId);
         prepareContext(signTransaction);
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.INVALID_SCHEDULE_ID);
 
         // verify we fail a sign for a deleted transaction.
         // Use an arbitrary schedule from the big list for this.
@@ -108,11 +108,11 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         writableSchedules.put(deleteTest);
         signTransaction = scheduleSignTransaction(deleteTest.scheduleId());
         prepareContext(signTransaction);
-        throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
+        throwsWorkflowException(() -> subject.handle(mockContext), ResponseCodeEnum.SCHEDULE_ALREADY_DELETED);
     }
 
     @Test
-    void handleExecutesImmediateIfPossible() throws HandleException, PreCheckException {
+    void handleExecutesImmediateIfPossible() throws WorkflowException, PreCheckException {
         int successCount = 0;
         for (final Schedule next : listOfScheduledOptions) {
             final int startCount = scheduleMapById.size();

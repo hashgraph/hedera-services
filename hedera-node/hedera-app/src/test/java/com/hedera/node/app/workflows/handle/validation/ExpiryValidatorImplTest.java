@@ -44,7 +44,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,16 +92,16 @@ class ExpiryValidatorImplTest {
 
     @Test
     void onCreationRequiresEitherExplicitValueOrFullAutoRenewMetaIfNotSelfFunding() {
-        willThrow(new HandleException(INVALID_EXPIRATION_TIME))
+        willThrow(new WorkflowException(INVALID_EXPIRATION_TIME))
                 .given(attributeValidator)
                 .validateExpiry(anyLong());
         final var expiryMeta1 = new ExpiryMeta(NA, NA, AN_AUTO_RENEW_ID);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta1, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
         final var expiryMeta2 = new ExpiryMeta(NA, A_PERIOD, null);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta2, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
 
@@ -116,7 +116,7 @@ class ExpiryValidatorImplTest {
                 AccountID.newBuilder().shardNum(2L).realmNum(2L).accountNum(888).build());
 
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
 
@@ -133,19 +133,19 @@ class ExpiryValidatorImplTest {
                 AccountID.newBuilder().shardNum(1L).realmNum(3L).accountNum(888).build());
 
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, newMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
 
     @Test
     void onCreationRequiresValidExpiryIfExplicit() {
-        willThrow(new HandleException(INVALID_EXPIRATION_TIME))
+        willThrow(new WorkflowException(INVALID_EXPIRATION_TIME))
                 .given(attributeValidator)
                 .validateExpiry(A_TIME);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
 
@@ -157,7 +157,7 @@ class ExpiryValidatorImplTest {
 
         final var expiryMeta = new ExpiryMeta(A_TIME, NA, AN_AUTO_RENEW_ID);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
 
@@ -170,37 +170,37 @@ class ExpiryValidatorImplTest {
 
     @Test
     void onCreationRequiresValidExpiryIfImplicit() {
-        willThrow(new HandleException(INVALID_EXPIRATION_TIME))
+        willThrow(new WorkflowException(INVALID_EXPIRATION_TIME))
                 .given(attributeValidator)
                 .validateExpiry(NOW.getEpochSecond() + A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(NA, A_PERIOD, AN_AUTO_RENEW_ID);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
 
     @Test
     void validatesAutoRenewPeriodIfSet() {
-        willThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, A_PERIOD, null);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
     @Test
     void validatesImpliedExpiry() {
-        willThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(A_PERIOD);
 
         final var expiryMeta = new ExpiryMeta(A_TIME, A_PERIOD, null);
         assertThatThrownBy(() -> subject.resolveCreationAttempt(false, expiryMeta, HederaFunctionality.NONE))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
@@ -240,7 +240,7 @@ class ExpiryValidatorImplTest {
         final var update = new ExpiryMeta(A_TIME - 1, NA, null);
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
@@ -250,7 +250,7 @@ class ExpiryValidatorImplTest {
         final var update = new ExpiryMeta(A_TIME - 1, NA, null);
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
@@ -259,12 +259,12 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, 0, null);
         final var update = new ExpiryMeta(NA, NA, AN_AUTO_RENEW_ID);
 
-        willThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(0L);
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
@@ -273,12 +273,12 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, 0, null);
         final var update = new ExpiryMeta(NA, B_PERIOD, AN_AUTO_RENEW_ID);
 
-        willThrow(new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE))
+        willThrow(new WorkflowException(AUTORENEW_DURATION_NOT_IN_RANGE))
                 .given(attributeValidator)
                 .validateAutoRenewPeriod(B_PERIOD);
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
@@ -292,7 +292,7 @@ class ExpiryValidatorImplTest {
                         com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT));
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_AUTORENEW_ACCOUNT));
     }
 
@@ -301,12 +301,12 @@ class ExpiryValidatorImplTest {
         final var current = new ExpiryMeta(A_TIME, 0, null);
         final var update = new ExpiryMeta(B_TIME, B_PERIOD, AN_AUTO_RENEW_ID);
 
-        willThrow(new HandleException(INVALID_EXPIRATION_TIME))
+        willThrow(new WorkflowException(INVALID_EXPIRATION_TIME))
                 .given(attributeValidator)
                 .validateExpiry(B_TIME);
 
         assertThatThrownBy(() -> subject.resolveUpdateAttempt(current, update, false))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
 

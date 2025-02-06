@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -70,7 +70,7 @@ public interface TokenServiceApi {
      * @param expiryValidator the expiry validator to use
      * @param recordBuilder the record builder to record the transfer in
      * @param freeAliasOnDeletion whether to free the deleted account's alias (if any)
-     * @throws HandleException if the account could not be deleted for some reason
+     * @throws WorkflowException if the account could not be deleted for some reason
      */
     void deleteAndTransfer(
             @NonNull AccountID deletedId,
@@ -90,7 +90,7 @@ public interface TokenServiceApi {
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
      * @param networkInfo            network info
-     * @throws HandleException if the staking election is invalid
+     * @throws WorkflowException if the staking election is invalid
      */
     void assertValidStakingElectionForCreation(
             boolean isStakingEnabled,
@@ -112,7 +112,7 @@ public interface TokenServiceApi {
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
      * @param networkInfo            network info
-     * @throws HandleException if the staking election is invalid
+     * @throws WorkflowException if the staking election is invalid
      */
     void assertValidStakingElectionForUpdate(
             boolean isStakingEnabled,

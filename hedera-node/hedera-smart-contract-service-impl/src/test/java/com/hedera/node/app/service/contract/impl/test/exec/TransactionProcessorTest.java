@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,8 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -364,11 +364,11 @@ class TransactionProcessorTest {
         final var context = wellKnownContextWith(blocks, tinybarValues, systemContractGasCalculator);
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(null);
 
-        final var handleException = catchThrowableOfType(
+        final var workflowException = catchThrowableOfType(
                 () -> subject.processTransaction(
                         transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
-                HandleException.class);
-        assertThat(handleException.getStatus()).isEqualTo(INVALID_ACCOUNT_ID);
+                WorkflowException.class);
+        assertThat(workflowException.getStatus()).isEqualTo(INVALID_ACCOUNT_ID);
     }
 
     @Test
@@ -390,11 +390,11 @@ class TransactionProcessorTest {
         given(worldUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
         given(worldUpdater.getHederaAccount(INVALID_CONTRACT_ADDRESS)).willThrow(IllegalArgumentException.class);
 
-        final var handleException = catchThrowableOfType(
+        final var workflowException = catchThrowableOfType(
                 () -> subject.processTransaction(
                         transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config),
-                HandleException.class);
-        assertThat(handleException.getStatus()).isEqualTo(INVALID_TRANSACTION_BODY);
+                WorkflowException.class);
+        assertThat(workflowException.getStatus()).isEqualTo(INVALID_TRANSACTION_BODY);
     }
 
     @Test

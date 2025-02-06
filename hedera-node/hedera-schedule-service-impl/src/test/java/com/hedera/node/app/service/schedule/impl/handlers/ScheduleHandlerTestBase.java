@@ -47,9 +47,9 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
@@ -95,9 +95,9 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         setUpContext();
     }
 
-    protected void throwsHandleException(final ThrowingCallable callable, final ResponseCodeEnum expectedError) {
+    protected void throwsWorkflowException(final ThrowingCallable callable, final ResponseCodeEnum expectedError) {
         assertThatThrownBy(callable)
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .hasFieldOrPropertyWithValue("status", expectedError);
     }
 

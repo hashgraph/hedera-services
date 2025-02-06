@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.file.impl.FileServiceImpl.THREE_MONTHS
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -39,11 +39,11 @@ import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -110,7 +110,7 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+    public void handle(@NonNull final HandleContext handleContext) throws WorkflowException {
         requireNonNull(handleContext);
 
         final var fileAppend = handleContext.body().fileAppendOrThrow();
@@ -119,7 +119,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
         if (target == null) { // should never happen, this is checked in pureChecks
-            throw new HandleException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
 
         // the update file always will be for the node, not a particular ledger that's why we just compare the num
@@ -133,7 +133,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var optionalFile = fileStore.get(target);
 
         if (optionalFile.isEmpty()) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
         final var file = optionalFile.get();
 
@@ -141,7 +141,7 @@ public class FileAppendHandler implements TransactionHandler {
         validateFalse(file.keys() == null, UNAUTHORIZED);
 
         if (file.deleted()) {
-            throw new HandleException(FILE_DELETED);
+            throw new WorkflowException(FILE_DELETED);
         }
 
         var contents = CommonPbjConverters.asBytes(file.contents());
@@ -221,7 +221,7 @@ public class FileAppendHandler implements TransactionHandler {
         final var fileStore = handleContext.storeFactory().writableStore(WritableUpgradeFileStore.class);
         File file = fileStore.peek(fileAppend.fileID());
         if (file == null || fileAppend.fileID() == null) {
-            throw new HandleException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
 
         fileStore.append(fileAppend.contents(), fileAppend.fileID());

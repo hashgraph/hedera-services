@@ -23,12 +23,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -127,7 +127,7 @@ public class TransactionDispatcher {
             final var handler = getHandler(feeContext.body());
             return handler.calculateFees(feeContext);
         } catch (UnsupportedOperationException ex) {
-            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 
@@ -138,14 +138,14 @@ public class TransactionDispatcher {
      * @param context the {@link HandleContext} with all the information needed to handle the transaction
      * @throws NullPointerException if {@code context} is {@code null}
      */
-    public void dispatchHandle(@NonNull final HandleContext context) throws HandleException {
+    public void dispatchHandle(@NonNull final HandleContext context) throws WorkflowException {
         requireNonNull(context, "The supplied argument 'context' cannot be null!");
 
         try {
             final var handler = getHandler(context.body());
             handler.handle(context);
         } catch (UnsupportedOperationException ex) {
-            throw new HandleException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 

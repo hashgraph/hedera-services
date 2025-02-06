@@ -66,8 +66,8 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -161,7 +161,7 @@ public class ChildDispatchFactory {
      * @param blockRecordInfo the block record info
      * @param options the dispatch options
      * @return the child dispatch
-     * @throws HandleException if the child stack base builder cannot be created
+     * @throws WorkflowException if the child stack base builder cannot be created
      */
     public Dispatch createChildDispatch(
             @NonNull final Configuration config,

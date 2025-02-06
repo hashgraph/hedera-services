@@ -23,9 +23,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -42,11 +42,11 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -92,7 +92,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
+    public void handle(@NonNull final HandleContext context) throws WorkflowException {
         requireNonNull(context);
         final var scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final var body = context.body();
@@ -116,14 +116,14 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
      * @param scheduleStore a Readable source of Schedule data from state
      * @param isLongTermEnabled a flag indicating if long term scheduling is enabled in configuration.
      * @return a schedule metadata read from state for the ID given, if all validation checks pass
-     * @throws HandleException if any validation check fails.
+     * @throws WorkflowException if any validation check fails.
      */
     @NonNull
     protected Schedule revalidateOrThrow(
             @NonNull final ScheduleID scheduleId,
             @NonNull final ReadableScheduleStore scheduleStore,
             final boolean isLongTermEnabled)
-            throws HandleException {
+            throws WorkflowException {
         requireNonNull(scheduleId);
         requireNonNull(scheduleStore);
         try {
@@ -132,7 +132,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
             validateFalse(schedule.executed(), SCHEDULE_ALREADY_EXECUTED);
             return schedule;
         } catch (final PreCheckException e) {
-            throw new HandleException(e.responseCode());
+            throw new WorkflowException(e.responseCode());
         }
     }
 

@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.AllowanceValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +90,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void validatesAllowancesLimit() {
         assertThatNoException().isThrownBy(() -> AllowanceValidator.validateAllowanceLimit(ownerAccount, 100));
         assertThatThrownBy(() -> AllowanceValidator.validateAllowanceLimit(ownerAccount, 0))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));
     }
 
@@ -119,7 +119,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
     void failsIfEffectiveOwnerDoesntExist() {
         final var missingOwner = AccountID.newBuilder().accountNum(1000).build();
         assertThatThrownBy(() -> getEffectiveOwner(missingOwner, account, readableAccountStore, expiryValidator))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
     }
 
@@ -133,7 +133,7 @@ class AllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         readableAccountStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
         assertThatThrownBy(
                         () -> getEffectiveOwner(deleteAccountId, deleteAccount, readableAccountStore, expiryValidator))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ALLOWANCE_OWNER_ID));
     }
 }

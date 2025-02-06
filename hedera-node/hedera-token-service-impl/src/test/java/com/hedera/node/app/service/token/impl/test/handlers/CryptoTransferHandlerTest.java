@@ -74,8 +74,8 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
@@ -319,7 +319,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -331,7 +331,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
@@ -373,7 +373,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         when(handleContext.dispatchMetadata()).thenReturn(mock(DispatchMetadata.class));
 
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
@@ -388,7 +388,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -412,7 +412,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -426,7 +426,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
@@ -442,7 +442,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -462,7 +462,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -476,7 +476,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
@@ -493,7 +493,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         final var context = mockContext(txn);
 
         Assertions.assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
@@ -530,7 +530,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN));
     }
 
@@ -649,7 +649,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
@@ -698,7 +698,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
