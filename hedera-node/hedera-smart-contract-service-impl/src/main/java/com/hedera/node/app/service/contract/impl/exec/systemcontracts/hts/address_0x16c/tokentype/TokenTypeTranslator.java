@@ -25,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x167.tokentype.TokenTypeCall;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Category;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Modifier;
@@ -72,6 +73,6 @@ public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = TOKEN_TYPE.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        return new TokenTypeCall(attempt.systemContractGasCalculator(), attempt.enhancement(), token);
+        return new TokenTypeCall(attempt.systemContractGasCalculator(), attempt.enhancement(), false, token);
     }
 }
