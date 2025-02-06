@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,8 +171,8 @@ public class BlockUnitSplit {
         if (unitTxnId == null) {
             return TxnIdType.NEW_UNIT_BY_ID;
         }
-        // Scheduled transactions never begin a new transactional unit and
-        final var radicallyDifferent = !nextId.scheduled()
+        // Scheduled or batch inner transactions never begin a new transactional unit
+        final var radicallyDifferent = !(nextId.scheduled() || parts.body().hasBatchKey())
                 && (!nextId.accountIDOrElse(AccountID.DEFAULT).equals(unitTxnId.accountIDOrElse(AccountID.DEFAULT))
                         || !nextId.transactionValidStartOrElse(Timestamp.DEFAULT)
                                 .equals(unitTxnId.transactionValidStartOrElse(Timestamp.DEFAULT)));
