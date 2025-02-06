@@ -98,7 +98,7 @@ public class CustomFixedFeeAssessor {
      */
     public void setTransactionFeesAsAssessed(
             AccountID payer, final FixedCustomFee fixedCustomFee, final AssessmentResult result) {
-        if(fixedCustomFee.hasFixedFee() && fixedCustomFee.hasFeeCollectorAccountId()) {
+        if (fixedCustomFee.hasFixedFee() && fixedCustomFee.hasFeeCollectorAccountId()) {
             final var fixedFee = fixedCustomFee.fixedFee();
             CustomFee customFee = CustomFee.newBuilder()
                     .feeCollectorAccountId(fixedCustomFee.feeCollectorAccountId())
@@ -114,7 +114,6 @@ public class CustomFixedFeeAssessor {
                 assessHbarFees(payer, customFee, result, false);
             }
         }
-
     }
 
     /**
