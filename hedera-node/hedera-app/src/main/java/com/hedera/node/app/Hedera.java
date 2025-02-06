@@ -59,6 +59,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -517,23 +518,7 @@ public final class Hedera
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterService(
-                                roster -> {
-                                    requireNonNull(initState);
-                                    final var rosterHash =
-                                            RosterUtils.hash(roster).getBytes();
-                                    final var tssConfig =
-                                            configProvider.getConfiguration().getConfigData(TssConfig.class);
-                                    return (!tssConfig.hintsEnabled()
-                                                    || new ReadableHintsStoreImpl(
-                                                                    initState.getReadableStates(HintsService.NAME))
-                                                            .isReadyToAdopt(rosterHash))
-                                            && (!tssConfig.historyEnabled()
-                                                    || new ReadableHistoryStoreImpl(
-                                                                    initState.getReadableStates(HistoryService.NAME))
-                                                            .isReadyToAdopt(rosterHash));
-                                },
-                                () -> requireNonNull(initState)),
+                        new RosterService(this::canAdoptRoster, this::onAdoptRoster, () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -1326,6 +1311,27 @@ public final class Hedera
             requireNonNull(initialStateHashFuture)
                     .complete(requireNonNull(notification.getState().getHash()).getBytes());
             notifications.unregister(ReconnectCompleteListener.class, this);
+        }
+    }
+
+    private boolean canAdoptRoster(@NonNull final Roster roster) {
+        requireNonNull(initState);
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssConfig = configProvider.getConfiguration().getConfigData(TssConfig.class);
+        return (!tssConfig.hintsEnabled()
+                        || new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME))
+                                .isReadyToAdopt(rosterHash))
+                && (!tssConfig.historyEnabled()
+                        || new ReadableHistoryStoreImpl(initState.getReadableStates(HistoryService.NAME))
+                                .isReadyToAdopt(rosterHash));
+    }
+
+    private void onAdoptRoster() {
+        requireNonNull(initState);
+        final var tssConfig = configProvider.getConfiguration().getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            hintsService.initSigningForNextScheme(
+                    new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME)));
         }
     }
 }
