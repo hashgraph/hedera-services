@@ -22,14 +22,23 @@ import com.hedera.node.app.blocks.BlockItemWriter;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Implements the bidirectional streaming RPC for the publishBlockStream rpc in BlockStreamService
  * See <a href="https://grpc.io/docs/languages/java/basics/">gRPC Basics</a>
  */
 public class GrpcBlockItemWriter implements BlockItemWriter {
-
+    private static final Logger logger = LogManager.getLogger(GrpcBlockItemWriter.class);
     private final BlockNodeConnectionManager connectionManager;
+
+    private final Map<Long, BlockState> blockStates = new ConcurrentHashMap<>();
+    private final ReentrantLock blockStateLock = new ReentrantLock();
+    private volatile BlockState currentBlock;
 
     public GrpcBlockItemWriter(BlockNodeConnectionManager connectionManager) {
         this.connectionManager = requireNonNull(connectionManager, "connectionManager must not be null");
@@ -37,12 +46,27 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void openBlock(long blockNumber) {
-        connectionManager.openBlock(blockNumber);
+        blockStateLock.lock();
+        try {
+            currentBlock = BlockState.from(blockNumber);
+            blockStates.put(blockNumber, currentBlock);
+            logger.info("Started new block in GrpcBlockItemWriter {}", blockNumber);
+        } finally {
+            blockStateLock.unlock();
+        }
     }
 
     @Override
     public BlockItemWriter writePbjItem(@NonNull Bytes bytes) {
-        connectionManager.addPbjItem(bytes);
+        blockStateLock.lock();
+        try {
+            if (currentBlock == null) {
+                throw new IllegalStateException("Received block item before opening block");
+            }
+            currentBlock.itemBytes().add(bytes);
+        } finally {
+            blockStateLock.unlock();
+        }
         return this;
     }
 
@@ -58,7 +82,29 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void closeBlock() {
-        // At this point the block proof has been written to the BlockNodeConnectionManager
-        connectionManager.closeBlock();
+        // At this point the block proof has been written to the GrpcBlockItemWriter
+        blockStateLock.lock();
+
+        if (currentBlock == null) {
+            throw new IllegalStateException("Received close block before opening block");
+        }
+        final long blockNumber = currentBlock.blockNumber();
+
+        try {
+            BlockState block = blockStates.get(blockNumber);
+            if (block == null) {
+                logger.error("Could not find block state for block {}", blockNumber);
+                return;
+            }
+            // Stream the block asynchronously
+            connectionManager.startStreamingBlock(block);
+
+            logger.info("Closed block in GrpcBlockItemWriter {}", blockNumber);
+            currentBlock = null;
+        } finally {
+            // Clean up the block state after streaming
+            blockStates.remove(blockNumber);
+            blockStateLock.unlock();
+        }
     }
 }
