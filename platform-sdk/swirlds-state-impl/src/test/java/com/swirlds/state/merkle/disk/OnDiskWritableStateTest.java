@@ -276,7 +276,7 @@ class OnDiskWritableStateTest extends MerkleTestBase {
                     onDiskValueClassId(),
                     STRING_CODEC,
                     fruitVirtualMap);
-            assertThat(state.getForModify(A_KEY)).isEqualTo(APPLE);
+            assertThat(state.get(A_KEY)).isEqualTo(APPLE);
             state.remove(B_KEY);
             assertThat(state.get(C_KEY)).isEqualTo(CHERRY);
             state.put(D_KEY, DATE);

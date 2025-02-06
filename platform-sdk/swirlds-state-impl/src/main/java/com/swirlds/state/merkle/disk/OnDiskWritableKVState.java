@@ -17,7 +17,6 @@
 package com.swirlds.state.merkle.disk;
 
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGet;
-import static com.swirlds.state.merkle.logging.StateLogger.logMapGetForModify;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGetSize;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapPut;
@@ -91,17 +90,6 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // Log to transaction state log, what was iterated
         logMapIterate(getStateKey(), virtualMap);
         return new OnDiskIterator<>(virtualMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected V getForModifyFromDataSource(@NonNull K key) {
-        final var k = new OnDiskKey<>(keyClassId, keyCodec, key);
-        final var v = virtualMap.getForModify(k);
-        final var value = v == null ? null : v.getValue();
-        // Log to transaction state log, what was read
-        logMapGetForModify(getStateKey(), key, value);
-        return value;
     }
 
     /** {@inheritDoc} */
