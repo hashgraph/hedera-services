@@ -324,12 +324,12 @@ public final class CryptoStatic {
      * @return the file name that is supposed to store the private key for the supplied member
      */
     private static String getPrivateKeysFileName(final NodeId nodeId) {
-        return "private-node" + (nodeId.id() + 1) + ".pfx";
+        return "private-" + nodeId.nameString() + ".pfx";
     }
 
     /**
      * Try to load the public.pfx and private-*.pfx key stores from disk. If successful, it will return an array
-     * containing the public.pfx followed by each private-*.pfx in the order that the names are given in the input. If
+     * containing the public.pfx followed by each private-*.pfx in the order that the ids are given in the input. If
      * public.pfx is missing, or even one of the private-*.pfx files is missing, or one of those files fails to load
      * properly, then it returns null. It does NOT return a partial list with the ones that worked.
      *
@@ -358,16 +358,16 @@ public final class CryptoStatic {
         Objects.requireNonNull(localNodes, LOCAL_NODES_MUST_NOT_BE_NULL);
         final int n = addressBook.getSize();
 
-        final List<NodeId> names = new ArrayList<>();
+        final List<NodeId> ids = new ArrayList<>();
 
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
-            names.add(nodeId);
+            ids.add(nodeId);
         }
 
         final KeyStore allPublic = loadKeys(keysDirPath.resolve(PUBLIC_KEYS_FILE), password);
 
-        final PublicStores publicStores = PublicStores.fromAllPublic(allPublic, names);
+        final PublicStores publicStores = PublicStores.fromAllPublic(allPublic, ids);
 
         final Map<NodeId, KeysAndCerts> keysAndCerts = new HashMap<>();
         for (int i = 0; i < n; i++) {

@@ -172,8 +172,8 @@ public record KeysAndCerts(
         final KeyPair sigKeyPair = sigKeyGen.generateKeyPair();
         final KeyPair agrKeyPair = agrKeyGen.generateKeyPair();
 
-        final String dnS = CryptoStatic.distinguishedName("s-" + nodeId);
-        final String dnA = CryptoStatic.distinguishedName("a-" + nodeId);
+        final String dnS = CryptoStatic.distinguishedName("s-" + nodeId.nameString());
+        final String dnA = CryptoStatic.distinguishedName("a-" + nodeId.nameString());
 
         // create the 2 certs (java.security.cert.Certificate)
         // both are signed by sigKeyPair, so sigCert is self-signed

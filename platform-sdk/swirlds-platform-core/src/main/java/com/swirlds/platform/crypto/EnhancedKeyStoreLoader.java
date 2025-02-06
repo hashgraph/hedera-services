@@ -830,7 +830,7 @@ public class EnhancedKeyStoreLoader {
     @NonNull
     private Path privateKeyStore(@NonNull NodeId nodeId, @NonNull KeyCertPurpose purpose) {
         Objects.requireNonNull(purpose, MSG_PURPOSE_NON_NULL);
-        return keyStoreDirectory.resolve(String.format("%s-private-node%d.pem", purpose.prefix(), nodeId.id() + 1));
+        return keyStoreDirectory.resolve(String.format("%s-private-%s.pem", purpose.prefix(), nodeId.nameString()));
     }
 
     /**
@@ -844,7 +844,7 @@ public class EnhancedKeyStoreLoader {
     @NonNull
     private Path legacyPrivateKeyStore(@NonNull NodeId nodeId) {
         Objects.requireNonNull(nodeId, MSG_NODE_ALIAS_NON_NULL);
-        return keyStoreDirectory.resolve(String.format("private-node%d.pfx", nodeId.id() + 1));
+        return keyStoreDirectory.resolve(String.format("private-%s.pfx", nodeId.nameString()));
     }
 
     /**
@@ -861,7 +861,7 @@ public class EnhancedKeyStoreLoader {
     private Path certificateStore(@NonNull NodeId nodeId, @NonNull KeyCertPurpose purpose) {
         Objects.requireNonNull(nodeId, MSG_NODE_ID_NON_NULL);
         Objects.requireNonNull(purpose, MSG_PURPOSE_NON_NULL);
-        return keyStoreDirectory.resolve(String.format("%s-public-node%d.pem", purpose.prefix(), nodeId.id() + 1));
+        return keyStoreDirectory.resolve(String.format("%s-public-%s.pem", purpose.prefix(), nodeId.nameString()));
     }
 
     /**
@@ -1201,7 +1201,7 @@ public class EnhancedKeyStoreLoader {
             if (localNodes.contains(nodeId)) {
                 // extract private keys for local nodes
                 final Path sPrivateKeyLocation =
-                        keyStoreDirectory.resolve("s-private-node" + (nodeId.id() + 1) + ".pem");
+                        keyStoreDirectory.resolve(String.format("s-private-%s.pem", nodeId.nameString()));
                 final Path ksLocation = legacyPrivateKeyStore(nodeId);
                 if (!Files.exists(sPrivateKeyLocation) && Files.exists(ksLocation)) {
                     logger.trace(
@@ -1240,7 +1240,8 @@ public class EnhancedKeyStoreLoader {
             }
 
             // extract certificates for all nodes
-            final Path sCertificateLocation = keyStoreDirectory.resolve("s-public-node" + (nodeId.id() + 1) + ".pem");
+            final Path sCertificateLocation =
+                    keyStoreDirectory.resolve(String.format("s-public-%s.pem", nodeId.nameString()));
             final Path ksLocation = legacyCertificateStore();
             if (!Files.exists(sCertificateLocation) && Files.exists(ksLocation)) {
                 logger.trace(

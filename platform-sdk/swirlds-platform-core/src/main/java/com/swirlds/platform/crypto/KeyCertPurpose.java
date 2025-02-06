@@ -37,7 +37,7 @@ public enum KeyCertPurpose {
      * @return the name of the key or certificate used in a KeyStore for this member and key type
      */
     public String storeName(final NodeId nodeId) {
-        return prefix + "-node" + (nodeId.id() + 1);
+        return prefix + "-" + nodeId.nameString();
     }
 
     /**
