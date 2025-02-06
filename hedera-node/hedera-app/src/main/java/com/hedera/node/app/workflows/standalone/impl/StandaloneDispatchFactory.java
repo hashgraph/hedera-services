@@ -153,8 +153,8 @@ public class StandaloneDispatchFactory {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);
-        final var preHandleResult =
-                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, consensusTransaction, readableStoreFactory);
+        final var preHandleResult = preHandleWorkflow.getCurrentPreHandleResult(
+                creatorInfo, consensusTransaction, readableStoreFactory, ignore -> {});
         final var tokenContext = new TokenContextImpl(config, storeMetricsService, stack, consensusNow);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var writableStoreFactory = new WritableStoreFactory(
