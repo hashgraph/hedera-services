@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingVersion;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilNextBlock;
 import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.FAKE_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -142,7 +143,9 @@ public class ConcurrentIntegrationTests {
                         .setNode("0.0.4")
                         .withSubmissionStrategy(usingVersion(PAST))
                         .hasKnownStatus(com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY),
-                getAccountBalance("somebody").hasTinyBars(0L));
+                getAccountBalance("somebody").hasTinyBars(0L),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
@@ -185,9 +188,12 @@ public class ConcurrentIntegrationTests {
                 }),
                 // This is the genesis transaction
                 cryptoCreate("firstUser"),
+                waitUntilNextBlock().withBackgroundTraffic(true),
                 // And now simulate an upgrade boundary
                 simulatePostUpgradeTransaction(),
+                // This is the post-upgrade transaction
                 cryptoCreate("secondUser"),
+                // Trigger block closure to ensure block is closed
                 doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
@@ -206,7 +212,9 @@ public class ConcurrentIntegrationTests {
                 // Confirm the payer was still charged a non-zero fee
                 getAccountBalance("treasury")
                         .hasTinyBars(spec -> amount ->
-                                Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)));
+                                Optional.ofNullable(amount == ONE_HUNDRED_HBARS ? "Fee was not recharged" : null)),
+                // Trigger block closure to ensure block is closed
+                doingContextual(TxnUtils::triggerAndCloseAtLeastOneFileIfNotInterrupted));
     }
 
     @GenesisHapiTest
