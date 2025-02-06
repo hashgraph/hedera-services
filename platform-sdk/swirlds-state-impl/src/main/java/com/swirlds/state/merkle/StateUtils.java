@@ -44,6 +44,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,12 +69,17 @@ public final class StateUtils {
      * @throws ClassCastException If the object or codec is not for type {@code T}.
      */
     public static <T> int writeToStream(
-            @NonNull final OutputStream out, @NonNull final Codec<T> codec, @NonNull final T object)
+            @NonNull final OutputStream out, @NonNull final Codec<T> codec, @Nullable final T object)
             throws IOException {
+        final var stream = new WritableStreamingData(out);
+        if (object == null) {
+            stream.writeInt(-1); // Marker for null value
+            return Integer.BYTES;
+        }
+
         final var byteStream = new ByteArrayOutputStream();
         codec.write(object, new WritableStreamingData(byteStream));
 
-        final var stream = new WritableStreamingData(out);
         stream.writeInt(byteStream.size());
         stream.writeBytes(byteStream.toByteArray());
         return byteStream.size();
@@ -88,11 +95,15 @@ public final class StateUtils {
      * @throws IOException If the input stream throws it or parsing fails
      * @throws ClassCastException If the object or codec is not for type {@code T}.
      */
-    @NonNull
+    @Nullable
     public static <T> T readFromStream(@NonNull final InputStream in, @NonNull final Codec<T> codec)
             throws IOException {
         final var stream = new ReadableStreamingData(in);
         final var size = stream.readInt();
+        if (size == -1) {
+            return null; // Return null explicitly if the marker is found
+        }
+
         stream.limit((long) size + Integer.BYTES); // +4 for the size
         try {
             return codec.parse(stream);

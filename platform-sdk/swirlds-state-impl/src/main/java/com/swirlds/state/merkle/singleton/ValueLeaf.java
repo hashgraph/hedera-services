@@ -43,6 +43,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     private final long classId;
     private final Codec<T> codec;
     /** The actual value. For example, it could be an Account or SmartContract. */
+    @Nullable
     private T val;
 
     /**
