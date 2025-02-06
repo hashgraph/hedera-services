@@ -16,10 +16,13 @@
 
 package com.swirlds.state.merkle.singleton;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.state.merkle.StateUtils.readFromStream;
 import static com.swirlds.state.merkle.StateUtils.writeToStream;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.codec.BlockInfoProtoCodec;
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -27,6 +30,9 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 
 /**
@@ -34,6 +40,9 @@ import java.io.IOException;
  * #classId}.
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
+
+    private static final Logger logger = LogManager.getLogger(ValueLeaf.class);
+
     /**
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
@@ -77,6 +86,30 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec, @Nullable final T value) {
         this(singletonClassId, codec);
         this.val = value;
+        if(val == null && codec instanceof BlockInfoProtoCodec) {
+            // FIXME: remove this log after fixing JRS failure
+            logger.info(STARTUP.getMarker(), "ValueLeaf created with null value for BlockInfoProtoCode. Call trace: {}", getCallTrace());
+        }
+    }
+
+    public static String getCallTrace() {
+        StringBuilder traceBuilder = new StringBuilder();
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+
+        // Skip the first few elements to remove getStackTrace() and getCallTrace() itself
+        for (int i = 2; i < stackTrace.length; i++) {
+            StackTraceElement element = stackTrace[i];
+            traceBuilder.append(String.format(
+                    "%d. %s.%s(%s:%d)%n",
+                    i - 1, // Adjust index for readability
+                    element.getClassName(),
+                    element.getMethodName(),
+                    element.getFileName(),
+                    element.getLineNumber()
+            ));
+        }
+
+        return traceBuilder.toString();
     }
 
     /** {@inheritDoc} */
