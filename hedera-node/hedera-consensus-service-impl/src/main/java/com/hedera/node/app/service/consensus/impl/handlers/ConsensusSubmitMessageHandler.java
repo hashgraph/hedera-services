@@ -34,7 +34,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
-import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
+import static com.hedera.node.app.spi.workflows.HandleContext.MetaDataKey.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -164,38 +165,16 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final var config = handleContext.configuration().getConfigData(ConsensusConfig.class);
         validateTransaction(txn, config, topic);
 
-        final var streamBuilder =
-                handleContext.savepointStack().getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class);
-
         /* handle custom fees */
         if (!topic.customFees().isEmpty() && !isFeeExempted(topic.feeExemptKeyList(), handleContext.keyVerifier())) {
-            // filter fee list
+            // 1. Filter the fee list (exclude fees with payer as fee collector or token treasury)
             final var feesToBeCharged = extractFeesToBeCharged(topic.customFees(), handleContext);
-
-            // check payer limits or throw
+            // 2. Validate payer's fee limits or throw
             if (!txn.maxCustomFees().isEmpty()) {
                 validateFeeLimits(handleContext.payer(), feesToBeCharged, txn.maxCustomFees());
             }
-
-            // create synthetic body and dispatch crypto transfer
-            final var syntheticBodies = customFeeAssessor.assessCustomFee(feesToBeCharged, handleContext.payer());
-            final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
-
-            // dispatch transfers to pay the fees, but suppress any child records.
-            for (final var syntheticBody : syntheticBodies) {
-                final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
-                        handleContext.payer(),
-                        TransactionBody.newBuilder()
-                                .cryptoTransfer(syntheticBody)
-                                .build(),
-                        CryptoTransferStreamBuilder.class,
-                        SUPPRESSING_TRANSACTION_CUSTOMIZER,
-                        new HandleContext.DispatchMetadata(Map.of(TRANSACTION_FIXED_FEE, true))));
-                validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
-                assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
-            }
-            // externalize all custom fees
-            streamBuilder.assessedCustomFees(assessedCustomFees);
+            // 3. Charge the fees
+            chargeCustomFees(feesToBeCharged, handleContext);
         }
 
         try {
@@ -205,7 +184,9 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             It will not be committed to state until commit is called on the state.--- */
             topicStore.put(updatedTopic);
 
-            streamBuilder
+            handleContext
+                    .savepointStack()
+                    .getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class)
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())
                     .topicRunningHashVersion(RUNNING_HASH_VERSION);
@@ -346,6 +327,39 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         } catch (final NoSuchAlgorithmException fatal) {
             throw new IllegalStateException(fatal);
         }
+    }
+
+    private void chargeCustomFees(final List<FixedCustomFee> feesToBeCharged, final HandleContext handleContext) {
+        // 1. Create synthetic bodies for each fee
+        final var syntheticBodies = customFeeAssessor.assessCustomFee(feesToBeCharged, handleContext.payer());
+        final var assessedCustomFees = new ArrayList<AssessedCustomFee>();
+        final var dispatchMetadata = EMPTY_METADATA;
+
+        // 2. Dispatch each synthetic body
+        for (final var entry : syntheticBodies.entrySet()) {
+            final var fee = entry.getKey();
+            final var syntheticBody = entry.getValue();
+            // set the fee in the metadata
+            dispatchMetadata.putMetadata(TRANSACTION_FIXED_FEE, fee);
+            final var cryptoTransferBody =
+                    TransactionBody.newBuilder().cryptoTransfer(syntheticBody).build();
+            // dispatch transfers to pay the fees, but suppress any child records.
+            final var dispatchedStreamBuilder = handleContext.dispatch(stepDispatch(
+                    handleContext.payer(),
+                    cryptoTransferBody,
+                    CryptoTransferStreamBuilder.class,
+                    SUPPRESSING_TRANSACTION_CUSTOMIZER,
+                    dispatchMetadata));
+            // validate response and collect assessed fees
+            validateTrue(dispatchedStreamBuilder.status().equals(SUCCESS), dispatchedStreamBuilder.status());
+            assessedCustomFees.addAll(dispatchedStreamBuilder.getAssessedCustomFees());
+        }
+
+        // 3. Externalize the assessed fees
+        handleContext
+                .savepointStack()
+                .getBaseBuilder(ConsensusSubmitMessageStreamBuilder.class)
+                .assessedCustomFees(assessedCustomFees);
     }
 
     /**

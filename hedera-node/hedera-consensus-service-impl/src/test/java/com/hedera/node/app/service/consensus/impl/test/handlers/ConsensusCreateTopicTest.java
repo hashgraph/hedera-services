@@ -292,8 +292,16 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     void handleWorksAsExpected() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
+        final var shard = 5;
+        final var realm = 10L;
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         final var op = txnBody.consensusCreateTopic();
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("topics.maxNumber", 10L)
+                .withValue("hedera.shard", shard)
+                .withValue("hedera.realm", realm)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
@@ -308,8 +316,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic =
-                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
+        final var topicID = TopicID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .topicNum(1_234L)
+                .build();
+        final var createdTopic = topicStore.getTopic(topicID);
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -320,9 +332,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1234667, actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
-        final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
         verify(recordBuilder).topicID(topicID);
-        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
+        assertNotNull(topicStore.getTopic(topicID));
     }
 
     @Test

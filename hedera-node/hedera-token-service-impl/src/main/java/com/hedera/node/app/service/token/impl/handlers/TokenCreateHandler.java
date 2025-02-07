@@ -55,6 +55,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -123,6 +124,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var op = txn.tokenCreationOrThrow();
         // Create or get needed config and stores
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var storeFactory = context.storeFactory();
         final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
@@ -141,8 +143,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
 
         // build a new token
         final var newTokenNum = context.entityNumGenerator().newEntityNum();
-        final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
-        final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
+        final var newTokenId = TokenID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .tokenNum(newTokenNum)
+                .build();
+        final var newToken = buildToken(newTokenId, op, resolvedExpiryMeta);
 
         // validate custom fees and get back list of fees with created token denomination
         final var feesSetNeedingCollectorAutoAssociation = customFeesValidator.validateForCreation(
@@ -237,15 +243,15 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     /**
      * Create a new token with the given parameters.
      *
-     * @param newTokenNum new token number
+     * @param newTokenId new token id
      * @param op token creation transaction body
      * @param resolvedExpiryMeta resolved expiry meta
      * @return newly created token
      */
     private Token buildToken(
-            final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
+            final TokenID newTokenId, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
         return new Token(
-                asToken(newTokenNum),
+                newTokenId,
                 op.name(),
                 op.symbol(),
                 op.decimals(),
@@ -271,7 +277,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.freezeDefault(),
                 false,
-                modifyCustomFeesWithSentinelValues(op.customFees(), newTokenNum),
+                modifyCustomFeesWithSentinelValues(op.customFees(), newTokenId),
                 op.metadata(),
                 op.metadataKey());
     }
@@ -282,11 +288,11 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
      * to the newly created token number before setting it to the token.
      *
      * @param customFees list of custom fees
-     * @param newTokenNum newly created token number
+     * @param newTokenId newly created token id
      * @return modified custom fees
      */
     private List<CustomFee> modifyCustomFeesWithSentinelValues(
-            final List<CustomFee> customFees, final long newTokenNum) {
+            final List<CustomFee> customFees, final TokenID newTokenId) {
         return customFees.stream()
                 .map(fee -> {
                     if (fee.hasFixedFee()
@@ -294,8 +300,6 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                             && fee.fixedFeeOrThrow()
                                     .denominatingTokenIdOrThrow()
                                     .equals(SENTINEL_TOKEN_ID)) {
-                        final var newTokenId =
-                                TokenID.newBuilder().tokenNum(newTokenNum).build();
                         final var modifiedFixedFee = fee.fixedFeeOrThrow()
                                 .copyBuilder()
                                 .denominatingTokenId(newTokenId)

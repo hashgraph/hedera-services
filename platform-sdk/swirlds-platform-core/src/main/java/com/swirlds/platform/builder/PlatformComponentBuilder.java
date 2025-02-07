@@ -73,6 +73,8 @@ import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
+import com.swirlds.platform.gossip.config.GossipConfig;
+import com.swirlds.platform.gossip.modular.SyncGossipModular;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
@@ -1061,19 +1063,45 @@ public class PlatformComponentBuilder {
     @NonNull
     public Gossip buildGossip() {
         if (gossip == null) {
-            gossip = new SyncGossip(
-                    blocks.platformContext(),
-                    AdHocThreadManager.getStaticThreadManager(),
-                    blocks.keysAndCerts(),
-                    blocks.rosterHistory().getCurrentRoster(),
-                    blocks.selfId(),
-                    blocks.appVersion(),
-                    blocks.swirldStateManager(),
-                    () -> blocks.getLatestCompleteStateReference().get().get(),
-                    x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
-                    state -> blocks.loadReconnectStateReference().get().accept(state),
-                    () -> blocks.clearAllPipelinesForReconnectReference().get().run(),
-                    blocks.intakeEventCounter());
+
+            var useModularizedGossip = blocks.platformContext()
+                    .getConfiguration()
+                    .getConfigData(GossipConfig.class)
+                    .useModularizedGossip();
+
+            if (useModularizedGossip) {
+                gossip = new SyncGossipModular(
+                        blocks.platformContext(),
+                        AdHocThreadManager.getStaticThreadManager(),
+                        blocks.keysAndCerts(),
+                        blocks.rosterHistory().getCurrentRoster(),
+                        blocks.selfId(),
+                        blocks.appVersion(),
+                        blocks.swirldStateManager(),
+                        () -> blocks.getLatestCompleteStateReference().get().get(),
+                        x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
+                        state -> blocks.loadReconnectStateReference().get().accept(state),
+                        () -> blocks.clearAllPipelinesForReconnectReference()
+                                .get()
+                                .run(),
+                        blocks.intakeEventCounter());
+            } else {
+                gossip = new SyncGossip(
+                        blocks.platformContext(),
+                        AdHocThreadManager.getStaticThreadManager(),
+                        blocks.keysAndCerts(),
+                        blocks.rosterHistory().getCurrentRoster(),
+                        blocks.selfId(),
+                        blocks.appVersion(),
+                        blocks.swirldStateManager(),
+                        () -> blocks.getLatestCompleteStateReference().get().get(),
+                        x -> blocks.statusActionSubmitterReference().get().submitStatusAction(x),
+                        state -> blocks.loadReconnectStateReference().get().accept(state),
+                        () -> blocks.clearAllPipelinesForReconnectReference()
+                                .get()
+                                .run(),
+                        blocks.intakeEventCounter());
+            }
         }
         return gossip;
     }
