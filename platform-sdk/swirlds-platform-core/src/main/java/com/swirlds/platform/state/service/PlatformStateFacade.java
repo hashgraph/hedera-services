@@ -54,21 +54,30 @@ public class PlatformStateFacade {
 
     private final Function<SemanticVersion, SoftwareVersion> versionFactory;
 
+    /**
+     * Create a new instance of {@link PlatformStateFacade}.
+     * @param versionFactory a factory to create the current {@link SoftwareVersion} from a {@link SemanticVersion}
+     */
     public PlatformStateFacade(Function<SemanticVersion, SoftwareVersion> versionFactory) {
         this.versionFactory = versionFactory;
     }
 
     /**
      * Given a {@link State}, returns the creation version of the platform state if it exists.
-     * @param root the root to extract the creation version from
+     * @param state the state to extract the creation version from
      * @return the creation version of the platform state, or null if the state is a genesis state
      */
-    public SemanticVersion creationSemanticVersionOf(@NonNull final State root) {
-        requireNonNull(root);
-        final var state = platformStateOf(root);
-        return state == null ? null : state.creationSoftwareVersion();
+    public SemanticVersion creationSemanticVersionOf(@NonNull final State state) {
+        requireNonNull(state);
+        final PlatformState platformState = platformStateOf(state);
+        return platformState == null ? null : platformState.creationSoftwareVersion();
     }
 
+    /**
+     * @param state the state to extract value from
+     * @param round the round to check
+     * @return true if the round is a freeze round
+     */
     public boolean isFreezeRound(@NonNull final State state, @NonNull final Round round) {
         final var platformState = platformStateOf(state);
         return isInFreezePeriod(
@@ -77,6 +86,11 @@ public class PlatformStateFacade {
                 platformState.lastFrozenTime() == null ? null : asInstant(platformState.lastFrozenTime()));
     }
 
+    /**
+     * Determines if the provided {@code state} is a genesis state.
+     * @param state the state to check
+     * @return true if the state is a genesis state
+     */
     public boolean isGenesisStateOf(@NonNull final State state) {
         return readablePlatformStateStore(state).getRound() == GENESIS_ROUND;
     }
@@ -127,12 +141,17 @@ public class PlatformStateFacade {
         return readablePlatformStateStore(root).getRound();
     }
 
+    /**
+     * Given a {@link State}, returns an instance of {@link PlatformState} if it exists.
+     * @param state the state to extract the platform state from
+     * @return the platform state, or null if the state is a genesis state
+     */
     @SuppressWarnings("unchecked")
-    public @Nullable PlatformState platformStateOf(@NonNull final State root) {
-        ReadableStates readableStates = root.getReadableStates(NAME);
+    public @Nullable PlatformState platformStateOf(@NonNull final State state) {
+        ReadableStates readableStates = state.getReadableStates(NAME);
         if (readableStates.isEmpty()) {
             // fallback to lookup directly in the Merkle tree, useful for loading the state from disk
-            if (root instanceof MerkleStateRoot<?> merkleStateRoot) {
+            if (state instanceof MerkleStateRoot<?> merkleStateRoot) {
                 final var index = merkleStateRoot.findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
                 return index == -1
                         ? UNINITIALIZED_PLATFORM_STATE
@@ -145,15 +164,31 @@ public class PlatformStateFacade {
         }
     }
 
+    /**
+     * Given a {@link State}, returns the legacy running event hash if it exists.
+     * @param state the state to extract the legacy running event hash from
+     * @return the legacy running event hash, or null if the state is a genesis state
+     */
     @Nullable
-    public Hash legacyRunningEventHashOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getLegacyRunningEventHash();
+    public Hash legacyRunningEventHashOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getLegacyRunningEventHash();
     }
 
-    public long ancientThresholdOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getAncientThreshold();
+    /**
+     * Given a {@link State}, for the oldest non-ancient round, get the lowest ancient indicator out of all of those round's judges.
+     * See {@link PlatformStateAccessor#getAncientThreshold()} for more information.
+     * @param state the state to extract the ancient threshold from
+     * @return the ancient threshold, or zero if the state is a genesis state
+     */
+    public long ancientThresholdOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getAncientThreshold();
     }
 
+    /**
+     * Given a {@link State}, returns the consensus snapshot if it exists.
+     * @param root the root to extract the consensus snapshot from
+     * @return the consensus snapshot, or null if the state is a genesis state
+     */
     @Nullable
     public com.swirlds.platform.consensus.ConsensusSnapshot consensusSnapshotOf(@NonNull final State root) {
         return readablePlatformStateStore(root).getSnapshot();
@@ -163,42 +198,87 @@ public class PlatformStateFacade {
         return new ReadablePlatformStateStore(root.getReadableStates(NAME), versionFactory);
     }
 
+    /**
+     * Given a {@link State}, returns the first software version where the birth round migration happened,
+     * or null if birth round migration has not yet happened.
+     * @param state the state to extract the first version in birth round mode from
+     * @return the number of non-ancient rounds, or zero if the state is a genesis state
+     */
     @Nullable
-    public SoftwareVersion firstVersionInBirthRoundModeOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getFirstVersionInBirthRoundMode();
+    public SoftwareVersion firstVersionInBirthRoundModeOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getFirstVersionInBirthRoundMode();
     }
 
+    /**
+     * Given a {@link State}, returns the last round before the birth round mode was enabled.
+     * @param root the root to extract the round number from
+     * @return the last round before the birth round mode was enabled, or zero if the state is a genesis state
+     */
     public long lastRoundBeforeBirthRoundModeOf(@NonNull final State root) {
         return readablePlatformStateStore(root).getLastRoundBeforeBirthRoundMode();
     }
 
-    public long lowestJudgeGenerationBeforeBirthRoundModeOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getLowestJudgeGenerationBeforeBirthRoundMode();
+    /**
+     * Given a {@link State}, lowest judge generation before birth round mode.
+     * @param state the state to extract the judge generation from
+     * @return the number of non-ancient rounds, or zero if the state is a genesis state
+     */
+    public long lowestJudgeGenerationBeforeBirthRoundModeOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getLowestJudgeGenerationBeforeBirthRoundMode();
     }
 
+    /**
+     * Given a {@link State}, returns consensus timestamp if it exists.
+     * @param state the state to extract the consensus timestamp from
+     * @return the consensus timestamp, or null if the state is a genesis state
+     */
     @Nullable
-    public Instant consensusTimestampOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getConsensusTimestamp();
+    public Instant consensusTimestampOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getConsensusTimestamp();
     }
 
-    public Instant freezeTimeOf(@NonNull final State root) {
-        return readablePlatformStateStore(root).getFreezeTime();
+    /**
+     * Given a {@link State}, returns the freeze time of the state if it exists.
+     * @param state the state to extract the freeze time from
+     * @return the freeze time, or null if the state is a genesis state
+     */
+    public Instant freezeTimeOf(@NonNull final State state) {
+        return readablePlatformStateStore(state).getFreezeTime();
     }
 
-    public void updateLastFrozenTime(@NonNull final State root) {
-        getWritablePlatformStateOf(root).setLastFrozenTime(freezeTimeOf(root));
+    /**
+     * Update the last frozen time of the state.
+     * @param state the state to update
+     */
+    public void updateLastFrozenTime(@NonNull final State state) {
+        getWritablePlatformStateOf(state).setLastFrozenTime(freezeTimeOf(state));
     }
 
+    /**
+     * Given a {@link State}, returns the last frozen time of the state if it exists.
+     * @param state the state to extract the last frozen time from
+     * @return the last frozen time, or null if the state is a genesis state
+     */
     @Nullable
     public Instant lastFrozenTimeOf(State state) {
         return readablePlatformStateStore(state).getLastFrozenTime();
     }
 
+    /**
+     * Given a {@link State}, returns the address book if it exists.
+     * @param state the state to extract the address book from
+     * @return the address book, or null if the state is a genesis state
+     */
     @Nullable
     public AddressBook addressBookOf(State state) {
         return readablePlatformStateStore(state).getAddressBook();
     }
 
+    /**
+     * Get the previous address book from the state.
+     * @param state the state to extract the address book from
+     * @return the previous address book, or null if the state is a genesis state
+     */
     @Nullable
     public AddressBook previousAddressBookOf(State state) {
         return readablePlatformStateStore(state).getPreviousAddressBook();
@@ -270,6 +350,16 @@ public class PlatformStateFacade {
         writablePlatformStateStore(state).setAllFrom(accessor);
     }
 
+    /**
+     * Generate a string that describes this state.
+     *
+     * @param hashDepth the depth of the tree to visit and print
+     */
+    @NonNull
+    public String getInfoString(@NonNull final State state, final int hashDepth) {
+        return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), state);
+    }
+
     private PlatformStateAccessor readablePlatformStateStore(@NonNull final State state) {
         ReadableStates readableStates = state.getReadableStates(NAME);
         if (readableStates.isEmpty()) {
@@ -282,13 +372,5 @@ public class PlatformStateFacade {
         return new WritablePlatformStateStore(state.getWritableStates(NAME), versionFactory);
     }
 
-    /**
-     * Generate a string that describes this state.
-     *
-     * @param hashDepth the depth of the tree to visit and print
-     */
-    @NonNull
-    public String getInfoString(@NonNull final State state, final int hashDepth) {
-        return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), state);
-    }
+
 }

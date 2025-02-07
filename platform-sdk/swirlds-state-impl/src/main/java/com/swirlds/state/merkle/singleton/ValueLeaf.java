@@ -84,25 +84,6 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         this.val = value;
     }
 
-    public static String getCallTrace() {
-        StringBuilder traceBuilder = new StringBuilder();
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-        // Skip the first few elements to remove getStackTrace() and getCallTrace() itself
-        for (int i = 2; i < stackTrace.length; i++) {
-            StackTraceElement element = stackTrace[i];
-            traceBuilder.append(String.format(
-                    "%d. %s.%s(%s:%d)%n",
-                    i - 1, // Adjust index for readability
-                    element.getClassName(),
-                    element.getMethodName(),
-                    element.getFileName(),
-                    element.getLineNumber()));
-        }
-
-        return traceBuilder.toString();
-    }
-
     /** {@inheritDoc} */
     @Override
     public ValueLeaf<T> copy() {
