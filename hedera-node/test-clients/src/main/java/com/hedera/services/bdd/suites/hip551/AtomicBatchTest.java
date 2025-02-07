@@ -552,6 +552,8 @@ public class AtomicBatchTest {
             return hapiTest(
                     cryptoCreate(batchOperator),
                     cryptoCreate(payer).balance(ONE_HUNDRED_HBARS),
+
+                    // modify batch valid start to 1 hour in the past
                     usableTxnIdNamed(batchTxnId).modifyValidStart(beforeHour).payerId(payer),
                     usableTxnIdNamed(innerTxnId).payerId(payer),
                     atomicBatch(cryptoCreate("foo")
@@ -562,7 +564,13 @@ public class AtomicBatchTest {
                             .txnId(batchTxnId)
                             .payingWith(payer)
                             .hasPrecheck(TRANSACTION_EXPIRED),
-                    atomicBatch(cryptoCreate("foo").txnId(innerTxnId).payingWith(payer)));
+
+                    // submit new batch with valid start and the same inner transaction
+                    atomicBatch(cryptoCreate("foo")
+                                    .txnId(innerTxnId)
+                                    .payingWith(payer)
+                                    .batchKey(batchOperator))
+                            .signedByPayerAnd(batchOperator));
         }
 
         @HapiTest
