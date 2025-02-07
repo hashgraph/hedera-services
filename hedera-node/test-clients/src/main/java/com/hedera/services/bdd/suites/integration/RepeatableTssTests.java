@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ public class RepeatableTssTests {
      */
     @LeakyRepeatableHapiTest(
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
-            overrides = {"tss.keyCandidateRoster"})
+            overrides = {"tss.keyCandidateRoster", "staking.maxStake"})
     Stream<DynamicTest> embeddedNodeVotesGivenThresholdValidMessages() {
         final var scenario = rekeyingScenario(
                 // Changing stakes is enough to ensure the candidate roster is different from the active roster
@@ -121,7 +121,7 @@ public class RepeatableTssTests {
      */
     @LeakyRepeatableHapiTest(
             value = {NEEDS_TSS_CONTROL, NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION},
-            overrides = {"tss.keyCandidateRoster", "tss.signWithLedgerId"})
+            overrides = {"tss.keyCandidateRoster", "tss.signWithLedgerId", "staking.maxStake"})
     Stream<DynamicTest> blockSigningHappyPath() {
         final var scenario = rekeyingScenario(
                 // Changing stakes is enough to ensure the candidate roster is different from the active roster

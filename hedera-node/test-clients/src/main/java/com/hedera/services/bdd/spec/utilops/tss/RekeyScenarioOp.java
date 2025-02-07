@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcingContextual;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.hip869.NodeCreateTest.generateX509Certificates;
 import static com.hedera.services.bdd.suites.utils.validation.ValidationScenarios.TINYBARS_PER_HBAR;
 import static com.swirlds.platform.roster.RosterRetriever.getActiveRosterHash;
@@ -312,12 +314,11 @@ public class RekeyScenarioOp extends UtilOp implements BlockStreamAssertion {
     private Stream<SpecOperation> enableTss() {
         if (blockSigningType == BlockSigningType.SIGN_WITH_LEDGER_ID) {
             return Stream.of(
-                    overriding("tss.keyCandidateRoster", "true"), overriding("tss.signWithLedgerId", "true")
-                    //                    overridingTwo("tss.signWithLedgerId", "true",
-                    //                            "tss.maxSharesPerNode", "4")
-                    );
+                    overridingTwo("tss.keyCandidateRoster", "true", "staking.maxStake", "" + (50 * ONE_BILLION_HBARS)),
+                    overriding("tss.signWithLedgerId", "true"));
         } else {
-            return Stream.of(overriding("tss.keyCandidateRoster", "true"));
+            return Stream.of(
+                    overridingTwo("tss.keyCandidateRoster", "true", "staking.maxStake", "" + (50 * ONE_BILLION_HBARS)));
         }
     }
 
