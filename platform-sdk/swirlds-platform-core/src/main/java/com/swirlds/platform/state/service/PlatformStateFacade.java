@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.Round;
@@ -148,11 +149,11 @@ public class PlatformStateFacade {
      */
     @SuppressWarnings("unchecked")
     public @Nullable PlatformState platformStateOf(@NonNull final State state) {
-        ReadableStates readableStates = state.getReadableStates(NAME);
+        final ReadableStates readableStates = state.getReadableStates(NAME);
         if (readableStates.isEmpty()) {
             // fallback to lookup directly in the Merkle tree, useful for loading the state from disk
             if (state instanceof MerkleStateRoot<?> merkleStateRoot) {
-                final var index = merkleStateRoot.findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
+                final int index = merkleStateRoot.findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
                 return index == -1
                         ? UNINITIALIZED_PLATFORM_STATE
                         : ((SingletonNode<PlatformState>) merkleStateRoot.getChild(index)).getValue();
@@ -357,11 +358,11 @@ public class PlatformStateFacade {
      */
     @NonNull
     public String getInfoString(@NonNull final State state, final int hashDepth) {
-        return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), state);
+        return createInfoString(hashDepth, readablePlatformStateStore(state), state.getHash(), (MerkleNode) state);
     }
 
     private PlatformStateAccessor readablePlatformStateStore(@NonNull final State state) {
-        ReadableStates readableStates = state.getReadableStates(NAME);
+        final ReadableStates readableStates = state.getReadableStates(NAME);
         if (readableStates.isEmpty()) {
             return new SnapshotPlatformStateAccessor(platformStateOf(state), versionFactory);
         }

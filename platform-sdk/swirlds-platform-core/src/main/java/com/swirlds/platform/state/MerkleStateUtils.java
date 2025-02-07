@@ -42,7 +42,7 @@ public class MerkleStateUtils {
             int hashDepth,
             @NonNull final PlatformStateAccessor platformState,
             @NonNull final Hash rootHash,
-            @NonNull final State state) {
+            @NonNull final MerkleNode state) {
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
         final ConsensusSnapshot snapshot = platformState.getSnapshot();

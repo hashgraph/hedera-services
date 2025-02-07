@@ -37,8 +37,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
 
-    private static final Logger logger = LogManager.getLogger(ValueLeaf.class);
-
     /**
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
