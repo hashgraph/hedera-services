@@ -31,14 +31,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Registers a {@link TestExecutionListener} when the {@link LauncherSession} is opened to
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
     public static final int CLASSIC_HAPI_TEST_NETWORK_SIZE = 4;
-    private static final Logger log = LoggerFactory.getLogger(SharedNetworkLauncherSessionListener.class);
+    private static final Logger log = LogManager.getLogger(SharedNetworkLauncherSessionListener.class);
 
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {
