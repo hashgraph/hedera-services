@@ -107,7 +107,6 @@ public class StakePeriodChanges {
                 logger.error("CATASTROPHIC failure updating midnight rates", e);
                 stack.rollbackFullStack();
             }
-            final var config = tokenContext.configuration();
             try {
                 final var streamBuilder =
                         endOfStakingPeriodUpdater.updateNodes(tokenContext, exchangeRateManager.exchangeRates());
