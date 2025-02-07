@@ -18,9 +18,9 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_KEY;
-import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_CONSTRUCTION_KEY;
+import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINT_CONSTRUCTION_KEY;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_KEY;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
@@ -63,11 +63,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
 
-    public WritableHintsStoreImpl(@NonNull WritableStates states) {
+    public WritableHintsStoreImpl(@NonNull final WritableStates states) {
         super(states);
         this.hintsKeys = states.get(HINTS_KEY_SETS_KEY);
-        this.nextConstruction = states.getSingleton(NEXT_CONSTRUCTION_KEY);
-        this.activeConstruction = states.getSingleton(ACTIVE_CONSTRUCTION_KEY);
+        this.nextConstruction = states.getSingleton(NEXT_HINT_CONSTRUCTION_KEY);
+        this.activeConstruction = states.getSingleton(ACTIVE_HINT_CONSTRUCTION_KEY);
         this.votes = states.get(PREPROCESSING_VOTES_KEY);
     }
 
@@ -146,7 +146,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public boolean purgeStateAfterHandoff(@NonNull final ActiveRosters activeRosters) {
+    public void updateForHandoff(@NonNull final ActiveRosters activeRosters) {
         if (activeRosters.phase() != HANDOFF) {
             throw new IllegalArgumentException("Not in handoff phase");
         }
@@ -159,9 +159,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                     newActiveSize, requireNonNull(activeConstruction.get()), activeRosters::findRelatedRoster);
             activeConstruction.put(nextConstruction.get());
             nextConstruction.put(HintsConstruction.DEFAULT);
-            return true;
         }
-        return false;
     }
 
     /**

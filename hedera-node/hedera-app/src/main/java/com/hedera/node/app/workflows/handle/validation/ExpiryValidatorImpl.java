@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.hapi.utils.InvalidTransactionException;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -180,7 +180,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             @NonNull final EntityType entityType,
             final boolean isMarkedExpired,
             final long balanceAvailableForSelfRenewal) {
-        final var isSmartContract = entityType.equals(EntityType.CONTRACT);
+        final var isSmartContract = entityType.equals(EntityType.CONTRACT_BYTECODE);
         final var autoRenewConfig = context.configuration().getConfigData(AutoRenewConfig.class);
         if (!autoRenewConfig.isAutoRenewEnabled()
                 || balanceAvailableForSelfRenewal > 0

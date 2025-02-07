@@ -49,7 +49,6 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduledOrder;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -63,6 +62,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -98,7 +98,9 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody body) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var body = context.body();
         requireNonNull(body);
         validateTruePreCheck(body.hasScheduleCreate(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleCreateOrThrow();
@@ -150,6 +152,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var consensusNow = context.consensusNow();
         final var defaultLifetime = ledgerConfig.scheduleTxExpiryTimeSecs();
         final var provisionalSchedule =
@@ -218,8 +221,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 provisionalSchedule.originalCreateTransactionOrThrow().transactionIDOrThrow();
         final var schedulerId = schedulingTxnId.accountIDOrThrow();
         final var scheduleId = ScheduleID.newBuilder()
-                .shardNum(schedulerId.shardNum())
-                .realmNum(schedulerId.realmNum())
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .scheduleNum(context.entityNumGenerator().newEntityNum())
                 .build();
         var schedule = provisionalSchedule
@@ -231,7 +234,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (tryToExecuteSchedule(context, schedule, requiredKeys, validationResult, isLongTermEnabled)) {
             schedule = markedExecuted(schedule, consensusNow);
         }
-        scheduleStore.put(schedule);
+        scheduleStore.putAndIncrementCount(schedule);
         context.savepointStack()
                 .getBaseBuilder(ScheduleStreamBuilder.class)
                 .scheduleID(schedule.scheduleId())

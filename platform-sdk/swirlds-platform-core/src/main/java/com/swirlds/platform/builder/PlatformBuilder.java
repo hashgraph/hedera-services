@@ -26,6 +26,7 @@ import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConf
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
@@ -71,6 +72,7 @@ import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -135,6 +137,7 @@ public final class PlatformBuilder {
     private Consumer<PlatformEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private Consumer<PlatformEvent> staleEventConsumer;
+    private Function<StateSignatureTransaction, Bytes> systemTransactionEncoder;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -294,6 +297,21 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Register a callback that is called when the platform creates a {@link StateSignatureTransaction} and wants
+     * to encode it to {@link Bytes}, using a logic specific to the application that uses the platform.
+     *
+     * @param systemTransactionEncoder the callback to register
+     * @return this
+     */
+    @NonNull
+    public PlatformBuilder withSystemTransactionEncoderCallback(
+            @NonNull final Function<StateSignatureTransaction, Bytes> systemTransactionEncoder) {
+        throwIfAlreadyUsed();
+        this.systemTransactionEncoder = Objects.requireNonNull(systemTransactionEncoder);
+        return this;
+    }
+
+    /**
      * Provide the cryptographic keys to use for this node.  The signing certificate for this node must be valid.
      *
      * @param keysAndCerts the cryptographic keys to use
@@ -421,8 +439,8 @@ public final class PlatformBuilder {
                 Scratchpad.create(platformContext, selfId, IssScratchpad.class, "platform.iss");
         issScratchpad.logContents();
 
-        final ApplicationCallbacks callbacks =
-                new ApplicationCallbacks(preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer);
+        final ApplicationCallbacks callbacks = new ApplicationCallbacks(
+                preconsensusEventConsumer, snapshotOverrideConsumer, staleEventConsumer, systemTransactionEncoder);
 
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(

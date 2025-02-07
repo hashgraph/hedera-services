@@ -18,8 +18,8 @@ package com.swirlds.platform.eventhandling;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.platform.components.transaction.system.SystemTransactionExtractionUtils.extractFromEvent;
 
+import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -30,8 +30,9 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -88,9 +89,21 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public List<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
+    public Queue<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
             @NonNull final PlatformEvent event) {
         final long startTime = time.nanoTime();
+        final Queue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
+                new ConcurrentLinkedQueue<>();
+        final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> consumer = scopedSystemTransactions::add;
+
+        for (final EventTransaction eventTransaction : event.getGossipEvent().eventTransaction()) {
+            if (eventTransaction.hasStateSignatureTransaction()) {
+                scopedSystemTransactions.add(new ScopedSystemTransaction<>(
+                        event.getCreatorId(),
+                        event.getSoftwareVersion(),
+                        eventTransaction.stateSignatureTransaction()));
+            }
+        }
 
         ReservedSignedState latestImmutableState = null;
         try {
@@ -100,7 +113,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                stateLifecycles.onPreHandle(event, latestImmutableState.get().getState(), NO_OP_CONSUMER);
+                stateLifecycles.onPreHandle(event, latestImmutableState.get().getState(), consumer);
             } catch (final Throwable t) {
                 logger.error(
                         EXCEPTION.getMarker(), "error invoking StateLifecycles.onPreHandle() for event {}", event, t);
@@ -112,9 +125,6 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             preHandleTime.update(startTime, time.nanoTime());
         }
 
-        // TODO adapt this logic to read transactions directly from the callback passed in StateLifecycles.onOreHandle()
-        // when
-        // implemented
-        return extractFromEvent(event, StateSignatureTransaction.class);
+        return scopedSystemTransactions;
     }
 }

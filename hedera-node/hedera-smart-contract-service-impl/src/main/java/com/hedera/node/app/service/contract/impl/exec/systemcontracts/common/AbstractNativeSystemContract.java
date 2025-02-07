@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ER
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.AbstractFullContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
@@ -63,20 +64,21 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
     public static final int FUNCTION_SELECTOR_LENGTH = 4;
 
     private final CallFactory callFactory;
-    private final ContractID contractID;
+    private final ContractMetrics contractMetrics;
 
     protected AbstractNativeSystemContract(
             @NonNull String name,
             @NonNull CallFactory callFactory,
-            @NonNull ContractID contractID,
-            @NonNull GasCalculator gasCalculator) {
+            @NonNull GasCalculator gasCalculator,
+            @NonNull ContractMetrics contractMetrics) {
         super(name, gasCalculator);
         this.callFactory = requireNonNull(callFactory);
-        this.contractID = requireNonNull(contractID);
+        this.contractMetrics = requireNonNull(contractMetrics);
     }
 
     @Override
-    public FullResult computeFully(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
+    public FullResult computeFully(
+            @NonNull ContractID contractID, @NonNull final Bytes input, @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
         final var callType = callTypeOf(frame);
@@ -87,7 +89,7 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
         final AbstractCallAttempt<?> attempt;
         try {
             validateTrue(input.size() >= FUNCTION_SELECTOR_LENGTH, INVALID_TRANSACTION_BODY);
-            attempt = callFactory.createCallAttemptFrom(input, callType, frame);
+            attempt = callFactory.createCallAttemptFrom(contractID, input, callType, frame);
             call = requireNonNull(attempt.asExecutableCall());
             if (frame.isStatic() && !call.allowsStaticFrame()) {
                 // FUTURE - we should really set an explicit halt reason here; instead we just halt the frame
@@ -99,11 +101,11 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
             // reason, halts the frame and consumes all remaining gas
             return haltResult(INVALID_OPERATION, frame.getRemainingGas());
         }
-        return resultOfExecuting(attempt, call, input, frame, this.contractID);
+        return resultOfExecuting(attempt, call, input, frame, contractID);
     }
 
     @SuppressWarnings({"java:S2637", "java:S2259"}) // this function is going to be refactored soon.
-    private static FullResult resultOfExecuting(
+    private FullResult resultOfExecuting(
             @NonNull final AbstractCallAttempt<?> attempt,
             @NonNull final Call call,
             @NonNull final Bytes input,
@@ -156,12 +158,23 @@ public abstract class AbstractNativeSystemContract extends AbstractFullContract 
                 }
             }
         } catch (final HandleException handleException) {
-            return haltHandleException(handleException, frame.getRemainingGas());
+            final var fullResult = haltHandleException(handleException, frame.getRemainingGas());
+            reportToMetrics(call, fullResult);
+            return fullResult;
         } catch (final Exception internal) {
             log.error("Unhandled failure for input {} to native system contract", input, internal);
-            return haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
+            final var fullResult = haltResult(PRECOMPILE_ERROR, frame.getRemainingGas());
+            reportToMetrics(call, fullResult);
+            return fullResult;
         }
-        return pricedResult.fullResult();
+        final var fullResult = pricedResult.fullResult();
+        reportToMetrics(call, fullResult);
+        return fullResult;
+    }
+
+    private void reportToMetrics(@NonNull final Call call, @NonNull final FullResult fullResult) {
+        contractMetrics.incrementSystemMethodCall(
+                call.getSystemContractMethod(), fullResult.result().getState());
     }
 
     private static void externalizeFailure(
