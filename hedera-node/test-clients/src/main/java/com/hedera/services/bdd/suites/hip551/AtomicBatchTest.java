@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
@@ -34,6 +35,37 @@ import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class AtomicBatchTest {
+
+    @HapiTest
+    public Stream<DynamicTest> invalidInnerTxnSignatureFails() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId = "innerId";
+
+        // create inner txn with:
+        // - custom txn id -> for getting the record
+        // - batch key -> for batch operator to sign
+        // - payer -> for paying the fee
+        final var innerTxn = cryptoCreate("foo")
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer)
+                .signedBy(DEFAULT_PAYER);
+
+        return hapiTest(
+                // create batch operator
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                // create another payer for the inner txn
+                cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
+                // use custom txn id so we can get the record
+                usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
+                // create a batch txn
+                atomicBatch(innerTxn)
+                        .payingWith(batchOperator)
+                        .via("batchTxn")
+                        .hasKnownStatus(INNER_TRANSACTION_FAILED));
+    }
 
     @HapiTest
     public Stream<DynamicTest> simpleBatchTest() {

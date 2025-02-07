@@ -68,6 +68,7 @@ public class AtomicBatchHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        // TODO
     }
 
     @Override
