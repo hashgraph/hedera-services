@@ -256,6 +256,11 @@ public class HalfDiskHashMap implements AutoCloseable, Snapshotable, FileStatist
                         EXCEPTION.getMarker(),
                         "Loading existing set of data files but no metadata file was found in [{}]",
                         storeDir.toAbsolutePath());
+                logger.info(
+                        MERKLE_DB.getMarker(),
+                        "List of files in [{}]: {}",
+                        storeDir.toAbsolutePath(),
+                        Files.list(storeDir));
                 throw new IOException("Can not load an existing HalfDiskHashMap from ["
                         + storeDir.toAbsolutePath()
                         + "] because metadata file is missing");
