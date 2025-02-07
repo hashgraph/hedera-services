@@ -371,6 +371,4 @@ public class PlatformStateFacade {
     private WritablePlatformStateStore writablePlatformStateStore(@NonNull final State state) {
         return new WritablePlatformStateStore(state.getWritableStates(NAME), versionFactory);
     }
-
-
 }
