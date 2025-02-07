@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -287,8 +287,7 @@ public interface PreHandleContext extends TransactionKeys {
             throws PreCheckException;
 
     @NonNull
-    void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull AccountID payerId)
-            throws PreCheckException;
+    void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull AccountID payerId) throws PreCheckException;
 
     /**
      * Returns the TransactionBogy from the given transaction.
@@ -296,5 +295,4 @@ public interface PreHandleContext extends TransactionKeys {
      */
     @Nullable
     TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException;
-
 }

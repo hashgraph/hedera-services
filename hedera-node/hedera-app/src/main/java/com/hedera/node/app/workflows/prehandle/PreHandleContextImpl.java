@@ -35,7 +35,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
@@ -509,9 +508,9 @@ public class PreHandleContextImpl implements PreHandleContext {
     public void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull final AccountID payerId)
             throws PreCheckException {
         // Throws PreCheckException if the payer account does not exist
-        final var context = new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
+        final var context =
+                new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPreHandle(context);
-
     }
 
     @Override
@@ -546,7 +545,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Nullable
     @Override
     public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException {
-            final var transactionInfo = transactionChecker.check(tx, null);
-            return transactionInfo.txBody();
+        final var transactionInfo = transactionChecker.check(tx, null);
+        return transactionInfo.txBody();
     }
 }
