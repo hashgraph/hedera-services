@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
-import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.internal.network.Network;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.RosterStateId;
@@ -77,9 +76,6 @@ class V0540RosterSchemaTest {
     private MigrationContext ctx;
 
     @Mock
-    private ReadableStates readableStates;
-
-    @Mock
     private WritableStates writableStates;
 
     @Mock
@@ -106,12 +102,6 @@ class V0540RosterSchemaTest {
     private State getState() {
         return state;
     }
-
-    @Mock
-    private ReadableSingletonState<PlatformState> platformStateSingleton;
-
-    @Mock
-    private PlatformState platformState;
 
     private V0540RosterSchema subject;
 

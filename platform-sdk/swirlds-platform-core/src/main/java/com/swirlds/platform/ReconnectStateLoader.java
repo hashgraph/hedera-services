@@ -41,7 +41,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.platform.wiring.PlatformWiring;
-import com.swirlds.state.State;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -113,12 +113,10 @@ public class ReconnectStateLoader {
             // It's important to call init() before loading the signed state. The loading process makes copies
             // of the state, and we want to be sure that the first state in the chain of copies has been initialized.
             final Hash reconnectHash = signedState.getState().getHash();
-            final State state = signedState.getState();
-            final SoftwareVersion creationSoftwareVersion =
-                    platformStateFacade.creationSoftwareVersionOf(signedState.getState());
+            final MerkleStateRoot<?> state = signedState.getState();
+            final SoftwareVersion creationSoftwareVersion = platformStateFacade.creationSoftwareVersionOf(state);
             signedState.init(platformContext);
-            stateLifecycles.onStateInitialized(
-                    signedState.getState(), platform, InitTrigger.RECONNECT, creationSoftwareVersion);
+            stateLifecycles.onStateInitialized(state, platform, InitTrigger.RECONNECT, creationSoftwareVersion);
 
             if (!Objects.equals(signedState.getState().getHash(), reconnectHash)) {
                 throw new IllegalStateException(
