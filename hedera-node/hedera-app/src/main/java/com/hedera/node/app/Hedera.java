@@ -1362,7 +1362,7 @@ public final class Hedera
      *
      * @param timeout maximum time to wait for a connection
      */
-    public void initializeBlockNodeConnections(Duration timeout) {
+    public void initializeBlockNodeConnections(java.time.Duration timeout) {
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (!blockStreamConfig.streamToBlockNodes()) {
             logger.info("Block stream to Block Nodes is disabled, skipping block node connection initialization");
