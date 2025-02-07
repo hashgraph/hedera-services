@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A service that provides the schema for the platform state, used by {@link MerkleStateRoot}
@@ -62,7 +63,7 @@ public enum PlatformStateService implements Service {
     /**
      * Temporary access to the re-clamped stake weights used in 0.58 upgrade specifically.
      */
-    private static final AtomicReference<Map<Long, Long>> RECLAMPED_STAKE_WEIGHTS = new AtomicReference<>();
+    private static final AtomicReference<Supplier<Map<Long, Long>>> RECLAMPED_STAKE_WEIGHTS = new AtomicReference<>();
 
     /**
      * The schemas to register with the {@link SchemaRegistry}.
@@ -115,7 +116,7 @@ public enum PlatformStateService implements Service {
     /**
      * Sets the re-clamped stake weights to the given map.
      */
-    public void setReclampedStakeWeights(@NonNull final Map<Long, Long> reclampedStakeWeights) {
+    public void setReclampedStakeWeights(@NonNull final Supplier<Map<Long, Long>> reclampedStakeWeights) {
         RECLAMPED_STAKE_WEIGHTS.set(requireNonNull(reclampedStakeWeights));
     }
 

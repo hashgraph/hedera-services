@@ -56,13 +56,13 @@ public class V058RosterLifecycleTransitionSchema extends Schema {
             SemanticVersion.newBuilder().major(0).minor(58).build();
 
     private final Supplier<AddressBook> addressBook;
-    private final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier;
+    private final Supplier<Supplier<Map<Long, Long>>> reclampedStakeWeightsSupplier;
     private final Function<Configuration, SoftwareVersion> appVersionFn;
     private final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn;
 
     public V058RosterLifecycleTransitionSchema(
             @NonNull final Supplier<AddressBook> addressBook,
-            @NonNull final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier,
+            @NonNull final Supplier<Supplier<Map<Long, Long>>> reclampedStakeWeightsSupplier,
             @NonNull final Function<Configuration, SoftwareVersion> appVersionFn,
             @NonNull final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn) {
         super(VERSION);
@@ -102,8 +102,8 @@ public class V058RosterLifecycleTransitionSchema extends Schema {
                 final var nextBook = isOverride ? withExtantNodeWeights(diskBook, currentBook) : diskBook;
                 stateStore.bulkUpdate(v -> {
                     v.setPreviousAddressBook(currentBook == null ? null : currentBook.copy());
-                    final var updatedNextBook =
-                            withReclampedStakeWeights(nextBook, reclampedStakeWeightsSupplier.get());
+                    final var updatedNextBook = withReclampedStakeWeights(
+                            nextBook, reclampedStakeWeightsSupplier.get().get());
                     v.setAddressBook(updatedNextBook);
                 });
             }

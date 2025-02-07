@@ -169,6 +169,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -676,10 +677,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (diskAddressBook != null) {
             PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
         }
-        final var store = new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenServiceImpl.NAME));
-        final var reclampedStakeWeights = computeReclampedStakeWeights(
-                store, configProvider.getConfiguration().getConfigData(StakingConfig.class));
-        PLATFORM_STATE_SERVICE.setReclampedStakeWeights(reclampedStakeWeights);
+        final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier = () -> {
+            final var store = new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenServiceImpl.NAME));
+            return computeReclampedStakeWeights(
+                    store, configProvider.getConfiguration().getConfigData(StakingConfig.class));
+        };
+        PLATFORM_STATE_SERVICE.setReclampedStakeWeights(reclampedStakeWeightsSupplier);
         this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,

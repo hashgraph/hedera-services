@@ -79,7 +79,7 @@ class V058RosterLifecycleTransitionSchemaTest {
     private Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn;
 
     @Mock
-    private Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier;
+    private Supplier<Supplier<Map<Long, Long>>> reclampedStakeWeightsSupplier;
 
     private V058RosterLifecycleTransitionSchema subject;
 
@@ -134,6 +134,7 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(platformStateStoreFn.apply(writableStates)).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(addressBook);
         given(addressBook.iterator()).willReturn(Collections.emptyIterator());
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);
@@ -152,6 +153,7 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(addressBook.iterator()).willReturn(Collections.emptyIterator());
         given(ctx.newStates()).willReturn(writableStates);
         given(platformStateStoreFn.apply(writableStates)).willReturn(platformStateStore);
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);
@@ -185,7 +187,7 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(matchingAddress.getWeight()).willReturn(matchingWeight);
         given(matchingAddress.copySetWeight(anyLong())).willReturn(matchingAddress);
         given(platformStateStore.getAddressBook()).willReturn(currentBook);
-        given(reclampedStakeWeightsSupplier.get()).willReturn(Map.of());
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);
