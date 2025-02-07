@@ -101,6 +101,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -160,6 +161,7 @@ public class PlatformComponentBuilder {
     private StateSigner stateSigner;
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
+    private PlatformWiring platformWiring;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -208,7 +210,10 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            return new SwirldsPlatform(this);
+            final SwirldsPlatform swirldsPlatform = new SwirldsPlatform(this);
+            platformWiring = swirldsPlatform.getPlatformWiring();
+
+            return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {
                 // Future work: eliminate the static variables that require this code to exist
@@ -221,6 +226,16 @@ public class PlatformComponentBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Getter for the PlatformWiring extracted from the newly created SwirldsPlatform instance
+     *
+     * @return the newly created PlatformWiring
+     */
+    @NonNull
+    public PlatformWiring getPlatformWiring() {
+        return platformWiring;
     }
 
     /**
