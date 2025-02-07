@@ -123,12 +123,12 @@ class StakeInfoHelperTest {
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).deleted()).isFalse();
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).weight()).isZero();
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).minStake()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).maxStake()).isEqualTo(1666666666666666666L);
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_4)).maxStake()).isEqualTo(45000000000000000L);
         // Also adds node 8 to the state
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).deleted()).isFalse();
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).weight()).isZero();
         assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).minStake()).isZero();
-        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(1666666666666666666L);
+        assertThat(((StakingNodeInfo) updatedStates.get(NODE_NUM_8)).maxStake()).isEqualTo(45000000000000000L);
     }
 
     private MapWritableStates newStatesInstance(final MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfo) {
