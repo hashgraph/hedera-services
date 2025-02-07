@@ -230,9 +230,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
         //   [64;  95]  r == x-value ∈ (0, secp256k1n);
         //   [96; 127]  s ∈ (0; sep256k1n ÷ 2 + 1)
 
-        if (messageHash.length != 32 || signature.length <= 64) {
-            return Optional.empty();
-        }
+        if (messageHash.length != 32 || signature.length <= 64) return Optional.empty();
         final var ov = reverseV(signature);
         if (ov.isEmpty()) return Optional.empty();
 
@@ -261,18 +259,12 @@ public class IsAuthorizedRawCall extends AbstractCall {
     @NonNull
     public Optional<Byte> reverseV(final byte[] signature) {
         requireNonNull(signature);
-        if (signature.length <= 64) {
-            throw new IllegalArgumentException("Signature is too short");
-        }
+        if (signature.length <= 64) throw new IllegalArgumentException("Signature is too short");
 
         final var v = new BigInteger(1, signature, 64, signature.length - 64);
 
-        if (knownVs.containsKey(v)) {
-            return Optional.of(knownVs.get(v));
-        }
-        if (BIG_35.compareTo(v) > 0) {
-            return Optional.empty(); // invalid
-        }
+        if (knownVs.containsKey(v)) return Optional.of(knownVs.get(v));
+        if (BIG_35.compareTo(v) > 0) return Optional.empty(); // invalid
 
         // v = {0,1} + (chainid * 2) + 35 thus parity is the opposite of the low order bit
         var parity = !v.testBit(0);
@@ -300,11 +292,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private SignatureType signatureTypeFromItsLength(@NonNull final byte[] signature) {
         final var len = signature.length;
 
-        if (EC_SIGNATURE_MIN_LENGTH <= len && len <= EC_SIGNATURE_MAX_LENGTH) {
-            return SignatureType.EC;
-        } else if (ED_SIGNATURE_LENGTH == len) {
-            return SignatureType.ED;
-        }
+        if (EC_SIGNATURE_MIN_LENGTH <= len && len <= EC_SIGNATURE_MAX_LENGTH) return SignatureType.EC;
+        else if (ED_SIGNATURE_LENGTH == len) return SignatureType.ED;
 
         return SignatureType.INVALID;
     }

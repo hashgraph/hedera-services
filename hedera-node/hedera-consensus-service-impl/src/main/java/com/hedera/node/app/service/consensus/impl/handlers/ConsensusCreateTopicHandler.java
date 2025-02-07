@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -123,6 +124,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
         final var topicStore = handleContext.storeFactory().writableStore(WritableTopicStore.class);
+        final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
 
         validateSemantics(op, handleContext);
 
@@ -163,6 +165,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
             /* --- Add topic id to topic builder --- */
             builder.topicId(TopicID.newBuilder()
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
                     .topicNum(handleContext.entityNumGenerator().newEntityNum())
                     .build());
 
