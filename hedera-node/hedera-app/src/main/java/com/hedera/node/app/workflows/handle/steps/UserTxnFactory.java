@@ -55,7 +55,7 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -427,19 +427,9 @@ public class UserTxnFactory {
                     null,
                     null,
                     0);
-        } catch (final PreCheckException e) {
+        } catch (final WorkflowException e) {
             return new PreHandleResult(
-                    null,
-                    null,
-                    PRE_HANDLE_FAILURE,
-                    e.responseCode(),
-                    null,
-                    emptySet(),
-                    null,
-                    emptySet(),
-                    null,
-                    null,
-                    0);
+                    null, null, PRE_HANDLE_FAILURE, e.getStatus(), null, emptySet(), null, emptySet(), null, null, 0);
         }
     }
 }

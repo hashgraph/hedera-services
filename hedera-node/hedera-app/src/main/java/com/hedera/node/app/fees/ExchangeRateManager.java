@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
@@ -124,14 +124,14 @@ public final class ExchangeRateManager {
         try {
             proposedRates = ExchangeRateSet.PROTOBUF.parse(bytes.toReadableSequentialData());
         } catch (final ParseException e) {
-            throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
 
         // Validate mandatory fields
         if (!(proposedRates.hasCurrentRate()
                 && proposedRates.currentRateOrThrow().hasExpirationTime()
                 && proposedRates.hasNextRate())) {
-            throw new HandleException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_EXCHANGE_RATE_FILE);
         }
 
         // Check bounds
@@ -142,7 +142,7 @@ public final class ExchangeRateManager {
         if (!isSuperUser) {
             final var limitPercent = ratesConfig.intradayChangeLimitPercent();
             if (!isNormalIntradayChange(midnightRates, proposedRates, limitPercent)) {
-                throw new HandleException(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
+                throw new WorkflowException(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
             }
         }
 

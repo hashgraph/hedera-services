@@ -64,8 +64,7 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -175,7 +174,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("All non-null key inputs required")
-    void nonNullKeyInputsRequired() throws PreCheckException {
+    void nonNullKeyInputsRequired() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var adminKey = SIMPLE_KEY_A;
@@ -192,7 +191,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Non-payer admin key is added")
-    void differentAdminKey() throws PreCheckException {
+    void differentAdminKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var adminKey = SIMPLE_KEY_A;
@@ -208,7 +207,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Non-payer submit key is added")
-    void createAddsDifferentSubmitKey() throws PreCheckException {
+    void createAddsDifferentSubmitKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var submitKey = SIMPLE_KEY_B;
@@ -224,7 +223,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Payer key can be added as admin")
-    void createAddsPayerAsAdmin() throws PreCheckException {
+    void createAddsPayerAsAdmin() {
         // given:
         final var protoPayerKey = SIMPLE_KEY_A;
         final var payerKey = mockPayerLookup(protoPayerKey);
@@ -240,7 +239,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Payer key can be added as submitter")
-    void createAddsPayerAsSubmitter() throws PreCheckException {
+    void createAddsPayerAsSubmitter() {
         // given:
         final var protoPayerKey = SIMPLE_KEY_B;
         final var payerKey = mockPayerLookup(protoPayerKey);
@@ -256,7 +255,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Fails if auto account is returned with a null key")
-    void autoRenewAccountKeyIsNull() throws PreCheckException {
+    void autoRenewAccountKeyIsNull() {
         // given:
         mockPayerLookup(key);
         given(accountStore.getAccountById(autoRenewId)).willReturn(null);
@@ -274,7 +273,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
     @Test
     @DisplayName("Only payer key is always required")
-    void requiresPayerKey() throws PreCheckException {
+    void requiresPayerKey() {
         // given:
         final var payerKey = mockPayerLookup(key);
         final var context = new FakePreHandleContext(accountStore, newCreateTxn(null, null, false));
@@ -383,8 +382,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+                .willThrow(new WorkflowException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, msg.getStatus());
     }
 
@@ -399,9 +398,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willThrow(new HandleException(INVALID_AUTORENEW_ACCOUNT));
+                .willThrow(new WorkflowException(INVALID_AUTORENEW_ACCOUNT));
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_AUTORENEW_ACCOUNT, msg.getStatus());
     }
 
@@ -414,11 +413,11 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
-        doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
+        doThrow(new WorkflowException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
                 .validateMemo(txnBody.consensusCreateTopicOrThrow().memo());
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(0, topicStore.sizeOfState());
     }
 
@@ -432,10 +431,10 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.attributeValidator()).willReturn(validator);
 
-        doThrow(new HandleException(ResponseCodeEnum.BAD_ENCODING))
+        doThrow(new WorkflowException(ResponseCodeEnum.BAD_ENCODING))
                 .when(validator)
                 .validateKey(adminKey);
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(0, topicStore.sizeOfState());
     }
 
@@ -464,7 +463,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
@@ -486,9 +485,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        doThrow(HandleException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), any());
+        doThrow(WorkflowException.class).when(expiryValidator).resolveCreationAttempt(anyBoolean(), any(), any());
 
-        final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var failure = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(0, topicStore.modifiedTopics().size());
     }
 
@@ -548,7 +547,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
@@ -571,7 +570,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }
@@ -594,7 +593,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.attributeValidator()).willReturn(validator);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR, msg.getStatus());
         assertEquals(0, topicStore.modifiedTopics().size());
     }

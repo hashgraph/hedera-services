@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhance
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Hash;
@@ -222,7 +222,7 @@ class FrameBuilderTest {
                 .getOrCreateConfig();
 
         assertThrows(
-                HandleException.class,
+                WorkflowException.class,
                 () -> subject.buildInitialFrameWith(
                         transaction,
                         worldUpdater,

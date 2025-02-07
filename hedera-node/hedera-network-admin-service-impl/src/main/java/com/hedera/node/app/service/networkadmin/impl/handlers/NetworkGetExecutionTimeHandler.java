@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import com.hedera.hapi.node.network.NetworkGetExecutionTimeResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,9 +59,9 @@ public class NetworkGetExecutionTimeHandler extends FreeQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
-        throw new PreCheckException(NOT_SUPPORTED);
+        throw new WorkflowException(NOT_SUPPORTED);
     }
 
     @Override

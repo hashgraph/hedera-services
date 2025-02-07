@@ -60,7 +60,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.service.token.records.ChildStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -149,7 +149,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(FAIL_INVALID));
     }
 
@@ -172,7 +172,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(FAIL_INVALID));
     }
 
@@ -654,7 +654,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(FAIL_INVALID));
     }
 

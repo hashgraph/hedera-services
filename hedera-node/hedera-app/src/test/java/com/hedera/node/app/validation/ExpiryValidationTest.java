@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.AutoRenewConfig;
@@ -97,7 +97,7 @@ class ExpiryValidationTest extends AppTestBase {
 
         // then
         assertThatThrownBy(() -> subject.checkAccountExpiry(account))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -131,7 +131,7 @@ class ExpiryValidationTest extends AppTestBase {
 
         // then
         assertThatThrownBy(() -> subject.checkAccountExpiry(account))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(CONTRACT_EXPIRED_AND_PENDING_REMOVAL));
     }
 

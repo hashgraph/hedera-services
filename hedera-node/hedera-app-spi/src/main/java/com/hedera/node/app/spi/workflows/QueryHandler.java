@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,9 +85,9 @@ public interface QueryHandler {
      *
      * @param context the {@link QueryContext} that contains all information about the query
      * @throws NullPointerException if {@code context} is {@code null}
-     * @throws PreCheckException if validation fails
+     * @throws WorkflowException if validation fails
      */
-    void validate(@NonNull QueryContext context) throws PreCheckException;
+    void validate(@NonNull QueryContext context);
 
     /**
      * This method is called during the query workflow. It determines the requested value(s) and returns the appropriate

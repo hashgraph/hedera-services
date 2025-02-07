@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -124,7 +124,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("Submission of the transaction to the platform is a success")
-        void submittingToPlatformSucceeds() throws PreCheckException {
+        void submittingToPlatformSucceeds() {
             // Given a platform that will succeed in taking bytes
             when(platform.createTransaction(any())).thenReturn(true);
 
@@ -140,15 +140,15 @@ final class SubmissionManagerTest extends AppTestBase {
         }
 
         @Test
-        @DisplayName("If the platform fails to onConsensusRound the bytes, a PreCheckException is thrown")
+        @DisplayName("If the platform fails to onConsensusRound the bytes, a WorkflowException is thrown")
         void testSubmittingToPlatformFails() {
             // Given a platform that will **fail** in taking bytes
             when(platform.createTransaction(any())).thenReturn(false);
 
             // When we submit bytes, then we fail by exception
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .extracting(t -> ((PreCheckException) t).responseCode())
+                    .isInstanceOf(WorkflowException.class)
+                    .extracting(t -> ((WorkflowException) t).getStatus())
                     .isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
             // And the error metrics HAVE been updated
             verify(platformTxnRejections).cycle();
@@ -158,7 +158,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("Submitting the same transaction twice in close succession rejects the duplicate")
-        void testSubmittingDuplicateTransactionsCloseTogether() throws PreCheckException {
+        void testSubmittingDuplicateTransactionsCloseTogether() {
             // Given a platform that will succeed in taking bytes
             when(platform.createTransaction(any())).thenReturn(true);
             when(deduplicationCache.contains(txBody.transactionIDOrThrow()))
@@ -169,8 +169,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // with a DUPLICATE_TRANSACTION error
             submissionManager.submit(txBody, bytes);
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .extracting(t -> ((PreCheckException) t).responseCode())
+                    .isInstanceOf(WorkflowException.class)
+                    .extracting(t -> ((WorkflowException) t).getStatus())
                     .isEqualTo(DUPLICATE_TRANSACTION);
             // And the deduplication cache is updated just once
             verify(deduplicationCache).add(txBody.transactionIDOrThrow());
@@ -222,7 +222,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
         @Test
         @DisplayName("An unchecked transaction not in PROD mode can be submitted")
-        void testSuccessWithUncheckedSubmit() throws PreCheckException {
+        void testSuccessWithUncheckedSubmit() {
             // Given a platform that will succeed in taking the *unchecked* bytes
             when(platform.createTransaction(uncheckedBytes)).thenReturn(true);
 
@@ -252,8 +252,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .isInstanceOf(WorkflowException.class)
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -278,8 +278,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .isInstanceOf(WorkflowException.class)
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -304,8 +304,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .isInstanceOf(WorkflowException.class)
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -330,8 +330,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // When we submit an unchecked transaction, and separate bytes, then the
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .isInstanceOf(WorkflowException.class)
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -344,7 +344,7 @@ final class SubmissionManagerTest extends AppTestBase {
         // TEST: If the unchecked submit is bogus bytes, or fails the onset check in some way, then
         // it must be rejected
         @Test
-        @DisplayName("Send bogus bytes as an unchecked transaction and verify it fails with a PreCheckException")
+        @DisplayName("Send bogus bytes as an unchecked transaction and verify it fails with a WorkflowException")
         void testBogusBytes() {
             // Given we are in TEST mode and have a transaction with bogus bytes
             config = () -> new VersionedConfigImpl(
@@ -365,8 +365,8 @@ final class SubmissionManagerTest extends AppTestBase {
             // When we submit an unchecked transaction with bogus bytes, and separate bytes, then the
             // submission FAILS because of the bogus bytes
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .isInstanceOf(WorkflowException.class)
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);

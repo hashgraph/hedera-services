@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetFastRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetFastRecordResponse;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetFastRecordHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +73,7 @@ class NetworkTransactionGetFastRecordHandlerTest {
     @Test
     void validateThrowsPreCheck() {
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 

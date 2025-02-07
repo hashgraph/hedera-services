@@ -44,9 +44,8 @@ import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.Throttle;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.InstantSource;
@@ -67,13 +66,13 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     private PreHandleContext realPreContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setUp() throws InvalidKeyException {
         subject = new ScheduleCreateHandler(InstantSource.system(), throttleFactory);
         setUpBase();
     }
 
     @Test
-    void preHandleVanilla() throws PreCheckException {
+    void preHandleVanilla() {
         realPreContext = new PreHandleContextImpl(
                 mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher, mockTransactionChecker);
         subject.preHandle(realPreContext);
@@ -90,7 +89,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleVanillaNoAdmin() throws PreCheckException {
+    void preHandleVanillaNoAdmin() {
         final TransactionBody transactionToTest = ScheduledTransactionFactory.scheduleCreateTransactionWith(
                 null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
         realPreContext = new PreHandleContextImpl(
@@ -106,7 +105,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleUsesCreatePayerIfScheduledPayerNotSet() throws PreCheckException {
+    void preHandleUsesCreatePayerIfScheduledPayerNotSet() {
         realPreContext = new PreHandleContextImpl(
                 mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher, mockTransactionChecker);
         subject.preHandle(realPreContext);
@@ -120,7 +119,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleMissingPayerThrowsInvalidPayer() throws PreCheckException {
+    void preHandleMissingPayerThrowsInvalidPayer() {
         reset(accountById);
         accountsMapById.put(payer, null);
 
@@ -131,7 +130,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleRejectsNonWhitelist() throws PreCheckException {
+    void preHandleRejectsNonWhitelist() {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         for (final Schedule next : listOfScheduledOptions) {
@@ -152,14 +151,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void handleRejectsDuplicateTransaction() throws PreCheckException {
+    void handleRejectsDuplicateTransaction() {
         final TransactionBody createTransaction = otherScheduleInState.originalCreateTransaction();
         prepareContext(createTransaction, otherScheduleInState.scheduleId().scheduleNum() + 1);
-        throwsHandleException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
+        throwsWorkflowException(() -> subject.handle(mockContext), IDENTICAL_SCHEDULE_ALREADY_CREATED);
     }
 
     @Test
-    void handleRejectsNonWhitelist() throws HandleException, PreCheckException {
+    void handleRejectsNonWhitelist() throws WorkflowException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         given(keyVerifier.authorizingSimpleKeys()).willReturn(new ConcurrentSkipListSet<>(new KeyComparator()));
@@ -177,13 +176,13 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 subject.handle(mockContext);
                 verifyHandleSucceededForWhitelist(next, startCount);
             } else {
-                throwsHandleException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+                throwsWorkflowException(() -> subject.handle(mockContext), SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
             }
         }
     }
 
     @Test
-    void handleRefusesToExceedCreationLimit() throws HandleException, PreCheckException {
+    void handleRefusesToExceedCreationLimit() throws WorkflowException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         assertThat(configuredWhitelist).hasSizeGreaterThan(4);
@@ -203,14 +202,14 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
             given(keyVerifier.verificationFor(any(Key.class), any(VerificationAssistant.class)))
                     .willReturn(new SignatureVerificationImpl(nullKey, null, true));
             if (configuredWhitelist.contains(functionType)) {
-                throwsHandleException(
+                throwsWorkflowException(
                         () -> subject.handle(mockContext), MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
             }
         }
     }
 
     @Test
-    void handleExecutesImmediateIfPossible() throws HandleException, PreCheckException {
+    void handleExecutesImmediateIfPossible() throws WorkflowException {
         final Set<HederaFunctionality> configuredWhitelist =
                 scheduleConfig.whitelist().functionalitySet();
         int successCount = 0;
@@ -263,8 +262,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
                 adminKey, "test", payer, scheduler, timestampValue);
     }
 
-    private void prepareContext(final TransactionBody createTransaction, final long nextEntityId)
-            throws PreCheckException {
+    private void prepareContext(final TransactionBody createTransaction, final long nextEntityId) {
         final EntityNumGenerator entityNumGenerator = mock(EntityNumGenerator.class);
         given(mockContext.body()).willReturn(createTransaction);
         given(mockContext.entityNumGenerator()).willReturn(entityNumGenerator);

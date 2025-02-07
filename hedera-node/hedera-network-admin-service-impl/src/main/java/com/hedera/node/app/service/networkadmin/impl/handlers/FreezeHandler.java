@@ -39,11 +39,10 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -89,7 +88,7 @@ public class FreezeHandler implements TransactionHandler {
      * @see <a href="https://hashgraph.github.io/hedera-protobufs/#freeze.proto">Protobuf freeze documentation</a>
      */
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
 
         final FreezeTransactionBody freezeTxn = context.body().freezeOrThrow();
@@ -110,7 +109,7 @@ public class FreezeHandler implements TransactionHandler {
     // it is necessary to check startHour, startMin, endHour, endMin, all of which are deprecated
     // because if any are present then we set a status of INVALID_FREEZE_TRANSACTION_BODY
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final TransactionBody txn = context.body();
 
@@ -119,7 +118,7 @@ public class FreezeHandler implements TransactionHandler {
 
         final FreezeType freezeType = freezeTxn.freezeType();
         if (freezeType == UNKNOWN_FREEZE_TYPE) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
 
         if (Arrays.asList(FREEZE_ONLY, FREEZE_UPGRADE, TELEMETRY_UPGRADE).contains(freezeType)) {
@@ -130,7 +129,7 @@ public class FreezeHandler implements TransactionHandler {
         if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
             final FileID updateFileID = freezeTxn.updateFile();
             if (updateFileID == null) {
-                throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+                throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
             }
         }
 
@@ -138,13 +137,12 @@ public class FreezeHandler implements TransactionHandler {
             final Bytes fileHash = freezeTxn.fileHash();
             // don't verify the hash, just make sure it is not null or empty and is the correct length
             if (fileHash == null || Bytes.EMPTY.equals(fileHash) || fileHash.length() != UPDATE_FILE_HASH_LEN) {
-                throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+                throw new WorkflowException(ResponseCodeEnum.FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
             }
         }
     }
 
-    private static @NonNull FreezeTransactionBody getFreezeTransactionBody(final TransactionBody txn)
-            throws PreCheckException {
+    private static @NonNull FreezeTransactionBody getFreezeTransactionBody(final TransactionBody txn) {
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 
         // freeze.proto properties startHour, startMin, endHour, endMin are deprecated in the protobuf
@@ -153,13 +151,13 @@ public class FreezeHandler implements TransactionHandler {
                 || freezeTxn.startMin() != 0
                 || freezeTxn.endHour() != 0
                 || freezeTxn.endMin() != 0) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
         return freezeTxn;
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
+    public void handle(@NonNull final HandleContext context) throws WorkflowException {
         requireNonNull(context);
         final var txn = context.body();
         final StoreFactory storeFactory = context.storeFactory();
@@ -218,7 +216,7 @@ public class FreezeHandler implements TransactionHandler {
             }
             case FREEZE_ONLY -> upgradeActions.scheduleFreezeOnlyAt(requireNonNull(freezeStartTime));
                 // UNKNOWN_FREEZE_TYPE will fail at preHandle, this code should never get called
-            case UNKNOWN_FREEZE_TYPE -> throw new HandleException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            case UNKNOWN_FREEZE_TYPE -> throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -250,16 +248,15 @@ public class FreezeHandler implements TransactionHandler {
     /**
      * For freeze types FREEZE_ONLY, FREEZE_UPGRADE, and TELEMETRY_UPGRADE, the startTime field must be set to
      * a time in the future, where future is defined as a time after the current consensus time.
-     * @throws PreCheckException if startTime is not in the future
+     * @throws WorkflowException if startTime is not in the future
      */
     private static void verifyFreezeStartTimeIsInFuture(
-            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull Timestamp curConsensusTime)
-            throws PreCheckException {
+            final @NonNull FreezeTransactionBody freezeTxn, final @NonNull Timestamp curConsensusTime) {
         requireNonNull(freezeTxn);
         requireNonNull(curConsensusTime);
         final Timestamp freezeStartTime = freezeTxn.startTime();
         if (freezeStartTime == null || (freezeStartTime.seconds() == 0 && freezeStartTime.nanos() == 0)) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
         final Instant freezeStartTimeInstant =
                 Instant.ofEpochSecond(freezeStartTime.seconds(), freezeStartTime.nanos());
@@ -269,20 +266,19 @@ public class FreezeHandler implements TransactionHandler {
         // make sure freezeStartTime is after current consensus time
         final boolean freezeStartTimeIsInFuture = freezeStartTimeInstant.isAfter(effectiveNowInstant);
         if (!freezeStartTimeIsInFuture) {
-            throw new PreCheckException(ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE);
+            throw new WorkflowException(ResponseCodeEnum.FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
     /**
      * For freeze types PREPARE_UPGRADE, FREEZE_UPGRADE, and TELEMETRY_UPGRADE,
      * the updateFile and fileHash fields must be set.
-     * @throws PreCheckException if updateFile or fileHash are not set or don't pass sanity checks
+     * @throws WorkflowException if updateFile or fileHash are not set or don't pass sanity checks
      */
     private static void verifyUpdateFile(
             final @NonNull FreezeTransactionBody freezeTxn,
             final @NonNull ReadableUpgradeFileStore upgradeStore,
-            final LongPair softwareUpdateRange)
-            throws PreCheckException {
+            final LongPair softwareUpdateRange) {
         requireNonNull(freezeTxn);
         requireNonNull(upgradeStore);
 
@@ -293,10 +289,10 @@ public class FreezeHandler implements TransactionHandler {
         if (updateFileID == null
                 || updateFileID.fileNum() < softwareUpdateRange.left()
                 || updateFileID.fileNum() > softwareUpdateRange.right()) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_FREEZE_TRANSACTION_BODY);
         }
         if (upgradeStore.peek(updateFileID) == null) {
-            throw new PreCheckException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
+            throw new WorkflowException(ResponseCodeEnum.FREEZE_UPDATE_FILE_DOES_NOT_EXIST);
         }
     }
 }

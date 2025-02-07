@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -101,13 +101,13 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final GetAccountDetailsQuery op = context.query().accountDetailsOrThrow();
 
         // The Account ID must be specified
         if (!op.hasAccountId()) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            throw new WorkflowException(INVALID_ACCOUNT_ID);
         }
 
         // The account must exist for that transaction ID

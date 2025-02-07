@@ -49,9 +49,8 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -123,7 +122,7 @@ class FileUpdateTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
+    void preHandleWorksAsExpected() {
         refreshStoresWithCurrentFileOnlyInReadable();
 
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -141,7 +140,7 @@ class FileUpdateTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+    void preHandleWorksAsExpectedImmutable() {
         file = createFileEmptyMemoAndKeys();
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -239,7 +238,7 @@ class FileUpdateTest extends FileTestBase {
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         given(handleContext.body()).willReturn(txBody);
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -255,7 +254,7 @@ class FileUpdateTest extends FileTestBase {
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
 
-        willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
+        willThrow(new WorkflowException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(txBody.fileUpdate().memo());
 
@@ -484,11 +483,11 @@ class FileUpdateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
     }
 
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
+        final var ex = assertThrows(WorkflowException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 

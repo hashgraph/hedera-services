@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -101,15 +101,15 @@ public class ScheduleGetInfoHandler extends PaidQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         Objects.requireNonNull(context);
         final ScheduleGetInfoQuery request = context.query().scheduleGetInfo();
         if (request != null && request.hasHeader()) {
             if (findSchedule(context) == null) {
-                throw new PreCheckException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                throw new WorkflowException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
             }
         } else {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION);
         }
     }
 

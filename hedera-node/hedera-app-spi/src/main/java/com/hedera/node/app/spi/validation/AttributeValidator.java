@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.key.KeyUtils;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -39,7 +39,7 @@ public interface AttributeValidator {
      * Then validates each key in the given structure. If the key is not valid throws {@code ResponseCodeEnum.BAD_ENCODING}
      *
      * @param key the key to validate
-     * @throws HandleException if the key is invalid or more than {@value MAX_NESTED_KEY_LEVELS}
+     * @throws WorkflowException if the key is invalid or more than {@value MAX_NESTED_KEY_LEVELS}
      */
     void validateKey(@NonNull Key key);
 
@@ -55,7 +55,7 @@ public interface AttributeValidator {
      * Validates the given memo.
      *
      * @param memo the memo to validate
-     * @throws HandleException if the key is invalid
+     * @throws WorkflowException if the key is invalid
      */
     void validateMemo(@Nullable String memo);
 
@@ -63,7 +63,7 @@ public interface AttributeValidator {
      * Validates the given expiry.
      *
      * @param expiry the expiry to validate
-     * @throws HandleException if the expiry is invalid
+     * @throws WorkflowException if the expiry is invalid
      */
     void validateExpiry(long expiry);
 
@@ -71,7 +71,7 @@ public interface AttributeValidator {
      * Validates the given auto-renew period.
      *
      * @param autoRenewPeriod the auto-renew period to validate
-     * @throws HandleException if the auto-renew period is invalid
+     * @throws WorkflowException if the auto-renew period is invalid
      */
     void validateAutoRenewPeriod(long autoRenewPeriod);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -124,11 +124,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         try {
             return context.dispatch(setupDispatch(context.payer(), synthTxn, CryptoCreateStreamBuilder.class))
                     .status();
-        } catch (HandleException e) {
-            // It is critically important we don't let HandleExceptions propagate to the workflow because
+        } catch (WorkflowException e) {
+            // It is critically important we don't let WorkflowException propagate to the workflow because
             // it doesn't rollback for contract operations so we can commit gas charges; that is, the
             // EVM transaction should always either run to completion or (if it must) throw an internal
-            // failure like an IllegalArgumentException---but not a HandleException!
+            // failure like an IllegalArgumentException---but not a WorkflowException!
             return e.getStatus();
         }
     }

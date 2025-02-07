@@ -43,7 +43,7 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.airdrops.TokenAirdropDecoder;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -157,7 +157,7 @@ public class TokenAirdropDecoderTest {
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
         given(addressIdConverter.convert(asHeadlongAddress(SYSTEM_ADDRESS)))
                 .willReturn(AccountID.newBuilder().accountNum(750).build());
-        assertThatExceptionOfType(HandleException.class)
+        assertThatExceptionOfType(WorkflowException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
                 .withMessage(INVALID_RECEIVING_NODE_ACCOUNT.protoName());
     }
@@ -250,7 +250,7 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThatExceptionOfType(HandleException.class)
+        assertThatExceptionOfType(WorkflowException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
                 .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }
@@ -323,7 +323,7 @@ public class TokenAirdropDecoderTest {
         given(configuration.getConfigData(LedgerConfig.class)).willReturn(ledgerConfig);
         given(ledgerConfig.tokenTransfersMaxLen()).willReturn(10);
         given(ledgerConfig.nftTransfersMaxLen()).willReturn(10);
-        assertThatExceptionOfType(HandleException.class)
+        assertThatExceptionOfType(WorkflowException.class)
                 .isThrownBy(() -> subject.decodeAirdrop(attempt))
                 .withMessage(TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED.protoName());
     }

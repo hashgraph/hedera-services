@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.security.InvalidKeyException;
 import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ReadableScheduleStoreTest extends ScheduleTestBase {
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setUp() throws InvalidKeyException {
         setUpBase();
     }
 

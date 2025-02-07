@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class InsufficientBalanceExceptionTest {
                 new InsufficientBalanceException(ResponseCodeEnum.UNAUTHORIZED, 42L);
 
         // then
-        assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(exception.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
         assertThat(exception.getEstimatedFee()).isEqualTo(42L);
         assertThat(exception.getMessage()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED.protoName());
     }

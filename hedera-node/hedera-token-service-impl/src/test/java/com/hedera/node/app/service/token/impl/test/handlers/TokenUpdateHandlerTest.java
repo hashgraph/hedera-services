@@ -86,10 +86,9 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -263,7 +262,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withMetadataKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
@@ -272,7 +271,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withToken(asToken(1000)).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
@@ -288,7 +287,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(preHandleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_IS_IMMUTABLE));
     }
 
@@ -300,49 +299,49 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withAdminKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withFreezeKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
 
         txn = new TokenUpdateBuilder().withKycKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_KYC_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withMetadataKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
@@ -455,7 +454,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_HAS_NO_KYC_KEY));
     }
 
@@ -474,31 +473,31 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
     @Test
     void failsIfMemoTooLong() {
-        doThrow(new HandleException(MEMO_TOO_LONG)).when(attributeValidator).validateMemo(any());
+        doThrow(new WorkflowException(MEMO_TOO_LONG)).when(attributeValidator).validateMemo(any());
         txn = new TokenUpdateBuilder()
                 .withMemo("12345678904634634563436462343254534e5365453435452454524541534353665324545435")
                 .build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MEMO_TOO_LONG));
     }
 
     @Test
     void failsIfMemoHasZeroByte() {
-        doThrow(new HandleException(INVALID_ZERO_BYTE_IN_STRING))
+        doThrow(new WorkflowException(INVALID_ZERO_BYTE_IN_STRING))
                 .when(attributeValidator)
                 .validateMemo(any());
         txn = new TokenUpdateBuilder().withMemo("\0").build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ZERO_BYTE_IN_STRING));
     }
 
@@ -543,7 +542,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_SYMBOL_TOO_LONG));
     }
 
@@ -588,7 +587,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThatNoException().isThrownBy(() -> subject.pureChecks(pureChecksContext));
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_NAME_TOO_LONG));
     }
 
@@ -772,7 +771,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NO_REMAINING_AUTOMATIC_ASSOCIATIONS));
     }
 
@@ -785,7 +784,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
     }
 
@@ -817,7 +816,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -844,7 +843,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -876,7 +875,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -902,7 +901,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(new ExpiryMeta(1234600L, autoRenewSecs, ownerId));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
     }
 
@@ -914,10 +913,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
-                .willThrow(new HandleException(ACCOUNT_DELETED));
+                .willThrow(new WorkflowException(ACCOUNT_DELETED));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_DELETED));
     }
 
@@ -929,10 +928,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
-                .willThrow(new HandleException(ACCOUNT_DELETED));
+                .willThrow(new WorkflowException(ACCOUNT_DELETED));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_DELETED));
     }
 
@@ -959,13 +958,13 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void failsOnReducedNewExpiry() {
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
-                .willThrow(new HandleException(EXPIRATION_REDUCTION_NOT_ALLOWED));
+                .willThrow(new WorkflowException(EXPIRATION_REDUCTION_NOT_ALLOWED));
         txn = new TokenUpdateBuilder()
                 .withExpiry(consensusInstant.getEpochSecond() - 72000)
                 .build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
@@ -974,9 +973,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withExpiry(3_000_000_000L + 10).build();
         given(handleContext.body()).willReturn(txn);
         given(expiryValidator.resolveUpdateAttempt(any(), any(), anyBoolean()))
-                .willThrow(new HandleException(INVALID_EXPIRATION_TIME));
+                .willThrow(new WorkflowException(INVALID_EXPIRATION_TIME));
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_EXPIRATION_TIME));
     }
 
@@ -992,7 +991,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_WAS_DELETED));
     }
 
@@ -1008,7 +1007,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_IS_PAUSED));
     }
 
@@ -1153,35 +1152,35 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
     }
 
@@ -1204,7 +1203,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withToken(nonFungibleTokenId).build();
         given(handleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(CURRENT_TREASURY_STILL_OWNS_NFTS));
     }
 

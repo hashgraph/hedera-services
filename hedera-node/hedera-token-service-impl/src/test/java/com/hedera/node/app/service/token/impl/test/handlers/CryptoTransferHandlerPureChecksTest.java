@@ -33,8 +33,8 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
 import java.util.List;
@@ -63,7 +63,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
@@ -75,7 +75,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -93,7 +93,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -105,7 +105,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -120,7 +120,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -132,7 +132,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
     }
 
@@ -143,7 +143,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
@@ -166,7 +166,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
@@ -185,7 +185,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID));
     }
 
@@ -201,7 +201,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS));
     }
 
@@ -217,7 +217,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN));
     }
 
@@ -243,7 +243,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_ID));
     }
 
@@ -258,7 +258,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER));
     }
 
@@ -275,7 +275,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID));
     }
 
@@ -291,7 +291,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID));
     }
 
@@ -309,7 +309,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST));
     }
 
@@ -342,7 +342,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS));
     }
 
@@ -358,7 +358,7 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ACCOUNT_AMOUNTS));
     }
 

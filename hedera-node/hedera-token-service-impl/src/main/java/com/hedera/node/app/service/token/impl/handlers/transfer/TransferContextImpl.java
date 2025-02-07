@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.node.app.service.token.AliasUtils.isSerializedProtoKey;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
@@ -32,7 +32,7 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -136,7 +136,7 @@ public class TransferContextImpl implements TransferContext {
             numAutoCreations++;
         } else {
             // Only EVM addresses and key aliases are supported when creating a new account.
-            throw new HandleException(INVALID_ALIAS_KEY);
+            throw new WorkflowException(INVALID_ALIAS_KEY);
         }
         // if this auto creation is from a token transfer, check if auto creation from tokens is enabled
         if (reqMaxAutoAssociations > 0) {
@@ -223,7 +223,7 @@ public class TransferContextImpl implements TransferContext {
                     return;
                 }
             }
-            throw new HandleException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+            throw new WorkflowException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
         }
     }
 }

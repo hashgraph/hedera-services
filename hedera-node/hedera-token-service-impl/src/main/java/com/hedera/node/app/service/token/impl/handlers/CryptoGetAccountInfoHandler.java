@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
 import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -50,8 +50,8 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.AccountSummariesApi;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -97,17 +97,17 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final var query = context.query();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final CryptoGetInfoQuery op = query.cryptoGetInfoOrThrow();
         if (op.hasAccountID()) {
             final var account = accountStore.getAliasedAccountById(requireNonNull(op.accountID()));
-            validateFalsePreCheck(account == null, INVALID_ACCOUNT_ID);
-            validateFalsePreCheck(account.deleted(), ACCOUNT_DELETED);
+            validateFalse(account == null, INVALID_ACCOUNT_ID);
+            validateFalse(account.deleted(), ACCOUNT_DELETED);
         } else {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            throw new WorkflowException(INVALID_ACCOUNT_ID);
         }
     }
 

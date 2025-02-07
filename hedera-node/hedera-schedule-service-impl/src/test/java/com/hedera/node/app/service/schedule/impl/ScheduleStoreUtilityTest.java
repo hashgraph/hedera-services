@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static org.assertj.core.api.BDDAssertions.assertThat;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.InvalidKeyException;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ScheduleStoreUtilityTest extends ScheduleTestBase {
 
     @BeforeEach
-    void setUp() throws PreCheckException, InvalidKeyException {
+    void setUp() throws InvalidKeyException {
         setUpBase();
     }
 

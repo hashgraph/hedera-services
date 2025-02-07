@@ -50,9 +50,8 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTes
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +79,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(missingTokenTxn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
@@ -94,7 +93,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(missingAcctTxn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }
 
@@ -179,7 +178,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
             final var txnBody = newTxnBody(true, true);
             given(handleContext.body()).willReturn(txnBody);
             assertThatThrownBy(() -> subject.handle(handleContext))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
 
             verify(tokenRelStore, never()).put(any(TokenRelation.class));

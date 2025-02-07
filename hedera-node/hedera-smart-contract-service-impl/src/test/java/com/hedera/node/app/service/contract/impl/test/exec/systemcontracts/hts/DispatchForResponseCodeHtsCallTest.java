@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
-import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -162,7 +162,7 @@ class DispatchForResponseCodeHtsCallTest extends CallTestBase {
                 STANDARD_OUTPUT_FN);
 
         // when/then
-        assertThatExceptionOfType(HandleException.class)
+        assertThatExceptionOfType(WorkflowException.class)
                 .isThrownBy(() -> subject.asSchedulableDispatchIn())
                 .withMessage(INVALID_TRANSACTION.toString());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.TransactionInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * associated status and (if it was parseable) the information on the
  * offending transaction.
  */
-public class DueDiligenceException extends PreCheckException {
+public class DueDiligenceException extends WorkflowException {
     @Nullable
     private final TransactionInfo transactionInfo;
 

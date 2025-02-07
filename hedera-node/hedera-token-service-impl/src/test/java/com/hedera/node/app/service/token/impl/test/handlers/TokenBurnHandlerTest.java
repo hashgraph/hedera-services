@@ -77,9 +77,8 @@ import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -142,7 +141,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
         }
 
@@ -152,7 +151,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
         }
 
@@ -162,7 +161,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
         }
 
@@ -181,7 +180,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_NFT_ID));
         }
     }
@@ -204,7 +203,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
         }
 
@@ -216,7 +215,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
         }
 
@@ -235,7 +234,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_WAS_DELETED));
         }
 
@@ -253,7 +252,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_IS_PAUSED));
         }
 
@@ -277,7 +276,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_HAS_NO_SUPPLY_KEY));
         }
 
@@ -296,7 +295,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
         }
 
@@ -321,7 +320,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
         }
 
@@ -345,7 +344,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_BURN_AMOUNT));
         }
 
@@ -370,7 +369,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INSUFFICIENT_TOKEN_BALANCE));
         }
 
@@ -468,7 +467,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(NOT_SUPPORTED));
         }
 
@@ -484,7 +483,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
         }
 
@@ -507,7 +506,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_NFT_ID));
         }
 
@@ -535,7 +534,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_NFT_ID));
         }
 
@@ -558,7 +557,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_BURN_METADATA));
         }
 
@@ -591,7 +590,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TREASURY_MUST_OWN_BURNED_NFT));
         }
 
@@ -623,7 +622,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TREASURY_ACCOUNT_FOR_TOKEN));
         }
 
@@ -666,7 +665,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var context = mockContext(txn);
 
             Assertions.assertThatThrownBy(() -> subject.handle(context))
-                    .isInstanceOf(HandleException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(FAIL_INVALID));
         }
 

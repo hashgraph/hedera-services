@@ -52,10 +52,9 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -126,7 +125,7 @@ class FileAppendHandlerTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileAppend(OP_BUILDER).build();
         given(context.body()).willReturn(txBody);
         assertThatThrownBy(() -> subject.pureChecks(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_FILE_ID));
     }
 
@@ -144,7 +143,7 @@ class FileAppendHandlerTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected")
-    void preHandleWorksAsExpected() throws PreCheckException {
+    void preHandleWorksAsExpected() {
         refreshStoresWithCurrentFileOnlyInReadable();
 
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -170,7 +169,7 @@ class FileAppendHandlerTest extends FileTestBase {
 
     @Test
     @DisplayName("Pre handle works as expected immutable")
-    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+    void preHandleWorksAsExpectedImmutable() {
         file = createFileEmptyMemoAndKeys();
         refreshStoresWithCurrentFileOnlyInReadable();
         BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
@@ -297,7 +296,7 @@ class FileAppendHandlerTest extends FileTestBase {
     }
 
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
+        final var ex = assertThrows(WorkflowException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 
@@ -344,7 +343,7 @@ class FileAppendHandlerTest extends FileTestBase {
         writableStore = new WritableFileStore(writableStates, writableEntityCounters);
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
 
         assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
@@ -357,7 +356,7 @@ class FileAppendHandlerTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
 
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
     }
 
     @Test

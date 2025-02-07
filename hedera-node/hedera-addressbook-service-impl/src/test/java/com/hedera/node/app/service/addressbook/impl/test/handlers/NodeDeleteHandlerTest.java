@@ -51,10 +51,9 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
@@ -110,9 +109,9 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
         given(transactionBody.nodeId()).willReturn(-1L);
 
-        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(WorkflowException.class);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
@@ -157,7 +156,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
-        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        WorkflowException thrown = (WorkflowException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
@@ -177,7 +176,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
-        HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
+        WorkflowException thrown = (WorkflowException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
@@ -224,7 +223,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenExistingAdminKeyValid() throws PreCheckException {
+    void preHandleWorksWhenExistingAdminKeyValid() {
         givenValidNodeWithAdminKey(anotherKey);
         refreshStoresWithCurrentNodeInReadable();
 
@@ -237,7 +236,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
+    void preHandleFailedWhenAdminKeyInValid() {
         givenValidNodeWithAdminKey(invalidKey);
         refreshStoresWithCurrentNodeInReadable();
         final var txn = newDeleteTxnWithNodeId(nodeId.number());
@@ -246,7 +245,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenTreasureSign() throws PreCheckException {
+    void preHandleWorksWhenTreasureSign() {
         final var txn = newDeleteTxn();
         final var context = setupPreHandlePayerKey(txn, payerId, anotherKey);
         subject.preHandle(context);
@@ -256,7 +255,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenSysAdminSign() throws PreCheckException {
+    void preHandleWorksWhenSysAdminSign() {
         final var accountID = AccountID.newBuilder().accountNum(50).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
@@ -267,7 +266,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleWorksWhenAddressBookAdminSign() throws PreCheckException {
+    void preHandleWorksWhenAddressBookAdminSign() {
         final var accountID = AccountID.newBuilder().accountNum(55).build();
         final var txn = newDeleteTxnWithPayerId(accountID);
         final var context = setupPreHandlePayerKey(txn, accountID, anotherKey);
@@ -304,8 +303,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
                 .build();
     }
 
-    private PreHandleContext setupPreHandlePayerKey(TransactionBody txn, AccountID contextPayerId, Key key)
-            throws PreCheckException {
+    private PreHandleContext setupPreHandlePayerKey(TransactionBody txn, AccountID contextPayerId, Key key) {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("accounts.treasury", 2)
                 .withValue("accounts.systemAdmin", 50)
@@ -319,8 +317,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     private static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
         assertThatThrownBy(something::run)
-                .isInstanceOf(HandleException.class)
-                .extracting(ex -> ((HandleException) ex).getStatus())
+                .isInstanceOf(WorkflowException.class)
+                .extracting(ex -> ((WorkflowException) ex).getStatus())
                 .isEqualTo(status);
     }
 }

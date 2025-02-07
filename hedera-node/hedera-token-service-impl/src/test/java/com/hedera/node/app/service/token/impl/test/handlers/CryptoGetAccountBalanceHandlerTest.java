@@ -59,8 +59,8 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountBalanceHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -181,7 +181,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -199,7 +199,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -219,7 +219,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_ACCOUNT_ID));
     }
 
@@ -237,7 +237,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(store);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.INVALID_CONTRACT_ID));
     }
 
@@ -257,7 +257,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.ACCOUNT_DELETED));
     }
 
@@ -278,7 +278,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
         when(context.createStore(ReadableAccountStore.class)).thenReturn(readableStore);
 
         assertThatThrownBy(() -> subject.validate(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ResponseCodeEnum.CONTRACT_DELETED));
     }
 

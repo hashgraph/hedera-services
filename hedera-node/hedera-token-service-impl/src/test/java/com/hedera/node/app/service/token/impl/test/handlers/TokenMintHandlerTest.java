@@ -53,9 +53,8 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -96,7 +95,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
@@ -158,7 +157,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     void failsOnMissingToken() {
         givenMintTxn(TokenID.newBuilder().tokenNum(100000L).build(), List.of(metadata1, metadata2), null);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
@@ -169,7 +168,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_WAS_DELETED));
     }
 
@@ -180,7 +179,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         givenMintTxn(fungibleTokenId, List.of(metadata1, metadata2), null);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_IS_PAUSED));
     }
 
@@ -188,7 +187,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     void failsOnNegativeAmount() {
         givenMintTxn(fungibleTokenId, null, -2L);
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_MINT_AMOUNT));
     }
 
@@ -199,17 +198,17 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void rejectsBothAmountAndMetadataFields() throws PreCheckException {
+    void rejectsBothAmountAndMetadataFields() {
         final var txn = givenMintTxn(fungibleTokenId, List.of(metadata1), 2L);
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
     @Test
-    void allowsTxnBodyWithNoProps() throws PreCheckException {
+    void allowsTxnBodyWithNoProps() {
         final var txn = givenMintTxn(fungibleTokenId, null, null);
         refreshReadableStores();
         final var context = new FakePreHandleContext(readableAccountStore, txn);
@@ -229,7 +228,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(METADATA_TOO_LONG));
     }
 
@@ -243,7 +242,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(BATCH_SIZE_LIMIT_EXCEEDED));
     }
 
@@ -257,7 +256,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED));
     }
 

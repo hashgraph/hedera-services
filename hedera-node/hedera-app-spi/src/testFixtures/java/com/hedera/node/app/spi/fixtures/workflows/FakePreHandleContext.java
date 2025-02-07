@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -90,10 +90,9 @@ public class FakePreHandleContext implements PreHandleContext {
      *
      * @param accountStore used to get keys for accounts and contracts
      * @param txn the transaction body
-     * @throws PreCheckException if the payer account ID is invalid or the key is null
+     * @throws WorkflowException if the payer account ID is invalid or the key is null
      */
-    public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn)
-            throws PreCheckException {
+    public FakePreHandleContext(@NonNull final ReadableAccountStore accountStore, @NonNull final TransactionBody txn) {
         this(
                 accountStore,
                 txn,
@@ -104,8 +103,7 @@ public class FakePreHandleContext implements PreHandleContext {
     public FakePreHandleContext(
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
-            @NonNull final Configuration configuration)
-            throws PreCheckException {
+            @NonNull final Configuration configuration) {
         this(accountStore, txn);
         this.configuration = configuration;
     }
@@ -115,15 +113,14 @@ public class FakePreHandleContext implements PreHandleContext {
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            final boolean userTransaction)
-            throws PreCheckException {
+            final boolean userTransaction) {
         this.accountStore = requireNonNull(accountStore, "The supplied argument 'accountStore' cannot be null!");
         this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
         this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
         this.userTransaction = userTransaction;
 
         stores.put(ReadableAccountStore.class, accountStore);
-        // Find the account, which must exist or throw a PreCheckException with the given response code.
+        // Find the account, which must exist or throw a WorkflowException with the given response code.
         final var account = accountStore.getAccountById(payer);
         mustExist(account, INVALID_PAYER_ACCOUNT_ID);
         // NOTE: While it is true that the key can be null on some special accounts like
@@ -247,11 +244,10 @@ public class FakePreHandleContext implements PreHandleContext {
     @SuppressWarnings(
             "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
     // false positive because of the !isValid(key) check
-    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (!isValid(key)) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         return requireKey(key);
     }
@@ -259,8 +255,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     @Override
     public PreHandleContext requireAliasedKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         return requireKey(accountID, responseCode, true);
     }
@@ -268,17 +263,15 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         return requireKey(accountID, responseCode, false);
     }
 
     private @NonNull PreHandleContext requireKey(
-            final @Nullable AccountID accountID, final @NonNull ResponseCodeEnum responseCode, boolean allowAliases)
-            throws PreCheckException {
+            final @Nullable AccountID accountID, final @NonNull ResponseCodeEnum responseCode, boolean allowAliases) {
         if (accountID == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         final Account account;
         if (allowAliases) {
@@ -287,14 +280,14 @@ public class FakePreHandleContext implements PreHandleContext {
             account = accountStore.getAccountById(accountID);
         }
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         final var key = account.key();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // Verify this key isn't for an immutable account
@@ -306,23 +299,22 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyOrThrow(
-            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (accountID == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         final var account = accountStore.getContractById(accountID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         final var key = account.key();
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         return requireKey(key);
@@ -331,8 +323,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
@@ -342,7 +333,7 @@ public class FakePreHandleContext implements PreHandleContext {
         // If an accountID is specified, then the account MUST exist
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
@@ -356,7 +347,7 @@ public class FakePreHandleContext implements PreHandleContext {
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         return requireKey(key);
@@ -365,8 +356,7 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     @NonNull
     public PreHandleContext requireKeyIfReceiverSigRequired(
-            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+            @Nullable final ContractID contractID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         // If no accountID is specified, then there is no key to require.
         if (contractID == null) {
@@ -376,7 +366,7 @@ public class FakePreHandleContext implements PreHandleContext {
         // If an accountID is specified, then the account MUST exist
         final var account = accountStore.getContractById(contractID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
@@ -389,7 +379,7 @@ public class FakePreHandleContext implements PreHandleContext {
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         return requireKey(key);
@@ -445,15 +435,15 @@ public class FakePreHandleContext implements PreHandleContext {
      * should be removed as soon as possible (along with this deprecated class).
      * <p>
      * Checks that a key does not represent an immutable account, e.g. the staking rewards account.
-     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * Throws a {@link WorkflowException} with the designated response code otherwise.
      * @param key the key to check
      * @param responseCode the response code to throw
-     * @throws PreCheckException if the account is considered immutable
+     * @throws WorkflowException if the account is considered immutable
      */
     private static void verifyIsNotImmutableAccount(
-            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) throws PreCheckException {
+            @Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         if (EMPTY_KEY_LIST.equals(key)) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
     }
 }

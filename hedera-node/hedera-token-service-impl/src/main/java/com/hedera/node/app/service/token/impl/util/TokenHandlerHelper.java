@@ -44,8 +44,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.REQUIRE_NOT_PAUSED;
-import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,8 +63,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -95,7 +94,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Returns the account if it exists and is usable. A {@link WorkflowException} is thrown if the account is invalid.
      * Note that this method should also work with account ID's that represent smart contracts.
      * If the account is deleted the return error code is ACCOUNT_DELETED.
      *
@@ -104,7 +103,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @return the account if it exists and is usable
-     * @throws HandleException if any of the account conditions are not met
+     * @throws WorkflowException if any of the account conditions are not met
      */
     @NonNull
     public static Account getIfUsable(
@@ -122,7 +121,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Returns the account if it exists and is usable. A {@link WorkflowException} is thrown if the account is invalid.
      * @param accountId the ID of the account to get
      * @param accountStore the {@link ReadableTokenStore} to use for account retrieval
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
@@ -165,7 +164,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid.
+     * Returns the token if it exists and is usable. A {@link WorkflowException} is thrown if the token is invalid.
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
      * @return the token if it exists and is usable
@@ -175,13 +174,13 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid.
+     * Returns the token if it exists and is usable. A {@link WorkflowException} is thrown if the token is invalid.
      *
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
      * @param tokenValidations whether validate paused token status
      * @return the token if it exists and is usable
-     * @throws HandleException if any of the token conditions are not met
+     * @throws WorkflowException if any of the token conditions are not met
      */
     @NonNull
     public static Token getIfUsable(
@@ -192,14 +191,14 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid.
+     * Returns the token if it exists and is usable. A {@link WorkflowException} is thrown if the token is invalid.
      *
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
      * @param tokenValidations whether validate paused token status
      * @param errorIfNotUsable the error response code, if token is not usable
      * @return the token if it exists and is usable
-     * @throws HandleException if any of the token conditions are not met
+     * @throws WorkflowException if any of the token conditions are not met
      */
     @NonNull
     public static Token getIfUsable(
@@ -227,7 +226,7 @@ public class TokenHandlerHelper {
      * @param tokenId the ID of the token
      * @param tokenRelStore the {@link ReadableTokenRelationStore} to use for token relation retrieval
      * @return the token relation if it exists and is usable
-     * @throws HandleException if any of the token relation conditions are not met
+     * @throws WorkflowException if any of the token relation conditions are not met
      */
     @NonNull
     public static TokenRelation getIfUsable(
@@ -250,7 +249,7 @@ public class TokenHandlerHelper {
      * @param nftId the ID of the NFT
      * @param nftStore the {@link ReadableNftStore} to use for NFT retrieval
      * @return the NFT if it exists and is usable
-     * @throws HandleException if any of the NFT conditions are not met
+     * @throws WorkflowException if any of the NFT conditions are not met
      */
     public static Nft getIfUsable(@NonNull final NftID nftId, @NonNull final ReadableNftStore nftStore) {
         requireNonNull(nftId);
@@ -262,7 +261,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Returns the account if it exists and is usable. A {@link WorkflowException} is thrown if the account is invalid.
      * Note that this method should also work with account ID's that represent smart contracts
      * If the account is deleted the return error code is ACCOUNT_DELETED
      *
@@ -271,7 +270,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @return the account if it exists and is usable
-     * @throws HandleException if any of the account conditions are not met
+     * @throws WorkflowException if any of the account conditions are not met
      */
     @NonNull
     public static Account getIfUsableForAliasedId(
@@ -284,7 +283,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Returns the account if it exists and is usable. A {@link WorkflowException} is thrown if the account is invalid.
      * Note that this method should also work with account ID's that represent smart contracts
      * If the account is deleted the return error code is INVALID_AUTORENEW_ACCOUNT
      *
@@ -293,7 +292,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @return the account if it exists and is usable
-     * @throws HandleException if any of the account conditions are not met
+     * @throws WorkflowException if any of the account conditions are not met
      */
     @NonNull
     public static Account getIfUsableForAutoRenew(
@@ -311,7 +310,7 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Returns the account if it exists and is usable. A {@link HandleException} is thrown if the account is invalid.
+     * Returns the account if it exists and is usable. A {@link WorkflowException} is thrown if the account is invalid.
      * Note that this method should also work with account ID's that represent smart contracts.
      * If the account is deleted the return error code is INVALID_TREASURY_ACCOUNT_FOR_TOKEN
      *
@@ -320,7 +319,7 @@ public class TokenHandlerHelper {
      * @param expiryValidator the {@link ExpiryValidator} to determine if the account is expired
      * @param errorIfNotUsable the {@link ResponseCodeEnum} to use if the account is not found/usable
      * @return the account if it exists and is usable
-     * @throws HandleException if any of the account conditions are not met
+     * @throws WorkflowException if any of the account conditions are not met
      */
     @NonNull
     public static Account getIfUsableWithTreasury(
@@ -356,12 +355,11 @@ public class TokenHandlerHelper {
      * Returns the token relation if it exists and is usable.
      * @param key the key to check
      * @param responseCode the response code to throw if the key is empty
-     * @throws PreCheckException if the key is empty
+     * @throws WorkflowException if the key is empty
      */
-    public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
-            throws PreCheckException {
+    public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         if (EMPTY_KEY_LIST.equals(key)) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
     }
 }

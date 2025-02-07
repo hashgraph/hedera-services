@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,7 +126,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
     void commonSetUp() {
         try {
             setUpPayer();
-        } catch (PreCheckException e) {
+        } catch (WorkflowException e) {
             throw new RuntimeException(e);
         }
     }
@@ -135,7 +135,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
         assertThat(context.requiredNonPayerKeys()).hasSize(nonPayerKeySize);
     }
 
-    protected void setUpPayer() throws PreCheckException {
+    protected void setUpPayer() {
         lenient().when(accountStore.getAccountById(payer)).thenReturn(payerAccount);
         lenient().when(payerAccount.key()).thenReturn(payerKey);
     }

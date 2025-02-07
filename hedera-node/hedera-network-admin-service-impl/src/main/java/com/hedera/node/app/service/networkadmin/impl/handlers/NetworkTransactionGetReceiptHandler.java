@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -60,18 +60,18 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
     }
 
     @Override
-    public void validate(@NonNull final QueryContext context) throws PreCheckException {
+    public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final var op = context.query().transactionGetReceiptOrThrow();
 
         // The transaction ID must be specified
         if (!op.hasTransactionID()) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
+            throw new WorkflowException(INVALID_TRANSACTION_ID);
         }
         // And must contain both a valid start time and an account ID
         final var transactionId = op.transactionIDOrThrow();
         if (!transactionId.hasTransactionValidStart() || !transactionId.hasAccountID()) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
+            throw new WorkflowException(INVALID_TRANSACTION_ID);
         }
     }
 

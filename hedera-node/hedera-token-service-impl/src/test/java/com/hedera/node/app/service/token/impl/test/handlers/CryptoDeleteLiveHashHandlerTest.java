@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ import static org.mockito.Mock.Strictness.LENIENT;
 
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -44,14 +43,14 @@ class CryptoDeleteLiveHashHandlerTest {
     @Test
     void preHandleThrowsUnsupported() {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 
     @Test
     void handleThrowsUnsupported() {
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 }

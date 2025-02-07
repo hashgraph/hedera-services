@@ -34,8 +34,7 @@ import static com.hedera.node.app.service.token.impl.validators.AllowanceValidat
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.validation.Validations.validateNullableAccountID;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -62,11 +61,10 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -98,10 +96,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     /**
      * Validates the transaction body for {@link HederaFunctionality#CRYPTO_APPROVE_ALLOWANCE}.
      * @param context the pure checks context
-     * @throws PreCheckException if the transaction is invalid for any reason
+     * @throws WorkflowException if the transaction is invalid for any reason
      */
     @Override
-    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) {
         requireNonNull(context);
         final var txn = context.body();
         requireNonNull(txn);
@@ -114,19 +112,19 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
         final var tokenAllowances = op.tokenAllowances();
         final var nftAllowances = op.nftAllowances();
         final var totalAllowancesSize = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
-        validateTruePreCheck(totalAllowancesSize != 0, EMPTY_ALLOWANCES);
+        validateTrue(totalAllowancesSize != 0, EMPTY_ALLOWANCES);
 
         // It is OK for the owner to be null, because that just means that we should use the payer as the owner.
         // But the spender always needs to be specified.
         for (final var allowance : cryptoAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
         }
 
         for (final var allowance : tokenAllowances) {
             validateNullableAccountID(allowance.owner());
-            validateTruePreCheck(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+            validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateAccountID(allowance.spender(), INVALID_ALLOWANCE_SPENDER_ID);
             mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
         }
@@ -139,7 +137,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+    public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         final var txn = context.body();
         final var payerId = context.payer();
@@ -160,7 +158,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var owner = allowance.owner();
             // (TEMPORARY) Remove after diff testing is complete
             if (owner != null && owner.hasAlias()) {
-                throw new PreCheckException(INVALID_ALLOWANCE_OWNER_ID);
+                throw new WorkflowException(INVALID_ALLOWANCE_OWNER_ID);
             }
             if (owner != null && !owner.equals(payerId)) {
                 context.requireKeyOrThrow(owner, INVALID_ALLOWANCE_OWNER_ID);
@@ -186,7 +184,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
+    public void handle(@NonNull final HandleContext context) throws WorkflowException {
         final var payer = context.payer();
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
 
@@ -223,13 +221,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param context the handle context
      * @param payerId the payer account id
      * @param accountStore the account store
-     * @throws HandleException if there is an error applying the changes
+     * @throws WorkflowException if there is an error applying the changes
      */
     private void approveAllowance(
             @NonNull final HandleContext context,
             @NonNull final AccountID payerId,
             @NonNull final WritableAccountStore accountStore)
-            throws HandleException {
+            throws WorkflowException {
         requireNonNull(context);
         requireNonNull(payerId);
         requireNonNull(accountStore);

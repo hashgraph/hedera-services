@@ -54,9 +54,8 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,7 +92,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     private PureChecksContext pureChecksContext;
 
     @BeforeEach
-    void setUp() throws PreCheckException {
+    void setUp() {
         given(accountStore.getAccountById(AccountID.newBuilder().accountNum(3L).build()))
                 .willReturn(account);
         given(account.key()).willReturn(payerKey);
@@ -116,7 +115,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         given(transactionBody.hasToken()).willReturn(false);
         given(pureChecksContext.body()).willReturn(transaction);
 
-        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(WorkflowException.class);
     }
 
     @Test
@@ -162,7 +161,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     void pauseTokenFailsIfInvalidToken() {
         givenInvalidTokenInTxn();
 
-        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        final var msg = assertThrows(WorkflowException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_TOKEN_ID, msg.getStatus());
     }
 
@@ -172,7 +171,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void failsInPrecheckIfTxnBodyHasNoToken() throws PreCheckException {
+    void failsInPrecheckIfTxnBodyHasNoToken() {
         final var txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payerId).build())
                 .tokenPause(TokenPauseTransactionBody.newBuilder())
@@ -183,7 +182,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void validatesTokenExistsInPreHandle() throws PreCheckException {
+    void validatesTokenExistsInPreHandle() {
         givenInvalidTokenInTxn();
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
@@ -191,14 +190,14 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void preHandleAddsPauseKeyToContext() throws PreCheckException {
+    void preHandleAddsPauseKeyToContext() {
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(preHandleContext);
         assertEquals(1, preHandleContext.requiredNonPayerKeys().size());
     }
 
     @Test
-    void preHandleSetsStatusWhenTokenMissing() throws PreCheckException {
+    void preHandleSetsStatusWhenTokenMissing() {
         givenInvalidTokenInTxn();
         preHandleContext = new FakePreHandleContext(accountStore, tokenPauseTxn);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
@@ -206,7 +205,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
     }
 
     @Test
-    void doesntAddAnyKeyIfPauseKeyMissing() throws PreCheckException {
+    void doesntAddAnyKeyIfPauseKeyMissing() {
         final var copy = token.copyBuilder().pauseKey(Key.DEFAULT).build();
         readableTokenState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
                 .value(tokenId, copy)

@@ -64,9 +64,8 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -107,7 +106,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceVanilla() throws PreCheckException {
+    void cryptoApproveAllowanceVanilla() {
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
@@ -118,7 +117,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidOwner() throws PreCheckException {
+    void cryptoApproveAllowanceFailsWithInvalidOwner() {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
@@ -131,7 +130,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidSpenderCrypto() throws PreCheckException {
+    void cryptoApproveAllowanceFailsWithInvalidSpenderCrypto() {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
@@ -147,7 +146,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidSpenderToken() throws PreCheckException {
+    void cryptoApproveAllowanceFailsWithInvalidSpenderToken() {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
@@ -163,7 +162,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsWithInvalidSpenderNFT() throws PreCheckException {
+    void cryptoApproveAllowanceFailsWithInvalidSpenderNFT() {
         readableAccounts =
                 emptyReadableAccountStateBuilder().value(payerId, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
@@ -179,7 +178,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() throws PreCheckException {
+    void cryptoApproveAllowanceDoesntAddIfOwnerSameAsPayer() {
         final var txn = cryptoApproveAllowanceTransaction(
                 ownerId, false, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
@@ -190,7 +189,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceAddsDelegatingSpender() throws PreCheckException {
+    void cryptoApproveAllowanceAddsDelegatingSpender() {
         final var txn = cryptoApproveAllowanceTransaction(
                 payerId, true, List.of(cryptoAllowance), List.of(tokenAllowance), List.of(nftAllowance));
         final var context = new FakePreHandleContext(readableAccountStore, txn);
@@ -201,7 +200,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() throws PreCheckException {
+    void cryptoApproveAllowanceFailsIfDelegatingSpenderMissing() {
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(payerId, account)
                 .value(ownerId, ownerAccount)
@@ -216,7 +215,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void tokenAllowanceFailsIfOwnerHasAlias() throws PreCheckException {
+    void tokenAllowanceFailsIfOwnerHasAlias() {
         final var tokenAllowance = TokenAllowance.newBuilder()
                 .tokenId(fungibleTokenId)
                 .owner(AccountID.newBuilder()
@@ -381,7 +380,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(payer.approveForAllNftAllowances()).isEmpty();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
     }
 
@@ -411,7 +410,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(payer.approveForAllNftAllowances()).isEmpty();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO));
 
         final var modifiedPayer = writableAccountStore.getAccountById(this.payerId);
@@ -440,12 +439,12 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(MAX_ALLOWANCES_EXCEEDED));
     }
 
     @Test
-    void emptyAllowanceListInTransactionFails() throws PreCheckException {
+    void emptyAllowanceListInTransactionFails() {
         final var txn = cryptoApproveAllowanceTransaction(payerId, false, List.of(), List.of(), List.of());
         given(handleContext.body()).willReturn(txn);
         // Two know accounts we are using for these tests. Initial allowances
@@ -460,7 +459,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(EMPTY_ALLOWANCES));
 
         // After handle allowances are not modified
@@ -520,7 +519,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
 
         cryptoApproveAllowanceTransaction(
@@ -537,7 +536,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NEGATIVE_ALLOWANCE_AMOUNT));
     }
 
@@ -606,7 +605,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     void handlePayerAccountNotFound() {
         given(handleContext.payer()).willReturn(AccountID.DEFAULT);
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAYER_ACCOUNT_ID));
     }
 
