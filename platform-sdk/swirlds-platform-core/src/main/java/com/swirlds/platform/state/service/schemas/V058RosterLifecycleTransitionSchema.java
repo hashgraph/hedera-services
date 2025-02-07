@@ -35,8 +35,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A restart-only schema to ensure the platform state has its active and previous
@@ -47,21 +50,26 @@ import java.util.function.Supplier;
  */
 @Deprecated
 public class V058RosterLifecycleTransitionSchema extends Schema {
+    private static final Logger logger = LogManager.getLogger(V058RosterLifecycleTransitionSchema.class);
+
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(58).build();
 
     private final Supplier<AddressBook> addressBook;
+    private final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier;
     private final Function<Configuration, SoftwareVersion> appVersionFn;
     private final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn;
 
     public V058RosterLifecycleTransitionSchema(
             @NonNull final Supplier<AddressBook> addressBook,
+            @NonNull final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier,
             @NonNull final Function<Configuration, SoftwareVersion> appVersionFn,
             @NonNull final Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn) {
         super(VERSION);
         this.addressBook = requireNonNull(addressBook);
         this.appVersionFn = requireNonNull(appVersionFn);
         this.platformStateStoreFn = requireNonNull(platformStateStoreFn);
+        this.reclampedStakeWeightsSupplier = requireNonNull(reclampedStakeWeightsSupplier);
     }
 
     @Override
@@ -94,10 +102,31 @@ public class V058RosterLifecycleTransitionSchema extends Schema {
                 final var nextBook = isOverride ? withExtantNodeWeights(diskBook, currentBook) : diskBook;
                 stateStore.bulkUpdate(v -> {
                     v.setPreviousAddressBook(currentBook == null ? null : currentBook.copy());
-                    v.setAddressBook(nextBook);
+                    final var updatedNextBook =
+                            withReclampedStakeWeights(nextBook, reclampedStakeWeightsSupplier.get());
+                    v.setAddressBook(updatedNextBook);
                 });
             }
         }
+    }
+
+    /**
+     * Returns an address book whose node weights are updated to match
+     */
+    private AddressBook withReclampedStakeWeights(
+            @NonNull final AddressBook book, @NonNull final Map<Long, Long> reclampedStakeWeights) {
+        final List<Address> addresses = new ArrayList<>();
+        for (final var address : book) {
+            final long newWeight =
+                    reclampedStakeWeights.getOrDefault(address.getNodeId().id(), 0L);
+            logger.info(
+                    "Adjusting re-clamped stake weight for node{} from {} to {}",
+                    address.getNodeId().id(),
+                    address.getWeight(),
+                    newWeight);
+            addresses.add(address.copySetWeight(newWeight));
+        }
+        return new AddressBook(addresses);
     }
 
     /**
