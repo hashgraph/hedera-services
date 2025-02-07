@@ -77,6 +77,7 @@ public class TurtleNode {
 
     private final DeterministicWiringModel model;
     private final Platform platform;
+    private final ConsensusRoundsHolder consensusRoundsHolder;
 
     /**
      * Create a new TurtleNode. Simulates a single consensus node in a TURTLE network.
@@ -163,7 +164,8 @@ public class TurtleNode {
                 TaskSchedulerConfiguration.parse(
                         "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC"));
 
-        consensusRoundsHolderWiring.bind(ConsensusRoundsListContainer::new);
+        consensusRoundsHolder = new ConsensusRoundsListContainer();
+        consensusRoundsHolderWiring.bind(consensusRoundsHolder);
 
         consensusEngineWiring
                 .getOutputWire()
@@ -182,5 +184,10 @@ public class TurtleNode {
      */
     public void tick() {
         model.tick();
+    }
+
+    @NonNull
+    public ConsensusRoundsHolder getConsensusRoundsHolder() {
+        return consensusRoundsHolder;
     }
 }
