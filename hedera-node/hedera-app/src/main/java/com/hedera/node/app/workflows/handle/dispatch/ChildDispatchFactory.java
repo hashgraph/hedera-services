@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -125,6 +126,7 @@ public class ChildDispatchFactory {
     private final ExchangeRateManager exchangeRateManager;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
     private final TransactionChecker transactionChecker;
+    private final DeduplicationCache deduplicationCache;
 
     @Inject
     public ChildDispatchFactory(
@@ -136,6 +138,7 @@ public class ChildDispatchFactory {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionChecker transactionChecker,
+            @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
@@ -146,6 +149,7 @@ public class ChildDispatchFactory {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
         this.transactionChecker = requireNonNull(transactionChecker);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     /**
@@ -291,7 +295,8 @@ public class ChildDispatchFactory {
                 throttleAdviser,
                 childFeeAccumulator,
                 dispatchMetadata,
-                transactionChecker);
+                transactionChecker,
+                deduplicationCache);
         final var childFees =
                 computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(

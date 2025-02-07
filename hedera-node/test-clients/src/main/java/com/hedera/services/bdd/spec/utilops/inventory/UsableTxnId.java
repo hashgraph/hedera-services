@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +31,7 @@ public class UsableTxnId extends UtilOp {
 
     private boolean useScheduledInappropriately = false;
     private Optional<String> payerId = Optional.empty();
+    private Optional<Timestamp> validStart = Optional.empty();
     private final String name;
 
     public UsableTxnId(String name) {
@@ -38,6 +40,11 @@ public class UsableTxnId extends UtilOp {
 
     public UsableTxnId payerId(String id) {
         payerId = Optional.of(id);
+        return this;
+    }
+
+    public UsableTxnId validStart(Timestamp timestamp) {
+        validStart = Optional.of(timestamp);
         return this;
     }
 
@@ -50,6 +57,7 @@ public class UsableTxnId extends UtilOp {
     protected boolean submitOp(@NonNull final HapiSpec spec) {
         final var txnId = spec.txns().nextTxnId().toBuilder();
         payerId.ifPresent(name -> txnId.setAccountID(TxnUtils.asId(name, spec)));
+        validStart.ifPresent(txnId::setTransactionValidStart);
         if (useScheduledInappropriately) {
             txnId.setScheduled(true);
         }
