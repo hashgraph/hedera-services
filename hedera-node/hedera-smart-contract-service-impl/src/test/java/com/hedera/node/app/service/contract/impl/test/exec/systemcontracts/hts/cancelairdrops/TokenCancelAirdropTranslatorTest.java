@@ -239,7 +239,7 @@ class TokenCancelAirdropTranslatorTest {
     void callFromHtsCancelAirdrop() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TokenCancelAirdropTranslator.CANCEL_AIRDROPS,
@@ -263,7 +263,7 @@ class TokenCancelAirdropTranslatorTest {
     void callFromHRCCancelFTAirdrop() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TokenCancelAirdropTranslator.HRC_CANCEL_AIRDROP_FT,
@@ -287,7 +287,7 @@ class TokenCancelAirdropTranslatorTest {
     void callFromHRCCancelNFTAirdrop() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 TokenCancelAirdropTranslator.HRC_CANCEL_AIRDROP_NFT,

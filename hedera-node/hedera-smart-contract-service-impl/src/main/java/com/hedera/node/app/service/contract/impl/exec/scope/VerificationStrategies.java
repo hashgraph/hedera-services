@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -36,6 +35,5 @@ public interface VerificationStrategies {
     VerificationStrategy activatingOnlyContractKeysFor(
             @NonNull Address sender,
             boolean requiresDelegatePermission,
-            @NonNull HederaNativeOperations nativeOperations,
-            @NonNull Configuration configuration);
+            @NonNull HederaNativeOperations nativeOperations);
 }

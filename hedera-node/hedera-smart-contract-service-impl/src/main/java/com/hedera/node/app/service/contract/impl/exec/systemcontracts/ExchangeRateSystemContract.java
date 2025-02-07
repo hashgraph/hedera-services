@@ -49,7 +49,7 @@ public class ExchangeRateSystemContract extends AbstractFullContract implements 
 
     public static final String EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS = "0x168";
     public static final ContractID EXCHANGE_RATE_CONTRACT_ID =
-            asNumberedContractId(0, 0, Address.fromHexString(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS));
+            asNumberedContractId(Address.fromHexString(EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS));
 
     private long gasRequirement;
 

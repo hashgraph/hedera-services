@@ -39,7 +39,6 @@ import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -190,21 +189,5 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     @Override
     public TransactionID getTransactionID() {
         return context.body().transactionIDOrThrow();
-    }
-
-    /**
-     * Returns the number of the shard from HederaConfig.
-     * @return the shard number
-     */
-    public long getShardNum() {
-        return context.configuration().getConfigData(HederaConfig.class).shard();
-    }
-
-    /**
-     * Returns the number of the realm from HederaConfig.
-     * @return the realm number
-     */
-    public long getRealmNum() {
-        return context.configuration().getConfigData(HederaConfig.class).realm();
     }
 }

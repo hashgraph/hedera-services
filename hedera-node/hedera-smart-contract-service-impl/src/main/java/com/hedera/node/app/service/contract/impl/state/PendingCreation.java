@@ -37,7 +37,7 @@ public record PendingCreation(
     }
 
     @Nullable
-    public Bytes aliasIfApplicable(long shard, long realm) {
-        return isLongZero(shard, realm, address) ? null : aliasFrom(address);
+    public Bytes aliasIfApplicable() {
+        return isLongZero(address) ? null : aliasFrom(address);
     }
 }

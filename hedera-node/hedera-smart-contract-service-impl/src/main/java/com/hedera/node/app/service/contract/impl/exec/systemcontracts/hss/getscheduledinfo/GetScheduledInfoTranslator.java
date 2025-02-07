@@ -79,24 +79,20 @@ public class GetScheduledInfoTranslator extends AbstractCallTranslator<HssCallAt
     private Call getFungibleTokenCreateCall(@NonNull final HssCallAttempt attempt) {
         final var call = GET_SCHEDULED_CREATE_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.inputBytes());
         final Address scheduleAddress = call.get(SCHEDULE_ADDRESS);
-        final var shard = attempt.enhancement().operations().getShard();
-        final var realm = attempt.enhancement().operations().getRealm();
         return new GetScheduledFungibleTokenCreateCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.configuration(),
-                addressToScheduleID(shard, realm, scheduleAddress));
+                addressToScheduleID(scheduleAddress));
     }
 
     private Call getNonFungibleTokenCreateCall(@NonNull final HssCallAttempt attempt) {
         final var call = GET_SCHEDULED_CREATE_NON_FUNGIBLE_TOKEN_INFO.decodeCall(attempt.inputBytes());
         final Address scheduleAddress = call.get(SCHEDULE_ADDRESS);
-        final var shard = attempt.enhancement().operations().getShard();
-        final var realm = attempt.enhancement().operations().getRealm();
         return new GetScheduledNonFungibleTokenCreateCall(
                 attempt.systemContractGasCalculator(),
                 attempt.enhancement(),
                 attempt.configuration(),
-                addressToScheduleID(shard, realm, scheduleAddress));
+                addressToScheduleID(scheduleAddress));
     }
 }

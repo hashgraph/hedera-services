@@ -28,7 +28,6 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.TinybarValues;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationStreamBuilder;
@@ -319,12 +318,9 @@ public class FrameUtils {
         requireNonNull(featureFlags);
 
         Long maybeGrandfatheredNumber = null;
-        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
-        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
-        if (isLongZero(shard, realm, address)) {
+        if (isLongZero(address)) {
             try {
-                maybeGrandfatheredNumber =
-                        asNumberedContractId(shard, realm, address).contractNum();
+                maybeGrandfatheredNumber = asNumberedContractId(address).contractNum();
             } catch (final ArithmeticException ignore) {
                 // Not a valid numbered contract id
             }
@@ -371,9 +367,7 @@ public class FrameUtils {
     }
 
     private static boolean isQualifiedDelegate(@NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
-        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
-        return isLongZero(shard, realm, recipient)
+        return isLongZero(recipient)
                 && contractsConfigOf(frame).permittedDelegateCallers().contains(numberOfLongZero(recipient));
     }
 

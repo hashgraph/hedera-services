@@ -162,21 +162,15 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public ContractID getHederaContractId(@NonNull final Address address) {
         requireNonNull(address);
         final var account = (HederaEvmAccount) get(address);
-        final var shard = enhancement().operations().getShard();
-        final var realm = enhancement().operations().getRealm();
         if (account == null) {
             // Also return ids for pending creations
             if (pendingCreation != null && pendingCreation.address().equals(address)) {
                 return ContractID.newBuilder()
-                        .shardNum(shard)
-                        .realmNum(realm)
                         .contractNum(pendingCreation.number())
                         .build();
             } else {
                 if (!contractMustBePresent) {
-                    return isLongZero(shard, realm, address)
-                            ? asNumberedContractId(shard, realm, address)
-                            : asEvmContractId(address);
+                    return isLongZero(address) ? asNumberedContractId(address) : asEvmContractId(address);
                 }
                 throw new IllegalArgumentException("No contract pending or extant at " + address);
             }
@@ -356,20 +350,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             enhancement
                     .operations()
                     .createContract(
-                            number,
-                            requireNonNull(pendingCreation.body()),
-                            pendingCreation.aliasIfApplicable(
-                                    enhancement.operations().getShard(),
-                                    enhancement.operations().getRealm()));
+                            number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
             enhancement
                     .operations()
-                    .createContract(
-                            number,
-                            pendingCreation.parentNumber(),
-                            pendingCreation.aliasIfApplicable(
-                                    enhancement.operations().getShard(),
-                                    enhancement.operations().getRealm()));
+                    .createContract(number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
@@ -379,9 +364,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public void deleteAccount(@NonNull final Address address) {
-        final var shard = enhancement.operations().getShard();
-        final var realm = enhancement.operations().getRealm();
-        if (isLongZero(shard, realm, address)) {
+        if (isLongZero(address)) {
             enhancement.operations().deleteUnaliasedContract(numberOfLongZero(address));
         } else {
             enhancement.operations().deleteAliasedContract(aliasFrom(address));

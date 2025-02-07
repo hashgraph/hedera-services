@@ -37,7 +37,6 @@ import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethodRegistry;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
-import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -164,9 +163,7 @@ public class HasCallAttempt extends AbstractCallAttempt<HasCallAttempt> {
      */
     public @Nullable Account linkedAccount(@NonNull final byte[] evmAddress) {
         requireNonNull(evmAddress);
-        final var shard = configuration().getConfigData(HederaConfig.class).shard();
-        final var realm = configuration().getConfigData(HederaConfig.class).realm();
-        if (isLongZeroAddress(shard, realm, evmAddress)) {
+        if (isLongZeroAddress(evmAddress)) {
             return enhancement.nativeOperations().getAccount(numberOfLongZero(evmAddress));
         } else {
             final var addressNum = enhancement

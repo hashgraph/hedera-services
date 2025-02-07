@@ -266,16 +266,6 @@ public class QueryHederaOperations implements HederaOperations {
         return configValidated(contractId, hederaConfig);
     }
 
-    @Override
-    public long getRealm() {
-        return hederaConfig.realm();
-    }
-
-    @Override
-    public long getShard() {
-        return hederaConfig.shard();
-    }
-
     public void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create accounts");
     }

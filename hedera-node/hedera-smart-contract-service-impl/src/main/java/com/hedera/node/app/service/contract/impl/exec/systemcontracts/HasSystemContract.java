@@ -40,7 +40,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class HasSystemContract extends AbstractNativeSystemContract implements HederaSystemContract {
     public static final String HAS_SYSTEM_CONTRACT_NAME = "HAS";
     public static final String HAS_EVM_ADDRESS = "0x16a";
-    public static final ContractID HAS_CONTRACT_ID = asNumberedContractId(0, 0, Address.fromHexString(HAS_EVM_ADDRESS));
+    public static final ContractID HAS_CONTRACT_ID = asNumberedContractId(Address.fromHexString(HAS_EVM_ADDRESS));
 
     @Inject
     public HasSystemContract(

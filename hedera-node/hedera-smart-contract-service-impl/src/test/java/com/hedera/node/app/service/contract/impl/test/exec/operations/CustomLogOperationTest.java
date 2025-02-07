@@ -152,10 +152,6 @@ class CustomLogOperationTest {
         final var expectedLog =
                 new Log(NON_SYSTEM_LONG_ZERO_ADDRESS, pbjToTuweniBytes(TestHelpers.LOG_DATA), builder.build());
 
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getShardNum()).willReturn(0L);
-        given(worldUpdater.getRealmNum()).willReturn(0L);
-
         final var subject = new CustomLogOperation(2, gasCalculator);
         final var result = subject.execute(frame, evm);
 

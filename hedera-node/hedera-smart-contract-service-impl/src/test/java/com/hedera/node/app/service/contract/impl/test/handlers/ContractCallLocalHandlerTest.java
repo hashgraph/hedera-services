@@ -26,7 +26,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,7 +51,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.swirlds.config.api.Configuration;
@@ -159,9 +157,6 @@ class ContractCallLocalHandlerTest {
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         givenAllowCallsToNonContractAccountOffConfig();
-        given(context.configuration()).willReturn(configuration);
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
 
         // when:
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();
@@ -173,9 +168,6 @@ class ContractCallLocalHandlerTest {
         given(context.query()).willReturn(query);
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.gas()).willReturn(-1L);
-        given(context.configuration()).willReturn(configuration);
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -231,8 +223,6 @@ class ContractCallLocalHandlerTest {
         given(context.createStore(ReadableTokenStore.class)).willReturn(tokenStore);
         given(tokenStore.get(any())).willReturn(null);
         givenAllowCallsToNonContractAccountOffConfig();
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -245,8 +235,6 @@ class ContractCallLocalHandlerTest {
         given(query.contractCallLocalOrThrow()).willReturn(contractCallLocalQuery);
         given(contractCallLocalQuery.gas()).willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1);
         givenAllowCallsToNonContractAccountOffConfig();
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
 
         // when:
         assertThatThrownBy(() -> subject.validate(context)).isInstanceOf(PreCheckException.class);
@@ -262,9 +250,6 @@ class ContractCallLocalHandlerTest {
         given(context.createStore(ReadableAccountStore.class)).willReturn(store);
         given(store.getContractById(contractID)).willReturn(contract);
         givenAllowCallsToNonContractAccountOffConfig();
-        given(context.configuration()).willReturn(configuration);
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
 
         // when:
         assertThatCode(() -> subject.validate(context)).doesNotThrowAnyException();

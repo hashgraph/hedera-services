@@ -290,12 +290,4 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * This is to improve Ethereum equivalence.
      */
     void setContractNotRequired();
-
-    default long getShardNum() {
-        return enhancement().nativeOperations().getShardNum();
-    }
-
-    default long getRealmNum() {
-        return enhancement().nativeOperations().getRealmNum();
-    }
 }

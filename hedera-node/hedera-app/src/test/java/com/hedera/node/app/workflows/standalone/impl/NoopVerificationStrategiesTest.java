@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.swirlds.config.api.Configuration;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,13 +33,10 @@ class NoopVerificationStrategiesTest {
     @Mock
     private HederaNativeOperations nativeOperations;
 
-    @Mock
-    private Configuration configuration;
-
     @Test
     void allKeysAreValid() {
         final var subject = NOOP_VERIFICATION_STRATEGIES.activatingOnlyContractKeysFor(
-                Address.ALTBN128_ADD, true, nativeOperations, configuration);
+                Address.ALTBN128_ADD, true, nativeOperations);
         assertSame(VerificationStrategy.Decision.VALID, subject.decideForPrimitive(Key.DEFAULT));
     }
 }

@@ -21,8 +21,6 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ma
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.config.data.HederaConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -46,20 +44,13 @@ public class DefaultVerificationStrategies implements VerificationStrategies {
     public VerificationStrategy activatingOnlyContractKeysFor(
             @NonNull final Address sender,
             final boolean requiresDelegatePermission,
-            @NonNull final HederaNativeOperations nativeOperations,
-            @NonNull final Configuration configuration) {
+            @NonNull final HederaNativeOperations nativeOperations) {
         final var contractNum = maybeMissingNumberOf(sender, nativeOperations);
         if (contractNum == MISSING_ENTITY_NUMBER) {
             throw new IllegalArgumentException("Cannot verify against missing contract " + sender);
         }
-
-        var hederaConfig = configuration.getConfigData(HederaConfig.class);
         return new ActiveContractVerificationStrategy(
-                ContractID.newBuilder()
-                        .shardNum(hederaConfig.shard())
-                        .realmNum(hederaConfig.realm())
-                        .contractNum(contractNum)
-                        .build(),
+                ContractID.newBuilder().contractNum(contractNum).build(),
                 tuweniToPbjBytes(sender),
                 requiresDelegatePermission,
                 ActiveContractVerificationStrategy.UseTopLevelSigs.NO);

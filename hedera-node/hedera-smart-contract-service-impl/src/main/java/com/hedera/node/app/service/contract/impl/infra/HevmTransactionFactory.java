@@ -216,8 +216,6 @@ public class HevmTransactionFactory {
                 relayerId,
                 asPriorityId(
                         ContractID.newBuilder()
-                                .shardNum(senderId.shardNum())
-                                .realmNum(senderId.realmNum())
                                 .evmAddress(Bytes.wrap(ethTxData.to()))
                                 .build(),
                         accountStore),

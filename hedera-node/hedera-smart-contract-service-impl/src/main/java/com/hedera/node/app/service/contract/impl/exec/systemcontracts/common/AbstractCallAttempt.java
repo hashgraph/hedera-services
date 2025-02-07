@@ -151,7 +151,7 @@ public abstract class AbstractCallAttempt<T extends AbstractCallAttempt<T>> {
      */
     public @NonNull VerificationStrategy defaultVerificationStrategy() {
         return verificationStrategies.activatingOnlyContractKeysFor(
-                authorizingAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations(), configuration);
+                authorizingAddress, onlyDelegatableContractKeysActive, enhancement.nativeOperations());
     }
 
     /**

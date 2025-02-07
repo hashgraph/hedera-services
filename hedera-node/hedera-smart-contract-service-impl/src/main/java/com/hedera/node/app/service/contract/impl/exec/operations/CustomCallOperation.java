@@ -25,7 +25,6 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
@@ -100,9 +99,7 @@ public class CustomCallOperation extends CallOperation {
     }
 
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
-        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
-        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
-        return !isLongZero(shard, realm, toAddress)
+        return !isLongZero(toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
                 && !addressChecks.isPresent(toAddress, frame);
     }

@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -46,7 +45,6 @@ import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -235,8 +233,7 @@ class SignScheduleTranslatorTest {
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(
-                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
                 .willReturn(verificationStrategy);
 
         // when:
@@ -266,8 +263,7 @@ class SignScheduleTranslatorTest {
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(nativeOperations.getAccount(payerId)).willReturn(SOMEBODY);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(
-                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
                 .willReturn(verificationStrategy);
         given(systemContractOperations.maybeEthSenderKey()).willReturn(key);
 
@@ -319,14 +315,8 @@ class SignScheduleTranslatorTest {
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(
-                        OWNER_BESU_ADDRESS, false, nativeOperations, configuration))
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, false, nativeOperations))
                 .willReturn(verificationStrategy);
-
-        var mockHederaOperations = mock(HederaOperations.class);
-        given(enhancement.operations()).willReturn(mockHederaOperations);
-        given(mockHederaOperations.getShard()).willReturn(0L);
-        given(mockHederaOperations.getRealm()).willReturn(0L);
 
         // when:
         final var input = Bytes.wrapByteBuffer(
@@ -355,13 +345,8 @@ class SignScheduleTranslatorTest {
         given(nativeOperations.getAccount(payerId)).willReturn(B_CONTRACT);
         given(schedule.scheduleId()).willReturn(scheduleID);
         given(addressIdConverter.convertSender(OWNER_BESU_ADDRESS)).willReturn(payerId);
-        given(verificationStrategies.activatingOnlyContractKeysFor(
-                        OWNER_BESU_ADDRESS, true, nativeOperations, configuration))
+        given(verificationStrategies.activatingOnlyContractKeysFor(OWNER_BESU_ADDRESS, true, nativeOperations))
                 .willReturn(verificationStrategy);
-        var mockHederaOperations = mock(HederaOperations.class);
-        given(enhancement.operations()).willReturn(mockHederaOperations);
-        given(mockHederaOperations.getShard()).willReturn(0L);
-        given(mockHederaOperations.getRealm()).willReturn(0L);
 
         // when:
         final var input = Bytes.wrapByteBuffer(

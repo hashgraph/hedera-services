@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has
 import static com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.CallAttemptHelpers.prepareHasAttemptWithSelectorAndCustomConfig;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
@@ -34,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,12 +86,6 @@ class SetUnlimitedAutoAssociationsTranslatorTest {
     void matchesWhenEnabled() {
         given(enhancement.nativeOperations()).willReturn(nativeOperations);
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
-
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
-        given(mockHederaConfig.shard()).willReturn(0L);
-        given(mockHederaConfig.realm()).willReturn(0L);
-
         given(contractsConfig.systemContractSetUnlimitedAutoAssociationsEnabled())
                 .willReturn(true);
         attempt = prepareHasAttemptWithSelectorAndCustomConfig(
@@ -115,10 +107,6 @@ class SetUnlimitedAutoAssociationsTranslatorTest {
         given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
         given(contractsConfig.systemContractSetUnlimitedAutoAssociationsEnabled())
                 .willReturn(false);
-        var mockHederaConfig = mock(HederaConfig.class);
-        given(configuration.getConfigData(HederaConfig.class)).willReturn(mockHederaConfig);
-        given(mockHederaConfig.shard()).willReturn(0L);
-        given(mockHederaConfig.realm()).willReturn(0L);
         attempt = prepareHasAttemptWithSelectorAndCustomConfig(
                 SET_UNLIMITED_AUTO_ASSOC,
                 subject,

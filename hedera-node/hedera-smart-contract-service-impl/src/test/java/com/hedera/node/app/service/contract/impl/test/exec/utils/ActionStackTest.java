@@ -234,7 +234,6 @@ class ActionStackTest {
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
-        mockWorldUpdater();
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, SYSTEM, ActionStack.Validation.ON);
 
@@ -266,7 +265,6 @@ class ActionStackTest {
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
         given(helper.isValid(any())).willReturn(true);
-        mockWorldUpdater();
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON);
 
@@ -587,7 +585,6 @@ class ActionStackTest {
         given(childFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
-        mockWorldUpdater();
 
         subject.pushActionOfIntermediate(parentFrame);
 
@@ -618,11 +615,5 @@ class ActionStackTest {
     private void givenPresentEvmAddress() {
         given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
-    }
-
-    private void mockWorldUpdater() {
-        given(parentFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getShardNum()).willReturn(0L);
-        given(worldUpdater.getRealmNum()).willReturn(0L);
     }
 }

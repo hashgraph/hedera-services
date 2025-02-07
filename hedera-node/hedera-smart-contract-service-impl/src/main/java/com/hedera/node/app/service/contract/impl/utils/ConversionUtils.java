@@ -24,12 +24,9 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.hasNonDegenerateAutoRenewAccountId;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
@@ -46,7 +43,6 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -365,9 +361,7 @@ public class ConversionUtils {
      * @return the id number of the given address's Hedera id
      */
     public static long hederaIdNumberIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
-        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
-        return isLongZero(shard, realm, address)
+        return isLongZero(address)
                 ? numberOfLongZero(address)
                 : proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow();
     }
@@ -431,10 +425,7 @@ public class ConversionUtils {
      * @return the implied Hedera entity number
      */
     public static long numberOfLongZero(@NonNull final Address address) {
-        // use only last 8 bytes of the address to get the number
-        final var numberAsArray = new byte[8];
-        arraycopy(address.toArray(), 12, numberAsArray, 0, 8);
-        return Bytes.of(numberAsArray).toUnsignedBigInteger().longValueExact();
+        return address.toUnsignedBigInteger().longValueExact();
     }
 
     /**
@@ -443,8 +434,8 @@ public class ConversionUtils {
      * @param address the EVM address (as a BESU {@link org.hyperledger.besu.datatypes.Address})
      * @return whether it is long-zero
      */
-    public static boolean isLongZero(final long shard, final long realm, @NonNull final Address address) {
-        return isLongZeroAddress(shard, realm, address.toArrayUnsafe());
+    public static boolean isLongZero(@NonNull final Address address) {
+        return isLongZeroAddress(address.toArrayUnsafe());
     }
 
     /**
@@ -453,9 +444,8 @@ public class ConversionUtils {
      * @param address the EVM address (as a headlong {@link com.esaulpaugh.headlong.abi.Address})
      * @return whether it is long-zero
      */
-    public static boolean isLongZero(
-            final long shard, final long realm, @NonNull final com.esaulpaugh.headlong.abi.Address address) {
-        return isLongZeroAddress(shard, realm, explicitFromHeadlong(address));
+    public static boolean isLongZero(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        return isLongZeroAddress(explicitFromHeadlong(address));
     }
 
     /**
@@ -504,15 +494,11 @@ public class ConversionUtils {
      * @param address the EVM address
      * @return the PBJ {@link AccountID}
      */
-    public static AccountID asNumberedAccountId(long shard, long realm, @NonNull final Address address) {
-        if (!isLongZero(shard, realm, address)) {
+    public static AccountID asNumberedAccountId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
-        return AccountID.newBuilder()
-                .shardNum(shard)
-                .realmNum(realm)
-                .accountNum(numberOfLongZero(address))
-                .build();
+        return AccountID.newBuilder().accountNum(numberOfLongZero(address)).build();
     }
 
     /**
@@ -521,20 +507,16 @@ public class ConversionUtils {
      * @param address the EVM address
      * @return the PBJ {@link ContractID}
      */
-    public static ContractID asNumberedContractId(long shard, long realm, @NonNull final Address address) {
-        if (!isLongZero(shard, realm, address)) {
+    public static ContractID asNumberedContractId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
-        return ContractID.newBuilder()
-                .shardNum(shard)
-                .realmNum(realm)
-                .contractNum(numberOfLongZero(address))
-                .build();
+        return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 
     public static com.hederahashgraph.api.proto.java.ScheduleID asScheduleId(
-            final long shard, final long realm, @NonNull final com.esaulpaugh.headlong.abi.Address address) {
-        if (!isLongZero(shard, realm, address)) {
+            @NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
         return com.hederahashgraph.api.proto.java.ScheduleID.newBuilder()
@@ -542,9 +524,8 @@ public class ConversionUtils {
                 .build();
     }
 
-    public static ScheduleID addressToScheduleID(
-            final long shard, final long realm, @NonNull final com.esaulpaugh.headlong.abi.Address address) {
-        if (!isLongZero(shard, realm, address)) {
+    public static ScheduleID addressToScheduleID(@NonNull final com.esaulpaugh.headlong.abi.Address address) {
+        if (!isLongZero(address)) {
             throw new IllegalArgumentException("Cannot extract id number from address " + address);
         }
         return ScheduleID.newBuilder()
@@ -676,14 +657,9 @@ public class ConversionUtils {
      * @param explicit the explicit 20-byte array
      * @return whether it is a long-zero address
      */
-    public static boolean isLongZeroAddress(final long shard, final long realm, final byte[] explicit) {
-        // check if first bytes are matching the shard and the realm
-        final byte[] shardAndRealm = new byte[12];
-        arraycopy(Ints.toByteArray((int) shard), 0, shardAndRealm, 0, 4);
-        arraycopy(Longs.toByteArray(realm), 0, shardAndRealm, 4, 8);
-
+    public static boolean isLongZeroAddress(final byte[] explicit) {
         for (int i = 0; i < NUM_LONG_ZEROS; i++) {
-            if (explicit[i] != shardAndRealm[i]) {
+            if (explicit[i] != 0) {
                 return false;
             }
         }
@@ -745,9 +721,7 @@ public class ConversionUtils {
     }
 
     private static Address longZeroAddressIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        final var shard = ((HederaWorldUpdater) frame.getWorldUpdater()).getShardNum();
-        final var realm = ((HederaWorldUpdater) frame.getWorldUpdater()).getRealmNum();
-        return isLongZero(shard, realm, address)
+        return isLongZero(address)
                 ? address
                 : asLongZeroAddress(
                         proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow());
@@ -755,9 +729,7 @@ public class ConversionUtils {
 
     private static long maybeMissingNumberOf(
             @NonNull final byte[] explicit, @NonNull final HederaNativeOperations nativeOperations) {
-        final var shard = nativeOperations.getShardNum();
-        final var realm = nativeOperations.getRealmNum();
-        if (isLongZeroAddress(shard, realm, explicit)) {
+        if (isLongZeroAddress(explicit)) {
             return longFrom(
                     explicit[12],
                     explicit[13],

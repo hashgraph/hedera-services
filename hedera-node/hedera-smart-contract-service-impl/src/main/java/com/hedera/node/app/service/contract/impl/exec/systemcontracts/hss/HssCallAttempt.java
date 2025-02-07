@@ -166,9 +166,7 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
      */
     public @Nullable Schedule linkedSchedule(@NonNull final byte[] evmAddress) {
         requireNonNull(evmAddress);
-        final var shard = enhancement.nativeOperations().getShardNum();
-        final var realm = enhancement.nativeOperations().getRealmNum();
-        if (isLongZeroAddress(shard, realm, evmAddress)) {
+        if (isLongZeroAddress(evmAddress)) {
             return enhancement.nativeOperations().getSchedule(numberOfLongZero(evmAddress));
         }
         return null;
@@ -206,19 +204,12 @@ public class HssCallAttempt extends AbstractCallAttempt<HssCallAttempt> {
         final var contractNum = maybeMissingNumberOf(senderAddress(), nativeOperations());
         if (isOnlyDelegatableContractKeysActive()) {
             return Set.of(Key.newBuilder()
-                    .delegatableContractId(ContractID.newBuilder()
-                            .shardNum(enhancement().operations().getShard())
-                            .realmNum(enhancement().operations().getRealm())
-                            .contractNum(contractNum)
-                            .build())
+                    .delegatableContractId(
+                            ContractID.newBuilder().contractNum(contractNum).build())
                     .build());
         } else {
             return Set.of(Key.newBuilder()
-                    .contractID(ContractID.newBuilder()
-                            .shardNum(enhancement().operations().getShard())
-                            .realmNum(enhancement().operations().getRealm())
-                            .contractNum(contractNum)
-                            .build())
+                    .contractID(ContractID.newBuilder().contractNum(contractNum).build())
                     .build());
         }
     }

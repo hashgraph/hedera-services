@@ -279,8 +279,4 @@ public interface HederaOperations {
                 ? contractId
                 : MISSING_CONTRACT_ID;
     }
-
-    long getRealm();
-
-    long getShard();
 }

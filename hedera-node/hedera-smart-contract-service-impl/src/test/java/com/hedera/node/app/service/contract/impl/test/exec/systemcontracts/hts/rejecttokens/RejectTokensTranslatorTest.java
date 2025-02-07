@@ -264,7 +264,7 @@ public class RejectTokensTranslatorTest {
     void callFromHtsTokenReject() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 RejectTokensTranslator.TOKEN_REJECT,
@@ -288,7 +288,7 @@ public class RejectTokensTranslatorTest {
     void callFromHRCCancelFTAirdrop() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 RejectTokensTranslator.HRC_TOKEN_REJECT_FT,
@@ -312,7 +312,7 @@ public class RejectTokensTranslatorTest {
     void callFromHRCCancelNFTAirdrop() {
         // given:
         given(addressIdConverter.convertSender(any())).willReturn(SENDER_ID);
-        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any(), any()))
+        given(verificationStrategies.activatingOnlyContractKeysFor(any(), anyBoolean(), any()))
                 .willReturn(verificationStrategy);
         attempt = prepareHtsAttemptWithSelectorAndCustomConfig(
                 RejectTokensTranslator.HRC_TOKEN_REJECT_NFT,

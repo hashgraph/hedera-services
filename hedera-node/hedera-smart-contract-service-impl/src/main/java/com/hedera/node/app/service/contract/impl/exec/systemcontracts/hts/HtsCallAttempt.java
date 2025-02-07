@@ -182,9 +182,7 @@ public class HtsCallAttempt extends AbstractCallAttempt<HtsCallAttempt> {
      */
     public @Nullable Token linkedToken(@NonNull final byte[] evmAddress) {
         requireNonNull(evmAddress);
-        final var shard = enhancement.nativeOperations().getShardNum();
-        final var realm = enhancement.nativeOperations().getRealmNum();
-        if (isLongZeroAddress(shard, realm, evmAddress)) {
+        if (isLongZeroAddress(evmAddress)) {
             return enhancement.nativeOperations().getToken(numberOfLongZero(evmAddress));
         } else {
             // No point in looking up a token that can't exist

@@ -256,8 +256,8 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final Address systemContractAddress,
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer) {
-        final var fullResult = systemContract.computeFully(
-                asNumberedContractId(0, 0, systemContractAddress), frame.getInputData(), frame);
+        final var fullResult =
+                systemContract.computeFully(asNumberedContractId(systemContractAddress), frame.getInputData(), frame);
         final var gasRequirement = fullResult.gasRequirement();
         final PrecompileContractResult result;
         if (frame.getRemainingGas() < gasRequirement) {
