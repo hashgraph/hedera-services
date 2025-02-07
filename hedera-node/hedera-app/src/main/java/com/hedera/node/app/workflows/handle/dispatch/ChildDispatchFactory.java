@@ -160,7 +160,7 @@ public class ChildDispatchFactory {
      * @param consensusNow            the consensus time
      * @param blockRecordInfo         the block record info
      * @param options                 the dispatch options
-     * @param overridePreHandleResult the override pre-handle result
+     * @param overridePreHandleResult the override pre-handle result for the inner transaction from atomic batch
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
@@ -184,6 +184,9 @@ public class ChildDispatchFactory {
         requireNonNull(consensusNow);
         requireNonNull(blockRecordInfo);
         requireNonNull(options);
+        // If there is an override pre-handle result, then this is an atomic batch inner transaction.
+        // In this case, we do not need to run pre-handle checks. Also, use a default key verifier to
+        // verify all the signatures
         final var preHandleResult = overridePreHandleResult != null
                 ? overridePreHandleResult
                 : preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);

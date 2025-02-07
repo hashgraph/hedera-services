@@ -57,7 +57,7 @@ import java.util.concurrent.Future;
  * @param verificationResults A map of {@link Future<SignatureVerificationFuture>} yielding the
  *                            {@link SignatureVerificationFuture} for a given cryptographic key. Ony cryptographic keys
  *                            are used as the key of this map.
- * @param innerResults {@link PreHandleResult} of the inner transaction (where appropriate)
+ * @param innerResults {@link PreHandleResult}s of the inner transactions if this is an atomic batch transaction.
  * @param configVersion The version of the configuration that was used during pre-handle
  */
 public record PreHandleResult(

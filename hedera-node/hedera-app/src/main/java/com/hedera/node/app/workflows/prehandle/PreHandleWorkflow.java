@@ -35,16 +35,18 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** A workflow to pre-handle transactions. */
+/**
+ * A workflow to pre-handle transactions.
+ */
 public interface PreHandleWorkflow {
     Logger log = LogManager.getLogger(PreHandleWorkflow.class);
 
     /**
      * Starts the pre-handle transaction workflow of the {@link Event}
      *
-     * @param readableStoreFactory the {@link ReadableStoreFactory} that is used for looking up stores
-     * @param creator The {@link AccountID} of the node that created these transactions
-     * @param transactions An {@link Stream} over all transactions to pre-handle
+     * @param readableStoreFactory      the {@link ReadableStoreFactory} that is used for looking up stores
+     * @param creator                   The {@link AccountID} of the node that created these transactions
+     * @param transactions              An {@link Stream} over all transactions to pre-handle
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
@@ -77,6 +79,17 @@ public interface PreHandleWorkflow {
             @Nullable PreHandleResult maybeReusableResult,
             @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback);
 
+    /**
+     * Starts the pre-handle transaction workflow for all transactions including inner transactions in an atomic batch.
+     *
+     * @param creator                   the node that created the transaction
+     * @param storeFactory              the store factory
+     * @param accountStore              the account store
+     * @param applicationTxBytes        the transaction to be verified
+     * @param maybeReusableResult       the previous result of pre-handle
+     * @param stateSignatureTxnCallback the callback to be called when encountering a {@link StateSignatureTransaction}
+     * @return the verification data for the transaction
+     */
     default PreHandleResult preHandleAllTransactions(
             @NonNull AccountID creator,
             @NonNull ReadableStoreFactory storeFactory,
@@ -91,6 +104,8 @@ public interface PreHandleWorkflow {
                 applicationTxBytes,
                 maybeReusableResult,
                 stateSignatureTxnCallback);
+        // If the transaction is an atomic batch, we need to pre-handle all inner transactions as well
+        // and add their results to the outer transaction's pre-handle result
         if (result.txInfo() != null && isAtomicBatch(result.txInfo())) {
             for (final var innerTx :
                     result.txInfo().txBody().atomicBatchOrThrow().transactions()) {
@@ -113,8 +128,8 @@ public interface PreHandleWorkflow {
      * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
      * its verification data.
      *
-     * @param creator the node that created the transaction
-     * @param platformTxn the transaction to be verified
+     * @param creator      the node that created the transaction
+     * @param platformTxn  the transaction to be verified
      * @param storeFactory the store factory
      * @return the verification data for the transaction
      */

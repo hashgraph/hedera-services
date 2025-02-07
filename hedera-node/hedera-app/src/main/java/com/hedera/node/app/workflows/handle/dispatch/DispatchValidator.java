@@ -38,6 +38,7 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
@@ -97,9 +98,10 @@ public class DispatchValidator {
             final var payer =
                     getPayerAccount(dispatch.readableStoreFactory(), dispatch.payerId(), dispatch.txnCategory());
             final var category = dispatch.txnCategory();
+            // Check payer signature for all batch inner transactions, scheduled, and user transactions
             final var requiresPayerSig = category == SCHEDULED
                     || category == USER
-                    || dispatch.txnInfo().txBody().hasBatchKey();
+                    || isBatchInnerTxn(dispatch.txnInfo().txBody());
             if (requiresPayerSig && !isHollow(payer)) {
                 // Skip payer verification for hollow accounts because ingest only submits valid signatures
                 // for hollow payers; and if an account is still hollow here, its alias cannot have changed
@@ -119,6 +121,10 @@ public class DispatchValidator {
                 case OTHER_NODE -> finalPayerValidationReport(payer, DuplicateStatus.DUPLICATE, dispatch);
             };
         }
+    }
+
+    private static boolean isBatchInnerTxn(final @NonNull TransactionBody txnBody) {
+        return txnBody.hasBatchKey();
     }
 
     /**

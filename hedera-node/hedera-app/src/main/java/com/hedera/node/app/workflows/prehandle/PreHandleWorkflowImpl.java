@@ -347,6 +347,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 configuration.getVersion());
     }
 
+    /**
+     * Checks if the transaction is an atomic batch transaction.
+     * @param txInfo the transaction info
+     * @return {@code true} if the transaction is an atomic batch transaction, {@code false} otherwise
+     */
     static boolean isAtomicBatch(final TransactionInfo txInfo) {
         return txInfo.functionality().equals(HederaFunctionality.ATOMIC_BATCH);
     }

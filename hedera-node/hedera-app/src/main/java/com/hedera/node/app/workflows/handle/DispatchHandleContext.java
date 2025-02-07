@@ -112,7 +112,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private Map<AccountID, Long> dispatchPaidRewards;
     private final DispatchMetadata dispatchMetaData;
     private final TransactionChecker transactionChecker;
-
+    // This is used to store the pre-handle results for the inner transactions
+    // in an atomic batch, null otherwise
     @Nullable
     private final List<PreHandleResult> preHandleResults;
 
@@ -369,6 +370,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
         requireNonNull(options);
         PreHandleResult childPreHandleResult = null;
+        // If we have pre-computed pre-handle results for the inner transactions, pass them to the child
+        // dispatch instead of computing a no-op result for child dispatch.
         if (preHandleResults != null && !preHandleResults.isEmpty()) {
             childPreHandleResult = preHandleResults.removeFirst();
         }
