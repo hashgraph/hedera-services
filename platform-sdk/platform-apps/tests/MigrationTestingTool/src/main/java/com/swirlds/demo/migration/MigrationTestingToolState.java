@@ -159,13 +159,13 @@ public class MigrationTestingToolState extends PlatformMerkleStateRoot {
     }
 
     @Override
-    public MerkleNode migrate(int version) {
+    public MerkleNode migrate(@NonNull Configuration configuration, int version) {
         if (version == ClassVersion.VIRTUAL_MAP) {
             FAKE_MERKLE_STATE_LIFECYCLES.initRosterState(this);
             return this;
         }
 
-        return super.migrate(version);
+        return super.migrate(configuration, version);
     }
 
     /**

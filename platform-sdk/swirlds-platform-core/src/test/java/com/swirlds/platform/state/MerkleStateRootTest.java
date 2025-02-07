@@ -810,14 +810,14 @@ class MerkleStateRootTest extends MerkleTestBase {
             var node2 = mock(MerkleNode.class);
             stateRoot.setChild(1, node2);
             reset(node1, node2);
-            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION));
+            assertSame(stateRoot, stateRoot.migrate(, CURRENT_VERSION, ));
             verifyNoMoreInteractions(node1, node2);
         }
 
         @Test
         @DisplayName("Migration from previous versions is not supported")
         void migration_not_supported() {
-            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(, CURRENT_VERSION - 1, ));
         }
     }
 

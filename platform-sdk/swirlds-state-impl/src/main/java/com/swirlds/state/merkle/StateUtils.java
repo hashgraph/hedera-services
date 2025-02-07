@@ -73,6 +73,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.swirlds.base.utility.Pair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -525,6 +526,31 @@ public final class StateUtils {
      */
     public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
         return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
+    }
+
+    /**
+     * Decomposes a computed label into its service name and state key components.
+     * <p>
+     * This method performs the inverse operation of {@link #computeLabel(String, String)}.
+     * It assumes the label is in the format "serviceName.stateKey".
+     * </p>
+     *
+     * @param label the computed label
+     * @return a {@link Pair} where the left element is the service name and the right element is the state key
+     * @throws IllegalArgumentException if the label does not contain a period ('.') as expected
+     * @throws NullPointerException     if the label is {@code null}
+     */
+    public static Pair<String, String> decomposeLabel(final String label) {
+        Objects.requireNonNull(label, "Label must not be null");
+
+        int delimiterIndex = label.indexOf('.');
+        if (delimiterIndex < 0) {
+            throw new IllegalArgumentException("Label must be in the format 'serviceName.stateKey'");
+        }
+
+        final String serviceName = label.substring(0, delimiterIndex);
+        final String stateKey = label.substring(delimiterIndex + 1);
+        return Pair.of(serviceName, stateKey);
     }
 
     private static final Bytes[] VIRTUAL_MAP_KEY_CACHE = new Bytes[65536];
