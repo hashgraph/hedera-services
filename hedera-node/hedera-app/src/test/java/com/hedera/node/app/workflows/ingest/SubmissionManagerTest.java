@@ -253,7 +253,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -279,7 +279,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -305,7 +305,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -331,7 +331,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // submission FAILS because we are in PROD mode
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);
@@ -366,7 +366,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // submission FAILS because of the bogus bytes
             assertThatThrownBy(() -> submissionManager.submit(txBody, bytes))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_TRANSACTION_NOT_CREATED);
+                    .hasFieldOrPropertyWithValue("status", PLATFORM_TRANSACTION_NOT_CREATED);
 
             // Then the platform NEVER sees the unchecked bytes
             verify(platform, never()).createTransaction(uncheckedBytes);

@@ -758,7 +758,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Then the checker should throw a WorkflowException
                 assertThatThrownBy(() -> checker.check(tx, null))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", MEMO_TOO_LONG);
+                        .hasFieldOrPropertyWithValue("status", MEMO_TOO_LONG);
             }
 
             // NOTE! This test will not be the case forever! We have an issue to fix
@@ -774,7 +774,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // Then the checker should throw a WorkflowException
                 assertThatThrownBy(() -> checker.check(tx, null))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_ZERO_BYTE_IN_STRING);
+                        .hasFieldOrPropertyWithValue("status", INVALID_ZERO_BYTE_IN_STRING);
             }
 
             @ParameterizedTest
@@ -792,7 +792,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 // When we check the transaction body
                 assertThatThrownBy(() -> checker.check(tx, null))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INSUFFICIENT_TX_FEE);
+                        .hasFieldOrPropertyWithValue("status", INSUFFICIENT_TX_FEE);
             }
         }
 
@@ -815,7 +815,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 assertThatThrownBy(() -> checker.checkTimeBox(
                                 body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
+                        .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION_DURATION);
             }
 
             @Test
@@ -833,7 +833,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 assertThatThrownBy(() -> checker.checkTimeBox(
                                 body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_DURATION);
+                        .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION_DURATION);
             }
 
             @Test
@@ -850,7 +850,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 assertThatThrownBy(() -> checker.checkTimeBox(
                                 body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_EXPIRED);
+                        .hasFieldOrPropertyWithValue("status", TRANSACTION_EXPIRED);
             }
 
             @Test
@@ -867,7 +867,7 @@ final class TransactionCheckerTest extends AppTestBase {
                 assertThatThrownBy(() -> checker.checkTimeBox(
                                 body, consensusNow, TransactionChecker.RequireMinValidLifetimeBuffer.YES))
                         .isInstanceOf(WorkflowException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
+                        .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION_START);
             }
         }
 
@@ -884,7 +884,7 @@ final class TransactionCheckerTest extends AppTestBase {
                     // When we parse and check, then the parsing fails due to the exception
                     assertThatThrownBy(() -> checker.check(tx, null))
                             .isInstanceOf(WorkflowException.class)
-                            .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
+                            .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION_BODY);
                 }
             }
         }

@@ -357,7 +357,7 @@ class IngestCheckerTest extends AppTestBase {
             // When the transaction is checked, then it throws a WorkflowException due to duplication
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
+                    .hasFieldOrPropertyWithValue("status", DUPLICATE_TRANSACTION);
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
     }
@@ -376,7 +376,7 @@ class IngestCheckerTest extends AppTestBase {
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", BUSY);
+                    .hasFieldOrPropertyWithValue("status", BUSY);
             verify(opWorkflowMetrics).incrementThrottled(UNCHECKED_SUBMIT);
         }
 
@@ -410,7 +410,7 @@ class IngestCheckerTest extends AppTestBase {
 
             assertThatThrownBy(() -> subject.runAllChecks(state, cryptoAddLiveHashTx, configuration))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+                    .hasFieldOrPropertyWithValue("status", NOT_SUPPORTED);
         }
 
         @Test
@@ -437,7 +437,7 @@ class IngestCheckerTest extends AppTestBase {
 
             assertThatThrownBy(() -> subject.runAllChecks(state, freezeTx, configuration))
                     .isInstanceOf(WorkflowException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
+                    .hasFieldOrPropertyWithValue("status", NOT_SUPPORTED);
         }
 
         @Test
