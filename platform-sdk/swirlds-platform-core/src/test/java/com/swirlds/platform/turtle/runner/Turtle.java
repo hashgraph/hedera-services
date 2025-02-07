@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.DIFFERENT_ORDER;
+import static com.swirlds.platform.test.consensus.framework.validation.Validations.ValidationType.INPUTS_ARE_SAME;
+
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -25,7 +28,11 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
+import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
+import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsListContainer;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -131,6 +138,28 @@ public class Turtle {
     public void start() {
         for (final TurtleNode node : nodes) {
             node.start();
+        }
+    }
+
+    public void validate() {
+        final Validations validations = Validations.standard();
+        validations.remove(INPUTS_ARE_SAME);
+        validations.remove(DIFFERENT_ORDER);
+
+        final TurtleNode node1 = nodes.getFirst();
+        final ConsensusOutput outputForNode1 = new ConsensusOutput(time);
+        outputForNode1.setConsensusRounds(
+                ((ConsensusRoundsListContainer) node1.getConsensusRoundsHolder()).getCollectedRounds());
+
+        for (int i = 1; i < nodes.size(); i++) {
+            final TurtleNode node2 = nodes.get(i);
+            for (final ConsensusOutputValidation validator : validations.getList()) {
+                final ConsensusOutput outputForNode2 = new ConsensusOutput(time);
+                outputForNode2.setConsensusRounds(
+                        ((ConsensusRoundsListContainer) node2.getConsensusRoundsHolder()).getCollectedRounds());
+
+                validator.validate(outputForNode1, outputForNode2);
+            }
         }
     }
 

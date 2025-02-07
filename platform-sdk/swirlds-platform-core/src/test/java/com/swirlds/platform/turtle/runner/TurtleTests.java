@@ -50,5 +50,7 @@ class TurtleTests {
 
         turtle.start();
         turtle.simulateTime(Duration.ofMinutes(5));
+
+        turtle.validate();
     }
 }

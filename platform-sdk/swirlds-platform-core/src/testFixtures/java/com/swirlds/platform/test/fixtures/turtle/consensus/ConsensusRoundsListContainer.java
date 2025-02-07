@@ -33,12 +33,15 @@ public class ConsensusRoundsListContainer implements ConsensusRoundsHolder {
         if (!rounds.isEmpty()) {
             collectedRounds.addAll(rounds);
         }
-
-        // TODO add validation logic for the events
     }
 
     @Override
     public void clear(@NonNull final Object ignored) {
         collectedRounds.clear();
+    }
+
+    @NonNull
+    public List<ConsensusRound> getCollectedRounds() {
+        return collectedRounds;
     }
 }
