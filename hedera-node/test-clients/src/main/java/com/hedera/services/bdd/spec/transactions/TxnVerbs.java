@@ -497,7 +497,7 @@ public class TxnVerbs {
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-        return contractCall(Optional.empty(), contract, functionName, params);
+        return innerContractCall(Optional.empty(), contract, functionName, params);
     }
 
     /**
@@ -510,9 +510,8 @@ public class TxnVerbs {
      * @param params the arguments (if any) passed to the contract's function
      */
     public static HapiContractCall contractCall(
-            String variant, String contract, String functionName, Object... params) {
-        return contractCall(
-                variant.isEmpty() ? Optional.empty() : Optional.of(variant), contract, functionName, params);
+            Optional<String> variant, String contract, String functionName, Object... params) {
+        return innerContractCall(variant, contract, functionName, params);
     }
 
     /**
@@ -526,7 +525,7 @@ public class TxnVerbs {
      * @param functionName the name of the function
      * @param params the arguments (if any) passed to the contract's function
      */
-    public static HapiContractCall contractCall(
+    private static HapiContractCall innerContractCall(
             final Optional<String> variant, final String contract, final String functionName, final Object... params) {
         final var abi = getABIFor(variant.orElse(VARIANT_NONE), FUNCTION, functionName, contract);
         return new HapiContractCall(abi, contract, params);

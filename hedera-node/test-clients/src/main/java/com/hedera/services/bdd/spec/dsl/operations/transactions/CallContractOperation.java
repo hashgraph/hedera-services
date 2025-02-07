@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -55,7 +56,7 @@ public class CallContractOperation extends AbstractSpecTransaction<CallContractO
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
         final var op = contractCall(
-                        target.variant(),
+                        Optional.of(target.variant()),
                         target.name(),
                         function,
                         withSubstitutedTypes(spec.targetNetworkOrThrow(), parameters))
