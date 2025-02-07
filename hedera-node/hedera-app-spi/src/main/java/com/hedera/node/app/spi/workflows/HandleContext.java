@@ -36,6 +36,7 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -115,22 +116,45 @@ public interface HandleContext {
      * be used to pass additional information to the targeted handlers.
      */
     class DispatchMetadata {
-        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(Map.of());
+        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(new HashMap<>());
 
         private final Map<MetaDataKey, Object> metadata;
 
-        public DispatchMetadata(Map<MetaDataKey, Object> metadata) {
+        /**
+         * Constructs a new DispatchMetadata instance with the given metadata map.
+         *
+         * @param metadata the metadata map
+         */
+        public DispatchMetadata(@NonNull final Map<MetaDataKey, Object> metadata) {
             this.metadata = metadata;
         }
 
-        public DispatchMetadata(MetaDataKey dataKey, Object value) {
-            this(Map.of(dataKey, value));
+        /**
+         * Constructs a new DispatchMetadata instance with a single metadata entry.
+         *
+         * @param dataKey the metadata key
+         * @param value the metadata value
+         */
+        public DispatchMetadata(@NonNull final MetaDataKey dataKey, @NonNull Object value) {
+            this.metadata = new HashMap<>(Map.of(dataKey, value));
         }
 
-        public void putMetadata(MetaDataKey dataKey, Object value) {
+        /**
+         * Adds or updates a metadata entry.
+         *
+         * @param dataKey the metadata key
+         * @param value the metadata value
+         */
+        public void putMetadata(@NonNull final MetaDataKey dataKey, @NonNull final Object value) {
             metadata.put(dataKey, value);
         }
 
+        /**
+         * Retrieves the metadata value associated with the given key.
+         *
+         * @param dataKey the metadata key
+         * @return an Optional containing the metadata value, or an empty Optional if the key is not present
+         */
         public Optional<Object> getMetadata(MetaDataKey dataKey) {
             return Optional.ofNullable(metadata.get(dataKey));
         }

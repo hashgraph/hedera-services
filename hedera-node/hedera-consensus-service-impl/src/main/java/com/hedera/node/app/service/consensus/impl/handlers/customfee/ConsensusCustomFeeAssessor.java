@@ -66,13 +66,12 @@ public class ConsensusCustomFeeAssessor {
         for (FixedCustomFee fee : customFees) {
             final var tokenTransfers = new ArrayList<TokenTransferList>();
             TransferList.Builder hbarTransfers = TransferList.newBuilder();
-            List<AccountAmount> accountAmounts = new ArrayList<>();
 
             final var fixedFee = fee.fixedFeeOrThrow();
             if (fixedFee.hasDenominatingTokenId()) {
                 tokenTransfers.add(buildCustomFeeTokenTransferList(payer, fee.feeCollectorAccountId(), fixedFee));
             } else {
-                accountAmounts = buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee);
+                final var accountAmounts = buildCustomFeeHbarTransferList(payer, fee.feeCollectorAccountId(), fixedFee);
                 hbarTransfers.accountAmounts(accountAmounts.toArray(AccountAmount[]::new));
             }
 

@@ -97,10 +97,10 @@ public class CustomFixedFeeAssessor {
      * @param result assessment result
      */
     public void setTransactionFeesAsAssessed(
-            AccountID payer, final FixedCustomFee fixedCustomFee, final AssessmentResult result) {
+            final AccountID payer, final FixedCustomFee fixedCustomFee, final AssessmentResult result) {
         if (fixedCustomFee.hasFixedFee() && fixedCustomFee.hasFeeCollectorAccountId()) {
             final var fixedFee = fixedCustomFee.fixedFee();
-            CustomFee customFee = CustomFee.newBuilder()
+            final var customFee = CustomFee.newBuilder()
                     .feeCollectorAccountId(fixedCustomFee.feeCollectorAccountId())
                     .fixedFee(fixedFee)
                     .build();
