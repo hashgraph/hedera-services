@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_LAMBDA_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -53,9 +54,13 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.LambdaCall;
+import com.hedera.hapi.node.base.LambdaID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.lambda.LambdaDispatchTransactionBody;
+import com.hedera.hapi.node.state.lambda.LambdaState;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -65,6 +70,7 @@ import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.state.ReadableLambdaStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -97,6 +103,7 @@ public class HevmTransactionFactory {
     private final EntitiesConfig entitiesConfig;
     private final ReadableFileStore fileStore;
     private final TokenServiceApi tokenServiceApi;
+    private final ReadableLambdaStore lambdaStore;
     private final ReadableAccountStore accountStore;
     private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
@@ -114,6 +121,7 @@ public class HevmTransactionFactory {
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final EntitiesConfig entitiesConfig,
+            @Nullable @InitialState final ReadableLambdaStore lambdaStore,
             @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull @InitialState final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
@@ -122,8 +130,9 @@ public class HevmTransactionFactory {
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
             @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final HederaEvmContext hederaEvmContext) {
-        this.featureFlags = featureFlags;
+        this.lambdaStore = lambdaStore;
         this.hydratedEthTxData = hydratedEthTxData;
+        this.featureFlags = requireNonNull(featureFlags);
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
         this.networkInfo = requireNonNull(networkInfo);
@@ -153,6 +162,7 @@ public class HevmTransactionFactory {
             case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(payerId, body.contractCreateInstanceOrThrow());
             case CONTRACT_CALL -> fromHapiCall(payerId, body.contractCallOrThrow());
             case ETHEREUM_TRANSACTION -> fromHapiEthereum(payerId, body.ethereumTransactionOrThrow());
+            case LAMBDA_DISPATCH -> fromLambdaDispatch(payerId, body.lambdaDispatchOrThrow());
             default -> throw new IllegalArgumentException("Not a contract operation");
         };
     }
@@ -173,7 +183,27 @@ public class HevmTransactionFactory {
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
                 body,
-                null);
+                null,
+                false);
+    }
+
+    private HederaEvmTransaction fromLambdaDispatch(
+            @NonNull final AccountID payer, @NonNull final LambdaDispatchTransactionBody body) {
+        final var details = assertValidDispatch(body);
+        return new HederaEvmTransaction(
+                payer,
+                null,
+                details.contractId(),
+                NOT_APPLICABLE,
+                details.callData(),
+                null,
+                0L,
+                details.gasLimit(),
+                NOT_APPLICABLE,
+                NOT_APPLICABLE,
+                null,
+                null,
+                true);
     }
 
     private HederaEvmTransaction fromHapiCall(
@@ -191,7 +221,8 @@ public class HevmTransactionFactory {
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
                 null,
-                null);
+                null,
+                false);
     }
 
     private HederaEvmTransaction fromHapiEthereum(
@@ -227,7 +258,8 @@ public class HevmTransactionFactory {
                 ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 null,
-                null);
+                null,
+                false);
     }
 
     private @NonNull HederaEvmTransaction fromEthTxCreate(
@@ -247,7 +279,8 @@ public class HevmTransactionFactory {
                 ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData),
-                null);
+                null,
+                false);
     }
 
     /**
@@ -282,7 +315,8 @@ public class HevmTransactionFactory {
                 NOT_APPLICABLE,
                 NOT_APPLICABLE,
                 null,
-                exception);
+                exception,
+                false);
     }
 
     private @NonNull EthTxData assertValidEthTx(@NonNull final EthereumTransactionBody body) {
@@ -309,6 +343,34 @@ public class HevmTransactionFactory {
             final var mayNotExist = featureFlags.isAllowCallsToNonContractAccountsEnabled(contractsConfig, contractNum);
             validateTrue(mayNotExist || !contract.deleted(), CONTRACT_DELETED);
         }
+    }
+
+    private record DispatchDetails(@NonNull LambdaState lambdaState, @NonNull LambdaCall call, long gasLimit) {
+        public ContractID contractId() {
+            return lambdaState.contractIdOrThrow();
+        }
+
+        public Bytes callData() {
+            return call.callData();
+        }
+    }
+
+    private @NonNull DispatchDetails assertValidDispatch(@NonNull final LambdaDispatchTransactionBody body) {
+        final var execution = body.executionOrThrow();
+        final var call = execution.callOrThrow();
+        final var lambdaId = LambdaID.newBuilder()
+                .ownerId(execution.ownerId())
+                .index(call.index())
+                .build();
+        final var lambdaState = requireNonNull(lambdaStore).getLambdaById(lambdaId);
+        validateTrue(lambdaState != null, INVALID_LAMBDA_ID);
+        final long minGasLimit = Math.max(
+                ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
+        final long gasLimit =
+                call.gasLimitOrElse(lambdaState.defaultGasLimitOrElse(contractsConfig.defaultLambdaGasLimit()));
+        validateTrue(gasLimit >= minGasLimit, INSUFFICIENT_GAS);
+        validateTrue(gasLimit <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
+        return new DispatchDetails(lambdaState, call, gasLimit);
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {

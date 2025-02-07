@@ -209,4 +209,10 @@ message TransactionReceipt {
      * This value SHALL NOT be set following any other transaction.
      */
     uint64 node_id = 15;
+
+    /**
+     * In the receipt of a successful create or update transaction for an entity that supports lambdas,
+     * the indexes of any newly installed lambdas.
+     */
+    repeated uint64 installed_lambda_indexes = 16;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,4 +62,10 @@ public @interface Contract {
      * @return the maximum number of auto-associations
      */
     int maxAutoAssociations() default 0;
+
+    /**
+     * Whether this contract implements one or more Hiero lambdas; used to configure where the spec should
+     * look for bytecode and initcode resources.
+     */
+    boolean implementsLambda() default false;
 }

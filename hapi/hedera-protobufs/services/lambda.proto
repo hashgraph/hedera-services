@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package proto;
+
+/*-
+ * ‌
+ * Hedera Network Services Protobuf
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import "basic_types.proto";
+import "google/protobuf/wrappers.proto";
+
+option java_package = "com.hederahashgraph.api.proto.java";
+// <<<pbj.java_package = "com.hedera.hapi.node.lambda">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/***
+ * The types of Hiero lambdas.
+ */
+enum LambdaType {
+  /**
+   * Customizes an account's authorization strategy for the CryptoTransfer transaction.
+   */
+  TRANSFER_ALLOWANCE = 0;
+}
+
+/**
+ * The charging patterns for Hiero lambdas.
+ */
+enum LambdaChargingPattern {
+  /**
+   * The payer of the transaction that references the lambda is charged
+   * for all used gas. They receive the normal refund for unused gas.
+   */
+  CALLER_PAYS = 0;
+  /**
+   * The referencing transaction's payer is initially charged, but receives
+   * a _full refund_ if the lambda does not revert. In that successful scenario,
+   * a designated account that authorized the lambda's installation pays for the
+   * gas actually consumed.
+   */
+  CALLER_PAYS_ON_REVERT = 1;
+}
+
+/**
+ * Specifies the initcode for a lambda that wants to initialize its
+ * bytecode via a EVM contract creation transaction.
+ */
+message LambdaInitcode {
+  oneof source {
+    /**
+     * The ID of the file that contains the lambda's initcode.
+     */
+    FileID file_id = 1;
+
+    /**
+     * The lambda's initcode, inline.
+     */
+    bytes code = 2;
+  }
+
+  /**
+   * The parameters to pass to the lambda's constructor.
+   */
+  bytes constructor_parameters = 3;
+
+  /**
+   * The gas limit to use when executing the lambda's initcode.
+   */
+  uint64 gas_limit = 4;
+}
+
+/**
+ * Specifies the bytecode and initial storage slots for a lambda
+ * that wants to initialize itself explicitly.
+ */
+message LambdaExplicitInit {
+  oneof bytecode_source {
+    /**
+     * The ID of a file that contains the lambda's
+     * pre-initialized bytecode.
+     */
+    FileID bytecode_file_id = 3;
+
+    /**
+     * The lambda's bytecode, inline.
+     */
+    bytes bytecode = 4;
+  }
+
+  /**
+   * The initial storage of the lambda.
+   */
+  repeated LambdaStorageSlot storage_slots = 5;
+}
+
+/**
+ * A slot in the storage of a lambda.
+ */
+message LambdaStorageSlot {
+  /**
+   * The 32-byte key of the slot; leading zeros may be omitted.
+   */
+  bytes key = 1;
+  /**
+   * If the slot is present, the 32-byte value of the slot;
+   * leaving this field empty in an update removes the slot.
+   */
+  bytes value = 2;
+}
+
+/**
+ * Defines how to install a lambda.
+ */
+message LambdaInstallation {
+  /**
+   * The type of lambda to install.
+   */
+  LambdaType type = 1;
+
+  oneof init_method {
+    /**
+     * If the lambda should be initialized via a EVM contract
+     * creation transaction, the initcode to execute.
+     */
+    LambdaInitcode initcode = 2;
+
+    /**
+     * If the lambda should be initialized explicitly, the
+     * bytecode and initial storage slots to use.
+     */
+    LambdaExplicitInit explicit_init = 3;
+  }
+
+  /**
+   * The charging pattern to apply for gas usage.
+   */
+  LambdaChargingPattern charging_pattern = 5;
+
+  /**
+   * If present, the default gas limit to use when
+   * executing the lambda.
+   */
+  google.protobuf.UInt64Value default_gas_limit = 6;
+
+  /**
+   * If present, a specific lambda index to attempt
+   * to install this lambda at.
+   */
+  google.protobuf.UInt64Value index = 7;
+}

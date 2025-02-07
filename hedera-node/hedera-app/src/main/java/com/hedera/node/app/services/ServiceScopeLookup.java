@@ -66,7 +66,9 @@ public class ServiceScopeLookup {
                     CONTRACT_UPDATE_INSTANCE,
                     CONTRACT_CALL,
                     CONTRACT_DELETE_INSTANCE,
-                    ETHEREUM_TRANSACTION -> ContractService.NAME;
+                    ETHEREUM_TRANSACTION,
+                    LAMBDA_SSTORE,
+                    LAMBDA_DISPATCH -> ContractService.NAME;
 
             case CRYPTO_CREATE_ACCOUNT,
                     CRYPTO_UPDATE_ACCOUNT,

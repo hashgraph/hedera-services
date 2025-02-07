@@ -112,6 +112,9 @@ import "auxiliary/history/history_proof_signature.proto";
 import "auxiliary/history/history_proof_key_publication.proto";
 import "auxiliary/history/history_proof_vote.proto";
 
+import "lambda_sstore.proto";
+import "lambda_dispatch.proto";
+
 /**
  * A wrapper around signed transaction bytes.<br/>
  * This was originally a transaction with body, signatures, and/or bytes,
@@ -647,6 +650,16 @@ message TransactionBody {
          * A transaction body for voting on a metadata proof descending from the ledger id.
          */
         com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
+
+        /**
+         * A transaction body for updating the storage of a lambda.
+         */
+        LambdaSStoreTransactionBody lambda_sstore = 72;
+
+        /**
+         * An internal-only transaction body for dispatching a lambda creation, deletion, or execution.
+         */
+        LambdaDispatchTransactionBody lambda_dispatch = 73;
     }
 
     /**

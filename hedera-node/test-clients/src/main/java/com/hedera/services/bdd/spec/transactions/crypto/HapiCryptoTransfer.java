@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package com.hedera.services.bdd.spec.transactions.crypto;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.infrastructure.meta.InitialAccountIdentifiers.throwIfNotEcdsa;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.stream.Collectors.collectingAndThen;
@@ -32,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.LambdaCall;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.EthSigsUtils;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
@@ -44,10 +47,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,7 +76,6 @@ import org.apache.logging.log4j.Logger;
 public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
     static final Logger log = LogManager.getLogger(HapiCryptoTransfer.class);
 
-    private static final List<TokenMovement> MISSING_TOKEN_AWARE_PROVIDERS = Collections.emptyList();
     private static final Function<HapiSpec, TransferList> MISSING_HBAR_ONLY_PROVIDER = null;
 
     private boolean logResolvedStatus = false;
@@ -554,6 +558,27 @@ public class HapiCryptoTransfer extends HapiBaseTransfer<HapiCryptoTransfer> {
     protected void updateStateOf(final HapiSpec spec) throws Throwable {
         if (logResolvedStatus) {
             log.info("Resolved to {}", actualStatus);
+        }
+    }
+
+    public static class CommonTransferAllowanceSwaps {
+        public static BiConsumer<HapiSpec, CryptoTransferTransactionBody.Builder> swapViaNftSenderLambda(
+                @NonNull final String sender,
+                @NonNull final String receiver,
+                @NonNull final String token,
+                final long serialNo,
+                @NonNull final LambdaCall lambdaCall) {
+            return (spec, op) -> {
+                op.addTokenTransfers(TokenTransferList.newBuilder()
+                        .setToken(asTokenId(token, spec))
+                        .addNftTransfers(NftTransfer.newBuilder()
+                                .setSenderAccountID(asId(sender, spec))
+                                .setReceiverAccountID(asId(receiver, spec))
+                                .setSerialNumber(serialNo)
+                                .setSenderTransferAllowanceLambdaCall(fromPbj(lambdaCall))
+                                .build())
+                        .build());
+            };
         }
     }
 }
