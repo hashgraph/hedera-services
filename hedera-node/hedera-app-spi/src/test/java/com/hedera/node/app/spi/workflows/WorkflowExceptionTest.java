@@ -17,16 +17,37 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
 class WorkflowExceptionTest {
     @Test
-    void reportsItsGivenStatus() {
-        final var ex = new WorkflowException(MEMO_TOO_LONG);
+    void testConstructor() {
+        final var exception = new WorkflowException(ResponseCodeEnum.UNAUTHORIZED);
 
-        assertEquals(MEMO_TOO_LONG, ex.getStatus());
+        assertThat(exception.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(exception.getMessage()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED.protoName());
+        assertTrue(exception.shouldRollbackStack());
+    }
+
+    @Test
+    void testConstructorMultipleParams() {
+        final var exception =
+                new WorkflowException(ResponseCodeEnum.UNAUTHORIZED, WorkflowException.ShouldRollbackStack.NO);
+
+        assertThat(exception.getStatus()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(exception.getMessage()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED.protoName());
+        assertFalse(exception.shouldRollbackStack());
+    }
+
+    @SuppressWarnings({"ThrowableNotThrown"})
+    @Test
+    void testConstructorWithIllegalParameters() {
+        assertThatThrownBy(() -> new WorkflowException(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
