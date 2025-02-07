@@ -16,10 +16,14 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.node.app.workflows.prehandle.PreHandleWorkflowImpl.isAtomicBatch;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -51,37 +55,17 @@ public interface PreHandleWorkflow {
             @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback);
 
     /**
-     * A convenience method to start the pre-handle transaction workflow for a single
-     * user transaction without a reusable result.
-     *
-     * @param creator The {@link AccountID} of the node that created these transactions
-     * @param storeFactory The {@link ReadableStoreFactory} based on the current state
-     * @param accountStore The {@link ReadableAccountStore} based on the current state
-     * @param platformTx The {@link Transaction} to pre-handle
-     * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
-     * @return The {@link PreHandleResult} of running pre-handle
-     */
-    default @NonNull PreHandleResult preHandleTransaction(
-            @NonNull AccountID creator,
-            @NonNull ReadableStoreFactory storeFactory,
-            @NonNull ReadableAccountStore accountStore,
-            @NonNull Transaction platformTx,
-            @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
-        return preHandleTransaction(creator, storeFactory, accountStore, platformTx, null, stateSignatureTxnCallback);
-    }
-
-    /**
      * Starts the pre-handle transaction workflow for a single transaction.
      *
      * <p>If this method is called directly, pre-handle is done on the current thread.
      *
-     * @param creator The {@link AccountID} of the node that created these transactions
-     * @param storeFactory The {@link ReadableStoreFactory} based on the current state
-     * @param accountStore The {@link ReadableAccountStore} based on the current state
-     * @param platformTx The {@link Transaction} to pre-handle
-     * @param maybeReusableResult The result of a previous call to the same method that may,
+     * @param creator                   The {@link AccountID} of the node that created these transactions
+     * @param storeFactory              The {@link ReadableStoreFactory} based on the current state
+     * @param accountStore              The {@link ReadableAccountStore} based on the current state
+     * @param applicationTxBytes        The {@link Transaction} to pre-handle
+     * @param maybeReusableResult       The result of a previous call to the same method that may,
      * @param stateSignatureTxnCallback A callback to be called when encountering a {@link StateSignatureTransaction}
-     * depending on changes in state, be reusable for this call
+     *                                  depending on changes in state, be reusable for this call
      * @return The {@link PreHandleResult} of running pre-handle
      */
     @NonNull
@@ -89,9 +73,39 @@ public interface PreHandleWorkflow {
             @NonNull AccountID creator,
             @NonNull ReadableStoreFactory storeFactory,
             @NonNull ReadableAccountStore accountStore,
-            @NonNull Transaction platformTx,
+            @NonNull Bytes applicationTxBytes,
             @Nullable PreHandleResult maybeReusableResult,
             @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback);
+
+    default PreHandleResult preHandleAllTransactions(
+            @NonNull AccountID creator,
+            @NonNull ReadableStoreFactory storeFactory,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull Bytes applicationTxBytes,
+            @Nullable PreHandleResult maybeReusableResult,
+            @NonNull Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
+        final var result = preHandleTransaction(
+                creator,
+                storeFactory,
+                accountStore,
+                applicationTxBytes,
+                maybeReusableResult,
+                stateSignatureTxnCallback);
+        if (result.txInfo() != null && isAtomicBatch(result.txInfo())) {
+            for (final var innerTx :
+                    result.txInfo().txBody().atomicBatchOrThrow().transactions()) {
+                final var innerResult = preHandleTransaction(
+                        creator,
+                        storeFactory,
+                        accountStore,
+                        com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(innerTx),
+                        null,
+                        ignore -> {});
+                requireNonNull(result.innerResults()).add(innerResult);
+            }
+        }
+        return result;
+    }
 
     /**
      * This method gets all the verification data for the current transaction. If pre-handle was previously ran
@@ -125,11 +139,11 @@ public interface PreHandleWorkflow {
         }
         // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
         platformTxn.setMetadata(null);
-        return preHandleTransaction(
+        return preHandleAllTransactions(
                 creator.accountId(),
                 storeFactory,
                 storeFactory.getStore(ReadableAccountStore.class),
-                platformTxn,
+                platformTxn.getApplicationTransaction(),
                 previousResult,
                 txns -> {});
     }

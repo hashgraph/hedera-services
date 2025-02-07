@@ -452,11 +452,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     nodeDueDiligenceFailure(NODE_1.nodeAccountID(), INVALID_TRANSACTION, null, DEFAULT_CONFIG_VERSION);
 
             // When we pre-handle the transaction
-            final var result = workflow.preHandleTransaction(
+            final var result = workflow.preHandleAllTransactions(
                     NODE_1.nodeAccountID(),
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
-                    createAppPayloadWrapper(new byte[2]),
+                    createAppPayloadWrapper(new byte[2]).getApplicationTransaction(),
                     previousResult,
                     txns -> {});
 
@@ -645,11 +645,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     DEFAULT_CONFIG_VERSION + 1);
 
             // When we pre-handle the transaction
-            final var result = workflow.preHandleTransaction(
+            final var result = workflow.preHandleAllTransactions(
                     NODE_1.nodeAccountID(),
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
-                    platformTx,
+                    platformTx.getApplicationTransaction(),
                     previousResult,
                     txns -> {});
 
@@ -692,11 +692,11 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     DEFAULT_CONFIG_VERSION);
 
             // When we pre-handle the transaction
-            final var result = workflow.preHandleTransaction(
+            final var result = workflow.preHandleAllTransactions(
                     NODE_1.nodeAccountID(),
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
-                    platformTx,
+                    platformTx.getApplicationTransaction(),
                     previousResult,
                     txns -> {});
 

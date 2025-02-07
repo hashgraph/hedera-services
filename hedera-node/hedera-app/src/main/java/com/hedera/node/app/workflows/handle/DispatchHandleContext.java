@@ -69,6 +69,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.purechecks.PureChecksContextImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -77,6 +78,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -111,6 +113,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final DispatchMetadata dispatchMetaData;
     private final TransactionChecker transactionChecker;
 
+    @Nullable
+    private final List<PreHandleResult> preHandleResults;
+
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
             @NonNull final NodeInfo creatorInfo,
@@ -135,7 +140,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final DispatchMetadata handleMetaData,
-            @NonNull final TransactionChecker transactionChecker) {
+            @NonNull final TransactionChecker transactionChecker,
+            @Nullable final List<PreHandleResult> preHandleResults) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -162,6 +168,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.networkInfo = requireNonNull(networkInfo);
         this.dispatchMetaData = requireNonNull(handleMetaData);
         this.transactionChecker = requireNonNull(transactionChecker);
+        this.preHandleResults = preHandleResults;
     }
 
     @NonNull
@@ -361,6 +368,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public <T extends StreamBuilder> T dispatch(@NonNull final DispatchOptions<T> options) {
         requireNonNull(options);
+        PreHandleResult childPreHandleResult = null;
+        if (preHandleResults != null && !preHandleResults.isEmpty()) {
+            childPreHandleResult = preHandleResults.removeFirst();
+        }
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 config,
                 stack,
@@ -370,7 +381,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 throttleAdviser,
                 consensusNow,
                 blockRecordInfo,
-                options);
+                options,
+                childPreHandleResult);
         dispatchProcessor.processDispatch(childDispatch);
         if (options.commitImmediately()) {
             stack.commitTransaction(childDispatch.recordBuilder());
