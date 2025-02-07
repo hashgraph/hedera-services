@@ -140,11 +140,13 @@ public class TurtleBuilder {
         return this;
     }
 
-    public TurtleBuilder withTestDirectory(Path testDirectory) {
+    @NonNull
+    public TurtleBuilder withTestDirectory(@NonNull final Path testDirectory) {
         this.testDirectory = testDirectory;
         return this;
     }
 
+    @NonNull
     Path getTestDirectory() {
         return testDirectory;
     }
