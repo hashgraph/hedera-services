@@ -53,17 +53,17 @@ For a straight positive scenario that can be tested, we can perform some basic c
 - validate state is properly signed by the platform
 
 In order to achieve these assertions, we should collect the events produced by consensus for each node and the state signed by each node.
-We can assert this behaviour at a predefined fixed period of time, to keep less memory footprint and stop the test as early as possible in case of mismatch between
-the expected and the actual results.
+We can assert this behaviour at a predefined fixed period of time, to keep less memory footprint and stop the test as early as possible,
+in case of mismatch between the expected and the actual results.
 
 In addition, we should have proper validation logic to make these assertions. Since they might be common for a lot of the
 turtle test cases, as well as some of the ConsensusTests, we can have common static validations extracted as some sort of validation utility.
 
 To achieve getting the events and state produced by a given TurtleNode for a given period of time, we should make some changes to the
-platform wiring mechanism, so that it's more customizable and allows adding custom wires used for tests only, without affecting the production code.
+platform wiring mechanism, without affecting the production code.
 
-When this refactoring is in place, we can enhance the components we are interested in, with these special output wires that can collect the output data of the component. Similarly,
-in the future we can add more wires for other components that we might need to test.
+When this refactoring is in place, we can enhance the components we are interested in, with these special output wires that can collect the output
+data of the component. Similarly, in the future we can add more wires for other components that we might need to test.
 
 #### ConsensusEngine wiring changes
 
@@ -76,25 +76,24 @@ Currently, we have the following structure of the ConsensusEngine wiring:
 We can add an additional output wire that will collect the events produced by the consensus algorithm into a small test component that stores them.
 This wire will be used only for testing purposes. Additionally, the assertion logic for the events might also be part of this component.
 
-This will be a light-weight option to get real objects from the platform execution.  The wiring will look like this:
+This will be a light-weight option to get real objects from the platform execution. The wiring will look like this:
 
 ![ConsensusEngineProposedWiring](ConsensusEngineProposedWiring.png)
+
+#### StateSignatureCollector wiring changes
+
+StateSignatureCollector is the component that is responsible for collecting hashed states and signatures from different nodes. After a majority
+of the signatures are collected, the state is signed.
+
+If we want to validate that the state is properly signed, we can solder a test output wire to the StateSignatureCollector, so that we collect signed states
+in a test component and assert that they have been properly signed. The assertion logic might be inside the component for the sake of simplicity.
+
+![StateSignatureCollectorProposedWiring](StateSignatureCollectorProposedWiring.png)
 
 ### Platform wiring adaptation
 
 In order to allow plugging test output wires to the production setup, the `PlatformWiring` component should be adapted.
 
-One easy approach might be converting it to use a `Builder` pattern and construct different instances - for production and for testing.
-
-We can create a method called `getProductionInstance()` that initializes all of the wires using the default production components and
-wire definitions. The actual soldering of the wires can be executed in a `build()` method that finalizes the component.
-
-Building a `PlatformWiring` for testing purposes can be done via calling additional builder methods that register output wires
-on top of the production ones and solder them to the components that we are interested in. This will happen before calling the `build()` method
-without adding conditional statements or changing the production code itself. The output wires will stream to a test container that will serve
-as an aggregator for the objects that are going to be asserted. There won't be extra complexity such as a test container wired to another test container.
-The container may or may not assert the incoming objects and periodically clean up the collected data.
-
-This approach will be a flexible way to configure the wiring for testing purposes and will allow adding more test output wires in the future.
-
-![PlatformWiringChanges](PlatformWiringChanges.png)
+The easiest approach will be to expose the production output wires we are interested in and this will allow us
+to solder the test output wires to them. This will not affect the production code and will allow us to collect all of the needed data
+that is outputed from the component we are interested in.
