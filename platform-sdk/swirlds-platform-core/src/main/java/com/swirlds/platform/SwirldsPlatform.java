@@ -522,4 +522,9 @@ public class SwirldsPlatform implements Platform {
                 ? AutoCloseableWrapper.empty()
                 : new AutoCloseableWrapper<>((T) wrapper.get().getState(), wrapper::close);
     }
+
+    @NonNull
+    public PlatformWiring getPlatformWiring() {
+        return platformWiring;
+    }
 }

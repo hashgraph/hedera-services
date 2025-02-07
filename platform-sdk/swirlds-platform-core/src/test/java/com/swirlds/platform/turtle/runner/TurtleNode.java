@@ -30,25 +30,33 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.component.framework.model.DeterministicWiringModel;
 import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
+import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsHolder;
+import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsListContainer;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
+import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -145,6 +153,21 @@ public class TurtleNode {
         platformComponentBuilder.withMetricsDocumentationEnabled(false).withGossip(network.getGossipInstance(nodeId));
 
         platform = platformComponentBuilder.build();
+
+        final PlatformWiring platformWiring = platformComponentBuilder.getPlatformWiring();
+        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                platformWiring.getConsensusEngineWiring();
+        final ComponentWiring<ConsensusRoundsHolder, Void> consensusRoundsHolderWiring = new ComponentWiring<>(
+                model,
+                ConsensusRoundsHolder.class,
+                TaskSchedulerConfiguration.parse(
+                        "SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC"));
+
+        consensusRoundsHolderWiring.bind(ConsensusRoundsListContainer::new);
+
+        consensusEngineWiring
+                .getOutputWire()
+                .solderTo(consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds));
     }
 
     /**
