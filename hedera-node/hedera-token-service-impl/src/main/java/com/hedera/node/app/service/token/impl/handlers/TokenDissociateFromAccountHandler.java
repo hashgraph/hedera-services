@@ -30,8 +30,6 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMA
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -214,10 +212,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var txn = context.body();
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
-        validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
-        validateFalsePreCheck(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
+        validateTrue(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
+        validateFalse(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
-        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateTrue(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**

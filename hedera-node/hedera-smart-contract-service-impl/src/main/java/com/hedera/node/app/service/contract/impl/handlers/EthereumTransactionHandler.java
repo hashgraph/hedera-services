@@ -26,8 +26,8 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_INT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
@@ -47,7 +47,6 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -109,18 +108,18 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
             final var ethTxData = populateEthTxData(
                     requireNonNull(txn.ethereumTransactionOrThrow().ethereumData())
                             .toByteArray());
-            validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
+            validateTrue(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
             final byte[] callData = ethTxData.hasCallData() ? ethTxData.callData() : new byte[0];
             final var intrinsicGas =
                     gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(callData), false);
-            validateTruePreCheck(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
+            validateTrue(ethTxData.gasLimit() >= intrinsicGas, INSUFFICIENT_GAS);
             // Do not allow sending HBars to Burn Address
             if (ethTxData.value().compareTo(BigInteger.ZERO) > 0) {
-                validateFalsePreCheck(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
+                validateFalse(Arrays.equals(ethTxData.to(), EMPTY_ADDRESS), INVALID_SOLIDITY_ADDRESS);
             }
             // sanity check evm address if there is one
             if (ethTxData.hasToAddress()) {
-                validateTruePreCheck(ethTxData.to().length == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
+                validateTrue(ethTxData.to().length == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
             }
         } catch (@NonNull final Exception e) {
             bumpExceptionMetrics(ETHEREUM_TRANSACTION, e);
@@ -149,7 +148,7 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
         requireNonNull(fileStore);
         try {
             return computeEthTxSigsFor(op, fileStore, config);
-        } catch (PreCheckException ignore) {
+        } catch (WorkflowException ignore) {
             return null;
         }
     }
@@ -222,14 +221,14 @@ public class EthereumTransactionHandler extends AbstractContractTransactionHandl
             @NonNull final Configuration config) {
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var hydratedTx = callDataHydration.tryToHydrate(op, fileStore, hederaConfig.firstUserEntity());
-        validateTruePreCheck(hydratedTx.status() == OK, hydratedTx.status());
+        validateTrue(hydratedTx.status() == OK, hydratedTx.status());
         final var ethTxData = hydratedTx.ethTxData();
-        validateTruePreCheck(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
+        validateTrue(ethTxData != null, INVALID_ETHEREUM_TRANSACTION);
         try {
             return ethereumSignatures.computeIfAbsent(ethTxData);
         } catch (RuntimeException ignore) {
             // Ignore and translate any signature computation exception
-            throw new PreCheckException(INVALID_ETHEREUM_TRANSACTION);
+            throw new WorkflowException(INVALID_ETHEREUM_TRANSACTION);
         }
     }
 }

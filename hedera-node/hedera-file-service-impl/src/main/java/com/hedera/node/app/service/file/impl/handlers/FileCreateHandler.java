@@ -39,7 +39,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -77,7 +76,7 @@ public class FileCreateHandler implements TransactionHandler {
         final FileCreateTransactionBody transactionBody = context.body().fileCreateOrThrow();
 
         if (!transactionBody.hasExpirationTime()) {
-            throw new PreCheckException(INVALID_EXPIRATION_TIME);
+            throw new WorkflowException(INVALID_EXPIRATION_TIME);
         }
     }
 
@@ -87,7 +86,7 @@ public class FileCreateHandler implements TransactionHandler {
      * <p>Determines signatures needed for create a file
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @throws PreCheckException if any issue happens on the pre handle level
+     * @throws WorkflowException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {

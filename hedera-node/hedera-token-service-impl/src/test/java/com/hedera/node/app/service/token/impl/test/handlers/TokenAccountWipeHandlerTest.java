@@ -70,7 +70,6 @@ import com.hedera.node.app.service.token.records.TokenAccountWipeStreamBuilder;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -136,7 +135,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
 
@@ -146,7 +145,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TOKEN_ID));
         }
 
@@ -156,7 +155,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
         }
 
@@ -166,7 +165,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_WIPING_AMOUNT));
         }
 
@@ -185,7 +184,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_NFT_ID));
         }
     }

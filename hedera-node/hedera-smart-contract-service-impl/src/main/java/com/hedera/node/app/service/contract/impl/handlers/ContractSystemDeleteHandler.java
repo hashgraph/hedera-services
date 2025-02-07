@@ -22,7 +22,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -51,12 +50,12 @@ public class ContractSystemDeleteHandler implements TransactionHandler {
     public void preHandle(@NonNull final PreHandleContext context) {
         // this will never actually get called
         // because pureChecks will always throw
-        throw new PreCheckException(NOT_SUPPORTED);
+        throw new WorkflowException(NOT_SUPPORTED);
     }
 
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) {
-        throw new PreCheckException(NOT_SUPPORTED);
+        throw new WorkflowException(NOT_SUPPORTED);
     }
 
     @Override

@@ -58,7 +58,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -116,8 +115,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdCannotNull() {
         txn = new NodeCreateBuilder().build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -125,8 +124,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdNeedSet() {
         txn = new NodeCreateBuilder().withAccountId(AccountID.DEFAULT).build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -134,8 +133,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void accountIdCannotAlias() {
         txn = new NodeCreateBuilder().withAccountId(alias).build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
     }
 
     @Test
@@ -146,8 +145,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withGossipEndpoint(List.of())
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_ENDPOINT);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_GOSSIP_ENDPOINT);
     }
 
     @Test
@@ -159,8 +158,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of())
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_SERVICE_ENDPOINT);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_SERVICE_ENDPOINT);
     }
 
     @Test
@@ -172,8 +171,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of(endpoint2))
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Test
@@ -186,8 +185,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withGossipCaCertificate(Bytes.wrap(certList.get(1).getEncoded()))
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(KEY_REQUIRED);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(KEY_REQUIRED);
     }
 
     @Test
@@ -201,8 +200,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withAdminKey(IMMUTABILITY_SENTINEL_KEY)
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(KEY_REQUIRED);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(KEY_REQUIRED);
     }
 
     @Test
@@ -216,8 +215,8 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .withAdminKey(invalidKey)
                 .build(payerId);
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_ADMIN_KEY);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_ADMIN_KEY);
     }
 
     @Test

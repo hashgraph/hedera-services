@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTRIES_FOR_FEE_EXE
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getConsensusCreateTopicFee;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -87,8 +86,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.consensusCreateTopicOrThrow();
         final var uniqueKeysCount = op.feeExemptKeyList().stream().distinct().count();
-        validateTruePreCheck(
-                uniqueKeysCount == op.feeExemptKeyList().size(), FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS);
+        validateTrue(uniqueKeysCount == op.feeExemptKeyList().size(), FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS);
     }
 
     @Override

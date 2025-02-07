@@ -112,7 +112,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
-     * @throws PreCheckException if the key is not accepted
+     * @throws WorkflowException if the key is not accepted
      */
     @NonNull
     PreHandleContext requireKey(@NonNull final Key key);
@@ -125,7 +125,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null
-     * @throws PreCheckException if the key is not accepted
+     * @throws WorkflowException if the key is not accepted
      */
     @NonNull
     PreHandleContext optionalKey(@NonNull final Key key);
@@ -138,7 +138,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @param keys the set of keys to be added
      * @return {@code this} object
      * @throws NullPointerException if the set of keys is null
-     * @throws PreCheckException if the key is not accepted
+     * @throws WorkflowException if the key is not accepted
      */
     @NonNull
     PreHandleContext optionalKeys(@NonNull final Set<Key> keys);
@@ -161,12 +161,12 @@ public interface PreHandleContext extends TransactionKeys {
     /**
      * Adds the given key to required non-payer keys. If the key is the same as the payer key, or if the key has
      * already been added, then the call is a no-op. The key must not be null and not empty, otherwise a
-     * PreCheckException is thrown with the given {@code responseCode}.
+     * WorkflowException is thrown with the given {@code responseCode}.
      *
      * @param key key to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty
+     * @throws WorkflowException if the key is null or empty
      */
     @NonNull
     PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode);
@@ -175,13 +175,13 @@ public interface PreHandleContext extends TransactionKeys {
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
      * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
      * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
-     * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
+     * be null or empty. If any of these conditions are not met, a WorkflowException is thrown with the given
      * {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * @throws WorkflowException if the key is null or empty or the account is null or the
      * account does not exist.
      */
     @NonNull
@@ -192,13 +192,13 @@ public interface PreHandleContext extends TransactionKeys {
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys. If
      * the key is the same as the payer key, or if the key has already been added, then the call is a no-op. The
      * {@link AccountID} must not be null, and must refer to an actual account. The admin key on that account must not
-     * be null or empty. If any of these conditions are not met, a PreCheckException is thrown with the given
+     * be null or empty. If any of these conditions are not met, a WorkflowException is thrown with the given
      * {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * @throws WorkflowException if the key is null or empty or the account is null or the
      * account does not exist.
      */
     @NonNull
@@ -211,7 +211,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @param accountID The ID of the contract account whose key is to be added
      * @param responseCode the response code to be used in case the key is null or empty
      * @return {@code this} object
-     * @throws PreCheckException if the key is null or empty or the account is null or the
+     * @throws WorkflowException if the key is null or empty or the account is null or the
      * contract account does not exist or the account is not a contract account.
      */
     @NonNull
@@ -222,11 +222,11 @@ public interface PreHandleContext extends TransactionKeys {
      * Adds the admin key of the account addressed by the given {@code accountID} to the required non-payer keys if
      * the {@link AccountID} is not null and if the account has `receiverSigRequired` set to true. If the account
      * does not exist, or `receiverSigRequired` is true but the key is null or empty, then a
-     * {@link PreCheckException} will be thrown with the supplied {@code responseCode}.
+     * {@link WorkflowException} will be thrown with the supplied {@code responseCode}.
      *
      * @param accountID The ID of the account whose key is to be added
-     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
-     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * @param responseCode the response code to be used if a {@link WorkflowException} is thrown
+     * @throws WorkflowException if the account does not exist or the account has `receiverSigRequired` but a null or
      * empty key.
      */
     @NonNull
@@ -237,8 +237,8 @@ public interface PreHandleContext extends TransactionKeys {
      * The same as {@link #requireKeyIfReceiverSigRequired(AccountID, ResponseCodeEnum)} but for a {@link ContractID}.
      *
      * @param contractID The ID of the contract account whose key is to be added
-     * @param responseCode the response code to be used if a {@link PreCheckException} is thrown
-     * @throws PreCheckException if the account does not exist or the account has `receiverSigRequired` but a null or
+     * @param responseCode the response code to be used if a {@link WorkflowException} is thrown
+     * @throws WorkflowException if the account does not exist or the account has `receiverSigRequired` but a null or
      * empty key, or the account exists but is not a contract account.
      */
     @NonNull
@@ -276,7 +276,7 @@ public interface PreHandleContext extends TransactionKeys {
      * @param body the {@link TransactionBody} which keys are needed
      * @param payerId the payer for the nested transaction
      * @return the set of keys
-     * @throws PreCheckException If there is a problem with the nested transaction
+     * @throws WorkflowException If there is a problem with the nested transaction
      */
     @NonNull
     TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId);

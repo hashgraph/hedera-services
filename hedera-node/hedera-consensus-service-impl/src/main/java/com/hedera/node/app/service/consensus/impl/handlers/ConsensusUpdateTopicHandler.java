@@ -36,8 +36,6 @@ import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableK
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -102,12 +100,12 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         requireNonNull(context);
         final var txn = context.body();
         final ConsensusUpdateTopicTransactionBody op = txn.consensusUpdateTopicOrThrow();
-        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
+        validateTrue(op.hasTopicID(), INVALID_TOPIC_ID);
 
         if (op.hasFeeExemptKeyList()) {
             final var uniqueKeysCount =
                     op.feeExemptKeyList().keys().stream().distinct().count();
-            validateTruePreCheck(
+            validateTrue(
                     uniqueKeysCount == op.feeExemptKeyList().keys().size(),
                     FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS);
         }
@@ -122,7 +120,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
-        validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
+        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
 
         // Extending the expiry is the *only* update operation permitted without an admin key. So if that is the
         // only thing this transaction is doing, then we don't need to worry about checking any additional keys.
@@ -149,7 +147,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         // If we change the custom fees the topic needs to have a fee schedule key, and it needs to sign the transaction
         if (op.hasCustomFees()) {
-            validateTruePreCheck(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_NOT_SET);
+            validateTrue(topic.hasFeeScheduleKey(), FEE_SCHEDULE_KEY_NOT_SET);
             context.requireKey(topic.feeScheduleKey());
         }
     }

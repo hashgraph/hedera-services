@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -126,7 +125,7 @@ class FileAppendHandlerTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileAppend(OP_BUILDER).build();
         given(context.body()).willReturn(txBody);
         assertThatThrownBy(() -> subject.pureChecks(context))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_FILE_ID));
     }
 

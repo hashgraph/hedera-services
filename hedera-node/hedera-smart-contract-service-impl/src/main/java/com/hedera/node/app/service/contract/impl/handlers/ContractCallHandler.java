@@ -22,7 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_INT;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.throwIfUnsuccessful;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -89,13 +89,13 @@ public class ContractCallHandler extends AbstractContractTransactionHandler {
             final var op = txn.contractCallOrThrow();
             mustExist(op.contractID(), INVALID_CONTRACT_ID);
             if (op.contractID().hasEvmAddress()) {
-                validateTruePreCheck(
+                validateTrue(
                         op.contractID().evmAddressOrThrow().length() == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
             }
 
             final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
                     Bytes.wrap(op.functionParameters().toByteArray()), false);
-            validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+            validateTrue(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
         } catch (@NonNull final Exception e) {
             bumpExceptionMetrics(CONTRACT_CALL, e);
             throw e;

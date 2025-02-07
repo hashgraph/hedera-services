@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -49,7 +48,7 @@ public class CryptoDeleteLiveHashHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        throw new PreCheckException(ResponseCodeEnum.NOT_SUPPORTED);
+        throw new WorkflowException(ResponseCodeEnum.NOT_SUPPORTED);
     }
 
     @Override
@@ -60,7 +59,7 @@ public class CryptoDeleteLiveHashHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws WorkflowException {
         // this will never actually get called
-        // because preHandle will throw a PreCheckException
+        // because preHandle will throw a WorkflowException
         // before we get here
         throw new WorkflowException(ResponseCodeEnum.NOT_SUPPORTED);
     }

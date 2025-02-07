@@ -82,7 +82,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
@@ -598,7 +597,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withInitialSupply(-1).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
@@ -611,7 +610,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
@@ -621,7 +620,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withDecimals(-1).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_DECIMALS));
     }
 
@@ -635,7 +634,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_DECIMALS));
     }
 
@@ -734,7 +733,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withFreezeDefault().withFreezeKey(null).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_HAS_NO_FREEZE_KEY));
     }
 
@@ -805,7 +804,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_MAX_SUPPLY));
     }
 
@@ -818,7 +817,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_MAX_SUPPLY));
     }
 
@@ -828,7 +827,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withInitialSupply(100).withMaxSupply(10).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_INITIAL_SUPPLY));
     }
 
@@ -838,7 +837,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenCreateBuilder().withUniqueToken().withSupplyKey(null).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_HAS_NO_SUPPLY_KEY));
     }
 

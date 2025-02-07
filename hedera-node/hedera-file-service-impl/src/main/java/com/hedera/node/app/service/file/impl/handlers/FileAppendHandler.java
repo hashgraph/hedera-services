@@ -39,7 +39,6 @@ import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -80,7 +79,7 @@ public class FileAppendHandler implements TransactionHandler {
         final FileAppendTransactionBody transactionBody = body.fileAppendOrThrow();
 
         if (transactionBody.fileID() == null) {
-            throw new PreCheckException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
     }
 
@@ -90,7 +89,7 @@ public class FileAppendHandler implements TransactionHandler {
      * <p>Determines signatures needed for append a file
      *
      * @param context the {@link PreHandleContext} which collects all information
-     * @throws PreCheckException if any issue happens on the pre handle level
+     * @throws WorkflowException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {

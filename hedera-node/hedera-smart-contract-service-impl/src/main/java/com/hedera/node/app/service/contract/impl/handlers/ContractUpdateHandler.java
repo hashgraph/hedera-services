@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyUtils;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -98,7 +97,7 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var targetId = op.contractIDOrThrow();
             final var maybeContract = accountStore.getContractById(targetId);
             if (maybeContract != null && maybeContract.keyOrThrow().key().kind() == Key.KeyOneOfType.CONTRACT_ID) {
-                throw new PreCheckException(MODIFYING_IMMUTABLE_CONTRACT);
+                throw new WorkflowException(MODIFYING_IMMUTABLE_CONTRACT);
             }
             context.requireKeyOrThrow(targetId, INVALID_CONTRACT_ID);
         }
@@ -118,7 +117,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         mustExist(op.contractID(), INVALID_CONTRACT_ID);
 
         if (op.hasAdminKey() && processAdminKey(op)) {
-            throw new PreCheckException(INVALID_ADMIN_KEY);
+            throw new WorkflowException(INVALID_ADMIN_KEY);
         }
     }
 

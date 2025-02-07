@@ -86,7 +86,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -263,7 +262,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withMetadataKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
@@ -288,7 +287,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().build();
         given(preHandleContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_IS_IMMUTABLE));
     }
 
@@ -300,49 +299,49 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = new TokenUpdateBuilder().withAdminKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withFreezeKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_FREEZE_KEY));
 
         txn = new TokenUpdateBuilder().withKycKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_KYC_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withMetadataKey(invalidAllZeros).build();
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
@@ -1153,35 +1152,35 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ADMIN_KEY));
 
         txn = new TokenUpdateBuilder().withSupplyKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_SUPPLY_KEY));
 
         txn = new TokenUpdateBuilder().withWipeKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_WIPE_KEY));
 
         txn = new TokenUpdateBuilder().withFeeScheduleKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_CUSTOM_FEE_SCHEDULE_KEY));
 
         txn = new TokenUpdateBuilder().withPauseKey(Key.DEFAULT).build();
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_PAUSE_KEY));
     }
 

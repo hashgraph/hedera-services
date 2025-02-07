@@ -29,8 +29,8 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.node.app.spi.workflows.FreeQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -66,12 +66,12 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
 
         // The transaction ID must be specified
         if (!op.hasTransactionID()) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
+            throw new WorkflowException(INVALID_TRANSACTION_ID);
         }
         // And must contain both a valid start time and an account ID
         final var transactionId = op.transactionIDOrThrow();
         if (!transactionId.hasTransactionValidStart() || !transactionId.hasAccountID()) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
+            throw new WorkflowException(INVALID_TRANSACTION_ID);
         }
     }
 

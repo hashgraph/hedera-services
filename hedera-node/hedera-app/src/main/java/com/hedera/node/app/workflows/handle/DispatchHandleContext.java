@@ -55,7 +55,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -277,9 +276,9 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 storeFactory.asReadOnly(), nestedTxn, payerForNested, configuration(), dispatcher, transactionChecker);
         try {
             dispatcher.dispatchPreHandle(nestedContext);
-        } catch (final PreCheckException ignored) {
+        } catch (final WorkflowException ignored) {
             // We must ignore/translate the exception here, as this is key gathering, not transaction validation.
-            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
+            throw new WorkflowException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return nestedContext;
     }

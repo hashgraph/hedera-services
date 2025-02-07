@@ -27,7 +27,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.utils.EthSigsUtils;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -232,13 +231,13 @@ public final class AliasUtils {
      * {@code WorkflowException} with {@code INVALID_ALIAS_KEY} response code.
      * @param alias given alias bytes
      * @return the parsed key
-     * @throws PreCheckException if the alias is not a valid key
+     * @throws WorkflowException if the alias is not a valid key
      */
     @NonNull
     public static Key asKeyFromAliasPreCheck(@NonNull final Bytes alias) {
         requireNonNull(alias);
         final var key = asKeyFromAliasOrElse(alias, null);
-        if (key == null) throw new PreCheckException(ResponseCodeEnum.INVALID_ALIAS_KEY);
+        if (key == null) throw new WorkflowException(ResponseCodeEnum.INVALID_ALIAS_KEY);
         return key;
     }
 

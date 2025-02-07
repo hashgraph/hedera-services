@@ -98,7 +98,6 @@ import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -470,23 +469,23 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
         @Test
         void testAllKeysForTransactionWithFailingPureCheck() {
-            doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
+            doThrow(new WorkflowException(INVALID_TRANSACTION_BODY))
                     .when(dispatcher)
                     .dispatchPureChecks(any());
             assertThatThrownBy(() -> subject.allKeysForTransaction(txBody, ERIN.accountID()))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_TRANSACTION_BODY));
         }
 
         @Test
         void testAllKeysForTransactionWithFailingPreHandle() {
-            doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
+            doThrow(new WorkflowException(INSUFFICIENT_ACCOUNT_BALANCE))
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 
             // gathering keys should not throw exceptions except for inability to read a key.
             assertThatThrownBy(() -> subject.allKeysForTransaction(txBody, ERIN.accountID()))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(UNRESOLVABLE_REQUIRED_SIGNERS));
         }
     }
@@ -623,7 +622,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .transactionID(TransactionID.newBuilder().accountID(ALICE.accountID()))
                     .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
                     .build();
-            doThrow(new PreCheckException(ResponseCodeEnum.INVALID_TOPIC_ID))
+            doThrow(new WorkflowException(ResponseCodeEnum.INVALID_TOPIC_ID))
                     .when(dispatcher)
                     .dispatchPureChecks(any());
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);

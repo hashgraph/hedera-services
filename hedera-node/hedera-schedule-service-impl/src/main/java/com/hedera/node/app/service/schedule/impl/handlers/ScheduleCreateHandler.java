@@ -37,8 +37,7 @@ import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.scheduledTxnIdFrom;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.transactionIdForScheduled;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -101,11 +100,11 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         requireNonNull(context);
         final var body = context.body();
         requireNonNull(body);
-        validateTruePreCheck(body.hasScheduleCreate(), INVALID_TRANSACTION_BODY);
+        validateTrue(body.hasScheduleCreate(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleCreateOrThrow();
-        validateTruePreCheck(op.hasScheduledTransactionBody(), INVALID_TRANSACTION);
+        validateTrue(op.hasScheduledTransactionBody(), INVALID_TRANSACTION);
         // (FUTURE) Add a dedicated response code for an op waiting for an unspecified expiration time
-        validateFalsePreCheck(op.waitForExpiry() && !op.hasExpirationTime(), MISSING_EXPIRY_TIME);
+        validateFalse(op.waitForExpiry() && !op.hasExpirationTime(), MISSING_EXPIRY_TIME);
     }
 
     @Override
@@ -116,7 +115,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var op = body.scheduleCreateOrThrow();
         final var config = context.configuration();
         final var hederaConfig = config.getConfigData(HederaConfig.class);
-        validateTruePreCheck(op.memo().length() <= hederaConfig.transactionMaxMemoUtf8Bytes(), MEMO_TOO_LONG);
+        validateTrue(op.memo().length() <= hederaConfig.transactionMaxMemoUtf8Bytes(), MEMO_TOO_LONG);
         // For backward compatibility, use ACCOUNT_ID_DOES_NOT_EXIST for a nonexistent designated payer
         if (op.hasPayerAccountID()) {
             final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -124,7 +123,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
             mustExist(payer, ACCOUNT_ID_DOES_NOT_EXIST);
         }
         final var schedulingConfig = config.getConfigData(SchedulingConfig.class);
-        validateTruePreCheck(
+        validateTrue(
                 isAllowedFunction(op.scheduledTransactionBodyOrThrow(), schedulingConfig),
                 SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         // If an admin key is present, it must sign

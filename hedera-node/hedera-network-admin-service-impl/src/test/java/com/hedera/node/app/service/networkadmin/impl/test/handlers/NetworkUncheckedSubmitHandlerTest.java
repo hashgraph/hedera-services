@@ -28,7 +28,6 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkUncheckedSu
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +49,7 @@ class NetworkUncheckedSubmitHandlerTest {
     @Test
     void preHandleThrowsUnsupported() {
         assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(NOT_SUPPORTED));
     }
 

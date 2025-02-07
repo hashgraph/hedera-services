@@ -62,7 +62,6 @@ import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -256,7 +255,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         when(readableTokenStore.get(TokenID.DEFAULT)).thenReturn(null);
 
         Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
@@ -294,7 +293,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         when(token.hasMetadataKey()).thenReturn(false);
 
         Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
 
@@ -354,7 +353,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         when(token.hasSupplyKey()).thenReturn(false);
 
         Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY));
     }
 

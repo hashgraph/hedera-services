@@ -44,7 +44,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
@@ -196,7 +196,7 @@ class IngestWorkflowImplTest extends AppTestBase {
             // actually good, I need to skip that one.
             if (status != PlatformStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
-                doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE))
+                doThrow(new WorkflowException(PLATFORM_NOT_ACTIVE))
                         .when(ingestChecker)
                         .verifyReadyForTransactions();
 
@@ -233,9 +233,9 @@ class IngestWorkflowImplTest extends AppTestBase {
         @ParameterizedTest(name = "WorkflowOnset fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the transaction fails WorkflowOnset, a failure response is returned with the right error")
-        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) throws ParseException {
-            // Given a WorkflowOnset that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.parse(any())).thenThrow(new PreCheckException(failureReason));
+        void onsetFailsWithWorkflowException(ResponseCodeEnum failureReason) throws ParseException {
+            // Given a WorkflowOnset that will throw a WorkflowException with the given failure reason
+            when(transactionChecker.parse(any())).thenThrow(new WorkflowException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -285,7 +285,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         void testIngestChecksFail(ResponseCodeEnum failureReason) throws ParseException {
             // Given a throttle on CONSENSUS_CREATE_TOPIC transactions (i.e. it is time to throttle)
             when(ingestChecker.runAllChecks(state, transaction, configuration))
-                    .thenThrow(new PreCheckException(failureReason));
+                    .thenThrow(new WorkflowException(failureReason));
 
             // When the transaction is submitted
             workflow.submitTransaction(requestBuffer, responseBuffer);
@@ -327,7 +327,7 @@ class IngestWorkflowImplTest extends AppTestBase {
         @DisplayName("If the platform fails to onConsensusRound the transaction, the transaction should be rejected")
         void testSubmitFails() throws ParseException {
             // Given a SubmissionManager that will fail the submit
-            doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
+            doThrow(new WorkflowException(PLATFORM_TRANSACTION_NOT_CREATED))
                     .when(submissionManager)
                     .submit(any(), any());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the
+ * An {@code InsufficientBalanceException} is a {@link WorkflowException} that is thrown, when the
  * payer balance is not sufficient to cover all the required fees. It provides the {@link #estimatedFee}.
  */
-public class InsufficientBalanceException extends PreCheckException {
+public class InsufficientBalanceException extends WorkflowException {
 
     private final long estimatedFee;
 

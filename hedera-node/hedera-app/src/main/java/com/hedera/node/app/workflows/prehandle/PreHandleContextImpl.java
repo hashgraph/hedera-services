@@ -34,9 +34,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -135,7 +135,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     /**
      * Create a new instance of {@link PreHandleContextImpl}.
-     * @throws PreCheckException if the payer account does not exist
+     * @throws WorkflowException if the payer account does not exist
      */
     private PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
@@ -269,7 +269,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (!isValid(key)) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // Verify this key isn't for an immutable account
@@ -302,7 +302,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             final @NonNull ResponseCodeEnum responseCode,
             final boolean allowAliasedIds) {
         if (accountID == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         // Immediately return if we would just repeat the payer requirement; note that correctness
         // of signing requirements for children dispatched by the contract service depends on this.
@@ -319,7 +319,7 @@ public class PreHandleContextImpl implements PreHandleContext {
             account = accountStore.getAccountById(accountID);
         }
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
@@ -333,7 +333,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         return requireKey(key);
@@ -345,12 +345,12 @@ public class PreHandleContextImpl implements PreHandleContext {
             @Nullable final ContractID accountID, @NonNull final ResponseCodeEnum responseCode) {
         requireNonNull(responseCode);
         if (accountID == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         final var account = accountStore.getContractById(accountID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         // If it is hollow account, and we require this to sign, we need to finalize the account
         // with the corresponding ECDSA key in handle
@@ -364,7 +364,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         return requireKey(key);
     }
@@ -382,7 +382,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If an accountID is specified, then the account MUST exist
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
@@ -403,7 +403,7 @@ public class PreHandleContextImpl implements PreHandleContext {
                 || key.key().kind() == KeyOneOfType.UNSET) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         return requireKey(key);
     }
@@ -421,7 +421,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         // If an accountID is specified, then the account MUST exist
         final var account = accountStore.getContractById(contractID);
         if (account == null) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
 
         // If the account exists but does not require a signature, then there is no key to require.
@@ -441,7 +441,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         if (!isValid(key)) { // Or if it is a Contract Key? Or if it is an empty key?
             // Or a KeyList with no
             // keys? Or KeyList with Contract keys only?
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
         return requireKey(key);
     }
@@ -475,18 +475,18 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     @Override
     public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull final AccountID payerId) {
-        // Throws PreCheckException if the transaction body is structurally invalid
+        // Throws WorkflowException if the transaction body is structurally invalid
         final var pureChecksContext = new PureChecksContextImpl(body, configuration, dispatcher, transactionChecker);
         dispatcher.dispatchPureChecks(pureChecksContext);
-        // Throws PreCheckException if the payer account does not exist
+        // Throws WorkflowException if the payer account does not exist
         final var context =
                 new PreHandleContextImpl(storeFactory, body, payerId, configuration, dispatcher, transactionChecker);
         try {
             // Accumulate all required keys in the context
             dispatcher.dispatchPreHandle(context);
-        } catch (final PreCheckException ignored) {
+        } catch (final WorkflowException ignored) {
             // Translate all prehandle failures to unresolvable required signers
-            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
+            throw new WorkflowException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return context;
     }
@@ -505,17 +505,17 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     /**
      * Checks that an account does not represent one of the staking accounts
-     * Throws a {@link PreCheckException} with the designated response code otherwise.
+     * Throws a {@link WorkflowException} with the designated response code otherwise.
      * @param accountID the accountID to check
      * @param responseCode the response code to throw
-     * @throws PreCheckException if the account is considered immutable
+     * @throws WorkflowException if the account is considered immutable
      */
     private void verifyNotStakingAccounts(
             @Nullable final AccountID accountID, @NonNull final ResponseCodeEnum responseCode) {
         final var accountNum = accountID != null ? accountID.accountNum() : 0;
         final var accountsConfig = configuration.getConfigData(AccountsConfig.class);
         if (accountNum == accountsConfig.stakingRewardAccount() || accountNum == accountsConfig.nodeRewardAccount()) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
     }
 }

@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_LIST
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_AIRDROP_WITH_FALLBACK_ROYALTY;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -114,15 +113,13 @@ public class TokenClaimAirdropHandler extends TransferExecutor implements Transa
         requireNonNull(op);
 
         final var pendingAirdrops = op.pendingAirdrops();
-        validateTruePreCheck(!pendingAirdrops.isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
+        validateTrue(!pendingAirdrops.isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
 
         final var uniqueAirdrops = Set.copyOf(pendingAirdrops);
-        validateTruePreCheck(pendingAirdrops.size() == uniqueAirdrops.size(), PENDING_AIRDROP_ID_REPEATED);
+        validateTrue(pendingAirdrops.size() == uniqueAirdrops.size(), PENDING_AIRDROP_ID_REPEATED);
 
-        validateTruePreCheck(
-                pendingAirdrops.stream().allMatch(PendingAirdropId::hasSenderId), INVALID_PENDING_AIRDROP_ID);
-        validateTruePreCheck(
-                pendingAirdrops.stream().allMatch(PendingAirdropId::hasReceiverId), INVALID_PENDING_AIRDROP_ID);
+        validateTrue(pendingAirdrops.stream().allMatch(PendingAirdropId::hasSenderId), INVALID_PENDING_AIRDROP_ID);
+        validateTrue(pendingAirdrops.stream().allMatch(PendingAirdropId::hasReceiverId), INVALID_PENDING_AIRDROP_ID);
     }
 
     @Override

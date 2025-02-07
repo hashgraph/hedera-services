@@ -35,8 +35,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.stepDispatch;
 import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.TRANSACTION_FIXED_FEE;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.SUPPRESSING_TRANSACTION_CUSTOMIZER;
 import static java.util.Objects.requireNonNull;
@@ -121,8 +120,8 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         final ConsensusSubmitMessageTransactionBody op = txn.consensusSubmitMessageOrThrow();
         // Validate the duplication of payer custom fee limits
         validateDuplicationFeeLimits(txn.maxCustomFees());
-        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
-        validateFalsePreCheck(op.message().length() == 0, INVALID_TOPIC_MESSAGE);
+        validateTrue(op.hasTopicID(), INVALID_TOPIC_ID);
+        validateFalse(op.message().length() == 0, INVALID_TOPIC_MESSAGE);
     }
 
     @Override
@@ -134,7 +133,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // The topic ID must be present on the transaction and the topic must exist.
         final var topic = topicStore.getTopic(op.topicIDOrElse(TopicID.DEFAULT));
         mustExist(topic, INVALID_TOPIC_ID);
-        validateFalsePreCheck(topic.deleted(), INVALID_TOPIC_ID);
+        validateFalse(topic.deleted(), INVALID_TOPIC_ID);
         // If a submit key is specified on the topic, then only those transactions signed by that key can be
         // submitted to the topic. If there is no submit key, then it is not required on the transaction.
         if (topic.hasSubmitKey()) {
@@ -480,8 +479,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
         // Validate that there are no duplicated account ids in the max custom fee list
         final var accounts =
                 allCustomFeeLimits.stream().map(CustomFeeLimit::accountId).toList();
-        validateTruePreCheck(
-                accounts.size() == new HashSet<>(accounts).size(), DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST);
+        validateTrue(accounts.size() == new HashSet<>(accounts).size(), DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST);
         // Validate that there are no duplicated denominating token ids in the max custom fee list
         for (final var customFeeLimit : allCustomFeeLimits) {
             final var htsCustomFeeLimits = customFeeLimit.fees().stream()
@@ -497,7 +495,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
                             .size()
                     != htsCustomFeeLimits.size();
             final var hbarLimitsHasDuplicate = new HashSet<>(hbarCustomFeeLimits).size() != hbarCustomFeeLimits.size();
-            validateTruePreCheck(
+            validateTrue(
                     !htsLimitHasDuplicate && !hbarLimitsHasDuplicate, DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST);
         }
     }

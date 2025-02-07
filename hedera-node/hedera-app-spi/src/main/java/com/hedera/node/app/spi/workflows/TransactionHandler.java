@@ -30,14 +30,14 @@ public interface TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information
      * @throws NullPointerException if {@code context} is {@code null}
-     * @throws PreCheckException if the transaction is invalid
+     * @throws WorkflowException if the transaction is invalid
      */
     void preHandle(@NonNull final PreHandleContext context);
 
     /**
      * Validate the transaction body, without involving state or dynamic properties.
      * This method is called as first step of preHandle. If there is any failure,
-     * throws a {@link PreCheckException}.
+     * throws a {@link WorkflowException}.
      *
      * <p>Since these checks are pure, they need not be repeated in handle workflow.
      * The result of these checks is cached in the {@link PreHandleContext} for use
@@ -45,7 +45,7 @@ public interface TransactionHandler {
      *
      * @param context the {@link PureChecksContext} which collects all information
      * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws PreCheckException if the transaction is invalid
+     * @throws WorkflowException if the transaction is invalid
      */
     void pureChecks(@NonNull PureChecksContext context);
 

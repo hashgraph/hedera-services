@@ -41,8 +41,8 @@ import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -81,7 +81,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
 
         // The transaction ID must be specified
         if (!op.hasTransactionID()) {
-            throw new PreCheckException(INVALID_TRANSACTION_ID);
+            throw new WorkflowException(INVALID_TRANSACTION_ID);
         }
 
         // The record must exist for that transaction ID
@@ -90,7 +90,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         // verify that the account id exist and not default
         final var accountID = txnId.accountID();
         if (accountID == null || accountID.equals(AccountID.DEFAULT)) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            throw new WorkflowException(INVALID_ACCOUNT_ID);
         }
     }
 

@@ -26,7 +26,6 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.getEffectiveOwner;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -81,10 +80,10 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.cryptoDeleteAllowanceOrThrow();
         final var allowances = op.nftAllowances();
-        validateTruePreCheck(!allowances.isEmpty(), EMPTY_ALLOWANCES);
+        validateTrue(!allowances.isEmpty(), EMPTY_ALLOWANCES);
         for (final var allowance : allowances) {
             mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
-            validateTruePreCheck(!allowance.serialNumbers().isEmpty(), EMPTY_ALLOWANCES);
+            validateTrue(!allowance.serialNumbers().isEmpty(), EMPTY_ALLOWANCES);
         }
     }
 

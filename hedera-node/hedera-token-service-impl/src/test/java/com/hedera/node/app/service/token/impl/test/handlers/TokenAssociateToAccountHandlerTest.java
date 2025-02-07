@@ -60,7 +60,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -121,7 +120,7 @@ class TokenAssociateToAccountHandlerTest {
             final var preHandleContext = new FakePreHandleContext(readableAccountStore, txn);
 
             assertThatThrownBy(() -> subject.preHandle(preHandleContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
 
@@ -131,7 +130,7 @@ class TokenAssociateToAccountHandlerTest {
             given(pureChecksContext.body()).willReturn(txn);
 
             assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_ID_REPEATED_IN_TOKEN_LIST));
         }
 

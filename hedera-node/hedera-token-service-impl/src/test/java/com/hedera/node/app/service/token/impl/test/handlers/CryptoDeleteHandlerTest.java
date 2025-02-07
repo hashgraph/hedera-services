@@ -67,7 +67,6 @@ import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -244,7 +243,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(pureChecksContext.body()).willReturn(txn);
 
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT));
     }
 
@@ -380,19 +379,19 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         var txn = deleteAccountTransaction(null, transferAccountId);
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
 
         txn = deleteAccountTransaction(deleteAccountId, null);
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
 
         txn = deleteAccountTransaction(null, null);
         given(pureChecksContext.body()).willReturn(txn);
         assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 

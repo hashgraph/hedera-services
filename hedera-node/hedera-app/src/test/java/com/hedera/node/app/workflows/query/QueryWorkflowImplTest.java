@@ -70,8 +70,8 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -597,7 +597,7 @@ class QueryWorkflowImplTest extends AppTestBase {
                                 .header(ResponseHeader.newBuilder().build())
                                 .build())
                         .build());
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+        doThrow(new WorkflowException(INSUFFICIENT_TX_FEE))
                 .when(queryChecker)
                 .validateCryptoTransfer(eq(transactionInfo), any());
         final var responseBuffer = newEmptyBuffer();
@@ -696,7 +696,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testInvalidNodeFails() throws ParseException {
         // given
-        doThrow(new PreCheckException(INVALID_NODE_ACCOUNT)).when(ingestChecker).verifyPlatformActive();
+        doThrow(new WorkflowException(INVALID_NODE_ACCOUNT)).when(ingestChecker).verifyPlatformActive();
         final var responseBuffer = newEmptyBuffer();
 
         // when
@@ -801,7 +801,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidTransactionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
+        doThrow(new WorkflowException(INVALID_TRANSACTION_BODY))
                 .when(ingestChecker)
                 .runAllChecks(state, payment, configuration);
         final var responseBuffer = newEmptyBuffer();
@@ -823,7 +823,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInvalidCryptoTransferFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(INSUFFICIENT_TX_FEE))
+        doThrow(new WorkflowException(INSUFFICIENT_TX_FEE))
                 .when(queryChecker)
                 .validateCryptoTransfer(eq(transactionInfo), any());
         final var responseBuffer = newEmptyBuffer();
@@ -874,7 +874,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithInsufficientPermissionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(NOT_SUPPORTED))
+        doThrow(new WorkflowException(NOT_SUPPORTED))
                 .when(queryChecker)
                 .checkPermissions(ALICE.accountID(), HederaFunctionality.FILE_GET_INFO);
         final var responseBuffer = newEmptyBuffer();
@@ -963,7 +963,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testQuerySpecificValidationFails() throws ParseException {
         final var captor = ArgumentCaptor.forClass(QueryContext.class);
         // given
-        doThrow(new PreCheckException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
+        doThrow(new WorkflowException(ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN))
                 .when(handler)
                 .validate(captor.capture());
         final var responseBuffer = newEmptyBuffer();
@@ -987,7 +987,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     void testPaidQueryWithFailingSubmissionFails() throws ParseException {
         // given
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
-        doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
+        doThrow(new WorkflowException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.bodyBytes());
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));

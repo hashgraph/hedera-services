@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTes
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import org.assertj.core.api.Assertions;
@@ -80,7 +79,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(missingTokenTxn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_TOKEN_ID));
     }
 
@@ -94,7 +93,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         given(pureChecksContext.body()).willReturn(missingAcctTxn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_ACCOUNT_ID));
     }
 

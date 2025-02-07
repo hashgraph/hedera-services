@@ -77,7 +77,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
@@ -234,7 +234,7 @@ class IngestCheckerTest extends AppTestBase {
                 given(blockStreamManager.hasLedgerId()).willReturn(true);
                 // When we try to parse and check a transaction, it should fail because the platform is not active
                 assertThatThrownBy(() -> subject.verifyPlatformActive())
-                        .isInstanceOf(PreCheckException.class)
+                        .isInstanceOf(WorkflowException.class)
                         .has(responseCode(PLATFORM_NOT_ACTIVE));
                 verify(opWorkflowMetrics, never()).incrementThrottled(any());
             }
@@ -246,7 +246,7 @@ class IngestCheckerTest extends AppTestBase {
             when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
             // When we try to parse and check a transaction, it should fail because the platform is not active
             assertThatThrownBy(() -> subject.verifyReadyForTransactions())
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(WAITING_FOR_LEDGER_ID));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -277,9 +277,9 @@ class IngestCheckerTest extends AppTestBase {
                 opWorkflowMetrics,
                 ServicesSoftwareVersion::new);
 
-        // Then the checker should throw a PreCheckException
+        // Then the checker should throw a WorkflowException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                .isInstanceOf(PreCheckException.class)
+                .isInstanceOf(WorkflowException.class)
                 .has(responseCode(INVALID_NODE_ACCOUNT));
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }
@@ -320,13 +320,13 @@ class IngestCheckerTest extends AppTestBase {
         @ParameterizedTest(name = "TransactionChecker fails with error code {0}")
         @MethodSource("failureReasons")
         @DisplayName("If the transaction fails TransactionChecker, a failure response is returned with the right error")
-        void onsetFailsWithPreCheckException(ResponseCodeEnum failureReason) {
-            // Given a TransactionChecker that will throw a PreCheckException with the given failure reason
-            when(transactionChecker.check(any(), eq(null))).thenThrow(new PreCheckException(failureReason));
+        void onsetFailsWithWorkflowException(ResponseCodeEnum failureReason) {
+            // Given a TransactionChecker that will throw a WorkflowException with the given failure reason
+            when(transactionChecker.check(any(), eq(null))).thenThrow(new WorkflowException(failureReason));
 
             // When the transaction is checked
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(failureReason));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -354,9 +354,9 @@ class IngestCheckerTest extends AppTestBase {
             // Given a deduplication cache, and a transaction with an ID already in the deduplication cache
             final var id = txBody.transactionIDOrThrow();
             deduplicationCache.add(id);
-            // When the transaction is checked, then it throws a PreCheckException due to duplication
+            // When the transaction is checked, then it throws a WorkflowException due to duplication
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .hasFieldOrPropertyWithValue("responseCode", DUPLICATE_TRANSACTION);
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -375,7 +375,7 @@ class IngestCheckerTest extends AppTestBase {
 
             // When the transaction is submitted
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .hasFieldOrPropertyWithValue("responseCode", BUSY);
             verify(opWorkflowMetrics).incrementThrottled(UNCHECKED_SUBMIT);
         }
@@ -409,7 +409,7 @@ class IngestCheckerTest extends AppTestBase {
             when(transactionChecker.check(cryptoAddLiveHashTx, null)).thenReturn(cryptoAddLiveHashTransactionInfo);
 
             assertThatThrownBy(() -> subject.runAllChecks(state, cryptoAddLiveHashTx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
         }
 
@@ -436,7 +436,7 @@ class IngestCheckerTest extends AppTestBase {
             when(transactionChecker.check(freezeTx, null)).thenReturn(freezeTransactionInfo);
 
             assertThatThrownBy(() -> subject.runAllChecks(state, freezeTx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
         }
 
@@ -467,10 +467,10 @@ class IngestCheckerTest extends AppTestBase {
         @MethodSource("failureReasons")
         @DisplayName("If the status of the payer account is invalid, the transaction should be rejected")
         void payerAccountStatusFails(ResponseCodeEnum failureReason) {
-            doThrow(new PreCheckException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
+            doThrow(new WorkflowException(failureReason)).when(solvencyPreCheck).getPayerAccount(any(), any());
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(failureReason));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -500,7 +500,7 @@ class IngestCheckerTest extends AppTestBase {
 
             // When the transaction is submitted, then the exception is thrown
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(UNAUTHORIZED));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -573,7 +573,7 @@ class IngestCheckerTest extends AppTestBase {
 
             // When the transaction is submitted, then the exception is thrown
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_SIGNATURE));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -589,7 +589,7 @@ class IngestCheckerTest extends AppTestBase {
                     .thenReturn(Map.of(ALICE.account().keyOrThrow(), verificationResultFuture));
 
             assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_SIGNATURE));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -686,7 +686,7 @@ class IngestCheckerTest extends AppTestBase {
 
             // when
             assertThatThrownBy(() -> subject.runAllChecks(state, myTx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_SIGNATURE));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }
@@ -787,7 +787,7 @@ class IngestCheckerTest extends AppTestBase {
 
             // when
             assertThatThrownBy(() -> subject.runAllChecks(state, myTx, configuration))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_SIGNATURE));
             verify(opWorkflowMetrics, never()).incrementThrottled(any());
         }

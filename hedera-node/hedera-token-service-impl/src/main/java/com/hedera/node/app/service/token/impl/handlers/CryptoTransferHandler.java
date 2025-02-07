@@ -29,7 +29,7 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -119,7 +119,7 @@ public class CryptoTransferHandler extends TransferExecutor implements Transacti
         final var txn = context.body();
         requireNonNull(txn);
         final var op = txn.cryptoTransfer();
-        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
+        validateTrue(op != null, INVALID_TRANSACTION_BODY);
         validator.pureChecks(op);
     }
 

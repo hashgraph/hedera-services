@@ -56,8 +56,8 @@ import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
@@ -290,7 +290,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Given a transaction that has bad bytes (and therefore fails to parse)
             final Transaction platformTx = createAppPayloadWrapper(randomByteArray(123));
             when(transactionChecker.parseAndCheck(any(Bytes.class)))
-                    .thenThrow(new PreCheckException(INVALID_TRANSACTION));
+                    .thenThrow(new WorkflowException(INVALID_TRANSACTION));
 
             // When we try to pre-handle the transaction
             workflow.preHandle(storeFactory, NODE_1.nodeAccountID(), Stream.of(platformTx), txns -> {});
@@ -474,10 +474,10 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     final class TransactionHandlerPreHandleTests {
         /**
          * If the transaction has a valid payer, then we next need to perform the pre-handle call on the dispatcher. It
-         * may fail with a {@link PreCheckException}. If it does, this response code must be propagated.
+         * may fail with a {@link WorkflowException}. If it does, this response code must be propagated.
          */
         @Test
-        @DisplayName("Pre-handle semantic checks fail with PreCheckException")
+        @DisplayName("Pre-handle semantic checks fail with WorkflowException")
         void preHandleSemanticChecksFail(@Mock SignatureVerificationFuture sigFuture) throws Exception {
             // Given a transaction that fails the semantic check to the transaction handler
             // (NOTE that INVALID_ACCOUNT_AMOUNTS is one such semantic failure scenario)
@@ -487,7 +487,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var key = ALICE.keyInfo().publicKey();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(key, sigFuture));
-            doThrow(new PreCheckException(INVALID_ACCOUNT_AMOUNTS))
+            doThrow(new WorkflowException(INVALID_ACCOUNT_AMOUNTS))
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 

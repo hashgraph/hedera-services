@@ -37,8 +37,6 @@ import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isImmutableKey;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -101,8 +99,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         requireNonNull(context);
         final var txn = context.body();
         final var op = txn.cryptoUpdateAccountOrThrow();
-        validateTruePreCheck(op.hasAccountIDToUpdate(), ACCOUNT_ID_DOES_NOT_EXIST);
-        validateFalsePreCheck(
+        validateTrue(op.hasAccountIDToUpdate(), ACCOUNT_ID_DOES_NOT_EXIST);
+        validateFalse(
                 op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
     }

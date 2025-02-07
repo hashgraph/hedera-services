@@ -40,8 +40,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -157,10 +157,10 @@ class PreHandleContextListUpdatesTest {
         assertThatThrownBy(() -> new PreHandleContextImpl(storeFactory, txn, CONFIG, null, transactionChecker))
                 .isInstanceOf(NullPointerException.class);
 
-        // When we pass null to requireKeyOrThrow for the account ID then we get a PreCheckException
+        // When we pass null to requireKeyOrThrow for the account ID then we get a WorkflowException
         final var subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker);
-        assertThrows(PreCheckException.class, () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
+        assertThrows(WorkflowException.class, () -> subject.requireKeyOrThrow((AccountID) null, INVALID_ACCOUNT_ID));
         // When we pass null to requireKeyOrThrow for the response code then we get a null pointer exception
         assertThrows(NullPointerException.class, () -> subject.requireKeyOrThrow(payer, null));
         // When we pass a null to requireKeyIfReceiverSigRequired for the account ID then nothing happens
@@ -265,7 +265,7 @@ class PreHandleContextListUpdatesTest {
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker);
 
-        // When we require an accountID that doesn't exist, then we get a PreCheckException
+        // When we require an accountID that doesn't exist, then we get a WorkflowException
         final var bogus = AccountID.newBuilder().build();
         assertThrowsPreCheck(() -> subject.requireKeyOrThrow(bogus, INVALID_ACCOUNT_ID), INVALID_ACCOUNT_ID);
     }

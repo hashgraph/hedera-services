@@ -39,8 +39,8 @@ import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -90,7 +90,7 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var query = context.query();
         final FileGetContentsQuery op = query.fileGetContentsOrThrow();
         if (!op.hasFileID()) {
-            throw new PreCheckException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
     }
 

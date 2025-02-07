@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.records.TokenBurnStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -96,7 +95,7 @@ public final class TokenBurnHandler extends BaseTokenHandler implements Transact
         final var tokenId = op.tokenOrElse(TokenID.DEFAULT);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMetadata == null) throw new WorkflowException(INVALID_TOKEN_ID);
         // we will fail in handle() if token has no supply key
         if (tokenMetadata.hasSupplyKey()) {
             context.requireKey(tokenMetadata.supplyKey());

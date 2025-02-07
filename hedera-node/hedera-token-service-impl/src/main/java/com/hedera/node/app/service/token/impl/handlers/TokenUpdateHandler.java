@@ -36,7 +36,6 @@ import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.AttributeValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -65,7 +64,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -103,7 +101,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         requireNonNull(txn);
         final var op = txn.tokenUpdateOrThrow();
-        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        validateTrue(op.hasToken(), INVALID_TOKEN_ID);
         // IMPORTANT: No matter the TokenKeyValidation mode, we always require keys to
         // be structurally valid. Putting structurally invalid keys into ledger state
         // makes no sense, and could create problems for mirror nodes and block explorers.
@@ -113,7 +111,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             if (tokenKey.isPresentInUpdate(op)) {
                 final var key = tokenKey.getFromUpdate(op);
                 if (!isKeyRemoval(key)) {
-                    validateTruePreCheck(isValid(key), tokenKey.invalidKeyStatus());
+                    validateTrue(isValid(key), tokenKey.invalidKeyStatus());
                 }
             }
         }
@@ -484,7 +482,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param context pre handle context
      * @param token original token
      * @param roleKey role key
-     * @throws PreCheckException if the token is immutable
+     * @throws WorkflowException if the token is immutable
      */
     private void requireAdminOrRole(
             @NonNull final PreHandleContext context, @NonNull final Token token, @NonNull final TokenKey roleKey) {
@@ -501,7 +499,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param token original token
      * @param roleKey role key
      * @param replacementKey replacement key
-     * @throws PreCheckException if the token is immutable
+     * @throws WorkflowException if the token is immutable
      */
     private void requireAdminOrRole(
             @NonNull final PreHandleContext context,
@@ -528,10 +526,10 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * If the token does not have adminKey, then fail with TOKEN_IS_IMMUTABLE.
      * @param context pre handle context
      * @param originalToken original token
-     * @throws PreCheckException if the token is immutable
+     * @throws WorkflowException if the token is immutable
      */
     private void requireAdmin(@NonNull final PreHandleContext context, @NonNull final Token originalToken) {
-        validateTruePreCheck(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
+        validateTrue(originalToken.hasAdminKey(), TOKEN_IS_IMMUTABLE);
         context.requireKey(originalToken.adminKeyOrThrow());
     }
 

@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbjResponseType;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -74,8 +74,8 @@ public class ContractGetBytecodeHandler extends PaidQueryHandler {
     public void validate(@NonNull final QueryContext context) {
         requireNonNull(context);
         final var contract = contractFrom(context);
-        validateFalsePreCheck(contract == null, INVALID_CONTRACT_ID);
-        validateFalsePreCheck(requireNonNull(contract).deleted(), CONTRACT_DELETED);
+        validateFalse(contract == null, INVALID_CONTRACT_ID);
+        validateFalse(requireNonNull(contract).deleted(), CONTRACT_DELETED);
     }
 
     @Override

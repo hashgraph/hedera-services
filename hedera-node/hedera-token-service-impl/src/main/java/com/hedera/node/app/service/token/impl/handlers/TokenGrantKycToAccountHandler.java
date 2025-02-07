@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -41,7 +41,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -73,9 +72,9 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
         if (tokenMeta == null) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
+            throw new WorkflowException(INVALID_TOKEN_ID);
         }
-        validateTruePreCheck(tokenMeta.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+        validateTrue(tokenMeta.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
         context.requireKey(tokenMeta.kycKey());
     }
 
@@ -88,11 +87,11 @@ public class TokenGrantKycToAccountHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenGrantKycOrThrow();
         if (!op.hasToken()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
+            throw new WorkflowException(INVALID_TOKEN_ID);
         }
 
         if (!op.hasAccount()) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            throw new WorkflowException(INVALID_ACCOUNT_ID);
         }
     }
 

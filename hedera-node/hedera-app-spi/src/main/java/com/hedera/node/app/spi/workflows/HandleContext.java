@@ -213,7 +213,7 @@ public interface HandleContext {
      * @param nestedTxn the {@link TransactionBody} which keys are needed
      * @param payerForNested the payer for the nested transaction
      * @return the set of keys
-     * @throws PreCheckException If there is a problem with the nested transaction
+     * @throws WorkflowException If there is a problem with the nested transaction
      */
     @NonNull
     TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested);

@@ -46,7 +46,6 @@ import com.hedera.node.app.service.token.records.TokenBaseStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -82,7 +81,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenFeeScheduleUpdateOrThrow();
         if (!op.hasTokenId()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
+            throw new WorkflowException(INVALID_TOKEN_ID);
         }
     }
 
@@ -98,7 +97,7 @@ public class TokenFeeScheduleUpdateHandler implements TransactionHandler {
 
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMetadata = tokenStore.getTokenMeta(tokenId);
-        if (tokenMetadata == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMetadata == null) throw new WorkflowException(INVALID_TOKEN_ID);
         if (tokenMetadata.hasFeeScheduleKey()) {
             context.requireKey(tokenMetadata.feeScheduleKey());
             for (final var customFee : op.customFees()) {

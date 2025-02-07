@@ -47,7 +47,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -197,7 +196,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 2. Do some general pre-checks
                 ingestChecker.verifyPlatformActive();
                 if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
-                    throw new PreCheckException(NOT_SUPPORTED);
+                    throw new WorkflowException(NOT_SUPPORTED);
                 }
 
                 final var state = wrappedState.get();
@@ -244,7 +243,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         final var payer = accountStore.getAccountById(payerID);
                         if (payer == null) {
                             // This should never happen, because the account is checked in the pure checks
-                            throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+                            throw new WorkflowException(PAYER_ACCOUNT_NOT_FOUND);
                         }
 
                         // 3.iv Calculate costs
@@ -261,7 +260,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     }
                 } else {
                     if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
-                        throw new PreCheckException(NOT_SUPPORTED);
+                        throw new WorkflowException(NOT_SUPPORTED);
                     }
                     context = new QueryContextImpl(
                             state,
@@ -280,7 +279,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 // 5. Check query throttles
                 if (shouldCharge && synchronizedThrottleAccumulator.shouldThrottle(function, query, state, payerID)) {
                     workflowMetrics.incrementThrottled(function);
-                    throw new PreCheckException(BUSY);
+                    throw new WorkflowException(BUSY);
                 }
 
                 if (handler.needsAnswerOnlyCost(responseType)) {
@@ -295,12 +294,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     response = handler.findResponse(context, header);
                 }
             } catch (InsufficientBalanceException e) {
-                response = createErrorResponse(handler, responseType, e.responseCode(), e.getEstimatedFee());
-            } catch (PreCheckException e) {
-                response = createErrorResponse(handler, responseType, e.responseCode(), 0L);
+                response = createErrorResponse(handler, responseType, e.getStatus(), e.getEstimatedFee());
             } catch (WorkflowException e) {
-                // Conceptually, this should never happen, because we should use PreCheckException only for queries
-                // But we catch it here to play it safe
                 response = createErrorResponse(handler, responseType, e.getStatus(), 0L);
             } catch (Exception e) {
                 logger.error("Unexpected exception while handling a query", e);

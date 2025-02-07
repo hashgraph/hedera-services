@@ -60,7 +60,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import java.time.Instant;
@@ -107,7 +106,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(INVALID_ACCOUNT_ID));
         }
 
@@ -117,7 +116,7 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
             given(pureChecksContext.body()).willReturn(txn);
 
             assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
-                    .isInstanceOf(PreCheckException.class)
+                    .isInstanceOf(WorkflowException.class)
                     .has(responseCode(TOKEN_ID_REPEATED_IN_TOKEN_LIST));
         }
     }

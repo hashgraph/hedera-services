@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -42,7 +41,6 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -72,9 +70,9 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
         requireNonNull(context);
         final var body = context.body();
         requireNonNull(body);
-        validateTruePreCheck(body.hasScheduleDelete(), INVALID_TRANSACTION_BODY);
+        validateTrue(body.hasScheduleDelete(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleDeleteOrThrow();
-        validateTruePreCheck(op.hasScheduleID(), INVALID_SCHEDULE_ID);
+        validateTrue(op.hasScheduleID(), INVALID_SCHEDULE_ID);
     }
 
     @Override
@@ -87,7 +85,7 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
         final var schedule = getValidated(op.scheduleIDOrThrow(), scheduleStore, isLongTermEnabled);
         validateFalse(schedule.deleted(), SCHEDULE_ALREADY_DELETED);
         validateFalse(schedule.executed(), SCHEDULE_ALREADY_EXECUTED);
-        validateTruePreCheck(schedule.hasAdminKey(), SCHEDULE_IS_IMMUTABLE);
+        validateTrue(schedule.hasAdminKey(), SCHEDULE_IS_IMMUTABLE);
         context.requireKey(schedule.adminKeyOrThrow());
     }
 
@@ -131,8 +129,8 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
             validateFalse(schedule.deleted(), SCHEDULE_ALREADY_DELETED);
             validateFalse(schedule.executed(), SCHEDULE_ALREADY_EXECUTED);
             return schedule;
-        } catch (final PreCheckException e) {
-            throw new WorkflowException(e.responseCode());
+        } catch (final WorkflowException e) {
+            throw new WorkflowException(e.getStatus());
         }
     }
 

@@ -51,7 +51,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -110,9 +109,9 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
         given(transaction.nodeDeleteOrThrow()).willReturn(transactionBody);
         given(transactionBody.nodeId()).willReturn(-1L);
 
-        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(WorkflowException.class);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test

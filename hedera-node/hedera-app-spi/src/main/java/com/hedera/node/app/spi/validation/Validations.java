@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -32,19 +32,19 @@ public final class Validations {
     private Validations() {}
 
     /**
-     * Checks that the given subject is not null. If it is, then a {@link PreCheckException} is thrown with the
+     * Checks that the given subject is not null. If it is, then a {@link WorkflowException} is thrown with the
      * given {@link ResponseCodeEnum}.
      *
      * @param subject The object to check.
      * @param code The {@link ResponseCodeEnum} to use if the subject is null.
      * @return The subject if it is not null.
      * @param <T> The type of the subject.
-     * @throws PreCheckException If the subject is null, a {@link PreCheckException} is thrown with the given
+     * @throws WorkflowException If the subject is null, a {@link WorkflowException} is thrown with the given
      * {@link ResponseCodeEnum}.
      */
     public static <T> T mustExist(@Nullable final T subject, @NonNull final ResponseCodeEnum code) {
         if (subject == null) {
-            throw new PreCheckException(code);
+            throw new WorkflowException(code);
         }
 
         return subject;
@@ -57,7 +57,7 @@ public final class Validations {
      *
      * @param subject The {@link AccountID} to validate.
      * @return The {@link AccountID} if valid.
-     * @throws PreCheckException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
+     * @throws WorkflowException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
      * be thrown.
      */
     @NonNull
@@ -68,12 +68,12 @@ public final class Validations {
             result = validateNullableAccountID(subject);
             // Cannot be null
             if (result == null) {
-                throw new PreCheckException(
+                throw new WorkflowException(
                         responseCodeEnum == null ? ResponseCodeEnum.INVALID_ACCOUNT_ID : responseCodeEnum);
             }
-        } catch (PreCheckException e) {
+        } catch (WorkflowException e) {
             if (responseCodeEnum != null) {
-                throw new PreCheckException(responseCodeEnum);
+                throw new WorkflowException(responseCodeEnum);
             } else throw e;
         }
         return result;
@@ -86,7 +86,7 @@ public final class Validations {
      *
      * @param subject The {@link AccountID} to validate.
      * @return The {@link AccountID} if valid.
-     * @throws PreCheckException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
+     * @throws WorkflowException If the account ID is not valid, {@link ResponseCodeEnum#INVALID_ACCOUNT_ID} will
      * be thrown.
      */
     @Nullable
@@ -98,19 +98,19 @@ public final class Validations {
 
         // The account ID must have the account type (number or alias) set. It cannot be UNSET.
         if (subject.account().kind() == AccountID.AccountOneOfType.UNSET) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
 
         // You cannot have negative or zero account numbers. Those just aren't allowed!
         if (subject.hasAccountNum() && subject.accountNumOrThrow() <= 0) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
         }
 
         // And if you have an alias, it has to have at least a byte.
         if (subject.hasAlias()) {
             final var alias = subject.aliasOrThrow();
             if (alias.length() < 1) {
-                throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
+                throw new WorkflowException(ResponseCodeEnum.INVALID_ACCOUNT_ID);
             }
         }
 

@@ -53,7 +53,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -113,7 +112,7 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
         given(transactionBody.hasToken()).willReturn(false);
         given(pureChecksContext.body()).willReturn(transaction);
 
-        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(pureChecksContext)).isInstanceOf(WorkflowException.class);
     }
 
     @Test

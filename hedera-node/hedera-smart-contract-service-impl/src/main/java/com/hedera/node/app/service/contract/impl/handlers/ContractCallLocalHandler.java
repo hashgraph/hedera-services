@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EV
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -101,18 +101,18 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         final var query = context.query();
         final ContractCallLocalQuery op = query.contractCallLocalOrThrow();
         final var requestedGas = op.gas();
-        validateTruePreCheck(requestedGas >= 0, CONTRACT_NEGATIVE_GAS);
+        validateTrue(requestedGas >= 0, CONTRACT_NEGATIVE_GAS);
         final var maxGasLimit =
                 context.configuration().getConfigData(ContractsConfig.class).maxGasPerSec();
-        validateTruePreCheck(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
+        validateTrue(requestedGas <= maxGasLimit, MAX_GAS_LIMIT_EXCEEDED);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(
                 org.apache.tuweni.bytes.Bytes.wrap(op.functionParameters().toByteArray()), false);
-        validateTruePreCheck(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
+        validateTrue(op.gas() >= intrinsicGas, INSUFFICIENT_GAS);
 
         final var contractID = op.contractID();
         mustExist(contractID, INVALID_CONTRACT_ID);
         if (op.contractID().hasEvmAddress()) {
-            validateTruePreCheck(
+            validateTrue(
                     op.contractID().evmAddressOrThrow().length() == EVM_ADDRESS_LENGTH_AS_INT, INVALID_CONTRACT_ID);
         }
         // A contract or token contract corresponding to that contract ID must exist in state (otherwise we have

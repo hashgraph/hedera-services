@@ -37,7 +37,6 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -70,11 +69,11 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.tokenFreeze();
         if (!op.hasToken()) {
-            throw new PreCheckException(INVALID_TOKEN_ID);
+            throw new WorkflowException(INVALID_TOKEN_ID);
         }
 
         if (!op.hasAccount()) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            throw new WorkflowException(INVALID_ACCOUNT_ID);
         }
     }
 
@@ -85,11 +84,11 @@ public class TokenFreezeAccountHandler implements TransactionHandler {
         final var op = context.body().tokenFreezeOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var tokenMeta = tokenStore.getTokenMeta(op.tokenOrElse(TokenID.DEFAULT));
-        if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
+        if (tokenMeta == null) throw new WorkflowException(INVALID_TOKEN_ID);
         if (tokenMeta.hasFreezeKey()) {
             context.requireKey(tokenMeta.freezeKey());
         } else {
-            throw new PreCheckException(TOKEN_HAS_NO_FREEZE_KEY);
+            throw new WorkflowException(TOKEN_HAS_NO_FREEZE_KEY);
         }
     }
 

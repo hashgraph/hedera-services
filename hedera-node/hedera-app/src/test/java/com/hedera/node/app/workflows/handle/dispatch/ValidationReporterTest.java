@@ -59,7 +59,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -137,7 +137,7 @@ class ValidationReporterTest {
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         given(dispatch.consensusNow()).willReturn(CONSENSUS_NOW);
-        doThrow(new PreCheckException(INVALID_TRANSACTION_DURATION))
+        doThrow(new WorkflowException(INVALID_TRANSACTION_DURATION))
                 .when(transactionChecker)
                 .checkTimeBox(TXN_BODY, CONSENSUS_NOW, TransactionChecker.RequireMinValidLifetimeBuffer.NO);
 
@@ -354,7 +354,7 @@ class ValidationReporterTest {
         givenSolvencyCheckSetup();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L));
-        doThrow(new PreCheckException(INSUFFICIENT_PAYER_BALANCE))
+        doThrow(new WorkflowException(INSUFFICIENT_PAYER_BALANCE))
                 .when(solvencyPreCheck)
                 .checkSolvency(
                         TXN_BODY,

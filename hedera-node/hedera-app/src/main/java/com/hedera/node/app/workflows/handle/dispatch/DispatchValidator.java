@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
@@ -149,12 +149,12 @@ public class DispatchValidator {
                             ? CHECK_OFFERED_FEE
                             : SKIP_OFFERED_FEE_CHECK);
         } catch (final InsufficientServiceFeeException e) {
-            return newPayerError(creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
+            return newPayerError(creatorId, payer, e.getStatus(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
         } catch (final InsufficientNonFeeDebitsException e) {
-            return newPayerError(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
-        } catch (final PreCheckException e) {
+            return newPayerError(creatorId, payer, e.getStatus(), CAN_PAY_SERVICE_FEE, duplicateStatus);
+        } catch (final WorkflowException e) {
             // Includes InsufficientNetworkFeeException
-            return newCreatorError(creatorId, e.responseCode());
+            return newCreatorError(creatorId, e.getStatus());
         }
         return switch (duplicateStatus) {
             case DUPLICATE -> newPayerDuplicateError(creatorId, payer);
@@ -198,8 +198,8 @@ public class DispatchValidator {
                     dispatch.txnInfo().txBody(),
                     dispatch.consensusNow(),
                     TransactionChecker.RequireMinValidLifetimeBuffer.NO);
-        } catch (PreCheckException e) {
-            return e.responseCode();
+        } catch (WorkflowException e) {
+            return e.getStatus();
         }
         return null;
     }

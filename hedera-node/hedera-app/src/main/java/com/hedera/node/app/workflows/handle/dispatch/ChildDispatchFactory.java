@@ -66,7 +66,6 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -377,12 +376,12 @@ public class ChildDispatchFactory {
                     null,
                     null,
                     0);
-        } catch (final PreCheckException e) {
+        } catch (final WorkflowException e) {
             return new PreHandleResult(
                     null,
                     null,
                     PRE_HANDLE_FAILURE,
-                    e.responseCode(),
+                    e.getStatus(),
                     null,
                     Collections.emptySet(),
                     null,

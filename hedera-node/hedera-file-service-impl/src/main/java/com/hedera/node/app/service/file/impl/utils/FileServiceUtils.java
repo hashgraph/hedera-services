@@ -32,7 +32,6 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
@@ -69,7 +68,7 @@ public class FileServiceUtils {
      * @param fileId the file id to validate and to fetch the metadata
      * @param fileStore the file store to fetch the metadata of specified file id
      * @param context the prehandle context for the transaction
-     * @throws PreCheckException if the file id is invalid or the file does not exist
+     * @throws WorkflowException if the file id is invalid or the file does not exist
      */
     public static void preValidate(
             @NonNull final FileID fileId,

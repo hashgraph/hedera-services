@@ -19,7 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -63,7 +63,7 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         requireNonNull(context);
         final TransactionBody txn = context.body();
         final ConsensusDeleteTopicTransactionBody op = txn.consensusDeleteTopicOrThrow();
-        validateTruePreCheck(op.hasTopicID(), INVALID_TOPIC_ID);
+        validateTrue(op.hasTopicID(), INVALID_TOPIC_ID);
     }
 
     @Override

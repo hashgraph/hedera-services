@@ -63,7 +63,6 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -356,11 +355,11 @@ public class TokenHandlerHelper {
      * Returns the token relation if it exists and is usable.
      * @param key the key to check
      * @param responseCode the response code to throw if the key is empty
-     * @throws PreCheckException if the key is empty
+     * @throws WorkflowException if the key is empty
      */
     public static void verifyNotEmptyKey(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode) {
         if (EMPTY_KEY_LIST.equals(key)) {
-            throw new PreCheckException(responseCode);
+            throw new WorkflowException(responseCode);
         }
     }
 }

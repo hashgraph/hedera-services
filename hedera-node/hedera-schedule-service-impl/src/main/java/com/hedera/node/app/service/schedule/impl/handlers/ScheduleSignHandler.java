@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.transactionIdForScheduled;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -68,9 +67,9 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         requireNonNull(context);
         final var body = context.body();
         requireNonNull(body);
-        validateTruePreCheck(body.hasScheduleSign(), INVALID_TRANSACTION_BODY);
+        validateTrue(body.hasScheduleSign(), INVALID_TRANSACTION_BODY);
         final var op = body.scheduleSignOrThrow();
-        validateTruePreCheck(op.hasScheduleID(), INVALID_SCHEDULE_ID);
+        validateTrue(op.hasScheduleID(), INVALID_SCHEDULE_ID);
     }
 
     @Override

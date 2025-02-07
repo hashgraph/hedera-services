@@ -56,7 +56,6 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -111,8 +110,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     void nodeIdCannotNegative() {
         txn = new NodeUpdateBuilder().build();
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ID);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
 
     @Test
@@ -124,8 +123,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withGossipCaCertificate(Bytes.EMPTY)
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Test
@@ -137,8 +136,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withGrpcCertificateHash(Bytes.EMPTY)
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_GRPC_CERTIFICATE_HASH);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_GRPC_CERTIFICATE_HASH);
     }
 
     @Test
@@ -150,8 +149,8 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withAdminKey(invalidKey)
                 .build();
         given(pureChecksContext.body()).willReturn(txn);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_ADMIN_KEY);
+        final var msg = assertThrows(WorkflowException.class, () -> subject.pureChecks(pureChecksContext));
+        assertThat(msg.getStatus()).isEqualTo(INVALID_ADMIN_KEY);
     }
 
     @Test

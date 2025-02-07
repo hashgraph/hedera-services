@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
@@ -129,7 +128,7 @@ class FileDeleteTest extends FileTestBase {
         given(transactionBody.fileID()).willReturn(null);
         given(context.body()).willReturn(transaction);
 
-        assertThatThrownBy(() -> subject.pureChecks(context)).isInstanceOf(PreCheckException.class);
+        assertThatThrownBy(() -> subject.pureChecks(context)).isInstanceOf(WorkflowException.class);
     }
 
     @Test

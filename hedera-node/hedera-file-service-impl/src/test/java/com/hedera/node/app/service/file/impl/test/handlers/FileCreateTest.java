@@ -57,7 +57,6 @@ import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.node.config.data.FilesConfig;
@@ -331,8 +330,8 @@ class FileCreateTest extends FileTestBase {
     }
 
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
-        final var ex = assertThrows(PreCheckException.class, something::run);
-        assertEquals(status, ex.responseCode());
+        final var ex = assertThrows(WorkflowException.class, something::run);
+        assertEquals(status, ex.getStatus());
     }
 
     private Key mockPayerLookup() {

@@ -31,7 +31,7 @@ public interface PreHandleDispatcher {
      *
      * @param context the {@link PreHandleContext} for the dispatched transaction
      * @throws NullPointerException if {@code transactionBody} is {@code null}
-     * @throws PreCheckException if the transaction within the context is invalid
+     * @throws WorkflowException if the transaction within the context is invalid
      */
     void dispatch(@NonNull PreHandleContext context);
 }

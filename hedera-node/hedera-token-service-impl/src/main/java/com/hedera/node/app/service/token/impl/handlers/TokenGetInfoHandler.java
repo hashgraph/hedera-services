@@ -30,8 +30,8 @@ import static com.hedera.hapi.node.base.TokenPauseStatus.PAUSE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenPauseStatus.UNPAUSED;
 import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
+import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
@@ -91,10 +91,10 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
         final var query = context.query();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
         final var op = query.tokenGetInfoOrThrow();
-        validateTruePreCheck(op.hasToken(), INVALID_TOKEN_ID);
+        validateTrue(op.hasToken(), INVALID_TOKEN_ID);
 
         final var token = tokenStore.get(requireNonNull(op.token()));
-        validateFalsePreCheck(token == null, INVALID_TOKEN_ID);
+        validateFalse(token == null, INVALID_TOKEN_ID);
     }
 
     @Override

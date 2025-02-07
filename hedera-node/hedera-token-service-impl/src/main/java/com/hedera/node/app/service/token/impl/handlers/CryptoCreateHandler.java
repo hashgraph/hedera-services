@@ -54,8 +54,6 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateFalse;
 import static com.hedera.node.app.spi.workflows.WorkflowException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -78,7 +76,6 @@ import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -125,30 +122,30 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var txn = context.body();
         final var op = txn.cryptoCreateAccountOrThrow();
         // Note: validation lives here for now but should take place in handle in the future
-        validateTruePreCheck(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
-        validateTruePreCheck(op.autoRenewPeriodOrThrow().seconds() >= 0, INVALID_RENEWAL_PERIOD);
+        validateTrue(op.hasAutoRenewPeriod(), INVALID_RENEWAL_PERIOD);
+        validateTrue(op.autoRenewPeriodOrThrow().seconds() >= 0, INVALID_RENEWAL_PERIOD);
         if (op.hasShardID()) {
-            validateTruePreCheck(op.shardIDOrThrow().shardNum() == 0, INVALID_ACCOUNT_ID);
+            validateTrue(op.shardIDOrThrow().shardNum() == 0, INVALID_ACCOUNT_ID);
         }
         if (op.hasRealmID()) {
-            validateTruePreCheck(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
+            validateTrue(op.realmIDOrThrow().realmNum() == 0, INVALID_ACCOUNT_ID);
         }
         // HIP 904 now allows for unlimited auto-associations
-        validateTruePreCheck(
+        validateTrue(
                 op.maxAutomaticTokenAssociations() >= UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
-        validateTruePreCheck(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
+        validateTrue(op.initialBalance() >= 0L, INVALID_INITIAL_BALANCE);
         // FUTURE: should this return SEND_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        validateTruePreCheck(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
+        validateTrue(op.sendRecordThreshold() >= 0L, INVALID_SEND_RECORD_THRESHOLD);
         // FUTURE: should this return RECEIVE_RECORD_THRESHOLD_FIELD_IS_DEPRECATED
-        validateTruePreCheck(op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD);
-        validateTruePreCheck(
+        validateTrue(op.receiveRecordThreshold() >= 0L, INVALID_RECEIVE_RECORD_THRESHOLD);
+        validateTrue(
                 op.proxyAccountIDOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         // sendRecordThreshold, receiveRecordThreshold and proxyAccountID are deprecated. So no need to check them.
-        validateFalsePreCheck(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
+        validateFalse(op.hasProxyAccountID(), PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
         final var alias = op.alias();
         // The alias, if set, must be of EVM address size, or it must be a valid key.
-        validateTruePreCheck(alias.length() == 0 || isOfEvmAddressSize(alias) || isKeyAlias(alias), INVALID_ALIAS_KEY);
+        validateTrue(alias.length() == 0 || isOfEvmAddressSize(alias) || isKeyAlias(alias), INVALID_ALIAS_KEY);
         // There must be a key provided, and it must not be empty, unless in one very particular case, where the
         // transactionID is null. This code is very particular about which error code to throw in various cases.
         // FUTURE: Clean up the error codes to be consistent.
@@ -157,14 +154,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var keyIsEmpty = isEmpty(key);
         if (!isInternal && keyIsEmpty) {
             if (key == null) {
-                throw new PreCheckException(alias.length() > 0 ? INVALID_ALIAS_KEY : KEY_REQUIRED);
+                throw new WorkflowException(alias.length() > 0 ? INVALID_ALIAS_KEY : KEY_REQUIRED);
             } else if (key.hasThresholdKey() || key.hasKeyList()) {
-                throw new PreCheckException(KEY_REQUIRED);
+                throw new WorkflowException(KEY_REQUIRED);
             } else {
-                throw new PreCheckException(BAD_ENCODING);
+                throw new WorkflowException(BAD_ENCODING);
             }
         }
-        validateTruePreCheck(key != null, KEY_NOT_PROVIDED);
+        validateTrue(key != null, KEY_NOT_PROVIDED);
     }
 
     @Override
@@ -206,7 +203,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             } else {
                 // We do NOT allow a crypto-create transaction sent from the user (i.e. a user transaction) to define
                 // a key-based alias. Technically we could, but key-aliases are deprecated, so we don't allow it.
-                throw new PreCheckException(INVALID_ALIAS_KEY);
+                throw new WorkflowException(INVALID_ALIAS_KEY);
             }
         }
 

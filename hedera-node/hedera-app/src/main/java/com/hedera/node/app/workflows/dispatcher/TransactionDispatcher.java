@@ -23,7 +23,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -72,7 +71,7 @@ public class TransactionDispatcher {
             final var handler = getHandler(context.body());
             handler.pureChecks(context);
         } catch (UnsupportedOperationException ex) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 
@@ -90,7 +89,7 @@ public class TransactionDispatcher {
             final var handler = getHandler(context.body());
             handler.preHandle(context);
         } catch (UnsupportedOperationException ex) {
-            throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            throw new WorkflowException(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         }
     }
 

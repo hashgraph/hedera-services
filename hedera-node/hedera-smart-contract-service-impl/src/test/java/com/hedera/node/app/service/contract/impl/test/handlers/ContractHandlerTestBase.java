@@ -28,8 +28,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.WorkflowException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,7 +126,7 @@ public class ContractHandlerTestBase implements TransactionFactory {
     void commonSetUp() {
         try {
             setUpPayer();
-        } catch (PreCheckException e) {
+        } catch (WorkflowException e) {
             throw new RuntimeException(e);
         }
     }

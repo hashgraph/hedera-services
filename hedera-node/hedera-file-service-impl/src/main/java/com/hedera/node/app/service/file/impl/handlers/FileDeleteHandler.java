@@ -35,7 +35,6 @@ import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
@@ -75,7 +74,7 @@ public class FileDeleteHandler implements TransactionHandler {
         final FileDeleteTransactionBody transactionBody = body.fileDeleteOrThrow();
 
         if (transactionBody.fileID() == null) {
-            throw new PreCheckException(INVALID_FILE_ID);
+            throw new WorkflowException(INVALID_FILE_ID);
         }
     }
 
@@ -86,7 +85,7 @@ public class FileDeleteHandler implements TransactionHandler {
      *
      * @param context the {@link PreHandleContext} which collects all information that will be passed to
      * {@code handle()}
-     * @throws PreCheckException if any issue happens on the pre handle level
+     * @throws WorkflowException if any issue happens on the pre handle level
      */
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
