@@ -44,4 +44,4 @@ public record StakingConfig(
         @ConfigProperty(defaultValue = "8500000000000000") @NetworkProperty long rewardBalanceThreshold,
         @ConfigProperty(defaultValue = "650000000000000000") @NetworkProperty long maxStakeRewarded,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long minStake,
-        @ConfigProperty(defaultValue = "100000000000000000") @NetworkProperty long maxStake) {}
+        @ConfigProperty(defaultValue = "10000000000000000") @NetworkProperty long maxStake) {}
