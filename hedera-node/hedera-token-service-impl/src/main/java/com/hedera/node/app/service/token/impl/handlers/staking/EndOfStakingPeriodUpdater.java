@@ -264,14 +264,18 @@ public class EndOfStakingPeriodUpdater {
         long totalStake = 0;
         for (final long nodeId : store.getAll()) {
             final var nodeInfo = requireNonNull(store.get(nodeId));
-            totalStake += nodeInfo.deleted() ? 0 : nodeInfo.stake();
+            if (!nodeInfo.deleted()) {
+                final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
+                totalStake += newStakes.stake();
+            }
         }
         final var totalWeight = stakingConfig.sumOfConsensusWeights();
         final Map<Long, Long> weights = new HashMap<>();
         for (final long nodeId : store.getAll()) {
             final var nodeInfo = requireNonNull(store.get(nodeId));
             if (!nodeInfo.deleted()) {
-                final long weight = scaleStakeToWeight(nodeInfo.stake(), totalStake, totalWeight);
+                final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
+                final long weight = scaleStakeToWeight(newStakes.stake(), totalStake, totalWeight);
                 weights.put(nodeId, weight);
             }
         }
