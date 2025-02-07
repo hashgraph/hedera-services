@@ -436,13 +436,23 @@ public class AtomicBatchTest {
             final var batchOperator = "batchOperator";
             return hapiTest(
                     cryptoCreate(batchOperator).balance(ONE_HUNDRED_HBARS),
+                    usableTxnIdNamed("innerTxn1").payerId(batchOperator),
+                    usableTxnIdNamed("innerTxn2").payerId(batchOperator),
                     atomicBatch(
-                                    cryptoCreate("foo").batchKey(batchOperator).payingWith(batchOperator),
-                                    cryptoCreate("bar").batchKey(batchOperator).payingWith(batchOperator))
+                                    cryptoCreate("foo")
+                                            .txnId("innerTxn1")
+                                            .batchKey(batchOperator)
+                                            .payingWith(batchOperator),
+                                    cryptoCreate("bar")
+                                            .txnId("innerTxn1")
+                                            .batchKey(batchOperator)
+                                            .payingWith(batchOperator))
                             .payingWith(batchOperator)
                             .via("batchTxn"),
-                    // add cryptoCreate fee twice to the expected fee
-                    validateChargedUsd("batchTxn", 0.001 + 0.05 + 0.05));
+                    // validate the fee charged for the batch txn and the inner txns
+                    validateChargedUsd("batchTxn", 0.001),
+                    validateChargedUsd("innerTxn1", 0.05),
+                    validateChargedUsd("innerTxn2", 0.05));
         }
     }
 }
