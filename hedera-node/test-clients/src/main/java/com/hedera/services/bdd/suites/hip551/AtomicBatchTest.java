@@ -37,15 +37,11 @@ import org.junit.jupiter.api.DynamicTest;
 public class AtomicBatchTest {
 
     @HapiTest
-    public Stream<DynamicTest> invalidInnerTxnSignatureFails() {
+    public Stream<DynamicTest> missingInnerTxnPayerSignatureFails() {
         final var batchOperator = "batchOperator";
         final var innerTnxPayer = "innerPayer";
         final var innerTxnId = "innerId";
-
-        // create inner txn with:
-        // - custom txn id -> for getting the record
-        // - batch key -> for batch operator to sign
-        // - payer -> for paying the fee
+        // crete inner txn with innerTnxPayer, but sign only with DEFAULT_PAYER
         final var innerTxn = cryptoCreate("foo")
                 .balance(ONE_HBAR)
                 .txnId(innerTxnId)
@@ -54,17 +50,28 @@ public class AtomicBatchTest {
                 .signedBy(DEFAULT_PAYER);
 
         return hapiTest(
-                // create batch operator
                 cryptoCreate(batchOperator).balance(ONE_HBAR),
-                // create another payer for the inner txn
                 cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
-                // use custom txn id so we can get the record
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
-                // create a batch txn
-                atomicBatch(innerTxn)
-                        .payingWith(batchOperator)
-                        .via("batchTxn")
-                        .hasKnownStatus(INNER_TRANSACTION_FAILED));
+                // Since the inner txn is signed by DEFAULT_PAYER, it should fail
+                atomicBatch(innerTxn).payingWith(batchOperator).hasKnownStatus(INNER_TRANSACTION_FAILED));
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> missingBatchKeyFails() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId = "innerId";
+        // crete inner txn with innerTnxPayer and without batchKey
+        final var innerTxn =
+                cryptoCreate("foo").balance(ONE_HBAR).txnId(innerTxnId).payingWith(innerTnxPayer);
+
+        return hapiTest(
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
+                usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
+                // Since the inner txn doesn't have batchKey, it should fail
+                atomicBatch(innerTxn).payingWith(batchOperator).hasKnownStatus(INNER_TRANSACTION_FAILED));
     }
 
     @HapiTest
