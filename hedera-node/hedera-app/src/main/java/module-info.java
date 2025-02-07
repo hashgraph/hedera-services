@@ -59,7 +59,6 @@ module com.hedera.node.app {
     requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.google.common;
-    requires com.google.protobuf;
     requires io.grpc.netty;
     requires io.grpc;
     requires io.helidon.common.tls;
