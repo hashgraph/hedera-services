@@ -28,8 +28,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link

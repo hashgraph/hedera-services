@@ -21,7 +21,6 @@ import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -67,7 +66,7 @@ public class MerkleStateUtils {
                 .render(sb);
 
         sb.append("\n");
-        new MerkleTreeVisualizer((MerkleNode) state).setDepth(hashDepth).render(sb);
+        new MerkleTreeVisualizer(state).setDepth(hashDepth).render(sb);
         return sb.toString();
     }
 }
