@@ -95,7 +95,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * Is this the last state saved before the freeze period
      */
-    private boolean freezeState;
+    private final boolean freezeState;
 
     /**
      * True if this state has been deleted. Used to prevent the same state from being deleted more than once.

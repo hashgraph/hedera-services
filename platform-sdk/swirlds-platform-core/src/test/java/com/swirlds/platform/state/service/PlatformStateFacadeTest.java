@@ -16,13 +16,41 @@
 
 package com.swirlds.platform.state.service;
 
+import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade;
 import java.time.Instant;
+import java.util.function.Function;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class PlatformStateFacadeTest {
+
+    public static final Function<SemanticVersion, SoftwareVersion> VERSION_FACTORY =
+            v -> new BasicSoftwareVersion(v.major());
+    private static TestPlatformStateFacade platformStateFacade;
+    private static PlatformMerkleStateRoot state;
+    private static PlatformMerkleStateRoot emptyState;
+    private static PlatformStateModifier platformStateModifier;
+
+    @BeforeAll
+    static void beforeAll() {
+        state = new PlatformMerkleStateRoot(VERSION_FACTORY);
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        emptyState = new PlatformMerkleStateRoot(VERSION_FACTORY);
+        platformStateFacade = new TestPlatformStateFacade(VERSION_FACTORY);
+        platformStateModifier = randomPlatformState(state, platformStateFacade);
+    }
 
     @Test
     void isInFreezePeriodTest() {
@@ -52,5 +80,29 @@ class PlatformStateFacadeTest {
 
         // Freeze time in the past, already froze at that exact time
         assertFalse(PlatformStateFacade.isInFreezePeriod(t3, t2, t2));
+    }
+
+    @Test
+    public void testCreationSoftwareVersionOf() {
+        assertEquals(
+                platformStateModifier.getCreationSoftwareVersion().getPbjSemanticVersion(),
+                platformStateFacade.creationSoftwareVersionOf(state).getPbjSemanticVersion());
+    }
+
+    @Test
+    public void testCreationSoftwareVersionOf_null() {
+        assertNull(platformStateFacade.creationSoftwareVersionOf(emptyState));
+    }
+
+    @Test
+    public void testRoundOf() {
+        assertEquals(platformStateModifier.getRound(), platformStateFacade.roundOf(state));
+    }
+
+    @Test
+    public void platformStateOf() {
+        final PlatformMerkleStateRoot noPlatformState = new PlatformMerkleStateRoot(VERSION_FACTORY);
+        noPlatformState.getReadableStates(PlatformStateService.NAME);
+        platformStateFacade.platformStateOf(noPlatformState);
     }
 }

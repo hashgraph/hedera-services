@@ -47,7 +47,7 @@ public enum PlatformStateService implements Service {
     /**
      * The schemas to register with the {@link SchemaRegistry}.
      */
-    public static final Collection<Schema> SCHEMAS = List.of(
+    private static final Collection<Schema> SCHEMAS = List.of(
             new V0540PlatformStateSchema(
                     config -> requireNonNull(APP_VERSION_FN.get()).apply(config)),
             new V059RosterLifecycleTransitionSchema());
