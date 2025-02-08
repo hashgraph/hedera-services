@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.fees;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -44,6 +46,13 @@ public interface FeeCharging {
          */
         @Nullable
         ResponseCodeEnum maybeErrorStatus();
+
+        /**
+         * Returns the error status or throws an exception if the error status is null.
+         */
+        default ResponseCodeEnum errorStatusOrThrow() {
+            return requireNonNull(maybeErrorStatus());
+        }
     }
 
     /**

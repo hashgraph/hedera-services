@@ -42,7 +42,6 @@ import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
-import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
@@ -118,13 +117,13 @@ public class DispatchProcessor {
      */
     public void processDispatch(@NonNull final Dispatch dispatch) {
         requireNonNull(dispatch);
-        final var errorReport = validator.validationReportFor(dispatch);
-        if (errorReport.isCreatorError()) {
-            chargeCreator(dispatch, errorReport);
+        final var validation = validator.validateFeeChargingScenario(dispatch);
+        if (!validation.creatorDidDueDiligence()) {
+            chargeCreator(dispatch, validation);
         } else {
-            chargePayer(dispatch, errorReport);
-            if (!alreadyFailed(dispatch, errorReport)) {
-                tryHandle(dispatch, errorReport);
+            chargePayer(dispatch, validation, false);
+            if (!alreadyFailed(dispatch, validation)) {
+                tryHandle(dispatch, validation);
             }
         }
         dispatchUsageManager.finalizeAndSaveUsage(dispatch);
@@ -140,9 +139,9 @@ public class DispatchProcessor {
      * the payer for the fees and return FEE_ONLY as work done.
      *
      * @param dispatch the dispatch to be processed
-     * @param validationResult the due diligence report for the dispatch
+     * @param validation the due diligence report for the dispatch
      */
-    private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
+    private void tryHandle(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
@@ -152,20 +151,21 @@ public class DispatchProcessor {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
             rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
-                chargePayer(dispatch, validationResult);
+                chargePayer(dispatch, validation, false);
             }
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
         } catch (final ThrottleException e) {
             final var functionality = dispatch.txnInfo().functionality();
             workflowMetrics.incrementThrottled(functionality);
-            rollbackAndRechargeFee(dispatch, validationResult, e.getStatus());
+            rollbackAndRechargeFee(dispatch, validation, e.getStatus());
             if (functionality == ETHEREUM_TRANSACTION) {
                 ethereumTransactionHandler.handleThrottled(dispatch.handleContext());
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            rollbackAndRechargeFee(dispatch, validationResult, FAIL_INVALID);
+            rollbackAndRechargeFee(dispatch, validation, FAIL_INVALID);
         }
     }
 
@@ -199,15 +199,15 @@ public class DispatchProcessor {
      * the payer for the fees and return FEE_ONLY as work done.
      *
      * @param dispatch the dispatch to be processed
-     * @param validationResult the due diligence report for the dispatch
+     * @param validation the due diligence report for the dispatch
      * @param status the status to set
      */
     private void rollbackAndRechargeFee(
             @NonNull final Dispatch dispatch,
-            @NonNull final ValidationResult validationResult,
+            @NonNull final FeeCharging.Validation validation,
             @NonNull final ResponseCodeEnum status) {
         rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
-        chargePayer(dispatch, validationResult.withoutServiceFee());
+        chargePayer(dispatch, validation, true);
         dispatchUsageManager.trackFeePayments(dispatch);
     }
 
@@ -215,10 +215,10 @@ public class DispatchProcessor {
      * Charges the creator for the network fee. This will be called when there is a due diligence failure.
      *
      * @param dispatch the dispatch to be processed
-     * @param report the due diligence report for the dispatch
+     * @param validation the validation of the charging scenario
      */
-    private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
-        dispatch.recordBuilder().status(report.creatorErrorOrThrow());
+    private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
+        dispatch.recordBuilder().status(validation.errorStatusOrThrow());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(
                         dispatch.creatorInfo().accountId(), dispatch.fees().networkFee());
@@ -230,8 +230,12 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validation the validation of the charging scenario
+     * @param waiveServiceFee whether to waive the service fee from the dispatch
      */
-    private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
+    private void chargePayer(
+            @NonNull final Dispatch dispatch,
+            @NonNull final FeeCharging.Validation validation,
+            final boolean waiveServiceFee) {
         final var fees = dispatch.fees();
         if (fees.nothingToCharge()) {
             return;
@@ -243,7 +247,8 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        appFeeCharging.charge(dispatch, validation, fees);
+        final var feesToCharge = waiveServiceFee ? fees.withoutServiceComponent() : fees;
+        dispatch.feeChargingOrElse(appFeeCharging).charge(dispatch, validation, feesToCharge);
     }
 
     /**
@@ -271,12 +276,12 @@ public class DispatchProcessor {
      * Otherwise, it will return false.
      *
      * @param dispatch the dispatch to be processed
-     * @param validationResult the due diligence report for the dispatch
+     * @param validation the due diligence report for the dispatch
      * @return true if the transaction has already failed, false otherwise
      */
-    private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
-        if (validationResult.isPayerError()) {
-            dispatch.recordBuilder().status(validationResult.payerErrorOrThrow());
+    private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
+        if (validation.maybeErrorStatus() != null) {
+            dispatch.recordBuilder().status(validation.errorStatusOrThrow());
             return true;
         }
         final var authorizationFailure = maybeAuthorizationFailure(dispatch);

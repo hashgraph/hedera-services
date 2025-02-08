@@ -57,6 +57,7 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyComparator;
@@ -66,6 +67,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling;
 import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -216,6 +218,8 @@ public class ChildDispatchFactory {
                 childVerifier,
                 consensusNow,
                 options.dispatchMetadata(),
+                options.throttling(),
+                options.customFeeCharging(),
                 creatorInfo,
                 config,
                 topLevelFunction,
@@ -227,8 +231,7 @@ public class ChildDispatchFactory {
                 blockRecordInfo,
                 serviceScopeLookup,
                 exchangeRateManager,
-                dispatcher,
-                options.throttling());
+                dispatcher);
     }
 
     private RecordDispatch newChildDispatch(
@@ -242,6 +245,8 @@ public class ChildDispatchFactory {
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
             @NonNull final DispatchMetadata dispatchMetadata,
+            @NonNull final ConsensusThrottling consensusThrottling,
+            @Nullable FeeCharging customFeeCharging,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
@@ -255,8 +260,7 @@ public class ChildDispatchFactory {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
+            @NonNull final TransactionDispatcher dispatcher) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack, softwareVersionFactory);
         final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
         final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
@@ -320,7 +324,8 @@ public class ChildDispatchFactory {
                 category,
                 childTokenContext,
                 preHandleResult,
-                throttleStrategy);
+                consensusThrottling,
+                customFeeCharging);
     }
 
     private static Fees computeChildFees(
@@ -339,9 +344,9 @@ public class ChildDispatchFactory {
                     yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
                 }
             }
-            case CHILD -> Fees.FREE;
             case USER, NODE -> throw new IllegalStateException(
                     "Should not dispatch child with user transaction category");
+            default -> feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
         };
     }
 

@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling;
 import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -49,7 +50,8 @@ public record DispatchOptions<T extends StreamBuilder>(
         @NonNull Class<T> streamBuilderType,
         @NonNull ReversingBehavior reversingBehavior,
         @NonNull StreamBuilder.TransactionCustomizer transactionCustomizer,
-        @NonNull DispatchMetadata dispatchMetadata) {
+        @NonNull DispatchMetadata dispatchMetadata,
+        @Nullable FeeCharging customFeeCharging) {
     private static final Predicate<Key> PREAUTHORIZED_KEYS = k -> true;
 
     /**
@@ -161,7 +163,8 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.IRREVERSIBLE,
                 NOOP_TRANSACTION_CUSTOMIZER,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                null);
     }
 
     /**
@@ -195,7 +198,8 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.REMOVABLE,
                 NOOP_TRANSACTION_CUSTOMIZER,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                null);
     }
 
     /**
@@ -215,6 +219,7 @@ public record DispatchOptions<T extends StreamBuilder>(
      * @param streamBuilderType the type of stream builder to use for the dispatch
      * @param stakingRewards whether the dispatch can trigger staking rewards
      * @param usePresetTxnId whether the dispatch's {@link TransactionBody} should include the expected txn id
+     * @param customFeeCharging the custom fee charging strategy for the dispatch
      * @return the options for the sub-dispatch
      */
     public static <T extends StreamBuilder> DispatchOptions<T> subDispatch(
@@ -224,7 +229,8 @@ public record DispatchOptions<T extends StreamBuilder>(
             @NonNull final Set<Key> authorizingKeys,
             @NonNull final Class<T> streamBuilderType,
             @NonNull final StakingRewards stakingRewards,
-            @NonNull final UsePresetTxnId usePresetTxnId) {
+            @NonNull final UsePresetTxnId usePresetTxnId,
+            @Nullable final FeeCharging customFeeCharging) {
         final var category =
                 switch (requireNonNull(stakingRewards)) {
                     case ON -> TransactionCategory.SCHEDULED;
@@ -242,7 +248,8 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.REVERSIBLE,
                 NOOP_TRANSACTION_CUSTOMIZER,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                customFeeCharging);
     }
 
     /**
@@ -276,7 +283,8 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.REMOVABLE,
                 transactionCustomizer,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                null);
     }
 
     /**
@@ -311,6 +319,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.REMOVABLE,
                 transactionCustomizer,
-                metaData);
+                metaData,
+                null);
     }
 }

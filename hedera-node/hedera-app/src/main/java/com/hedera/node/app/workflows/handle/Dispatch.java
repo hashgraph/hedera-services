@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
@@ -36,6 +38,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Set;
 
@@ -208,6 +211,23 @@ public interface Dispatch extends FeeCharging.Context {
      * @return the throttling strategy
      */
     HandleContext.ConsensusThrottling throttleStrategy();
+
+    /**
+     * The custom fee charging for this dispatch, if any.
+     */
+    @Nullable
+    FeeCharging customFeeCharging();
+
+    /**
+     * Returns the custom fee charging for this dispatch, or the given default if none is set.
+     * @param feeCharging the default fee charging
+     * @return the custom fee charging, or the default if none is set
+     */
+    default FeeCharging feeChargingOrElse(@NonNull final FeeCharging feeCharging) {
+        requireNonNull(feeCharging);
+        final var customFeeCharging = customFeeCharging();
+        return customFeeCharging != null ? customFeeCharging : feeCharging;
+    }
 
     @Override
     default void charge(@NonNull final AccountID payerId, @NonNull final Fees fees) {

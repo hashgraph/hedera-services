@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -85,7 +86,7 @@ public class DispatchValidator {
      * @param dispatch the dispatch
      * @return the error report
      */
-    public ValidationResult validationReportFor(@NonNull final Dispatch dispatch) {
+    public FeeCharging.Validation validateFeeChargingScenario(@NonNull final Dispatch dispatch) {
         final var creatorError = creatorErrorIfKnown(dispatch);
         if (creatorError != null) {
             return newCreatorError(dispatch.creatorInfo().accountId(), creatorError);
@@ -108,9 +109,9 @@ public class DispatchValidator {
                             dispatch.txnInfo().txBody().transactionIDOrThrow(),
                             dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
-                case NO_DUPLICATE -> finalPayerValidationReport(payer, DuplicateStatus.NO_DUPLICATE, dispatch);
+                case NO_DUPLICATE -> getFinalPayerValidation(payer, DuplicateStatus.NO_DUPLICATE, dispatch);
                 case SAME_NODE -> newCreatorError(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION);
-                case OTHER_NODE -> finalPayerValidationReport(payer, DuplicateStatus.DUPLICATE, dispatch);
+                case OTHER_NODE -> getFinalPayerValidation(payer, DuplicateStatus.DUPLICATE, dispatch);
             };
         }
     }
@@ -124,26 +125,28 @@ public class DispatchValidator {
      * @return the error report
      */
     @NonNull
-    private ValidationResult finalPayerValidationReport(
+    private FeeCharging.Validation getFinalPayerValidation(
             @NonNull final Account payer,
             @NonNull final DuplicateStatus duplicateStatus,
             @NonNull final Dispatch dispatch) {
         final var creatorId = dispatch.creatorInfo().accountId();
-        final var chargingResult = feeCharging.validate(
-                payer,
-                creatorId,
-                dispatch.fees(),
-                dispatch.txnInfo().txBody(),
-                duplicateStatus == DuplicateStatus.DUPLICATE,
-                dispatch.txnInfo().functionality(),
-                dispatch.txnCategory());
-        if (!chargingResult.isSuccess()) {
-            return chargingResult;
+        final boolean isDuplicate = duplicateStatus == DuplicateStatus.DUPLICATE;
+        final var validation = dispatch.feeChargingOrElse(feeCharging)
+                .validate(
+                        payer,
+                        creatorId,
+                        dispatch.fees(),
+                        dispatch.txnInfo().txBody(),
+                        isDuplicate,
+                        dispatch.txnInfo().functionality(),
+                        dispatch.txnCategory());
+        if (validation.maybeErrorStatus() != null) {
+            return validation;
         }
         return switch (duplicateStatus) {
             case DUPLICATE -> newPayerDuplicateError(creatorId, payer);
             case NO_DUPLICATE -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
-                    ? chargingResult
+                    ? validation
                     : newPayerUniqueError(
                             creatorId, payer, dispatch.preHandleResult().responseCode());
         };

@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.fees.FeeCharging;
+import com.hedera.node.app.spi.fees.FeeCharging.Validation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public record ValidationResult(
         @Nullable ResponseCodeEnum payerError,
         @NonNull ServiceFeeStatus serviceFeeStatus,
         @NonNull DuplicateStatus duplicateStatus)
-        implements FeeCharging.Validation {
+        implements Validation {
 
     @Override
     public boolean creatorDidDueDiligence() {

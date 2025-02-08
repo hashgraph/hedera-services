@@ -587,7 +587,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            null)))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatch(subDispatch(
                             AccountID.DEFAULT,
@@ -596,7 +597,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             null,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            null)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -611,7 +613,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.OFF,
-                            UsePresetTxnId.NO))),
+                            UsePresetTxnId.NO,
+                            null))),
                     Arguments.of((Consumer<HandleContext>) context ->
                             context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
         }
@@ -709,7 +712,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     emptySet(),
                     StreamBuilder.class,
                     StakingRewards.ON,
-                    UsePresetTxnId.NO));
+                    UsePresetTxnId.NO,
+                    null));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
