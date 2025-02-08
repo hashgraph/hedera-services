@@ -19,6 +19,7 @@ package com.hedera.node.app.fees;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
@@ -92,5 +93,23 @@ public class AppFeeCharging implements FeeCharging {
             return newCreatorError(creatorId, e.responseCode());
         }
         return newSuccess(creatorId, payer);
+    }
+
+    @Override
+    public void charge(@NonNull final Context ctx, @NonNull final Validation validation, @NonNull final Fees fees) {
+        requireNonNull(ctx);
+        requireNonNull(validation);
+        requireNonNull(fees);
+        if (!(validation instanceof ValidationResult result)) {
+            throw new IllegalArgumentException("App charging strategy cannot use validation of type "
+                    + validation.getClass().getName());
+        }
+        final boolean shouldWaiveServiceFee =
+                result.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || result.duplicateStatus() == DUPLICATE;
+        final var feesToCharge = shouldWaiveServiceFee ? fees.withoutServiceComponent() : fees;
+        switch (ctx.category()) {
+            case USER, NODE -> ctx.charge(result.payerOrThrow().accountIdOrThrow(), feesToCharge, result.creatorId());
+            default -> ctx.charge(result.payerOrThrow().accountIdOrThrow(), feesToCharge);
+        }
     }
 }

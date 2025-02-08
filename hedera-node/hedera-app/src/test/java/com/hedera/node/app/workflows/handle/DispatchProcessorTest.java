@@ -45,6 +45,7 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.new
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newSuccess;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -73,6 +74,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
@@ -179,7 +181,7 @@ class DispatchProcessorTest {
     private OpWorkflowMetrics opWorkflowMetrics;
 
     @Mock
-    private AppFeeCharging feeCharging;
+    private SolvencyPreCheck solvencyPreCheck;
 
     private DispatchProcessor subject;
 
@@ -197,7 +199,7 @@ class DispatchProcessorTest {
                 ethereumTransactionHandler,
                 networkInfo,
                 opWorkflowMetrics,
-                feeCharging);
+                new AppFeeCharging(solvencyPreCheck));
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
@@ -253,6 +255,8 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -274,6 +278,8 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -297,6 +303,8 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -320,6 +328,8 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -343,6 +353,8 @@ class DispatchProcessorTest {
         given(dispatch.keyVerifier()).willReturn(keyVerifier);
         given(dispatch.requiredKeys()).willReturn(Set.of(Key.DEFAULT));
         given(keyVerifier.verificationFor(Key.DEFAULT)).willReturn(FAILED_VERIFICATION);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -368,6 +380,8 @@ class DispatchProcessorTest {
         given(dispatch.hollowAccounts()).willReturn(Set.of(HOLLOW));
         given(keyVerifier.verificationFor(HOLLOW.alias())).willReturn(FAILED_VERIFICATION);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -392,6 +406,8 @@ class DispatchProcessorTest {
                 .when(dispatcher)
                 .dispatchHandle(context);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -417,6 +433,8 @@ class DispatchProcessorTest {
                 .when(dispatcher)
                 .dispatchHandle(context);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -440,6 +458,8 @@ class DispatchProcessorTest {
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -464,6 +484,8 @@ class DispatchProcessorTest {
         doThrow(ThrottleException.newGasThrottleException())
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
+        doCallRealMethod().when(dispatch).charge(any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -487,6 +509,8 @@ class DispatchProcessorTest {
                 .when(dispatchUsageManager)
                 .screenForCapacity(dispatch);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -511,6 +535,8 @@ class DispatchProcessorTest {
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
         doThrow(new IllegalStateException()).when(dispatcher).dispatchHandle(context);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -538,6 +564,8 @@ class DispatchProcessorTest {
         given(keyVerifier.verificationFor(HOLLOW.alias())).willReturn(PASSED_VERIFICATION);
         givenAuthorization(CONTRACT_TXN_INFO);
         givenSystemEffectSuccess(CONTRACT_TXN_INFO);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -559,6 +587,8 @@ class DispatchProcessorTest {
         given(dispatch.txnCategory()).willReturn(HandleContext.TransactionCategory.CHILD);
         given(dispatch.handleContext()).willReturn(context);
         givenAuthorization(CRYPTO_TRANSFER_TXN_INFO);
+        doCallRealMethod().when(dispatch).charge(any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -600,6 +630,8 @@ class DispatchProcessorTest {
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -619,6 +651,8 @@ class DispatchProcessorTest {
         given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
         given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 
@@ -640,6 +674,8 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatch.fees()).willReturn(FEES);
         given(dispatch.txnCategory()).willReturn(USER);
+        doCallRealMethod().when(dispatch).charge(any(), any(), any());
+        doCallRealMethod().when(dispatch).category();
 
         subject.processDispatch(dispatch);
 

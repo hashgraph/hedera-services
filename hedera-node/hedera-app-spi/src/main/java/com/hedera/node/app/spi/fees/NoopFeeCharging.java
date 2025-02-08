@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A fee charging strategy that validates all situations and charges no fees.
+ * A fee charging strategy that validates all scenarios and charges no fees.
  */
 public enum NoopFeeCharging implements FeeCharging {
     NOOP_FEE_CHARGING;
@@ -49,6 +49,13 @@ public enum NoopFeeCharging implements FeeCharging {
         requireNonNull(function);
         requireNonNull(category);
         return PassedValidation.INSTANCE;
+    }
+
+    @Override
+    public void charge(@NonNull final Context ctx, @NonNull final Validation validation, @NonNull final Fees fees) {
+        requireNonNull(ctx);
+        requireNonNull(validation);
+        requireNonNull(fees);
     }
 
     private record PassedValidation(boolean creatorDidDueDiligence, @Nullable ResponseCodeEnum maybeErrorStatus)

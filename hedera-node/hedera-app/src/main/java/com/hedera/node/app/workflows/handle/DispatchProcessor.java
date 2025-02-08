@@ -27,10 +27,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -38,6 +35,7 @@ import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
@@ -80,7 +78,7 @@ public class DispatchProcessor {
     private final EthereumTransactionHandler ethereumTransactionHandler;
     private final NetworkInfo networkInfo;
     private final OpWorkflowMetrics workflowMetrics;
-    private final AppFeeCharging feeCharging;
+    private final AppFeeCharging appFeeCharging;
 
     @Inject
     public DispatchProcessor(
@@ -95,7 +93,7 @@ public class DispatchProcessor {
             @NonNull final EthereumTransactionHandler ethereumTransactionHandler,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final OpWorkflowMetrics workflowMetrics,
-            @NonNull final AppFeeCharging feeCharging) {
+            @NonNull final AppFeeCharging appFeeCharging) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -107,7 +105,7 @@ public class DispatchProcessor {
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
         this.networkInfo = requireNonNull(networkInfo);
         this.workflowMetrics = requireNonNull(workflowMetrics);
-        this.feeCharging = requireNonNull(feeCharging);
+        this.appFeeCharging = requireNonNull(appFeeCharging);
     }
 
     /**
@@ -231,9 +229,9 @@ public class DispatchProcessor {
      * will be charged to the creator. If the transaction is a duplicate, the service fee will be waived.
      *
      * @param dispatch the dispatch to be processed
-     * @param report the due diligence report for the dispatch
+     * @param validation the validation of the charging scenario
      */
-    private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
+    private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
         final var fees = dispatch.fees();
         if (fees.nothingToCharge()) {
             return;
@@ -245,18 +243,7 @@ public class DispatchProcessor {
         if (hasWaivedFees) {
             return;
         }
-        final var shouldWaiveServiceFee =
-                report.serviceFeeStatus() == UNABLE_TO_PAY_SERVICE_FEE || report.duplicateStatus() == DUPLICATE;
-        final var feesToCharge = shouldWaiveServiceFee ? fees.withoutServiceComponent() : fees;
-        if (dispatch.txnCategory() == USER || dispatch.txnCategory() == NODE) {
-            dispatch.feeAccumulator()
-                    .chargeFees(report.payerOrThrow().accountIdOrThrow(), report.creatorId(), feesToCharge);
-        } else {
-            // The node only does work for submitting user transactions, so for other categories,
-            // we charge fees that are collected without a disbursement to the node account
-            dispatch.feeAccumulator()
-                    .chargeNetworkFee(report.payerOrThrow().accountIdOrThrow(), feesToCharge.totalFee());
-        }
+        appFeeCharging.charge(dispatch, validation, fees);
     }
 
     /**
