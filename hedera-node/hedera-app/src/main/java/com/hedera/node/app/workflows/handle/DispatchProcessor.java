@@ -34,6 +34,7 @@ import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.Se
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -79,6 +80,7 @@ public class DispatchProcessor {
     private final EthereumTransactionHandler ethereumTransactionHandler;
     private final NetworkInfo networkInfo;
     private final OpWorkflowMetrics workflowMetrics;
+    private final AppFeeCharging feeCharging;
 
     @Inject
     public DispatchProcessor(
@@ -92,7 +94,8 @@ public class DispatchProcessor {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final EthereumTransactionHandler ethereumTransactionHandler,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final OpWorkflowMetrics workflowMetrics) {
+            @NonNull final OpWorkflowMetrics workflowMetrics,
+            @NonNull final AppFeeCharging feeCharging) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
@@ -104,6 +107,7 @@ public class DispatchProcessor {
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
         this.networkInfo = requireNonNull(networkInfo);
         this.workflowMetrics = requireNonNull(workflowMetrics);
+        this.feeCharging = requireNonNull(feeCharging);
     }
 
     /**

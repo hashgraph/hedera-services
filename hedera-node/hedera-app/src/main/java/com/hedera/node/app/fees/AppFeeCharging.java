@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
 import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
+import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -57,7 +58,7 @@ public class AppFeeCharging implements FeeCharging {
     }
 
     @Override
-    public Validation validate(
+    public ValidationResult validate(
             @NonNull final Account payer,
             @NonNull final AccountID creatorId,
             @NonNull final Fees fees,
@@ -77,7 +78,7 @@ public class AppFeeCharging implements FeeCharging {
                     payer.accountIdOrThrow(),
                     function,
                     payer,
-                    isDuplicate ? fees : fees.withoutServiceComponent(),
+                    isDuplicate ? fees.withoutServiceComponent() : fees,
                     NOT_INGEST,
                     (category == USER || category == SCHEDULED || category == NODE)
                             ? CHECK_OFFERED_FEE

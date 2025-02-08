@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.new
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,6 +60,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
@@ -83,6 +85,7 @@ import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.node.app.workflows.handle.throttle.ThrottleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
+import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -175,6 +178,9 @@ class DispatchProcessorTest {
     @Mock
     private OpWorkflowMetrics opWorkflowMetrics;
 
+    @Mock
+    private AppFeeCharging feeCharging;
+
     private DispatchProcessor subject;
 
     @BeforeEach
@@ -190,7 +196,8 @@ class DispatchProcessorTest {
                 dispatcher,
                 ethereumTransactionHandler,
                 networkInfo,
-                opWorkflowMetrics);
+                opWorkflowMetrics,
+                feeCharging);
         given(dispatch.stack()).willReturn(stack);
         given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
@@ -201,6 +208,9 @@ class DispatchProcessorTest {
         given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
         given(dispatchValidator.validationReportFor(dispatch))
                 .willReturn(newCreatorError(CREATOR_ACCOUNT_ID, INVALID_PAYER_SIGNATURE));
+        final var creatorInfo = mock(NodeInfo.class);
+        given(dispatch.creatorInfo()).willReturn(creatorInfo);
+        given(creatorInfo.accountId()).willReturn(CREATOR_ACCOUNT_ID);
 
         subject.processDispatch(dispatch);
 

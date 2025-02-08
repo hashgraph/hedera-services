@@ -151,6 +151,13 @@ public record ValidationResult(
     }
 
     /**
+     * Returns true if no errors were found.
+     */
+    public boolean isSuccess() {
+        return creatorError == null && payerError == null;
+    }
+
+    /**
      * Checks if there is a creator error.
      * @return true if there is a creator error. Otherwise, false.
      */

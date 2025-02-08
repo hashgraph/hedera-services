@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,18 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.NOT_INGEST;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newCreatorError;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerDuplicateError;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerError;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newPayerUniqueError;
-import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.newSuccess;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
-import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -63,6 +56,7 @@ public class DispatchValidator {
     private final SolvencyPreCheck solvencyPreCheck;
     private final HederaRecordCache recordCache;
     private final TransactionChecker transactionChecker;
+    private final AppFeeCharging feeCharging;
 
     /**
      * Creates an error reporter with the given dependencies.
@@ -73,12 +67,14 @@ public class DispatchValidator {
      */
     @Inject
     public DispatchValidator(
-            final SolvencyPreCheck solvencyPreCheck,
-            final HederaRecordCache recordCache,
-            final TransactionChecker transactionChecker) {
-        this.solvencyPreCheck = solvencyPreCheck;
-        this.recordCache = recordCache;
-        this.transactionChecker = transactionChecker;
+            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final AppFeeCharging feeCharging) {
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
+        this.recordCache = requireNonNull(recordCache);
+        this.transactionChecker = requireNonNull(transactionChecker);
+        this.feeCharging = requireNonNull(feeCharging);
     }
 
     /**
@@ -133,33 +129,21 @@ public class DispatchValidator {
             @NonNull final DuplicateStatus duplicateStatus,
             @NonNull final Dispatch dispatch) {
         final var creatorId = dispatch.creatorInfo().accountId();
-        try {
-            solvencyPreCheck.checkSolvency(
-                    dispatch.txnInfo().txBody(),
-                    payer.accountIdOrThrow(),
-                    dispatch.txnInfo().functionality(),
-                    payer,
-                    duplicateStatus == DuplicateStatus.NO_DUPLICATE
-                            ? dispatch.fees()
-                            : dispatch.fees().withoutServiceComponent(),
-                    NOT_INGEST,
-                    (dispatch.txnCategory() == USER
-                                    || dispatch.txnCategory() == SCHEDULED
-                                    || dispatch.txnCategory() == NODE)
-                            ? CHECK_OFFERED_FEE
-                            : SKIP_OFFERED_FEE_CHECK);
-        } catch (final InsufficientServiceFeeException e) {
-            return newPayerError(creatorId, payer, e.responseCode(), UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
-        } catch (final InsufficientNonFeeDebitsException e) {
-            return newPayerError(creatorId, payer, e.responseCode(), CAN_PAY_SERVICE_FEE, duplicateStatus);
-        } catch (final PreCheckException e) {
-            // Includes InsufficientNetworkFeeException
-            return newCreatorError(creatorId, e.responseCode());
+        final var chargingResult = feeCharging.validate(
+                payer,
+                creatorId,
+                dispatch.fees(),
+                dispatch.txnInfo().txBody(),
+                duplicateStatus == DuplicateStatus.DUPLICATE,
+                dispatch.txnInfo().functionality(),
+                dispatch.txnCategory());
+        if (!chargingResult.isSuccess()) {
+            return chargingResult;
         }
         return switch (duplicateStatus) {
             case DUPLICATE -> newPayerDuplicateError(creatorId, payer);
             case NO_DUPLICATE -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
-                    ? newSuccess(creatorId, payer)
+                    ? chargingResult
                     : newPayerUniqueError(
                             creatorId, payer, dispatch.preHandleResult().responseCode());
         };

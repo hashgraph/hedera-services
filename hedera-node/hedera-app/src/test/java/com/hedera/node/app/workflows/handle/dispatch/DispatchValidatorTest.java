@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
@@ -81,7 +82,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ValidationReporterTest {
+class DispatchValidatorTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
@@ -117,7 +118,8 @@ class ValidationReporterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new DispatchValidator(solvencyPreCheck, recordCache, transactionChecker);
+        subject = new DispatchValidator(
+                solvencyPreCheck, recordCache, transactionChecker, new AppFeeCharging(solvencyPreCheck));
     }
 
     @Test
