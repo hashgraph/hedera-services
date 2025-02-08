@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static com.hedera.node.app.spi.fees.NoopFeeCharging.NOOP_FEE_CHARGING;
 import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.EMPTY_METADATA;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.TransactionCustomizer.NOOP_TRANSACTION_CUSTOMIZER;
 import static java.util.Collections.emptySet;
@@ -284,7 +285,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 ReversingBehavior.REMOVABLE,
                 transactionCustomizer,
                 EMPTY_METADATA,
-                null);
+                NOOP_FEE_CHARGING);
     }
 
     /**
