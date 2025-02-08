@@ -18,9 +18,11 @@ package com.hedera.node.app.hints;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -106,5 +108,11 @@ public interface ReadableHintsStore {
     @NonNull
     List<HintsKeyPublication> getHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
 
+    /**
+     * Returns the current CRS state.
+     * @return the current CRS state
+     */
     CRSState getCrsState();
+
+    Map<EntityNumber, CrsPublicationTransactionBody> getCrsPublications();
 }

@@ -86,5 +86,9 @@ public interface HintsController {
      */
     void cancelPendingWork();
 
-    void addCrsPublication(final long nodeId, @NonNull CrsPublicationTransactionBody publication);
+    /**
+     * Adds a CRS publication to the controller's state, if the network is still gathering contributions.
+     * @param publication the CRS publication
+     */
+    void addCrsPublication(@NonNull CrsPublicationTransactionBody publication);
 }

@@ -88,25 +88,6 @@ public interface WritableHintsStore extends ReadableHintsStore {
     void setCRSState(@NonNull CRSState crsState);
 
     /**
-     * Sets the initial CRS for the network.
-     *
-     * @param initialCrs              the initial CRS
-     * @param firstContributingNodeId the ID of the first contributing node for updating CRS
-     * @param nextContributionTimeEnd the end of the time window for the next contribution
-     */
-    void putInitialCrs(
-            @NonNull Bytes initialCrs, long firstContributingNodeId, @NonNull Instant nextContributionTimeEnd);
-
-    /**
-     * Updates the CRS for the network. This is called after the CRS to be updated is validated.
-     *
-     * @param updatedCrs              the updated CRS
-     * @param nextContributingNodeId  the ID of the next contributing node for updating CRS
-     * @param nextContributionTimeEnd the end of the time window for the next contribution
-     */
-    void updateCrs(@NonNull Bytes updatedCrs, long nextContributingNodeId, @NonNull Instant nextContributionTimeEnd);
-
-    /**
      * Moves the CRS contribution to be done by the next node in the roster. This is called when the
      * current node did not contribute the CRS in time.
      *

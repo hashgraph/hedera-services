@@ -63,7 +63,7 @@ public class CrsPublicationHandler implements TransactionHandler {
         controllers.getInProgressForNumParties(numNodes).ifPresent(controller -> {
             if (creatorId == hintsStore.getCrsState().nextContributingNodeId()) {
                 hintsStore.addCrsPublication(creatorId, op);
-                controller.addCrsPublication(creatorId, op);
+                controller.addCrsPublication(op);
             }
         });
     }
