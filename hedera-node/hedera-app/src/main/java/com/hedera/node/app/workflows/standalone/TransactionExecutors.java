@@ -272,6 +272,7 @@ public enum TransactionExecutors {
                 bootstrapConfigProvider::getConfiguration,
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
+                () -> componentRef.get().appFeeCharging(),
                 new AppThrottleFactory(
                         configProvider::getConfiguration,
                         () -> state,

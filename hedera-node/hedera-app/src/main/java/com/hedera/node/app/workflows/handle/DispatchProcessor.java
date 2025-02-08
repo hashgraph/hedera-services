@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,7 +218,8 @@ public class DispatchProcessor {
     private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
         dispatch.recordBuilder().status(report.creatorErrorOrThrow());
         dispatch.feeAccumulator()
-                .chargeNetworkFee(report.creatorId(), dispatch.fees().networkFee());
+                .chargeNetworkFee(
+                        dispatch.creatorInfo().accountId(), dispatch.fees().networkFee());
     }
 
     /**

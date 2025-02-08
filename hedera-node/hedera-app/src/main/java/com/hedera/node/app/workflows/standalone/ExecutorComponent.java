@@ -20,6 +20,7 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.platform.PlatformStateModule;
@@ -96,6 +97,8 @@ public interface ExecutorComponent {
     }
 
     Consumer<State> initializer();
+
+    AppFeeCharging appFeeCharging();
 
     DispatchProcessor dispatchProcessor();
 
