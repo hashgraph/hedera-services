@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-module com.swirlds.demo.crypto {
-    requires com.hedera.node.hapi;
-    requires com.hedera.pbj.runtime;
-    requires com.swirlds.common;
-    requires com.swirlds.metrics.api;
-    requires com.swirlds.platform.core.test.fixtures;
-    requires com.swirlds.platform.core;
-    requires com.swirlds.state.api;
-    requires com.swirlds.state.impl;
-    requires java.desktop;
-    requires org.apache.logging.log4j;
-    requires static com.github.spotbugs.annotations;
+package com.swirlds.platform.gossip.modular;
+
+/**
+ * Minimal interface for controlling main sync gossip intake. Used by reconnect protocol to stop gossiping while
+ * resynchronization of all events are done and to resume it after everything is done.
+ */
+public interface GossipController {
+
+    /**
+     * Stop gossiping until {@link #resume()} is called. If called when already paused then this has no effect.
+     */
+    void pause();
+
+    /**
+     * Resume gossiping. Undoes the effect of {@link #pause()}. Should be called exactly once after each call to
+     * {@link #pause()}.
+     */
+    void resume();
 }
