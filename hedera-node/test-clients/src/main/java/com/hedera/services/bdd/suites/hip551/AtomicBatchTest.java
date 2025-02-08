@@ -499,4 +499,56 @@ public class AtomicBatchTest {
                             .signedBy(alis, bob));
         }
     }
+
+    @Nested
+    @DisplayName("Privileged Transactions - POSITIVE")
+    class PrivilegedTransactionsPositive {
+
+        @LeakyHapiTest(requirement = {THROTTLE_OVERRIDES})
+        @DisplayName("Batch containing only privileged transactions")
+        public Stream<DynamicTest> batchContainingOnlyPrivilegedTxn() {
+            final var batchOperator = "batchOperator";
+
+            return hapiTest(
+                    cryptoCreate(batchOperator).balance(FIVE_HBARS),
+                    atomicBatch(fileUpdate(THROTTLE_DEFS)
+                                    .batchKey(batchOperator)
+                                    .noLogging()
+                                    .payingWith(GENESIS)
+                                    .contents(protoDefsFromResource("testSystemFiles/mainnet-throttles.json")
+                                            .toByteArray()))
+                            .payingWith(batchOperator));
+        }
+    }
+
+    @Nested
+    @DisplayName("Fees - POSITIVE")
+    class FeesPositive {
+
+        @HapiTest
+        @Disabled // TODO: enable this, when the fee calculation of inner transactions is implemented
+        @DisplayName("Payer was charged for all transactions")
+        public Stream<DynamicTest> payerWasCharged() {
+            final var batchOperator = "batchOperator";
+            return hapiTest(
+                    cryptoCreate(batchOperator).balance(ONE_HUNDRED_HBARS),
+                    usableTxnIdNamed("innerTxn1").payerId(batchOperator),
+                    usableTxnIdNamed("innerTxn2").payerId(batchOperator),
+                    atomicBatch(
+                                    cryptoCreate("foo")
+                                            .txnId("innerTxn1")
+                                            .batchKey(batchOperator)
+                                            .payingWith(batchOperator),
+                                    cryptoCreate("bar")
+                                            .txnId("innerTxn1")
+                                            .batchKey(batchOperator)
+                                            .payingWith(batchOperator))
+                            .payingWith(batchOperator)
+                            .via("batchTxn"),
+                    // validate the fee charged for the batch txn and the inner txns
+                    validateChargedUsd("batchTxn", 0.001),
+                    validateChargedUsd("innerTxn1", 0.05),
+                    validateChargedUsd("innerTxn2", 0.05));
+        }
+    }
 }
