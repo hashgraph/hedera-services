@@ -28,6 +28,7 @@ import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_ST
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByBlockNumber;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.computeReclampedStakeWeights;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
@@ -84,6 +85,7 @@ import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
@@ -116,6 +118,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.StreamMode;
 import com.hedera.node.internal.network.Network;
@@ -166,6 +169,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -673,6 +677,12 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (diskAddressBook != null) {
             PLATFORM_STATE_SERVICE.setDiskAddressBook(diskAddressBook);
         }
+        final Supplier<Map<Long, Long>> reclampedStakeWeightsSupplier = () -> {
+            final var store = new ReadableStakingInfoStoreImpl(state.getReadableStates(TokenServiceImpl.NAME));
+            return computeReclampedStakeWeights(
+                    store, configProvider.getConfiguration().getConfigData(StakingConfig.class));
+        };
+        PLATFORM_STATE_SERVICE.setReclampedStakeWeights(reclampedStakeWeightsSupplier);
         this.initState = state;
         final var migrationChanges = serviceMigrator.doMigrations(
                 state,
@@ -688,6 +698,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
                 startupNetworks);
         this.initState = null;
         PLATFORM_STATE_SERVICE.clearDiskAddressBook();
+        PLATFORM_STATE_SERVICE.clearReclampedStakeWeights();
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();
         boundaryStateChangeListener.reset();

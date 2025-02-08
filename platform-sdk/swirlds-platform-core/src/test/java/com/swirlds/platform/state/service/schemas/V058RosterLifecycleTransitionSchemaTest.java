@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.service.schemas;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -35,9 +36,12 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,11 +78,15 @@ class V058RosterLifecycleTransitionSchemaTest {
     @Mock
     private Function<WritableStates, WritablePlatformStateStore> platformStateStoreFn;
 
+    @Mock
+    private Supplier<Supplier<Map<Long, Long>>> reclampedStakeWeightsSupplier;
+
     private V058RosterLifecycleTransitionSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V058RosterLifecycleTransitionSchema(() -> addressBook, appVersionFn, platformStateStoreFn);
+        subject = new V058RosterLifecycleTransitionSchema(
+                () -> addressBook, reclampedStakeWeightsSupplier, appVersionFn, platformStateStoreFn);
     }
 
     @Test
@@ -125,11 +133,13 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(ctx.newStates()).willReturn(writableStates);
         given(platformStateStoreFn.apply(writableStates)).willReturn(platformStateStore);
         given(platformStateStore.getAddressBook()).willReturn(addressBook);
+        given(addressBook.iterator()).willReturn(Collections.emptyIterator());
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);
         verify(platformStateStore).setPreviousAddressBook(addressBook);
-        verify(platformStateStore).setAddressBook(addressBook);
+        verify(platformStateStore).setAddressBook(any());
     }
 
     @Test
@@ -140,13 +150,15 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(config.getConfigData(AddressBookConfig.class)).willReturn(addressBookConfig);
         given(addressBookConfig.forceUseOfConfigAddressBook()).willReturn(true);
         given(addressBook.copy()).willReturn(addressBook);
+        given(addressBook.iterator()).willReturn(Collections.emptyIterator());
         given(ctx.newStates()).willReturn(writableStates);
         given(platformStateStoreFn.apply(writableStates)).willReturn(platformStateStore);
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);
         verify(platformStateStore).setPreviousAddressBook(null);
-        verify(platformStateStore).setAddressBook(addressBook);
+        verify(platformStateStore).setAddressBook(any());
     }
 
     @Test
@@ -163,6 +175,7 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(matchingAddress.getNodeId()).willReturn(matchingNodeId);
         final var newAddress = mock(Address.class);
         given(newAddress.getNodeId()).willReturn(NodeId.of(43L));
+        given(newAddress.copySetWeight(anyLong())).willReturn(newAddress);
         given(addressBook.iterator())
                 .willReturn(List.of(matchingAddress, newAddress).iterator());
         given(ctx.newStates()).willReturn(writableStates);
@@ -172,8 +185,9 @@ class V058RosterLifecycleTransitionSchemaTest {
         given(currentBook.contains(matchingNodeId)).willReturn(true);
         given(currentBook.getAddress(matchingNodeId)).willReturn(matchingAddress);
         given(matchingAddress.getWeight()).willReturn(matchingWeight);
-        given(matchingAddress.copySetWeight(matchingWeight)).willReturn(matchingAddress);
+        given(matchingAddress.copySetWeight(anyLong())).willReturn(matchingAddress);
         given(platformStateStore.getAddressBook()).willReturn(currentBook);
+        given(reclampedStakeWeightsSupplier.get()).willReturn(Map::of);
         subject.restart(ctx);
         verify(platformStateStore).bulkUpdate(captor.capture());
         captor.getValue().accept(platformStateStore);

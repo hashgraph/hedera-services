@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.NodeStake;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
@@ -161,7 +162,7 @@ public class EndOfStakingPeriodUpdater {
             final var pendingRewards = (nodeInfo.stakeRewardStart() - nodeInfo.unclaimedStakeRewardStart())
                     / HBARS_TO_TINYBARS
                     * nodeRewardRate;
-            final var newStakes = computeNewStakes(nodeInfo);
+            final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
             log.info(
                     "For node{}, the tb/hbar reward rate was {} for {} pending, with stake reward start {} -> {}",
                     nodeId,
@@ -249,6 +250,36 @@ public class EndOfStakingPeriodUpdater {
                 .memo(END_OF_PERIOD_MEMO)
                 .exchangeRate(exchangeRates)
                 .status(SUCCESS);
+    }
+
+    /**
+     * Given a {@link ReadableStakingInfoStore}, computes the new weights for all nodes based on their stakes,
+     * re-clamped to the {@code [minStake, maxStake]} range in the given {@link StakingConfig}.
+     * @param store the {@link ReadableStakingInfoStore} to compute the new weights for
+     * @param stakingConfig the {@link StakingConfig} to use for the re-clamping
+     * @return a map of node IDs to their new weights
+     */
+    public static Map<Long, Long> computeReclampedStakeWeights(
+            @NonNull final ReadableStakingInfoStore store, @NonNull final StakingConfig stakingConfig) {
+        long totalStake = 0;
+        for (final long nodeId : store.getAll()) {
+            final var nodeInfo = requireNonNull(store.get(nodeId));
+            if (!nodeInfo.deleted()) {
+                final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
+                totalStake += newStakes.stake();
+            }
+        }
+        final var totalWeight = stakingConfig.sumOfConsensusWeights();
+        final Map<Long, Long> weights = new HashMap<>();
+        for (final long nodeId : store.getAll()) {
+            final var nodeInfo = requireNonNull(store.get(nodeId));
+            if (!nodeInfo.deleted()) {
+                final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
+                final long weight = scaleStakeToWeight(newStakes.stake(), totalStake, totalWeight);
+                weights.put(nodeId, weight);
+            }
+        }
+        return weights;
     }
 
     /**

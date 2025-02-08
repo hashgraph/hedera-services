@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A service that provides the schema for the platform state, used by {@link MerkleStateRoot}
@@ -57,6 +59,12 @@ public enum PlatformStateService implements Service {
      */
     @Deprecated
     private static final AtomicReference<AddressBook> DISK_ADDRESS_BOOK = new AtomicReference<>();
+
+    /**
+     * Temporary access to the re-clamped stake weights used in 0.58 upgrade specifically.
+     */
+    private static final AtomicReference<Supplier<Map<Long, Long>>> RECLAMPED_STAKE_WEIGHTS = new AtomicReference<>();
+
     /**
      * The schemas to register with the {@link SchemaRegistry}.
      */
@@ -65,6 +73,7 @@ public enum PlatformStateService implements Service {
                     .apply(config)),
             new V058RosterLifecycleTransitionSchema(
                     DISK_ADDRESS_BOOK::get,
+                    RECLAMPED_STAKE_WEIGHTS::get,
                     config -> requireNonNull(APP_VERSION_FN.get()).apply(config),
                     WritablePlatformStateStore::new));
 
@@ -102,6 +111,20 @@ public enum PlatformStateService implements Service {
      */
     public void clearDiskAddressBook() {
         DISK_ADDRESS_BOOK.set(null);
+    }
+
+    /**
+     * Sets the re-clamped stake weights to the given map.
+     */
+    public void setReclampedStakeWeights(@NonNull final Supplier<Map<Long, Long>> reclampedStakeWeights) {
+        RECLAMPED_STAKE_WEIGHTS.set(requireNonNull(reclampedStakeWeights));
+    }
+
+    /**
+     * Clears the re-clamped stake weights.
+     */
+    public void clearReclampedStakeWeights() {
+        RECLAMPED_STAKE_WEIGHTS.set(null);
     }
 
     /**
