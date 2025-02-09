@@ -39,7 +39,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -54,7 +53,6 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class DispatchValidator {
-    private final SolvencyPreCheck solvencyPreCheck;
     private final HederaRecordCache recordCache;
     private final TransactionChecker transactionChecker;
     private final AppFeeCharging feeCharging;
@@ -62,17 +60,14 @@ public class DispatchValidator {
     /**
      * Creates an error reporter with the given dependencies.
      *
-     * @param solvencyPreCheck the solvency pre-check
      * @param recordCache the record cache
      * @param transactionChecker the transaction checker
      */
     @Inject
     public DispatchValidator(
-            @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final TransactionChecker transactionChecker,
             @NonNull final AppFeeCharging feeCharging) {
-        this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.recordCache = requireNonNull(recordCache);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.feeCharging = requireNonNull(feeCharging);

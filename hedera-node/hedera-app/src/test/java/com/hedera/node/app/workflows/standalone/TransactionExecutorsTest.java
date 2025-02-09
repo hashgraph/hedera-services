@@ -455,7 +455,7 @@ public class TransactionExecutorsTest {
                         new ContractServiceImpl(appContext, NO_OP_METRICS),
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
-                        new ScheduleServiceImpl(),
+                        new ScheduleServiceImpl(appContext),
                         new TokenServiceImpl(),
                         new UtilServiceImpl(),
                         new RecordCacheService(),

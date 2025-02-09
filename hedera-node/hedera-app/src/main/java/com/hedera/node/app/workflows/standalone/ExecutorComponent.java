@@ -26,6 +26,7 @@ import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.platform.PlatformStateModule;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.spi.throttle.Throttle;
@@ -68,6 +69,9 @@ public interface ExecutorComponent {
     interface Builder {
         @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
+
+        @BindsInstance
+        Builder scheduleService(ScheduleService scheduleService);
 
         @BindsInstance
         Builder contractServiceImpl(ContractServiceImpl contractService);

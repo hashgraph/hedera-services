@@ -298,7 +298,7 @@ public class ChildDispatchFactory {
                 dispatchMetadata,
                 transactionChecker);
         final var childFees =
-                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+                computeChildFees(payerId, dispatchHandleContext, category, topLevelFunction, txnInfo);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
                 txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
         if (congestionMultiplier > 1) {
@@ -332,11 +332,9 @@ public class ChildDispatchFactory {
             @NonNull final AccountID payerId,
             @NonNull final FeeContext feeContext,
             @NonNull final HandleContext.TransactionCategory childCategory,
-            @NonNull final TransactionDispatcher dispatcher,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final TransactionInfo childTxnInfo) {
         return switch (childCategory) {
-            case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
             case PRECEDING -> {
                 if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
                     yield Fees.FREE;

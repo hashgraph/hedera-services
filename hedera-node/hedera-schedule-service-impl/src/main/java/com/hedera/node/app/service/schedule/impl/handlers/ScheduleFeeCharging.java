@@ -14,24 +14,34 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.fees;
+package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.spi.fees.FeeCharging;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
- * A fee charging strategy that validates all scenarios and charges no fees.
+ * A fee charging strategy that delegates to the base fee charging strategy; but <b>only</b> for the service
+ * component of the fees in each charging scenario.
  */
-public enum NoopFeeCharging implements FeeCharging {
-    NOOP_FEE_CHARGING;
+@Singleton
+public class ScheduleFeeCharging implements FeeCharging {
+    private final ScheduleService service;
+
+    @Inject
+    public ScheduleFeeCharging(@NonNull final ScheduleService service) {
+        this.service = requireNonNull(service);
+    }
 
     @Override
     public Validation validate(
@@ -48,7 +58,8 @@ public enum NoopFeeCharging implements FeeCharging {
         requireNonNull(body);
         requireNonNull(function);
         requireNonNull(category);
-        return PassedValidation.INSTANCE;
+        return service.baseFeeCharging()
+                .validate(payer, creatorId, fees.onlyServiceComponent(), body, isDuplicate, function, category);
     }
 
     @Override
@@ -56,10 +67,6 @@ public enum NoopFeeCharging implements FeeCharging {
         requireNonNull(ctx);
         requireNonNull(validation);
         requireNonNull(fees);
-    }
-
-    private record PassedValidation(boolean creatorDidDueDiligence, @Nullable ResponseCodeEnum maybeErrorStatus)
-            implements Validation {
-        private static final PassedValidation INSTANCE = new PassedValidation(true, null);
+        service.baseFeeCharging().charge(ctx, validation, fees.onlyServiceComponent());
     }
 }
