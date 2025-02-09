@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -69,7 +68,7 @@ public class StakeInfoHelper {
         requireNonNull(nodeId);
         requireNonNull(stakingInfoStore);
 
-        final var currentStakingInfo = stakingInfoStore.get(nodeId);
+        final var currentStakingInfo = stakingInfoStore.getForModify(nodeId);
         final var currentStakeRewardStart = currentStakingInfo.stakeRewardStart();
         final var newUnclaimedStakeRewardStart = currentStakingInfo.unclaimedStakeRewardStart() + amount;
 
@@ -196,7 +195,7 @@ public class StakeInfoHelper {
         requireNonNull(rewardsStore);
         final var preUpgradeNodeIds = infoStore.getAll();
         preUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
-            final var stakingInfo = requireNonNull(infoStore.get(nodeId));
+            final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
             if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
                 infoStore.put(
                         nodeId,
@@ -219,11 +218,9 @@ public class StakeInfoHelper {
             @NonNull final WritableStakingInfoStore store,
             @NonNull final List<NodeInfo> nodeInfos,
             @NonNull final Configuration config) {
-        final var numberOfNodesInAddressBook = nodeInfos.size();
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+        final long maxStakePerNode = stakingConfig.maxStake();
         for (final var nodeId : nodeInfos) {
             final var stakingInfo = store.get(nodeId.nodeId());
             if (stakingInfo != null) {
