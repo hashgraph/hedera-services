@@ -18,13 +18,11 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId.NO;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
@@ -58,8 +56,6 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.FeeCharging;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -297,8 +293,7 @@ public class ChildDispatchFactory {
                 childFeeAccumulator,
                 dispatchMetadata,
                 transactionChecker);
-        final var childFees =
-                computeChildFees(payerId, dispatchHandleContext, category, topLevelFunction, txnInfo);
+        final var childFees = dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
                 txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
         if (congestionMultiplier > 1) {
@@ -326,26 +321,6 @@ public class ChildDispatchFactory {
                 preHandleResult,
                 consensusThrottling,
                 customFeeCharging);
-    }
-
-    private static Fees computeChildFees(
-            @NonNull final AccountID payerId,
-            @NonNull final FeeContext feeContext,
-            @NonNull final HandleContext.TransactionCategory childCategory,
-            @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final TransactionInfo childTxnInfo) {
-        return switch (childCategory) {
-            case PRECEDING -> {
-                if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
-                    yield Fees.FREE;
-                } else {
-                    yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
-                }
-            }
-            case USER, NODE -> throw new IllegalStateException(
-                    "Should not dispatch child with user transaction category");
-            default -> feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
-        };
     }
 
     /**

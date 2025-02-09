@@ -36,6 +36,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -106,7 +107,8 @@ public class HandleSystemContractOperations implements SystemContractOperations 
                 // transaction's remaining gas, so there is no more charging to do in the DispatchProcessor;
                 // FUTURE - make the custom implementation here _directly_ deduct from remaining gas without
                 // the manual precomputation upstream from here
-                NOOP_FEE_CHARGING));
+                NOOP_FEE_CHARGING,
+                PropagateFeeChargingStrategy.YES));
     }
 
     @Override

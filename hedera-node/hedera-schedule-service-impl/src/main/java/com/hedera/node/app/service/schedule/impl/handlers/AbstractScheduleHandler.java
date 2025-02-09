@@ -46,6 +46,7 @@ import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -288,7 +289,8 @@ public abstract class AbstractScheduleHandler {
                             ScheduleStreamBuilder.class,
                             StakingRewards.ON,
                             DispatchOptions.UsePresetTxnId.NO,
-                            customFeeCharging))
+                            customFeeCharging,
+                            PropagateFeeChargingStrategy.NO))
                     .scheduleRef(schedule.scheduleId());
             context.savepointStack()
                     .getBaseBuilder(ScheduleStreamBuilder.class)

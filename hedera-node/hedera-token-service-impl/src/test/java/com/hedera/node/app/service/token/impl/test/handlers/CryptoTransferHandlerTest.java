@@ -627,6 +627,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         givenTxn(txnBody, payerId);
 
+        given(handleContext.dispatchMetadata()).willReturn(DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
@@ -676,6 +677,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
         givenTxn(txnBody, payerId);
 
+        given(handleContext.dispatchMetadata()).willReturn(DispatchMetadata.EMPTY_METADATA);
         given(handleContext.dispatch(
                         argThat(options -> CryptoCreateStreamBuilder.class.equals(options.streamBuilderType())
                                 && payerId.equals(options.payerId()))))
