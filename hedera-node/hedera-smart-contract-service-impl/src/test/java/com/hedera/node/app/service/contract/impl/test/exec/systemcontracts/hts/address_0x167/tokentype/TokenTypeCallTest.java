@@ -23,8 +23,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x167.tokentype.TokenTypeCall;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x167.tokentype.TokenTypeTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.address_0x167.TokenTypeTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
