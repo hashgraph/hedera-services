@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2023-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -236,6 +236,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Write Artifact Version Descriptor
+        if: ${{ steps.baseline.outputs.exists == 'false' && !failure() && !cancelled() }}
         run: |
           printf "VERSION=%s\nCOMMIT=%s\nDATE=%s" "$(./gradlew -q showVersion)" "$(git log -1 --format='%H' | cut -c1-8)" "$(date -u)" | tee "${{ github.workspace }}/${{ env.DOCKER_CONTEXT_PATH }}/sdk/VERSION"
 
