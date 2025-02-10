@@ -140,12 +140,23 @@ public class TurtleBuilder {
         return this;
     }
 
+    /**
+     * Set node output directory.
+     *
+     * @param testDirectory the directory where node output will be stored, like saved state and so on
+     * @return this builder
+     */
     @NonNull
     public TurtleBuilder withTestDirectory(@NonNull final Path testDirectory) {
         this.testDirectory = testDirectory;
         return this;
     }
 
+    /**
+     * Get node output directory.
+     *
+     * @return the directory where the node output will be stored, like saved state and so on
+     */
     @NonNull
     Path getTestDirectory() {
         return testDirectory;

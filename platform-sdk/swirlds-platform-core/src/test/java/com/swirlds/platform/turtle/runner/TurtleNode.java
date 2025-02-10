@@ -82,7 +82,7 @@ public class TurtleNode {
      * @param addressBook the address book for the network
      * @param privateKeys the private keys for this node
      * @param network     the simulated network
-     * @param testDirectory the directory for test files
+     * @param testDirectory the directory where the node output will be stored, like saved state and so on
      */
     TurtleNode(
             @NonNull final Randotron randotron,

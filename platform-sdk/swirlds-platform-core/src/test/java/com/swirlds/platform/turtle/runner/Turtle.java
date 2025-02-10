@@ -127,7 +127,7 @@ public class Turtle {
                     addressBook,
                     addressBookBuilder.getPrivateKeys(nodeId),
                     network,
-                    builder.getTestDirectory()));
+                    builder.getTestDirectory().resolve("node-" + nodeId.id())));
         }
     }
 
