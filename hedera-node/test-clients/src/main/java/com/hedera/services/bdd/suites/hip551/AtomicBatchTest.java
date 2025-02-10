@@ -391,7 +391,10 @@ public class AtomicBatchTest {
                             .signedByPayerAnd(batchOperator)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
                     // create a successful batch, containing the second (non-executed) transaction
-                    atomicBatch(cryptoCreate("bar").txnId(secondTxnId).payingWith(payer)));
+                    atomicBatch(cryptoCreate("bar")
+                            .txnId(secondTxnId)
+                            .payingWith(payer)
+                            .batchKey(batchOperator)));
         }
 
         @HapiTest
@@ -528,10 +531,7 @@ public class AtomicBatchTest {
                     createHollowAccountFrom(alias),
                     getAliasedAccountInfo(alias).isHollow(),
                     atomicBatch(
-                                    cryptoCreate("foo")
-                                            .payingWith(alias)
-                                            .batchKey(batchOperator)
-                                            .batchKey(batchOperator),
+                                    cryptoCreate("foo").payingWith(alias).batchKey(batchOperator),
                                     cryptoCreate("bar")
                                             .alias(ByteString.EMPTY)
                                             .payingWith(alias)
