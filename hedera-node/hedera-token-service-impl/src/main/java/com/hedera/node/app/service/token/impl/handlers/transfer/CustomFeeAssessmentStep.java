@@ -23,7 +23,7 @@ import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AssessmentResult.HBAR_TOKEN_ID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.workflows.HandleContext.MetaDataKey.TRANSACTION_FIXED_FEE;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.Type.TRANSACTION_FIXED_FEE;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -141,10 +141,12 @@ public class CustomFeeAssessmentStep {
         final var result = assessFees(tokenStore, tokenRelStore, config, accountStore, autoCreationTest);
 
         // check if the current operation is a dispatch for paying a transaction fixed fee
-        final var txnFeeMetadata =
-                transferContext.getHandleContext().dispatchMetadata().getMetadata(TRANSACTION_FIXED_FEE);
+        final var txnFeeMetadata = transferContext
+                .getHandleContext()
+                .dispatchMetadata()
+                .getMetadata(TRANSACTION_FIXED_FEE, FixedCustomFee.class);
         if (txnFeeMetadata.isPresent()) {
-            final var transactionFixedFee = (FixedCustomFee) txnFeeMetadata.get();
+            final var transactionFixedFee = txnFeeMetadata.get();
             final var payer = transferContext.getHandleContext().payer();
             final var assessmentResult = new AssessmentResult(emptyList(), emptyList());
 
