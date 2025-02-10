@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,6 +138,16 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     public int compareTo(@NonNull final NodeId other) {
         Objects.requireNonNull(other, "NodeId cannot be null");
         return Long.compare(this.id, other.id);
+    }
+
+    /**
+     *  Returns the string representing the name of this {@link NodeId} using convention
+     * "nodeX" where X is {@link NodeId#id()} + 1
+     * @return "nodeX" where X = this.id + 1. E.g.: {@link NodeId#FIRST_NODE_ID} is "node1".
+     */
+    @NonNull
+    public String nameString() {
+        return "node" + (id + 1);
     }
 
     /**
