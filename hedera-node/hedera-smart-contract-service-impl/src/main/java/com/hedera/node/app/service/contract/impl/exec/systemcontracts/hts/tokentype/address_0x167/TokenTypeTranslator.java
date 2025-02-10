@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.address_0x16c.balanceof;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.address_0x167;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_16C_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_167_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeCall;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Category;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Modifier;
@@ -34,46 +36,44 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Translates {@code balanceOf} calls to the HTS system contract.
+ * Translates {@code getTokenType()} calls to the HTS system contract.
  */
 @Singleton
-public class BalanceOfTranslator extends AbstractCallTranslator<HtsCallAttempt> {
-    /**
-     * Selector for balanceOf(address) method.
-     */
-    public static final SystemContractMethod BALANCE_OF_16C = SystemContractMethod.declare(
-                    "balanceOf(address)", ReturnTypes.INT)
+public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> {
+    /** Selector for getTokenType(address) method. */
+    public static final SystemContractMethod TOKEN_TYPE = SystemContractMethod.declare(
+                    "getTokenType(address)", ReturnTypes.RESPONSE_CODE_INT32)
             .withModifier(Modifier.VIEW)
             .withCategory(Category.TOKEN_QUERY)
-            .withSupportedAddress(HTS_16C_CONTRACT_ID);
+            .withSupportedAddress(HTS_167_CONTRACT_ID);
 
     /**
      * Default constructor for injection.
      */
     @Inject
-    public BalanceOfTranslator(
+    public TokenTypeTranslator(
             @NonNull final SystemContractMethodRegistry systemContractMethodRegistry,
             @NonNull final ContractMetrics contractMetrics) {
         // Dagger2
         super(SystemContractMethod.SystemContract.HTS, systemContractMethodRegistry, contractMetrics);
 
-        registerMethods(BALANCE_OF_16C);
+        registerMethods(TOKEN_TYPE);
+    }
+
+    @Override
+    public @NonNull Optional<SystemContractMethod> identifyMethod(@NonNull final HtsCallAttempt attempt) {
+        requireNonNull(attempt);
+        return attempt.isMethod(TOKEN_TYPE);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public BalanceOfCall callFrom(@NonNull final HtsCallAttempt attempt) {
-        final Address owner =
-                BALANCE_OF_16C.decodeCall(attempt.input().toArrayUnsafe()).get(0);
-        return new BalanceOfCall(
-                attempt.enhancement(), attempt.systemContractGasCalculator(), attempt.redirectToken(), owner);
-    }
-
-    @Override
-    public @NonNull Optional<SystemContractMethod> identifyMethod(@NonNull final HtsCallAttempt attempt) {
-        requireNonNull(attempt);
-        return attempt.isMethod(BALANCE_OF_16C);
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
+        final var args = TOKEN_TYPE.decodeCall(attempt.input().toArrayUnsafe());
+        final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
+        return new TokenTypeCall(
+                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
     }
 }

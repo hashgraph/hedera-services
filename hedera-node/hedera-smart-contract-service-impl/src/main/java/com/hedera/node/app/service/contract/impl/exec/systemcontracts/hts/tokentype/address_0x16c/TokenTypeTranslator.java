@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype;
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.address_0x16c;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_16C_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 import static java.util.Objects.requireNonNull;
 
@@ -24,6 +25,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Abs
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.tokentype.TokenTypeCall;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Category;
 import com.hedera.node.app.service.contract.impl.exec.utils.SystemContractMethod.Modifier;
@@ -42,7 +44,8 @@ public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     public static final SystemContractMethod TOKEN_TYPE = SystemContractMethod.declare(
                     "getTokenType(address)", ReturnTypes.RESPONSE_CODE_INT32)
             .withModifier(Modifier.VIEW)
-            .withCategory(Category.TOKEN_QUERY);
+            .withCategory(Category.TOKEN_QUERY)
+            .withSupportedAddress(HTS_16C_CONTRACT_ID);
 
     /**
      * Default constructor for injection.
@@ -70,7 +73,6 @@ public class TokenTypeTranslator extends AbstractCallTranslator<HtsCallAttempt> 
     public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var args = TOKEN_TYPE.decodeCall(attempt.input().toArrayUnsafe());
         final var token = attempt.linkedToken(fromHeadlongAddress(args.get(0)));
-        return new TokenTypeCall(
-                attempt.systemContractGasCalculator(), attempt.enhancement(), attempt.isStaticCall(), token);
+        return new TokenTypeCall(attempt.systemContractGasCalculator(), attempt.enhancement(), false, token);
     }
 }

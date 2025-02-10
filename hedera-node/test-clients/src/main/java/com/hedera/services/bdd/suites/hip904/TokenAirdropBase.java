@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.hips.hip904;
+package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;

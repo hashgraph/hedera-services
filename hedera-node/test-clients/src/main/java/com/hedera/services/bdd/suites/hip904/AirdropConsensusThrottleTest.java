@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.hips.hip904;
+package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;

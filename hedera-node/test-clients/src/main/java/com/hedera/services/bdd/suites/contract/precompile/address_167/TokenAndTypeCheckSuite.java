@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.contract.precompile;
+package com.hedera.services.bdd.suites.contract.precompile.address_167;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_IS_TOKEN;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecContract.VARIANT_167;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -47,6 +48,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -73,27 +75,31 @@ public class TokenAndTypeCheckSuite {
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                uploadInitCode(Optional.empty(), VARIANT_167, TOKEN_AND_TYPE_CHECK_CONTRACT),
                 contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
                 withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCallLocal(
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         IS_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .logged()
                                 .has(resultWith()
                                         .resultViaFunctionName(
+                                                Optional.of(VARIANT_167),
                                                 IS_TOKEN,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                 isLiteralResult(new Object[] {Boolean.TRUE}))),
                         contractCallLocal(
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .logged()
                                 .has(resultWith()
                                         .resultViaFunctionName(
+                                                Optional.of(VARIANT_167),
                                                 GET_TOKEN_TYPE,
                                                 TOKEN_AND_TYPE_CHECK_CONTRACT,
                                                 isLiteralResult(new Object[] {BigInteger.valueOf(0)}))))));
@@ -114,11 +120,12 @@ public class TokenAndTypeCheckSuite {
                         .initialSupply(1_000)
                         .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
                 tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-                uploadInitCode(TOKEN_AND_TYPE_CHECK_CONTRACT),
+                uploadInitCode(Optional.empty(), VARIANT_167, TOKEN_AND_TYPE_CHECK_CONTRACT),
                 contractCreate(TOKEN_AND_TYPE_CHECK_CONTRACT),
                 withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         IS_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))
@@ -126,6 +133,7 @@ public class TokenAndTypeCheckSuite {
                                 .payingWith(ACCOUNT)
                                 .gas(GAS_TO_OFFER),
                         contractCall(
+                                        Optional.of(VARIANT_167),
                                         TOKEN_AND_TYPE_CHECK_CONTRACT,
                                         GET_TOKEN_TYPE,
                                         HapiParserUtil.asHeadlongAddress(notAnAddress))
