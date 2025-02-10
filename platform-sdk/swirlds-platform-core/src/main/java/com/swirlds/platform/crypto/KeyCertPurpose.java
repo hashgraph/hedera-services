@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.crypto;
 
+import com.swirlds.common.platform.NodeId;
+
 /**
  * Denotes which of the three purposes a key or certificate serves
  */
@@ -31,12 +33,11 @@ public enum KeyCertPurpose {
     }
 
     /**
-     * @param memberName
-     * 		the name of the required member
+     * @param nodeId the node identifier
      * @return the name of the key or certificate used in a KeyStore for this member and key type
      */
-    public String storeName(final String memberName) {
-        return prefix + "-" + memberName;
+    public String storeName(final NodeId nodeId) {
+        return prefix + "-" + nodeId.nameString();
     }
 
     /**
