@@ -18,7 +18,6 @@ package com.hedera.node.app.blocks.impl.streaming;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
@@ -34,6 +33,7 @@ import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
 import io.helidon.webclient.grpc.GrpcClientProtocolConfig;
 import io.helidon.webclient.grpc.GrpcServiceClient;
 import io.helidon.webclient.grpc.GrpcServiceDescriptor;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -176,7 +176,7 @@ public class BlockNodeConnectionManager {
                 try {
                     protocBlockItems.add(
                             com.hedera.hapi.block.stream.protoc.BlockItem.parseFrom(batchItem.toByteArray()));
-                } catch (InvalidProtocolBufferException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });
