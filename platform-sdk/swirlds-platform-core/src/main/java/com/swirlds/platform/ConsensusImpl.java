@@ -360,7 +360,7 @@ public class ConsensusImpl implements Consensus {
                 continue;
             }
 
-            if (insertedEvent.isConsensus() || rounds.isAncient(insertedEvent)) {
+            if (insertedEvent.isConsensus() || ancient(insertedEvent)) {
                 insertedEvent.clearMetadata();
 
                 // all events that are consensus or ancient have a round of -infinity
@@ -744,7 +744,7 @@ public class ConsensusImpl implements Consensus {
         final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
 
         final long nonAncientThreshold = ancientMode.selectIndicator(
-                rounds.getMinGenerationNonAncient(),
+                rounds.getAncientThreshold(),
                 Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
 
         final long nonExpiredThreshold = ancientMode.selectIndicator(
@@ -877,7 +877,7 @@ public class ConsensusImpl implements Consensus {
     }
 
     private boolean nonConsensusNonAncient(@NonNull final EventImpl e) {
-        return !e.isConsensus() && !rounds.isAncient(e);
+        return !e.isConsensus() && !ancient(e);
     }
 
     private @Nullable EventImpl timedStronglySeeP(@Nullable final EventImpl x, final long m) {
@@ -937,7 +937,7 @@ public class ConsensusImpl implements Consensus {
      * @return true if the event is ancient
      */
     private boolean ancient(@Nullable final EventImpl x) {
-        return x == null || x.getGeneration() < rounds.getMinGenerationNonAncient();
+        return x == null || x.getGeneration() < rounds.getAncientThreshold();
     }
 
     /**
