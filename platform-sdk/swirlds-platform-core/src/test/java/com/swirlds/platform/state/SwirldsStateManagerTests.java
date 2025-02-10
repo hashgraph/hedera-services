@@ -138,10 +138,7 @@ class SwirldsStateManagerTests {
                 new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
-        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-        when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
-
-        platformStateFacade.updatePlatformState(state, platformState);
+        platformStateFacade.setCreationSoftwareVersionTo(state, new BasicSoftwareVersion(nextInt(1, 100)));
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
