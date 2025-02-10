@@ -329,7 +329,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                     """
                     # Block stream configuration
                     blockStream.writerMode=FILE_AND_GRPC
-                    blockStream.streamToBlockNodes=true
                     blockStream.shutdownNodeOnNoBlockNodes=true
                     """;
 

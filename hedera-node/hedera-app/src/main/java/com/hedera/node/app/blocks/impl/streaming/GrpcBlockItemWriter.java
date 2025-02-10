@@ -24,7 +24,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,7 +36,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     private final BlockNodeConnectionManager connectionManager;
 
     private final Map<Long, BlockState> blockStates = new ConcurrentHashMap<>();
-    private final ReentrantLock blockStateLock = new ReentrantLock();
     private volatile BlockState currentBlock;
 
     public GrpcBlockItemWriter(BlockNodeConnectionManager connectionManager) {
@@ -48,27 +46,17 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     public void openBlock(long blockNumber) {
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
 
-        blockStateLock.lock();
-        try {
-            currentBlock = BlockState.from(blockNumber);
-            blockStates.put(blockNumber, currentBlock);
-            logger.info("Started new block in GrpcBlockItemWriter {}", blockNumber);
-        } finally {
-            blockStateLock.unlock();
-        }
+        currentBlock = BlockState.from(blockNumber);
+        blockStates.put(blockNumber, currentBlock);
+        logger.info("Started new block in GrpcBlockItemWriter {}", blockNumber);
     }
 
     @Override
     public BlockItemWriter writePbjItem(@NonNull Bytes bytes) {
-        blockStateLock.lock();
-        try {
-            if (currentBlock == null) {
-                throw new IllegalStateException("Received block item before opening block");
-            }
-            currentBlock.itemBytes().add(bytes);
-        } finally {
-            blockStateLock.unlock();
+        if (currentBlock == null) {
+            throw new IllegalStateException("Received block item before opening block");
         }
+        currentBlock.itemBytes().add(bytes);
         return this;
     }
 
@@ -84,9 +72,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void closeBlock() {
-        // At this point the block proof has been written to the GrpcBlockItemWriter
-        blockStateLock.lock();
-
         if (currentBlock == null) {
             throw new IllegalStateException("Received close block before opening block");
         }
@@ -106,7 +91,6 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
         } finally {
             // Clean up the block state after streaming
             blockStates.remove(blockNumber);
-            blockStateLock.unlock();
         }
     }
 }

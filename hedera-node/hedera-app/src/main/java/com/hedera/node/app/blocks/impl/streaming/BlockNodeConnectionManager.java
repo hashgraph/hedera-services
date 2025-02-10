@@ -39,7 +39,6 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +49,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,16 +91,11 @@ public class BlockNodeConnectionManager {
     private void establishConnections() {
         logger.info("Establishing connections to block nodes");
 
-        // Get all non-preferred nodes we haven't connected to yet
         List<BlockNodeConfig> availableNodes = blockNodeConfigurations.getAllNodes().stream()
                 .filter(node -> !activeConnections.containsKey(node))
                 .filter(node -> !nodesInBackoff.contains(node))
-                .collect(Collectors.toList());
+                .toList();
 
-        // Shuffle the list
-        Collections.shuffle(availableNodes);
-
-        // Take up to availableNonPreferredSlots nodes
         availableNodes.forEach(this::connectToNode);
     }
 
