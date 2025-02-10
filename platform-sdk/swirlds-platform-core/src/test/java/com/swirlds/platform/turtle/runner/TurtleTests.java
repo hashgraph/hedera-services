@@ -26,7 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 class TurtleTests {
 
     @TempDir
-    Path testDirectory;
+    Path outputDirectory;
 
     /**
      * Simulate a turtle network for 5 minutes.
@@ -51,7 +51,7 @@ class TurtleTests {
                 .withNodeCount(4)
                 .withSimulationGranularity(Duration.ofMillis(10))
                 .withTimeReportingEnabled(true)
-                .withTestDirectory(testDirectory)
+                .withOutputDirectory(outputDirectory)
                 .build();
 
         turtle.start();

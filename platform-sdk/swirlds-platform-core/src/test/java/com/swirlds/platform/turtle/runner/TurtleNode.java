@@ -82,7 +82,7 @@ public class TurtleNode {
      * @param addressBook the address book for the network
      * @param privateKeys the private keys for this node
      * @param network     the simulated network
-     * @param testDirectory the directory where the node output will be stored, like saved state and so on
+     * @param outputDirectory the directory where the node output will be stored, like saved state and so on
      */
     TurtleNode(
             @NonNull final Randotron randotron,
@@ -91,13 +91,13 @@ public class TurtleNode {
             @NonNull final AddressBook addressBook,
             @NonNull final KeysAndCerts privateKeys,
             @NonNull final SimulatedNetwork network,
-            @NonNull final Path testDirectory) {
+            @NonNull final Path outputDirectory) {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
-                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
-                .withValue(FileSystemManagerConfig_.ROOT_PATH, testDirectory.toString())
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, outputDirectory.toString())
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, outputDirectory.toString())
                 .getOrCreateConfig();
 
         setupGlobalMetrics(configuration);
