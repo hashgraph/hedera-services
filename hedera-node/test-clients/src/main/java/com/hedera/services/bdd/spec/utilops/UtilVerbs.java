@@ -2018,14 +2018,17 @@ public class UtilVerbs {
     public static HapiSpecOperation validateRecordTransactionFees(HapiSpec spec, String txn) {
         var shard = spec.startupProperties().getLong("hedera.shard");
         var realm = spec.startupProperties().getLong("hedera.realm");
+        var fundingAccount = spec.startupProperties().getLong("ledger.fundingAccount");
+        var stakingRewardAccount = spec.startupProperties().getLong("accounts.stakingRewardAccount");
+        var nodeRewardAccount = spec.startupProperties().getLong("accounts.nodeRewardAccount");
 
         return validateRecordTransactionFees(
                 txn,
                 Set.of(
                         asAccount(String.format("%s.%s.3", shard, realm)),
-                        asAccount(String.format("%s.%s.98", shard, realm)),
-                        asAccount(String.format("%s.%s.800", shard, realm)),
-                        asAccount(String.format("%s.%s.801", shard, realm))));
+                        asAccount(String.format("%s.%s.%s", shard, realm, fundingAccount)),
+                        asAccount(String.format("%s.%s.%s", shard, realm, stakingRewardAccount)),
+                        asAccount(String.format("%s.%s.%s", shard, realm, nodeRewardAccount))));
     }
 
     /**
