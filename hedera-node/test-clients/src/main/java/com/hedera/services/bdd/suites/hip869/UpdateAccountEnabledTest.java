@@ -20,6 +20,8 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.realm;
+import static com.hedera.services.bdd.spec.HapiPropertySource.shard;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -140,7 +142,7 @@ public class UpdateAccountEnabledTest {
                 viewNode(
                         "testNode",
                         node -> assertEquals(
-                                AccountID.newBuilder().accountNum(1000).build(),
+                            AccountID.newBuilder().shardNum(shard).realmNum(realm).accountNum(1000).build(),
                                 node.accountId(),
                                 "Node accountId should be updated")));
     }
