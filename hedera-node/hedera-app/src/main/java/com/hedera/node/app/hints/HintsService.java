@@ -126,11 +126,6 @@ public interface HintsService extends Service, BlockHashSigner {
      */
     HintsHandlers handlers();
 
-    /**
-     * Returns the handlers for the {@link HintsService}.
-     */
-    HintsHandlers handlers();
-
     @Override
     default int migrationOrder() {
         return MIGRATION_ORDER;
