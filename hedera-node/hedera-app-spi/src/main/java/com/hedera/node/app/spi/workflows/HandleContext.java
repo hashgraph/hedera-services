@@ -36,7 +36,9 @@ import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Represents the context of a single {@code handle()}-call.
@@ -99,24 +101,62 @@ public interface HandleContext {
     }
 
     /**
+     * Enumerates the possible kinds of dispatch metadata.
+     */
+    enum MetaDataKey {
+        /**
+         * The fixed fee of a transaction.
+         */
+        TRANSACTION_FIXED_FEE
+    }
+
+    /**
      * Metadata that can be attached to a dispatch.
      * This metadata is passed when dispatching a child transaction and can
      * be used to pass additional information to the targeted handlers.
      */
     class DispatchMetadata {
-        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(Map.of());
+        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(new HashMap<>());
 
-        // Metadata keys
-        public static final String TRANSACTION_FIXED_FEE = "transactionFixedFee";
+        private final Map<MetaDataKey, Object> metadata;
 
-        private final Map<String, Object> metadata;
-
-        public DispatchMetadata(Map<String, Object> metadata) {
+        /**
+         * Constructs a new DispatchMetadata instance with the given metadata map.
+         *
+         * @param metadata the metadata map
+         */
+        public DispatchMetadata(@NonNull final Map<MetaDataKey, Object> metadata) {
             this.metadata = metadata;
         }
 
-        public Object getMetadata(String dataKey) {
-            return metadata.get(dataKey);
+        /**
+         * Constructs a new DispatchMetadata instance with a single metadata entry.
+         *
+         * @param dataKey the metadata key
+         * @param value the metadata value
+         */
+        public DispatchMetadata(@NonNull final MetaDataKey dataKey, @NonNull Object value) {
+            this.metadata = new HashMap<>(Map.of(dataKey, value));
+        }
+
+        /**
+         * Adds or updates a metadata entry.
+         *
+         * @param dataKey the metadata key
+         * @param value the metadata value
+         */
+        public void putMetadata(@NonNull final MetaDataKey dataKey, @NonNull final Object value) {
+            metadata.put(dataKey, value);
+        }
+
+        /**
+         * Retrieves the metadata value associated with the given key.
+         *
+         * @param dataKey the metadata key
+         * @return an Optional containing the metadata value, or an empty Optional if the key is not present
+         */
+        public Optional<Object> getMetadata(MetaDataKey dataKey) {
+            return Optional.ofNullable(metadata.get(dataKey));
         }
     }
 
