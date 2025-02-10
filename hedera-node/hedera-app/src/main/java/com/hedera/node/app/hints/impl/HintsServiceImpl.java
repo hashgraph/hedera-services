@@ -18,14 +18,18 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.hints.WritableHintsStore;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.schemas.V059HintsSchema;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,16 +41,27 @@ import java.util.concurrent.Executor;
  * Placeholder implementation of the {@link HintsService}.
  */
 public class HintsServiceImpl implements HintsService {
+    @Deprecated
+    private final Configuration bootstrapConfig;
+
     private final HintsServiceComponent component;
 
     public HintsServiceImpl(
             @NonNull final Metrics metrics,
             @NonNull final Executor executor,
             @NonNull final AppContext appContext,
-            @NonNull final HintsLibrary library) {
+            @NonNull final HintsLibrary library,
+            @NonNull final Configuration bootstrapConfig) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         // Fully qualified for benefit of javadoc
         this.component = com.hedera.node.app.hints.impl.DaggerHintsServiceComponent.factory()
                 .create(library, appContext, executor, metrics);
+    }
+
+    @VisibleForTesting
+    HintsServiceImpl(@NonNull final Configuration bootstrapConfig, @NonNull final HintsServiceComponent component) {
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.component = requireNonNull(component);
     }
 
     @Override
@@ -59,7 +74,17 @@ public class HintsServiceImpl implements HintsService {
         requireNonNull(hintsStore);
         requireNonNull(now);
         requireNonNull(tssConfig);
-        throw new UnsupportedOperationException();
+        switch (activeRosters.phase()) {
+            case BOOTSTRAP, TRANSITION -> {
+                final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
+                if (!construction.hasHintsScheme()) {
+                    final var controller =
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
+                    controller.advanceConstruction(now, hintsStore);
+                }
+            }
+            case HANDOFF -> hintsStore.updateForHandoff(activeRosters);
+        }
     }
 
     @Override
@@ -68,9 +93,17 @@ public class HintsServiceImpl implements HintsService {
     }
 
     @Override
+    public HintsHandlers handlers() {
+        return component.handlers();
+    }
+
+    @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V059HintsSchema(component.signingContext()));
+        final var tssConfig = bootstrapConfig.getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            registry.register(new V059HintsSchema(component.signingContext()));
+        }
     }
 
     @Override
@@ -82,5 +115,16 @@ public class HintsServiceImpl implements HintsService {
     public CompletableFuture<Bytes> signFuture(@NonNull final Bytes blockHash) {
         requireNonNull(blockHash);
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void initSigningForNextScheme(@NonNull final ReadableHintsStore hintsStore) {
+        requireNonNull(hintsStore);
+        component.signingContext().setConstruction(requireNonNull(hintsStore.getNextConstruction()));
+    }
+
+    @Override
+    public void stop() {
+        component.controllers().stop();
     }
 }

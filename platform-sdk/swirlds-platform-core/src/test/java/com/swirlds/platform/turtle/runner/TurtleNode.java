@@ -22,6 +22,7 @@ import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.setupG
 import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialState;
 import static com.swirlds.platform.turtle.runner.TurtleStateLifecycles.TURTLE_STATE_LIFECYCLES;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.filesystem.FileSystemManager;
@@ -33,12 +34,12 @@ import com.swirlds.component.framework.model.DeterministicWiringModel;
 import com.swirlds.component.framework.model.WiringModelBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
@@ -48,7 +49,6 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Supplier;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -103,16 +103,22 @@ public class TurtleNode {
         model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
-        final Supplier<PlatformMerkleStateRoot> genesisStateSupplier = TurtleTestingToolState::getStateRootNode;
         final var version = new BasicSoftwareVersion(1);
-
+        MerkleDb.resetDefaultInstancePath();
         final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
         final var fileSystemManager = FileSystemManager.create(configuration);
         final var recycleBin =
                 RecycleBin.create(metrics, configuration, getStaticThreadManager(), time, fileSystemManager, nodeId);
 
         final var reservedState = getInitialState(
-                configuration, recycleBin, version, genesisStateSupplier, "foo", "bar", nodeId, addressBook);
+                configuration,
+                recycleBin,
+                version,
+                TurtleTestingToolState::getStateRootNode,
+                "foo",
+                "bar",
+                nodeId,
+                addressBook);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo",
@@ -127,7 +133,8 @@ public class TurtleNode {
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withKeysAndCerts(privateKeys)
                 .withPlatformContext(platformContext)
-                .withConfiguration(configuration);
+                .withConfiguration(configuration)
+                .withSystemTransactionEncoderCallback(StateSignatureTransaction.PROTOBUF::toBytes);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks.impl.streaming;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
@@ -27,6 +28,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.internal.network.BlockNodeConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.helidon.common.tls.Tls;
 import io.helidon.webclient.grpc.GrpcClient;
 import io.helidon.webclient.grpc.GrpcClientMethodDescriptor;
@@ -42,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,7 +54,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Manages connections to block nodes, including connection lifecycle, node selection,
@@ -98,7 +100,8 @@ public class BlockNodeConnectionManager {
     /**
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
-    private void establishConnections() {
+    @VisibleForTesting
+    public void establishConnections() {
         logger.info(
                 "Establishing connections to block nodes... (Available non-preferred slots: {})",
                 availableNonPreferredSlots);
@@ -318,20 +321,22 @@ public class BlockNodeConnectionManager {
      * @return true if at least one connection was established, false if timeout occurred
      */
     public boolean waitForConnection(Duration timeout) {
-        Instant deadline = Instant.now().plus(timeout);
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
         establishConnections();
-        while (Instant.now().isBefore(deadline)) {
-            if (!activeConnections.isEmpty()) {
-                return true;
-            }
-            try {
-                Thread.sleep(1000); // Wait 1 second between attempts
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        return false;
+
+        scheduler.scheduleAtFixedRate(
+                () -> {
+                    if (!activeConnections.isEmpty()) {
+                        future.complete(true);
+                    } else if (Instant.now().isAfter(Instant.now().plus(timeout))) {
+                        future.complete(false);
+                    }
+                },
+                0,
+                1,
+                TimeUnit.SECONDS);
+
+        return future.getNow(false);
     }
 
     /**

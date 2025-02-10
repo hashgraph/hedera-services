@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
 
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.node.app.hints.HintsService;
+import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -54,6 +56,12 @@ public interface HandleWorkflowModule {
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {
         return contractService::handlers;
+    }
+
+    @Provides
+    @Singleton
+    static HintsHandlers provideHintsHandlers(@NonNull final HintsService hintsService) {
+        return hintsService.handlers();
     }
 
     @Provides
@@ -109,7 +117,8 @@ public interface HandleWorkflowModule {
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers,
-            @NonNull final AddressBookHandlers addressBookHandlers) {
+            @NonNull final AddressBookHandlers addressBookHandlers,
+            @NonNull final HintsHandlers hintsHandlers) {
         return new TransactionHandlers(
                 consensusHandlers.consensusCreateTopicHandler(),
                 consensusHandlers.consensusUpdateTopicHandler(),
@@ -164,6 +173,9 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
+                hintsHandlers.keyPublicationHandler(),
+                hintsHandlers.preprocessingVoteHandler(),
+                hintsHandlers.partialSignatureHandler(),
                 utilHandlers.prngHandler());
     }
 }

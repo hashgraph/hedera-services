@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FileBlockItemWriterTest {
+class FileBlockItemWriterTest {
 
     @TempDir
     Path tempDir;
@@ -64,7 +64,7 @@ public class FileBlockItemWriterTest {
     private FileSystem fileSystem;
 
     @Test
-    public void testOpenBlock() {
+    void testOpenBlock() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -84,7 +84,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testOpenBlockCannotInitializeTwice() {
+    void testOpenBlockCannotInitializeTwice() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -103,7 +103,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testOpenBlockNegativeBlockNumber() {
+    void testOpenBlockNegativeBlockNumber() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -117,7 +117,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testWriteItem() throws IOException {
+    void testWriteItem() throws IOException {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -151,7 +151,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testWriteItemBeforeOpen() {
+    void testWriteItemBeforeOpen() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -168,7 +168,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlock() {
+    void testCloseBlock() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -190,7 +190,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlockNotOpen() {
+    void testCloseBlockNotOpen() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);
@@ -204,7 +204,7 @@ public class FileBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlockAlreadyClosed() {
+    void testCloseBlockAlreadyClosed() {
         when(configProvider.getConfiguration()).thenReturn(versionedConfiguration);
         when(versionedConfiguration.getConfigData(BlockStreamConfig.class)).thenReturn(blockStreamConfig);
         when(blockStreamConfig.compressFilesOnCreation()).thenReturn(true);

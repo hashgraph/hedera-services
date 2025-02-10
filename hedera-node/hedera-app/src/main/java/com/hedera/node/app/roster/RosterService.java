@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,6 @@ import java.util.function.Supplier;
  * Not exposed outside `hedera-app`.
  */
 public class RosterService implements Service {
-    /**
-     * During migration to the roster lifecycle, the platform state service may need
-     * to set its legacy address books based on the current roster. To do this, we
-     * need to ensure the roster service is migrated before the platform state service.
-     */
     public static final int MIGRATION_ORDER = PLATFORM_STATE_SERVICE.migrationOrder() - 1;
 
     public static final String NAME = "RosterService";
@@ -50,13 +45,21 @@ public class RosterService implements Service {
      */
     private final Predicate<Roster> canAdopt;
     /**
+     * A callback to run when a candidate roster is adopted.
+     */
+    private final Runnable onAdopt;
+    /**
      * Required until the upgrade that adopts the roster lifecycle; at that upgrade boundary,
      * we must initialize the active roster from the platform state's legacy address books.
      */
     @Deprecated
     private final Supplier<State> stateSupplier;
 
-    public RosterService(@NonNull final Predicate<Roster> canAdopt, @NonNull final Supplier<State> stateSupplier) {
+    public RosterService(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final Runnable onAdopt,
+            @NonNull final Supplier<State> stateSupplier) {
+        this.onAdopt = requireNonNull(onAdopt);
         this.canAdopt = requireNonNull(canAdopt);
         this.stateSupplier = requireNonNull(stateSupplier);
     }
@@ -75,6 +78,6 @@ public class RosterService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, stateSupplier));
+        registry.register(new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new, stateSupplier));
     }
 }

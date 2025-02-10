@@ -46,6 +46,8 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
 
     @Override
     public void openBlock(long blockNumber) {
+        if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
+
         blockStateLock.lock();
         try {
             currentBlock = BlockState.from(blockNumber);

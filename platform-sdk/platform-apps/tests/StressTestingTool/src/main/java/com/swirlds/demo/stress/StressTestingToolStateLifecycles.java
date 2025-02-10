@@ -128,8 +128,9 @@ public class StressTestingToolStateLifecycles implements StateLifecycles<StressT
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull Round round, @NonNull StressTestingToolState state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull StressTestingToolState state) {
         // no-op
+        return true;
     }
 
     @Override

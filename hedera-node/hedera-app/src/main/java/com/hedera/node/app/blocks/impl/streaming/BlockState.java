@@ -17,9 +17,9 @@
 package com.hedera.node.app.blocks.impl.streaming;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Track the current block state

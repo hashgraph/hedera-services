@@ -40,6 +40,7 @@ import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
+import com.hedera.node.app.platform.PlatformStateModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -47,7 +48,6 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.throttle.Throttle;
 import com.hedera.node.app.state.HederaStateInjectionModule;
@@ -101,7 +101,8 @@ import javax.inject.Singleton;
             BlockStreamModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class,
-            FacilityInitModule.class
+            FacilityInitModule.class,
+            PlatformStateModule.class
         })
 public interface HederaInjectionComponent {
     InitTrigger initTrigger();
@@ -148,14 +149,18 @@ public interface HederaInjectionComponent {
 
     StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
-    StoreMetricsService storeMetricsService();
-
     SubmissionManager submissionManager();
 
     AsyncFatalIssListener fatalIssListener();
 
     @Component.Builder
     interface Builder {
+        @BindsInstance
+        Builder hintsService(HintsService hintsService);
+
+        @BindsInstance
+        Builder historyService(HistoryService historyService);
+
         @BindsInstance
         Builder fileServiceImpl(FileServiceImpl fileService);
 
@@ -194,12 +199,6 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder blockHashSigner(BlockHashSigner blockHashSigner);
-
-        @BindsInstance
-        Builder hintsService(HintsService hintsService);
-
-        @BindsInstance
-        Builder historyService(HistoryService historyService);
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);

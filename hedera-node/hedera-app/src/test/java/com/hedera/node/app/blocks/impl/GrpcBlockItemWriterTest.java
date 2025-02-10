@@ -31,19 +31,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class GrpcBlockItemWriterTest {
+class GrpcBlockItemWriterTest {
 
     @Mock
     private BlockNodeConnectionManager blockNodeConnectionManager;
 
     @Test
-    public void testGrpcBlockItemWriterConstructor() {
+    void testGrpcBlockItemWriterConstructor() {
         final GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
         assertThat(grpcBlockItemWriter).isNotNull();
     }
 
     @Test
-    public void testOpenBlockNegativeBlockNumber() {
+    void testOpenBlockNegativeBlockNumber() {
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         assertThatThrownBy(() -> grpcBlockItemWriter.openBlock(-1), "Block number must be non-negative")
@@ -51,7 +51,7 @@ public class GrpcBlockItemWriterTest {
     }
 
     @Test
-    public void testWriteItemBeforeOpen() {
+    void testWriteItemBeforeOpen() {
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         // Create BlockProof as easiest way to build object from BlockStreams
@@ -66,7 +66,7 @@ public class GrpcBlockItemWriterTest {
     }
 
     @Test
-    public void testCloseBlockNotOpen() {
+    void testCloseBlockNotOpen() {
         GrpcBlockItemWriter grpcBlockItemWriter = new GrpcBlockItemWriter(blockNodeConnectionManager);
 
         assertThatThrownBy(grpcBlockItemWriter::closeBlock, "Cannot close a GrpcBlockItemWriter that is not open")

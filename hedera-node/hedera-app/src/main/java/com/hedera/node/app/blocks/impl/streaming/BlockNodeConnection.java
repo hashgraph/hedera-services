@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl.streaming;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.node.internal.network.BlockNodeConfig;
@@ -30,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Represents a single connection to a block node. Each connection is responsible for connecting to configured block nodes
+ */
 public class BlockNodeConnection {
     private static final Logger logger = LogManager.getLogger(BlockNodeConnection.class);
     private static final int MAX_RETRY_ATTEMPTS = 5;
@@ -54,7 +58,8 @@ public class BlockNodeConnection {
         establishStream();
     }
 
-    private void establishStream() {
+    @VisibleForTesting
+    public void establishStream() {
         requestObserver =
                 grpcServiceClient.bidi(manager.getGrpcEndPoint(), new StreamObserver<PublishStreamResponse>() {
                     @Override
@@ -81,13 +86,15 @@ public class BlockNodeConnection {
                 });
     }
 
-    private void handleStreamFailure() {
+    @VisibleForTesting
+    public void handleStreamFailure() {
         isActive = false;
         removeFromActiveConnections(node);
         scheduleReconnect();
     }
 
-    private void scheduleReconnect() {
+    @VisibleForTesting
+    public void scheduleReconnect() {
         if (retryAttempts < MAX_RETRY_ATTEMPTS) {
             long delayMillis =
                     (long) (INITIAL_RETRY_DELAY.toMillis() * Math.pow(RETRY_BACKOFF_MULTIPLIER, retryAttempts));
