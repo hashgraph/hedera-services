@@ -233,7 +233,7 @@ public class StakeInfoHelper {
                 final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
                         .nodeNumber(nodeId.nodeId())
                         .maxStake(maxStakePerNode)
-                        .minStake(0L)
+                        .minStake(stakingConfig.minStake())
                         .rewardSumHistory(
                                 nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
                         .weight(0)
