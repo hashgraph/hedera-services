@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiTest;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
@@ -47,8 +48,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
-import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
@@ -480,11 +481,17 @@ public class AtomicBatchTest {
                     newKeyNamed(alias).shape(SECP_256K1_SHAPE),
                     createHollowAccountFrom(alias),
                     getAliasedAccountInfo(alias).isHollow(),
-                    atomicBatch(cryptoCreate("foo").payingWith(alias).batchKey(batchOperator))
+                    atomicBatch(cryptoCreate("foo")
+                                    .payingWith(alias)
+                                    .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
+                                    .batchKey(batchOperator))
                             .payingWith(alias)
+                            .batchKey(batchOperator)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
                             .signedBy(alias, batchOperator),
-                    getAliasedAccountInfo(alias).isNotHollow()));
+                    getAliasedAccountInfo(alias)
+                            .has(accountWith().hasNonEmptyKey())
+                            .logged()));
         }
 
         @HapiTest
@@ -502,7 +509,7 @@ public class AtomicBatchTest {
                                     cryptoCreate("foo")
                                             .payingWith(alias)
                                             .batchKey(batchOperator)
-                                            .batchKey(batchOperator),
+                                            .sigMapPrefixes(uniqueWithFullPrefixesFor(alias)),
                                     cryptoCreate("bar")
                                             .alias(ByteString.EMPTY)
                                             .payingWith(alias)
