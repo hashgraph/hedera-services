@@ -91,9 +91,10 @@ public class Utils {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());
     }
 
-    public static ByteString parsedToByteString(long n) {
-        return ByteString.copyFrom(
-                Bytes32.fromHexStringLenient(Long.toHexString(n)).toArray());
+    public static ByteString parsedToByteString(long shard, long realm, long n) {
+        final var hexString =
+                Bytes.wrap(asSolidityAddress((int) shard, realm, n)).toHexString();
+        return ByteString.copyFrom(Bytes32.fromHexStringLenient(hexString).toArray());
     }
 
     public static String asHexedAddress(final TokenID id) {
