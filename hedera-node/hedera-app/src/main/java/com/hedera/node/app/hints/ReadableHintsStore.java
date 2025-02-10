@@ -18,7 +18,6 @@ package com.hedera.node.app.hints;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -114,5 +113,5 @@ public interface ReadableHintsStore {
      */
     CRSState getCrsState();
 
-    Map<EntityNumber, CrsPublicationTransactionBody> getCrsPublications();
+    List<CrsPublicationTransactionBody> getCrsPublications();
 }

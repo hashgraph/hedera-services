@@ -86,7 +86,7 @@ public class InertHintsController implements HintsController {
     }
 
     @Override
-    public void addCrsPublication( @NonNull final CrsPublicationTransactionBody publication) {
+    public void addCrsPublication(@NonNull final CrsPublicationTransactionBody publication) {
         requireNonNull(publication);
         // No-op
     }

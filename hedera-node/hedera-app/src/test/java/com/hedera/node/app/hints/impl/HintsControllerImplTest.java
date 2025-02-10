@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
@@ -360,7 +361,8 @@ class HintsControllerImplTest {
                 submissions,
                 context,
                 HederaTestConfigBuilder::createConfig,
-                Bytes.wrap("test"), crsPublications);
+                CRSState.newBuilder().crs(Bytes.wrap("test")).build(),
+                List.of());
     }
 
     private void runScheduledTasks() {

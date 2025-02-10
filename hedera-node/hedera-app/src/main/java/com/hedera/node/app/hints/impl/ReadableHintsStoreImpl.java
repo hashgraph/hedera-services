@@ -25,13 +25,13 @@ import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_PUBLICATIONS
 import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -39,7 +39,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -57,7 +56,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     private final ReadableSingletonState<HintsConstruction> activeConstruction;
     private final ReadableKVState<PreprocessingVoteId, PreprocessingVote> votes;
     private final ReadableSingletonState<CRSState> crs;
-    private final ReadableKVState<EntityNumber, CrsPublicationTransactionBody> crsPublications;
+    private final ReadableKVState<NodeId, CrsPublicationTransactionBody> crsPublications;
 
     public ReadableHintsStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
@@ -139,11 +138,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
         return requireNonNull(crs.get());
     }
 
-    public Map<EntityNumber, CrsPublicationTransactionBody> getCrsPublications() {
-        final Map<EntityNumber, CrsPublicationTransactionBody> publications = new HashMap<>();
+    public List<CrsPublicationTransactionBody> getCrsPublications() {
+        final List<CrsPublicationTransactionBody> publications = new ArrayList<>();
         while (crsPublications.keys().hasNext()) {
             final var entry = crsPublications.keys().next();
-            publications.put(entry, crsPublications.get(entry));
+            publications.add(crsPublications.get(entry));
         }
         return publications;
     }

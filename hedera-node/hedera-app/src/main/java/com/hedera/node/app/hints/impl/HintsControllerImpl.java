@@ -39,7 +39,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashMap;
@@ -74,7 +73,15 @@ public class HintsControllerImpl implements HintsController {
     private final RosterTransitionWeights weights;
     private final Map<Long, PreprocessingVote> votes = new ConcurrentHashMap<>();
     private final NavigableMap<Instant, CompletableFuture<Validation>> validationFutures = new TreeMap<>();
+    private final Supplier<Configuration> configurationSupplier;
+    /**
+     * The future that resolves to the final updated CRS for the network.
+     */
     private CompletableFuture<Bytes> finalUpdatedCrsFuture;
+    /**
+     * The initial CRS for the network. This is used to verify the first update to the CRS.
+     */
+    private final Bytes initialCrs;
 
     /**
      * The ongoing construction, updated each time the controller advances the construction in state.
@@ -92,13 +99,11 @@ public class HintsControllerImpl implements HintsController {
      */
     @Nullable
     private CompletableFuture<Void> publicationFuture;
-
+    /**
+     * If not null, the future performing the CRS update publication for this node.
+     */
     @Nullable
     private CompletableFuture<Void> crsPublicationFuture;
-
-    private final Supplier<Configuration> configurationSupplier;
-
-    private final Bytes initialCrs;
 
     /**
      * A party's validated hinTS key, including the key itself and whether it is valid.
@@ -107,8 +112,7 @@ public class HintsControllerImpl implements HintsController {
      * @param hintsKey the hinTS key
      * @param isValid  whether the key is valid
      */
-    private record Validation(int partyId, @NonNull Bytes hintsKey, boolean isValid) {
-    }
+    private record Validation(int partyId, @NonNull Bytes hintsKey, boolean isValid) {}
 
     public HintsControllerImpl(
             final long selfId,
@@ -214,12 +218,14 @@ public class HintsControllerImpl implements HintsController {
         // If all nodes have contributed
         if (crsState.nextContributingNodeId() == -1) {
             if (crsState.isGatheringContributions()) {
-                final var delay = configurationSupplier.get().getConfigData(TssConfig.class).crsFinalizationDelay();
-                final var updatedState =
-                        crsState.copyBuilder()
-                                .isGatheringContributions(false)
-                                .contributionEndTime(asTimestamp(now.plus(delay)))
-                                .build();
+                final var delay = configurationSupplier
+                        .get()
+                        .getConfigData(TssConfig.class)
+                        .crsFinalizationDelay();
+                final var updatedState = crsState.copyBuilder()
+                        .isGatheringContributions(false)
+                        .contributionEndTime(asTimestamp(now.plus(delay)))
+                        .build();
                 hintsStore.setCRSState(updatedState);
             } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
                 final var finalCrs = finalUpdatedCrsFuture.join();
@@ -355,7 +361,8 @@ public class HintsControllerImpl implements HintsController {
         if (finalUpdatedCrsFuture == null) {
             finalUpdatedCrsFuture = CompletableFuture.supplyAsync(
                     () -> {
-                        final var isValid = library.verifyCrsUpdate(initialCrs, publication.newCrs(), publication.proof());
+                        final var isValid =
+                                library.verifyCrsUpdate(initialCrs, publication.newCrs(), publication.proof());
                         if (isValid) {
                             return publication.newCrs();
                         }

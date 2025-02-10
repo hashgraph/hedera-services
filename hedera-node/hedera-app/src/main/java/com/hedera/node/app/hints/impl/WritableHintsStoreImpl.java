@@ -28,7 +28,6 @@ import static com.hedera.node.app.roster.ActiveRosters.Phase.BOOTSTRAP;
 import static com.hedera.node.app.roster.ActiveRosters.Phase.HANDOFF;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
@@ -39,6 +38,7 @@ import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
@@ -67,7 +67,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
-    private final WritableKVState<EntityNumber, CrsPublicationTransactionBody> crsPublications;
+    private final WritableKVState<NodeId, CrsPublicationTransactionBody> crsPublications;
     private final WritableSingletonState<CRSState> crsState;
 
     public WritableHintsStoreImpl(@NonNull final WritableStates states) {
@@ -177,32 +177,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public void putInitialCrs(
-            @NonNull final Bytes initialCrs, final long firstNodeId, @NonNull final Instant nextContributionTimeEnd) {
-        final var crsState = CRSState.newBuilder()
-                .crs(initialCrs)
-                .isGatheringContributions(true)
-                .nextContributingNodeId(firstNodeId)
-                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
-                .build();
-        setCRSState(crsState);
-    }
-
-    @Override
-    public void updateCrs(
-            @NonNull final Bytes updatedCrs,
-            final long nextContributingNodeId,
-            @NonNull final Instant nextContributionTimeEnd) {
-        final var crsState = requireNonNull(this.crsState.get());
-        final var newCrsState = crsState.copyBuilder()
-                .crs(updatedCrs)
-                .nextContributingNodeId(nextContributingNodeId)
-                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
-                .build();
-        setCRSState(newCrsState);
-    }
-
-    @Override
     public void moveToNextNode(final long nextNodeIdFromRoster, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = requireNonNull(this.crsState.get());
         final var newCrsState = crsState.copyBuilder()
@@ -214,7 +188,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     @Override
     public void addCrsPublication(final long nodeId, @NonNull final CrsPublicationTransactionBody crsPublication) {
-        crsPublications.put(new EntityNumber(nodeId), crsPublication);
+        crsPublications.put(new NodeId(nodeId), crsPublication);
     }
 
     /**
