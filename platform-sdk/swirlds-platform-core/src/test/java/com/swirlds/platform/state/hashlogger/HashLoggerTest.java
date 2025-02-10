@@ -154,7 +154,6 @@ public class HashLoggerTest {
         final SignedState signedState = mock(SignedState.class);
         final PlatformMerkleStateRoot state = mock(PlatformMerkleStateRoot.class);
         final PlatformStateAccessor platformState = mock(PlatformStateAccessor.class);
-        when(platformStateFacade.getReadablePlatformStateOf(state)).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(round);
         when(state.getRoute()).thenReturn(merkleNode.getRoute());
         when(state.getHash()).thenReturn(merkleNode.getHash());

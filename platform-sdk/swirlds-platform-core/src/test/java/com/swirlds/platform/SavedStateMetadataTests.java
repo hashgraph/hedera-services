@@ -220,7 +220,6 @@ class SavedStateMetadataTests {
         RosterServiceStateMock.setup(state, roster);
 
         when(signedState.getState()).thenReturn(state);
-        when(platformStateFacade.getReadablePlatformStateOf(state)).thenReturn(platformState);
         when(signedState.getSigSet()).thenReturn(sigSet);
         when(sigSet.getSigningNodes())
                 .thenReturn(new ArrayList<>(List.of(NodeId.of(3L), NodeId.of(1L), NodeId.of(2L))));

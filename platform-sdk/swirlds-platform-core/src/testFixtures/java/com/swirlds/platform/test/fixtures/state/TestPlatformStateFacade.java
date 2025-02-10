@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.fixtures.state;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -31,14 +30,6 @@ public class TestPlatformStateFacade extends PlatformStateFacade {
 
     public TestPlatformStateFacade(Function<SemanticVersion, SoftwareVersion> versionFactory) {
         super(versionFactory);
-    }
-
-    /**
-     * The method is made public for testing purposes.
-     */
-    @Override
-    public PlatformStateAccessor getReadablePlatformStateOf(@NonNull State root) {
-        return super.getReadablePlatformStateOf(root);
     }
 
     /**
