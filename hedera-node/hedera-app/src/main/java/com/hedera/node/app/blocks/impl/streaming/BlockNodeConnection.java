@@ -16,18 +16,16 @@
 
 package com.hedera.node.app.blocks.impl.streaming;
 
-import com.google.common.annotations.VisibleForTesting;
+import static com.hedera.hapi.block.protoc.PublishStreamResponseCode.STREAM_ITEMS_UNKNOWN;
+
 import com.hedera.hapi.block.protoc.PublishStreamRequest;
 import com.hedera.hapi.block.protoc.PublishStreamResponse;
 import com.hedera.node.internal.network.BlockNodeConfig;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.helidon.webclient.grpc.GrpcServiceClient;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,19 +34,13 @@ import org.apache.logging.log4j.Logger;
  */
 public class BlockNodeConnection {
     private static final Logger logger = LogManager.getLogger(BlockNodeConnection.class);
-    private static final int MAX_RETRY_ATTEMPTS = 5;
-    private static final Duration INITIAL_RETRY_DELAY = Duration.ofSeconds(1);
-    private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final BlockNodeConfig node;
     private final GrpcServiceClient grpcServiceClient;
     private final BlockNodeConnectionManager manager;
     private StreamObserver<PublishStreamRequest> requestObserver;
-
     private volatile boolean isActive = true;
-    private int retryAttempts = 0;
-    private Instant nextRetryTime = Instant.now();
 
     public BlockNodeConnection(
             BlockNodeConfig nodeConfig, GrpcServiceClient grpcServiceClient, BlockNodeConnectionManager manager) {
@@ -56,19 +48,19 @@ public class BlockNodeConnection {
         this.grpcServiceClient = grpcServiceClient;
         this.manager = manager;
         establishStream();
+        logger.info("BlockNodeConnection INITIALIZED");
     }
 
-    @VisibleForTesting
-    public void establishStream() {
+    private void establishStream() {
         requestObserver =
                 grpcServiceClient.bidi(manager.getGrpcEndPoint(), new StreamObserver<PublishStreamResponse>() {
                     @Override
                     public void onNext(PublishStreamResponse response) {
-                        // if (response.hasAcknowledgement()) {
-                        // handleAcknowledgement(response.getAcknowledgement());
-                        // } else if (response.hasStatus()) {
-                        // handleEndOfStream(response.getStatus());
-                        // }
+                        if (response.hasAcknowledgement()) {
+                            handleAcknowledgement(response.getAcknowledgement());
+                        } else if (response.hasStatus()) {
+                            handleEndOfStream(response.getStatus());
+                        }
                     }
 
                     @Override
@@ -86,51 +78,28 @@ public class BlockNodeConnection {
                 });
     }
 
-    @VisibleForTesting
-    public void handleStreamFailure() {
-        isActive = false;
-        removeFromActiveConnections(node);
-        scheduleReconnect();
+    private void handleAcknowledgement(PublishStreamResponse.Acknowledgement acknowledgement) {
+        if (acknowledgement.hasBlockAck()) {
+            logger.info("PublishStreamResponse: a full block received: {}", acknowledgement.getBlockAck());
+        } else if (acknowledgement.hasItemAck()) {
+            logger.info("PublishStreamResponse: a single block item is received: {}", acknowledgement.getItemAck());
+        }
     }
 
-    @VisibleForTesting
-    public void scheduleReconnect() {
-        if (retryAttempts < MAX_RETRY_ATTEMPTS) {
-            long delayMillis =
-                    (long) (INITIAL_RETRY_DELAY.toMillis() * Math.pow(RETRY_BACKOFF_MULTIPLIER, retryAttempts));
-            nextRetryTime = Instant.now().plusMillis(delayMillis);
-            retryAttempts++;
-
+    private void handleEndOfStream(PublishStreamResponse.EndOfStream endOfStream) {
+        if (endOfStream.getStatus().equals(STREAM_ITEMS_UNKNOWN)) {
             logger.info(
-                    "Scheduling retry attempt {} for node {}:{} in {} ms",
-                    retryAttempts,
-                    node.address(),
-                    node.port(),
-                    delayMillis);
-            scheduler.schedule(this::reconnect, delayMillis, TimeUnit.MILLISECONDS);
-        } else {
-            logger.error(
-                    "Max retry attempts ({}) reached for node {}:{}. Giving up.",
-                    MAX_RETRY_ATTEMPTS,
-                    node.address(),
-                    node.port());
-            addNodeInBackoff(node);
+                    "Error returned from block node at block number {}: {}", endOfStream.getBlockNumber(), endOfStream);
         }
-    }
-
-    private void reconnect() {
-        if (Instant.now().isAfter(nextRetryTime)) {
-            logger.info("Attempting retry {} for node {}:{}", retryAttempts, node.address(), node.port());
-            establishStream();
-        }
-    }
-
-    private void addNodeInBackoff(BlockNodeConfig node) {
-        manager.addNodeInBackoff(node);
     }
 
     private void removeFromActiveConnections(BlockNodeConfig node) {
         manager.handleConnectionError(node);
+    }
+
+    public void handleStreamFailure() {
+        isActive = false;
+        removeFromActiveConnections(node);
     }
 
     public void sendRequest(PublishStreamRequest request) {

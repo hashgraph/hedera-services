@@ -18,7 +18,6 @@ package com.hedera.node.app.blocks.impl.streaming;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
@@ -71,7 +70,6 @@ public class BlockNodeConnectionManager {
     private final ReentrantLock connectionLock = new ReentrantLock();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService streamingExecutor = Executors.newSingleThreadExecutor();
-    private int availableNonPreferredSlots = 0;
 
     /**
      * Creates a new BlockNodeConnectionManager with the given configuration from disk.
@@ -87,67 +85,25 @@ public class BlockNodeConnectionManager {
             return;
         }
         this.blockNodeConfigurations = new BlockNodeConfigExtractor(blockStreamConfig.blockNodeConnectionFileDir());
-        final Duration nodeReselectionInterval = blockNodeConfigurations.getNodeReselectionInterval();
-
-        // Schedule periodic node reselection
-        scheduler.scheduleAtFixedRate(
-                this::performNodeReselection,
-                nodeReselectionInterval.toSeconds(),
-                nodeReselectionInterval.toSeconds(),
-                TimeUnit.SECONDS);
     }
 
     /**
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
-    @VisibleForTesting
-    public void establishConnections() {
-        logger.info(
-                "Establishing connections to block nodes... (Available non-preferred slots: {})",
-                availableNonPreferredSlots);
+    private void establishConnections() {
+        logger.info("Establishing connections to block nodes");
 
-        // First, connect to all preferred nodes that we haven't connected to yet
-        blockNodeConfigurations.getAllNodes().stream()
-                .filter(this::preferredNode)
+        // Get all non-preferred nodes we haven't connected to yet
+        List<BlockNodeConfig> availableNodes = blockNodeConfigurations.getAllNodes().stream()
                 .filter(node -> !activeConnections.containsKey(node))
                 .filter(node -> !nodesInBackoff.contains(node))
-                .forEach(this::connectToNode);
+                .collect(Collectors.toList());
 
-        // Then connect to non-preferred nodes by priority, respecting max connections limit
-        if (availableNonPreferredSlots > 0) {
-            // Get all non-preferred nodes we haven't connected to yet
-            List<BlockNodeConfig> availableNodes = blockNodeConfigurations.getAllNodes().stream()
-                    .filter(node -> !preferredNode(node))
-                    .filter(node -> !activeConnections.containsKey(node))
-                    .filter(node -> !nodesInBackoff.contains(node))
-                    .collect(Collectors.toList());
+        // Shuffle the list
+        Collections.shuffle(availableNodes);
 
-            // Shuffle the list
-            Collections.shuffle(availableNodes);
-
-            // Take up to availableNonPreferredSlots nodes
-            availableNodes.stream().limit(availableNonPreferredSlots).forEach(node -> {
-                connectToNode(node);
-                availableNonPreferredSlots--;
-            });
-        }
-    }
-
-    private void performNodeReselection() {
-        // Don't replace preferred nodes
-        List<BlockNodeConfig> nonPreferredConnections = activeConnections.keySet().stream()
-                .filter(node -> !preferredNode(node))
-                .toList();
-
-        // Disconnect from non-preferred nodes
-        for (BlockNodeConfig node : nonPreferredConnections) {
-            disconnectFromNode(node);
-        }
-        // Reset available slots for non-preferred nodes
-        availableNonPreferredSlots = blockNodeConfigurations.getMaxSimultaneousConnections();
-
-        // Establish new connections
-        establishConnections();
+        // Take up to availableNonPreferredSlots nodes
+        availableNodes.forEach(this::connectToNode);
     }
 
     private void connectToNode(@NonNull BlockNodeConfig node) {
@@ -191,9 +147,6 @@ public class BlockNodeConnectionManager {
         BlockNodeConnection connection = activeConnections.remove(node);
         if (connection != null) {
             connection.close();
-            if (!preferredNode(node)) {
-                availableNonPreferredSlots++;
-            }
             logger.info("Disconnected from block node {}:{}", node.address(), node.port());
         }
         nodesInBackoff.remove(node);
@@ -266,11 +219,6 @@ public class BlockNodeConnectionManager {
         }
     }
 
-    private boolean preferredNode(@NonNull BlockNodeConfig node) {
-        // priority equals 1 means the node is preferred
-        return node.priority() == 1;
-    }
-
     /**
      * Initiates the streaming of a block to all active connections.
      *
@@ -336,14 +284,7 @@ public class BlockNodeConnectionManager {
                 1,
                 TimeUnit.SECONDS);
 
-        return future.getNow(false);
-    }
-
-    /**
-     * @param node the node that failed to connect and rescheduled for retry
-     */
-    public void addNodeInBackoff(@NonNull BlockNodeConfig node) {
-        nodesInBackoff.add(node);
+        return future.join();
     }
 
     /**
@@ -351,13 +292,5 @@ public class BlockNodeConnectionManager {
      */
     public String getGrpcEndPoint() {
         return GRPC_END_POINT;
-    }
-
-    /**
-     * @return the active connections
-     */
-    @VisibleForTesting
-    public Map<BlockNodeConfig, BlockNodeConnection> getActiveConnections() {
-        return activeConnections;
     }
 }

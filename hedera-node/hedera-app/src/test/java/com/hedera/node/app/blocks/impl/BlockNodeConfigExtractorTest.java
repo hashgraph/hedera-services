@@ -23,7 +23,6 @@ import com.hedera.node.app.blocks.impl.streaming.BlockNodeConfigExtractor;
 import com.hedera.node.internal.network.BlockNodeConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,20 +48,7 @@ class BlockNodeConfigExtractorTest {
     void testLoadConfig() {
         List<BlockNodeConfig> nodes = blockNodeConfigExtractor.getAllNodes();
         assertThat(nodes).isNotEmpty();
-        assertThat(nodes).allMatch(node -> node.address() != null && node.port() > 0 && node.priority() > 0);
-    }
-
-    @Test
-    void testMaxSimultaneousConnections() {
-        int maxConnections = blockNodeConfigExtractor.getMaxSimultaneousConnections();
-        assertThat(maxConnections).isEqualTo(1);
-    }
-
-    @Test
-    void testNodeReselectionInterval() {
-        Duration interval = blockNodeConfigExtractor.getNodeReselectionInterval();
-        assertThat(interval).isNotNull();
-        assertThat(interval.getSeconds()).isEqualTo(3600);
+        assertThat(nodes).allMatch(node -> node.address() != null && node.port() > 0);
     }
 
     @Test

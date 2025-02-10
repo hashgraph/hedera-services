@@ -24,22 +24,14 @@ option java_multiple_files = true;
  */
 message BlockNodeConfig {
     /**
-     * The priority of the block node connection.<br/>
-     * This field SHALL specify the priority of the block node connection.
-     * With the highest priority being 1. All block nodes with priority 1,
-     * are considered preferred block nodes and different logic MAY apply to them.
-     */
-    int32 priority = 1;
-
-    /**
      * The address of the block node.<br/>
      */
-    string address = 2;
+    string address = 1;
 
     /**
      * The port of the block node.<br/>
      */
-    int32 port = 3;
+    int32 port = 2;
 }
 
 /**
@@ -57,22 +49,7 @@ message BlockNodeConnectionInfo {
     repeated BlockNodeConfig nodes = 1;
 
     /**
-      * The interval in seconds at which to perform reselection
-      * of block nodes that the consensus node SHOULD to connect to.<br/>
-      * This interval applies to all non-preferred block nodes.
-     */
-    int32 node_reselection_interval = 2;
-
-    /**
-     * The maximum number of simultaneous connections to block nodes.<br/>
-     * This field SHALL specify the maximum number of simultaneous connections
-     * to block nodes that the consensus node SHOULD maintain.
-     * This interval applies to all non-preferred block nodes.
-     */
-    int32 max_simultaneous_connections = 3;
-
-    /**
      * The size of the batches of block items to be streamed to block nodes.<br/>
      */
-    int32 block_item_batch_size = 4;
+    int32 block_item_batch_size = 2;
 } 

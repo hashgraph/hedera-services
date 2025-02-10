@@ -35,19 +35,21 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param compressFilesOnCreation whether to compress files on creation
  * @param hashCombineBatchSize the number of items to hash in a batch
  * @param roundsPerBlock the number of rounds per block
+ * @param waitPeriodForActiveConnection the time in minutes to wait for an active connection
  * @param grpcAddress the address of the gRPC server
  * @param grpcPort the port of the gRPC server
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "BOTH") @NetworkProperty StreamMode streamMode,
-        @ConfigProperty(defaultValue = "FILE") @NodeProperty BlockStreamWriterMode writerMode,
+        @ConfigProperty(defaultValue = "FILE_AND_GRPC") @NodeProperty BlockStreamWriterMode writerMode,
         @ConfigProperty(defaultValue = "false") @NodeProperty boolean shutdownNodeOnNoBlockNodes,
         @ConfigProperty(defaultValue = "/opt/hgcapp/blockStreams") @NodeProperty String blockFileDir,
         @ConfigProperty(defaultValue = "/opt/hgcapp/data/config") @NodeProperty String blockNodeConnectionFileDir,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation,
         @ConfigProperty(defaultValue = "32") @NetworkProperty int hashCombineBatchSize,
         @ConfigProperty(defaultValue = "1") @NetworkProperty int roundsPerBlock,
+        @ConfigProperty(defaultValue = "2") @NetworkProperty long waitPeriodForActiveConnection,
         @ConfigProperty(defaultValue = "localhost") String grpcAddress,
         @ConfigProperty(defaultValue = "8080") @Min(0) @Max(65535) int grpcPort) {
 

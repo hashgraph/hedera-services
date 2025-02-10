@@ -326,7 +326,7 @@ public class WorkingDirUtils {
         try (final var files = Files.walk(assetDir)) {
             files.filter(file -> !file.equals(assetDir)).forEach(file -> {
                 final var fileName = file.getFileName().toString();
-                if (fileName.endsWith(".properties") || fileName.endsWith(".json") || fileName.endsWith(".yaml")) {
+                if (fileName.endsWith(".properties") || fileName.endsWith(".json")) {
                     copyUnchecked(
                             file,
                             workingDir

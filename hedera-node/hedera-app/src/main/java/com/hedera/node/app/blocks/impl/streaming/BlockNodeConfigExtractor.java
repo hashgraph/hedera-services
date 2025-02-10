@@ -23,8 +23,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -36,8 +34,6 @@ import org.apache.logging.log4j.Logger;
 public class BlockNodeConfigExtractor {
     private static final Logger logger = LogManager.getLogger(BlockNodeConfigExtractor.class);
     private final List<BlockNodeConfig> allNodes;
-    private final int maxSimultaneousConnections;
-    private final Duration nodeReselectionInterval;
     private final int blockItemBatchSize;
 
     /**
@@ -52,23 +48,18 @@ public class BlockNodeConfigExtractor {
 
             // Convert proto config to internal config objects
             this.allNodes = protoConfig.nodes().stream()
-                    .map(node -> new BlockNodeConfig(node.priority(), node.address(), node.port()))
+                    .map(node -> new BlockNodeConfig(node.address(), node.port()))
                     .collect(Collectors.toList());
 
             logger.info("Loaded block node configuration from {}", configPath);
             logger.info("Block node configuration: {}", allNodes);
 
-            this.maxSimultaneousConnections = protoConfig.maxSimultaneousConnections();
-            this.nodeReselectionInterval = Duration.ofSeconds(protoConfig.nodeReselectionInterval());
             this.blockItemBatchSize = protoConfig.blockItemBatchSize();
 
         } catch (IOException | ParseException e) {
             logger.error("Failed to read block node configuration from {}", configPath, e);
             throw new RuntimeException("Failed to read block node configuration from " + configPath, e);
         }
-
-        // Sort nodes by priority (lowest number = highest priority)
-        allNodes.sort(Comparator.comparingInt(BlockNodeConfig::priority));
     }
 
     /**
@@ -76,20 +67,6 @@ public class BlockNodeConfigExtractor {
      */
     public List<BlockNodeConfig> getAllNodes() {
         return allNodes;
-    }
-
-    /**
-     * @return the maximum number of simultaneous connections to block nodes
-     */
-    public int getMaxSimultaneousConnections() {
-        return maxSimultaneousConnections;
-    }
-
-    /**
-     * @return the interval of node reselection
-     */
-    public Duration getNodeReselectionInterval() {
-        return nodeReselectionInterval;
     }
 
     /**
