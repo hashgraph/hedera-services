@@ -177,8 +177,8 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      * @param token the tokens to associate
      * @return the operation
      */
-    public TransferTokenOperation transferToken(
-            @NonNull final SpecToken token, final long amount, @NonNull final SpecAccount sender) {
+    public TransferTokenOperation receiveUnitsFrom(
+            @NonNull final SpecAccount sender, @NonNull final SpecToken token, final long amount) {
         requireNonNull(token);
         requireNonNull(sender);
         return new TransferTokenOperation(amount, token, sender, this);
