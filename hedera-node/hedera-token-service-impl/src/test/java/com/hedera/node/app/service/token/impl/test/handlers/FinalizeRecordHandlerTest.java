@@ -30,6 +30,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -63,6 +64,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -96,9 +98,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
-    private Token TOKEN_321_FUNGIBLE =
+    private final Token TOKEN_321_FUNGIBLE =
             givenValidFungibleToken().copyBuilder().tokenId(TOKEN_321).build();
-    private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
     private FinalizeContext context;
@@ -121,12 +122,16 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private StakingRewardsHelper stakingRewardsHelper;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private FinalizeRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new FinalizeRecordHandler(stakingRewardsHandler);
+        when(configProvider.getConfiguration()).thenReturn(versionedConfig);
+        subject = new FinalizeRecordHandler(stakingRewardsHandler, configProvider);
     }
 
     @Test
@@ -338,6 +343,190 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
 
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-fungibleAmountToTransfer)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(fungibleAmountToTransfer)
+                                        .build())
+                        .build()));
+    }
+
+    @Test
+    void handleFungibleTokenTransfersAndHbarTransfersToAccountDeductsFromChildRecordsSuccess() {
+        final var senderAcct = ACCOUNT_1212;
+        final var senderTokenRel = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
+        final var childAmount = fungibleAmountToTransfer / 2;
+
+        setupTestStores(List.of(senderAcct), List.of(senderTokenRel), List.of(TOKEN_321_FUNGIBLE), List.of());
+        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created (with an hbar balance of 0)
+        writableAccountStore.put(ACCOUNT_3434
+                .copyBuilder()
+                .tinybarBalance(0)
+                .alias(Bytes.wrap("00000000000000000002"))
+                .build());
+        // Simulate the receiver's token relation being auto-created (and both the sender and receiver token rel
+        // balances adjusted)
+        writableTokenRelStore.put(senderTokenRel.copyBuilder().balance(1).build());
+        writableTokenRelStore.put(senderTokenRel
+                .copyBuilder()
+                .accountId(ACCOUNT_3434_ID)
+                .balance(fungibleAmountToTransfer)
+                .build());
+        context = mockContext();
+        given(context.configuration()).willReturn(configuration);
+
+        final var childRecord = mock(RecordStreamBuilder.class);
+        // child record has  1212 (-) -> 3434(+) transfer
+        given(childRecord.transferList())
+                .willReturn(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(childAmount)
+                                        .build())
+                        .build());
+        given(childRecord.tokenTransferLists())
+                .willReturn(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(childAmount)
+                                        .build())
+                        .build()));
+
+        given(context.hasChildOrPrecedingRecords()).willReturn(true);
+        doAnswer(invocation -> {
+                    final var consumer = invocation.getArgument(1, Consumer.class);
+                    consumer.accept(childRecord);
+                    return null;
+                })
+                .when(context)
+                .forEachChildRecord(any(), any());
+
+        subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+        BDDMockito.verify(recordBuilder)
+                .transferList(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(-childAmount)
+                                        .build())
+                        .build());
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-500)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(500)
+                                        .build())
+                        .build()));
+    }
+
+    @Test
+    void handleNonFungibleTokenTransfersDeductsFromChildRecordsSuccess() {
+        final var senderAcct = ACCOUNT_1212;
+        final var senderTokenRel = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
+        final var childAmount = fungibleAmountToTransfer / 2;
+
+        setupTestStores(List.of(senderAcct), List.of(senderTokenRel), List.of(TOKEN_321_FUNGIBLE), List.of());
+        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created (with an hbar balance of 0)
+        writableAccountStore.put(ACCOUNT_3434
+                .copyBuilder()
+                .tinybarBalance(0)
+                .alias(Bytes.wrap("00000000000000000002"))
+                .build());
+        // Simulate the receiver's token relation being auto-created (and both the sender and receiver token rel
+        // balances adjusted)
+        writableTokenRelStore.put(senderTokenRel.copyBuilder().balance(1).build());
+        writableTokenRelStore.put(senderTokenRel
+                .copyBuilder()
+                .accountId(ACCOUNT_3434_ID)
+                .balance(fungibleAmountToTransfer)
+                .build());
+        context = mockContext();
+        given(context.configuration()).willReturn(configuration);
+
+        final var childRecord = mock(RecordStreamBuilder.class);
+        // child record has  1212 (-) -> 3434(+) transfer
+        given(childRecord.transferList())
+                .willReturn(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(childAmount)
+                                        .build())
+                        .build());
+        given(childRecord.tokenTransferLists())
+                .willReturn(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .serialNumber(1)
+                                .senderAccountID(ACCOUNT_1212_ID)
+                                .receiverAccountID(ACCOUNT_3434_ID)
+                                .build())
+                        .build()));
+
+        given(context.hasChildOrPrecedingRecords()).willReturn(true);
+        doAnswer(invocation -> {
+                    final var consumer = invocation.getArgument(1, Consumer.class);
+                    consumer.accept(childRecord);
+                    return null;
+                })
+                .when(context)
+                .forEachChildRecord(any(), any());
+
+        subject.finalizeStakingRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap());
+        BDDMockito.verify(recordBuilder)
+                .transferList(TransferList.newBuilder()
+                        .accountAmounts(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(-childAmount)
+                                        .build())
+                        .build());
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)

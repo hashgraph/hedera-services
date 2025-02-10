@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip991;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -71,6 +72,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -112,15 +117,26 @@ public class TopicCustomFeeSubmitMessageTest extends TopicCustomFeeBase {
         @HapiTest
         @DisplayName("MessageSubmit to a public topic with a fee of 1 FT")
         // TOPIC_FEE_105
-        final Stream<DynamicTest> messageSubmitToPublicTopicWithFee1token() {
+        final Stream<DynamicTest> messageSubmitToPublicTopicWithFee1token(
+                @FungibleToken(name = "fungibleToken", initialSupply = 123456) SpecFungibleToken ft,
+                @Contract(contract = "TokenTransferContract", creationGas = 1_000_000L) SpecContract contract) {
             final var collector = "collector";
             final var fee = fixedConsensusHtsFee(1, BASE_TOKEN, collector);
             return hapiTest(
+                    contract.associateTokens(ft),
+                    contract.receiveUnitsFrom(ft.treasury(), ft, 123L),
                     cryptoCreate(collector),
                     tokenAssociate(collector, BASE_TOKEN),
                     createTopic(TOPIC).withConsensusCustomFee(fee),
                     submitMessageTo(TOPIC).message("TEST").payingWith(SUBMITTER),
-                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1));
+                    getAccountBalance(collector).hasTokenBalance(BASE_TOKEN, 1),
+                    contract.call("transferTokenPublic", ft, contract, ft.treasury(), 2L)
+                            .gas(1_000_000L)
+                            .via("after"),
+                    getTxnRecord("after")
+                            .andAllChildRecords()
+                            .hasChildRecords(recordWith().assessedCustomFeeCount(0))
+                            .logged());
         }
 
         @HapiTest
