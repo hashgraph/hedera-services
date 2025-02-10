@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
@@ -143,7 +144,7 @@ public class HintsControllerImpl implements HintsController {
         this.votes.putAll(votes);
         this.configurationSupplier = requireNonNull(configuration);
         this.initialCrs = crsState.crs();
-        if (crsState.isGatheringContributions()) {
+        if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
             crsPublications.forEach(this::addCrsPublication);
         }
         // Ensure we are up-to-date on any published hinTS keys we might need for this construction
@@ -179,7 +180,9 @@ public class HintsControllerImpl implements HintsController {
         requireNonNull(now);
         requireNonNull(hintsStore);
         // Do the work needed to set the CRS for network and start the preprocessing vote
-        doCRSWork(now, hintsStore);
+        if (hintsStore.getCrsState().stage() != CRSStage.COMPLETED) {
+            doCRSWork(now, hintsStore);
+        }
 
         if (construction.hasHintsScheme()) {
             return;
@@ -216,13 +219,13 @@ public class HintsControllerImpl implements HintsController {
         final var crsState = hintsStore.getCrsState();
         // If all nodes have contributed
         if (crsState.nextContributingNodeId() == -1) {
-            if (crsState.isGatheringContributions()) {
+            if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
                 final var delay = configurationSupplier
                         .get()
                         .getConfigData(TssConfig.class)
                         .crsFinalizationDelay();
                 final var updatedState = crsState.copyBuilder()
-                        .isGatheringContributions(false)
+                        .stage(CRSStage.WAITING_FOR_ADOPTING_FINAL_CRS)
                         .contributionEndTime(asTimestamp(now.plus(delay)))
                         .build();
                 hintsStore.setCRSState(updatedState);
@@ -230,6 +233,7 @@ public class HintsControllerImpl implements HintsController {
                 final var finalCrs = finalUpdatedCrsFuture.join();
                 final var updatedState = crsState.copyBuilder()
                         .crs(finalCrs)
+                        .stage(CRSStage.COMPLETED)
                         .contributionEndTime((Timestamp) null)
                         .build();
                 hintsStore.setCRSState(updatedState);

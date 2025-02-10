@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
@@ -116,7 +117,7 @@ public class CrsPublicationHandlerTest {
         when(controllers.getInProgressForNumParties(anyInt())).thenReturn(Optional.of(controller));
         when(hintsStore.getCrsState())
                 .thenReturn(CRSState.newBuilder()
-                        .isGatheringContributions(true)
+                        .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                         .crs(INITIAL_CRS)
                         .nextContributingNodeId(0L)
                         .build());

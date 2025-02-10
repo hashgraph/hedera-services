@@ -29,6 +29,7 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
@@ -381,7 +382,7 @@ class WritableHintsStoreImplTest {
         final var crsState = CRSState.newBuilder()
                 .crs(Bytes.wrap("test"))
                 .nextContributingNodeId(0L)
-                .isGatheringContributions(true)
+                .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                 .contributionEndTime(asTimestamp(Instant.ofEpochSecond(1_234_567L)))
                 .build();
         final AtomicReference<CRSState> crsStateRef = new AtomicReference<>();

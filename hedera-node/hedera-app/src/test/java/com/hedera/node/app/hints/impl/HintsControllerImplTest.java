@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
@@ -401,7 +402,7 @@ class HintsControllerImplTest {
 
         given(store.getCrsState())
                 .willReturn(CRSState.newBuilder()
-                        .isGatheringContributions(true)
+                        .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                         .nextContributingNodeId(-1)
                         .crs(INITIAL_CRS)
                         .build());
@@ -409,7 +410,7 @@ class HintsControllerImplTest {
 
         verify(store)
                 .setCRSState(CRSState.newBuilder()
-                        .isGatheringContributions(false)
+                        .stage(CRSStage.WAITING_FOR_ADOPTING_FINAL_CRS)
                         .nextContributingNodeId(-1)
                         .contributionEndTime(asTimestamp(CONSENSUS_NOW.plus(Duration.ofSeconds(5))))
                         .crs(INITIAL_CRS)
@@ -422,7 +423,7 @@ class HintsControllerImplTest {
 
         given(store.getCrsState())
                 .willReturn(CRSState.newBuilder()
-                        .isGatheringContributions(false)
+                        .stage(CRSStage.WAITING_FOR_ADOPTING_FINAL_CRS)
                         .nextContributingNodeId(-1)
                         .contributionEndTime(asTimestamp(CONSENSUS_NOW.minus(Duration.ofSeconds(7))))
                         .crs(INITIAL_CRS)
@@ -433,7 +434,7 @@ class HintsControllerImplTest {
 
         verify(store)
                 .setCRSState(CRSState.newBuilder()
-                        .isGatheringContributions(false)
+                        .stage(CRSStage.COMPLETED)
                         .nextContributingNodeId(-1)
                         .contributionEndTime((Timestamp) null)
                         .crs(INITIAL_CRS)
@@ -446,7 +447,7 @@ class HintsControllerImplTest {
 
         given(store.getCrsState())
                 .willReturn(CRSState.newBuilder()
-                        .isGatheringContributions(true)
+                        .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                         .nextContributingNodeId(1)
                         .contributionEndTime(asTimestamp(CONSENSUS_NOW.minus(Duration.ofSeconds(7))))
                         .crs(INITIAL_CRS)
@@ -465,7 +466,7 @@ class HintsControllerImplTest {
 
         given(store.getCrsState())
                 .willReturn(CRSState.newBuilder()
-                        .isGatheringContributions(true)
+                        .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                         .nextContributingNodeId(SELF_ID)
                         .contributionEndTime(asTimestamp(CONSENSUS_NOW.plus(Duration.ofSeconds(7))))
                         .crs(INITIAL_CRS)
@@ -507,7 +508,7 @@ class HintsControllerImplTest {
                 context,
                 HederaTestConfigBuilder::createConfig,
                 CRSState.newBuilder()
-                        .isGatheringContributions(true)
+                        .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                         .crs(INITIAL_CRS)
                         .build(),
                 List.of(CrsPublicationTransactionBody.newBuilder().build()));

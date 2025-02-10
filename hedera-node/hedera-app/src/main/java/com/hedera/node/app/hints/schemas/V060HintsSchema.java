@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
@@ -71,7 +72,7 @@ public class V060HintsSchema extends Schema {
             final var initialCrs = library.newCrs(tssConfig.initialCrsParties());
             states.<CRSState>getSingleton(CRS_STATE_KEY)
                     .put(CRSState.newBuilder()
-                            .isGatheringContributions(true)
+                            .stage(CRSStage.GATHERING_CONTRIBUTIONS)
                             .crs(initialCrs)
                             .build());
         }
