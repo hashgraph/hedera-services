@@ -107,14 +107,28 @@ public interface PreHandleWorkflow {
         // If the transaction is an atomic batch, we need to pre-handle all inner transactions as well
         // and add their results to the outer transaction's pre-handle result
         if (result.txInfo() != null && isAtomicBatch(result.txInfo())) {
-            for (final var innerTx :
-                    result.txInfo().txBody().atomicBatchOrThrow().transactions()) {
+            final var resultPresent = maybeReusableResult != null
+                    && maybeReusableResult.innerResults() != null
+                    && !maybeReusableResult.innerResults().isEmpty();
+            for (int i = 0;
+                    i
+                            < result.txInfo()
+                                    .txBody()
+                                    .atomicBatchOrThrow()
+                                    .transactions()
+                                    .size();
+                    i++) {
+                final var innerTx = result.txInfo()
+                        .txBody()
+                        .atomicBatchOrThrow()
+                        .transactions()
+                        .get(i);
                 final var innerResult = preHandleTransaction(
                         creator,
                         storeFactory,
                         accountStore,
                         com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(innerTx),
-                        null,
+                        resultPresent ? maybeReusableResult.innerResults().get(i) : null,
                         ignore -> {});
                 requireNonNull(result.innerResults()).add(innerResult);
             }
