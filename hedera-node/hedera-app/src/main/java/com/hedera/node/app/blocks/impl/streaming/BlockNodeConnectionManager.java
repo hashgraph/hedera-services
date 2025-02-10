@@ -18,6 +18,7 @@ package com.hedera.node.app.blocks.impl.streaming;
 
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hapi.block.protoc.BlockItemSet;
 import com.hedera.hapi.block.protoc.BlockStreamServiceGrpc;
@@ -43,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -98,7 +100,8 @@ public class BlockNodeConnectionManager {
     /**
      * Attempts to establish connections to block nodes based on priority and configuration.
      */
-    private void establishConnections() {
+    @VisibleForTesting
+    public void establishConnections() {
         logger.info(
                 "Establishing connections to block nodes... (Available non-preferred slots: {})",
                 availableNonPreferredSlots);
@@ -318,20 +321,22 @@ public class BlockNodeConnectionManager {
      * @return true if at least one connection was established, false if timeout occurred
      */
     public boolean waitForConnection(Duration timeout) {
-        Instant deadline = Instant.now().plus(timeout);
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
         establishConnections();
-        while (Instant.now().isBefore(deadline)) {
-            if (!activeConnections.isEmpty()) {
-                return true;
-            }
-            try {
-                Thread.sleep(1000); // Wait 1 second between attempts
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        return false;
+
+        scheduler.scheduleAtFixedRate(
+                () -> {
+                    if (!activeConnections.isEmpty()) {
+                        future.complete(true);
+                    } else if (Instant.now().isAfter(Instant.now().plus(timeout))) {
+                        future.complete(false);
+                    }
+                },
+                0,
+                1,
+                TimeUnit.SECONDS);
+
+        return future.getNow(false);
     }
 
     /**
@@ -346,5 +351,13 @@ public class BlockNodeConnectionManager {
      */
     public String getGrpcEndPoint() {
         return GRPC_END_POINT;
+    }
+
+    /**
+     * @return the active connections
+     */
+    @VisibleForTesting
+    public Map<BlockNodeConfig, BlockNodeConnection> getActiveConnections() {
+        return activeConnections;
     }
 }
