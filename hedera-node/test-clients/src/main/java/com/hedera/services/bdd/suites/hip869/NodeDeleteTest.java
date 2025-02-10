@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class NodeDeleteTest {
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 // Submit to a different node so ingest check is skipped
                 nodeDelete("node100")
-                    .setNode(asEntityString(5))
+                        .setNode(asEntityString(5))
                         .payingWith("payer")
                         .hasKnownStatus(INVALID_SIGNATURE)
                         .via("failedDeletion"),
@@ -101,7 +101,7 @@ public class NodeDeleteTest {
 
                 // Submit with several signatures and the price should increase
                 nodeDelete("node100")
-                    .setNode(asEntityString(5))
+                        .setNode(asEntityString(5))
                         .payingWith("payer")
                         .signedBy("payer", "randomAccount", "testKey")
                         .hasKnownStatus(INVALID_SIGNATURE)
@@ -126,7 +126,7 @@ public class NodeDeleteTest {
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded()),
                 // Submit to a different node so ingest check is skipped
                 nodeDelete("node100")
-                    .setNode(asEntityString(5))
+                        .setNode(asEntityString(5))
                         .fee(1)
                         .payingWith("payer")
                         .hasKnownStatus(INSUFFICIENT_TX_FEE)
@@ -134,7 +134,7 @@ public class NodeDeleteTest {
                 getTxnRecord("failedDeletion").logged(),
                 // Submit with several signatures and the price should increase
                 nodeDelete("node100")
-                    .setNode(asEntityString(5))
+                        .setNode(asEntityString(5))
                         .fee(ONE_HBAR)
                         .payingWith("payer")
                         .signedBy("payer", "randomAccount", "testKey")

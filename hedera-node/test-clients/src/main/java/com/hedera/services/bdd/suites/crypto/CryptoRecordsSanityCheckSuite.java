@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class CryptoRecordsSanityCheckSuite {
                 cryptoCreate("test").via("txn"),
                 validateTransferListForBalances(
                         "txn", List.of("test", FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
-            withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
@@ -116,7 +116,7 @@ public class CryptoRecordsSanityCheckSuite {
                         "txn",
                         List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test"),
                         Set.of("test")),
-            withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
@@ -127,7 +127,7 @@ public class CryptoRecordsSanityCheckSuite {
                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, "a", 1_234L)).via("txn"),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "a")),
-            withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
@@ -139,7 +139,7 @@ public class CryptoRecordsSanityCheckSuite {
                 cryptoUpdate("test").key(NEW_KEY).via("txn").fee(500_000L).payingWith("test"),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER, "test")),
-            withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)

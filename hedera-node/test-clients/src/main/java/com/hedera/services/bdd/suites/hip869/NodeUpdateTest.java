@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ public class NodeUpdateTest {
                 .adminKey("adminKey2")
                 .signedBy(DEFAULT_PAYER, "adminKey", "adminKey2")
                 .description("updated description")
-            .accountId(asEntityString(100))
+                .accountId(asEntityString(100))
                 .gossipEndpoint(List.of(
                         asServiceEndpoint("127.0.0.1:60"),
                         asServiceEndpoint("127.0.0.2:60"),

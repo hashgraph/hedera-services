@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class VerifyGetLiveHashNotSupported extends UtilOp {
         var realm = spec.startupProperties().getLong("hedera.realm");
 
         CryptoGetLiveHashQuery.Builder op =
-            CryptoGetLiveHashQuery.newBuilder().setAccountID(asAccount(String.format("%d.%d.2", shard, realm)));
+                CryptoGetLiveHashQuery.newBuilder().setAccountID(asAccount(String.format("%d.%d.2", shard, realm)));
         Query query = Query.newBuilder().setCryptoGetLiveHash(op).build();
         final var response = spec.targetNetworkOrThrow().send(query, CryptoGetLiveHash, targetNodeFor(spec));
         Assertions.assertEquals(

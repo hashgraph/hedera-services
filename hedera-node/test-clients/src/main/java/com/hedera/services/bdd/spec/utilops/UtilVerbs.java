@@ -1607,9 +1607,8 @@ public class UtilVerbs {
                 final var updateSubOp = fileUpdate(fileName)
                         .fee(ONE_HUNDRED_HBARS)
                         .contents(contents.substring(0, position))
-                        .alertingPre(fid -> System.out.println(
-                            ".i. Submitting initial update for file" +
-                                String.format(" %s.%s.%s, ", fid.getShardNum(), fid.getRealmNum(), fid.getFileNum())))
+                        .alertingPre(fid -> System.out.println(".i. Submitting initial update for file"
+                                + String.format(" %s.%s.%s, ", fid.getShardNum(), fid.getRealmNum(), fid.getFileNum())))
                         .alertingPost(code -> System.out.println(".i. Finished initial update with " + code))
                         .noLogging()
                         .payingWith(payer)
@@ -2021,11 +2020,12 @@ public class UtilVerbs {
         var realm = spec.startupProperties().getLong("hedera.realm");
 
         return validateRecordTransactionFees(
-            txn, Set.of(
-                asAccount(String.format("%s.%s.3", shard, realm)),
-                asAccount(String.format("%s.%s.98", shard, realm)),
-                asAccount(String.format("%s.%s.800", shard, realm)),
-                asAccount(String.format("%s.%s.801", shard, realm))));
+                txn,
+                Set.of(
+                        asAccount(String.format("%s.%s.3", shard, realm)),
+                        asAccount(String.format("%s.%s.98", shard, realm)),
+                        asAccount(String.format("%s.%s.800", shard, realm)),
+                        asAccount(String.format("%s.%s.801", shard, realm))));
     }
 
     /**

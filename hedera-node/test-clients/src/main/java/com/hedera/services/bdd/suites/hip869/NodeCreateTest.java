@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -124,7 +123,7 @@ public class NodeCreateTest {
             throws CertificateEncodingException { // skipping ingest but purecheck still throw the same
 
         return hapiTest(nodeCreate("nodeCreate")
-            .setNode(asEntityString(4)) // exclude 1.2.3
+                .setNode(asEntityString(4)) // exclude 1.2.3
                 .adminKey(NONSENSE_KEY)
                 .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .hasKnownStatus(KEY_REQUIRED));
@@ -305,7 +304,7 @@ public class NodeCreateTest {
                         .description("hello")
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .grpcCertificateHash("hash".getBytes())
-                    .accountId(asAccount(asEntityString(100)))
+                        .accountId(asAccount(asEntityString(100)))
                         .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
                         .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
                         .adminKey(ED_25519_KEY)
@@ -346,7 +345,7 @@ public class NodeCreateTest {
                 .description("hello")
                 .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                 .grpcCertificateHash("hash".getBytes())
-            .accountId(asAccount(asEntityString(100)))
+                .accountId(asAccount(asEntityString(100)))
                 .gossipEndpoint(GOSSIP_ENDPOINTS)
                 .serviceEndpoint(SERVICES_ENDPOINTS)
                 .adminKey(ED_25519_KEY)
@@ -408,7 +407,7 @@ public class NodeCreateTest {
                         .adminKey(ED_25519_KEY)
                         .payingWith("payer")
                         .signedBy("payer")
-                    .setNode(asEntityString(4))
+                        .setNode(asEntityString(4))
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .hasKnownStatus(UNAUTHORIZED)
                         .via("nodeCreationFailed"),
@@ -430,7 +429,7 @@ public class NodeCreateTest {
                         .adminKey(ED_25519_KEY)
                         .payingWith("payer")
                         .signedBy("payer", "randomAccount", "testKey")
-                    .setNode(asEntityString(4))
+                        .setNode(asEntityString(4))
                         .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
                         .hasKnownStatus(UNAUTHORIZED)
                         .via("multipleSigsCreation"),
@@ -455,7 +454,7 @@ public class NodeCreateTest {
                         .payingWith("payer")
                         .signedBy("payer")
                         .description(description)
-                    .setNode(asEntityString(4))
+                        .setNode(asEntityString(4))
                         .gossipCaCertificate(gossipCertificates.getFirst().getEncoded())
                         .fee(1)
                         .hasKnownStatus(INSUFFICIENT_TX_FEE)
@@ -477,7 +476,7 @@ public class NodeCreateTest {
                         .payingWith("payer")
                         .signedBy("payer", "randomAccount", "testKey")
                         .description(description)
-                    .setNode(asEntityString(4))
+                        .setNode(asEntityString(4))
                         .gossipCaCertificate(gossipCertificates.getLast().getEncoded())
                         .fee(1)
                         .hasKnownStatus(INSUFFICIENT_TX_FEE)
