@@ -46,6 +46,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 
 /**
  * Provides read access to the {@link HintsConstruction} and {@link PreprocessingVote} instances in state.
@@ -134,17 +137,17 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
         return publications;
     }
 
+    @Override
     public @NonNull CRSState getCrsState() {
         return requireNonNull(crs.get());
     }
 
+    @Override
     public List<CrsPublicationTransactionBody> getCrsPublications() {
-        final List<CrsPublicationTransactionBody> publications = new ArrayList<>();
-        while (crsPublications.keys().hasNext()) {
-            final var entry = crsPublications.keys().next();
-            publications.add(crsPublications.get(entry));
-        }
-        return publications;
+        return StreamSupport.stream(
+                        Spliterators.spliteratorUnknownSize(crsPublications.keys(), Spliterator.ORDERED), false)
+                .map(crsPublications::get)
+                .toList();
     }
 
     private boolean constructionIsFor(

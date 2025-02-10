@@ -40,9 +40,9 @@ public interface ReadableHintsStore {
      * The full record of a hinTS key publication, including the key, the time it was adopted, the submitting node id,
      * and the party id the node claimed to have for the construction. (For validating its submission.)
      *
-     * @param nodeId the id of the node submitting the key
-     * @param hintsKey the hinTS key itself
-     * @param partyId the party id the node claimed to have for the construction
+     * @param nodeId       the id of the node submitting the key
+     * @param hintsKey     the hinTS key itself
+     * @param partyId      the party id the node claimed to have for the construction
      * @param adoptionTime the time at which the key was adopted
      */
     record HintsKeyPublication(long nodeId, @NonNull Bytes hintsKey, int partyId, @NonNull Instant adoptionTime) {
@@ -66,6 +66,7 @@ public interface ReadableHintsStore {
 
     /**
      * Returns whether the give roster hash is ready to be adopted.
+     *
      * @param rosterHash the roster hash
      * @return whether the give roster hash is ready to be adopted
      */
@@ -84,6 +85,7 @@ public interface ReadableHintsStore {
 
     /**
      * If there is a known construction matching the active rosters, returns it; otherwise, null.
+     *
      * @param activeRosters the active rosters
      */
     @Nullable
@@ -91,8 +93,9 @@ public interface ReadableHintsStore {
 
     /**
      * Returns all known preprocessing output votes from the given nodes for the given construction id.
+     *
      * @param constructionId the construction id
-     * @param nodeIds the node ids
+     * @param nodeIds        the node ids
      * @return the preprocessed keys and votes, or null
      */
     @NonNull
@@ -100,7 +103,8 @@ public interface ReadableHintsStore {
 
     /**
      * Returns the hinTS keys published by the given set of nodes for the given party size.
-     * @param nodeIds the node ids
+     *
+     * @param nodeIds    the node ids
      * @param numParties the number of parties in the scheme
      * @return the {@link HintsKeyPublication}s
      */
@@ -109,9 +113,15 @@ public interface ReadableHintsStore {
 
     /**
      * Returns the current CRS state.
+     *
      * @return the current CRS state
      */
     CRSState getCrsState();
 
+    /**
+     * Returns the current CRS publications submitted by the nodes.
+     *
+     * @return the current CRS publications
+     */
     List<CrsPublicationTransactionBody> getCrsPublications();
 }
