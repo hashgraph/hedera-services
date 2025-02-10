@@ -144,6 +144,9 @@ class BlockStreamManagerImplTest {
     @Mock
     private CompletableFuture<Bytes> mockSigningFuture;
 
+    @Mock
+    private ConsensusEvent consensusEvent;
+
     private WritableStates writableStates;
 
     @Mock

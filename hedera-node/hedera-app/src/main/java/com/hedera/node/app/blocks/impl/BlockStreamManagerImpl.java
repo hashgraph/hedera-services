@@ -122,7 +122,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // The last non-empty (i.e., not skipped) round number that will eventually get a start-of-state hash
     private long lastNonEmptyRoundNumber;
     private Bytes lastBlockHash;
-    private Instant consensusTimeFirstEventInBlock;
+    private Instant blockTimestamp;
     private Instant consensusTimeLastRound;
     private BlockItemWriter writer;
     private StreamingTreeHasher inputTreeHasher;
@@ -238,8 +238,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Writer will be null when beginning a new block
         if (writer == null) {
             writer = writerSupplier.get();
-            consensusTimeFirstEventInBlock = round.iterator().next().getConsensusTimestamp();
-            boundaryStateChangeListener.setBoundaryTimestamp(round.getConsensusTimestamp());
+            // This iterator is never empty; c.f. DefaultTransactionHandler#handleConsensusRound()
+            blockTimestamp = round.iterator().next().getConsensusTimestamp();
+            boundaryStateChangeListener.setBoundaryTimestamp(blockTimestamp);
 
             final var blockStreamInfo = blockStreamInfoFrom(state);
             pendingWork = classifyPendingWork(blockStreamInfo, version);
@@ -425,7 +426,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public @NonNull Timestamp blockTimestamp() {
-        return asTimestamp(consensusTimeFirstEventInBlock);
+        return new Timestamp(blockTimestamp.getEpochSecond(), blockTimestamp.getNano());
     }
 
     @Override
@@ -544,8 +545,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
 
         // For time-based blocks, check if enough consensus time has elapsed
-        final var elapsedSeconds = Duration.between(consensusTimeFirstEventInBlock, consensusTimeLastRound)
-                .getSeconds();
+        final var elapsedSeconds =
+                Duration.between(blockTimestamp, consensusTimeLastRound).getSeconds();
         return elapsedSeconds >= blockPeriod;
     }
 
