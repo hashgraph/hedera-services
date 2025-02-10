@@ -68,7 +68,7 @@ public class StakeInfoHelper {
         requireNonNull(nodeId);
         requireNonNull(stakingInfoStore);
 
-        final var currentStakingInfo = stakingInfoStore.getForModify(nodeId);
+        final var currentStakingInfo = stakingInfoStore.get(nodeId);
         final var currentStakeRewardStart = currentStakingInfo.stakeRewardStart();
         final var newUnclaimedStakeRewardStart = currentStakingInfo.unclaimedStakeRewardStart() + amount;
 
@@ -195,7 +195,7 @@ public class StakeInfoHelper {
         requireNonNull(rewardsStore);
         final var preUpgradeNodeIds = infoStore.getAll();
         preUpgradeNodeIds.stream().sorted().forEach(nodeId -> {
-            final var stakingInfo = requireNonNull(infoStore.getForModify(nodeId));
+            final var stakingInfo = requireNonNull(infoStore.get(nodeId));
             if (!networkInfo.containsNode(nodeId) && !stakingInfo.deleted()) {
                 infoStore.put(
                         nodeId,

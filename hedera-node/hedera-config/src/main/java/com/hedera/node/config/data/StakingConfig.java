@@ -40,7 +40,6 @@ public record StakingConfig(
         // from all production 0.0.121 system files
         @ConfigProperty(defaultValue = "6849") @NetworkProperty long perHbarRewardRate,
         @ConfigProperty(defaultValue = "25000000000000000") @NetworkProperty long startThreshold,
-        @ConfigProperty(defaultValue = "500") @NetworkProperty int sumOfConsensusWeights,
         @ConfigProperty(defaultValue = "8500000000000000") @NetworkProperty long rewardBalanceThreshold,
         @ConfigProperty(defaultValue = "650000000000000000") @NetworkProperty long maxStakeRewarded,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long minStake,
