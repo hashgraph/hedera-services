@@ -309,7 +309,7 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void settingNonceUsesApi() {
-        var configuration = HederaTestConfigBuilder.create()
+        final var configuration = HederaTestConfigBuilder.create()
                 .withValue("hedera.shard", 0)
                 .withValue("hedera.realm", 0)
                 .getOrCreateConfig();

@@ -91,7 +91,7 @@ public class SysFileOverrideOp extends UtilOp {
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        var fileId = asEntityString(target.number());
+        final var fileId = asEntityString(target.number());
         allRunFor(spec, getFileContents(fileId).consumedBy(bytes -> this.originalContents = bytes));
         log.info("Took snapshot of {}", target);
         final var styledContents = overrideSupplier.get();
