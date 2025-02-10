@@ -19,6 +19,7 @@ package com.hedera.node.app.hints.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore;
@@ -114,6 +115,7 @@ class HintsControllersTest {
         given(weights.sourceNodesHaveTargetThreshold()).willReturn(true);
         given(keyAccessor.getOrCreateBlsKeyPair(1L)).willReturn(BLS_KEY_PAIR);
         given(selfNodeInfoSupplier.get()).willReturn(selfNodeInfo);
+        given(hintsStore.getCrsState()).willReturn(CRSState.DEFAULT);
 
         final var controller = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore);
 

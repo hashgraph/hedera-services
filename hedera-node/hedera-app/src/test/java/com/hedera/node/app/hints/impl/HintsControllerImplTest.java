@@ -22,7 +22,9 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -33,6 +35,7 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
+import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -83,6 +86,7 @@ class HintsControllerImplTest {
     private static final HintsKeyPublication TARDY_NODE_TWO_PUBLICATION =
             new HintsKeyPublication(2L, Bytes.wrap("TWO"), 1, PREPROCESSING_START_TIME.plusSeconds(1));
     private static final Map<Long, Long> TARGET_NODE_WEIGHTS = Map.of(1L, 8L, 2L, 2L);
+    private static final Bytes INITIAL_CRS = Bytes.wrap("CRS");
 
     @Mock
     private HintsLibrary library;
@@ -117,6 +121,7 @@ class HintsControllerImplTest {
     @Test
     void finishedIsNotInProgressAndDoesNothing() {
         setupWith(FINISHED_CONSTRUCTION);
+        scheduledTasks.poll();
 
         assertFalse(subject.isStillInProgress());
 
@@ -155,6 +160,8 @@ class HintsControllerImplTest {
     @Test
     void setsNodeIdsAndSchedulesVerificationForExpectedPartyId() {
         setupWith(UNFINISHED_CONSTRUCTION);
+        // remove crs publication task
+        scheduledTasks.poll();
         given(weights.targetNodeWeights()).willReturn(TARGET_NODE_WEIGHTS);
 
         subject.addHintsKeyPublication(EXPECTED_NODE_ONE_PUBLICATION);
@@ -238,6 +245,8 @@ class HintsControllerImplTest {
     @Test
     void publishesHintsKeyIfNotDoneBeforeGracePeriodOver() {
         setupWith(UNFINISHED_CONSTRUCTION);
+        // remove crs publication task
+        scheduledTasks.poll();
         given(weights.numTargetNodesInSource()).willReturn(2);
         given(weights.targetNodeWeights()).willReturn(Map.of(SELF_ID, 1L));
 
@@ -264,6 +273,8 @@ class HintsControllerImplTest {
     @Test
     void publishesHintsKeyIfNotDoneAfterGracePeriodOverWithoutAdequateWeightFromTarget() {
         setupWith(UNFINISHED_CONSTRUCTION);
+        // remove crs publication task
+        scheduledTasks.poll();
         given(weights.numTargetNodesInSource()).willReturn(2);
         given(weights.targetNodeWeights()).willReturn(Map.of(SELF_ID, 1L));
         given(weights.targetWeightThreshold()).willReturn(1L);
@@ -341,6 +352,43 @@ class HintsControllerImplTest {
         verify(context, never()).setConstruction(any());
     }
 
+    @Test
+    void crsPublicationsInConstructorWhenNotValid() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        final var task = requireNonNull(scheduledTasks.poll());
+        task.run();
+
+        verify(library).verifyCrsUpdate(eq(INITIAL_CRS), any(), any());
+    }
+
+    @Test
+    void setsCRSPublicationsInConstructorWhenValid() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        given(library.verifyCrsUpdate(any(), any(), any())).willReturn(true);
+        final var task = requireNonNull(scheduledTasks.poll());
+        task.run();
+
+        verify(library).verifyCrsUpdate(eq(INITIAL_CRS), any(), any());
+    }
+
+    @Test
+    void addsCRSPublications() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+        given(library.verifyCrsUpdate(any(), any(), any())).willReturn(true);
+        final var task = requireNonNull(scheduledTasks.poll());
+        task.run();
+
+        verify(library).verifyCrsUpdate(eq(INITIAL_CRS), any(), any());
+        subject.addCrsPublication(CrsPublicationTransactionBody.newBuilder()
+                .newCrs(Bytes.wrap("newcrs"))
+                .proof(Bytes.wrap("proof"))
+                .build());
+
+        final var task1 = requireNonNull(scheduledTasks.poll());
+        task1.run();
+        verify(library).verifyCrsUpdate(any(), eq(Bytes.wrap("newcrs")), eq(Bytes.wrap("proof")));
+    }
+
     private void setupWith(@NonNull final HintsConstruction construction) {
         setupWith(construction, List.of());
     }
@@ -361,8 +409,12 @@ class HintsControllerImplTest {
                 submissions,
                 context,
                 HederaTestConfigBuilder::createConfig,
-                CRSState.newBuilder().crs(Bytes.wrap("test")).build(),
-                List.of());
+                CRSState.newBuilder()
+                        .isGatheringContributions(true)
+                        .crs(INITIAL_CRS)
+                        .build(),
+                List.of(CrsPublicationTransactionBody.newBuilder().build()));
+        lenient().when(store.getCrsState()).thenReturn(CRSState.DEFAULT);
     }
 
     private void runScheduledTasks() {

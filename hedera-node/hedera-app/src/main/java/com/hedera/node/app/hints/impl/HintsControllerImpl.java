@@ -352,6 +352,9 @@ public class HintsControllerImpl implements HintsController {
         if (crsPublicationFuture != null) {
             crsPublicationFuture.cancel(true);
         }
+        if (finalUpdatedCrsFuture != null) {
+            finalUpdatedCrsFuture.cancel(true);
+        }
         validationFutures.values().forEach(future -> future.cancel(true));
     }
 
