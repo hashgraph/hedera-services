@@ -177,11 +177,9 @@ public class HintsControllerImpl implements HintsController {
     public void advanceConstruction(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(now);
         requireNonNull(hintsStore);
+        // Do the work needed to set the CRS for network and start the preprocessing vote
+        doCRSWork(now, hintsStore);
 
-        if (hintsStore.getCrsState().isGatheringContributions()) {
-            doCRSWork(now, hintsStore);
-            return;
-        }
         if (construction.hasHintsScheme()) {
             return;
         }
@@ -237,7 +235,8 @@ public class HintsControllerImpl implements HintsController {
             }
         } else if (crsState.nextContributingNodeId() == selfId && crsPublicationFuture == null) {
             submitUpdatedCRS(hintsStore);
-        } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
+        } else if (crsState.contributionEndTime() != null
+                && now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
             moveToNextNode(now, hintsStore, crsState);
         }
     }

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
@@ -44,6 +45,7 @@ import com.hedera.node.app.tss.TssKeyPair;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -87,6 +89,8 @@ class HintsControllerImplTest {
             new HintsKeyPublication(2L, Bytes.wrap("TWO"), 1, PREPROCESSING_START_TIME.plusSeconds(1));
     private static final Map<Long, Long> TARGET_NODE_WEIGHTS = Map.of(1L, 8L, 2L, 2L);
     private static final Bytes INITIAL_CRS = Bytes.wrap("CRS");
+    private static final Bytes NEW_CRS = Bytes.wrap("newCRS");
+    private static final Bytes PROOF = Bytes.wrap("proof");
 
     @Mock
     private HintsLibrary library;
@@ -380,13 +384,61 @@ class HintsControllerImplTest {
 
         verify(library).verifyCrsUpdate(eq(INITIAL_CRS), any(), any());
         subject.addCrsPublication(CrsPublicationTransactionBody.newBuilder()
-                .newCrs(Bytes.wrap("newcrs"))
-                .proof(Bytes.wrap("proof"))
+                .newCrs(NEW_CRS)
+                .proof(PROOF)
                 .build());
 
         final var task1 = requireNonNull(scheduledTasks.poll());
         task1.run();
-        verify(library).verifyCrsUpdate(any(), eq(Bytes.wrap("newcrs")), eq(Bytes.wrap("proof")));
+        verify(library).verifyCrsUpdate(any(), eq(NEW_CRS), eq(PROOF));
+    }
+
+    @Test
+    void setsFinalCRSIfAllIdsCompleted() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+
+        given(store.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .isGatheringContributions(true)
+                        .nextContributingNodeId(-1)
+                        .crs(INITIAL_CRS)
+                        .build());
+        subject.advanceConstruction(CONSENSUS_NOW, store);
+
+        verify(store)
+                .setCRSState(CRSState.newBuilder()
+                        .isGatheringContributions(false)
+                        .nextContributingNodeId(-1)
+                        .contributionEndTime(asTimestamp(CONSENSUS_NOW.plus(Duration.ofSeconds(5))))
+                        .crs(INITIAL_CRS)
+                        .build());
+    }
+
+    @Test
+    void setsFinalCRSAndRemovesContributionEndTime() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+
+        given(store.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .isGatheringContributions(false)
+                        .nextContributingNodeId(-1)
+                        .contributionEndTime(asTimestamp(CONSENSUS_NOW.minus(Duration.ofSeconds(7))))
+                        .crs(INITIAL_CRS)
+                        .build());
+        given(submissions.submitUpdateCRS(any(), any())).willReturn(CompletableFuture.completedFuture(null));
+        subject.addCrsPublication(CrsPublicationTransactionBody.newBuilder()
+                .newCrs(NEW_CRS)
+                .proof(PROOF)
+                .build());
+        subject.advanceConstruction(CONSENSUS_NOW, store);
+
+        verify(store)
+                .setCRSState(CRSState.newBuilder()
+                        .isGatheringContributions(false)
+                        .nextContributingNodeId(-1)
+                        .contributionEndTime((Timestamp) null)
+                        .crs(INITIAL_CRS)
+                        .build());
     }
 
     private void setupWith(@NonNull final HintsConstruction construction) {
