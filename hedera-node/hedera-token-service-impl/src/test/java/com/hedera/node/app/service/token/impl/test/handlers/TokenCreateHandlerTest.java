@@ -864,6 +864,37 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void succeedsWithArbitraryShardAndRealm() {
+        final int shard = 5;
+        final long realm = 10;
+        setUpTxnContext();
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
+                .willReturn(new ExpiryMeta(1L, THREE_MONTHS_IN_SECONDS, null));
+        var config = HederaTestConfigBuilder.create()
+                .withValue("hedera.shard", shard)
+                .withValue("hedera.realm", realm)
+                .getOrCreateConfig();
+        txn = new TokenCreateBuilder().withAdminKey(IMMUTABILITY_SENTINEL_KEY).build();
+        given(handleContext.configuration()).willReturn(config);
+        given(handleContext.body()).willReturn(txn);
+        subject.handle(handleContext);
+
+        var expectedTokenId = TokenID.newBuilder()
+                .tokenNum(newTokenId.tokenNum())
+                .realmNum(realm)
+                .shardNum(shard)
+                .build();
+
+        // newly created account and payer account are modified
+        assertThat(writableTokenStore.modifiedTokens()).contains(expectedTokenId);
+
+        // Validate created account exists and check record builder has created account recorded
+        final var createdToken = writableTokenStore.get(expectedTokenId);
+        assertThat(createdToken).isNotNull();
+    }
+
+    @Test
     void failsForInvalidMetaDataKey() {
         setUpTxnContext();
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);

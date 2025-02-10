@@ -22,7 +22,7 @@ plugins {
 }
 
 dependencies {
-    api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
+    api(platform("io.netty:netty-bom:4.1.117.Final"))
 
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
     runtime("org.apache.logging.log4j:log4j-slf4j2-impl") {
@@ -32,10 +32,10 @@ dependencies {
 
 val autoService = "1.1.1"
 val besu = "24.3.3"
-val bouncycastle = "1.79"
-val dagger = "2.42"
+val bouncycastle = "1.80"
+val dagger = "2.55"
 val eclipseCollections = "11.1.0"
-val grpc = "1.69.0"
+val grpc = "1.70.0"
 val hederaCryptography = "0.1.1-SNAPSHOT"
 val helidon = "4.1.6"
 val jackson = "2.18.2"
@@ -133,7 +133,7 @@ dependencies.constraints {
     api("org.junit-pioneer:junit-pioneer:2.3.0") { because("org.junitpioneer") }
     api("org.mockito:mockito-core:$mockito") { because("org.mockito") }
     api("org.mockito:mockito-junit-jupiter:$mockito") { because("org.mockito.junit.jupiter") }
-    api("org.opentest4j:opentest4j:1.2.0") { because("org.opentest4j") }
+    api("org.opentest4j:opentest4j:1.3.0") { because("org.opentest4j") }
     api("org.testcontainers:testcontainers:$testContainers") { because("org.testcontainers") }
     api("org.testcontainers:junit-jupiter:$testContainers") {
         because("org.testcontainers.junit.jupiter")
@@ -148,7 +148,7 @@ dependencies.constraints {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
     api("com.google.protobuf:protoc:3.25.4")
-    api("io.grpc:protoc-gen-grpc-java:1.69.0")
+    api("io.grpc:protoc-gen-grpc-java:$grpc")
 
     api("com.hedera.cryptography:hedera-cryptography-pairings-api:$hederaCryptography") {
         because("com.hedera.cryptography.pairings.api")
