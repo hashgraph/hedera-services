@@ -26,6 +26,7 @@ import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
@@ -96,6 +97,7 @@ public class TurtleNode {
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
                 .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, testDirectory.toString())
                 .getOrCreateConfig();
 
         setupGlobalMetrics(configuration);
