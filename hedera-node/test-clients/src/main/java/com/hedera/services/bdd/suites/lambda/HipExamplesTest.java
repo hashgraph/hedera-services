@@ -16,6 +16,16 @@
 
 package com.hedera.services.bdd.suites.lambda;
 
+import com.hedera.hapi.node.base.LambdaCall;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
+
+import java.util.stream.Stream;
+
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -24,15 +34,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.lambda.LambdaInstaller.lambdaBytecode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-
-import com.hedera.hapi.node.base.LambdaCall;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
-import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class HipExamplesTest {
@@ -53,7 +54,7 @@ public class HipExamplesTest {
                                 "traveler",
                                 cleverCoin.name(),
                                 1L,
-                                new LambdaCall(index, Bytes.EMPTY, 100_000L, false)))
+                                new LambdaCall(index, Bytes.EMPTY, 100_000L)))
                         .payingWith("traveler"));
     }
 }

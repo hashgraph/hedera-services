@@ -145,6 +145,19 @@ message LambdaInstallation {
      * bytecode and initial storage slots to use.
      */
     LambdaExplicitInit explicit_init = 3;
+
+    /**
+     * A "hook" contract to reuse bytecode from; will be delegate called
+     * using the lambda's storage instead of its own.
+     * <p>
+     * For lambda types such as TRANSFER_ALLOWANCE, the hook ABI is extended
+     * to include the address of the installing account on whose behalf the
+     * contract is currently being executed.
+     * <p>
+     * As a best practice, hook contracts used should revert if their address
+     * is not the lambda system contract address 0x16c.
+     */
+    ContractID hook_contract_id = 4;
   }
 
   /**

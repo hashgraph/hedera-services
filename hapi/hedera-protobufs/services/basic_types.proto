@@ -500,13 +500,6 @@ message LambdaCall {
      * If present, an explicit gas limit to use.
      */
     google.protobuf.UInt64Value gas_limit = 3;
-
-    /**
-     * If true, enables full execution mode at a higher price
-     * and externalizes the lambda's call trace as a child
-     * transaction.
-     */
-    bool requires_externalization = 4;
 }
 
 /**

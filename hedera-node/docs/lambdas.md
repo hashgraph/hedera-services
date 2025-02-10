@@ -17,34 +17,35 @@ updated: 2025-01-26
 ## Abstract
 
 We propose Hiero **lambdas**, lightweight EVM functions that users can **install** on their entities to extend and
-customize the native protocol. After a lambda is installed to an entity, relevant transactions reference it by id to
-apply its custom logic.
+customize the native protocol. After a lambda is installed to an entity, transactions reference it by id to apply 
+its custom logic.
 
-A lambda does not have a `ContractID` or EVM address; it cannot be called via the Hedera API (HAPI); and it cannot hold
-HBAR or Hedera Token Service (HTS) assets. To further encourage lightweight usage, lambdas default to an execution mode
-that reverts on any opcode usage that would require the network to externalize a call trace. (Users can pay a higher fee
-to enable full execution mode and externalize the call trace for a lambda.)
+A lambda does not have a `ContractID` or EVM address. It cannot be called via the Hedera API (HAPI), and it cannot hold
+HBAR or Hedera Token Service (HTS) assets. Users can, however, install a lambda that reuses bytecode from an already 
+deployed smart contract. We call such a lambda a **hook**, in contrast to **standalone** lambdas that are installed 
+with their own bytecode. A hook lambda executes with `DELEGATECALL` at the top level so the shared bytecode sees the 
+storage of the installed lambda currently executing it.
 
 The **type** of a lambda determines where it can be installed, which transactions can reference it, and exactly how the
 protocol applies its logic. For example, an allowance lambda can be installed on an account, referenced by a
 `CryptoTransfer` transaction, and the protocol executes it to decide if the `CryptoTransfer` can succeed. All types of
-lambdas use EVM **application binary interfaces (ABI)** to ensure a clear contract between the protocol and user-defined
-logic.
+lambdas use an EVM **application binary interface (ABI)** to ensure a clear contract between the protocol and 
+user-defined logic. 
 
-Unlike smart contracts, which must encapsulate trust guarantees for multiple parties, Hiero lambdas belong to a single
-owner who can directly update their storage via a `LambdaSStore` transaction. This streamlined design enables
+Unlike smart contracts, which must encapsulate trust guarantees for multiple parties, lambdas belong to a single
+owner who can directly update their storage via a `LambdaSStore` transaction. This streamlined design supports
 fast, low-cost adjustments to a lambda with less overhead than a typical `ConsensusSubmitMessage`; and far less
 than a `ContractCall`.
 
-As an application, we also introduce a **transfer allowance** lambda type that is installable on Hiero accounts and
-referenceable by `CryptoTransfer` transactions. We give two simple examples of transfer allowances. The first creates
-a one-time use passcode allowance; the second refines the native `receiver_sig_required` flag to permit just HTS token
-credits that do not incur custom fees.
+As a first application of lambdas, we propose the **transfer allowance** lambda type that is installable on Hiero 
+accounts and referenceable by `CryptoTransfer` transactions. We give two simple examples of transfer allowances. The 
+first creates a one-time use passcode allowance; the second refines the native `receiver_sig_required` flag to permit 
+just HTS token credits that do not incur custom fees.
 
 ## Motivation
 
-Hedera users frequently seek to customize native entities instead of migrating their decentralized applications (dApps)
-to purely EVM-based smart contracts. We see this in multiple proposals:
+Hedera users often want to customize native entities instead of migrating their decentralized applications (dApps) to 
+purely EVM-based smart contracts. We see this in multiple proposals:
 - [HIP-18: Custom Hedera Token Service Fees](https://hips.hedera.com/hip/hip-18) introduced custom fee
 payments for HTS transfers.
 - [HIP-904: Frictionless Airdrops](https://hips.hedera.com/hip/hip-904) enabled more permissive token association policies.
@@ -52,8 +53,8 @@ payments for HTS transfers.
 proposes fee-based access control for message submissions to topics.
 
 In principle, these sorts of enhancements could be written as smart contracts, _if_ the protocol exposed suitable
-"hooks" to inject custom logic. But without these hooks, users must either switch to a more EVM-centric architecture
-or undertake the slow, complex process of designing, drafting, and building consensus around a new HIP.
+extension points to inject custom logic. But in the current protocol, users must either switch to a more EVM-centric 
+architecture or undertake the slow, complex process of designing, drafting, and building consensus around a new HIP.
 
 We believe lambdas fill this gap by providing carefully chosen extension points within the native protocol. With
 lambdas, the use cases motivating HIP-18, HIP-904, and HIP-991 (and many other past and future enhancements) could be
@@ -94,16 +95,20 @@ that basis and the referencing transaction will roll back with final status of `
 
 ### Lambda execution environment
 
-Although a lambda exists in the network state with  bytecode and storage, it does **not** have a directly callable
-EVM address. You cannot invoke it through the HAPI or reference it from other smart contracts by EVM address.
+A standalone lambda exists in network state with both bytecode and storage, and a hook lambda has its own storage. But 
+neither is directly callable. That is, users cannot invoke lambdas by `ContractID` through HAPI or reference them from 
+other smart contracts by EVM address.
 
-Instead, when a lambda is executed, both the EVM receiver and contract address in the initial frame are set to a
-reserved system contract address, `0x16c`.
-
-Lambdas execute by default in a mode that reverts on any opcode usage that would require the network to externalize a
-call trace. (For example, include the `CALL`, `CREATE`, and `LOG` opcode variants.) This default mode is intended to
-encourage lightweight usage. Users can pay a higher fee to enable full execution mode and externalize the call trace
-for a lambda.
+When the protocol executes a lambda, it sets the EVM `recipient` address in the initial frame to the reserved system 
+contract address `0x16c`. This makes it easy to write a hook contract that can be used exclusively as a lambdas,
+```solidity
+contract SharedHook {
+   function lambdaEntrypoint(address installer) external payable {
+      require(address(this) == 0x16c, "Contract only callable as a lambda");
+      // Now we know we are executing a lambda on behalf of the installer address
+   }
+}
+```
 
 ### Core HAPI protobufs
 
@@ -143,13 +148,14 @@ enum LambdaChargingPattern {
 }
 ```
 
-To install a lambda, you must specify its type and how to initialize its bytecode and storage. You can do this by
-providing EVM initcode to execute with a constructor call; or, for especially lightweight lambdas, by providing
-pre-initialized bytecode and storage slots.
+To install a lambda, you must specify its type and how to initialize its bytecode and storage. You can do this in 
+three ways,
+1. By providing EVM initcode to execute with a constructor call; 
+2. By providing pre-initialized bytecode and storage slots; or,
+3. By reusing bytecode from an already deployed smart contract.
 
-You may optionally specify a charging pattern, default gas limit, and a specific lambda index to try to install the
-lambda at. (If this index is already taken, the installing transaction will fail with final status
-`LAMBDA_INDEX_IN_USE`.)
+You may optionally specify a charging pattern, default gas limit, and a specific index to install the lambda at. (If 
+this index is already taken, the installing transaction will fail with status `LAMBDA_INDEX_IN_USE`.)
 
 ```protobuf
 /**
@@ -223,41 +229,54 @@ message LambdaExplicitInit {
  * Defines how to install a lambda.
  */
 message LambdaInstallation {
-  /**
-   * The type of lambda to install.
-   */
-  LambdaType type = 1;
+   /**
+    * The type of lambda to install.
+    */
+   LambdaType type = 1;
 
-  oneof init_method {
-    /**
-     * If the lambda should be initialized via a EVM contract
-     * creation transaction, the initcode to execute.
-     */
-    LambdaInitcode initcode = 2;
+   oneof init_method {
+      /**
+       * If the lambda should be initialized via a EVM contract
+       * creation transaction, the initcode to execute.
+       */
+      LambdaInitcode initcode = 2;
 
-    /**
-     * If the lambda should be initialized explicitly, the
-     * bytecode and initial storage slots to use.
-     */
-    LambdaExplicitInit explicit_init = 3;
-  }
+      /**
+       * If the lambda should be initialized explicitly, the
+       * bytecode and initial storage slots to use.
+       */
+      LambdaExplicitInit explicit_init = 3;
 
-  /**
-   * The charging pattern to apply for gas usage.
-   */
-  LambdaChargingPattern charging_pattern = 5;
+      /**
+       * A "hook" contract to reuse bytecode from; will be delegate called 
+       * using the lambda's storage instead of its own. 
+       * <p>
+       * For lambda types such as TRANSFER_ALLOWANCE, the hook ABI is extended
+       * to include the address of the installing account on whose behalf the
+       * contract is currently being executed.
+       * <p>
+       * As a best practice, hook contracts used should revert if their address 
+       * is not the lambda system contract address 0x16c.
+       */
+      ContractID hook_contract_id = 4;
+   }
 
-  /**
-   * If present, the default gas limit to use when
-   * executing the lambda.
-   */
-  google.protobuf.UInt64Value default_gas_limit = 6;
+   /**
+    * The charging pattern to apply for gas usage.
+    */
+   LambdaChargingPattern charging_pattern = 5;
 
-  /**
-   * If present, a specific lambda index to attempt
-   * to install this lambda at.
-   */
-  google.protobuf.UInt64Value index = 7;
+   /**
+    * If present, the default gas limit to use when
+    * executing the lambda.
+    */
+   google.protobuf.UInt64Value default_gas_limit = 6;
+
+   /**
+    * If present, a specific lambda index to attempt
+    * to install this lambda at.
+    */
+   google.protobuf.UInt64Value index = 7;
 }
 ```
 
@@ -335,13 +354,6 @@ message LambdaCall {
    * If present, an explicit gas limit to use.
    */
   google.protobuf.UInt64Value gas_limit = 3;
-
-  /**
-   * If true, enables full execution mode at a higher price
-   * and externalizes the lambda's call trace as a child
-   * transaction.
-   */
-  bool requires_externalization = 4;
 }
 ```
 
@@ -607,7 +619,23 @@ interface IHieroTransferAllowance {
     /// @param proposedTransfers The proposed transfers
     /// @param args The extra arguments
     /// @return true If the proposed transfers are allowed, false or revert otherwise
-    function allow(ProposedTransfers memory proposedTransfers, bytes memory args) external payable returns (bool);
+    function allow(
+       ProposedTransfers memory proposedTransfers, 
+       bytes memory args
+    ) external payable returns (bool);
+   
+   /// Decides if the proposed transfers are allowed on behalf of the
+   /// given installer address; optionally in the presence of additional 
+   /// context encoded by the transaction payer in the extra args.
+   /// @param installer The address of the installing account for which the hook is being executed
+   /// @param proposedTransfers The proposed transfers
+   /// @param args The extra arguments
+   /// @return true If the proposed transfers are allowed, false or revert otherwise
+   function allowHook(
+      address installer,
+      ProposedTransfers memory proposedTransfers, 
+      bytes memory args
+   ) external payable returns (bool);
 }
 ```
 
