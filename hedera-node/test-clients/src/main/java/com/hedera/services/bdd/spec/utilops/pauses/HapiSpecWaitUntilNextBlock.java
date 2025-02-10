@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -107,7 +108,7 @@ public class HapiSpecWaitUntilNextBlock extends UtilOp {
     private long findLatestBlockNumber(Path blockDir) throws IOException {
         try (Stream<Path> files = Files.walk(blockDir)) {
             return files.filter(this::isBlockFile)
-                    .map(this::extractBlockNumber)
+                    .map(BlockStreamAccess::extractBlockNumber)
                     .filter(num -> num >= 0)
                     .max(Long::compareTo)
                     .orElse(-1L);
@@ -128,15 +129,5 @@ public class HapiSpecWaitUntilNextBlock extends UtilOp {
         String fileName = path.getFileName().toString();
         return Files.isRegularFile(path)
                 && (fileName.endsWith(BLOCK_FILE_EXTENSION) || fileName.endsWith(COMPRESSED_BLOCK_FILE_EXTENSION));
-    }
-
-    private long extractBlockNumber(Path path) {
-        try {
-            String fileName = path.getFileName().toString();
-            String numberPart = fileName.substring(0, fileName.indexOf(BLOCK_FILE_EXTENSION));
-            return Long.parseLong(numberPart);
-        } catch (Exception e) {
-            return -1L;
-        }
     }
 }

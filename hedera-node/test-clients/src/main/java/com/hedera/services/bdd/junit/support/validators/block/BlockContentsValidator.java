@@ -86,19 +86,19 @@ public class BlockContentsValidator implements BlockStreamValidator {
         validateBlockProof(items.getLast());
     }
 
-    private static void validateBlockHeader(BlockItem item) {
+    private static void validateBlockHeader(final BlockItem item) {
         if (!item.hasBlockHeader()) {
             Assertions.fail("Block must start with a block header");
         }
     }
 
-    private static void validateBlockProof(BlockItem item) {
+    private static void validateBlockProof(final BlockItem item) {
         if (!item.hasBlockProof()) {
             Assertions.fail("Block must end with a block proof");
         }
     }
 
-    private static void validateRounds(List<BlockItem> roundItems) {
+    private static void validateRounds(final List<BlockItem> roundItems) {
         int currentIndex = 0;
         while (currentIndex < roundItems.size()) {
             currentIndex = validateSingleRound(roundItems, currentIndex);
@@ -109,7 +109,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
      * Validates a single round within a block, starting at the given index.
      * Returns the index of the next item after this round.
      */
-    private static int validateSingleRound(List<BlockItem> items, int startIndex) {
+    private static int validateSingleRound(final List<BlockItem> items, int startIndex) {
         // Validate round header
         if (!items.get(startIndex).hasRoundHeader()) {
             logger.error("Expected round header at index {}, found: {}", startIndex, items.get(startIndex));
@@ -150,7 +150,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
      * Validates a transaction group (transaction + result + optional outputs).
      * Returns the index of the next item after this group.
      */
-    private static int validateTransactionGroup(List<BlockItem> items, int transactionIndex) {
+    private static int validateTransactionGroup(final List<BlockItem> items, int transactionIndex) {
         if (transactionIndex + 1 >= items.size()) {
             Assertions.fail("Event transaction at end of block with no result");
         }

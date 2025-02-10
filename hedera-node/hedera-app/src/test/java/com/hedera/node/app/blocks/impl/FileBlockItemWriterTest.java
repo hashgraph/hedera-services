@@ -144,8 +144,8 @@ public class FileBlockItemWriterTest {
         fileBlockItemWriter.closeBlock();
 
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
-        Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
-        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+        final Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
+        final Path expectedMarkerFile = expectedDirectory.resolve(MF);
 
         // Verify both block file and marker file exist
         assertThat(Files.exists(expectedBlockFile)).isTrue();
@@ -199,7 +199,7 @@ public class FileBlockItemWriterTest {
 
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
         Path expectedBlockFile = expectedDirectory.resolve("000000000000000000000000000000000001.blk.gz");
-        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+        Path expectedMarkerFile = expectedDirectory.resolve(MF);
 
         // Verify both block file and marker file exist
         assertThat(Files.exists(expectedBlockFile)).isTrue();
@@ -241,7 +241,7 @@ public class FileBlockItemWriterTest {
 
         // Verify marker file exists before attempting second close
         Path expectedDirectory = tempDir.resolve("block-0.0.3");
-        Path expectedMarkerFile = expectedDirectory.resolve("000000000000000000000000000000000001.mf");
+        Path expectedMarkerFile = expectedDirectory.resolve(MF);
         assertThat(Files.exists(expectedMarkerFile)).isTrue();
 
         assertThatThrownBy(fileBlockItemWriter::closeBlock, "Cannot close a FileBlockItemWriter that is already closed")
