@@ -63,6 +63,7 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
     protected void addToDataSource(@NonNull E element) {
         final QueueState state = queueHelper.getState();
         virtualMap.put(getVirtualMapKey(serviceName, stateKey, state.getTailAndIncrement()), element, valueCodec);
+        queueHelper.updateState(state);
         // Log to transaction state log, what was added
         logQueueAdd(computeLabel(serviceName, stateKey), element);
     }
@@ -71,9 +72,8 @@ public class OnDiskWritableQueueState<E> extends WritableQueueStateBase<E> {
     protected void removeFromDataSource() {
         final QueueState state = queueHelper.getState();
         if (!state.isEmpty()) {
-            // TODO: double check VirtualMap#remove return type
-            final var valueToRemove = queueHelper.getFromStore(state.getHead());
-            virtualMap.remove(getVirtualMapKey(serviceName, stateKey, state.getHeadAndIncrement()));
+            final var valueToRemove = virtualMap.remove(getVirtualMapKey(serviceName, stateKey, state.getHeadAndIncrement()), valueCodec);
+            queueHelper.updateState(state);
             // Log to transaction state log, what was added
             logQueueRemove(computeLabel(serviceName, stateKey), valueToRemove);
         } else {

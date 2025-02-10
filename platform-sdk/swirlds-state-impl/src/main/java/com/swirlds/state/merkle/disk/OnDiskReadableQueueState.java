@@ -53,7 +53,7 @@ public class OnDiskReadableQueueState<E> extends ReadableQueueStateBase<E> {
     @Override
     protected E peekOnDataSource() {
         final QueueState state = queueHelper.getState();
-        final E value = state.isEmpty() ? null : queueHelper.getFromStore(queueHelper.getState().getHead());
+        final E value = state.isEmpty() ? null : queueHelper.getFromStore(state.getHead());
         // Log to transaction state log, what was peeked
         logQueuePeek(computeLabel(serviceName, stateKey), value);
         return value;

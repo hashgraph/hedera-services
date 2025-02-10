@@ -60,7 +60,11 @@ public final class OnDiskQueueHelper<E> {
     }
 
     public QueueState getState() {
-        return virtualMap.get(StateUtils.getVirtualMapKey(serviceName, stateKey), QueueCodec.INSTANCE);
+        return virtualMap.get(getVirtualMapKey(serviceName, stateKey), QueueCodec.INSTANCE);
+    }
+
+    public void updateState(@NonNull final QueueState state) {
+        virtualMap.put(getVirtualMapKey(serviceName, stateKey), state, QueueCodec.INSTANCE);
     }
 
     /**
