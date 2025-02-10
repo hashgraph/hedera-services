@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -53,9 +54,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
     private List<HapiTxnOp<?>> operationsToBatch = null;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
-
-    private boolean useRawTransactions = false;
-    private List<Transaction> transactionsToBatch;
+    private List<Transaction> transactionsToBatch = new ArrayList<>();
 
     public HapiAtomicBatch() {}
 
@@ -64,7 +63,6 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     }
 
     public HapiAtomicBatch(Transaction... transactions) {
-        useRawTransactions = true;
         this.transactionsToBatch = Arrays.stream(transactions).toList();
     }
 
@@ -96,25 +94,22 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
         final AtomicBatchTransactionBody opBody = spec.txns()
                 .<AtomicBatchTransactionBody, AtomicBatchTransactionBody.Builder>body(
                         AtomicBatchTransactionBody.class, b -> {
-                            if (useRawTransactions) {
-                                b.addAllTransactions(transactionsToBatch);
-                            } else {
-                                for (HapiTxnOp<?> op : operationsToBatch) {
-                                    try {
-                                        // set node account id to 0.0.0 if not set
-                                        if (op.getNode().isEmpty()) {
-                                            op.setNode(DEFAULT_NODE_ACCOUNT_ID);
-                                        }
-                                        // create a transaction for each operation
-                                        final var transaction = op.signedTxnFor(spec);
-                                        // save transaction id
-                                        final var txnId = extractTxnId(transaction);
-                                        operationsMap.put(txnId, op);
-                                        // add the transaction to the batch
-                                        b.addTransactions(transaction);
-                                    } catch (Throwable e) {
-                                        throw new RuntimeException(e);
+                            b.addAllTransactions(transactionsToBatch);
+                            for (HapiTxnOp<?> op : operationsToBatch) {
+                                try {
+                                    // set node account id to 0.0.0 if not set
+                                    if (op.getNode().isEmpty()) {
+                                        op.setNode(DEFAULT_NODE_ACCOUNT_ID);
                                     }
+                                    // create a transaction for each operation
+                                    final var transaction = op.signedTxnFor(spec);
+                                    // save transaction id
+                                    final var txnId = extractTxnId(transaction);
+                                    operationsMap.put(txnId, op);
+                                    // add the transaction to the batch
+                                    b.addTransactions(transaction);
+                                } catch (Throwable e) {
+                                    throw new RuntimeException(e);
                                 }
                             }
                         });
@@ -137,6 +132,11 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
                 op.updateStateFromRecord(recordQuery.getResponseRecord(), spec);
             }
         }
+    }
+
+    public HapiAtomicBatch addTransaction(Transaction txn) {
+        transactionsToBatch.add(txn);
+        return this;
     }
 
     @Override
