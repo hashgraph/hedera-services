@@ -185,8 +185,8 @@ public class ChildDispatchFactory {
         requireNonNull(blockRecordInfo);
         requireNonNull(options);
         // If there is an override pre-handle result, then this is an atomic batch inner transaction.
-        // In this case, we do not need to run pre-handle checks. Also, use a default key verifier to
-        // verify all the signatures
+        // If there is an override pre-handle result, we re-use it, and this dispatch will check signatures using the
+        // results from the override pre-handle result
         final var preHandleResult = overridePreHandleResult != null
                 ? overridePreHandleResult
                 : preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);

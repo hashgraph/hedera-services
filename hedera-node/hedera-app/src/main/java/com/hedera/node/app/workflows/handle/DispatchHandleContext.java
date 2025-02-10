@@ -371,7 +371,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         requireNonNull(options);
         PreHandleResult childPreHandleResult = null;
         // If we have pre-computed pre-handle results for the inner transactions, pass them to the child
-        // dispatch instead of computing a no-op result for child dispatch.
+        // dispatch instead of computing a synthetic pre-handle result for child dispatch.
         if (preHandleResults != null && !preHandleResults.isEmpty()) {
             childPreHandleResult = preHandleResults.removeFirst();
         }

@@ -107,28 +107,24 @@ public interface PreHandleWorkflow {
         // If the transaction is an atomic batch, we need to pre-handle all inner transactions as well
         // and add their results to the outer transaction's pre-handle result
         if (result.txInfo() != null && isAtomicBatch(result.txInfo())) {
-            final var resultPresent = maybeReusableResult != null
+            final var innerTxns = result.txInfo().txBody().atomicBatchOrThrow().transactions();
+            var useInnerResults = maybeReusableResult != null
                     && maybeReusableResult.innerResults() != null
                     && !maybeReusableResult.innerResults().isEmpty();
-            for (int i = 0;
-                    i
-                            < result.txInfo()
-                                    .txBody()
-                                    .atomicBatchOrThrow()
-                                    .transactions()
-                                    .size();
-                    i++) {
-                final var innerTx = result.txInfo()
-                        .txBody()
-                        .atomicBatchOrThrow()
-                        .transactions()
-                        .get(i);
+            // Use the inner results only if the number of inner results matches the number of inner transactions
+            if (useInnerResults && maybeReusableResult.innerResults().size() != innerTxns.size()) {
+                useInnerResults = false;
+                log.warn("The number of inner results in the atomic batch transaction does not match the number of "
+                        + "inner transactions. Need to re-run pre-handle for all inner transactions.");
+            }
+            for (int i = 0; i < innerTxns.size(); i++) {
+                final var innerTx = innerTxns.get(i);
                 final var innerResult = preHandleTransaction(
                         creator,
                         storeFactory,
                         accountStore,
                         com.hedera.hapi.node.base.Transaction.PROTOBUF.toBytes(innerTx),
-                        resultPresent ? maybeReusableResult.innerResults().get(i) : null,
+                        useInnerResults ? maybeReusableResult.innerResults().get(i) : null,
                         ignore -> {});
                 requireNonNull(result.innerResults()).add(innerResult);
             }
