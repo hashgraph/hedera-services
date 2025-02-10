@@ -964,7 +964,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Migrate fails if the first child is not PlatformState")
         void migrate_fail() {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(, CURRENT_VERSION - 1, ));
         }
 
         @Test
@@ -975,7 +975,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             var node2 = mock(MerkleNode.class);
             stateRoot.setChild(1, node2);
             reset(node1, node2);
-            assertSame(stateRoot, stateRoot.migrate(CURRENT_VERSION));
+            assertSame(stateRoot, stateRoot.migrate(, CURRENT_VERSION, ));
             verifyNoMoreInteractions(node1, node2);
         }
 
@@ -987,7 +987,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             var node2 = mock(MerkleNode.class);
             stateRoot.setChild(1, node2);
 
-            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(CURRENT_VERSION - 1));
+            assertThrows(UnsupportedOperationException.class, () -> stateRoot.migrate(, CURRENT_VERSION - 1, ));
         }
     }
 

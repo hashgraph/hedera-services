@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.exceptions.IllegalChildCountException;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
@@ -201,7 +202,7 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
      * @throws IOException
      * 		thrown when version or the options or nodes count are invalid
      */
-    public <T extends MerkleNode> T readMerkleTree(final Path directory, final int maxNumberOfNodes)
+    public <T extends MerkleNode> T readMerkleTree(@NonNull final Configuration configuration, final Path directory, final int maxNumberOfNodes)
             throws IOException {
 
         validateDirectory(directory);
@@ -230,7 +231,7 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
             readNextNode(directory, deserializedVersions);
         }
 
-        final MerkleNode migratedRoot = initializeAndMigrateTreeAfterDeserialization(root, deserializedVersions);
+        final MerkleNode migratedRoot = initializeAndMigrateTreeAfterDeserialization(configuration, root, deserializedVersions);
 
         if (migratedRoot == null) {
             return null;

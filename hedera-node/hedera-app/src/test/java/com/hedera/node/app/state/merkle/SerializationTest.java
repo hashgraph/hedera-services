@@ -319,7 +319,7 @@ class SerializationTest extends MerkleTestBase {
                 new HashMap<>(),
                 migrationStateChanges,
                 startupNetworks);
-        loadedTree.migrate(MerkleStateRoot.CURRENT_VERSION);
+        loadedTree.migrate(CONFIGURATION, MerkleStateRoot.CURRENT_VERSION);
     }
 
     private PlatformMerkleStateRoot createMerkleHederaState(Schema schemaV1) {

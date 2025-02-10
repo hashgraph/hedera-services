@@ -29,7 +29,7 @@ import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
+import com.swirlds.state.merkle.disk.OnDiskWritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +56,7 @@ class WritablePlatformStateStoreTest {
         platformSingleton.setValue(toPbjPlatformState(randomPlatformState(randotron)));
 
         when(writableStates.<PlatformState>getSingleton(PLATFORM_STATE_KEY))
-                .thenReturn(new WritableSingletonStateImpl<>(PLATFORM_STATE_KEY, platformSingleton));
+                .thenReturn(new OnDiskWritableSingletonState<>(PLATFORM_STATE_KEY, platformSingleton));
         store = new WritablePlatformStateStore(writableStates, (version) -> new BasicSoftwareVersion(version.major()));
     }
 
