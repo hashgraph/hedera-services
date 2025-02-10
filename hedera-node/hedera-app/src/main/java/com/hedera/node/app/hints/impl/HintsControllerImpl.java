@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
@@ -241,6 +242,14 @@ public class HintsControllerImpl implements HintsController {
         }
     }
 
+    /**
+     * Moves to the next node in the roster to contribute to the CRS. If the current node is the last
+     * sets the next contributing node to -1 and sets the contribution end time.
+     *
+     * @param now        the current consensus time
+     * @param hintsStore the writable hints store
+     * @param crsState   the current CRS state
+     */
     private void moveToNextNode(
             final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore, final CRSState crsState) {
         final var tssConfig = configurationSupplier.get().getConfigData(TssConfig.class);
@@ -250,6 +259,12 @@ public class HintsControllerImpl implements HintsController {
                 now.plusSeconds(tssConfig.crsUpdateContributionTime().toSeconds()));
     }
 
+    /**
+     * Submits the updated CRS to the network. This is done asynchronously. The updated CRS is generated
+     * by the library by updating the old CRS with new entropy.
+     *
+     * @param hintsStore the writable hints store
+     */
     private void submitUpdatedCRS(final @NonNull WritableHintsStore hintsStore) {
         final var oldCRS = hintsStore.getCrsState().crs();
         crsPublicationFuture = CompletableFuture.runAsync(
@@ -549,5 +564,10 @@ public class HintsControllerImpl implements HintsController {
                     }
                 },
                 executor);
+    }
+
+    @VisibleForTesting
+    public void setFinalUpdatedCrsFuture(final CompletableFuture<Bytes> finalUpdatedCrsFuture) {
+        this.finalUpdatedCrsFuture = finalUpdatedCrsFuture;
     }
 }

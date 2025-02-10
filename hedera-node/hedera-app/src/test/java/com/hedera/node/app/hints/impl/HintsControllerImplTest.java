@@ -52,6 +52,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,6 +89,7 @@ class HintsControllerImplTest {
     private static final HintsKeyPublication TARDY_NODE_TWO_PUBLICATION =
             new HintsKeyPublication(2L, Bytes.wrap("TWO"), 1, PREPROCESSING_START_TIME.plusSeconds(1));
     private static final Map<Long, Long> TARGET_NODE_WEIGHTS = Map.of(1L, 8L, 2L, 2L);
+    private static final Set<Long> SOURCE_NODE_IDS = Set.of(0L, 1L, 2L);
     private static final Bytes INITIAL_CRS = Bytes.wrap("CRS");
     private static final Bytes NEW_CRS = Bytes.wrap("newCRS");
     private static final Bytes PROOF = Bytes.wrap("proof");
@@ -425,11 +427,8 @@ class HintsControllerImplTest {
                         .contributionEndTime(asTimestamp(CONSENSUS_NOW.minus(Duration.ofSeconds(7))))
                         .crs(INITIAL_CRS)
                         .build());
-        given(submissions.submitUpdateCRS(any(), any())).willReturn(CompletableFuture.completedFuture(null));
-        subject.addCrsPublication(CrsPublicationTransactionBody.newBuilder()
-                .newCrs(NEW_CRS)
-                .proof(PROOF)
-                .build());
+
+        subject.setFinalUpdatedCrsFuture(CompletableFuture.completedFuture(INITIAL_CRS));
         subject.advanceConstruction(CONSENSUS_NOW, store);
 
         verify(store)
@@ -439,6 +438,52 @@ class HintsControllerImplTest {
                         .contributionEndTime((Timestamp) null)
                         .crs(INITIAL_CRS)
                         .build());
+    }
+
+    @Test
+    void movesToNextNodeIfTimeLimitExceeded() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+
+        given(store.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .isGatheringContributions(true)
+                        .nextContributingNodeId(1)
+                        .contributionEndTime(asTimestamp(CONSENSUS_NOW.minus(Duration.ofSeconds(7))))
+                        .crs(INITIAL_CRS)
+                        .build());
+
+        given(weights.sourceNodeIds()).willReturn(SOURCE_NODE_IDS);
+        subject.setFinalUpdatedCrsFuture(CompletableFuture.completedFuture(INITIAL_CRS));
+        subject.advanceConstruction(CONSENSUS_NOW, store);
+
+        verify(store).moveToNextNode(2L, CONSENSUS_NOW.plus(Duration.ofSeconds(10)));
+    }
+
+    @Test
+    void submitsCRSUpdateIfSelf() {
+        setupWith(UNFINISHED_CONSTRUCTION);
+
+        given(store.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .isGatheringContributions(true)
+                        .nextContributingNodeId(SELF_ID)
+                        .contributionEndTime(asTimestamp(CONSENSUS_NOW.plus(Duration.ofSeconds(7))))
+                        .crs(INITIAL_CRS)
+                        .build());
+        given(submissions.submitUpdateCRS(any(), any())).willReturn(CompletableFuture.completedFuture(null));
+        given(codec.decodeCrsUpdate(any())).willReturn(new HintsLibraryCodec.CrsUpdateOutput(NEW_CRS, PROOF));
+
+        final var task = requireNonNull(scheduledTasks.poll());
+        task.run();
+        assertTrue(scheduledTasks.isEmpty());
+
+        subject.advanceConstruction(CONSENSUS_NOW, store);
+
+        final var task1 = requireNonNull(scheduledTasks.poll());
+        task1.run();
+
+        verify(library).updateCrs(eq(INITIAL_CRS), any());
+        verify(submissions).submitUpdateCRS(NEW_CRS, PROOF);
     }
 
     private void setupWith(@NonNull final HintsConstruction construction) {
