@@ -22,7 +22,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.impl.HintsController;
-import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;

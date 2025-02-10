@@ -22,8 +22,6 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.hapi.utils.EntityType;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.hapi.utils.EntityType;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.swirlds.state.spi.WritableKVState;

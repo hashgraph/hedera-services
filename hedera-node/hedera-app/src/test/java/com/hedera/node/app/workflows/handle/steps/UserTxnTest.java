@@ -77,7 +77,6 @@ import com.swirlds.state.lifecycle.info.NodeInfo;
 import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

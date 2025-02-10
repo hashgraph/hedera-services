@@ -42,7 +42,6 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
-import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
