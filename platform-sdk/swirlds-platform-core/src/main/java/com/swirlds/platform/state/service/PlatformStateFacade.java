@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
 import static com.swirlds.platform.state.service.PlatformStateService.NAME;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
+import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -153,7 +154,9 @@ public class PlatformStateFacade {
             // fallback to lookup directly in the Merkle tree, useful for loading the state from disk
             if (state instanceof MerkleStateRoot<?> merkleStateRoot) {
                 final int index = merkleStateRoot.findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
-                return index == -1 ? null : ((SingletonNode<PlatformState>) merkleStateRoot.getChild(index)).getValue();
+                return index == -1
+                        ? UNINITIALIZED_PLATFORM_STATE
+                        : ((SingletonNode<PlatformState>) merkleStateRoot.getChild(index)).getValue();
             }
             return null;
         } else {
@@ -190,10 +193,6 @@ public class PlatformStateFacade {
     @Nullable
     public com.swirlds.platform.consensus.ConsensusSnapshot consensusSnapshotOf(@NonNull final State root) {
         return readablePlatformStateStore(root).getSnapshot();
-    }
-
-    protected PlatformStateAccessor getReadablePlatformStateOf(@NonNull final State root) {
-        return new ReadablePlatformStateStore(root.getReadableStates(NAME), versionFactory);
     }
 
     /**

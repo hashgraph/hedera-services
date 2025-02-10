@@ -101,9 +101,7 @@ public class BlockingState extends PlatformMerkleStateRoot {
         if (!(obj instanceof final BlockingState that)) {
             return false;
         }
-        return Objects.equals(
-                platformStateFacade.getReadablePlatformStateOf(this),
-                platformStateFacade.getReadablePlatformStateOf(that));
+        return Objects.equals(platformStateFacade.platformStateOf(this), platformStateFacade.platformStateOf(that));
     }
 
     /**

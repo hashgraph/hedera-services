@@ -72,7 +72,6 @@ public class TransactionHandlerTester {
         stateLifecycles = mock(StateLifecycles.class);
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.cast()).thenReturn(consensusState);
-        when(platformStateFacade.getReadablePlatformStateOf(consensusState)).thenReturn(platformState);
         when(platformStateFacade.getWritablePlatformStateOf(consensusState)).thenReturn(platformState);
 
         when(stateLifecycles.onSealConsensusRound(any(), any())).thenReturn(true);
