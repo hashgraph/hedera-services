@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #!/bin/bash
 #
 #   Copyright The repro-sources-list.sh Authors.

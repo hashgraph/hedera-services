@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #! /bin/sh
 if [ $# -lt 2 ]; then
   echo "USAGE: $0 host default_node [property_suffix=1k]"

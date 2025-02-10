@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 # This script creates a symlink to pcli.sh in /usr/local/bin. This will enable the user to run pcli from any directory

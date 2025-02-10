@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * # Core Event Data
  * A message that describes the metadata for an event.

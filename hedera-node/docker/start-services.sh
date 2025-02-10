@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 export NODE_ID CI_WAIT_FOR_PEERS

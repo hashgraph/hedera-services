@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #!/bin/bash
 
 # script to be called by platform regression scrip to transfer files to update Node
