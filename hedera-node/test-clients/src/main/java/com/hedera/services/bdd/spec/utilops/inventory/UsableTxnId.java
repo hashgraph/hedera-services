@@ -87,7 +87,7 @@ public class UsableTxnId extends UtilOp {
 
         final var finalTxnId = txnIdBuilder;
         payerId.ifPresent(name -> finalTxnId.setAccountID(TxnUtils.asId(name, spec)));
-        validStart.ifPresent(txnId::setTransactionValidStart);
+        validStart.ifPresent(finalTxnId::setTransactionValidStart);
         if (useScheduledInappropriately) {
             txnIdBuilder.setScheduled(true);
         }
