@@ -129,7 +129,14 @@ public class PlatformStateFacade {
     @Nullable
     public SoftwareVersion creationSoftwareVersionOf(@NonNull final State state) {
         requireNonNull(state);
+        if (isPlatformStateEmpty(state)) {
+            return null;
+        }
         return readablePlatformStateStore(state).getCreationSoftwareVersion();
+    }
+
+    private static boolean isPlatformStateEmpty(State state) {
+        return state.getReadableStates(NAME).isEmpty();
     }
 
     /**
@@ -158,7 +165,7 @@ public class PlatformStateFacade {
                         ? UNINITIALIZED_PLATFORM_STATE
                         : ((SingletonNode<PlatformState>) merkleStateRoot.getChild(index)).getValue();
             }
-            return null;
+            return UNINITIALIZED_PLATFORM_STATE;
         } else {
             return (PlatformState)
                     readableStates.getSingleton(PLATFORM_STATE_KEY).get();
@@ -327,24 +334,6 @@ public class PlatformStateFacade {
      */
     public void setCreationSoftwareVersionTo(@NonNull final State state, @NonNull SoftwareVersion creationVersion) {
         getWritablePlatformStateOf(state).setCreationSoftwareVersion(creationVersion);
-    }
-
-    /**
-     * Sets the last freezeTime based on which the nodes were frozen.
-     *
-     * @param lastFrozenTime the last freezeTime based on which the nodes were frozen
-     */
-    public void setLastFrozenTimeTo(@NonNull final State state, @NonNull Instant lastFrozenTime) {
-        getWritablePlatformStateOf(state).setLastFrozenTime(lastFrozenTime);
-    }
-
-    /**
-     * Updates the platform state with the values from the provided instance of {@link PlatformStateModifier}
-     *
-     * @param accessor a source of values
-     */
-    public void updatePlatformState(@NonNull final State state, @NonNull final PlatformStateModifier accessor) {
-        writablePlatformStateStore(state).setAllFrom(accessor);
     }
 
     /**

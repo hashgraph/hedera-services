@@ -408,7 +408,7 @@ public final class EventRecoveryWorkflow {
                 currentRoundTimestamp,
                 platformStateFacade.freezeTimeOf(newState));
         if (isFreezeState) {
-            platformStateFacade.setLastFrozenTimeTo(newState, platformStateFacade.freezeTimeOf(newState));
+            platformStateFacade.updateLastFrozenTime(newState);
         }
 
         final ReservedSignedState signedState = new SignedState(
