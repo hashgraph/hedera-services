@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,22 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "systemContract.accountService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractAccountServiceEnabled,
-        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "false") @NetworkProperty
+        @ConfigProperty(value = "systemContract.scheduleService.enabled", defaultValue = "true") @NetworkProperty
                 boolean systemContractScheduleServiceEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.signSchedule.enabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractSignScheduleEnabled,
+        @ConfigProperty(
+                        value = "systemContract.scheduleService.signSchedule.from.contract.enabled",
+                        defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractSignScheduleFromContractEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.authorizeSchedule.enabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractAuthorizeScheduleEnabled,
+        @ConfigProperty(value = "systemContract.scheduleService.scheduleNative.enabled", defaultValue = "true")
+                @NetworkProperty
+                boolean systemContractScheduleNativeEnabled,
         @ConfigProperty(value = "systemContract.accountService.isAuthorizedRawEnabled", defaultValue = "true")
                 @NetworkProperty
                 boolean systemContractAccountServiceIsAuthorizedRawEnabled,
@@ -112,12 +126,14 @@ public record ContractsConfig(
                 boolean systemContractSetUnlimitedAutoAssociationsEnabled,
         @ConfigProperty(value = "evm.ethTransaction.zeroHapiFees.enabled", defaultValue = "false") @NetworkProperty
                 boolean evmEthTransactionZeroHapiFeesEnabled,
-        @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
-                boolean evmVersionDynamic,
         @ConfigProperty(value = "evm.allowCallsToNonContractAccounts", defaultValue = "true") @NetworkProperty
                 boolean evmAllowCallsToNonContractAccounts,
         @ConfigProperty(value = "evm.chargeGasOnEvmHandleException", defaultValue = "true") @NetworkProperty
                 boolean chargeGasOnEvmHandleException,
         @ConfigProperty(value = "evm.nonExtantContractsFail", defaultValue = "0") @NetworkProperty
                 Set<Long> evmNonExtantContractsFail,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.51") @NetworkProperty String evmVersion,
+        @ConfigProperty(value = "metrics.smartContract.primary.enabled", defaultValue = "true") @NetworkProperty
+                boolean metricsSmartContractPrimaryEnabled,
+        @ConfigProperty(value = "metrics.smartContract.secondary.enabled", defaultValue = "true") @NetworkProperty
+                boolean metricsSmartContractSecondaryEnabled) {}

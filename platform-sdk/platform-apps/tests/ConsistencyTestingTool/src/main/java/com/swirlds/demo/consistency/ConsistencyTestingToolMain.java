@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -57,7 +59,9 @@ public class ConsistencyTestingToolMain implements SwirldMain {
                     new ClassConstructorPair(ConsistencyTestingToolState.class, () -> {
                         ConsistencyTestingToolState consistencyTestingToolState = new ConsistencyTestingToolState(
                                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(consistencyTestingToolState);
+                        // Don't call FAKE_MERKLE_STATE_LIFECYCLES.initStates(consistencyTestingToolState) here.
+                        // The stub states are automatically initialized upon loading the state from disk,
+                        // or after finishing a reconnect.
                         return consistencyTestingToolState;
                     }));
             registerMerkleStateRootClassIds();
@@ -114,7 +118,7 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     public PlatformMerkleStateRoot newMerkleStateRoot() {
         final PlatformMerkleStateRoot state = new ConsistencyTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(softwareVersion.getVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
 
         return state;
     }
@@ -136,5 +140,10 @@ public class ConsistencyTestingToolMain implements SwirldMain {
     @Override
     public List<Class<? extends Record>> getConfigDataTypes() {
         return List.of(ConsistencyTestingToolConfig.class);
+    }
+
+    @Override
+    public Bytes encodeSystemTransaction(final @NonNull StateSignatureTransaction transaction) {
+        return StateSignatureTransaction.PROTOBUF.toBytes(transaction);
     }
 }

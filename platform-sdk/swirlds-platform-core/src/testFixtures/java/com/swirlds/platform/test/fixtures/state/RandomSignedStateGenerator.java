@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package com.swirlds.platform.test.fixtures.state;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.Reservable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
@@ -35,16 +38,17 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder.WeightDistributionStrategy;
 import com.swirlds.platform.test.fixtures.state.manager.SignatureVerificationTestUtils;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -63,12 +67,19 @@ import java.util.stream.Stream;
  */
 public class RandomSignedStateGenerator {
 
+    /**
+     * Signed states now use virtual maps which are heavy RAM consumers. They need to be released
+     * in order to avoid producing OOMs when running tests. This list tracks all signed states
+     * built on a given thread.
+     */
+    private static final ThreadLocal<List<SignedState>> builtSignedStates = ThreadLocal.withInitial(ArrayList::new);
+
     final Random random;
 
-    private MerkleRoot state;
+    private PlatformMerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
-    private AddressBook addressBook;
+    private Roster roster;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
     private SoftwareVersion softwareVersion;
@@ -110,13 +121,13 @@ public class RandomSignedStateGenerator {
      * @return a new signed state
      */
     public SignedState build() {
-        final AddressBook addressBookInstance;
-        if (addressBook == null) {
-            addressBookInstance = RandomAddressBookBuilder.create(random)
-                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
+        final Roster rosterInstance;
+        if (roster == null) {
+            rosterInstance = RandomRosterBuilder.create(random)
+                    .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
-            addressBookInstance = addressBook;
+            rosterInstance = roster;
         }
 
         final SoftwareVersion softwareVersionInstance;
@@ -126,7 +137,7 @@ public class RandomSignedStateGenerator {
             softwareVersionInstance = softwareVersion;
         }
 
-        final MerkleRoot stateInstance;
+        final PlatformMerkleStateRoot stateInstance;
         registerMerkleStateRootClassIds();
         if (state == null) {
             if (useBlockingState) {
@@ -135,7 +146,7 @@ public class RandomSignedStateGenerator {
                 stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            ((MerkleStateRoot) stateInstance).setTime(Time.getCurrent());
+            stateInstance.setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }
@@ -193,12 +204,14 @@ public class RandomSignedStateGenerator {
 
         platformState.bulkUpdate(v -> {
             v.setSnapshot(consensusSnapshotInstance);
-            v.setAddressBook(addressBookInstance);
             v.setLegacyRunningEventHash(legacyRunningEventHashInstance);
             v.setCreationSoftwareVersion(softwareVersionInstance);
             v.setRoundsNonAncient(roundsNonAncientInstance);
             v.setConsensusTimestamp(consensusTimestampInstance);
         });
+
+        FAKE_MERKLE_STATE_LIFECYCLES.initRosterState((MerkleStateRoot) stateInstance);
+        RosterUtils.setActiveRoster((State) stateInstance, rosterInstance, roundInstance);
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
@@ -231,9 +244,10 @@ public class RandomSignedStateGenerator {
             final List<NodeId> signingNodeIdsInstance;
             if (signingNodeIds == null) {
                 signingNodeIdsInstance = new LinkedList<>();
-                if (addressBookInstance.getSize() > 0) {
-                    for (int i = 0; i < addressBookInstance.getSize() / 3 + 1; i++) {
-                        signingNodeIdsInstance.add(addressBookInstance.getNodeId(i));
+                if (!rosterInstance.rosterEntries().isEmpty()) {
+                    for (int i = 0; i < rosterInstance.rosterEntries().size() / 3 + 1; i++) {
+                        final RosterEntry node = rosterInstance.rosterEntries().get(i);
+                        signingNodeIdsInstance.add(NodeId.of(node.nodeId()));
                     }
                 }
             } else {
@@ -253,6 +267,7 @@ public class RandomSignedStateGenerator {
             signedState.getSigSet().addSignature(nodeId, signaturesInstance.get(nodeId));
         }
 
+        builtSignedStates.get().add(signedState);
         return signedState;
     }
 
@@ -315,12 +330,12 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the address book.
+     * Set the roster.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setAddressBook(final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public RandomSignedStateGenerator setRoster(final Roster roster) {
+        this.roster = roster;
         return this;
     }
 
@@ -450,5 +465,38 @@ public class RandomSignedStateGenerator {
     public RandomSignedStateGenerator setUseBlockingState(boolean useBlockingState) {
         this.useBlockingState = useBlockingState;
         return this;
+    }
+
+    /**
+     * Keep calling release() on a given Reservable until it's completely released.
+     * @param reservable a reservable to release
+     */
+    public static void releaseReservable(@NonNull final Reservable reservable) {
+        while (reservable.getReservationCount() >= 0) {
+            reservable.release();
+        }
+    }
+
+    /**
+     * Release all the SignedState objects built by this generator on the current thread,
+     * and then clear the list of built states.
+     */
+    public static void releaseAllBuiltSignedStates() {
+        builtSignedStates.get().forEach(signedState -> {
+            releaseReservable(signedState.getState());
+        });
+        builtSignedStates.get().clear();
+    }
+
+    /**
+     * Clear the list of states built on the current thread w/o releasing them.
+     * There are tests that actually release the states on purpose, verifying the reserve/release behavior.
+     * Some of these tests use mocks which fail if the state is released more than what the test expects.
+     * For these few special cases, this method allows the test to "forget" about any states that it built
+     * using this generator on the current thread. As long as the number of such special cases is low enough,
+     * this shouldn't cause any serious resource leaks or OOMs in tests.
+     */
+    public static void forgetAllBuiltSignedStatesWithoutReleasing() {
+        builtSignedStates.get().clear();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,42 +21,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.event.EventSerializationUtils;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import com.swirlds.platform.test.utils.EqualsVerifier;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class PlatformEventTest {
 
-    @BeforeAll
-    public static void setup() throws FileNotFoundException, ConstructableRegistryException {
-        new TestConfigBuilder().getOrCreateConfig();
-        StaticSoftwareVersion.setSoftwareVersion(new BasicSoftwareVersion(1));
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-    }
-
-    @AfterAll
-    static void afterAll() {
-        StaticSoftwareVersion.reset();
-    }
-
     @Test
     @DisplayName("Serialize and deserialize event with 2 app payloads")
-    void serializeDeserializeAppPayloads() throws IOException, ConstructableRegistryException {
+    void serializeDeserializeAppPayloads() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
@@ -66,7 +46,7 @@ class PlatformEventTest {
 
     @Test
     @DisplayName("Serialize and deserialize event with no payloads")
-    void serializeDeserializeNoPayloads() throws IOException, ConstructableRegistryException {
+    void serializeDeserializeNoPayloads() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random)
@@ -79,7 +59,7 @@ class PlatformEventTest {
 
     @Test
     @DisplayName("Serialize and deserialize event with 2 system payloads")
-    void serializeDeserializeSystemPayloads() throws IOException, ConstructableRegistryException {
+    void serializeDeserializeSystemPayloads() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random)
@@ -92,7 +72,7 @@ class PlatformEventTest {
 
     @Test
     @DisplayName("Serialize and deserialize event with 2 system payloads and 2 app payloads")
-    void serializeDeserializeAppAndSystemPayloads() throws IOException, ConstructableRegistryException {
+    void serializeDeserializeAppAndSystemPayloads() throws IOException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random)

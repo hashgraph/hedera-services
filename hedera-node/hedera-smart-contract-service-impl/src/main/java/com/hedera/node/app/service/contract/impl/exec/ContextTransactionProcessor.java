@@ -174,7 +174,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     private HederaEvmTransaction safeCreateHevmTransaction() {
         try {
-            return hevmTransactionFactory.fromHapiTransaction(context.body());
+            return hevmTransactionFactory.fromHapiTransaction(context.body(), context.payer());
         } catch (HandleException e) {
             // Return a HederaEvmTransaction that represents the error in order to charge fees to the sender
             return hevmTransactionFactory.fromContractTxException(context.body(), e);

@@ -96,7 +96,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
@@ -367,16 +366,11 @@ public class CryptoUpdateSuite {
                 getAccountInfo("autoAssocTarget")
                         .hasMaxAutomaticAssociations(-1)
                         .logged(),
-                validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
-                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
-                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
-                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff)
-                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff)
-                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
+                validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff),
+                validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff),
+                validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff),
+                validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff),
+                validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff));
     }
 
     @HapiTest

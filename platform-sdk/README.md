@@ -46,7 +46,7 @@ Portions of this Hedera Hashgraph, LLC Software may utilize the following copyri
 use of which is hereby acknowledged.
 
 The full list of acknowledgements is available at
-[https://github.com/hashgraph/hedera-services/raw/develop/platform-sdk/sdk/docs/acknowledgments.html](sdk/docs/acknowledgments.html)
+[https://github.com/hashgraph/hedera-services/raw/main/platform-sdk/sdk/docs/acknowledgments.html](sdk/docs/acknowledgments.html)
 
 ## License
 

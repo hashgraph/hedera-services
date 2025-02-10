@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.info.DiskStartupNetworks.tryToExport;
+
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -27,18 +30,20 @@ import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
-import com.hedera.node.app.tss.TssBaseService;
-import com.hedera.node.app.tss.handlers.TssHandlers;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.CacheConfig;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.State;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -53,15 +58,22 @@ public interface HandleWorkflowModule {
 
     @Provides
     @Singleton
-    static Supplier<TssHandlers> provideTssHandlers(@NonNull final TssBaseService tssBaseService) {
-        return tssBaseService::tssHandlers;
+    static EthereumTransactionHandler provideEthereumTransactionHandler(
+            @NonNull final ContractServiceImpl contractService) {
+        return contractService.handlers().ethereumTransactionHandler();
     }
 
     @Provides
     @Singleton
-    static EthereumTransactionHandler provideEthereumTransactionHandler(
-            @NonNull final ContractServiceImpl contractService) {
-        return contractService.handlers().ethereumTransactionHandler();
+    static BiConsumer<Roster, Path> provideRosterExportHelper() {
+        return (roster, path) -> {
+            final var network = Network.newBuilder()
+                    .nodeMetadata(roster.rosterEntries().stream()
+                            .map(entry -> new NodeMetadata(entry, null))
+                            .toList())
+                    .build();
+            tryToExport(network, path);
+        };
     }
 
     Runnable NO_OP = () -> {};
@@ -94,7 +106,6 @@ public interface HandleWorkflowModule {
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final Supplier<ContractHandlers> contractHandlers,
-            @NonNull final Supplier<TssHandlers> tssHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers,
@@ -153,9 +164,6 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
-                utilHandlers.prngHandler(),
-                tssHandlers.get().tssMessageHandler(),
-                tssHandlers.get().tssVoteHandler(),
-                tssHandlers.get().tssShareSignatureHandler());
+                utilHandlers.prngHandler());
     }
 }

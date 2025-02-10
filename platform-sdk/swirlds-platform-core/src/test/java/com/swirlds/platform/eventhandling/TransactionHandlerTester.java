@@ -24,7 +24,8 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.roster.RosterRetriever;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.service.PlatformStateValueAccumulator;
@@ -51,17 +52,14 @@ public class TransactionHandlerTester {
     /**
      * Constructs a new {@link TransactionHandlerTester} with the given {@link AddressBook}.
      *
-     * @param addressBook
-     *     the {@link AddressBook} to use
+     * @param addressBook the {@link AddressBook} to use
      */
     public TransactionHandlerTester(final AddressBook addressBook) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         platformState = new PlatformStateValueAccumulator();
 
-        final MerkleRoot consensusState = mock(MerkleRoot.class);
-        final SwirldState swirldState = mock(SwirldState.class);
-        when(consensusState.getSwirldState()).thenReturn(swirldState);
+        final PlatformMerkleStateRoot consensusState = mock(PlatformMerkleStateRoot.class);
         when(consensusState.copy()).thenReturn(consensusState);
         when(consensusState.getReadablePlatformState()).thenReturn(platformState);
         when(consensusState.getWritablePlatformState()).thenReturn(platformState);
@@ -69,11 +67,15 @@ public class TransactionHandlerTester {
                     handledRounds.add(i.getArgument(0));
                     return null;
                 })
-                .when(swirldState)
-                .handleConsensusRound(any(), any());
+                .when(consensusState)
+                .handleConsensusRound(any(), any(), any());
         final StatusActionSubmitter statusActionSubmitter = submittedActions::add;
         swirldStateManager = new SwirldStateManager(
-                platformContext, addressBook, NodeId.FIRST_NODE_ID, statusActionSubmitter, new BasicSoftwareVersion(1));
+                platformContext,
+                RosterRetriever.buildRoster(addressBook),
+                NodeId.FIRST_NODE_ID,
+                statusActionSubmitter,
+                new BasicSoftwareVersion(1));
         swirldStateManager.setInitialState(consensusState);
         defaultTransactionHandler = new DefaultTransactionHandler(
                 platformContext, swirldStateManager, statusActionSubmitter, mock(SoftwareVersion.class));

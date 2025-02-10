@@ -26,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
@@ -41,6 +42,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.SortedSet;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -176,5 +178,16 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
+    }
+
+    @Override
+    @NonNull
+    public SortedSet<Key> authorizingSimpleKeys() {
+        return context.keyVerifier().authorizingSimpleKeys();
+    }
+
+    @Override
+    public TransactionID getTransactionID() {
+        return context.body().transactionIDOrThrow();
     }
 }

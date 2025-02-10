@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,13 +31,15 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.platform.state.MerkleStateLifecycles;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateModifier;
+import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
@@ -49,6 +51,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +85,7 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
     private static final int HANDLE_MICROS = 100;
 
     public StatsSigningTestingToolState(
-            @NonNull final MerkleStateLifecycles lifecycles,
+            @NonNull final StateLifecycles lifecycles,
             @NonNull final Function<SemanticVersion, SoftwareVersion> versionFactory,
             @NonNull final Supplier<SttTransactionPool> transactionPoolSupplier) {
         super(lifecycles, versionFactory);
@@ -110,7 +113,9 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(
+            @NonNull final Event event,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         final SttTransactionPool sttTransactionPool = transactionPoolSupplier.get();
         if (sttTransactionPool != null) {
             event.forEachTransaction(transaction -> {
@@ -131,7 +136,10 @@ public class StatsSigningTestingToolState extends PlatformMerkleStateRoot {
      * {@inheritDoc}
      */
     @Override
-    public void handleConsensusRound(final Round round, final PlatformStateModifier platformState) {
+    public void handleConsensusRound(
+            @NonNull final Round round,
+            @NonNull final PlatformStateModifier platformState,
+            @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {
         throwIfImmutable();
         round.forEachTransaction(this::handleTransaction);
     }

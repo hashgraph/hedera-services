@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHand
 import static com.swirlds.merkle.test.fixtures.map.lifecycle.SaveExpectedMapHandler.serialize;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_6_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static java.lang.System.exit;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -94,7 +94,7 @@ import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.system.status.PlatformStatus;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -150,7 +150,6 @@ public class PlatformTestingToolMain implements SwirldMain {
             ConstructableRegistry.getInstance()
                     .registerConstructable(new ClassConstructorPair(PlatformTestingToolState.class, () -> {
                         PlatformTestingToolState ptt = new PlatformTestingToolState();
-                        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(ptt);
                         return ptt;
                     }));
             logger.info(
@@ -161,7 +160,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             .getConstructor(PlatformTestingToolState.CLASS_ID)
                             .get()
                             .getClassId());
-            FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+            FakeStateLifecycles.registerMerkleStateRootClassIds();
         } catch (ConstructableRegistryException e) {
             logger.error(STARTUP.getMarker(), "Failed to register PlatformTestingToolState", e);
             throw new RuntimeException(e);
@@ -869,7 +868,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         final PlatformMerkleStateRoot state = new PlatformTestingToolState(
                 FAKE_MERKLE_STATE_LIFECYCLES,
                 version -> new BasicSoftwareVersion(softwareVersion.getSoftwareVersion()));
-        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
+        FAKE_MERKLE_STATE_LIFECYCLES.initStates(state);
         return state;
     }
 

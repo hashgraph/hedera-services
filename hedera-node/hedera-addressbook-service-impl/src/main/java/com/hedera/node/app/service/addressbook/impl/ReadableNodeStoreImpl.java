@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,10 @@ import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -55,8 +56,8 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
     }
 
     @Override
-    public Roster snapshotOfFutureRoster() {
-        return constructFromNodesState(nodesState());
+    public Roster snapshotOfFutureRoster(Function<Long, Long> weightFunction) {
+        return constructFromNodesStateWithStakingInfoWeight(nodesState(), weightFunction);
     }
 
     /**
@@ -88,21 +89,23 @@ public class ReadableNodeStoreImpl implements ReadableNodeStore {
         return nodesState().keys();
     }
 
-    private Roster constructFromNodesState(@NonNull final ReadableKVState<EntityNumber, Node> nodesState) {
+    private Roster constructFromNodesStateWithStakingInfoWeight(
+            @NonNull final ReadableKVState<EntityNumber, Node> nodesState,
+            @NonNull final Function<Long, Long> weightProvider) {
         final var rosterEntries = new ArrayList<RosterEntry>();
         for (final var it = nodesState.keys(); it.hasNext(); ) {
             final var nodeNumber = it.next();
             final var node = requireNonNull(nodesState.get(nodeNumber));
-            final var nodeEndpoints = node.gossipEndpoint();
+            var nodeEndpoints = node.gossipEndpoint();
             // we want to swap the internal and external node endpoints
             // so that the external one is at index 0
             if (nodeEndpoints.size() > 1) {
-                Collections.swap(nodeEndpoints, 0, 1);
+                nodeEndpoints = List.of(nodeEndpoints.getLast(), nodeEndpoints.getFirst());
             }
             if (!node.deleted()) {
                 final var entry = RosterEntry.newBuilder()
                         .nodeId(node.nodeId())
-                        .weight(node.weight())
+                        .weight(weightProvider.apply(node.nodeId()))
                         .gossipCaCertificate(node.gossipCaCertificate())
                         .gossipEndpoint(nodeEndpoints)
                         .build();

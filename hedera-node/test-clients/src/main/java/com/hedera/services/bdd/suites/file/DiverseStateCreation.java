@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -112,7 +112,7 @@ public final class DiverseStateCreation extends HapiSuite {
         return List.of(createDiverseState());
     }
 
-    final Stream<DynamicTest> createDiverseState() {
+    Stream<DynamicTest> createDiverseState() {
         final KeyShape SMALL_SHAPE = listOf(threshOf(1, 3));
         final KeyShape MEDIUM_SHAPE = listOf(SIMPLE, threshOf(2, 3));
         final KeyShape LARGE_SHAPE = listOf(
@@ -126,65 +126,54 @@ public final class DiverseStateCreation extends HapiSuite {
         final var fuseContract = "Fuse";
         final var multiContract = "Multipurpose";
 
-        return defaultHapiSpec("CreateDiverseState")
-                .given(
-                        newKeyNamed(smallKey).shape(SMALL_SHAPE),
-                        newKeyNamed(mediumKey).shape(MEDIUM_SHAPE),
-                        newKeyNamed(largeKey).shape(LARGE_SHAPE))
-                .when(
-                        /* Create some well-known files */
-                        fileCreate(SMALL_FILE)
-                                .contents(SMALL_CONTENTS)
-                                .key(smallKey)
-                                .expiry(SMALL_EXPIRY_TIME)
-                                .exposingNumTo(num -> entityNums.put(SMALL_FILE, num)),
-                        fileCreate(MEDIUM_FILE)
-                                .contents("")
-                                .key(mediumKey)
-                                .expiry(MEDIUM_EXPIRY_TIME)
-                                .exposingNumTo(num -> entityNums.put(MEDIUM_FILE, num)),
-                        updateLargeFile(
-                                GENESIS,
-                                MEDIUM_FILE,
-                                ByteString.copyFrom(MEDIUM_CONTENTS),
-                                false,
-                                OptionalLong.of(ONE_HBAR)),
-                        fileDelete(MEDIUM_FILE),
-                        fileCreate(LARGE_FILE)
-                                .contents("")
-                                .key(largeKey)
-                                .expiry(LARGE_EXPIRY_TIME)
-                                .exposingNumTo(num -> entityNums.put(LARGE_FILE, num)),
-                        updateLargeFile(
-                                GENESIS,
-                                LARGE_FILE,
-                                ByteString.copyFrom(LARGE_CONTENTS),
-                                false,
-                                OptionalLong.of(ONE_HBAR)),
-                        /* Create some bytecode files */
-                        uploadSingleInitCode(
-                                fuseContract, FUSE_EXPIRY_TIME, GENESIS, num -> entityNums.put(FUSE_INITCODE, num)),
-                        uploadSingleInitCode(
-                                multiContract, MULTI_EXPIRY_TIME, GENESIS, num -> entityNums.put(MULTI_INITCODE, num)),
-                        contractCreate(fuseContract).exposingNumTo(num -> entityNums.put(FUSE_CONTRACT, num)),
-                        contractCreate(multiContract).exposingNumTo(num -> entityNums.put(MULTI_CONTRACT, num)),
-                        contractCall(multiContract, "believeIn", EXPECTED_LUCKY_NO))
-                .then(
-                        systemFileDelete(fuseContract).payingWith(GENESIS),
-                        systemFileDelete(multiContract).payingWith(GENESIS),
-                        getFileInfo(SMALL_FILE).exposingKeyReprTo(repr -> keyReprs.put(SMALL_FILE, repr)),
-                        getFileInfo(MEDIUM_FILE).exposingKeyReprTo(repr -> keyReprs.put(MEDIUM_FILE, repr)),
-                        getFileInfo(LARGE_FILE).exposingKeyReprTo(repr -> keyReprs.put(LARGE_FILE, repr)),
-                        getContractBytecode(FUSE_CONTRACT)
-                                .exposingBytecodeTo(code -> hexedBytecode.put(FUSE_BYTECODE, CommonUtils.hex(code))),
-                        withOpContext((spec, opLog) -> {
-                            final var toSerialize = Map.of(
-                                    ENTITY_NUM_KEY, entityNums,
-                                    KEY_REPRS_KEY, keyReprs,
-                                    HEXED_BYTECODE_KEY, hexedBytecode);
-                            final var om = new ObjectMapper();
-                            om.writeValue(Files.newOutputStream(Paths.get(STATE_META_JSON_LOC)), toSerialize);
-                        }));
+        return hapiTest(
+                newKeyNamed(smallKey).shape(SMALL_SHAPE),
+                newKeyNamed(mediumKey).shape(MEDIUM_SHAPE),
+                newKeyNamed(largeKey).shape(LARGE_SHAPE),
+                /* Create some well-known files */
+                fileCreate(SMALL_FILE)
+                        .contents(SMALL_CONTENTS)
+                        .key(smallKey)
+                        .expiry(SMALL_EXPIRY_TIME)
+                        .exposingNumTo(num -> entityNums.put(SMALL_FILE, num)),
+                fileCreate(MEDIUM_FILE)
+                        .contents("")
+                        .key(mediumKey)
+                        .expiry(MEDIUM_EXPIRY_TIME)
+                        .exposingNumTo(num -> entityNums.put(MEDIUM_FILE, num)),
+                updateLargeFile(
+                        GENESIS, MEDIUM_FILE, ByteString.copyFrom(MEDIUM_CONTENTS), false, OptionalLong.of(ONE_HBAR)),
+                fileDelete(MEDIUM_FILE),
+                fileCreate(LARGE_FILE)
+                        .contents("")
+                        .key(largeKey)
+                        .expiry(LARGE_EXPIRY_TIME)
+                        .exposingNumTo(num -> entityNums.put(LARGE_FILE, num)),
+                updateLargeFile(
+                        GENESIS, LARGE_FILE, ByteString.copyFrom(LARGE_CONTENTS), false, OptionalLong.of(ONE_HBAR)),
+                /* Create some bytecode files */
+                uploadSingleInitCode(
+                        fuseContract, FUSE_EXPIRY_TIME, GENESIS, num -> entityNums.put(FUSE_INITCODE, num)),
+                uploadSingleInitCode(
+                        multiContract, MULTI_EXPIRY_TIME, GENESIS, num -> entityNums.put(MULTI_INITCODE, num)),
+                contractCreate(fuseContract).exposingNumTo(num -> entityNums.put(FUSE_CONTRACT, num)),
+                contractCreate(multiContract).exposingNumTo(num -> entityNums.put(MULTI_CONTRACT, num)),
+                contractCall(multiContract, "believeIn", EXPECTED_LUCKY_NO),
+                systemFileDelete(fuseContract).payingWith(GENESIS),
+                systemFileDelete(multiContract).payingWith(GENESIS),
+                getFileInfo(SMALL_FILE).exposingKeyReprTo(repr -> keyReprs.put(SMALL_FILE, repr)),
+                getFileInfo(MEDIUM_FILE).exposingKeyReprTo(repr -> keyReprs.put(MEDIUM_FILE, repr)),
+                getFileInfo(LARGE_FILE).exposingKeyReprTo(repr -> keyReprs.put(LARGE_FILE, repr)),
+                getContractBytecode(FUSE_CONTRACT)
+                        .exposingBytecodeTo(code -> hexedBytecode.put(FUSE_BYTECODE, CommonUtils.hex(code))),
+                withOpContext((spec, opLog) -> {
+                    final var toSerialize = Map.of(
+                            ENTITY_NUM_KEY, entityNums,
+                            KEY_REPRS_KEY, keyReprs,
+                            HEXED_BYTECODE_KEY, hexedBytecode);
+                    final var om = new ObjectMapper();
+                    om.writeValue(Files.newOutputStream(Paths.get(STATE_META_JSON_LOC)), toSerialize);
+                }));
     }
 
     @Override

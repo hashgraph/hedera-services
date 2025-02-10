@@ -1,3 +1,14 @@
+/**
+ * # Response Code Enumeration
+ * An enumeration of possible response codes.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
 syntax = "proto3";
 
 package proto;
@@ -23,7 +34,7 @@ option java_package = "com.hederahashgraph.api.proto.java";
 option java_multiple_files = true;
 
 /**
- * UNDOCUMENTED
+ * An enumeration of possible response codes.
  */
 enum ResponseCodeEnum {
     /**
@@ -471,12 +482,12 @@ enum ResponseCodeEnum {
     INVALID_INITIAL_BALANCE = 85;
 
     /**
-     * [Deprecated]. attempt to set negative receive record threshold
+     * Attempt to set negative receive record threshold
      */
     INVALID_RECEIVE_RECORD_THRESHOLD = 86 [deprecated = true];
 
     /**
-     * [Deprecated]. attempt to set negative send record threshold
+     * Attempt to set negative send record threshold
      */
     INVALID_SEND_RECORD_THRESHOLD = 87 [deprecated = true];
 
@@ -1115,7 +1126,7 @@ enum ResponseCodeEnum {
     UNEXPECTED_TOKEN_DECIMALS = 283;
 
     /**
-     * [Deprecated] The proxy account id is invalid or does not exist.
+     * The proxy account id is invalid or does not exist.
      */
     INVALID_PROXY_ACCOUNT_ID = 284 [deprecated = true];
 
@@ -1152,7 +1163,7 @@ enum ResponseCodeEnum {
     NEGATIVE_ALLOWANCE_AMOUNT = 290;
 
     /**
-     * [Deprecated] The approveForAll flag cannot be set for a fungible token.
+     * The approveForAll flag cannot be set for a fungible token.
      */
     CANNOT_APPROVE_FOR_ALL_FUNGIBLE_COMMON = 291 [deprecated = true];
 
@@ -1178,13 +1189,13 @@ enum ResponseCodeEnum {
     EMPTY_ALLOWANCES = 295;
 
     /**
-     * [Deprecated] Spender is repeated more than once in Crypto or Token or NFT allowance lists in a single
+     * Spender is repeated more than once in Crypto or Token or NFT allowance lists in a single
      * CryptoApproveAllowance transaction.
      */
     SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES = 296 [deprecated = true];
 
     /**
-     * [Deprecated] Serial numbers are repeated in nft allowance for a single spender account
+     * Serial numbers are repeated in nft allowance for a single spender account
      */
     REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES = 297 [deprecated = true];
 
@@ -1438,7 +1449,9 @@ enum ResponseCodeEnum {
 
     /**
      * A transaction failed because the TLS certificate provided for the
-     * node is missing or invalid.<br/>
+     * node is missing or invalid.
+     * <p>
+     * #### Probable Causes
      * The certificate MUST be a TLS certificate of a type permitted for gossip
      * signatures.<br/>
      * The value presented MUST be a UTF-8 NFKD encoding of the TLS
@@ -1450,7 +1463,9 @@ enum ResponseCodeEnum {
 
     /**
      * A transaction failed because the hash provided for the gRPC certificate
-     * is present but invalid.<br/>
+     * is present but invalid.
+     * <p>
+     * #### Probable Causes
      * The `grpc_certificate_hash` MUST be a SHA-384 hash.<br/>
      * The input hashed MUST be a UTF-8 NFKD encoding of the actual TLS
      * certificate.<br/>
@@ -1536,17 +1551,18 @@ enum ResponseCodeEnum {
     TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY = 360;
 
     /**
-    * The transaction attempted to the use an empty List of `PendingAirdropId`.
+    * The list of `PendingAirdropId`s is empty and MUST NOT be empty.
     */
     EMPTY_PENDING_AIRDROP_ID_LIST = 361;
 
     /**
-    * The transaction attempted to the same `PendingAirdropId` twice.
+    * A `PendingAirdropId` is repeated in a `claim` or `cancel` transaction.
     */
     PENDING_AIRDROP_ID_REPEATED = 362;
 
     /**
-    * The transaction attempted to use more than the allowed number of `PendingAirdropId`.
+    * The number of `PendingAirdropId` values in the list exceeds the maximum
+    * allowable number.
     */
     PENDING_AIRDROP_ID_LIST_TOO_LONG = 363;
 
@@ -1557,8 +1573,9 @@ enum ResponseCodeEnum {
 
     /*
      * The identified account is sender for one or more pending airdrop(s)
-     * and cannot be deleted.<br/>
-     * Requester should cancel all pending airdrops before resending
+     * and cannot be deleted.
+     * <p>
+     * The requester SHOULD cancel all pending airdrops before resending
      * this transaction.
      */
     ACCOUNT_HAS_PENDING_AIRDROPS = 365;
@@ -1589,34 +1606,38 @@ enum ResponseCodeEnum {
      * The token might be deleted, or the sender may not have enough tokens
      * to fulfill the offer.
      * <p>
-     * The client SHOULD query mirror node to determine the status of the pending
-     * airdrop and whether the sender can fulfill the offer.
+     * The client SHOULD query mirror node to determine the status of the
+     * pending airdrop and whether the sender can fulfill the offer.
      */
     INVALID_TOKEN_IN_PENDING_AIRDROP = 369;
-
-    /**
-     * A scheduled transaction configured to wait for expiry to execute was given
-     * an expiry time not strictly after the time at which its creation reached
-     * consensus.
-     */
-    SCHEDULE_EXPIRY_MUST_BE_FUTURE = 370;
-
-    /**
-     * A scheduled transaction configured to wait for expiry to execute was given
-     * an expiry time too far in the future after the time at which its creation
-     * reached consensus.
-     */
-    SCHEDULE_EXPIRY_TOO_LONG = 371;
 
     /**
      * A scheduled transaction configured to wait for expiry to execute was given
      * an expiry time at which there is already too many transactions scheduled to
      * expire; its creation must be retried with a different expiry.
      */
-    SCHEDULE_EXPIRY_IS_BUSY = 372;
+    SCHEDULE_EXPIRY_IS_BUSY = 370;
 
     /**
      * The provided gRPC certificate hash is invalid.
      */
-    INVALID_GRPC_CERTIFICATE_HASH = 373;
+    INVALID_GRPC_CERTIFICATE_HASH = 371;
+
+    /**
+     * A scheduled transaction configured to wait for expiry to execute was not
+     * given an explicit expiration time.
+     */
+    MISSING_EXPIRY_TIME = 372;
+
+    /**
+     * A contract operation attempted to schedule another transaction after it
+     * had already scheduled a recursive contract call.
+     */
+    NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION = 373;
+
+    /**
+     * A contract can schedule recursive calls a finite number of times (this is
+     * approximately four million times with typical network configuration.)
+     */
+    RECURSIVE_SCHEDULING_LIMIT_REACHED = 374;
 }

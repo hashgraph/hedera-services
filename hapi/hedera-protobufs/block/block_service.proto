@@ -353,6 +353,18 @@ enum PublishStreamResponseCode {
      * block stream data.
      */
     STREAM_ITEMS_BEHIND = 5;
+
+    /**
+     * The block node had an internal error and cannot continue processing.<br/>
+     * The publisher may retry again later.
+     */
+    STREAM_ITEMS_INTERNAL_ERROR = 6;
+
+    /**
+      * The requested stream is not available.<br/>
+      * The publisher may retry again later.
+     */
+    STREAM_ITEMS_NOT_AVAILABLE = 7;
 }
 
 /**
@@ -656,6 +668,12 @@ enum SubscribeStreamResponseCode {
      * `end_block_number` field to a valid end block.
      */
     READ_STREAM_INVALID_END_BLOCK_NUMBER = 4;
+
+    /**
+     * The requested stream is not available.<br/>
+     * The client MAY retry again later.
+     */
+    READ_STREAM_NOT_AVAILABLE = 5;
 }
 
 /**

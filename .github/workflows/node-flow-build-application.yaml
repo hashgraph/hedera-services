@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ on:
         default: "temurin"
   push:
     branches:
-      - develop
       - main
       - 'release/*'
 
@@ -91,7 +90,7 @@ jobs:
     if: ${{ needs.code.result == 'success' }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
+        uses: step-security/harden-runner@c95a14d0e5bab51a9f56296a4eb0e416910cd350 # v2.10.3
         with:
           egress-policy: audit
 
@@ -124,7 +123,7 @@ jobs:
         with:
           workflow: .github/workflows/node-flow-deploy-release-artifact.yaml
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
-          ref: develop # ensure we are always using the workflow definition from the develop branch
+          ref: main # ensure we are always using the workflow definition from the main branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           inputs: '{
             "ref": "${{ steps.workflow-inputs.outputs.input-ref }}",

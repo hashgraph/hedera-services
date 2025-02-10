@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,10 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
-import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,20 +41,20 @@ public abstract class AbstractFakePlatform implements Platform {
     protected final AtomicLong consensusOrder = new AtomicLong(1);
 
     private final NodeId selfId;
-    private final AddressBook addressBook;
     private final Roster roster;
     private final PlatformContext platformContext;
     private final FakeNotificationEngine notificationEngine = new FakeNotificationEngine();
 
     public AbstractFakePlatform(
             @NonNull final NodeId selfId,
-            @NonNull final AddressBook addressBook,
-            @NonNull final ScheduledExecutorService executorService) {
+            @NonNull final Roster roster,
+            @NonNull final ScheduledExecutorService executorService,
+            @NonNull final Metrics metrics) {
+        requireNonNull(metrics);
         requireNonNull(executorService);
         this.selfId = requireNonNull(selfId);
-        this.addressBook = requireNonNull(addressBook);
-        this.roster = RosterRetriever.buildRoster(addressBook);
-        platformContext = new FakePlatformContext(selfId, executorService);
+        this.roster = requireNonNull(roster);
+        this.platformContext = new FakePlatformContext(selfId, executorService, metrics);
     }
 
     /**

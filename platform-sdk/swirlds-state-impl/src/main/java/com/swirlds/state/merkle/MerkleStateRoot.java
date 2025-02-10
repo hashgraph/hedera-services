@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
 
-    private static final long CLASS_ID = 0x8e300b0dfdafbb1aL;
+    private static final long CLASS_ID = 0x8e300b0dfdafbb1bL;
     // Migrates from `PlatformState` to State API singleton
     public static final int CURRENT_VERSION = 31;
 
@@ -403,6 +403,38 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
             node = getChild(nodeIndex);
         }
         nodeInitializer.accept(node);
+    }
+
+    /**
+     * Unregister a service without removing its nodes from the state.
+     *
+     * Services such as the PlatformStateService and RosterService may be registered
+     * on a newly loaded (or received via Reconnect) SignedState object in order
+     * to access the PlatformState and RosterState/RosterMap objects so that the code
+     * can fetch the current active Roster for the state and validate it. Once validated,
+     * the state may need to be loaded into the system as the actual state,
+     * and as a part of this process, the States API
+     * is going to be initialized to allow access to all the services known to the app.
+     * However, the States API initialization is guarded by a
+     * {@code state.getReadableStates(PlatformStateService.NAME).isEmpty()} check.
+     * So if this service has previously been initialized, then the States API
+     * won't be initialized in full.
+     *
+     * To prevent this and to allow the system to initialize all the services,
+     * we unregister the PlatformStateService and RosterService after the validation is performed.
+     *
+     * Note that unlike the MerkleStateRoot.removeServiceState() method below in this class,
+     * the unregisterService() method will NOT remove the merkle nodes that store the states of
+     * the services being unregistered. This is by design because these nodes will be used
+     * by the actual service states once the app initializes the States API in full.
+     *
+     * @param serviceName a service to unregister
+     */
+    public void unregisterService(@NonNull final String serviceName) {
+        readableStatesMap.remove(serviceName);
+        writableStatesMap.remove(serviceName);
+
+        services.remove(serviceName);
     }
 
     /**
@@ -798,7 +830,9 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
          * @param stateKey the state key
          */
         public void remove(String stateKey) {
-            stateMetadata.remove(stateKey);
+            if (!Map.of().equals(stateMetadata)) {
+                stateMetadata.remove(stateKey);
+            }
             kvInstances.remove(stateKey);
             singletonInstances.remove(stateKey);
             queueInstances.remove(stateKey);
@@ -908,6 +942,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
      */
     @Override
     public MerkleStateRoot<?> loadSnapshot(@NonNull Path targetPath) throws IOException {
-        return MerkleTreeSnapshotReader.readStateFileData(targetPath).state();
+        return (MerkleStateRoot<?>)
+                MerkleTreeSnapshotReader.readStateFileData(targetPath).stateRoot();
     }
 }

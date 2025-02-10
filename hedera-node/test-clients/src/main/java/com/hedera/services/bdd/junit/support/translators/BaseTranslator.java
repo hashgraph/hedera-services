@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.scheduledTxnIdFrom;
 import static com.hedera.node.config.types.EntityType.ACCOUNT;
 import static com.hedera.node.config.types.EntityType.FILE;
 import static com.hedera.node.config.types.EntityType.NODE;
@@ -68,6 +69,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,6 +91,8 @@ public class BaseTranslator {
     private ExchangeRateSet activeRates;
     private final Map<TokenID, Long> totalSupplies = new HashMap<>();
     private final Map<TokenID, TokenType> tokenTypes = new HashMap<>();
+    private final Map<TransactionID, ScheduleID> scheduleRefs = new HashMap<>();
+    private final Map<ScheduleID, TransactionID> scheduleTxnIds = new HashMap<>();
     private final Set<TokenAssociation> knownAssociations = new HashSet<>();
     private final Map<PendingAirdropId, PendingAirdropValue> pendingAirdrops = new HashMap<>();
 
@@ -98,11 +102,11 @@ public class BaseTranslator {
     private long prevHighestKnownEntityNum = 0L;
 
     private Instant userTimestamp;
-    private ScheduleID scheduleRef;
     private final List<TransactionSidecarRecord> sidecarRecords = new ArrayList<>();
     private final Map<TokenID, Integer> numMints = new HashMap<>();
     private final Map<TokenID, List<Long>> highestPutSerialNos = new HashMap<>();
     private final Map<EntityType, List<Long>> nextCreatedNums = new EnumMap<>(EntityType.class);
+    private final Set<ScheduleID> purgedScheduleIds = new HashSet<>();
 
     /**
      * Defines how a translator specifies details of a translated transaction record.
@@ -169,7 +173,7 @@ public class BaseTranslator {
         highestPutSerialNos.clear();
         nextCreatedNums.clear();
         sidecarRecords.clear();
-        scheduleRef = null;
+        purgedScheduleIds.clear();
         scanUnit(unit);
         nextCreatedNums.values().forEach(list -> {
             final Set<Long> distinctNums = Set.copyOf(list);
@@ -190,6 +194,13 @@ public class BaseTranslator {
         }
         highestKnownEntityNum =
                 nextCreatedNums.values().stream().mapToLong(List::getLast).max().orElse(highestKnownEntityNum);
+    }
+
+    /**
+     * Finishes the ongoing transactional unit, purging any schedules that were deleted.
+     */
+    public void finishLastUnit() {
+        purgedScheduleIds.forEach(scheduleId -> scheduleRefs.remove(scheduleTxnIds.remove(scheduleId)));
     }
 
     /**
@@ -353,8 +364,9 @@ public class BaseTranslator {
             final var output = parts.callContractOutputOrThrow();
             recordBuilder.contractCallResult(output.contractCallResultOrThrow());
         }
+        // If this transaction was executed by virtue of being scheduled, set its schedule ref
         if (parts.transactionIdOrThrow().scheduled()) {
-            recordBuilder.scheduleRef(scheduleRefOrThrow());
+            Optional.ofNullable(scheduleRefs.get(parts.transactionIdOrThrow())).ifPresent(recordBuilder::scheduleRef);
         }
         return new SingleTransactionRecord(
                 parts.transactionParts().wrapper(),
@@ -386,22 +398,13 @@ public class BaseTranslator {
         return activeRates;
     }
 
-    /**
-     * Returns the modified schedule id for the ongoing transactional unit.
-     *
-     * @return the modified schedule id
-     */
-    public @NonNull ScheduleID scheduleRefOrThrow() {
-        return requireNonNull(scheduleRef);
-    }
-
     private void scanUnit(@NonNull final BlockTransactionalUnit unit) {
         unit.stateChanges().forEach(stateChange -> {
             if (stateChange.hasMapDelete()) {
                 final var mapDelete = stateChange.mapDeleteOrThrow();
                 final var key = mapDelete.keyOrThrow();
                 if (key.hasScheduleIdKey()) {
-                    scheduleRef = key.scheduleIdKeyOrThrow();
+                    purgedScheduleIds.add(key.scheduleIdKeyOrThrow());
                 }
             } else if (stateChange.hasMapUpdate()) {
                 final var mapUpdate = stateChange.mapUpdateOrThrow();
@@ -439,7 +442,12 @@ public class BaseTranslator {
                                 .computeIfAbsent(SCHEDULE, ignore -> new LinkedList<>())
                                 .add(num);
                     }
-                    scheduleRef = key.scheduleIdKeyOrThrow();
+                    final var schedule = mapUpdate.valueOrThrow().scheduleValueOrThrow();
+                    final var scheduleId = key.scheduleIdKeyOrThrow();
+                    final var scheduledTxnId = scheduledTxnIdFrom(
+                            schedule.originalCreateTransactionOrThrow().transactionIDOrThrow());
+                    scheduleRefs.put(scheduledTxnId, scheduleId);
+                    scheduleTxnIds.put(scheduleId, scheduledTxnId);
                 } else if (key.hasAccountIdKey()) {
                     final var num = key.accountIdKeyOrThrow().accountNumOrThrow();
                     if (num > highestKnownEntityNum) {

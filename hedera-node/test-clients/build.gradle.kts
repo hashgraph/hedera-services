@@ -1,24 +1,10 @@
-/*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+// SPDX-License-Identifier: Apache-2.0
+import com.github.jengelman.gradle.plugins.shadow.internal.DefaultDependencyFilter
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.shadow-jar")
+    id("org.hiero.gradle.module.application")
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
@@ -36,6 +22,8 @@ sourceSets {
     create("rcdiff")
     create("yahcli")
 }
+
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
 tasks.register<JavaExec>("runTestClient") {
     group = "build"
@@ -271,16 +259,22 @@ tasks.register<Test>("testRepeatable") {
     modularity.inferModulePath.set(false)
 }
 
-tasks.shadowJar {
-    archiveFileName.set("SuiteRunner.jar")
+tasks.withType<ShadowJar>().configureEach {
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    mergeServiceFiles()
 
-    manifest {
-        attributes(
-            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
-            "Multi-Release" to "true"
-        )
-    }
+    manifest { attributes("Multi-Release" to "true") }
+
+    // There is an issue in the shadow plugin that it automatically accesses the
+    // files in 'runtimeClasspath' while Gradle is building the task graph.
+    // See: https://github.com/GradleUp/shadow/issues/882
+    dependencyFilter = NoResolveDependencyFilter()
 }
+
+application.mainClass = "com.hedera.services.bdd.suites.SuiteRunner"
+
+tasks.shadowJar { archiveFileName.set("SuiteRunner.jar") }
 
 val yahCliJar =
     tasks.register<ShadowJar>("yahCliJar") {
@@ -289,12 +283,7 @@ val yahCliJar =
         archiveClassifier.set("yahcli")
         configurations = listOf(project.configurations.getByName("yahcliRuntimeClasspath"))
 
-        manifest {
-            attributes(
-                "Main-Class" to "com.hedera.services.yahcli.Yahcli",
-                "Multi-Release" to "true"
-            )
-        }
+        manifest { attributes("Main-Class" to "com.hedera.services.yahcli.Yahcli") }
     }
 
 val rcdiffJar =
@@ -306,12 +295,7 @@ val rcdiffJar =
         archiveFileName.set("rcdiff.jar")
         configurations = listOf(project.configurations.getByName("rcdiffRuntimeClasspath"))
 
-        manifest {
-            attributes(
-                "Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper",
-                "Multi-Release" to "true"
-            )
-        }
+        manifest { attributes("Main-Class" to "com.hedera.services.rcdiff.RcDiffCmdWrapper") }
     }
 
 val validationJar =
@@ -323,8 +307,7 @@ val validationJar =
         manifest {
             attributes(
                 "Main-Class" to
-                    "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios",
-                "Multi-Release" to "true"
+                    "com.hedera.services.bdd.suites.utils.validation.ValidationScenarios"
             )
         }
     }
@@ -359,4 +342,10 @@ val cleanYahCli =
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
+}
+
+class NoResolveDependencyFilter : DefaultDependencyFilter(project) {
+    override fun resolve(configuration: FileCollection): FileCollection {
+        return configuration
+    }
 }

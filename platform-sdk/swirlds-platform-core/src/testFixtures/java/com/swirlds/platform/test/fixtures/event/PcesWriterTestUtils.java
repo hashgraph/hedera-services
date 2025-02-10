@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,8 +125,7 @@ public class PcesWriterTestUtils {
             assertTrue(eventsIterator.hasNext());
             assertEquals(event, eventsIterator.next());
         }
-
-        assertFalse(eventsIterator.hasNext());
+        assertFalse(eventsIterator.hasNext(), "There should be no more events");
         assertEquals(truncatedFileCount, eventsIterator.getTruncatedFileCount());
 
         // Make sure things look good when iterating starting in the middle of the stream that was written
@@ -169,11 +168,14 @@ public class PcesWriterTestUtils {
             assertTrue(file.getUpperBound() >= previousMaximum);
             previousMaximum = file.getUpperBound();
 
-            final IOIterator<PlatformEvent> fileEvents = file.iterator(0);
-            while (fileEvents.hasNext()) {
-                final PlatformEvent event = fileEvents.next();
-                assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
-                assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
+            try (final IOIterator<PlatformEvent> fileEvents = file.iterator(0)) {
+                while (fileEvents.hasNext()) {
+                    final PlatformEvent event = fileEvents.next();
+                    assertTrue(event.getAncientIndicator(ancientMode) >= file.getLowerBound());
+                    assertTrue(event.getAncientIndicator(ancientMode) <= file.getUpperBound());
+                }
+            } catch (final IOException ignored) {
+                // hasNext() can throw an IOException if the file is truncated, in this case there is nothing to do
             }
         }
     }

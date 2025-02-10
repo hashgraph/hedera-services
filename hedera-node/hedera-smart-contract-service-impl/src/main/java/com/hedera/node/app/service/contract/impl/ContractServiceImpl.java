@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,22 @@ package com.hedera.node.app.service.contract.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.DefaultVerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
@@ -48,19 +52,26 @@ public class ContractServiceImpl implements ContractService {
      * @param appContext the current application context
      */
     public ContractServiceImpl(@NonNull final AppContext appContext) {
-        this(appContext, null, null);
+        this(appContext, null, null, Set.of());
     }
 
     /**
      * @param appContext the current application context
      * @param verificationStrategies the current verification strategy used
      * @param addOnTracers all operation tracer callbacks
+     * @param customOps any additional custom operations to use when constructing the EVM
      */
     public ContractServiceImpl(
             @NonNull final AppContext appContext,
             @Nullable final VerificationStrategies verificationStrategies,
-            @Nullable final Supplier<List<OperationTracer>> addOnTracers) {
+            @Nullable final Supplier<List<OperationTracer>> addOnTracers,
+            @NonNull final Set<Operation> customOps) {
         requireNonNull(appContext);
+        requireNonNull(customOps);
+        final var metricsSupplier = requireNonNull(appContext.metricsSupplier());
+        final Supplier<ContractsConfig> contractsConfigSupplier =
+                () -> appContext.configSupplier().get().getConfigData(ContractsConfig.class);
+        final var contractMetrics = new ContractMetrics(metricsSupplier, contractsConfigSupplier);
         this.component = DaggerContractServiceComponent.factory()
                 .create(
                         appContext.instantSource(),
@@ -68,13 +79,23 @@ public class ContractServiceImpl implements ContractService {
                         // C.f. https://github.com/hashgraph/hedera-services/issues/14248
                         appContext.signatureVerifier(),
                         Optional.ofNullable(verificationStrategies).orElseGet(DefaultVerificationStrategies::new),
-                        addOnTracers);
+                        addOnTracers,
+                        contractMetrics,
+                        customOps);
     }
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ContractSchema());
         registry.register(new V0500ContractSchema());
+    }
+
+    /**
+     * Create the metrics for the smart contracts service. This needs to be delayed until _after_
+     * the metrics are available - which happens after `Hedera.initializeStatesApi`.
+     */
+    public void registerMetrics() {
+        component.contractMetrics().createContractMetrics();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.doStaticSetup;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static com.swirlds.platform.event.preconsensus.PcesUtilities.getDatabaseDirectory;
-import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.PlatformContext;
@@ -52,15 +52,12 @@ import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
-import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -68,7 +65,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -197,8 +193,6 @@ public final class PlatformBuilder {
         this.selfId = Objects.requireNonNull(selfId);
         this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
         this.rosterHistory = Objects.requireNonNull(rosterHistory);
-
-        StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
     }
 
     /**
@@ -374,14 +368,12 @@ public final class PlatformBuilder {
 
         final boolean firstPlatform = doStaticSetup(configuration, configPath);
 
-        checkNodesToRun(List.of(selfId));
-
-        final AddressBook addressBook = RosterUtils.buildAddressBook(rosterHistory.getCurrentRoster());
+        final Roster currentRoster = rosterHistory.getCurrentRoster();
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final IntakeEventCounter intakeEventCounter;
         if (syncConfig.waitForEventsInIntake()) {
-            intakeEventCounter = new DefaultIntakeEventCounter(addressBook);
+            intakeEventCounter = new DefaultIntakeEventCounter(currentRoster);
         } else {
             intakeEventCounter = new NoOpIntakeEventCounter();
         }
@@ -418,7 +410,7 @@ public final class PlatformBuilder {
         final AtomicReference<StatusActionSubmitter> statusActionSubmitterAtomicReference = new AtomicReference<>();
         final SwirldStateManager swirldStateManager = new SwirldStateManager(
                 platformContext,
-                addressBook,
+                currentRoster,
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion);

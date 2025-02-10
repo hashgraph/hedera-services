@@ -65,6 +65,14 @@ public final class ScheduleServiceImpl implements ScheduleService {
      * {@link ExecutableTxnIterator#purgeUntilNext()}.
      */
     private static class PurgingIterator implements ExecutableTxnIterator {
+        /**
+         * No loop should exceed this iteration limit; if that happens, the iterator will throw an unchecked
+         * exception to trigger the handle workflow to skip over the interval used to construct this iterator
+         * and log an {@code ERROR} event. (The limit is up to an interval of hundred days being processed
+         * at once; or a day in which every second had the maximum 100 of transactions scheduled.)
+         */
+        private static final int LOOP_INVARIANT_LIMIT = 86_400 * 100;
+
         private static final Comparator<ScheduledOrder> ORDER_COMPARATOR =
                 Comparator.comparingLong(ScheduledOrder::expirySecond).thenComparingInt(ScheduledOrder::orderNumber);
 
@@ -148,9 +156,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
             }
             // Pointer to the order whose executable transaction metadata should be purged
             var order = requireNonNull(previousOrder);
+            int i = LOOP_INVARIANT_LIMIT;
             while (ORDER_COMPARATOR.compare(order, nextOrder) <= 0) {
                 final var lastOfSecond = scheduleStore.purgeByOrder(order);
                 order = next(order, lastOfSecond);
+                i--;
+                if (i == 0) {
+                    throw new IllegalStateException("Loop invariant limit exceeded during remove() after comparing "
+                            + order + " to " + nextOrder);
+                }
             }
             candidateOrder = order;
             previousOrder = null;
@@ -159,14 +173,21 @@ public final class ScheduleServiceImpl implements ScheduleService {
         @Override
         public boolean purgeUntilNext() {
             if (!nextKnown) {
-                throw new IllegalStateException("purgeUntilNext() called before next()");
+                throw new IllegalStateException("purgeUntilNext() called before hasNext()");
             }
             if (previousOrder != null) {
                 var order = previousOrder;
                 final var boundaryOrder = nextOrder != null ? nextOrder : new ScheduledOrder(endSecond + 1, 0);
+                int i = LOOP_INVARIANT_LIMIT;
                 while (ORDER_COMPARATOR.compare(order, boundaryOrder) < 0) {
                     final var lastOfSecond = scheduleStore.purgeByOrder(order);
                     order = next(order, lastOfSecond);
+                    i--;
+                    if (i == 0) {
+                        throw new IllegalStateException(
+                                "Loop invariant limit exceeded during purgeUntilNext() after comparing " + order
+                                        + " to " + boundaryOrder);
+                    }
                 }
                 return true;
             }
@@ -202,6 +223,7 @@ public final class ScheduleServiceImpl implements ScheduleService {
                     order = new ScheduledOrder(startSecond, startCounts.numberProcessed());
                 }
             }
+            int i = LOOP_INVARIANT_LIMIT;
             while (order.expirySecond() <= endSecond) {
                 final var nextId = scheduleStore.getByOrder(order);
                 if (nextId != null) {
@@ -218,6 +240,11 @@ public final class ScheduleServiceImpl implements ScheduleService {
                     }
                 } else {
                     order = next(order, true);
+                }
+                i--;
+                if (i == 0) {
+                    throw new IllegalStateException("Loop invariant limit exceeded during prepNext() after comparing "
+                            + order + " expiry second to " + endSecond);
                 }
             }
             nextKnown = true;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.swirlds.platform.state;
 
 import static com.swirlds.platform.state.service.PbjConverter.toPbjPlatformState;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
-import static com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,6 +50,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptographyFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.platform.system.InitTrigger;
@@ -57,12 +59,11 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.platform.test.fixtures.state.FakeMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StateDefinition;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
@@ -83,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -101,7 +103,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
-    private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
+    private final StateLifecycles lifecycles = new StateLifecycles() {
 
         @Override
         public void onSealConsensusRound(@NonNull Round round, @NonNull State state) {
@@ -109,17 +111,23 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         }
 
         @Override
-        public void onPreHandle(@NonNull Event event, @NonNull State state) {
+        public void onPreHandle(
+                @NonNull Event event,
+                @NonNull State state,
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onPreHandleCalled.set(true);
         }
 
         @Override
-        public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
+        public void onNewRecoveredState(@NonNull State recoveredState) {
             // No-op
         }
 
         @Override
-        public void onHandleConsensusRound(@NonNull Round round, @NonNull State state) {
+        public void onHandleConsensusRound(
+                @NonNull Round round,
+                @NonNull State state,
+                @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactions) {
             onHandleCalled.set(true);
         }
 
@@ -132,9 +140,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onUpdateWeight(
-                @NonNull MerkleStateRoot state,
-                @NonNull AddressBook configAddressBook,
-                @NonNull PlatformContext context) {
+                @NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
             onUpdateWeightCalled.set(true);
         }
     };
@@ -146,7 +152,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupConstructableRegistry();
-        FakeMerkleStateLifecycles.registerMerkleStateRootClassIds();
+        FakeStateLifecycles.registerMerkleStateRootClassIds();
         setupFruitMerkleMap();
         stateRoot = new PlatformMerkleStateRoot(lifecycles, softwareVersionSupplier);
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(stateRoot);
@@ -760,7 +766,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
         @DisplayName("The onPreHandle handler is called when a pre-handle happens")
         void onPreHandleCalled() {
             assertThat(onPreHandleCalled).isFalse();
-            stateRoot.preHandle(Mockito.mock(Event.class));
+            stateRoot.preHandle(Mockito.mock(Event.class), systemTransactions -> {});
             assertThat(onPreHandleCalled).isTrue();
         }
     }
@@ -775,7 +781,7 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             final var platformState = Mockito.mock(PlatformStateModifier.class);
             final var state = new PlatformMerkleStateRoot(lifecycles, softwareVersionSupplier);
 
-            state.handleConsensusRound(round, platformState);
+            state.handleConsensusRound(round, platformState, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
     }
@@ -791,10 +797,12 @@ class PlatformMerkleStateRootTest extends MerkleTestBase {
             // The original no longer has the listener
             final var round = Mockito.mock(Round.class);
             final var platformState = Mockito.mock(PlatformStateModifier.class);
-            assertThrows(MutabilityException.class, () -> stateRoot.handleConsensusRound(round, platformState));
+            assertThrows(
+                    MutabilityException.class,
+                    () -> stateRoot.handleConsensusRound(round, platformState, systemTransactions -> {}));
 
             // But the copy does
-            copy.handleConsensusRound(round, platformState);
+            copy.handleConsensusRound(round, platformState, systemTransactions -> {});
             assertThat(onHandleCalled).isTrue();
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
+import static com.swirlds.platform.eventhandling.DefaultTransactionPrehandler.NO_OP_CONSUMER;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
@@ -51,8 +52,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.roster.RosterRetriever;
-import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -61,7 +61,6 @@ import com.swirlds.platform.state.snapshot.SignedStateFileReader;
 import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.CesEvent;
@@ -153,9 +152,6 @@ public final class EventRecoveryWorkflow {
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
                         platformContext.getConfiguration(), signedStateFile)
                 .reservedSignedState()) {
-            StaticSoftwareVersion.setSoftwareVersion(
-                    initialState.get().getState().getReadablePlatformState().getCreationSoftwareVersion());
-
             logger.info(
                     STARTUP.getMarker(),
                     "State from round {} loaded.",
@@ -163,7 +159,7 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Loading event stream at {}", eventStreamDirectory);
 
             final IOIterator<StreamedRound> roundIterator = new EventStreamRoundIterator(
-                    RosterRetriever.buildRoster(initialState.get().getAddressBook()),
+                    initialState.get().getRoster(),
                     eventStreamDirectory,
                     initialState.get().getRound() + 1,
                     allowPartialRounds);
@@ -185,7 +181,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final MerkleRoot mutableStateCopy =
+            final PlatformMerkleStateRoot mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
@@ -376,7 +372,7 @@ public final class EventRecoveryWorkflow {
 
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
-        final MerkleRoot newState = previousState.get().getState().copy();
+        final PlatformMerkleStateRoot newState = previousState.get().getState().copy();
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
@@ -397,7 +393,7 @@ public final class EventRecoveryWorkflow {
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
-                newState.getSwirldState().cast(),
+                newState.cast(),
                 newState.getWritablePlatformState(),
                 round);
 
@@ -485,10 +481,10 @@ public final class EventRecoveryWorkflow {
         mutableState.throwIfImmutable();
 
         for (final ConsensusEvent event : round) {
-            immutableState.preHandle(event);
+            immutableState.preHandle(event, NO_OP_CONSUMER);
         }
 
-        mutableState.handleConsensusRound(round, platformState);
+        mutableState.handleConsensusRound(round, platformState, NO_OP_CONSUMER);
 
         // FUTURE WORK: there are currently no system transactions that are capable of modifying
         //  the state. If/when system transactions capable of modifying state are added, this workflow

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.state.PlatformStateModifier;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
@@ -25,6 +27,7 @@ import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * A Swirld app is defined by creating two classes, one implementing {@link SwirldMain}, and the other
@@ -68,16 +71,25 @@ public interface SwirldState extends MerkleNode {
      * <strong>This method is always invoked on an immutable state.</strong>
      *
      * @param event the event to perform pre-handling on
+     * @param stateSignatureTransaction a consumer that accepts a {@link ScopedSystemTransaction} that
+     *                                   will be used for callbacks
      */
-    default void preHandle(final Event event) {}
+    default void preHandle(
+            final Event event,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction) {}
 
     /**
      * This method should apply the transactions in the provided round to the state. Only called on mutable states.
      *
      * @param round         the round to apply
      * @param platformState the platform state
+     * @param stateSignatureTransaction a consumer that accepts a {@link ScopedSystemTransaction} that
+     *                                   will be used for callbacks
      */
-    void handleConsensusRound(final Round round, final PlatformStateModifier platformState);
+    void handleConsensusRound(
+            final Round round,
+            final PlatformStateModifier platformState,
+            final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransaction);
 
     /**
      * Called by the platform after it has made all its changes to this state for the given round.

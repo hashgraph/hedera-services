@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,24 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.info.DiskStartupNetworks.GENESIS_NETWORK_JSON;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.config.converter.SemanticVersionConverter;
+import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,7 +46,9 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +57,9 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
+    private static final Key CLASSIC_ADMIN_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"))
+            .build();
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
@@ -52,6 +68,7 @@ public class WorkingDirUtils {
     private static final String PROJECT_BOOTSTRAP_ASSETS_LOC = "hedera-node/configuration/dev";
     private static final String TEST_CLIENTS_BOOTSTRAP_ASSETS_LOC = "../configuration/dev";
     private static final X509Certificate SIG_CERT;
+    public static final Bytes VALID_CERT;
 
     static {
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
@@ -59,6 +76,11 @@ public class WorkingDirUtils {
                 .withRealKeysEnabled(true)
                 .build();
         SIG_CERT = requireNonNull(randomAddressBook.iterator().next().getSigCert());
+        try {
+            VALID_CERT = Bytes.wrap(SIG_CERT.getEncoded());
+        } catch (CertificateEncodingException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static final String DATA_DIR = "data";
@@ -70,6 +92,8 @@ public class WorkingDirUtils {
     public static final String GENESIS_PROPERTIES = "genesis.properties";
     public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String STATE_METADATA_FILE = "stateMetadata.txt";
+    public static final String NODE_ADMIN_KEYS_JSON = "node-admin-keys.json";
+    public static final String CANDIDATE_ROSTER_JSON = "candidate-roster.json";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
@@ -101,6 +125,9 @@ public class WorkingDirUtils {
      * @param configTxt the contents of the <i>config.txt</i> file
      */
     public static void recreateWorkingDir(@NonNull final Path workingDir, @NonNull final String configTxt) {
+        requireNonNull(workingDir);
+        requireNonNull(configTxt);
+
         // Clean up any existing directory structure
         rm(workingDir);
         // Initialize the data folders
@@ -109,8 +136,12 @@ public class WorkingDirUtils {
         // Initialize the current upgrade folder
         createDirectoriesUnchecked(
                 workingDir.resolve(DATA_DIR).resolve(UPGRADE_DIR).resolve(CURRENT_DIR));
-        // Write the address book (config.txt)
+        // Write the address book (config.txt) and genesis network (genesis-network.json) files
         writeStringUnchecked(workingDir.resolve(CONFIG_TXT), configTxt);
+        final var network = networkFrom(configTxt, OnlyRoster.NO);
+        writeStringUnchecked(
+                workingDir.resolve(DATA_DIR).resolve(CONFIG_FOLDER).resolve(GENESIS_NETWORK_JSON),
+                Network.JSON.toJSON(network));
         // Copy the bootstrap assets into the working directory
         copyBootstrapAssets(bootstrapAssetsLoc(), workingDir);
         // Update the log4j2.xml file with the correct output directory
@@ -131,6 +162,7 @@ public class WorkingDirUtils {
 
     /**
      * Updates the given key/value property override at the given location
+     *
      * @param propertiesPath the path to the properties file
      * @param overrides the key/value property overrides
      */
@@ -157,6 +189,19 @@ public class WorkingDirUtils {
      */
     public static JutilPropertySource hapiTestStartupProperties() {
         return new JutilPropertySource(bootstrapAssetsLoc().resolve(APPLICATION_PROPERTIES));
+    }
+
+    /**
+     * Returns the version in the project's {@code version.txt} file.
+     *
+     * @return the version
+     */
+    public @NonNull static SemanticVersion workingDirVersion() {
+        final var loc = Paths.get(System.getProperty("user.dir")).endsWith("hedera-services")
+                ? "version.txt"
+                : "../version.txt";
+        final var versionLiteral = readStringUnchecked(Paths.get(loc)).trim();
+        return requireNonNull(new SemanticVersionConverter().convert(versionLiteral));
     }
 
     private static Path bootstrapAssetsLoc() {
@@ -341,15 +386,59 @@ public class WorkingDirUtils {
                 .toList());
     }
 
-    public static AddressBook loadAddressBookWithDeterministicCerts(@NonNull final Path path) {
-        requireNonNull(path);
-        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
-        try {
-            final var addressBook = configFile.getAddressBook();
-            CryptoStatic.generateKeysAndCerts(addressBook);
-            return addressBook;
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating keys and certs", e);
-        }
+    /**
+     * Whether only the {@link RosterEntry} entries should be set in a network resource.
+     */
+    public enum OnlyRoster {
+        YES,
+        NO
+    }
+
+    /**
+     * Creates a network from the given <i>config.txt</i> file, using the given functions to provide
+     * TSS encryption keys and TSS key material. The network's roster entries will have the gossip certificates
+     * set to the same certificates used in each position by a test network.
+     *
+     * @param configTxt the contents of the <i>config.txt</i> file
+     * @param onlyRoster if true, only the roster entries will be set in the network
+     * @return the network
+     */
+    public static Network networkFrom(@NonNull final String configTxt, @NonNull final OnlyRoster onlyRoster) {
+        requireNonNull(configTxt);
+        requireNonNull(onlyRoster);
+        final var certs = AddressBookUtils.certsFor(configTxt);
+        final var nodeMetadata = Arrays.stream(configTxt.split("\n"))
+                .filter(line -> line.contains("address, "))
+                .map(line -> {
+                    final var parts = line.split(", ");
+                    final long nodeId = Long.parseLong(parts[1]);
+                    final long weight = Long.parseLong(parts[4]);
+                    final var gossipEndpoints =
+                            List.of(endpointFrom(parts[5], parts[6]), endpointFrom(parts[7], parts[8]));
+                    final var cert = certs.get(nodeId);
+                    final var metadata = NodeMetadata.newBuilder()
+                            .rosterEntry(new RosterEntry(nodeId, weight, cert, gossipEndpoints));
+                    if (onlyRoster == OnlyRoster.NO) {
+                        metadata.node(new Node(
+                                nodeId,
+                                toPbj(HapiPropertySource.asAccount(parts[9])),
+                                "node" + (nodeId + 1),
+                                gossipEndpoints,
+                                List.of(),
+                                cert,
+                                // The gRPC certificate hash is irrelevant for PR checks
+                                Bytes.EMPTY,
+                                weight,
+                                false,
+                                CLASSIC_ADMIN_KEY));
+                    }
+                    return metadata.build();
+                })
+                .toList();
+        return Network.newBuilder().nodeMetadata(nodeMetadata).build();
+    }
+
+    private static ServiceEndpoint endpointFrom(@NonNull final String hostLiteral, @NonNull final String portLiteral) {
+        return HapiPropertySource.asServiceEndpoint(hostLiteral + ":" + portLiteral);
     }
 }
