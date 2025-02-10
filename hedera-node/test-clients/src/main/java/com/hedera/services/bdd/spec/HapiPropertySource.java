@@ -517,4 +517,8 @@ public interface HapiPropertySource {
                 .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
                 .build());
     }
+
+    static String asEntityString(final long num) {
+        return String.format(ENTITY_STRING, shard, realm, num);
+    }
 }
