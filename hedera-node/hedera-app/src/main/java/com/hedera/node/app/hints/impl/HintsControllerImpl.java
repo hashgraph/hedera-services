@@ -134,8 +134,7 @@ public class HintsControllerImpl implements HintsController {
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext context,
             @NonNull final Supplier<Configuration> configuration,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now) {
+            @NonNull final WritableHintsStore hintsStore) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);
@@ -152,7 +151,7 @@ public class HintsControllerImpl implements HintsController {
         final var crsState = hintsStore.getCrsState();
         final var crsPublications = hintsStore.getCrsPublications();
         if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
-            crsPublications.forEach(publication -> addCrsPublication(publication, now, hintsStore));
+            crsPublications.forEach(publication -> verifyCrsUpdate(publication, hintsStore));
         }
         this.initialCrs = crsState.stage() != CRSStage.COMPLETED ? crsState.crs() : null;
         // Ensure we are up-to-date on any published hinTS keys we might need for this construction
@@ -393,6 +392,16 @@ public class HintsControllerImpl implements HintsController {
             @NonNull Instant consensusTime,
             @NonNull WritableHintsStore hintsStore) {
         requireNonNull(publication);
+        requireNonNull(consensusTime);
+        requireNonNull(hintsStore);
+
+        verifyCrsUpdate(publication, hintsStore);
+        moveToNextNode(consensusTime, hintsStore);
+    }
+
+    @Override
+    public void verifyCrsUpdate(
+            @NonNull final CrsPublicationTransactionBody publication, @NonNull final WritableHintsStore hintsStore) {
         if (finalUpdatedCrsFuture == null) {
             finalUpdatedCrsFuture = CompletableFuture.supplyAsync(
                     () -> {
@@ -416,7 +425,6 @@ public class HintsControllerImpl implements HintsController {
                     },
                     executor);
         }
-        moveToNextNode(consensusTime, hintsStore);
     }
 
     /**

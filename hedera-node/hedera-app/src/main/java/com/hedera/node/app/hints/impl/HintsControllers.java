@@ -28,7 +28,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -88,14 +87,12 @@ public class HintsControllers {
      * @param activeRosters the active rosters
      * @param construction  the hinTS construction
      * @param hintsStore    the hinTS store
-     * @param now           the current consensus time
      * @return the result of the operation
      */
     public @NonNull HintsController getOrCreateFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now) {
+            @NonNull final WritableHintsStore hintsStore) {
         requireNonNull(activeRosters);
         requireNonNull(construction);
         requireNonNull(hintsStore);
@@ -103,7 +100,7 @@ public class HintsControllers {
             if (controller != null) {
                 controller.cancelPendingWork();
             }
-            controller = newControllerFor(activeRosters, construction, hintsStore, now);
+            controller = newControllerFor(activeRosters, construction, hintsStore);
         }
         return requireNonNull(controller);
     }
@@ -155,14 +152,12 @@ public class HintsControllers {
      * @param activeRosters the active rosters
      * @param construction  the hinTS construction
      * @param hintsStore    the hints store
-     * @param now           the current consensus time
      * @return the controller
      */
     private HintsController newControllerFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
-            @NonNull final WritableHintsStore hintsStore,
-            final Instant now) {
+            @NonNull final WritableHintsStore hintsStore) {
         final var weights = activeRosters.transitionWeights();
         if (!weights.sourceNodesHaveTargetThreshold()) {
             return new InertHintsController(construction.constructionId());
@@ -185,8 +180,7 @@ public class HintsControllers {
                     submissions,
                     context,
                     configurationSupplier,
-                    hintsStore,
-                    now);
+                    hintsStore);
         }
     }
 

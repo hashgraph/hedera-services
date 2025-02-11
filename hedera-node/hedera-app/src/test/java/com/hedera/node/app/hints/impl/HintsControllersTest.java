@@ -102,11 +102,11 @@ class HintsControllersTest {
                 HintsConstruction.newBuilder().constructionId(2L).build();
 
         assertTrue(subject.getInProgressById(2L).isEmpty());
-        final var firstController = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore, now);
+        final var firstController = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore);
         assertTrue(subject.getInProgressById(1L).isEmpty());
         assertTrue(subject.getInProgressById(2L).isEmpty());
         assertInstanceOf(InertHintsController.class, firstController);
-        final var secondController = subject.getOrCreateFor(activeRosters, twoConstruction, hintsStore, now);
+        final var secondController = subject.getOrCreateFor(activeRosters, twoConstruction, hintsStore);
         assertNotSame(firstController, secondController);
         assertInstanceOf(InertHintsController.class, secondController);
     }
@@ -119,7 +119,7 @@ class HintsControllersTest {
         given(selfNodeInfoSupplier.get()).willReturn(selfNodeInfo);
         given(hintsStore.getCrsState()).willReturn(CRSState.DEFAULT);
 
-        final var controller = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore, now);
+        final var controller = subject.getOrCreateFor(activeRosters, ONE_CONSTRUCTION, hintsStore);
 
         assertInstanceOf(HintsControllerImpl.class, controller);
 

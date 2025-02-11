@@ -529,8 +529,7 @@ class HintsControllerImplTest {
                 submissions,
                 context,
                 HederaTestConfigBuilder::createConfig,
-                store,
-                CONSENSUS_NOW);
+                store);
     }
 
     private void runScheduledTasks() {

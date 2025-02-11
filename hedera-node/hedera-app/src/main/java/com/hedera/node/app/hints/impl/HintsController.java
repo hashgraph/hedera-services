@@ -94,4 +94,6 @@ public interface HintsController {
             @NonNull CrsPublicationTransactionBody publication,
             @NonNull Instant consensusTime,
             @NonNull WritableHintsStore hintsStore);
+
+    void verifyCrsUpdate(@NonNull CrsPublicationTransactionBody publication, @NonNull WritableHintsStore hintsStore);
 }

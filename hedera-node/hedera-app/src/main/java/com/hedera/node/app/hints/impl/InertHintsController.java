@@ -95,4 +95,12 @@ public class InertHintsController implements HintsController {
         requireNonNull(hintsStore);
         // No-op
     }
+
+    @Override
+    public void verifyCrsUpdate(
+            @NonNull final CrsPublicationTransactionBody publication, @NonNull final WritableHintsStore hintsStore) {
+        requireNonNull(publication);
+        requireNonNull(hintsStore);
+        // No-op
+    }
 }

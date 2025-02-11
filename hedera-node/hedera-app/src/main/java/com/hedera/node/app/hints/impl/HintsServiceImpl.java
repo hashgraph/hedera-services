@@ -87,7 +87,7 @@ public class HintsServiceImpl implements HintsService {
                 final var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
                 if (!construction.hasHintsScheme()) {
                     final var controller =
-                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore, now);
+                            component.controllers().getOrCreateFor(activeRosters, construction, hintsStore);
                     controller.advanceConstruction(now, hintsStore);
                 }
             }
