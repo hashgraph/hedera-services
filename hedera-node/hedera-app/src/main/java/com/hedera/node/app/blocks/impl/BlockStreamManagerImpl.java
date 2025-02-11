@@ -94,7 +94,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
 
     private final int roundsPerBlock;
-    private final int blockPeriodSeconds;
+    private final Duration blockPeriod;
     private final BlockStreamWriterMode streamWriterType;
     private final int hashCombineBatchSize;
     private final BlockHashSigner blockHashSigner;
@@ -190,7 +190,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.hapiVersion = hapiVersionFrom(config);
         final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
         this.roundsPerBlock = blockStreamConfig.roundsPerBlock();
-        this.blockPeriodSeconds = blockStreamConfig.blockPeriodSeconds();
+        this.blockPeriod = blockStreamConfig.blockPeriod();
         this.streamWriterType = blockStreamConfig.writerMode();
         this.hashCombineBatchSize = blockStreamConfig.hashCombineBatchSize();
         final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
@@ -539,15 +539,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             return true;
         }
 
-        // If blockPeriodSeconds is 0, use roundsPerBlock
-        if (blockPeriodSeconds <= 0) {
+        // If blockPeriod is 0, use roundsPerBlock
+        if (blockPeriod.isZero()) {
             return roundNumber % roundsPerBlock == 0;
         }
 
         // For time-based blocks, check if enough consensus time has elapsed
-        final var elapsedSeconds =
-                Duration.between(blockTimestamp, consensusTimeLastRound).getSeconds();
-        return elapsedSeconds >= blockPeriodSeconds;
+        final var elapsed = Duration.between(blockTimestamp, consensusTimeLastRound);
+        return elapsed.compareTo(blockPeriod) >= 0;
     }
 
     private boolean isFreezeRound(@NonNull final PlatformState platformState, @NonNull final Round round) {
