@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.schedule.impl.schemas.V0570ScheduleSchema;
+import com.hedera.node.app.spi.AppContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.StateDefinition;
@@ -25,9 +26,12 @@ class ScheduleServiceImplTest {
     @Mock
     private SchemaRegistry registry;
 
+    @Mock
+    private AppContext appContext;
+
     @Test
     void testsSpi() {
-        final ScheduleService service = new ScheduleServiceImpl();
+        final ScheduleService service = new ScheduleServiceImpl(appContext);
         BDDAssertions.assertThat(service).isNotNull();
         BDDAssertions.assertThat(service.getClass()).isEqualTo(ScheduleServiceImpl.class);
         BDDAssertions.assertThat(service.getServiceName()).isEqualTo("ScheduleService");
@@ -36,7 +40,7 @@ class ScheduleServiceImplTest {
     @Test
     @SuppressWarnings("rawtypes")
     void registersExpectedSchema() {
-        final ScheduleServiceImpl subject = new ScheduleServiceImpl();
+        final ScheduleServiceImpl subject = new ScheduleServiceImpl(appContext);
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
         subject.registerSchemas(registry);
         verify(registry, times(2)).register(schemaCaptor.capture());

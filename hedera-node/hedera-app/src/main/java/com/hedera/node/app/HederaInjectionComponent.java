@@ -14,6 +14,7 @@ import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
@@ -104,6 +105,8 @@ public interface HederaInjectionComponent {
     Supplier<Charset> nativeCharset();
 
     NetworkInfo networkInfo();
+
+    AppFeeCharging appFeeCharging();
 
     PreHandleWorkflow preHandleWorkflow();
 

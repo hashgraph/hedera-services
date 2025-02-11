@@ -3,6 +3,7 @@ package com.hedera.node.app.service.schedule.impl.handlers;
 
 import static org.assertj.core.api.BDDAssertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -36,7 +37,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleSignHandler();
+        subject = new ScheduleSignHandler(mock(ScheduleFeeCharging.class));
         setUpBase();
     }
 

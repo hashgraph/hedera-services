@@ -48,8 +48,8 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
     private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
-    public ScheduleDeleteHandler() {
-        // Dagger2
+    public ScheduleDeleteHandler(@NonNull final ScheduleFeeCharging feeCharging) {
+        super(feeCharging);
     }
 
     @Override

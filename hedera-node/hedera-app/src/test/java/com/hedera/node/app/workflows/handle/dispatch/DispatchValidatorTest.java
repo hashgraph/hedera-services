@@ -24,7 +24,9 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
@@ -36,6 +38,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
@@ -66,7 +69,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ValidationReporterTest {
+class DispatchValidatorTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
@@ -102,7 +105,7 @@ class ValidationReporterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new DispatchValidator(solvencyPreCheck, recordCache, transactionChecker);
+        subject = new DispatchValidator(recordCache, transactionChecker, new AppFeeCharging(solvencyPreCheck));
     }
 
     @Test
@@ -110,7 +113,7 @@ class ValidationReporterTest {
         givenCreatorInfo();
         given(dispatch.preHandleResult()).willReturn(INVALID_PAYER_SIG_PREHANDLE);
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
     }
@@ -126,7 +129,7 @@ class ValidationReporterTest {
                 .when(transactionChecker)
                 .checkTimeBox(TXN_BODY, CONSENSUS_NOW, TransactionChecker.RequireMinValidLifetimeBuffer.NO);
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_TRANSACTION_DURATION), report);
     }
@@ -140,7 +143,7 @@ class ValidationReporterTest {
         givenPayer(payer -> payer.tinybarBalance(1L));
         givenInvalidPayerSig();
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE), report);
     }
@@ -152,8 +155,9 @@ class ValidationReporterTest {
         givenSolvencyCheckSetup();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L));
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         verify(solvencyPreCheck)
                 .checkSolvency(
@@ -177,8 +181,9 @@ class ValidationReporterTest {
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(1L)
                 .alias(Bytes.fromHex("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"))
                 .key(IMMUTABILITY_SENTINEL_KEY));
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         verify(solvencyPreCheck)
                 .checkSolvency(
@@ -200,9 +205,10 @@ class ValidationReporterTest {
         givenSolvencyCheckSetup();
         givenValidPayerSig();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(123L));
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         verify(solvencyPreCheck)
                 .checkSolvency(
@@ -233,7 +239,7 @@ class ValidationReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenPayer(payer -> payer.tinybarBalance(123L));
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION), report);
     }
@@ -246,9 +252,10 @@ class ValidationReporterTest {
         givenSolvencyCheckSetup();
         givenValidPayerSig();
         given(dispatch.preHandleResult()).willReturn(UNSUCCESSFUL_PREHANDLE);
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
         final var payerAccount = givenPayer(payer -> payer.tinybarBalance(123L));
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         verify(solvencyPreCheck)
                 .checkSolvency(
@@ -286,8 +293,9 @@ class ValidationReporterTest {
                         FEES,
                         NOT_INGEST,
                         SKIP_OFFERED_FEE_CHECK);
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(
                 newPayerError(
@@ -317,8 +325,9 @@ class ValidationReporterTest {
                         FEES,
                         NOT_INGEST,
                         CHECK_OFFERED_FEE);
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(
                 newPayerError(
@@ -349,8 +358,9 @@ class ValidationReporterTest {
                         FEES,
                         NOT_INGEST,
                         CHECK_OFFERED_FEE);
+        doCallRealMethod().when(dispatch).feeChargingOrElse(any());
 
-        final var report = subject.validationReportFor(dispatch);
+        final var report = subject.validateFeeChargingScenario(dispatch);
 
         assertEquals(newCreatorError(dispatch.creatorInfo().accountId(), INSUFFICIENT_PAYER_BALANCE), report);
     }
@@ -361,7 +371,7 @@ class ValidationReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenPayer(payer -> payer.tinybarBalance(1L).deleted(true));
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
+        assertThrows(IllegalStateException.class, () -> subject.validateFeeChargingScenario(dispatch));
     }
 
     @Test
@@ -369,7 +379,7 @@ class ValidationReporterTest {
         givenChildDispatch();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenMissingPayer();
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
+        assertThrows(IllegalStateException.class, () -> subject.validateFeeChargingScenario(dispatch));
     }
 
     @Test
@@ -378,7 +388,7 @@ class ValidationReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenPayer(payer -> payer.tinybarBalance(1L).smartContract(true));
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
+        assertThrows(IllegalStateException.class, () -> subject.validateFeeChargingScenario(dispatch));
     }
 
     @Test
@@ -387,7 +397,7 @@ class ValidationReporterTest {
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenMissingPayer();
         given(dispatch.txnInfo()).willReturn(TXN_INFO);
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
+        assertThrows(IllegalStateException.class, () -> subject.validateFeeChargingScenario(dispatch));
     }
 
     @Test
@@ -395,7 +405,7 @@ class ValidationReporterTest {
         givenScheduledDispatch();
         given(dispatch.preHandleResult()).willReturn(SUCCESSFUL_PREHANDLE);
         givenMissingPayer();
-        assertThrows(IllegalStateException.class, () -> subject.validationReportFor(dispatch));
+        assertThrows(IllegalStateException.class, () -> subject.validateFeeChargingScenario(dispatch));
     }
 
     private void givenMissingPayer() {

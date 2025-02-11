@@ -9,6 +9,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONT
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
+import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.Type.CUSTOM_FEE_CHARGING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
@@ -20,6 +21,7 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -75,8 +77,14 @@ public class AutoAccountCreator {
 
         // Dispatch the auto-creation record as a preceding record; note we pass null for the
         // "verification assistant" since we have no non-payer signatures to verify here
-        final var streamBuilder = handleContext.dispatch(
-                setupDispatch(handleContext.payer(), syntheticCreation.build(), CryptoCreateStreamBuilder.class));
+        final var streamBuilder = handleContext.dispatch(setupDispatch(
+                handleContext.payer(),
+                syntheticCreation.build(),
+                CryptoCreateStreamBuilder.class,
+                handleContext
+                        .dispatchMetadata()
+                        .getMetadata(CUSTOM_FEE_CHARGING, FeeCharging.class)
+                        .orElse(null)));
         // If the child transaction failed, we should fail the parent transaction as well and propagate the failure.
         validateTrue(streamBuilder.status() == SUCCESS, streamBuilder.status());
 
