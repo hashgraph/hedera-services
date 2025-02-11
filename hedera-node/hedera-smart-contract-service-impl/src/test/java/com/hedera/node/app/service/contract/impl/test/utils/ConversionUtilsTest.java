@@ -270,9 +270,9 @@ class ConversionUtilsTest {
         System.arraycopy(Longs.toByteArray(realm), 0, expected, 4, 8);
         System.arraycopy(Longs.toByteArray(num), 0, expected, 12, 8);
 
-        final byte[] actual = ConversionUtils.asEvmAddress(shard, realm, num);
+        final byte[] actual = asEvmAddress(shard, realm, num);
 
-        assertArrayEquals(expected, actual);
+        assertArrayEquals(expected, actual, "EVM address is not as expected");
     }
 
     private byte[] bloomFor(@NonNull final Log log) {
