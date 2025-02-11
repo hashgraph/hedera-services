@@ -45,7 +45,6 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
-import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
@@ -68,7 +67,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 public enum TransactionExecutors {
     TRANSACTION_EXECUTORS;
 
-    public static final NodeInfo DEFAULT_NODE_INFO = new NodeInfoImpl(0, asAccount(3L), 10, List.of(), Bytes.EMPTY);
     public static final String MAX_SIGNED_TXN_SIZE_PROPERTY = "executor.maxSignedTxnSize";
 
     /**
@@ -262,6 +260,11 @@ public enum TransactionExecutors {
         final var bootstrapConfig = bootstrapConfigProvider.getConfiguration();
         final var configProvider = new ConfigProviderImpl(false, null, properties);
         final AtomicReference<ExecutorComponent> componentRef = new AtomicReference<>();
+
+        var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        var defaultNodeInfo = new NodeInfoImpl(
+                0, asAccount(hederaConfig.shard(), hederaConfig.realm(), 3L), 10, List.of(), Bytes.EMPTY);
+
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
                 new AppSignatureVerifier(
@@ -270,7 +273,7 @@ public enum TransactionExecutors {
                         new SignatureVerifierImpl(CryptographyHolder.get())),
                 UNAVAILABLE_GOSSIP,
                 bootstrapConfigProvider::getConfiguration,
-                () -> DEFAULT_NODE_INFO,
+                () -> defaultNodeInfo,
                 () -> NO_OP_METRICS,
                 () -> componentRef.get().appFeeCharging(),
                 new AppThrottleFactory(

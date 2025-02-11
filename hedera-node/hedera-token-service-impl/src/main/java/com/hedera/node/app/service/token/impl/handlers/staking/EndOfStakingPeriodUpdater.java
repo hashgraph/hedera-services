@@ -68,6 +68,7 @@ public class EndOfStakingPeriodUpdater {
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
 
     private final AccountsConfig accountsConfig;
+    private final HederaConfig hederaConfig;
     private final StakingRewardsHelper stakeRewardsHelper;
     private final HederaConfig hederaConfig;
 

@@ -32,8 +32,12 @@ public class BaseCryptoHandler {
      * @return the accountID
      */
     @NonNull
-    public static AccountID asAccount(final long num) {
-        return AccountID.newBuilder().accountNum(num).build();
+    public static AccountID asAccount(final long shard, final long realm, final long num) {
+        return AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(num)
+                .build();
     }
 
     /**
