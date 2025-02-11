@@ -52,7 +52,7 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private List<HapiTxnOp<?>> operationsToBatch = null;
+    private final List<HapiTxnOp<?>> operationsToBatch;
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
     private List<Transaction> transactionsToBatch = new ArrayList<>();
 
@@ -132,6 +132,9 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
                 op.updateStateFromRecord(recordQuery.getResponseRecord(), spec);
             }
         }
+
+        // validate execution order of specific transactions
+        validateExecutionOrder(spec, txnIdsForOrderValidation);
     }
 
     public HapiAtomicBatch addTransaction(Transaction txn) {
@@ -147,5 +150,52 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
         return super.toStringHelper().add("range", operationsToBatch);
+    }
+
+    public HapiAtomicBatch validateTxnOrder(String... txnIds) {
+        txnIdsForOrderValidation = Arrays.asList(txnIds);
+        return this;
+    }
+
+    private boolean validateExecutionOrder(HapiSpec spec, List<String> transactionIds) throws Throwable {
+        if (transactionIds.size() < 2) {
+            return true;
+        }
+
+        for (int i = 0; i < transactionIds.size() - 1; i++) {
+            final var txnId1 = spec.registry().getTxnId(transactionIds.get(i));
+            final var txnId2 = spec.registry().getTxnId(transactionIds.get(i + 1));
+
+            if (txnId1 == null || txnId2 == null) {
+                throw new IllegalArgumentException("Invalid transaction id to validate execution order");
+            }
+            final var record1 = getTxnRecord(txnId1).noLogging().assertingNothing();
+            final var record2 = getTxnRecord(txnId2).noLogging().assertingNothing();
+
+            final var error1 = record1.execFor(spec);
+            final var error2 = record2.execFor(spec);
+
+            if (error1.isPresent()) {
+                throw error1.get();
+            }
+
+            if (error2.isPresent()) {
+                throw error2.get();
+            }
+
+            final var consensus1 = record1.getResponseRecord().getConsensusTimestamp();
+            final var consensus2 = record2.getResponseRecord().getConsensusTimestamp();
+
+            // throw if second consensus is before the first
+            // 1. compare seconds
+            if (consensus2.getSeconds() < consensus1.getSeconds()) {
+                throw new IllegalArgumentException("Invalid execution order");
+            }
+            // 2. compare nanos
+            if (consensus2.getNanos() <= consensus1.getNanos()) {
+                throw new IllegalArgumentException("Invalid execution order");
+            }
+        }
+        return true;
     }
 }

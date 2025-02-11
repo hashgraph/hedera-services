@@ -66,6 +66,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -240,7 +241,7 @@ public class ChildDispatchFactory {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
-            @NonNull final HandleContext.DispatchMetadata dispatchMetadata,
+            @NonNull final DispatchMetadata dispatchMetadata,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,

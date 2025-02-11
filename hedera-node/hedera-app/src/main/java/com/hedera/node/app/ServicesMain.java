@@ -40,6 +40,7 @@ import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
@@ -55,6 +56,7 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.tss.TssBlockHashSigner;
 import com.hedera.node.internal.network.Network;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
@@ -182,6 +184,11 @@ public class ServicesMain implements SwirldMain<PlatformMerkleStateRoot> {
     @Override
     public void run() {
         hederaOrThrow().run();
+    }
+
+    @Override
+    public @NonNull Bytes encodeSystemTransaction(@NonNull StateSignatureTransaction transaction) {
+        return hedera.encodeSystemTransaction(transaction);
     }
 
     /**
