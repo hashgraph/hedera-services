@@ -19,6 +19,7 @@ package com.hedera.node.app.services;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.spi.throttle.Throttle;
@@ -39,6 +40,7 @@ import java.util.function.Supplier;
  * @param selfNodeInfoSupplier The supplier of the self-node info
  * @param metricsSupplier The supplier of metrics.
  * @param throttleFactory The factory for throttles.
+ * @param feeChargingSupplier supplies the app's fee charging strategy implementation
  * @param idFactory The factory for entity ids.
  */
 public record AppContextImpl(
@@ -49,6 +51,7 @@ public record AppContextImpl(
         @NonNull Supplier<NodeInfo> selfNodeInfoSupplier,
         @NonNull Supplier<Metrics> metricsSupplier,
         @NonNull Throttle.Factory throttleFactory,
+        @NonNull Supplier<FeeCharging> feeChargingSupplier,
         @NonNull EntityIdFactory idFactory)
         implements AppContext {
     public AppContextImpl {
@@ -59,6 +62,7 @@ public record AppContextImpl(
         requireNonNull(selfNodeInfoSupplier);
         requireNonNull(metricsSupplier);
         requireNonNull(throttleFactory);
+        requireNonNull(feeChargingSupplier);
         requireNonNull(idFactory);
     }
 }

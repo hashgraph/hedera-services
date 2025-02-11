@@ -279,11 +279,12 @@ public enum TransactionExecutors {
                         () -> componentRef.get().throttleServiceManager().activeThrottleDefinitionsOrThrow(),
                         ThrottleAccumulator::new,
                         softwareVersionFactory),
+                () -> componentRef.get().appFeeCharging(),
                 new AppEntityIdFactory(bootstrapConfig));
         final var contractService = new ContractServiceImpl(
                 appContext, NO_OP_METRICS, NOOP_VERIFICATION_STRATEGIES, tracerBinding, customOps);
         final var fileService = new FileServiceImpl();
-        final var scheduleService = new ScheduleServiceImpl();
+        final var scheduleService = new ScheduleServiceImpl(appContext);
         final var hintsService = new HintsServiceImpl(
                 NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, new HintsLibraryImpl(), bootstrapConfig);
         final var component = DaggerExecutorComponent.builder()
@@ -291,6 +292,7 @@ public enum TransactionExecutors {
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(bootstrapConfigProvider)
                 .fileServiceImpl(fileService)
+                .scheduleService(scheduleService)
                 .contractServiceImpl(contractService)
                 .scheduleServiceImpl(scheduleService)
                 .hintsService(hintsService)

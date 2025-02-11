@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.spi.throttle.Throttle;
@@ -215,6 +216,12 @@ public interface AppContext {
      * @return the throttle factory
      */
     Throttle.Factory throttleFactory();
+
+    /**
+     * Supplier of the application's strategy for charging fees.
+     * @return the fee charging strategy
+     */
+    Supplier<FeeCharging> feeChargingSupplier();
 
     /**
      * The application's strategy for creating entity ids.
