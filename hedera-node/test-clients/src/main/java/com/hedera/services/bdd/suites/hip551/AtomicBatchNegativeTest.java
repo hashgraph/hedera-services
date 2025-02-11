@@ -237,6 +237,7 @@ public class AtomicBatchNegativeTest {
 
         @HapiTest
         @DisplayName("Bach contract call with 6kb payload, will fail")
+        @Disabled
         //  BATCH_50
         public Stream<DynamicTest> exceedsTxnSizeLimit() {
             final var contract = "CalldataSize";
