@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
@@ -91,8 +90,13 @@ public class SysFileOverrideOp extends UtilOp {
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
-        final var fileId = asEntityString(target.number());
-        allRunFor(spec, getFileContents(fileId).consumedBy(bytes -> this.originalContents = bytes));
+        var fileNumber = String.format(
+                "%s.%s.%s",
+                spec.startupProperties().getLong("hedera.shard"),
+                spec.startupProperties().getLong("hedera.realm"),
+                target.number());
+
+        allRunFor(spec, getFileContents(fileNumber).consumedBy(bytes -> this.originalContents = bytes));
         log.info("Took snapshot of {}", target);
         final var styledContents = overrideSupplier.get();
         // The supplier can return null to indicate that this operation should not update the file,
@@ -103,7 +107,7 @@ public class SysFileOverrideOp extends UtilOp {
             allRunFor(
                     spec,
                     updateLargeFile(
-                            GENESIS, fileId, ByteString.copyFrom(rawContents), true, OptionalLong.of(ONE_HBAR)));
+                            GENESIS, fileNumber, ByteString.copyFrom(rawContents), true, OptionalLong.of(ONE_HBAR)));
             if (target == Target.FEES) {
                 if (!spec.tryReinitializingFees()) {
                     log.warn("Failed to reinitialize fees");
@@ -121,11 +125,17 @@ public class SysFileOverrideOp extends UtilOp {
     public void restoreContentsIfNeeded(@NonNull final HapiSpec spec) {
         requireNonNull(spec);
         if (originalContents != null) {
+            final var fileNumber = String.format(
+                    "%s.%s.%s",
+                    spec.startupProperties().getLong("hedera.shard"),
+                    spec.startupProperties().getLong("hedera.realm"),
+                    target.number());
+
             allRunFor(
                     spec,
                     updateLargeFile(
                             GENESIS,
-                            asEntityString(target.number()),
+                            fileNumber,
                             ByteString.copyFrom(originalContents),
                             true,
                             OptionalLong.of(ONE_HBAR)));

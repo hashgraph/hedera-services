@@ -154,7 +154,7 @@ public class EndOfStakingPeriodUpdater {
             final var pendingRewards = (nodeInfo.stakeRewardStart() - nodeInfo.unclaimedStakeRewardStart())
                     / HBARS_TO_TINYBARS
                     * nodeRewardRate;
-            final var newStakes = computeNewStakes(nodeInfo);
+            final var newStakes = computeNewStakes(nodeInfo, stakingConfig);
             log.info(
                     "For node{}, the tb/hbar reward rate was {} for {} pending, with stake reward start {} -> {}",
                     nodeId,
