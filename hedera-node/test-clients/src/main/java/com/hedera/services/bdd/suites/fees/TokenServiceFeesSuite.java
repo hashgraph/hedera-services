@@ -874,7 +874,7 @@ public class TokenServiceFeesSuite {
                                 copyFromUtf8("f"),
                                 copyFromUtf8("g"))),
                 getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).via("getTokenInfo").payingWith(TOKEN_TREASURY),
-                sleepFor(1000),
+                sleepFor(3000),
                 validateChargedUsd("getTokenInfo", expectedTokenGetNftInfo));
     }
 

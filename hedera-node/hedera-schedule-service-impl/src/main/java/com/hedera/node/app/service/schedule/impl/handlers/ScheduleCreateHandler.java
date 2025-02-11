@@ -92,7 +92,10 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
     @Inject
     public ScheduleCreateHandler(
-            @NonNull final InstantSource instantSource, @NonNull final Throttle.Factory throttleFactory) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final Throttle.Factory throttleFactory,
+            @NonNull final ScheduleFeeCharging feeCharging) {
+        super(feeCharging);
         this.instantSource = requireNonNull(instantSource);
         this.throttleFactory = requireNonNull(throttleFactory);
     }

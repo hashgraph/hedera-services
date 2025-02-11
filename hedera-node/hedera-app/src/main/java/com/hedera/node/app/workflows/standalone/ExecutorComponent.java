@@ -20,11 +20,13 @@ import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.fees.AppFeeCharging;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.platform.PlatformStateModule;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.spi.throttle.Throttle;
@@ -69,6 +71,9 @@ public interface ExecutorComponent {
         Builder fileServiceImpl(FileServiceImpl fileService);
 
         @BindsInstance
+        Builder scheduleService(ScheduleService scheduleService);
+
+        @BindsInstance
         Builder contractServiceImpl(ContractServiceImpl contractService);
 
         @BindsInstance
@@ -96,6 +101,8 @@ public interface ExecutorComponent {
     }
 
     Consumer<State> initializer();
+
+    AppFeeCharging appFeeCharging();
 
     DispatchProcessor dispatchProcessor();
 
