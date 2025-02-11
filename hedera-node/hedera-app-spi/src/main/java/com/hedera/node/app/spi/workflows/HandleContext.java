@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.workflows;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -101,62 +103,65 @@ public interface HandleContext {
     }
 
     /**
-     * Enumerates the possible kinds of dispatch metadata.
-     */
-    enum MetaDataKey {
-        /**
-         * The fixed fee of a transaction.
-         */
-        TRANSACTION_FIXED_FEE
-    }
-
-    /**
      * Metadata that can be attached to a dispatch.
      * This metadata is passed when dispatching a child transaction and can
      * be used to pass additional information to the targeted handlers.
      */
     class DispatchMetadata {
-        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(new HashMap<>());
+        public static final DispatchMetadata EMPTY_METADATA = new DispatchMetadata(Map.of());
 
-        private final Map<MetaDataKey, Object> metadata;
+        private final Map<Type, Object> metadata;
 
         /**
          * Constructs a new DispatchMetadata instance with the given metadata map.
          *
          * @param metadata the metadata map
          */
-        public DispatchMetadata(@NonNull final Map<MetaDataKey, Object> metadata) {
-            this.metadata = metadata;
+        public DispatchMetadata(@NonNull final Map<Type, Object> metadata) {
+            this.metadata = requireNonNull(metadata);
         }
 
         /**
          * Constructs a new DispatchMetadata instance with a single metadata entry.
          *
-         * @param dataKey the metadata key
+         * @param type the metadata key
          * @param value the metadata value
          */
-        public DispatchMetadata(@NonNull final MetaDataKey dataKey, @NonNull Object value) {
-            this.metadata = new HashMap<>(Map.of(dataKey, value));
+        public DispatchMetadata(@NonNull final Type type, @NonNull Object value) {
+            this.metadata = new HashMap<>(Map.of(type, value));
         }
 
         /**
          * Adds or updates a metadata entry.
          *
-         * @param dataKey the metadata key
+         * @param type the metadata key
          * @param value the metadata value
          */
-        public void putMetadata(@NonNull final MetaDataKey dataKey, @NonNull final Object value) {
-            metadata.put(dataKey, value);
+        public void putMetadata(@NonNull final Type type, @NonNull final Object value) {
+            metadata.put(type, value);
         }
 
         /**
          * Retrieves the metadata value associated with the given key.
          *
-         * @param dataKey the metadata key
-         * @return an Optional containing the metadata value, or an empty Optional if the key is not present
+         * @param type the metadata key
+         * @param javaType the Java type of the metadata value
+         * @return the metadata value, if present
          */
-        public Optional<Object> getMetadata(MetaDataKey dataKey) {
-            return Optional.ofNullable(metadata.get(dataKey));
+        public <T> Optional<T> getMetadata(@NonNull final Type type, @NonNull final Class<T> javaType) {
+            requireNonNull(type);
+            requireNonNull(javaType);
+            return Optional.ofNullable(metadata.get(type)).map(javaType::cast);
+        }
+
+        /**
+         * Enumerates the possible types of dispatch metadata.
+         */
+        public enum Type {
+            /**
+             * The fixed fee of a transaction.
+             */
+            TRANSACTION_FIXED_FEE,
         }
     }
 

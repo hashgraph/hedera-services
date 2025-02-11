@@ -35,6 +35,8 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.wires.input.InputWire;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
@@ -43,6 +45,7 @@ import com.swirlds.platform.components.DefaultEventWindowManager;
 import com.swirlds.platform.components.DefaultSavedStateController;
 import com.swirlds.platform.components.EventWindowManager;
 import com.swirlds.platform.components.SavedStateController;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -54,6 +57,7 @@ import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RuntimeMetrics;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.publisher.DefaultPlatformPublisher;
@@ -523,8 +527,14 @@ public class SwirldsPlatform implements Platform {
                 : new AutoCloseableWrapper<>((T) wrapper.get().getState(), wrapper::close);
     }
 
-    @NonNull
-    public PlatformWiring getPlatformWiring() {
-        return platformWiring;
+    /**
+     * Binds a custom input wire to the consensus engine output wire. This method is mainly created for test purposes.
+     *
+     * @param inputWire to bind
+     */
+    public void bindInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
+        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                platformWiring.getConsensusEngineWiring();
+        consensusEngineWiring.getOutputWire().solderTo(inputWire);
     }
 }
