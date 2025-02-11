@@ -19,17 +19,27 @@ option java_package = "com.hedera.node.internal.network.legacy";
 option java_multiple_files = true;
 
 /**
- * Configuration for a single block node connection.<br/>
- * This message delivers the information needed to stream blocks to a block node.
+ * A single block node connection configuration.<br/>
+ *
+ * This message provides the necessary details for a consensus node to
+ * establish a connection and stream blocks to a block node.</br>
+ * Each instance of this message represents one block node connection.
+ * Multiple instances may be included in {@link BlockNodeConnectionInfo}.
+ * - Each instance SHALL contain a valid address and port.<br/>
+ * - A consensus node SHALL connect to all listed block nodes.<br/>
+ * - The address MUST be a valid DNS hostname or IP address.<br/>
+ * - The port SHALL be within the valid TCP/UDP port range.<br/>
  */
 message BlockNodeConfig {
     /**
-     * The address of the block node.<br/>
+     * The network address of the block node.<br/>
+     * This MAY be an IP address or a DNS hostname.
      */
     string address = 1;
 
     /**
-     * The port of the block node.<br/>
+     * The port used to communicate with the block node.<br/>
+     * Valid port range is 1 to 65535.
      */
     int32 port = 2;
 }
