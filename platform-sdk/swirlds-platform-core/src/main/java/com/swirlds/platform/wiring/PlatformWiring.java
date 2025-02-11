@@ -622,19 +622,12 @@ public class PlatformWiring {
                 hashedStateAndRoundOutputWire.buildAdvancedTransformer(
                         new StateAndRoundToStateReserver("postHasher_stateReserver"));
 
-        // Extract signatures from post-consensus events for input to the StateSignatureCollector.
-        final WireTransformer<StateAndRound, Queue<ScopedSystemTransaction<StateSignatureTransaction>>>
-                stateAndRoundTransformer = new WireTransformer<>(
-                        model,
-                        "getSystemTransactionsFromStateAndRound",
-                        "system transactions",
-                        StateAndRound::systemTransactions);
-
-        stateHasherWiring.getOutputWire().solderTo(stateAndRoundTransformer.getInputWire());
-        transactionHandlerWiring.getOutputWire().solderTo(stateAndRoundTransformer.getInputWire());
-
-        stateAndRoundTransformer
+        transactionHandlerWiring
                 .getOutputWire()
+                .buildTransformer(
+                        "getSystemTransactions",
+                        "stateAndRound with system transactions",
+                        StateAndRound::systemTransactions)
                 .solderTo(stateSignatureCollectorWiring.getInputWire(
                         StateSignatureCollector::handlePostconsensusSignatures));
 
