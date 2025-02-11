@@ -41,7 +41,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -53,8 +52,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages connections to block nodes, including connection lifecycle, node selection,
- * and error handling with exponential backoff.
+ * Manages connections to block nodes, connection lifecycle and node selection.
  */
 public class BlockNodeConnectionManager {
     private static final Logger logger = LogManager.getLogger(BlockNodeConnectionManager.class);
@@ -62,7 +60,6 @@ public class BlockNodeConnectionManager {
             BlockStreamServiceGrpc.getPublishBlockStreamMethod().getBareMethodName();
 
     private final Map<BlockNodeConfig, BlockNodeConnection> activeConnections;
-    private final Set<BlockNodeConfig> nodesInBackoff;
     private BlockNodeConfigExtractor blockNodeConfigurations;
 
     private final ReentrantLock connectionLock = new ReentrantLock();
@@ -76,7 +73,6 @@ public class BlockNodeConnectionManager {
     public BlockNodeConnectionManager(@NonNull final ConfigProvider configProvider) {
         requireNonNull(configProvider);
         this.activeConnections = new ConcurrentHashMap<>();
-        this.nodesInBackoff = ConcurrentHashMap.newKeySet();
 
         final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         if (!blockStreamConfig.streamToBlockNodes()) {
@@ -93,7 +89,6 @@ public class BlockNodeConnectionManager {
 
         List<BlockNodeConfig> availableNodes = blockNodeConfigurations.getAllNodes().stream()
                 .filter(node -> !activeConnections.containsKey(node))
-                .filter(node -> !nodesInBackoff.contains(node))
                 .toList();
 
         availableNodes.forEach(this::connectToNode);
@@ -126,7 +121,6 @@ public class BlockNodeConnectionManager {
             connectionLock.lock();
             try {
                 activeConnections.put(node, connection);
-                nodesInBackoff.remove(node);
             } finally {
                 connectionLock.unlock();
             }
@@ -142,7 +136,6 @@ public class BlockNodeConnectionManager {
             connection.close();
             logger.info("Disconnected from block node {}:{}", node.address(), node.port());
         }
-        nodesInBackoff.remove(node);
     }
 
     private void streamBlockToConnections(@NonNull BlockState block) {
