@@ -49,6 +49,7 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.util.MarkerFileWriter;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -479,6 +480,11 @@ public class ConsensusImpl implements Consensus {
             e.setConsensus(true);
             e.setRecTimes(null);
         });
+        // This value is normally updated when a round gets decided, but since we are starting from
+        // a snapshot, we need to set it here.
+        rounds.setConsensusRelevantGeneration(
+                initJudges.getJudges().stream().map(EventImpl::getGeneration).min(Long::compareTo)
+                        .orElse(EventConstants.FIRST_GENERATION));
         initJudges = null;
 
         return true;
@@ -713,7 +719,7 @@ public class ConsensusImpl implements Consensus {
         // Check for no judges or super majority conditions.
         checkJudges(judges, decidedRoundNumber);
 
-        // update the round and generation values since fame has been decided for a new round
+        // update the round and ancient threshold values since fame has been decided for a new round
         rounds.currentElectionDecided();
 
         // all events that reach consensus during this method call, in consensus order

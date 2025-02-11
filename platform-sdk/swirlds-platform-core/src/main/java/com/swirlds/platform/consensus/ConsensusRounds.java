@@ -52,7 +52,12 @@ public class ConsensusRounds {
     /** The round we are currently voting on */
     private final RoundElections roundElections = new RoundElections();
     /** the current threshold below which all events are ancient */
-    private long ancientThreshold = EventConstants.FIRST_GENERATION;
+    private long ancientThreshold = EventConstants.ANCIENT_THRESHOLD_UNDEFINED;
+    /**
+     * the minimum generation of all the judges in the latest decided round. events with a lower generation than this do
+     * not affect any consensus calculations
+     */
+    private long consensusRelevantGeneration = EventConstants.GENERATION_UNDEFINED;
 
     /** Constructs an empty object */
     public ConsensusRounds(@NonNull final ConsensusConfig config, @NonNull final AncientMode ancientMode, @NonNull final Roster roster) {
@@ -70,6 +75,7 @@ public class ConsensusRounds {
         maxRoundCreated = ConsensusConstants.ROUND_UNDEFINED;
         roundElections.reset();
         updateAncientThreshold();
+        consensusRelevantGeneration = EventConstants.GENERATION_UNDEFINED;
     }
 
     /**
@@ -124,9 +130,16 @@ public class ConsensusRounds {
      * @return true if its older
      */
     public boolean isOlderThanDecidedRoundGeneration(@NonNull final EventImpl event) {
-        return isAnyRoundDecided() // if no round has been decided, it can't be older
-                && minimumJudgeStorage.get(getLastRoundDecided()).minimumJudgeAncientThreshold()
-                        > event.getGeneration();
+        return consensusRelevantGeneration > event.getGeneration();
+    }
+
+    /**
+     * Setter for the {@link #consensusRelevantGeneration} field. This is used when loading consensus from a snapshot.
+     *
+     * @param consensusRelevantGeneration the value to set
+     */
+    public void setConsensusRelevantGeneration(final long consensusRelevantGeneration) {
+        this.consensusRelevantGeneration = consensusRelevantGeneration;
     }
 
     /**
@@ -141,6 +154,7 @@ public class ConsensusRounds {
      */
     public void currentElectionDecided() {
         minimumJudgeStorage.add(roundElections.getRound(), roundElections.createMinimumJudgeInfo(ancientMode));
+        consensusRelevantGeneration = roundElections.getMinGeneration();
         roundElections.startNextElection();
         // Delete the oldest rounds with round number which is expired
         minimumJudgeStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
@@ -248,9 +262,9 @@ public class ConsensusRounds {
      * Update the current ancient threshold based on the latest round decided.
      */
     private void updateAncientThreshold() {
-        if (getFameDecidedBelow() == ConsensusConstants.ROUND_FIRST) {
+        if (isAnyRoundDecided()) {
             // if no round has been decided, no events are ancient yet
-            ancientThreshold = EventConstants.FIRST_GENERATION;
+            ancientThreshold = EventConstants.ANCIENT_THRESHOLD_UNDEFINED;
             return;
         }
         final long nonAncientRound =

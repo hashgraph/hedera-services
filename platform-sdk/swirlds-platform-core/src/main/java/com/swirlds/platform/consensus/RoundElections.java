@@ -117,7 +117,7 @@ public class RoundElections {
     /**
      * @return the minimum generation of all the judges(unique famous witnesses) in this round
      */
-    private long getMinGeneration() {
+    public long getMinGeneration() {
         if (minGeneration == EventConstants.GENERATION_UNDEFINED) {
             throw new IllegalStateException("Cannot provide the minimum generation until all judges are found");
         }
