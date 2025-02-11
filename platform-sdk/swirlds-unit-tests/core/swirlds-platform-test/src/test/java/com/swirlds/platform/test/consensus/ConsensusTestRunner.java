@@ -16,13 +16,16 @@
 
 package com.swirlds.platform.test.consensus;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.test.consensus.framework.TestInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 public class ConsensusTestRunner {
     private ConsensusTestParams params;
+    private List<PlatformContext> contexts;
     private ThrowingConsumer<TestInput> test;
     private int iterations = 1;
     private int eventsToGenerate = 10_000;
@@ -33,6 +36,11 @@ public class ConsensusTestRunner {
 
     public @NonNull ConsensusTestRunner setParams(@NonNull final ConsensusTestParams params) {
         this.params = params;
+        return this;
+    }
+
+    public @NonNull ConsensusTestRunner setContexts(@NonNull final List<PlatformContext> contexts) {
+        this.contexts = contexts;
         return this;
     }
 
@@ -47,19 +55,22 @@ public class ConsensusTestRunner {
     }
 
     public void run() {
-        try {
             for (final long seed : params.seeds()) {
-                System.out.println("Running seed: " + seed);
-
-                test.accept(new TestInput(
-                        params.platformContext(), params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                runWithSeed(seed);
             }
 
             for (int i = 0; i < iterations; i++) {
                 final long seed = new Random().nextLong();
-                System.out.println("Running seed: " + seed);
+                runWithSeed(seed);
+            }
+    }
+
+    private void runWithSeed(final long seed) {
+        System.out.println("Running seed: " + seed);
+        try {
+            for (final PlatformContext context : contexts) {
                 test.accept(new TestInput(
-                        params.platformContext(), params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                        context, params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
             }
         } catch (final Throwable e) {
             throw new RuntimeException(e);

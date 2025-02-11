@@ -128,7 +128,7 @@ public class ConsensusSnapshot implements SelfSerializable {
      * @param roundsNonAncient the number of non-ancient rounds
      * @return minimum non-ancient generation
      */
-    public long getMinimumGenerationNonAncient(final int roundsNonAncient) {
+    public long getAncientThreshold(final int roundsNonAncient) {
         return RoundCalculationUtils.getMinGenNonAncient(
                 roundsNonAncient, round, this::getMinimumJudgeAncientThreshold);
     }

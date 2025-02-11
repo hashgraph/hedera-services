@@ -52,7 +52,7 @@ public final class NoEventsLost {
         final long nonAncientGen = output.getConsensusRounds()
                 .getLast()
                 .getSnapshot()
-                .getMinimumGenerationNonAncient(CONFIG.roundsNonAncient());
+                .getAncientThreshold(CONFIG.roundsNonAncient());
 
         for (final PlatformEvent event : output.getAddedEvents()) {
             if (event.getGeneration() >= nonAncientGen) {

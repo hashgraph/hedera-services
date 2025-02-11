@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.WeightGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record ConsensusTestParams(
-        @NonNull PlatformContext platformContext,
         int numNodes,
         @NonNull WeightGenerator weightGenerator,
         @NonNull String weightDesc,

@@ -36,11 +36,13 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
 import com.swirlds.platform.event.hashing.EventHasher;
 import com.swirlds.platform.event.orphan.DefaultOrphanBuffer;
 import com.swirlds.platform.event.orphan.OrphanBuffer;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -65,6 +67,7 @@ public class TestIntake {
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
     private final WiringModel model;
     private final int roundsNonAncient;
+    private final AncientMode ancientMode;
 
     /**
      * @param platformContext the platform context used to configure this intake.
@@ -76,6 +79,10 @@ public class TestIntake {
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
+        ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
 
         final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
@@ -165,9 +172,9 @@ public class TestIntake {
 
         final EventWindow eventWindow = new EventWindow(
                 snapshot.round(),
-                snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
-                snapshot.getMinimumGenerationNonAncient(roundsNonAncient),
-                GENERATION_THRESHOLD);
+                snapshot.getAncientThreshold(roundsNonAncient),
+                snapshot.getAncientThreshold(roundsNonAncient),
+                ancientMode);
 
         orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow).put(eventWindow);
         consensusEngineWiring
@@ -187,6 +194,9 @@ public class TestIntake {
     public <X> TaskScheduler<X> directScheduler(final String name) {
         return model.<X>schedulerBuilder(name)
                 .withType(TaskSchedulerType.DIRECT)
+                .withUncaughtExceptionHandler((t, e) -> {
+                    throw new RuntimeException("Uncaught exception in task " + t, e);
+                })
                 .build();
     }
 }

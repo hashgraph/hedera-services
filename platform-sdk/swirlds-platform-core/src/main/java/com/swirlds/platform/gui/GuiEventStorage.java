@@ -109,7 +109,7 @@ public class GuiEventStorage {
     public synchronized void handleSnapshotOverride(@NonNull final ConsensusSnapshot snapshot) {
         consensus.loadSnapshot(snapshot);
         linker.clear();
-        linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(
+        linker.setNonAncientThreshold(snapshot.getAncientThreshold(
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient()));
         lastConsensusRound = null;
     }
