@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test;
+package com.swirlds.platform.test.fixtures;
 
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.PlatformStateUtils.randomPlatformState;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 
 import com.swirlds.common.test.fixtures.RandomUtils;

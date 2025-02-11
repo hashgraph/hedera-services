@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.fixtures.turtle.runner;
+package com.swirlds.platform.test.turtle;
 
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.test.fixtures.turtle.runner.Turtle;
+import com.swirlds.platform.test.fixtures.turtle.runner.TurtleBuilder;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.Disabled;
