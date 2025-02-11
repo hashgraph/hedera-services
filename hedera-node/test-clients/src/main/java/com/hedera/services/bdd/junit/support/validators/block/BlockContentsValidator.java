@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.working
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.services.bdd.junit.support.BlockStreamAccess;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -74,7 +75,7 @@ public class BlockContentsValidator implements BlockStreamValidator {
         }
 
         if (items.size() <= 2) {
-            Assertions.fail("Block contains only header and proof with no rounds");
+            Assertions.fail("Block contains insufficient number of block items");
         }
 
         // A block SHALL start with a `block_header`.
@@ -131,16 +132,17 @@ public class BlockContentsValidator implements BlockStreamValidator {
             } else if (item.hasTransactionResult() || item.hasTransactionOutput()) {
                 logger.error(
                         "Found transaction result or output without preceding transaction at index {}", currentIndex);
-                Assertions.fail("Transaction result or output must be preceded by event transaction");
+                Assertions.fail(
+                        "Found transaction result or output without preceding transaction at index " + currentIndex);
             } else {
                 logger.error("Invalid item type at index {}: {}", currentIndex, item);
-                Assertions.fail("Invalid item type in round");
+                Assertions.fail("Invalid item type at index " + currentIndex + ": " + item);
             }
         }
 
         if (!hasEventOrStateChange) {
             logger.error("Round starting at index {} has no event headers or state changes", startIndex);
-            Assertions.fail("Round must contain at least one event header or state change");
+            Assertions.fail("Round starting at index " + startIndex + " has no event headers or state changes");
         }
 
         return currentIndex;
@@ -165,6 +167,12 @@ public class BlockContentsValidator implements BlockStreamValidator {
         // Check for optional transaction outputs
         int currentIndex = transactionIndex + 2;
         while (currentIndex < items.size() && items.get(currentIndex).hasTransactionOutput()) {
+            // Check that transaction output is not equal to TransactionOutput.DEFAULT
+            if (TransactionOutput.DEFAULT.equals(items.get(currentIndex).transactionOutput())) {
+                logger.error("Transaction output at index {} is equal to TransactionOutput.DEFAULT", currentIndex);
+                Assertions.fail(
+                        "Transaction output at index " + currentIndex + " is equal to TransactionOutput.DEFAULT");
+            }
             currentIndex++;
         }
 

@@ -81,7 +81,9 @@ import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -664,6 +666,16 @@ class BlockStreamManagerImplTest {
 
         given(mockEvent.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
 
+        // Set up the signature future to complete immediately and run the callback synchronously
+        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
+        doAnswer(invocationOnMock -> {
+                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
+                    consumer.accept(FIRST_FAKE_SIGNATURE);
+                    return null;
+                })
+                .when(mockSigningFuture)
+                .thenAcceptAsync(any());
+
         // When starting a round at t=0
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1000));
         subject.initLastBlockHash(N_MINUS_2_BLOCK_HASH);
@@ -679,15 +691,6 @@ class BlockStreamManagerImplTest {
 
         // When starting another round at t=3 (after period)
         given(round.getConsensusTimestamp()).willReturn(Instant.ofEpochSecond(1003));
-        // Set up the signature future to complete immediately and run the callback synchronously
-        given(blockHashSigner.signFuture(any())).willReturn(mockSigningFuture);
-        doAnswer(invocationOnMock -> {
-                    final Consumer<Bytes> consumer = invocationOnMock.getArgument(0);
-                    consumer.accept(FIRST_FAKE_SIGNATURE);
-                    return null;
-                })
-                .when(mockSigningFuture)
-                .thenAcceptAsync(any());
         subject.startRound(round, state);
         subject.endRound(state, ROUND_NO);
 
@@ -813,7 +816,7 @@ class BlockStreamManagerImplTest {
         final var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .withValue("blockStream.roundsPerBlock", roundsPerBlock)
-                .withValue("blockStream.blockPeriodSeconds", blockPeriod)
+                .withValue("blockStream.blockPeriod", Duration.of(blockPeriod, ChronoUnit.SECONDS))
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BlockStreamManagerImpl(
