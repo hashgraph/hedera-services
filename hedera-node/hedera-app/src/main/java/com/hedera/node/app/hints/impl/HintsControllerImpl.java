@@ -78,11 +78,15 @@ public class HintsControllerImpl implements HintsController {
     private final Supplier<Configuration> configurationSupplier;
     /**
      * The future that resolves to the final updated CRS for the network.
+     * This will be null until the first node has contributed to the CRS update.
      */
+    @Nullable
     private CompletableFuture<Bytes> finalUpdatedCrsFuture;
     /**
-     * The initial CRS for the network. This is used to verify the first update to the CRS.
+     * The initial CRS for the network. This is used to verify the first update to the CRS. This will be null if
+     * the CRS construction is complete when the controller is created.
      */
+    @Nullable
     private final Bytes initialCrs;
 
     /**
@@ -143,7 +147,7 @@ public class HintsControllerImpl implements HintsController {
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
         this.configurationSupplier = requireNonNull(configuration);
-        this.initialCrs = crsState.crs();
+        this.initialCrs = crsState.stage() != CRSStage.COMPLETED ? crsState.crs() : null;
         if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
             crsPublications.forEach(this::addCrsPublication);
         }
@@ -230,7 +234,7 @@ public class HintsControllerImpl implements HintsController {
                         .build();
                 hintsStore.setCRSState(updatedState);
             } else if (now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
-                final var finalCrs = finalUpdatedCrsFuture.join();
+                final var finalCrs = requireNonNull(finalUpdatedCrsFuture).join();
                 final var updatedState = crsState.copyBuilder()
                         .crs(finalCrs)
                         .stage(CRSStage.COMPLETED)
@@ -382,8 +386,8 @@ public class HintsControllerImpl implements HintsController {
         if (finalUpdatedCrsFuture == null) {
             finalUpdatedCrsFuture = CompletableFuture.supplyAsync(
                     () -> {
-                        final var isValid =
-                                library.verifyCrsUpdate(initialCrs, publication.newCrs(), publication.proof());
+                        final var isValid = library.verifyCrsUpdate(
+                                requireNonNull(initialCrs), publication.newCrs(), publication.proof());
                         if (isValid) {
                             return publication.newCrs();
                         }
@@ -571,7 +575,7 @@ public class HintsControllerImpl implements HintsController {
     }
 
     @VisibleForTesting
-    public void setFinalUpdatedCrsFuture(final CompletableFuture<Bytes> finalUpdatedCrsFuture) {
+    public void setFinalUpdatedCrsFuture(@Nullable final CompletableFuture<Bytes> finalUpdatedCrsFuture) {
         this.finalUpdatedCrsFuture = finalUpdatedCrsFuture;
     }
 }
