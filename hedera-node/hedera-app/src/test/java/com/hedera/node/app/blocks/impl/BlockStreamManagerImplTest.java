@@ -764,7 +764,7 @@ class BlockStreamManagerImplTest {
 
     @Test
     void usesRoundsPerBlockWhenBlockPeriodIsZero() throws ParseException {
-        // Given blockPeriod=0 and roundsPerBlock=2
+        // Given blockPeriodSeconds=0 and roundsPerBlock=2
         givenSubjectWith(
                 2,
                 0,
@@ -813,7 +813,7 @@ class BlockStreamManagerImplTest {
         final var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .withValue("blockStream.roundsPerBlock", roundsPerBlock)
-                .withValue("blockStream.blockPeriod", blockPeriod)
+                .withValue("blockStream.blockPeriodSeconds", blockPeriod)
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
         subject = new BlockStreamManagerImpl(
