@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.swirlds.platform.state.service.ReadableRosterStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -55,12 +54,9 @@ public class CrsPublicationHandler implements TransactionHandler {
         requireNonNull(context);
         final var op = context.body().crsPublicationOrThrow();
         final var hintsStore = context.storeFactory().writableStore(WritableHintsStore.class);
-        final var rosterStore = context.storeFactory().readableStore(ReadableRosterStore.class);
-        final var numNodes =
-                requireNonNull(rosterStore.getActiveRoster()).rosterEntries().size();
 
         final var creatorId = context.creatorInfo().nodeId();
-        controllers.getInProgressForNumParties(numNodes).ifPresent(controller -> {
+        controllers.getAnyInProgress().ifPresent(controller -> {
             if (creatorId == hintsStore.getCrsState().nextContributingNodeId()) {
                 hintsStore.addCrsPublication(creatorId, op);
                 controller.addCrsPublication(op);

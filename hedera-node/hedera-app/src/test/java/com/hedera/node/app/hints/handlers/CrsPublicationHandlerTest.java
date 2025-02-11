@@ -114,7 +114,7 @@ public class CrsPublicationHandlerTest {
 
     @Test
     void testHandle() {
-        when(controllers.getInProgressForNumParties(anyInt())).thenReturn(Optional.of(controller));
+        when(controllers.getAnyInProgress()).thenReturn(Optional.of(controller));
         when(hintsStore.getCrsState())
                 .thenReturn(CRSState.newBuilder()
                         .stage(CRSStage.GATHERING_CONTRIBUTIONS)
@@ -129,7 +129,7 @@ public class CrsPublicationHandlerTest {
 
     @Test
     void testHandleNoInProgressController() {
-        when(controllers.getInProgressForNumParties(anyInt())).thenReturn(Optional.empty());
+        when(controllers.getAnyInProgress()).thenReturn(Optional.empty());
         assertDoesNotThrow(() -> subject.handle(handleContext));
         verify(hintsStore, never()).addCrsPublication(anyInt(), any());
     }

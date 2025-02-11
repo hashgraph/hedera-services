@@ -128,6 +128,15 @@ public class HintsControllers {
     }
 
     /**
+     * Returns the in-progress controller for the hinTS construction with the given party size.
+     *
+     * @return the controller, if it exists
+     */
+    public Optional<HintsController> getAnyInProgress() {
+        return Optional.ofNullable(controller);
+    }
+
+    /**
      * Stops the current controller, if it exists.
      */
     public void stop() {
