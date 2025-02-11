@@ -477,7 +477,7 @@ public class ConversionUtils {
      * @param accountID the account id to convert
      * @return the long zero address
      */
-    public static Address asLongZeroAddress(final AccountID accountID) {
+    public static Address asLongZeroAddress(@NonNull final AccountID accountID) {
         return Address.wrap(
                 Bytes.wrap(asEvmAddress(accountID.shardNum(), accountID.realmNum(), accountID.accountNumOrThrow())));
     }
@@ -652,6 +652,7 @@ public class ConversionUtils {
 
     /**
      * Given a long entity number, returns its 20-byte EVM address.
+     * The shard is downcast to an int so it must not exceed the range of an int.
      *
      * @param shard the shard number
      * @param realm the realm number

@@ -248,7 +248,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         }
     }
 
-    private boolean isSentinelAccount(final AccountID accountID) {
+    private boolean isSentinelAccount(@NonNull final AccountID accountID) {
         return accountID.hasAccountNum()
                 && accountID.shardNum() == 0L
                 && accountID.realmNum() == 0L
