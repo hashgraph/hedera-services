@@ -17,6 +17,7 @@
 package com.swirlds.platform.turtle.runner;
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.pbj.runtime.ParseException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
@@ -27,22 +28,32 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class handles the lifecycle events for the {@link TurtleTestingToolState}.
  */
 enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
     TURTLE_STATE_LIFECYCLES;
+    private static final Logger logger = LogManager.getLogger(TurtleStateLifecycles.class);
 
     @Override
     public void onPreHandle(
             @NonNull Event event,
             @NonNull TurtleTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
-        // no op
+        event.forEachTransaction(transaction -> {
+            if (transaction.isSystem()) {
+                return;
+            }
+
+            consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
+        });
     }
 
     @Override
@@ -55,6 +66,14 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
                 round.getRoundNum(),
                 round.getConsensusTimestamp().getNano(),
                 round.getConsensusTimestamp().getEpochSecond());
+
+        round.forEachEventTransaction((ev, tx) -> {
+            if (tx.isSystem()) {
+                return;
+            }
+
+            consumeSystemTransaction(tx, ev, stateSignatureTransactionCallback);
+        });
     }
 
     @Override
@@ -83,5 +102,27 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
     @Override
     public void onNewRecoveredState(@NonNull TurtleTestingToolState recoveredState) {
         // no op
+    }
+
+    /**
+     * Converts a transaction to a {@link StateSignatureTransaction} and then consumes it into a callback.
+     *
+     * @param transaction the transaction to consume
+     * @param event the event that contains the transaction
+     * @param stateSignatureTransactionCallback the callback to call with the system transaction
+     */
+    private void consumeSystemTransaction(
+            final @NonNull Transaction transaction,
+            final @NonNull Event event,
+            final @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>>
+                            stateSignatureTransactionCallback) {
+        try {
+            final var stateSignatureTransaction =
+                    StateSignatureTransaction.PROTOBUF.parse(transaction.getApplicationTransaction());
+            stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
+                    event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
+        } catch (final ParseException e) {
+            logger.error("Failed to parse StateSignatureTransaction", e);
+        }
     }
 }
