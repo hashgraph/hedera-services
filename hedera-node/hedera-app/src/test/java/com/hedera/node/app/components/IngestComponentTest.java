@@ -134,6 +134,7 @@ class IngestComponentTest {
                 HISTORY_LIBRARY_CODEC,
                 DEFAULT_CONFIG);
         app = DaggerHederaInjectionComponent.builder()
+                .appContext(appContext)
                 .configProviderImpl(configProvider)
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
