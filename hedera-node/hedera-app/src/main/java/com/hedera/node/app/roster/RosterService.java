@@ -45,13 +45,21 @@ public class RosterService implements Service {
      */
     private final Predicate<Roster> canAdopt;
     /**
+     * A callback to run when a candidate roster is adopted.
+     */
+    private final Runnable onAdopt;
+    /**
      * Required until the upgrade that adopts the roster lifecycle; at that upgrade boundary,
      * we must initialize the active roster from the platform state's legacy address books.
      */
     @Deprecated
     private final Supplier<State> stateSupplier;
 
-    public RosterService(@NonNull final Predicate<Roster> canAdopt, @NonNull final Supplier<State> stateSupplier) {
+    public RosterService(
+            @NonNull final Predicate<Roster> canAdopt,
+            @NonNull final Runnable onAdopt,
+            @NonNull final Supplier<State> stateSupplier) {
+        this.onAdopt = requireNonNull(onAdopt);
         this.canAdopt = requireNonNull(canAdopt);
         this.stateSupplier = requireNonNull(stateSupplier);
     }
@@ -70,6 +78,6 @@ public class RosterService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(canAdopt, WritableRosterStore::new, stateSupplier));
+        registry.register(new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new, stateSupplier));
     }
 }

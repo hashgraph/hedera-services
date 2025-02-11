@@ -30,15 +30,11 @@ import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.blockHashByB
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeTransactionWith;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
-import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
-import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.state.service.PlatformStateService.PLATFORM_STATE_SERVICE;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RECONNECT;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -59,6 +55,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
@@ -106,8 +103,6 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.StateLifecyclesImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.hedera.node.app.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.statedumpers.MerkleStateChild;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.AppThrottleFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
@@ -517,23 +512,7 @@ public final class Hedera
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterService(
-                                roster -> {
-                                    requireNonNull(initState);
-                                    final var rosterHash =
-                                            RosterUtils.hash(roster).getBytes();
-                                    final var tssConfig =
-                                            configProvider.getConfiguration().getConfigData(TssConfig.class);
-                                    return (!tssConfig.hintsEnabled()
-                                                    || new ReadableHintsStoreImpl(
-                                                                    initState.getReadableStates(HintsService.NAME))
-                                                            .isReadyToAdopt(rosterHash))
-                                            && (!tssConfig.historyEnabled()
-                                                    || new ReadableHistoryStoreImpl(
-                                                                    initState.getReadableStates(HistoryService.NAME))
-                                                            .isReadyToAdopt(rosterHash));
-                                },
-                                () -> requireNonNull(initState)),
+                        new RosterService(this::canAdoptRoster, this::onAdoptRoster, () -> requireNonNull(initState)),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -945,20 +924,9 @@ public final class Hedera
                         simplifiedStateSignatureTxnCallback);
     }
 
-    public void onNewRecoveredState(@NonNull final State recoveredState) {
-        try {
-            if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
-                dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, MerkleStateChild.childrenToDump());
-            }
-        } catch (Exception e) {
-            logger.error("Error dumping state after migration at MOD_POST_EVENT_STREAM_REPLAY", e);
-        }
+    public void onNewRecoveredState() {
         // Always close the block manager so replay will end with a complete record file
         daggerApp.blockRecordManager().close();
-    }
-
-    public static boolean shouldDump(@NonNull final InitTrigger trigger, @NonNull final DumpCheckpoint checkpoint) {
-        return trigger == EVENT_STREAM_RECOVERY && selectedDumpCheckpoints().contains(checkpoint);
     }
 
     /**
@@ -1326,6 +1294,27 @@ public final class Hedera
             requireNonNull(initialStateHashFuture)
                     .complete(requireNonNull(notification.getState().getHash()).getBytes());
             notifications.unregister(ReconnectCompleteListener.class, this);
+        }
+    }
+
+    private boolean canAdoptRoster(@NonNull final Roster roster) {
+        requireNonNull(initState);
+        final var rosterHash = RosterUtils.hash(roster).getBytes();
+        final var tssConfig = configProvider.getConfiguration().getConfigData(TssConfig.class);
+        return (!tssConfig.hintsEnabled()
+                        || new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME))
+                                .isReadyToAdopt(rosterHash))
+                && (!tssConfig.historyEnabled()
+                        || new ReadableHistoryStoreImpl(initState.getReadableStates(HistoryService.NAME))
+                                .isReadyToAdopt(rosterHash));
+    }
+
+    private void onAdoptRoster() {
+        requireNonNull(initState);
+        final var tssConfig = configProvider.getConfiguration().getConfigData(TssConfig.class);
+        if (tssConfig.hintsEnabled()) {
+            hintsService.initSigningForNextScheme(
+                    new ReadableHintsStoreImpl(initState.getReadableStates(HintsService.NAME)));
         }
     }
 }

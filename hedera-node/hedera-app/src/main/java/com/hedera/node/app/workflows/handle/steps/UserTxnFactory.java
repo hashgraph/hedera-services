@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.STATE_SIGNATURE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.workflows.handle.TransactionType.GENESIS_TRANSACTION;
@@ -35,6 +36,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
@@ -53,6 +55,7 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -88,7 +91,9 @@ import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -169,14 +174,16 @@ public class UserTxnFactory {
      * @param platformTxn the transaction itself
      * @param consensusNow the current consensus time
      * @param type the type of the transaction
-     * @return the new user transaction
+     * @param stateSignatureTxnCallback a callback to be called when encountering a {@link StateSignatureTransaction}
+     * @return the new user transaction, or {@code null} if the transaction is not a user transaction
      */
-    public UserTxn createUserTxn(
+    public @Nullable UserTxn createUserTxn(
             @NonNull final State state,
             @NonNull final NodeInfo creatorInfo,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Instant consensusNow,
-            @NonNull final TransactionType type) {
+            @NonNull final TransactionType type,
+            @NonNull final Consumer<StateSignatureTransaction> stateSignatureTxnCallback) {
         requireNonNull(state);
         requireNonNull(creatorInfo);
         requireNonNull(platformTxn);
@@ -185,9 +192,12 @@ public class UserTxnFactory {
         final var config = configProvider.getConfiguration();
         final var stack = createRootSavepointStack(state, type);
         final var readableStoreFactory = new ReadableStoreFactory(stack, softwareVersionFactory);
-        final var preHandleResult =
-                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
+        final var preHandleResult = preHandleWorkflow.getCurrentPreHandleResult(
+                creatorInfo, platformTxn, readableStoreFactory, stateSignatureTxnCallback);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
+        if (txnInfo.functionality() == STATE_SIGNATURE_TRANSACTION) {
+            return null;
+        }
         final var tokenContext = new TokenContextImpl(
                 config,
                 stack,
@@ -340,7 +350,7 @@ public class UserTxnFactory {
                 dispatchProcessor,
                 throttleAdvisor,
                 feeAccumulator,
-                HandleContext.DispatchMetadata.EMPTY_METADATA,
+                DispatchMetadata.EMPTY_METADATA,
                 transactionChecker,
                 deduplicationCache);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
@@ -382,7 +392,7 @@ public class UserTxnFactory {
      * @param type the type of the transaction
      * @return the new root savepoint stack
      */
-    private SavepointStackImpl createRootSavepointStack(
+    public SavepointStackImpl createRootSavepointStack(
             @NonNull final State state, @NonNull final TransactionType type) {
         final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
