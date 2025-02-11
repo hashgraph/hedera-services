@@ -19,6 +19,7 @@ package com.swirlds.platform.consensus;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.logging.legacy.LogMarker;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.MinimumJudgeInfo;
@@ -40,6 +41,8 @@ public class ConsensusRounds {
     private static final Logger logger = LogManager.getLogger(ConsensusRounds.class);
     /** consensus configuration */
     private final ConsensusConfig config;
+    /** the ancient mode currently in use */
+    private final AncientMode ancientMode;
     /** stores the minimum judge ancient identifier for all decided and non-expired rounds */
     private final SequentialRingBuffer<MinimumJudgeInfo> minimumJudgeStorage;
     /** a derivative of the only roster currently in use, until roster changes are implemented */
@@ -52,8 +55,9 @@ public class ConsensusRounds {
     private long ancientThreshold = EventConstants.FIRST_GENERATION;
 
     /** Constructs an empty object */
-    public ConsensusRounds(@NonNull final ConsensusConfig config, @NonNull final Roster roster) {
+    public ConsensusRounds(@NonNull final ConsensusConfig config, @NonNull final AncientMode ancientMode, @NonNull final Roster roster) {
         this.config = Objects.requireNonNull(config);
+        this.ancientMode = Objects.requireNonNull(ancientMode);
         this.minimumJudgeStorage =
                 new SequentialRingBuffer<>(ConsensusConstants.ROUND_FIRST, config.roundsExpired() * 2);
         this.rosterEntryMap = RosterUtils.toMap(Objects.requireNonNull(roster));
@@ -136,7 +140,7 @@ public class ConsensusRounds {
      * Notifies the instance that the current elections have been decided. This will start the next election.
      */
     public void currentElectionDecided() {
-        minimumJudgeStorage.add(roundElections.getRound(), roundElections.createMinimumJudgeInfo());
+        minimumJudgeStorage.add(roundElections.getRound(), roundElections.createMinimumJudgeInfo(ancientMode));
         roundElections.startNextElection();
         // Delete the oldest rounds with round number which is expired
         minimumJudgeStorage.removeOlderThan(getFameDecidedBelow() - config.roundsExpired());
@@ -231,12 +235,13 @@ public class ConsensusRounds {
     }
 
     /**
-     * @return The minimum judge generation number from the oldest non-expired round, if we have expired any rounds.
-     * Else this returns {@link EventConstants#FIRST_GENERATION}.
+     * Similar to {@link #getAncientThreshold()} but for expired rounds.
+     *
+     * @return the threshold for expired rounds
      */
-    public long getMinRoundGeneration() {
+    public long getExpiredThreshold() {
         final MinimumJudgeInfo info = minimumJudgeStorage.get(minimumJudgeStorage.minIndex());
-        return info == null ? EventConstants.FIRST_GENERATION : info.minimumJudgeAncientThreshold();
+        return info == null ? EventConstants.ANCIENT_THRESHOLD_UNDEFINED : info.minimumJudgeAncientThreshold();
     }
 
     /**
@@ -255,23 +260,11 @@ public class ConsensusRounds {
     }
 
     /**
-     * Return the minimum generation of all the famous witnesses that are not in ancient rounds.
+     * Returns the threshold of all the judges that are not in ancient rounds. This is either a generation value or a
+     * birth round value, depending on the ancient mode configured. If no judges are ancient, returns
+     * {@link EventConstants#FIRST_GENERATION} or {@link ConsensusConstants#ROUND_FIRST} depending on the ancient mode.
      *
-     * <p>Define gen(R) to be the minimum generation of all the events that were famous witnesses in
-     * round R.
-     *
-     * <p>If round R is the most recent round for which we have decided the fame of all the
-     * witnesses, then any event with a generation less than gen(R - {@code Settings.state.roundsExpired}) is called an
-     * “expired” event. And any non-expired event with a generation less than gen(R -
-     * {@code Settings.state.roundsNonAncient} + 1) is an “ancient” event. If the event failed to achieve consensus
-     * before becoming ancient, then it is “stale”. So every non-expired event with a generation before gen(R -
-     * {@code Settings.state.roundsNonAncient} + 1) is either stale or consensus, not both.
-     *
-     * <p>Expired events can be removed from memory unless they are needed for an old signed state
-     * that is still being used for something (such as still in the process of being written to disk).
-     *
-     * @return The minimum generation of all the judges that are not ancient. If no judges are ancient, returns
-     * {@link EventConstants#FIRST_GENERATION}.
+     * @return the threshold
      */
     public long getAncientThreshold() {
         return ancientThreshold;

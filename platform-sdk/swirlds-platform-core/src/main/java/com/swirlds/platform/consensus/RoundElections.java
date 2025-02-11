@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.IntReference;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.events.EventConstants;
@@ -52,6 +53,8 @@ public class RoundElections {
     private final List<CandidateWitness> elections = new ArrayList<>();
     /** the minimum generation of all the judges, this is only set once the judges are found */
     private long minGeneration = EventConstants.GENERATION_UNDEFINED;
+    /** the minimum birth round of all the judges, this is only set once the judges are found */
+    private long minBirthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
 
     /**
      * @return the round number of witnesses we are voting on
@@ -114,7 +117,7 @@ public class RoundElections {
     /**
      * @return the minimum generation of all the judges(unique famous witnesses) in this round
      */
-    public long getMinGeneration() {
+    private long getMinGeneration() {
         if (minGeneration == EventConstants.GENERATION_UNDEFINED) {
             throw new IllegalStateException("Cannot provide the minimum generation until all judges are found");
         }
@@ -122,10 +125,23 @@ public class RoundElections {
     }
 
     /**
+     * @return the minimum birth round of all the judges(unique famous witnesses) in this round
+     */
+    private long getMinBirthRound() {
+        if (minBirthRound == EventConstants.BIRTH_ROUND_UNDEFINED) {
+            throw new IllegalStateException("Cannot provide the minimum birth round until all judges are found");
+        }
+        return minBirthRound;
+    }
+
+    /**
      * @return create a {@link MinimumJudgeInfo} instance for this round
      */
-    public @NonNull MinimumJudgeInfo createMinimumJudgeInfo() {
-        return new MinimumJudgeInfo(round, getMinGeneration());
+    public @NonNull MinimumJudgeInfo createMinimumJudgeInfo(final AncientMode ancientMode) {
+        return new MinimumJudgeInfo(round,
+                ancientMode == AncientMode.GENERATION_THRESHOLD
+                        ? getMinGeneration()
+                        : getMinBirthRound());
     }
 
     /**
@@ -149,11 +165,11 @@ public class RoundElections {
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
         allJudges.sort(Comparator.comparingLong(e -> e.getCreatorId().id()));
-        minGeneration = allJudges.stream()
-                .mapToLong(EventImpl::getGeneration)
-                .min()
-                .orElse(EventConstants.GENERATION_UNDEFINED);
-        allJudges.forEach(EventImpl::setJudgeTrue);
+        for (final EventImpl judge : allJudges) {
+            minGeneration = Math.min(minGeneration, judge.getGeneration());
+            minBirthRound = Math.min(minBirthRound, judge.getBirthRound());
+            judge.setJudgeTrue();
+        }
 
         return allJudges;
     }

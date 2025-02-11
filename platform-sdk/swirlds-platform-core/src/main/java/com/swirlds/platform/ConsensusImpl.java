@@ -236,11 +236,12 @@ public class ConsensusImpl implements Consensus {
         this.rosterTotalWeight = RosterUtils.computeTotalWeight(roster);
         this.rosterIndicesMap = RosterUtils.toIndicesMap(roster);
 
-        this.rounds = new ConsensusRounds(config, roster);
         this.ancientMode = platformContext
                 .getConfiguration()
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
+        this.rounds = new ConsensusRounds(config, ancientMode, roster);
+
         this.noSuperMajorityLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
         this.noJudgeLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
         this.coinRoundLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(1));
@@ -738,18 +739,8 @@ public class ConsensusImpl implements Consensus {
             }
         }
 
-        // Future work: prior to enabling a birth round based ancient mode, we need to use real values for
-        // previousRoundNonAncient and previousRoundNonExpired. This is currently a place holder.
-        final long previousRoundNonAncient = ConsensusConstants.ROUND_FIRST;
-        final long previousRoundNonExpired = ConsensusConstants.ROUND_FIRST;
-
-        final long nonAncientThreshold = ancientMode.selectIndicator(
-                rounds.getAncientThreshold(),
-                Math.max(previousRoundNonAncient, decidedRoundNumber - config.roundsNonAncient() + 1));
-
-        final long nonExpiredThreshold = ancientMode.selectIndicator(
-                rounds.getMinRoundGeneration(),
-                Math.max(previousRoundNonExpired, decidedRoundNumber - config.roundsExpired() + 1));
+        final long nonAncientThreshold = rounds.getAncientThreshold();
+        final long nonExpiredThreshold = rounds.getExpiredThreshold();
 
         return new ConsensusRound(
                 roster,
@@ -933,11 +924,12 @@ public class ConsensusImpl implements Consensus {
 
     /**
      * Check if the event is ancient
+     *
      * @param x the event to check
      * @return true if the event is ancient
      */
     private boolean ancient(@Nullable final EventImpl x) {
-        return x == null || x.getGeneration() < rounds.getAncientThreshold();
+        return x == null || x.getAgeValue(ancientMode) < rounds.getAncientThreshold();
     }
 
     /**
