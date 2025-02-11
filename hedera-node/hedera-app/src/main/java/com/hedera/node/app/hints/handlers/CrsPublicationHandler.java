@@ -57,9 +57,9 @@ public class CrsPublicationHandler implements TransactionHandler {
 
         final var creatorId = context.creatorInfo().nodeId();
         controllers.getAnyInProgress().ifPresent(controller -> {
-            if (creatorId == hintsStore.getCrsState().nextContributingNodeId()) {
+            if (creatorId == hintsStore.getCrsState().nextContributingNodeIdOrThrow()) {
                 hintsStore.addCrsPublication(creatorId, op);
-                controller.addCrsPublication(op);
+                controller.addCrsPublication(op, context.consensusNow(), hintsStore);
             }
         });
     }

@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -133,8 +134,8 @@ public class HintsControllerImpl implements HintsController {
             @NonNull final HintsSubmissions submissions,
             @NonNull final HintsContext context,
             @NonNull final Supplier<Configuration> configuration,
-            @NonNull final CRSState crsState,
-            final List<CrsPublicationTransactionBody> crsPublications) {
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now) {
         this.selfId = selfId;
         this.blsKeyPair = requireNonNull(blsKeyPair);
         this.weights = requireNonNull(weights);
@@ -147,10 +148,13 @@ public class HintsControllerImpl implements HintsController {
         this.construction = requireNonNull(construction);
         this.votes.putAll(votes);
         this.configurationSupplier = requireNonNull(configuration);
-        this.initialCrs = crsState.stage() != CRSStage.COMPLETED ? crsState.crs() : null;
+
+        final var crsState = hintsStore.getCrsState();
+        final var crsPublications = hintsStore.getCrsPublications();
         if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
-            crsPublications.forEach(this::addCrsPublication);
+            crsPublications.forEach(publication -> addCrsPublication(publication, now, hintsStore));
         }
+        this.initialCrs = crsState.stage() != CRSStage.COMPLETED ? crsState.crs() : null;
         // Ensure we are up-to-date on any published hinTS keys we might need for this construction
         if (!construction.hasHintsScheme()) {
             final var cutoffTime = construction.hasPreprocessingStartTime()
@@ -222,7 +226,7 @@ public class HintsControllerImpl implements HintsController {
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         final var crsState = hintsStore.getCrsState();
         // If all nodes have contributed
-        if (crsState.nextContributingNodeId() == -1) {
+        if (crsState.nextContributingNodeId() == null) {
             if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
                 final var delay = configurationSupplier
                         .get()
@@ -246,7 +250,7 @@ public class HintsControllerImpl implements HintsController {
             submitUpdatedCRS(hintsStore);
         } else if (crsState.contributionEndTime() != null
                 && now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
-            moveToNextNode(now, hintsStore, crsState);
+            moveToNextNode(now, hintsStore);
         }
     }
 
@@ -256,14 +260,14 @@ public class HintsControllerImpl implements HintsController {
      *
      * @param now        the current consensus time
      * @param hintsStore the writable hints store
-     * @param crsState   the current CRS state
      */
-    private void moveToNextNode(
-            final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore, final CRSState crsState) {
+    private void moveToNextNode(final @NonNull Instant now, final @NonNull WritableHintsStore hintsStore) {
+        final var crsState = hintsStore.getCrsState();
         final var tssConfig = configurationSupplier.get().getConfigData(TssConfig.class);
-        final var nextNodeId = nextNodeId(weights.sourceNodeIds(), crsState.nextContributingNodeId());
+        final var optionalNextNodeId = nextNodeId(weights.sourceNodeIds(), crsState);
+
         hintsStore.moveToNextNode(
-                nextNodeId,
+                optionalNextNodeId,
                 now.plusSeconds(tssConfig.crsUpdateContributionTime().toSeconds()));
     }
 
@@ -288,14 +292,17 @@ public class HintsControllerImpl implements HintsController {
      * Returns the immediate next node id from the roster after the current node id.
      *
      * @param nodeIds       the node ids in the roster
-     * @param currentNodeId the current node id
+     * @param crsState      the current CRS state
      * @return the immediate next node id from the roster after the current node id
      */
-    private long nextNodeId(final Set<Long> nodeIds, final long currentNodeId) {
+    private OptionalLong nextNodeId(final Set<Long> nodeIds, final CRSState crsState) {
+        if (!crsState.hasNextContributingNodeId()) {
+            return OptionalLong.empty();
+        }
         return nodeIds.stream()
-                .filter(nodeId -> nodeId > currentNodeId)
-                .findFirst()
-                .orElse(-1L);
+                .mapToLong(Long::longValue)
+                .filter(nodeId -> nodeId > crsState.nextContributingNodeIdOrThrow())
+                .findFirst();
     }
 
     /**
@@ -381,7 +388,10 @@ public class HintsControllerImpl implements HintsController {
     }
 
     @Override
-    public void addCrsPublication(@NonNull final CrsPublicationTransactionBody publication) {
+    public void addCrsPublication(
+            @NonNull final CrsPublicationTransactionBody publication,
+            @NonNull Instant consensusTime,
+            @NonNull WritableHintsStore hintsStore) {
         requireNonNull(publication);
         if (finalUpdatedCrsFuture == null) {
             finalUpdatedCrsFuture = CompletableFuture.supplyAsync(
@@ -406,6 +416,7 @@ public class HintsControllerImpl implements HintsController {
                     },
                     executor);
         }
+        moveToNextNode(consensusTime, hintsStore);
     }
 
     /**

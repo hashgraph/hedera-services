@@ -53,6 +53,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -177,10 +178,11 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     }
 
     @Override
-    public void moveToNextNode(final long nextNodeIdFromRoster, @NonNull final Instant nextContributionTimeEnd) {
+    public void moveToNextNode(
+            @NonNull final OptionalLong nextNodeIdFromRoster, @NonNull final Instant nextContributionTimeEnd) {
         final var crsState = requireNonNull(this.crsState.get());
         final var newCrsState = crsState.copyBuilder()
-                .nextContributingNodeId(nextNodeIdFromRoster)
+                .nextContributingNodeId(nextNodeIdFromRoster.isPresent() ? nextNodeIdFromRoster.getAsLong() : null)
                 .contributionEndTime(asTimestamp(nextContributionTimeEnd))
                 .build();
         setCRSState(newCrsState);

@@ -124,7 +124,7 @@ public class CrsPublicationHandlerTest {
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
         verify(hintsStore).addCrsPublication(0L, CrsPublicationTransactionBody.DEFAULT);
-        verify(controller).addCrsPublication(any());
+        verify(controller).addCrsPublication(any(), any(), any());
     }
 
     @Test

@@ -22,12 +22,13 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.HintsService;
-import com.hedera.node.app.hints.ReadableHintsStore;
+import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.roster.ActiveRosters;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -85,14 +86,16 @@ public class HintsControllers {
      * Creates a new controller for the given hinTS construction, sourcing its rosters from the given store.
      *
      * @param activeRosters the active rosters
-     * @param construction the hinTS construction
-     * @param hintsStore the hinTS store
+     * @param construction  the hinTS construction
+     * @param hintsStore    the hinTS store
+     * @param now           the current consensus time
      * @return the result of the operation
      */
     public @NonNull HintsController getOrCreateFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
-            @NonNull final ReadableHintsStore hintsStore) {
+            @NonNull final WritableHintsStore hintsStore,
+            @NonNull final Instant now) {
         requireNonNull(activeRosters);
         requireNonNull(construction);
         requireNonNull(hintsStore);
@@ -100,7 +103,7 @@ public class HintsControllers {
             if (controller != null) {
                 controller.cancelPendingWork();
             }
-            controller = newControllerFor(activeRosters, construction, hintsStore);
+            controller = newControllerFor(activeRosters, construction, hintsStore, now);
         }
         return requireNonNull(controller);
     }
@@ -148,15 +151,18 @@ public class HintsControllers {
 
     /**
      * Returns a new controller for the given active rosters and hinTS construction.
+     *
      * @param activeRosters the active rosters
-     * @param construction the hinTS construction
-     * @param hintsStore the hints store
+     * @param construction  the hinTS construction
+     * @param hintsStore    the hints store
+     * @param now           the current consensus time
      * @return the controller
      */
     private HintsController newControllerFor(
             @NonNull final ActiveRosters activeRosters,
             @NonNull final HintsConstruction construction,
-            @NonNull final ReadableHintsStore hintsStore) {
+            @NonNull final WritableHintsStore hintsStore,
+            final Instant now) {
         final var weights = activeRosters.transitionWeights();
         if (!weights.sourceNodesHaveTargetThreshold()) {
             return new InertHintsController(construction.constructionId());
@@ -166,8 +172,6 @@ public class HintsControllers {
             final var votes = hintsStore.getVotes(construction.constructionId(), weights.sourceNodeIds());
             final var selfId = selfNodeInfoSupplier.get().nodeId();
             final var blsKeyPair = keyAccessor.getOrCreateBlsKeyPair(construction.constructionId());
-            final var crsState = hintsStore.getCrsState();
-            final var crsPublications = hintsStore.getCrsPublications();
             return new HintsControllerImpl(
                     selfId,
                     blsKeyPair,
@@ -181,8 +185,8 @@ public class HintsControllers {
                     submissions,
                     context,
                     configurationSupplier,
-                    crsState,
-                    crsPublications);
+                    hintsStore,
+                    now);
         }
     }
 

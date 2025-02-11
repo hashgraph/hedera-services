@@ -20,10 +20,10 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINT_CONS
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.hints.CRSStage;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
+import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsContext;
@@ -58,7 +58,7 @@ public class V060HintsSchema extends Schema {
                 StateDefinition.singleton(CRS_STATE_KEY, CRSState.PROTOBUF),
                 StateDefinition.onDisk(
                         CRS_PUBLICATIONS_KEY,
-                        EntityNumber.PROTOBUF,
+                        NodeId.PROTOBUF,
                         CrsPublicationTransactionBody.PROTOBUF,
                         MAX_CRS_PUBLICATIONS));
     }
@@ -73,6 +73,7 @@ public class V060HintsSchema extends Schema {
             states.<CRSState>getSingleton(CRS_STATE_KEY)
                     .put(CRSState.newBuilder()
                             .stage(CRSStage.GATHERING_CONTRIBUTIONS)
+                            .nextContributingNodeId(0L)
                             .crs(initialCrs)
                             .build());
         }

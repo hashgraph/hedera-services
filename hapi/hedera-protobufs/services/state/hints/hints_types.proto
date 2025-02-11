@@ -19,6 +19,7 @@ package com.hedera.hapi.node.state.hints;
  */
 
 import "timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 option java_package = "com.hederahashgraph.api.proto.java";
 // <<<pbj.java_package = "com.hedera.hapi.node.state.hints">>> This comment is special code for setting PBJ Compiler java package
@@ -219,7 +220,7 @@ message CRSState {
      * The id of the next node that should contribute to the CRS. This is used
      * to ensure that all nodes contribute to the CRS in a round-robin fashion.
      */
-    uint64 next_contributing_node_id = 3;
+    google.protobuf.UInt64Value  next_contributing_node_id = 3;
     /**
      * The time at which the network should stop waiting for the node's contributions
      * and move on to the next node in the round-robin fashion.

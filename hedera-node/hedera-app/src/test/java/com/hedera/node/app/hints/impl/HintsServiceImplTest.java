@@ -141,7 +141,7 @@ class HintsServiceImplTest {
         given(hintsStore.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, tssConfig))
                 .willReturn(construction);
         given(component.controllers()).willReturn(controllers);
-        given(controllers.getOrCreateFor(activeRosters, construction, hintsStore))
+        given(controllers.getOrCreateFor(activeRosters, construction, hintsStore, CONSENSUS_NOW))
                 .willReturn(controller);
 
         subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig);
