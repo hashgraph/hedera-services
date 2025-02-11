@@ -109,6 +109,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.hiero.event.creator.impl.EventCreationConfig;
 
@@ -172,6 +173,7 @@ public class PlatformWiring {
     private final ComponentWiring<StatusStateMachine, PlatformStatus> statusStateMachineWiring;
     private final ComponentWiring<BranchDetector, PlatformEvent> branchDetectorWiring;
     private final ComponentWiring<BranchReporter, Void> branchReporterWiring;
+    private Consumer<ConsensusRound> consensusRoundConsumer;
 
     /**
      * Constructor.
@@ -185,7 +187,16 @@ public class PlatformWiring {
             @NonNull final PlatformContext platformContext,
             @NonNull final WiringModel model,
             @NonNull final ApplicationCallbacks applicationCallbacks) {
+        this(platformContext, model, applicationCallbacks, null);
+    }
 
+    public PlatformWiring(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final WiringModel model,
+            @NonNull final ApplicationCallbacks applicationCallbacks,
+            Consumer<ConsensusRound> consensusRoundConsumer) {
+
+        this.consensusRoundConsumer = consensusRoundConsumer;
         this.platformContext = Objects.requireNonNull(platformContext);
         this.model = Objects.requireNonNull(model);
 
@@ -587,6 +598,9 @@ public class PlatformWiring {
         consensusRoundOutputWire.solderTo(
                 eventWindowManagerWiring.getInputWire(EventWindowManager::extractEventWindow));
 
+        if (consensusRoundConsumer != null) {
+            consensusRoundOutputWire.solderTo("consensusOutputTestTool", "round output", consensusRoundConsumer);
+        }
         consensusEngineWiring
                 .getSplitAndTransformedOutput(ConsensusEngine::getCesEvents)
                 .solderTo(consensusEventStreamWiring.getInputWire(ConsensusEventStream::addEvents));
@@ -847,6 +861,14 @@ public class PlatformWiring {
         return eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateRosters);
     }
 
+    public InputWire<PlatformEvent> getPlatformEventInput() {
+        return eventHasherWiring.getInputWire(EventHasher::hashEvent);
+    }
+
+    public OutputWire<ConsensusRound> getConsensusRoundOutput() {
+        return consensusEngineWiring.getSplitOutput();
+    }
+
     /**
      * Get the input wire for dumping a state to disk
      * <p>
@@ -1065,5 +1087,9 @@ public class PlatformWiring {
      */
     public void clear() {
         platformCoordinator.clear();
+    }
+
+    public void setConsensusOutputConsumer(final Consumer<ConsensusRound> consensusRoundConsumer) {
+        this.consensusRoundConsumer = consensusRoundConsumer;
     }
 }

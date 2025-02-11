@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +45,10 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowgraphInsertionException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.events.EventDescriptorWrapper;
-import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
-import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.addressbook.RandomRosterBuilder;
+import com.swirlds.platform.test.fixtures.event.emitter.EventEmitterFactory;
+import com.swirlds.platform.test.fixtures.event.emitter.StandardEventEmitter;
+import com.swirlds.platform.test.fixtures.sync.SyncTestUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

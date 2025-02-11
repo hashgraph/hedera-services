@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.stream.LongStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class SequentialRingBufferTest {
@@ -90,7 +91,7 @@ class SequentialRingBufferTest {
     @Test
     void intOverflow() {
         final SequentialRingBuffer<Long> data = new SequentialRingBuffer<>(100);
-        assertDoesNotThrow(() -> data.get(Long.MAX_VALUE / 2));
+        Assertions.assertDoesNotThrow(() -> data.get(Long.MAX_VALUE / 2));
     }
 
     private void assertEmpty(final SequentialRingBuffer<Long> rounds, final long startCheck, final long endCheck) {

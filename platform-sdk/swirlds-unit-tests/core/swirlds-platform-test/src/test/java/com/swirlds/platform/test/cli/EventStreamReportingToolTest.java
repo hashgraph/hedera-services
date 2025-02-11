@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.cli;
 
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.fixtures.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
@@ -25,7 +25,7 @@ import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
-import com.swirlds.platform.test.consensus.GenerateConsensus;
+import com.swirlds.platform.test.fixtures.consensus.GenerateConsensus;
 import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
 import java.io.IOException;
