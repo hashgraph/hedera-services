@@ -496,11 +496,11 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
     }
 
     @Test
-    void testUpdateSnapshotUpdate() throws IOException {
+    void testRestoreUpdateSnapshot() throws IOException {
         try (final LongList longList = createFullyParameterizedLongListWith(100, MAX_LONGS)) {
             longList.updateValidRange(0, 50);
             longList.put(2, 1002);
-            final Path tmpDir = Files.createTempDirectory("testUpdateSnapshotUpdate");
+            final Path tmpDir = Files.createTempDirectory("testRestoreUpdateSnapshot");
             final Path tmpFile = tmpDir.resolve("snapshot");
             longList.writeToFile(tmpFile);
             try (final LongList restored = createLongListFromFile(tmpFile)) {
@@ -508,7 +508,7 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> {
                 assertEquals(3, restored.size());
                 assertEquals(1002, restored.get(2));
                 restored.put(3, 1003);
-                final Path tmpDir2 = Files.createTempDirectory("testUpdateSnapshotUpdate");
+                final Path tmpDir2 = Files.createTempDirectory("testRestoreUpdateSnapshot");
                 final Path tmpFile2 = tmpDir2.resolve("snapshot");
                 restored.writeToFile(tmpFile2);
                 try (final LongList restored2 = createLongListFromFile(tmpFile2)) {

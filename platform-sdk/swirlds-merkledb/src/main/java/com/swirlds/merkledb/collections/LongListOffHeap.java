@@ -91,8 +91,10 @@ public final class LongListOffHeap extends AbstractLongList<ByteBuffer> implemen
             throws IOException {
         ByteBuffer chunk = createChunk();
         readDataIntoBuffer(fileChannel, chunkIndex, startIndex, endIndex, chunk);
-        // Chunk position is now 0 and its limit is memoryChunkSize. When this long list is
-        // written to a file, chunk position and limit are taken care of
+        // All chunks (byte buffers) in LongListOffHeap are stored with position == 0 and
+        // limit == capacity. When this list is written to a file, the first and the last
+        // chunk positions and limits are taken care of
+        chunk.clear();
         return chunk;
     }
 

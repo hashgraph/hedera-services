@@ -307,8 +307,7 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /**
      * Reads a specified range of elements from a file channel into the given buffer, starting from
-     * the given start index (inc) and up to the given end index (exc). After this call, buffer
-     * possible will be set to 0, and buffer limit will be set to its capacity.
+     * the given start index (inc) and up to the given end index (exc).
      * <p>
      * This method computes the appropriate byte offsets within the buffer and the number of bytes
      * to read based on the provided {@code startIndex} and {@code endIndex}. It then performs a
@@ -341,10 +340,6 @@ public abstract class AbstractLongList<C> implements LongList {
             throw new IOException("Failed to read chunks, chunkIndex=" + chunkIndex + " expected=" + bytesToRead
                     + " actual=" + bytesRead);
         }
-
-        // Clear buffer position / limit. Some long list implementations (e.g. off-heap lists) may
-        // use the buffer internally. Let them handle the position and the limit as needed.
-        buffer.clear();
     }
 
     /**
