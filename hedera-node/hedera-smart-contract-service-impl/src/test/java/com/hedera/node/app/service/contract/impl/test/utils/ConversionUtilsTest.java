@@ -261,7 +261,7 @@ class ConversionUtilsTest {
     }
 
     @Test
-    void asEvmAddressTest() {
+    void evmAddressConversionTest() {
         final long shard = 1L;
         final long realm = 2L;
         final long num = 3L;
