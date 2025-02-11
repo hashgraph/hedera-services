@@ -94,7 +94,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final V get(@NonNull K key) {
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
-        var modifications = getModifications();
+        final var modifications = getModifications();
         if (modifications.containsKey(key)) {
             return modifications.get(key);
         } else {
