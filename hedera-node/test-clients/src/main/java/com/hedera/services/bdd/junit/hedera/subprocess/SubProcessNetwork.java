@@ -129,14 +129,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Get the current block node mode
-     * @return current block node mode
-     */
-    public BlockNodeMode getBlockNodeMode() {
-        return blockNodeMode;
-    }
-
-    /**
      * Wraps a runnable, allowing us to defer running it until we know we are the privileged runner
      * out of potentially several concurrent threads.
      */
