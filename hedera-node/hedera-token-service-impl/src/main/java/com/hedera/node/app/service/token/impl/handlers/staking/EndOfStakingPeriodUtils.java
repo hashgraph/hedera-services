@@ -240,15 +240,21 @@ public final class EndOfStakingPeriodUtils {
      * current staking info. The new {@code stakeRewardStart} value is also computed
      *
      * @param stakingInfo the node's current staking info
+     * @param stakingConfig the staking configuration of the network
      * @return the calculated {@link StakeResult}
      */
     @NonNull
-    public static StakeResult computeNewStakes(@NonNull final StakingNodeInfo stakingInfo) {
+    public static StakeResult computeNewStakes(
+            @NonNull final StakingNodeInfo stakingInfo, @NonNull final StakingConfig stakingConfig) {
+        requireNonNull(stakingInfo);
+        requireNonNull(stakingConfig);
         final var totalStake = stakingInfo.stakeToReward() + stakingInfo.stakeToNotReward();
         final long newStake;
-        if (totalStake > stakingInfo.maxStake()) {
-            newStake = stakingInfo.maxStake();
-        } else if (totalStake < stakingInfo.minStake()) {
+        final long effectiveMax = Math.min(stakingInfo.maxStake(), stakingConfig.maxStake());
+        final long effectiveMin = Math.min(effectiveMax, Math.max(stakingInfo.minStake(), stakingConfig.minStake()));
+        if (totalStake > effectiveMax) {
+            newStake = effectiveMax;
+        } else if (totalStake < effectiveMin) {
             newStake = 0;
         } else {
             newStake = totalStake;

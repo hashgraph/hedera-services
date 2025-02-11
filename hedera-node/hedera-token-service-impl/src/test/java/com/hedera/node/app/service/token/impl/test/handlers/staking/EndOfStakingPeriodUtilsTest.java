@@ -2,8 +2,10 @@
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.*;
+import static com.hedera.node.app.service.token.impl.test.handlers.staking.StakeInfoHelperTest.DEFAULT_CONFIG;
 
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.config.data.StakingConfig;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +30,7 @@ class EndOfStakingPeriodUtilsTest {
             .rewardSumHistory(List.of(2L, 1L, 0L))
             .weight(5)
             .build();
+    private static final StakingConfig STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
 
     @Test
     void readableNonZeroHistoryFromEmptyRewards() {
@@ -134,7 +137,8 @@ class EndOfStakingPeriodUtilsTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void computeStakeNullArg() {
-        Assertions.assertThatThrownBy(() -> computeNewStakes(null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> computeNewStakes(null, STAKING_CONFIG))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -142,7 +146,7 @@ class EndOfStakingPeriodUtilsTest {
         final var maxStake = STAKE_TO_REWARD + STAKE_TO_NOT_REWARD - 1;
         final var input = STAKING_INFO.copyBuilder().maxStake(maxStake).build();
 
-        final var result = computeNewStakes(input);
+        final var result = computeNewStakes(input, STAKING_CONFIG);
         Assertions.assertThat(result.stake()).isEqualTo(maxStake);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -154,7 +158,7 @@ class EndOfStakingPeriodUtilsTest {
                 .minStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = computeNewStakes(input);
+        final var result = computeNewStakes(input, STAKING_CONFIG);
         Assertions.assertThat(result.stake()).isZero();
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -167,7 +171,7 @@ class EndOfStakingPeriodUtilsTest {
                 .maxStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = computeNewStakes(input);
+        final var result = computeNewStakes(input, STAKING_CONFIG);
         Assertions.assertThat(result.stake()).isEqualTo(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
