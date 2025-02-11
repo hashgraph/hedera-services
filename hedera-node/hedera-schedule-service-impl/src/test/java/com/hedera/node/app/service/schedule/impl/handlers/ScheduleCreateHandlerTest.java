@@ -68,7 +68,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler(InstantSource.system(), throttleFactory);
+        subject = new ScheduleCreateHandler(idFactory, InstantSource.system(), throttleFactory);
         setUpBase();
     }
 

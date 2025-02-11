@@ -41,6 +41,7 @@ import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsServiceImpl;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.history.impl.HistoryServiceImpl;
+import com.hedera.node.app.ids.AppEntityIdFactory;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -121,7 +122,8 @@ class IngestComponentTest {
                 () -> configuration,
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
-                throttleFactory);
+                throttleFactory,
+                new AppEntityIdFactory(configuration));
         final var hintsService = new HintsServiceImpl(
                 NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class), DEFAULT_CONFIG);
         final var historyService = new HistoryServiceImpl(
