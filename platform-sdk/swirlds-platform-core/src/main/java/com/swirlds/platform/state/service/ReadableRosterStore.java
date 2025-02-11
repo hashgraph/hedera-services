@@ -91,11 +91,4 @@ public interface ReadableRosterStore {
      */
     @Nullable
     Bytes getCandidateRosterHash();
-
-    /**
-     * Gets the immediate next nodeId from the roster entries after the give nodeId.
-     * @param nodeId The node id
-     * @return The next node id
-     */
-    long nextNodeId(long nodeId);
 }

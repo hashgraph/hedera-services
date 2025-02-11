@@ -207,20 +207,25 @@ enum CRSStage {
  * The state of a CRS construction.
  */
 message CRSState {
-    /**
+
+  /**
      * The bytes of the CRS. Based on the CRSStage, this may be the initial CRS
      * or the final CRS.
      */
     bytes crs = 1;
+
     /**
      * The stage of the CRS construction.
      */
     CRSStage stage = 2;
+
     /**
      * The id of the next node that should contribute to the CRS. This is used
      * to ensure that all nodes contribute to the CRS in a round-robin fashion.
+     * If this is null, then all nodes in the network have contributed to the CRS.
      */
     google.protobuf.UInt64Value  next_contributing_node_id = 3;
+
     /**
      * The time at which the network should stop waiting for the node's contributions
      * and move on to the next node in the round-robin fashion.

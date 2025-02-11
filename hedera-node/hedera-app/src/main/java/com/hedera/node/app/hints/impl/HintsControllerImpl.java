@@ -225,7 +225,7 @@ public class HintsControllerImpl implements HintsController {
     private void doCRSWork(@NonNull final Instant now, @NonNull final WritableHintsStore hintsStore) {
         final var crsState = hintsStore.getCrsState();
         // If all nodes have contributed
-        if (crsState.nextContributingNodeId() == null) {
+        if (!crsState.hasNextContributingNodeId()) {
             if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
                 final var delay = configurationSupplier
                         .get()
@@ -245,7 +245,7 @@ public class HintsControllerImpl implements HintsController {
                         .build();
                 hintsStore.setCRSState(updatedState);
             }
-        } else if (crsState.nextContributingNodeId() == selfId && crsPublicationFuture == null) {
+        } else if (crsState.nextContributingNodeIdOrThrow() == selfId && crsPublicationFuture == null) {
             submitUpdatedCRS(hintsStore);
         } else if (crsState.contributionEndTime() != null
                 && now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
