@@ -52,18 +52,15 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
     static final Logger log = LogManager.getLogger(HapiAtomicBatch.class);
 
     private static final String DEFAULT_NODE_ACCOUNT_ID = "0.0.0";
-    private final List<HapiTxnOp<?>> operationsToBatch;
+    private final List<HapiTxnOp<?>> operationsToBatch = new ArrayList<>();
     private final Map<TransactionID, HapiTxnOp<?>> operationsMap = new HashMap<>();
-    private List<Transaction> transactionsToBatch = new ArrayList<>();
+    private final List<Transaction> transactionsToBatch = new ArrayList<>();
+    private final List<String> txnIdsForOrderValidation = new ArrayList();
 
     public HapiAtomicBatch() {}
 
     public HapiAtomicBatch(HapiTxnOp<?>... ops) {
-        this.operationsToBatch = Arrays.stream(ops).toList();
-    }
-
-    public HapiAtomicBatch(Transaction... transactions) {
-        this.transactionsToBatch = Arrays.stream(transactions).toList();
+        this.operationsToBatch.addAll(Arrays.stream(ops).toList());
     }
 
     @Override
@@ -137,11 +134,6 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
         validateExecutionOrder(spec, txnIdsForOrderValidation);
     }
 
-    public HapiAtomicBatch addTransaction(Transaction txn) {
-        transactionsToBatch.add(txn);
-        return this;
-    }
-
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(spec -> spec.registry().getKey(effectivePayer(spec)));
@@ -152,8 +144,13 @@ public class HapiAtomicBatch extends HapiTxnOp<HapiAtomicBatch> {
         return super.toStringHelper().add("range", operationsToBatch);
     }
 
+    public HapiAtomicBatch addTransaction(Transaction txn) {
+        transactionsToBatch.add(txn);
+        return this;
+    }
+
     public HapiAtomicBatch validateTxnOrder(String... txnIds) {
-        txnIdsForOrderValidation = Arrays.asList(txnIds);
+        txnIdsForOrderValidation.addAll(Arrays.asList(txnIds));
         return this;
     }
 
