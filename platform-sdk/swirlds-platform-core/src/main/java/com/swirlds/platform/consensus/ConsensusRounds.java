@@ -262,7 +262,7 @@ public class ConsensusRounds {
      * Update the current ancient threshold based on the latest round decided.
      */
     private void updateAncientThreshold() {
-        if (isAnyRoundDecided()) {
+        if (!isAnyRoundDecided()) {
             // if no round has been decided, no events are ancient yet
             ancientThreshold = EventConstants.ANCIENT_THRESHOLD_UNDEFINED;
             return;

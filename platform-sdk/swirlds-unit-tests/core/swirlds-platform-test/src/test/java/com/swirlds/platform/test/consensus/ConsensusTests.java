@@ -48,11 +48,6 @@ class ConsensusTests extends PlatformTest {
     private boolean ignoreNoJudgesMarkerFile = false;
     private boolean ignoreCoinRoundMarkerFile = false;
 
-    @BeforeAll
-    public static void initConfig() {
-        new TestConfigBuilder().getOrCreateConfig();
-    }
-
     @AfterEach
     void checkForMarkerFiles() {
         if (!ignoreNoSuperMajorityMarkerFile) {

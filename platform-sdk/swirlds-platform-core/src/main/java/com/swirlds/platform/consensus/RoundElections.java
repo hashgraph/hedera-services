@@ -164,7 +164,12 @@ public class RoundElections {
                     election.getWitness().getCreatorId(), election.getWitness(), RoundElections::uniqueFamous);
         }
         final List<EventImpl> allJudges = new ArrayList<>(uniqueFamous.values());
+        if (allJudges.isEmpty()) {
+            throw new IllegalStateException("No judges found in round " + round);
+        }
         allJudges.sort(Comparator.comparingLong(e -> e.getCreatorId().id()));
+        minGeneration = Long.MAX_VALUE;
+        minBirthRound = Long.MAX_VALUE;
         for (final EventImpl judge : allJudges) {
             minGeneration = Math.min(minGeneration, judge.getGeneration());
             minBirthRound = Math.min(minBirthRound, judge.getBirthRound());
