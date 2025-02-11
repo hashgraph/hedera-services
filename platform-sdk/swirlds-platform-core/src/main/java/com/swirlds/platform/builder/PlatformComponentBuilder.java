@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.component.framework.component.ComponentWiring;
+import com.swirlds.component.framework.wires.input.InputWire;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
@@ -75,6 +76,7 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.config.GossipConfig;
 import com.swirlds.platform.gossip.modular.SyncGossipModular;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
@@ -101,11 +103,11 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
-import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -161,7 +163,7 @@ public class PlatformComponentBuilder {
     private StateSigner stateSigner;
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
-    private PlatformWiring platformWiring;
+    private SwirldsPlatform swirldsPlatform;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -210,9 +212,7 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            final SwirldsPlatform swirldsPlatform = new SwirldsPlatform(this);
-            platformWiring = swirldsPlatform.getPlatformWiring();
-
+            swirldsPlatform = new SwirldsPlatform(this);
             return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {
@@ -229,13 +229,12 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Getter for the PlatformWiring extracted from the newly created SwirldsPlatform instance
+     * Binds a custom input wire to the consensus engine output wire. This method is mainly created for test purposes.
      *
-     * @return the newly created PlatformWiring
+     * @param inputWire to bind
      */
-    @NonNull
-    public PlatformWiring getPlatformWiring() {
-        return platformWiring;
+    public void bindInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
+        swirldsPlatform.bindInputWireToConsensusEngine(inputWire);
     }
 
     /**
