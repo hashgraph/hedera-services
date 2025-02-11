@@ -444,4 +444,114 @@ public class AirdropFromContractTest {
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 2L)));
         }));
     }
+
+    @Order(11)
+    @HapiTest
+    @DisplayName("Contract airdrops multiple times that FT to an account, then only one pending transaction is created")
+    public Stream<DynamicTest> airdropFTToAccountMultipleTimes(
+            @NonNull @Account(maxAutoAssociations = 0, tinybarBalance = 100_000_000L) final SpecAccount receiver,
+            @NonNull @Contract(contract = "EmptyOne", creationGas = 100_000_000L) final SpecContract sender,
+            @NonNull @FungibleToken(initialSupply = 1_000L) final SpecFungibleToken token) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.authorizeContract(airdropContract),
+                    sender.associateTokens(token),
+                    token.treasury().transferUnitsTo(sender, 10L, token));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call("tokenAirdrop", token, sender, receiver, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    airdropContract
+                            .call("tokenAirdrop", token, sender, receiver, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    airdropContract
+                            .call("tokenAirdrop", token, sender, receiver, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(1)),
+                    receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)));
+            allRunFor(
+                    spec,
+                    tokenClaimAirdrop(pendingAirdrop(sender.name(), receiver.name(), token.name()))
+                            .payingWith(receiver.name()),
+                    receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 3L)));
+        }));
+    }
+
+    @Order(12)
+    @HapiTest
+    @DisplayName(
+            "Contract airdrops a FT to an account, then associate the receiver, then airdrops the same token again")
+    public Stream<DynamicTest> airdropFTToAccountThenAssociateTheReceiverAndAirdropAgain(
+            @NonNull @Account(maxAutoAssociations = 0, tinybarBalance = 100_000_000L) final SpecAccount receiver,
+            @NonNull @Contract(contract = "EmptyOne", creationGas = 100_000_000L) final SpecContract sender,
+            @NonNull @FungibleToken(initialSupply = 1_000L) final SpecFungibleToken token) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender.authorizeContract(airdropContract),
+                    sender.associateTokens(token),
+                    token.treasury().transferUnitsTo(sender, 10L, token));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call("tokenAirdrop", token, sender, receiver, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(1)),
+                    receiver.associateTokens(token),
+                    airdropContract
+                            .call("tokenAirdrop", token, sender, receiver, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(0)),
+                    receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1L)));
+        }));
+    }
+
+    @Order(13)
+    @HapiTest
+    @DisplayName("Multiple contracts airdrop tokens to multiple accounts.")
+    public Stream<DynamicTest> multipleContractsAirdropTokensToMultipleAccounts(
+            @NonNull @Account(maxAutoAssociations = 1, tinybarBalance = 100_000_000L) final SpecAccount receiver1,
+            @NonNull @Account(maxAutoAssociations = 1, tinybarBalance = 100_000_000L) final SpecAccount receiver2,
+            @NonNull @Contract(contract = "EmptyOne", creationGas = 100_000_000L) final SpecContract sender1,
+            @NonNull @Contract(contract = "EmptyConstructor", creationGas = 100_000_000L) final SpecContract sender2,
+            @NonNull @FungibleToken(initialSupply = 1_000L) final SpecFungibleToken token) {
+        return hapiTest(withOpContext((spec, opLog) -> {
+            allRunFor(
+                    spec,
+                    sender1.authorizeContract(airdropContract),
+                    sender2.authorizeContract(airdropContract),
+                    sender1.associateTokens(token),
+                    sender2.associateTokens(token),
+                    token.treasury().transferUnitsTo(sender1, 10L, token),
+                    token.treasury().transferUnitsTo(sender2, 10L, token));
+            allRunFor(
+                    spec,
+                    airdropContract
+                            .call("tokenAirdrop", token, sender1, receiver1, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
+                    airdropContract
+                            .call("tokenAirdrop", token, sender2, receiver2, 1L)
+                            .sending(85_000_000L)
+                            .gas(1_500_000L),
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(0)),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTinyBars(100_000_000L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTinyBars(100_000_000L)),
+                    receiver1.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1L)),
+                    receiver2.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 1L)));
+        }));
+    }
 }
