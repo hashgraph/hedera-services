@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 # Compiling this contract is complicated, as Solidity and YUL don't currently
 # (as of 0.8.18) support PUSH0, and when they do they won't support push via
 # assembly, so we have to verbarim include the opcode.  Verbatim is not

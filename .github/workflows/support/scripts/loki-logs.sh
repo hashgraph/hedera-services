@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 #
 # Use Loki API to chek if all nodes are up and running by searching "ACTIVE" message in swirlds.log

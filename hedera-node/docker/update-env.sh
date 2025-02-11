@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 # This scripts create a '.env' file that is used for docker & docker-compose as an input of environment variables.

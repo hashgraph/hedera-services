@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 #!/usr/bin/env bash
 
 # script to test update feature on local macOS

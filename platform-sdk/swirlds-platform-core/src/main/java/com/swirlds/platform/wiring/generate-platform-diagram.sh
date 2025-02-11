@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 # The location were this script can be found.

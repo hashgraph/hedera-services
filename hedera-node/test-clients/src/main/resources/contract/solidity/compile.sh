@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #! /bin/sh
 set -x
 if [ $# -lt 1 ]; then

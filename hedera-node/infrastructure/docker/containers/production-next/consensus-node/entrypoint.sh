@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/command/with-contenv bash
 # shellcheck shell=bash
 

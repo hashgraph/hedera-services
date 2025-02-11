@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 # Cleans build files in a way that './gradlew clean' can only dream of.

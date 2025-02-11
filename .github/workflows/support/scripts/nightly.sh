@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/bin/bash -x
 #
 # Launch test client for nightly service performance test

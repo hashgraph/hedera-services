@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
 #!/usr/bin/env bash
 
 # script to be called by platform regression scrip to build new jar for update feature test
