@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
@@ -100,7 +101,11 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, roster);
+                platformContext,
+                thisNode,
+                mock(ConnectionTracker.class),
+                socketFactory,
+                Utilities.createPeerInfoList(roster, thisNode));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -181,7 +186,11 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, roster);
+                platformContext,
+                thisNode,
+                mock(ConnectionTracker.class),
+                socketFactory,
+                Utilities.createPeerInfoList(roster, thisNode));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");

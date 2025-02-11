@@ -29,6 +29,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.gossip.modular.GossipController;
 import com.swirlds.platform.gossip.modular.SyncGossipSharedProtocolState;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.reconnect.*;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.service.PlatformStateFacade;
@@ -38,6 +39,7 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -105,6 +107,7 @@ public class ReconnectProtocol implements Protocol {
      * @param threadManager         the thread manager
      * @param latestCompleteState   holds the latest signed state that has enough signatures to be verifiable
      * @param roster                the current roster
+     * @param peers                 the current list of peers
      * @param loadReconnectState    a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param swirldStateManager    manages the mutable state
@@ -118,6 +121,7 @@ public class ReconnectProtocol implements Protocol {
             @NonNull final ThreadManager threadManager,
             @NonNull final Supplier<ReservedSignedState> latestCompleteState,
             @NonNull final Roster roster,
+            @NonNull final List<PeerInfo> peers,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -130,7 +134,7 @@ public class ReconnectProtocol implements Protocol {
 
         var reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
 
-        var reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), roster);
+        var reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), peers);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
