@@ -201,6 +201,7 @@ public class RoundElections {
         numUnknownFame.set(0);
         elections.clear();
         minGeneration = EventConstants.GENERATION_UNDEFINED;
+        minBirthRound = EventConstants.BIRTH_ROUND_UNDEFINED;
     }
 
     /** Reset this instance to its initial state */
