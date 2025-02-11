@@ -10,6 +10,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateRecordTransactionFees;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withStrictCostAnswerValidation;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
@@ -33,7 +34,7 @@ public class FileRecordsSanityCheckSuite {
                 fileAppend("test").via("txn").fee(95_000_000L),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
-                validateRecordTransactionFees("txn")));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @HapiTest
@@ -43,7 +44,7 @@ public class FileRecordsSanityCheckSuite {
                 fileCreate("test").via("txn"),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
-                validateRecordTransactionFees("txn")));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @HapiTest
@@ -54,7 +55,7 @@ public class FileRecordsSanityCheckSuite {
                 fileDelete("test").via("txn"),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
-                validateRecordTransactionFees("txn")));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 
     @HapiTest
@@ -69,6 +70,6 @@ public class FileRecordsSanityCheckSuite {
                 withStrictCostAnswerValidation(() -> getFileInfo("test").payingWith(EXCHANGE_RATE_CONTROL)),
                 validateTransferListForBalances(
                         "txn", List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER)),
-                validateRecordTransactionFees("txn")));
+                withOpContext((spec, opLog) -> validateRecordTransactionFees(spec, "txn"))));
     }
 }

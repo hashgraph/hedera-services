@@ -9,7 +9,9 @@ import static com.swirlds.platform.turtle.runner.TurtleStateLifecycles.TURTLE_ST
 
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.swirlds.base.time.Time;
+import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.io.config.FileSystemManagerConfig_;
 import com.swirlds.common.io.filesystem.FileSystemManager;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.platform.NodeId;
@@ -34,6 +36,7 @@ import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -64,6 +67,7 @@ public class TurtleNode {
      * @param addressBook the address book for the network
      * @param privateKeys the private keys for this node
      * @param network     the simulated network
+     * @param outputDirectory the directory where the node output will be stored, like saved state and so on
      */
     TurtleNode(
             @NonNull final Randotron randotron,
@@ -71,11 +75,14 @@ public class TurtleNode {
             @NonNull final NodeId nodeId,
             @NonNull final AddressBook addressBook,
             @NonNull final KeysAndCerts privateKeys,
-            @NonNull final SimulatedNetwork network) {
+            @NonNull final SimulatedNetwork network,
+            @NonNull final Path outputDirectory) {
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue(PlatformSchedulersConfig_.CONSENSUS_EVENT_STREAM, "NO_OP")
                 .withValue(BasicConfig_.JVM_PAUSE_DETECTOR_SLEEP_MS, "0")
+                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, outputDirectory.toString())
+                .withValue(FileSystemManagerConfig_.ROOT_PATH, outputDirectory.toString())
                 .getOrCreateConfig();
 
         setupGlobalMetrics(configuration);

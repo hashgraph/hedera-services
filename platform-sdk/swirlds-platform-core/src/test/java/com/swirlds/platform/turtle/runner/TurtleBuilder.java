@@ -3,6 +3,7 @@ package com.swirlds.platform.turtle.runner;
 
 import com.swirlds.common.test.fixtures.Randotron;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -27,6 +28,7 @@ public class TurtleBuilder {
     private Duration simulationGranularity = Duration.ofMillis(10);
     private int nodeCount = 4;
     private boolean timeReportingEnabled;
+    private Path outputDirectory;
 
     /**
      * Create a new TurtleBuilder.
@@ -121,6 +123,28 @@ public class TurtleBuilder {
     public TurtleBuilder withTimeReportingEnabled(final boolean timeReportingEnabled) {
         this.timeReportingEnabled = timeReportingEnabled;
         return this;
+    }
+
+    /**
+     * Set node output directory.
+     *
+     * @param outputDirectory the directory where node output will be stored, like saved state and so on
+     * @return this builder
+     */
+    @NonNull
+    public TurtleBuilder withOutputDirectory(@NonNull final Path outputDirectory) {
+        this.outputDirectory = outputDirectory;
+        return this;
+    }
+
+    /**
+     * Get node output directory.
+     *
+     * @return the directory where the node output will be stored, like saved state and so on
+     */
+    @NonNull
+    Path getOutputDirectory() {
+        return outputDirectory;
     }
 
     /**

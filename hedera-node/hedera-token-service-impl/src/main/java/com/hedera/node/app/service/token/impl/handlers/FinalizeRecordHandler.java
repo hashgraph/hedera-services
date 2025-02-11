@@ -28,6 +28,7 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -53,6 +54,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
 
     private final StakingRewardsHandler stakingRewardsHandler;
     private final HederaConfig hederaConfig;
+    private final AccountsConfig accountsConfig;
 
     /**
      * Constructs a {@link FinalizeRecordHandler} instance.
@@ -63,6 +65,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             @NonNull final StakingRewardsHandler stakingRewardsHandler, @NonNull final ConfigProvider configProvider) {
         this.stakingRewardsHandler = stakingRewardsHandler;
         this.hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        this.accountsConfig = configProvider.getConfiguration().getConfigData(AccountsConfig.class);
     }
 
     public void finalizeStakingRecord(
@@ -185,7 +188,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
             if (childHbarChangesFromRecord.size() == 1) {
                 var genesisTreasuryCredit = List.of(AccountAmount.newBuilder()
                         .amount(LEDGER_TOTAL_TINY_BAR_FLOAT)
-                        .accountID(asAccount(hederaConfig.shard(), hederaConfig.realm(), 2))
+                        .accountID(asAccount(hederaConfig.shard(), hederaConfig.realm(), accountsConfig.treasury()))
                         .build());
 
                 if (!childHbarChangesFromRecord.equals(genesisTreasuryCredit)) {
