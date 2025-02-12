@@ -79,8 +79,10 @@ public class AtomicBatchHandler implements TransactionHandler {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 
-        // verify that the atomic batch transaction body supposed or not supposed to have a batch key
-        if(txn.hasBatchKey()){
+        // the atomic batch transaction body cannot have a batch key
+        // only the inner transactions can have a batch key
+        // in future, we may wish to allow nested batches, in which case the atomic batch transaction could have a batch key
+        if (txn.hasBatchKey()) {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 

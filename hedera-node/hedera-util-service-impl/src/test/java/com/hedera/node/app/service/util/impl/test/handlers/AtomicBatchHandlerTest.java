@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.util.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -28,7 +30,12 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -39,10 +46,12 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +64,10 @@ class AtomicBatchHandlerTest {
     private HandleContext handleContext;
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
+
+    @Mock
+    private PureChecksContext pureChecksContext;
+
     @Mock
     private StreamBuilder recordBuilder;
 
@@ -85,6 +98,29 @@ class AtomicBatchHandlerTest {
     }
 
     @Test
+    void failsOnEmptyBatchList() {
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp);
+        given(pureChecksContext.body()).willReturn(txnBody);
+
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
+        assertEquals(BATCH_LIST_EMPTY, msg.responseCode());
+    }
+
+    @Test
+    void failsIfBatchKeySet() {
+        final var transaction = mock(Transaction.class);
+        final var txnBodyBuilder = AtomicBatchTransactionBody.newBuilder().transactions(transaction);
+        final var txnBody = newTxnBodyBuilder(payerId1, consensusTimestamp, SIMPLE_KEY_A)
+                .atomicBatch(txnBodyBuilder)
+                .build();
+
+        given(pureChecksContext.body()).willReturn(txnBody);
+
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
+        assertEquals(BATCH_LIST_EMPTY, msg.responseCode());
+    }
+
+    @Test
     void preHandleBatchSizeExceedsMaxBatchSize() throws PreCheckException {
         final var batchKey = SIMPLE_KEY_A;
         final var transaction1 = mock(Transaction.class);
@@ -111,9 +147,9 @@ class AtomicBatchHandlerTest {
         assertEquals(ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED, msg.responseCode());
     }
 
+
     @Test
     void cannotParseInnerTransactionFailed() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
         final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
         given(handleContext.body()).willReturn(txnBody);
