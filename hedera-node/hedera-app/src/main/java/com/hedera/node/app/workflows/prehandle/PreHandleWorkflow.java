@@ -106,7 +106,9 @@ public interface PreHandleWorkflow {
                 stateSignatureTxnCallback);
         // If the transaction is an atomic batch, we need to pre-handle all inner transactions as well
         // and add their results to the outer transaction's pre-handle result
-        if (result.txInfo() != null && isAtomicBatch(result.txInfo())) {
+        if (result.txInfo() != null
+                && isAtomicBatch(result.txInfo())
+                && result.status() == PreHandleResult.Status.SO_FAR_SO_GOOD) {
             final var innerTxns = result.txInfo().txBody().atomicBatchOrThrow().transactions();
             var useInnerResults = maybeReusableResult != null
                     && maybeReusableResult.innerResults() != null
