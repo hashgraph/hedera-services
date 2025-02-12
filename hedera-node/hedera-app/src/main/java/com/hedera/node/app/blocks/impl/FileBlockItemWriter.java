@@ -49,10 +49,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
     private static final Logger logger = LogManager.getLogger(FileBlockItemWriter.class);
 
     /** The file extension for block files. */
-    public static final String RECORD_EXTENSION = "blk";
+    private static final String RECORD_EXTENSION = "blk";
 
     /** The suffix added to RECORD_EXTENSION when they are compressed. */
-    public static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
+    private static final String COMPRESSION_ALGORITHM_EXTENSION = ".gz";
 
     /** Whether to compress the block files. */
     private final boolean compressFiles;
@@ -185,6 +185,13 @@ public class FileBlockItemWriter implements BlockItemWriter {
         try {
             writableStreamingData.close();
             state = State.CLOSED;
+            // Write a .mf file to indicate that the block file is complete.
+            final Path markerFile = getBlockFilePath(blockNumber).resolveSibling(longToFileName(blockNumber) + ".mf");
+            if (Files.exists(markerFile)) {
+                logger.info("Skipping block marker file for {} as it already exists", markerFile);
+            } else {
+                Files.createFile(markerFile);
+            }
         } catch (final IOException e) {
             logger.error("Error closing the FileBlockItemWriter output stream", e);
             throw new UncheckedIOException(e);
@@ -209,7 +216,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
      * @return the 36-character string padded with leading zeros
      */
     @NonNull
-    private static String longToFileName(final long value) {
+    public static String longToFileName(final long value) {
         // Convert the signed long to an unsigned long using BigInteger for correct representation
         BigInteger unsignedValue =
                 BigInteger.valueOf(value & Long.MAX_VALUE).add(BigInteger.valueOf(Long.MIN_VALUE & value));

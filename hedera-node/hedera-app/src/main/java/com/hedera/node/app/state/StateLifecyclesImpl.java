@@ -61,10 +61,10 @@ public class StateLifecyclesImpl implements StateLifecycles<PlatformMerkleStateR
     }
 
     @Override
-    public void onSealConsensusRound(@NonNull final Round round, @NonNull final PlatformMerkleStateRoot state) {
+    public boolean onSealConsensusRound(@NonNull final Round round, @NonNull final PlatformMerkleStateRoot state) {
         requireNonNull(state);
         requireNonNull(round);
-        hedera.onSealConsensusRound(round, state);
+        return hedera.onSealConsensusRound(round, state);
     }
 
     @Override
@@ -86,6 +86,6 @@ public class StateLifecyclesImpl implements StateLifecycles<PlatformMerkleStateR
 
     @Override
     public void onNewRecoveredState(@NonNull final PlatformMerkleStateRoot recoveredStateRoot) {
-        hedera.onNewRecoveredState(recoveredStateRoot);
+        hedera.onNewRecoveredState();
     }
 }

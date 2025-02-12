@@ -98,7 +98,7 @@ class StressTestingToolStateTest {
         final Randotron randotron = Randotron.create();
 
         final var keysAndCerts =
-                KeysAndCerts.generate("a-name", EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
+                KeysAndCerts.generate(NodeId.FIRST_NODE_ID, EMPTY_ARRAY, EMPTY_ARRAY, EMPTY_ARRAY, new PublicStores());
 
         final var signer = new PlatformSigner(keysAndCerts);
         final Hash stateHash = randotron.nextHash();
@@ -290,6 +290,17 @@ class StressTestingToolStateTest {
 
         // Then
         assertThat(consumedSystemTransactions.size()).isZero();
+    }
+
+    @Test
+    void onSealDefaultsToTrue() {
+        // Given (empty)
+
+        // When
+        final boolean result = stateLifecycles.onSealConsensusRound(round, state);
+
+        // Then
+        assertThat(result).isTrue();
     }
 
     private void givenRoundAndEvent() {
