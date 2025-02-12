@@ -16,15 +16,18 @@
 
 package com.hedera.node.app.service.util.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -38,7 +41,6 @@ import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.AtomicBatchTransactionBody;
 import com.hedera.node.app.service.util.impl.handlers.AtomicBatchHandler;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -59,19 +61,16 @@ class AtomicBatchHandlerTest {
     @Mock
     private StreamBuilder recordBuilder;
 
-    @Mock
-    private BlockRecordInfo blockRecordInfo;
-
     private AtomicBatchHandler subject;
 
-    private Timestamp consensusTimestamp =
+    private final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     private static final Key SIMPLE_KEY_A = Key.newBuilder()
             .ed25519(Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
             .build();
-    private AccountID payerId1 = AccountID.newBuilder().accountNum(1001).build();
-    private AccountID payerId2 = AccountID.newBuilder().accountNum(1002).build();
-    private AccountID payerId3 = AccountID.newBuilder().accountNum(1003).build();
+    private final AccountID payerId1 = AccountID.newBuilder().accountNum(1001).build();
+    private final AccountID payerId2 = AccountID.newBuilder().accountNum(1002).build();
+    private final AccountID payerId3 = AccountID.newBuilder().accountNum(1003).build();
 
     @BeforeEach
     void setUp() {
@@ -85,46 +84,43 @@ class AtomicBatchHandlerTest {
 
     @Test
     void cannotParseInnerTransactionFailed() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        willThrow(new HandleException(INVALID_TRANSACTION_BODY))
-                .given(handleContext)
-                .bodyFromTransaction(transaction);
+        given(handleContext.bodyFromTransaction(transaction)).willThrow(new HandleException(INVALID_TRANSACTION_BODY));
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INNER_TRANSACTION_FAILED, msg.getStatus());
     }
 
     @Test
-    void innerTransactionFailed() {
-        final var batchKey = SIMPLE_KEY_A;
+    void innerTransactionDispatchFailed() {
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
+        final var dispatchOptions = atomicBatchDispatch(payerId2, innerTxnBody, StreamBuilder.class);
+        given(handleContext.dispatch(dispatchOptions)).willReturn(recordBuilder);
+        given(recordBuilder.status()).willReturn(UNKNOWN);
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INNER_TRANSACTION_FAILED, msg.getStatus());
     }
 
     @Test
     void handleDispatched() {
-        final var batchKey = SIMPLE_KEY_A;
         final var transaction = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction);
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
         final var dispatchOptions = atomicBatchDispatch(payerId2, innerTxnBody, StreamBuilder.class);
         given(handleContext.dispatch(dispatchOptions)).willReturn(recordBuilder);
@@ -138,17 +134,16 @@ class AtomicBatchHandlerTest {
         final var batchKey = SIMPLE_KEY_A;
         final var transaction1 = mock(Transaction.class);
         final var transaction2 = mock(Transaction.class);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, batchKey, transaction1, transaction2);
-        final var innerTxnBody1 = newTxnBodyBuilder(payerId2, consensusTimestamp)
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction1, transaction2);
+        final var innerTxnBody1 = newTxnBodyBuilder(payerId2, consensusTimestamp, batchKey)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .build();
-        final var innerTxnBody2 = newTxnBodyBuilder(payerId3, consensusTimestamp)
+        final var innerTxnBody2 = newTxnBodyBuilder(payerId3, consensusTimestamp, batchKey)
                 .consensusDeleteTopic(
                         ConsensusDeleteTopicTransactionBody.newBuilder().build())
                 .build();
         given(handleContext.body()).willReturn(txnBody);
-        given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
         given(handleContext.bodyFromTransaction(transaction2)).willReturn(innerTxnBody2);
         final var dispatchOptions1 = atomicBatchDispatch(payerId2, innerTxnBody1, StreamBuilder.class);
@@ -161,20 +156,58 @@ class AtomicBatchHandlerTest {
         verify(handleContext).dispatch(dispatchOptions2);
     }
 
+    @Test
+    void innerTransactionTimeBoxCheckFailed() {
+        final var transaction = mock(Transaction.class);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
+                .consensusCreateTopic(
+                        ConsensusCreateTopicTransactionBody.newBuilder().build())
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
+        doThrow(new HandleException(INVALID_TRANSACTION_START))
+                .when(handleContext)
+                .checkTimeBox(innerTxnBody);
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(INNER_TRANSACTION_FAILED, msg.getStatus());
+    }
+
+    @Test
+    void innerTransactionDuplicationCheckFailed() {
+        final var transaction = mock(Transaction.class);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
+                .consensusCreateTopic(
+                        ConsensusCreateTopicTransactionBody.newBuilder().build())
+                .build();
+        final var transactionId = TransactionID.newBuilder()
+                .accountID(payerId2)
+                .transactionValidStart(consensusTimestamp)
+                .build();
+        given(handleContext.body()).willReturn(txnBody);
+        given(handleContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
+        doThrow(new HandleException(DUPLICATE_TRANSACTION)).when(handleContext).checkDuplication(transactionId);
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(INNER_TRANSACTION_FAILED, msg.getStatus());
+    }
+
     private TransactionBody newAtomicBatch(
-            AccountID payerId, Timestamp consensusTimestamp, Key batchKey, Transaction... transactions) {
+            AccountID payerId, Timestamp consensusTimestamp, Transaction... transactions) {
         final var atomicBatchBuilder = AtomicBatchTransactionBody.newBuilder().transactions(transactions);
         return newTxnBodyBuilder(payerId, consensusTimestamp)
-                .batchKey(batchKey)
                 .atomicBatch(atomicBatchBuilder)
                 .build();
     }
 
-    private TransactionBody.Builder newTxnBodyBuilder(AccountID payerId, Timestamp consensusTimestamp) {
+    private TransactionBody.Builder newTxnBodyBuilder(
+            AccountID payerId, Timestamp consensusTimestamp, Key... batchKey) {
         final var txnId = TransactionID.newBuilder()
                 .accountID(payerId)
                 .transactionValidStart(consensusTimestamp)
                 .build();
-        return TransactionBody.newBuilder().transactionID(txnId);
+        return batchKey.length == 0
+                ? TransactionBody.newBuilder().transactionID(txnId)
+                : TransactionBody.newBuilder().transactionID(txnId).batchKey(batchKey[0]);
     }
 }
