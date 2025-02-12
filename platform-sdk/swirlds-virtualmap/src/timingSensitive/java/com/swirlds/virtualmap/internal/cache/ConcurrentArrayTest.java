@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ class ConcurrentArrayTest {
     }
 
     /**
-     * Merged concurrent arrqys are immutable
+     * Merged concurrent arrays are immutable
      */
     @Test
     @Tags({@Tag("VirtualMerkle"), @Tag("VirtualNodeCache")})

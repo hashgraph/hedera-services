@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ public class RandomGraph {
         unused = new int[numUnused]; // treat this as a list of possible neighbors that haven't been used yet
         for (int i = 0;
                 i < numUnused;
-                i++) { // initally, all neighbors are unused, and so are candidates for using them
+                i++) { // initially, all neighbors are unused, and so are candidates for using them
             unused[i] = i;
         }
         for (int i = 0; i < degree / 2; i++) {

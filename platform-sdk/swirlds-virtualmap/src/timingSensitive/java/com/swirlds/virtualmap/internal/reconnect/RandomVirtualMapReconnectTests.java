@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
      * @param initialMapSize
      * 		how many key/values to store in both teacherMap and learnerMap before the reconnect
      * @param maximumKey
-     * 		how many distict Key values are allowed to exist
+     * 		how many distinct Key values are allowed to exist
      * @param operations
      * 		how many create/update/delete operations to perform on just the teacherMap, prior to the
      * 		reconnect

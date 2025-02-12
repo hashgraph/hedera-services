@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class AdjustmentUtils {
     }
 
     /**
-     * Given the token deomination, fee collector and the amount to be charged, this method
+     * Given the token denomination, fee collector and the amount to be charged, this method
      * returns the {@link FixedFee} representation of custom fee.
      * @param unitsToCollect The amount to be charged
      * @param tokenDenomination The token denomination

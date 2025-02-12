@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,7 +234,7 @@ class TransactionModuleTest {
         // greater than the above 6 tinycents, is the effective price)...
         given(canonicalDispatchPrices.canonicalPriceInTinycents(DispatchType.APPROVE))
                 .willReturn(66L);
-        // And a converstion rate of 7 tinybar per 66 tinycents...
+        // And a conversion rate of 7 tinybar per 66 tinycents...
         given(tinybarValues.asTinybars(66L)).willReturn(7L);
         // With each gas costing 2 tinybar...
         given(tinybarValues.childTransactionTinybarGasPrice()).willReturn(2L);

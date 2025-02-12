@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public class ThreeLongsList {
      * For each to iterate over all triples stored.
      *
      * @param handler
-     * 		callback to receieve each triple.
+     * 		callback to receive each triple.
      */
     public <T extends Throwable> void forEach(final ThreeLongFunction<T> handler) throws T {
         int index = 0;

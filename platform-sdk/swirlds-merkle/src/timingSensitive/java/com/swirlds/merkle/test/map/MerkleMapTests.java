@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,7 +220,7 @@ class MerkleMapTests {
             mm.remove(key);
         }
 
-        assertEquals(0, mm.size(), "expected map to be emtpy");
+        assertEquals(0, mm.size(), "expected map to be empty");
         mm.release();
     }
 
@@ -262,7 +262,7 @@ class MerkleMapTests {
 
         mm.clear();
 
-        assertEquals(0, mm.size(), "expected map to be emtpy");
+        assertEquals(0, mm.size(), "expected map to be empty");
         mm.release();
     }
 
@@ -876,7 +876,7 @@ class MerkleMapTests {
 
         root2.release();
         assertEquals(-1, map.getReservationCount(), "reference count should be -1");
-        assertTrue(map.isDestroyed(), "Expected map to be releaed");
+        assertTrue(map.isDestroyed(), "Expected map to be released");
     }
 
     @Test

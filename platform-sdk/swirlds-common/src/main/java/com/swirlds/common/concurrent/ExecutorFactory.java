@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public interface ExecutorFactory {
      *
      * @param runnable the runnable
      * @return the not started thread
-     * @deprecated all useage should be migrated to {@link #createExecutorService(int)}
+     * @deprecated all usage should be migrated to {@link #createExecutorService(int)}
      */
     @Deprecated
     @NonNull

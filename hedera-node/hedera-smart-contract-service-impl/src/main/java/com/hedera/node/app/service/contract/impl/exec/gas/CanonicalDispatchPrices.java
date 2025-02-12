@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class CanonicalDispatchPrices {
     public static final BigDecimal USD_TO_TINYCENTS = BigDecimal.valueOf(100 * 100_000_000L);
 
     /**
-     * @param assetsLoader used to load the fee schedule from recources
+     * @param assetsLoader used to load the fee schedule from resources
      */
     @Inject
     public CanonicalDispatchPrices(@NonNull final AssetsLoader assetsLoader) {

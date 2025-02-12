@@ -933,7 +933,7 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     }
 
     /**
-     * Returns the number of the current rount
+     * Returns the number of the current round
      */
     public abstract long getCurrentRound();
 

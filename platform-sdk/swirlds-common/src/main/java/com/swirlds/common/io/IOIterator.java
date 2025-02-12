@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public interface IOIterator<T> extends AutoCloseableNonThrowing {
      * 		a function that converts from the old type into the new type.
      * @param <U>
      * 		the type returned by the new iterator
-     * @return an iterator that walks the same data but returns a differnet type
+     * @return an iterator that walks the same data but returns a different type
      */
     default <U> IOIterator<U> transform(final Function<T, U> converter) {
 

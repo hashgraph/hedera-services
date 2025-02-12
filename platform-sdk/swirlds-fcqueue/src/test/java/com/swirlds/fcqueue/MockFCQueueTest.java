@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -321,7 +321,7 @@ class MockFCQueueTest {
 
         final FCQueue<FCInt> qc = SerializationUtils.serializeDeserialize(q);
 
-        assertEquals(q.getHash(), qc.getHash(), "Hash value after serialization/deserializeation changed");
+        assertEquals(q.getHash(), qc.getHash(), "Hash value after serialization/deserialization changed");
     }
 
     /**
@@ -798,7 +798,7 @@ class MockFCQueueTest {
 
     /**
      * add the same element to a MockFCQueue instance and a Queue instance
-     * if queue is null, we only add elements into the MockFCQueue isntance
+     * if queue is null, we only add elements into the MockFCQueue instance
      *
      * @param fcq
      * 		a MockFCQueue instance

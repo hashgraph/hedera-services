@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class MinLengthConstraint implements ConfigPropertyConstraint<String> {
     /**
      * Creates the constraint.
      *
-     * @param minLength the minmal allowed length
+     * @param minLength the minimal allowed length
      */
     public MinLengthConstraint(final int minLength) {
         this.minLength = minLength;
