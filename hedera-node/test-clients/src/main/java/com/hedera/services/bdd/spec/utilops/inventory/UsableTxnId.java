@@ -33,6 +33,7 @@ public class UsableTxnId extends UtilOp {
     private Optional<String> payerId = Optional.empty();
     private Optional<String> asScheduled = Optional.empty();
     private Optional<Long> customValidStart = Optional.empty();
+    private Optional<Timestamp> validStart = Optional.empty();
     private final String name;
 
     public UsableTxnId(String name) {
@@ -41,6 +42,11 @@ public class UsableTxnId extends UtilOp {
 
     public UsableTxnId payerId(String id) {
         payerId = Optional.of(id);
+        return this;
+    }
+
+    public UsableTxnId validStart(Timestamp timestamp) {
+        validStart = Optional.of(timestamp);
         return this;
     }
 
@@ -81,6 +87,7 @@ public class UsableTxnId extends UtilOp {
 
         final var finalTxnId = txnIdBuilder;
         payerId.ifPresent(name -> finalTxnId.setAccountID(TxnUtils.asId(name, spec)));
+        validStart.ifPresent(finalTxnId::setTransactionValidStart);
         if (useScheduledInappropriately) {
             txnIdBuilder.setScheduled(true);
         }

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -460,4 +461,16 @@ public interface HandleContext {
      */
     @Nullable
     TransactionBody bodyFromTransaction(@NonNull final Transaction tx);
+
+    /**
+     * Checks transaction start and duration
+     * @param txBody the transaction body
+     */
+    void checkTimeBox(@NonNull final TransactionBody txBody);
+
+    /**
+     * Checks for duplication of the transaction
+     * @param transactionID the transaction ID
+     */
+    void checkDuplication(@NonNull final TransactionID transactionID);
 }
