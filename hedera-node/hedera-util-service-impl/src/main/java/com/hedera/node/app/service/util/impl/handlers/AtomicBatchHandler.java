@@ -28,7 +28,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.util.AtomicBatchTransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.*;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -81,14 +80,15 @@ public class AtomicBatchHandler implements TransactionHandler {
 
         // the atomic batch transaction body cannot have a batch key
         // only the inner transactions can have a batch key
-        // in future, we may wish to allow nested batches, in which case the atomic batch transaction could have a batch key
+        // in future, we may wish to allow nested batches, in which case the atomic batch transaction could have a batch
+        // key
         if (txn.hasBatchKey()) {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 
         Set<Transaction> set = new HashSet<>();
         for (final Transaction transaction : transactions) {
-            if (transaction == null) {
+            if (transaction == null) { // I think this can never happen
                 throw new PreCheckException(BATCH_LIST_CONTAINS_NULL_VALUES);
             }
 
