@@ -16,12 +16,7 @@
 
 package com.hedera.node.app.service.util.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_DUPLICATES;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_CONTAINS_NULL_VALUES;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BATCH_LIST_EMPTY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -164,14 +159,14 @@ class AtomicBatchHandlerTest {
         given(pureChecksContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertEquals(INVALID_TRANSACTION_BODY, msg.responseCode());
+        assertEquals(INVALID_NODE_ACCOUNT_ID, msg.responseCode());
     }
 
     @Test
     void failsIfInnerTxMissingBatchKey() throws PreCheckException {
         final var transaction = mock(Transaction.class);
         final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction);
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp)
                 .consensusCreateTopic(
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .nodeAccountID(AccountID.newBuilder().accountNum(1).build())
@@ -180,7 +175,7 @@ class AtomicBatchHandlerTest {
         given(pureChecksContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-        assertEquals(INVALID_TRANSACTION_BODY, msg.responseCode());
+        assertEquals(MISSING_BATCH_KEY, msg.responseCode());
     }
 
     @Test
@@ -208,6 +203,20 @@ class AtomicBatchHandlerTest {
         given(preHandleContext.bodyFromTransaction(transaction3)).willReturn(innerTxnBody3);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
         assertEquals(ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED, msg.responseCode());
+    }
+
+    @Test
+    void preHandleBatchWithBatchKeyIsNull() throws PreCheckException {
+        final var transaction1 = mock(Transaction.class);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction1);
+        final var innerTxnBody1 = newTxnBodyBuilder(payerId1, consensusTimestamp)
+                .consensusCreateTopic(
+                        ConsensusCreateTopicTransactionBody.newBuilder().build())
+                .build();
+        given(preHandleContext.body()).willReturn(txnBody);
+        given(preHandleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertEquals(ResponseCodeEnum.BAD_ENCODING, msg.responseCode());
     }
 
     @Test
