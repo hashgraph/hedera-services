@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior;
@@ -48,7 +49,7 @@ public record DispatchOptions<T extends StreamBuilder>(
         @NonNull Class<T> streamBuilderType,
         @NonNull ReversingBehavior reversingBehavior,
         @NonNull StreamBuilder.TransactionCustomizer transactionCustomizer,
-        @NonNull HandleContext.DispatchMetadata dispatchMetadata) {
+        @NonNull DispatchMetadata dispatchMetadata) {
     private static final Predicate<Key> PREAUTHORIZED_KEYS = k -> true;
 
     /**
@@ -297,7 +298,7 @@ public record DispatchOptions<T extends StreamBuilder>(
             @NonNull final TransactionBody body,
             @NonNull final Class<T> streamBuilderType,
             @NonNull final StreamBuilder.TransactionCustomizer transactionCustomizer,
-            @NonNull final HandleContext.DispatchMetadata metaData) {
+            @NonNull final DispatchMetadata metaData) {
         return new DispatchOptions<>(
                 Commit.WITH_PARENT,
                 payerId,

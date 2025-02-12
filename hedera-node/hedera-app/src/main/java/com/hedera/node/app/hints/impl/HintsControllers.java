@@ -124,6 +124,16 @@ public class HintsControllers {
     }
 
     /**
+     * Stops the current controller, if it exists.
+     */
+    public void stop() {
+        if (controller != null) {
+            controller.cancelPendingWork();
+            controller = null;
+        }
+    }
+
+    /**
      * Returns a new controller for the given active rosters and hinTS construction.
      * @param activeRosters the active rosters
      * @param construction the hinTS construction
