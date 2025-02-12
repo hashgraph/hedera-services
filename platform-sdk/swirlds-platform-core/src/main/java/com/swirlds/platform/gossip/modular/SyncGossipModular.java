@@ -187,7 +187,8 @@ public class SyncGossipModular implements Gossip {
                 new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedVersion());
         final List<ProtocolRunnable> handshakeProtocols = List.of(versionCompareHandshake);
 
-        final List<StoppableThread> threads = network.buildProtocolThreads(threadManager, selfId, handshakeProtocols, protocols);
+        final List<StoppableThread> threads =
+                network.buildProtocolThreads(threadManager, selfId, handshakeProtocols, protocols);
 
         controller.registerThingToStartButNotStop(sharedState.shadowgraphExecutor());
         controller.registerThingsToStart(threads);
