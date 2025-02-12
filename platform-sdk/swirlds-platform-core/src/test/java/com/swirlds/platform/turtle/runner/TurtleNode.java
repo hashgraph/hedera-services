@@ -42,12 +42,15 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.builder.PlatformComponentBuilder.SolderWireType;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.roster.RosterUtils;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.address.AddressBookUtils;
 import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsHolder;
@@ -58,7 +61,9 @@ import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -118,6 +123,9 @@ public class TurtleNode {
         model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
+        final SoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
+        final PlatformStateFacade platformStateFacade = new PlatformStateFacade(v -> softwareVersion);
+        ;
         final var version = new BasicSoftwareVersion(1);
         MerkleDb.resetDefaultInstancePath();
         final var metrics = getMetricsProvider().createPlatformMetrics(nodeId);
@@ -133,17 +141,19 @@ public class TurtleNode {
                 "foo",
                 "bar",
                 nodeId,
-                addressBook);
+                addressBook,
+                platformStateFacade);
         final var initialState = reservedState.state();
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo",
                         "bar",
-                        new BasicSoftwareVersion(1),
+                        softwareVersion,
                         initialState,
                         TURTLE_STATE_LIFECYCLES,
                         nodeId,
                         AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                        RosterUtils.buildRosterHistory(initialState.get().getState()))
+                        RosterUtils.buildRosterHistory(initialState.get().getState(), platformStateFacade),
+                        platformStateFacade)
                 .withModel(model)
                 .withRandomBuilder(new RandomBuilder(randotron.nextLong()))
                 .withKeysAndCerts(privateKeys)
@@ -169,7 +179,11 @@ public class TurtleNode {
 
         final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
                 consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
-        platformComponentBuilder.bindInputWireToConsensusEngine(consensusRoundsHolderInputWire);
+
+        final Map<SolderWireType, InputWire<?>> additionalWires = new HashMap<>();
+        additionalWires.put(SolderWireType.CONSENSUS_ENGINE, consensusRoundsHolderInputWire);
+
+        platformComponentBuilder.appendAdditionalInputWires(additionalWires);
     }
 
     /**

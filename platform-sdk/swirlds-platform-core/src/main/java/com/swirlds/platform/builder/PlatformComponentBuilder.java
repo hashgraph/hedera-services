@@ -103,11 +103,14 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -229,12 +232,26 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Binds a custom input wire to the consensus engine output wire. This method is mainly created for test purposes.
+     * Binds additional custom input wires to the specified output wires on top of the default wirings that are
+     * already created.
      *
-     * @param inputWire to bind
+     * @param inputWires map between an output wire type and an input wire to solder it to
      */
-    public void bindInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
-        swirldsPlatform.bindInputWireToConsensusEngine(inputWire);
+    public void appendAdditionalInputWires(final Map<SolderWireType, InputWire<?>> inputWires) {
+        final PlatformWiring platformWiring = blocks.platformWiring();
+
+        for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : inputWires.entrySet()) {
+            switch (inputWireEntry.getKey()) {
+                case CONSENSUS_ENGINE -> {
+                    final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                            platformWiring.getConsensusEngineWiring();
+                    if (inputWireEntry.getValue() != null) {
+                        consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
+                                inputWireEntry.getValue());
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1098,7 +1115,8 @@ public class PlatformComponentBuilder {
                         () -> blocks.clearAllPipelinesForReconnectReference()
                                 .get()
                                 .run(),
-                        blocks.intakeEventCounter());
+                        blocks.intakeEventCounter(),
+                        blocks.platformStateFacade());
             } else {
                 gossip = new SyncGossip(
                         blocks.platformContext(),
@@ -1114,7 +1132,8 @@ public class PlatformComponentBuilder {
                         () -> blocks.clearAllPipelinesForReconnectReference()
                                 .get()
                                 .run(),
-                        blocks.intakeEventCounter());
+                        blocks.intakeEventCounter(),
+                        blocks.platformStateFacade());
             }
         }
         return gossip;
@@ -1183,7 +1202,11 @@ public class PlatformComponentBuilder {
             final String actualMainClassName = stateConfig.getMainClassName(blocks.mainClassName());
 
             stateSnapshotManager = new DefaultStateSnapshotManager(
-                    blocks.platformContext(), actualMainClassName, blocks.selfId(), blocks.swirldName());
+                    blocks.platformContext(),
+                    actualMainClassName,
+                    blocks.selfId(),
+                    blocks.swirldName(),
+                    blocks.platformStateFacade());
         }
         return stateSnapshotManager;
     }
@@ -1214,7 +1237,7 @@ public class PlatformComponentBuilder {
     @NonNull
     public HashLogger buildHashLogger() {
         if (hashLogger == null) {
-            hashLogger = new DefaultHashLogger(blocks.platformContext());
+            hashLogger = new DefaultHashLogger(blocks.platformContext(), blocks.platformStateFacade());
         }
         return hashLogger;
     }
@@ -1345,7 +1368,8 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     blocks.swirldStateManager(),
                     blocks.statusActionSubmitterReference().get(),
-                    blocks.appVersion());
+                    blocks.appVersion(),
+                    blocks.platformStateFacade());
         }
         return transactionHandler;
     }
@@ -1381,5 +1405,12 @@ public class PlatformComponentBuilder {
             latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
         }
         return latestCompleteStateNotifier;
+    }
+
+    public static enum SolderWireType {
+        /**
+         * Solder a wire to the consensus engine output
+         */
+        CONSENSUS_ENGINE
     }
 }
