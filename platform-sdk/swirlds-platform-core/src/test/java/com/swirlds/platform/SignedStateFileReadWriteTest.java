@@ -110,7 +110,7 @@ class SignedStateFileReadWriteTest {
         final SignedState signedState = new RandomSignedStateGenerator()
                 .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
                 .build();
-        State state = signedState.getState();
+        final State state = signedState.getState();
         writeHashInfoFile(platformContext, testDirectory, state, stateFacade);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
