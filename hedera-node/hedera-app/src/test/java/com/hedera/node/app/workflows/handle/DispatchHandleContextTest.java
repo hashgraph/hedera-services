@@ -808,7 +808,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 feeAccumulator,
                 EMPTY_METADATA,
                 transactionChecker,
-                deduplicationCache,
                 results);
     }
 

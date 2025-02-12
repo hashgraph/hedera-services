@@ -249,10 +249,8 @@ public class AtomicBatchTest {
                         .payingWith(innerTnxPayer)
                         .balance(ONE_HBAR),
                 atomicBatch(innerTxn1, innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED),
-                atomicBatch(innerTxn2));
-        // PreHandleWorkflowImpl.preHandleTransaction() added inner transaction id to deduplicationCache, uncommented
-        // below after neeha's pr 17763
-        // atomicBatch(innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED));
+                atomicBatch(innerTxn2),
+                atomicBatch(innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED));
     }
 
     @HapiTest

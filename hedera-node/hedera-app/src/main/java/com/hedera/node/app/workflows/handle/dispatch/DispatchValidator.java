@@ -102,7 +102,9 @@ public class DispatchValidator {
                     return newCreatorError(dispatch.creatorInfo().accountId(), INVALID_PAYER_SIGNATURE);
                 }
             }
-            final var duplicateCheckResult = category != USER && category != NODE
+            final var duplicateCheckResult = category != USER
+                            && category != NODE
+                            && !isBatchInnerTxn(dispatch.txnInfo().txBody())
                     ? NO_DUPLICATE
                     : recordCache.hasDuplicate(
                             dispatch.txnInfo().txBody().transactionIDOrThrow(),
@@ -115,7 +117,7 @@ public class DispatchValidator {
         }
     }
 
-    private static boolean isBatchInnerTxn(final @NonNull TransactionBody txnBody) {
+    public static boolean isBatchInnerTxn(final @NonNull TransactionBody txnBody) {
         return txnBody.hasBatchKey();
     }
 
@@ -180,7 +182,9 @@ public class DispatchValidator {
      */
     @Nullable
     private ResponseCodeEnum getExpiryError(final @NonNull Dispatch dispatch) {
-        if (dispatch.txnCategory() != USER && dispatch.txnCategory() != NODE) {
+        if (dispatch.txnCategory() != USER
+                && dispatch.txnCategory() != NODE
+                && !isBatchInnerTxn(dispatch.txnInfo().txBody())) {
             return null;
         }
         try {

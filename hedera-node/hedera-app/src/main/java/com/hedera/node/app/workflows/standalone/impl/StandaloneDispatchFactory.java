@@ -211,7 +211,6 @@ public class StandaloneDispatchFactory {
                 feeAccumulator,
                 EMPTY_METADATA,
                 transactionChecker,
-                deduplicationCache,
                 preHandleResult.innerResults());
         final var fees = transactionDispatcher.dispatchComputeFees(dispatchHandleContext);
         return new RecordDispatch(

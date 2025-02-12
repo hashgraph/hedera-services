@@ -306,7 +306,6 @@ public class ChildDispatchFactory {
                 childFeeAccumulator,
                 dispatchMetadata,
                 transactionChecker,
-                deduplicationCache,
                 null);
         final var childFees = dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(

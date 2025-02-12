@@ -58,6 +58,7 @@ public class AtomicBatchHandler implements TransactionHandler {
      */
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
+        requireNonNull(context);
         // TODO
     }
 
@@ -80,21 +81,19 @@ public class AtomicBatchHandler implements TransactionHandler {
         if (!context.configuration().getConfigData(AtomicBatchConfig.class).isEnabled()) {
             throw new HandleException(NOT_SUPPORTED);
         }
-        final var transactions = op.transactions();
         final var txnBodies = new ArrayList<TransactionBody>();
-        // validate all the inner transactions
-        for (final var transaction : transactions) {
+        for (final var transaction : op.transactions()) {
             TransactionBody body;
             try {
                 body = context.bodyFromTransaction(transaction);
-                context.checkTimeBox(requireNonNull(body));
-                context.checkDuplication(body.transactionIDOrThrow());
                 txnBodies.add(body);
             } catch (HandleException e) {
                 // Do we need to keep the specific ResponseCodeEnum here?
                 throw new HandleException(INNER_TRANSACTION_FAILED);
             }
         }
+        // The parsing check, timebox, and duplication checks are done in the pre-handle workflow
+        // So, no need to repeat here
         // dispatch all the inner transactions
         for (final var body : txnBodies) {
             final var payerId = body.transactionIDOrThrow().accountIDOrThrow();

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.isBatchInnerTxn;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.nodeDueDiligenceFailure;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.preHandleFailure;
@@ -205,8 +206,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             // But we still re-check for node diligence failures
             transactionChecker.checkParsed(txInfo);
             // The transaction account ID MUST have matched the creator!
-            final var isBatchInnerTxn = txInfo.txBody().hasBatchKey();
-            if (!isBatchInnerTxn && !creator.equals(txInfo.txBody().nodeAccountID())) {
+            if (!isBatchInnerTxn(txInfo.txBody())
+                    && !creator.equals(txInfo.txBody().nodeAccountID())) {
                 throw new DueDiligenceException(INVALID_NODE_ACCOUNT, txInfo);
             }
         } catch (DueDiligenceException e) {
