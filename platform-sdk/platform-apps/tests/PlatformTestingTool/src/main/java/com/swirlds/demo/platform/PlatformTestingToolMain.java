@@ -67,7 +67,6 @@ import com.swirlds.demo.platform.fs.stresstest.proto.ControlType;
 import com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction;
 import com.swirlds.demo.platform.fs.stresstest.proto.TestTransactionWrapper;
 import com.swirlds.demo.platform.nft.NftQueryController;
-import com.swirlds.demo.platform.stream.AccountBalanceExport;
 import com.swirlds.demo.virtualmerkle.config.VirtualMerkleConfig;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapValue;

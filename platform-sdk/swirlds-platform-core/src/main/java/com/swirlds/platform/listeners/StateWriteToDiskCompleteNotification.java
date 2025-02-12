@@ -17,8 +17,6 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.state.State;
-import java.nio.file.Path;
 import java.time.Instant;
 
 /**
