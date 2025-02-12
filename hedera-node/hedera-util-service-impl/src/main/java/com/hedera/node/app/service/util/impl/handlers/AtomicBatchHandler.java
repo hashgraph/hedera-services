@@ -81,7 +81,7 @@ public class AtomicBatchHandler implements TransactionHandler {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 
-        // verify that the atomic batch transaction body supposed or not supposed to have a btach key
+        // verify that the atomic batch transaction body supposed or not supposed to have a batch key
         if(txn.hasBatchKey()){
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
@@ -105,6 +105,7 @@ public class AtomicBatchHandler implements TransactionHandler {
                     throw new PreCheckException(INVALID_NODE_ACCOUNT_ID);
                 }
                 //transaction checker parse and check - to check validity of the transaction expire
+                context.executeInnerPureCheck(innerTrxBody);
             } catch (Exception e) {
                 throw new PreCheckException(INVALID_TRANSACTION_BODY);
             }
@@ -136,7 +137,7 @@ public class AtomicBatchHandler implements TransactionHandler {
 
             //this method will dispatch the prehandle transaction of each transaction in the batch
             context.executeInnerPreHandle(body, payerId);
-            context.requireKeyOrThrow(transaction.body().batchKey(), BAD_ENCODING);
+            context.requireKeyOrThrow(body.batchKey(), BAD_ENCODING);
         }
     }
 
