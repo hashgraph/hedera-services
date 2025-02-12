@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,17 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.junit.jupiter.api.Assertions;
 
 public class TimestampChecker {
     public static void validateConsensusTimestamps(
-            @NonNull final ConsensusOutput output1, @NonNull final ConsensusOutput ignored) {
+            @NonNull final List<ConsensusRound> consensusRoundsForNode1,
+            @NonNull final List<ConsensusRound> ignoredConsensusRounds) {
         PlatformEvent previousConsensusEvent = null;
 
-        for (final ConsensusRound round : output1.getConsensusRounds()) {
+        for (final ConsensusRound round : consensusRoundsForNode1) {
             for (final PlatformEvent e : round.getConsensusEvents()) {
                 if (previousConsensusEvent == null) {
                     previousConsensusEvent = e;
