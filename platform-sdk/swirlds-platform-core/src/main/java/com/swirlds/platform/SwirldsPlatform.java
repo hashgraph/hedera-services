@@ -370,7 +370,7 @@ public class SwirldsPlatform implements Platform {
             return null;
         }
 
-        State state = initialState.getState();
+        final State state = initialState.getState();
         return new DefaultBirthRoundMigrationShim(
                 platformContext,
                 platformStateFacade.firstVersionInBirthRoundModeOf(state),
