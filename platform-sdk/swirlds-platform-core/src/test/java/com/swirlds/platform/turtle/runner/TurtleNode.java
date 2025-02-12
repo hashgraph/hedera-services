@@ -48,6 +48,7 @@ import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.service.PlatformStateFacade;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -57,11 +58,13 @@ import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsHolder
 import com.swirlds.platform.test.fixtures.turtle.consensus.ConsensusRoundsListContainer;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedGossip;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
+import com.swirlds.platform.test.fixtures.turtle.signedstate.SignedStateHolder;
+import com.swirlds.platform.test.fixtures.turtle.signedstate.SignedStateListContainer;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,6 +88,7 @@ public class TurtleNode {
     private final DeterministicWiringModel model;
     private final Platform platform;
     private final ConsensusRoundsHolder consensusRoundsHolder;
+    private final SignedStateHolder signedStateHolder;
 
     /**
      * Create a new TurtleNode. Simulates a single consensus node in a TURTLE network.
@@ -171,19 +175,41 @@ public class TurtleNode {
 
         platform = platformComponentBuilder.build();
 
+        final Map<SolderWireType, InputWire<?>> additionalWires = new EnumMap<>(SolderWireType.class);
+
+        consensusRoundsHolder = new ConsensusRoundsListContainer();
+        signedStateHolder = new SignedStateListContainer();
+
+        solderTestInputWireToConsensusEngineOutputWire(additionalWires);
+        solderTestInputWireToStateSignatureCollectorOutputWire(additionalWires);
+
+        platformComponentBuilder.appendAdditionalInputWires(additionalWires);
+    }
+
+    private void solderTestInputWireToConsensusEngineOutputWire(
+            final Map<SolderWireType, InputWire<?>> additionalWires) {
         final ComponentWiring<ConsensusRoundsHolder, Void> consensusRoundsHolderWiring =
                 new ComponentWiring<>(model, ConsensusRoundsHolder.class, TaskSchedulerConfiguration.parse("DIRECT"));
 
-        consensusRoundsHolder = new ConsensusRoundsListContainer();
         consensusRoundsHolderWiring.bind(consensusRoundsHolder);
 
         final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
                 consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
 
-        final Map<SolderWireType, InputWire<?>> additionalWires = new HashMap<>();
         additionalWires.put(SolderWireType.CONSENSUS_ENGINE, consensusRoundsHolderInputWire);
+    }
 
-        platformComponentBuilder.appendAdditionalInputWires(additionalWires);
+    private void solderTestInputWireToStateSignatureCollectorOutputWire(
+            final Map<SolderWireType, InputWire<?>> additionalWires) {
+        final ComponentWiring<SignedStateHolder, Void> signedStatesHolderWiring =
+                new ComponentWiring<>(model, SignedStateHolder.class, TaskSchedulerConfiguration.parse("DIRECT"));
+
+        signedStatesHolderWiring.bind(signedStateHolder);
+
+        final InputWire<List<ReservedSignedState>> signedStateHolderInputWire =
+                signedStatesHolderWiring.getInputWire(SignedStateHolder::interceptSignedStates);
+
+        additionalWires.put(SolderWireType.STATE_SIGNATURE_COLLECTOR, signedStateHolderInputWire);
     }
 
     /**
