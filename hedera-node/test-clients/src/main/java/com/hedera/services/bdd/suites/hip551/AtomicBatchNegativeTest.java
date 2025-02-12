@@ -98,7 +98,6 @@ public class AtomicBatchNegativeTest {
 
         @HapiTest
         @DisplayName("Submit same batch twice should fail")
-        @Disabled // TODO: check if validation will pass with all disabled tests
         // BATCH_42 BATCH_43
         public Stream<DynamicTest> submitSameBatch() {
 
@@ -159,7 +158,6 @@ public class AtomicBatchNegativeTest {
 
         @LeakyHapiTest(requirement = {THROTTLE_OVERRIDES})
         @DisplayName("Bach contract call with more than the TPS limit")
-        @Disabled // TODO: try to fix log validation
         //  BATCH_47
         public Stream<DynamicTest> contractCallMoreThanTPSLimit() {
             final var batchOperator = "batchOperator";
@@ -203,7 +201,6 @@ public class AtomicBatchNegativeTest {
 
         @LeakyHapiTest(overrides = {"consensus.handle.maxFollowingRecords"})
         @DisplayName("Exceeds child transactions limit should fail")
-        @Disabled // TODO: try to fix log validation
         //  BATCH_47
         public Stream<DynamicTest> exceedsChildTxnLimit() {
             final var batchOperator = "batchOperator";
@@ -221,7 +218,6 @@ public class AtomicBatchNegativeTest {
 
         @LeakyHapiTest(overrides = {"contracts.maxGasPerSec"})
         @DisplayName("Exceeds gas limit should fail")
-        @Disabled // TODO: try to fix log validation
         //  BATCH_48
         public Stream<DynamicTest> exceedsGasLimit() {
             final var contract = "CalldataSize";
@@ -242,7 +238,6 @@ public class AtomicBatchNegativeTest {
 
         @HapiTest
         @DisplayName("Bach contract call with 6kb payload, will fail")
-        @Disabled // TODO: try to fix log validation
         //  BATCH_50
         public Stream<DynamicTest> exceedsTxnSizeLimit() {
             final var contract = "CalldataSize";
@@ -262,8 +257,8 @@ public class AtomicBatchNegativeTest {
         }
 
         @LeakyHapiTest(overrides = {"atomicBatch.maxNumberOfTransactions"})
-        @Disabled // TODO: enable this test when we have the maxInnerTxn property
         @DisplayName("Exceeds max number of inner transactions limit should fail")
+        @Disabled // TODO: enable this test when we have the maxInnerTxn property
         //  BATCH_52
         public Stream<DynamicTest> exceedsInnerTxnLimit() {
             final var batchOperator = "batchOperator";
@@ -281,6 +276,7 @@ public class AtomicBatchNegativeTest {
 
         @HapiTest
         @DisplayName("Resubmit batch after INSUFFICIENT_PAYER_BALANCE")
+        @Disabled // Failed log validation: "Non-duplicate {} not cached for either payer or submitting node {}"
         // BATCH_53
         public Stream<DynamicTest> resubmitAfterInsufficientPayerBalance() {
             return hapiTest(
@@ -307,8 +303,8 @@ public class AtomicBatchNegativeTest {
         }
 
         @HapiTest
-        @Disabled // TODO: Enable this test when we have global batch key validation
         @DisplayName("Submit non batch inner transaction with batch key should fail")
+        @Disabled // TODO: Enable this test when we have global batch key validation
         //  BATCH_54
         public Stream<DynamicTest> nonInnerTxnWithBatchKey() {
             final var batchOperator = "batchOperator";
@@ -318,8 +314,8 @@ public class AtomicBatchNegativeTest {
         }
 
         @HapiTest
-        @Disabled // TODO: Enable this test when we have global batch key validation
         @DisplayName("Submit non batch inner transaction with invalid batch key should fail")
+        @Disabled // TODO: Enable this test when we have global batch key validation
         //  BATCH_54
         public Stream<DynamicTest> nonInnerTxnWithInvalidBatchKey() {
             return hapiTest(withOpContext((spec, opLog) -> {
