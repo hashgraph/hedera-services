@@ -92,7 +92,10 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
 
     @Inject
     public ScheduleCreateHandler(
-            @NonNull final InstantSource instantSource, @NonNull final Throttle.Factory throttleFactory) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final Throttle.Factory throttleFactory,
+            @NonNull final ScheduleFeeCharging feeCharging) {
+        super(feeCharging);
         this.instantSource = requireNonNull(instantSource);
         this.throttleFactory = requireNonNull(throttleFactory);
     }
@@ -152,6 +155,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         final var schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var consensusNow = context.consensusNow();
         final var defaultLifetime = ledgerConfig.scheduleTxExpiryTimeSecs();
         final var provisionalSchedule =
@@ -220,8 +224,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 provisionalSchedule.originalCreateTransactionOrThrow().transactionIDOrThrow();
         final var schedulerId = schedulingTxnId.accountIDOrThrow();
         final var scheduleId = ScheduleID.newBuilder()
-                .shardNum(schedulerId.shardNum())
-                .realmNum(schedulerId.realmNum())
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
                 .scheduleNum(context.entityNumGenerator().newEntityNum())
                 .build();
         var schedule = provisionalSchedule
