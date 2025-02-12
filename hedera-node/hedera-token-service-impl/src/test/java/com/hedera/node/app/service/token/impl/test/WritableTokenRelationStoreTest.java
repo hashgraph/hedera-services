@@ -121,32 +121,6 @@ class WritableTokenRelationStoreTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void testGetForModify() {
-        TokenRelation tokenRelation = mock(TokenRelation.class);
-        given(tokenRelState.getForModify(EntityIDPair.newBuilder()
-                        .accountId(ACCOUNT_20_ID)
-                        .tokenId(TOKEN_10_ID)
-                        .build()))
-                .willReturn(tokenRelation);
-
-        final var result = subject.getForModify(ACCOUNT_20_ID, TOKEN_10_ID);
-        Assertions.assertThat(result).isEqualTo(tokenRelation);
-    }
-
-    @Test
-    void testGetForModifyEmpty() {
-        given(tokenRelState.getForModify(EntityIDPair.newBuilder()
-                        .accountId(asAccount(0L, 0L, -2L))
-                        .tokenId(TOKEN_10_ID)
-                        .build()))
-                .willReturn(null);
-
-        final var result =
-                subject.getForModify(AccountID.newBuilder().accountNum(-2L).build(), TOKEN_10_ID);
-        Assertions.assertThat(result).isNull();
-    }
-
-    @Test
     void testSizeOfState() {
         Assertions.assertThat(readableEntityCounters.numTokenRelations()).isEqualTo(subject.sizeOfState());
     }

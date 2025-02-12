@@ -70,7 +70,6 @@ public class EndOfStakingPeriodUpdater {
     private final AccountsConfig accountsConfig;
     private final HederaConfig hederaConfig;
     private final StakingRewardsHelper stakeRewardsHelper;
-    private final HederaConfig hederaConfig;
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
