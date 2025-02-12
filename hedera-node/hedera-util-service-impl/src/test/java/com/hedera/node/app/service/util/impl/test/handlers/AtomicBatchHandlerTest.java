@@ -18,8 +18,7 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -217,6 +216,27 @@ class AtomicBatchHandlerTest {
         given(preHandleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
         assertEquals(ResponseCodeEnum.BAD_ENCODING, msg.responseCode());
+    }
+
+    @Test
+    void preHandleValidScenario() throws PreCheckException {
+        final var batchKey = SIMPLE_KEY_A;
+        final var transaction1 = mock(Transaction.class);
+        final var transaction2 = mock(Transaction.class);
+        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, transaction1, transaction2);
+        final var innerTxnBody1 = newTxnBodyBuilder(payerId1, consensusTimestamp, batchKey)
+                .consensusCreateTopic(
+                        ConsensusCreateTopicTransactionBody.newBuilder().build())
+                .build();
+        final var innerTxnBody2 = newTxnBodyBuilder(payerId2, consensusTimestamp, batchKey)
+                .consensusDeleteTopic(
+                        ConsensusDeleteTopicTransactionBody.newBuilder().build())
+                .build();
+        given(preHandleContext.body()).willReturn(txnBody);
+        given(preHandleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
+        given(preHandleContext.bodyFromTransaction(transaction2)).willReturn(innerTxnBody2);
+        assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
     }
 
     @Test
