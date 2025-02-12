@@ -32,15 +32,12 @@ import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This class handles the lifecycle events for the {@link TurtleTestingToolState}.
  */
 enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
     TURTLE_STATE_LIFECYCLES;
-    private static final Logger logger = LogManager.getLogger(TurtleStateLifecycles.class);
 
     @Override
     public void onPreHandle(
@@ -48,10 +45,6 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
             @NonNull TurtleTestingToolState state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         event.forEachTransaction(transaction -> {
-            if (transaction.isSystem()) {
-                return;
-            }
-
             consumeSystemTransaction(transaction, event, stateSignatureTransactionCallback);
         });
     }
@@ -68,10 +61,6 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
                 round.getConsensusTimestamp().getEpochSecond());
 
         round.forEachEventTransaction((ev, tx) -> {
-            if (tx.isSystem()) {
-                return;
-            }
-
             consumeSystemTransaction(tx, ev, stateSignatureTransactionCallback);
         });
     }
@@ -122,7 +111,7 @@ enum TurtleStateLifecycles implements StateLifecycles<TurtleTestingToolState> {
             stateSignatureTransactionCallback.accept(new ScopedSystemTransaction<>(
                     event.getCreatorId(), event.getSoftwareVersion(), stateSignatureTransaction));
         } catch (final ParseException e) {
-            logger.error("Failed to parse StateSignatureTransaction", e);
+            throw new RuntimeException("Failed to parse StateSignatureTransaction", e);
         }
     }
 }
