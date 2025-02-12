@@ -54,4 +54,10 @@ testModuleInfo {
     requires("org.mockito")
     requires("org.hiero.consensus.gossip")
     requiresStatic("com.github.spotbugs.annotations")
+    requires("com.swirlds.component.framework")
+    requires("com.swirlds.config.extensions.test.fixtures")
+    requires("org.junit.jupiter.api")
+    requires("com.hedera.node.hapi")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.state.api")
 }

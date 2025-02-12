@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
+import com.swirlds.platform.test.fixtures.sync.EventFactory;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;

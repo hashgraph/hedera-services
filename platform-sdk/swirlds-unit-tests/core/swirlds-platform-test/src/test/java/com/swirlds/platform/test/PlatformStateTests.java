@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.PlatformStateUtils.randomPlatformState;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
 import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
 import static com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade.TEST_PLATFORM_STATE_FACADE;
