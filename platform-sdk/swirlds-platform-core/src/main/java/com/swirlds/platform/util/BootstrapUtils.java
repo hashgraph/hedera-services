@@ -237,7 +237,7 @@ public final class BootstrapUtils {
         if (loadedSignedState == null) {
             loadedSoftwareVersion = null;
         } else {
-            State state = loadedSignedState.getState();
+            final State state = loadedSignedState.getState();
             loadedSoftwareVersion = platformStateFacade.creationSoftwareVersionOf(state);
         }
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
