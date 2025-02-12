@@ -28,6 +28,7 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestNode;
 import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
@@ -617,7 +618,9 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         for (final ConsensusTestNode node : orchestrator.getNodes()) {
-            node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot());
+            node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot(
+                    input.platformContext().getConfiguration().getConfigData(EventConfig.class).getAncientMode()
+            ));
         }
 
         orchestrator

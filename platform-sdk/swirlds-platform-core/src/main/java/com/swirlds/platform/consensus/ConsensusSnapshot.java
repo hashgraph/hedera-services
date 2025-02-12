@@ -21,6 +21,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -129,8 +130,8 @@ public class ConsensusSnapshot implements SelfSerializable {
      * @return minimum non-ancient generation
      */
     public long getAncientThreshold(final int roundsNonAncient) {
-        return RoundCalculationUtils.getMinGenNonAncient(
-                roundsNonAncient, round, this::getMinimumJudgeAncientThreshold);
+        final long oldestNonAncientRound = RoundCalculationUtils.getOldestNonAncientRound(roundsNonAncient, round);
+        return getMinimumJudgeAncientThreshold(oldestNonAncientRound);
     }
 
     /**

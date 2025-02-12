@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.consensus;
 
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.state.MinimumJudgeInfo;
 import com.swirlds.platform.system.events.EventConstants;
@@ -28,14 +29,6 @@ import java.util.stream.LongStream;
  * Utility class for generating "synthetic" snapshots
  */
 public final class SyntheticSnapshot {
-    /** genesis snapshot, when loaded by consensus, it will start from genesis */
-    public static final ConsensusSnapshot GENESIS_SNAPSHOT = new ConsensusSnapshot(
-            ConsensusConstants.ROUND_FIRST,
-            List.of(),
-            List.of(new MinimumJudgeInfo(ConsensusConstants.ROUND_FIRST, EventConstants.FIRST_GENERATION)),
-            ConsensusConstants.FIRST_CONSENSUS_NUMBER,
-            Instant.EPOCH);
-
     /** Utility class, should not be instantiated */
     private SyntheticSnapshot() {}
 
@@ -73,9 +66,17 @@ public final class SyntheticSnapshot {
     }
 
     /**
-     * @return the genesis snapshot
+     * @return the genesis snapshot, when loaded by consensus, it will start from genesis
      */
-    public static @NonNull ConsensusSnapshot getGenesisSnapshot() {
-        return GENESIS_SNAPSHOT;
+    public static @NonNull ConsensusSnapshot getGenesisSnapshot(@NonNull final AncientMode ancientMode) {
+        return new ConsensusSnapshot(
+                ConsensusConstants.ROUND_FIRST,
+                List.of(),
+                List.of(new MinimumJudgeInfo(ConsensusConstants.ROUND_FIRST,
+                        ancientMode == AncientMode.GENERATION_THRESHOLD
+                        ? EventConstants.FIRST_GENERATION
+                        : ConsensusConstants.ROUND_FIRST)),
+                ConsensusConstants.FIRST_CONSENSUS_NUMBER,
+                Instant.EPOCH);
     }
 }

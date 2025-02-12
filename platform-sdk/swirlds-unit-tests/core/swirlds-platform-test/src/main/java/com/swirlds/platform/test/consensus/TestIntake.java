@@ -17,8 +17,6 @@
 package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.component.framework.wires.SolderType.INJECT;
-import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
-import static com.swirlds.platform.event.AncientMode.GENERATION_THRESHOLD;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -36,6 +34,7 @@ import com.swirlds.platform.components.consensus.DefaultConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
@@ -187,7 +186,7 @@ public class TestIntake {
     }
 
     public void reset() {
-        loadSnapshot(GENESIS_SNAPSHOT);
+        loadSnapshot(SyntheticSnapshot.getGenesisSnapshot(ancientMode));
         output.clear();
     }
 
