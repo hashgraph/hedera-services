@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile.airdrops;
 import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.FEE_SCHEDULE_KEY;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenClaimAirdr
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFeeScheduleUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFeeNetOfTransfers;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenClaimAirdrop.pendingAirdrop;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -367,14 +369,19 @@ public class AirdropFromContractTest {
                             .via("AirdropTxn"),
                     receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token1.name(), 0L)),
                     receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token2.name(), 0L)),
-                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(2)));
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(2)),
+                    getTxnRecord("AirdropTxn")
+                            .hasChildRecords(recordWith()
+                                    .pendingAirdrops(includingFungiblePendingAirdrop(
+                                            moving(10L, token1.name()).between(sender.name(), receiver.name()),
+                                            moving(10L, token2.name()).between(sender.name(), receiver.name())))));
         }));
     }
 
     @Order(9)
     @HapiTest
-    @DisplayName("Can airdrop token to a contract deployed with CREATE2 on hollow account address")
-    public Stream<DynamicTest> canAirdropToContractDeployedWithCreate(
+    @DisplayName("Contract account airdrops a multiple tokens to an address with no account on it.")
+    public Stream<DynamicTest> airdropToAddressWithNoAccount(
             @NonNull @Account(maxAutoAssociations = 10, tinybarBalance = 100L) final SpecAccount receiver,
             @Contract(contract = "EmptyOne", creationGas = 10_000_000L) final SpecContract sender,
             @NonNull @FungibleToken(initialSupply = 1_000_000L) final SpecFungibleToken token) {
@@ -425,8 +432,10 @@ public class AirdropFromContractTest {
                     airdropContract
                             .call("tokenAirdrop", token, sender, receiver, 5L)
                             .sending(85_000_000L)
-                            .gas(1_500_000L),
+                            .gas(1_500_000L)
+                            .via("AirdropTxn"),
                     receiver.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 0L)),
+                    getTxnRecord("AirdropTxn").hasChildRecords(recordWith().pendingAirdropsCount(1)),
                     sender.getBalance().andAssert(balance -> balance.hasTokenBalance(token.name(), 10L)));
             allRunFor(
                     spec,
