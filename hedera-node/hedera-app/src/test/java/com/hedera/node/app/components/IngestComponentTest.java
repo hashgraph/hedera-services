@@ -19,6 +19,7 @@ package com.hedera.node.app.components;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.history.impl.HistoryLibraryCodecImpl.HISTORY_LIBRARY_CODEC;
 import static com.hedera.node.app.spi.AppContext.Gossip.UNAVAILABLE_GOSSIP;
+import static com.hedera.node.app.spi.fees.NoopFeeCharging.NOOP_FEE_CHARGING;
 import static com.hedera.node.app.workflows.standalone.TransactionExecutors.DEFAULT_NODE_INFO;
 import static com.swirlds.platform.system.address.AddressBookUtils.endpointFor;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -121,6 +122,7 @@ class IngestComponentTest {
                 () -> configuration,
                 () -> DEFAULT_NODE_INFO,
                 () -> NO_OP_METRICS,
+                () -> NOOP_FEE_CHARGING,
                 throttleFactory);
         final var hintsService = new HintsServiceImpl(
                 NO_OP_METRICS, ForkJoinPool.commonPool(), appContext, mock(HintsLibrary.class), DEFAULT_CONFIG);
@@ -136,7 +138,7 @@ class IngestComponentTest {
                 .bootstrapConfigProviderImpl(new BootstrapConfigProviderImpl())
                 .fileServiceImpl(new FileServiceImpl())
                 .contractServiceImpl(new ContractServiceImpl(appContext, NO_OP_METRICS))
-                .scheduleService(new ScheduleServiceImpl())
+                .scheduleService(new ScheduleServiceImpl(appContext))
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.hedera.services.bdd.suites.hip906;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.realm;
+import static com.hedera.services.bdd.spec.HapiPropertySource.shard;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -81,7 +83,8 @@ public class HbarAllowanceApprovalTest {
                 cryptoCreate(SPENDER).exposingCreatedIdTo(id -> spenderNum.set(idAsHeadlongAddress(id))),
                 cryptoApproveAllowance().payingWith(ACCOUNT).addCryptoAllowance(ACCOUNT, SPENDER, 1_000_000),
                 withOpContext((spec, opLog) -> {
-                    var accountAddress = "0.0." + accountNum.get().value();
+                    var accountAddress = String.format(
+                            "%s.%s.%s", shard, realm, accountNum.get().value());
                     var spenderAddress = spenderNum.get();
                     allRunFor(
                             spec,
@@ -124,7 +127,8 @@ public class HbarAllowanceApprovalTest {
                         .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
                 cryptoCreate(SPENDER).exposingCreatedIdTo(id -> spenderNum.set(idAsHeadlongAddress(id))),
                 withOpContext((spec, opLog) -> {
-                    var accountAddress = "0.0." + accountNum.get().value();
+                    var accountAddress = String.format(
+                            "%s.%s.%s", shard, realm, accountNum.get().value());
                     var spenderAddress = spenderNum.get();
                     allRunFor(
                             spec,
@@ -273,7 +277,8 @@ public class HbarAllowanceApprovalTest {
                         .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
                 cryptoCreate(SPENDER).exposingCreatedIdTo(id -> spenderNum.set(idAsHeadlongAddress(id))),
                 withOpContext((spec, opLog) -> {
-                    var accountAddress = "0.0." + accountNum.get().value();
+                    var accountAddress = String.format(
+                            "%s.%s.%s", shard, realm, accountNum.get().value());
                     var spenderAddress = spenderNum.get();
                     allRunFor(
                             spec,

@@ -143,6 +143,7 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.ReadablePlatformStateStore;
 import com.swirlds.platform.state.service.ReadableRosterStore;
@@ -286,6 +287,12 @@ public final class Hedera
     private final BlockStreamService blockStreamService;
 
     /**
+     * The platform state facade singleton, kept as a field here to avoid constructing twice`
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final PlatformStateFacade platformStateFacade;
+
+    /**
      * The block hash signer factory.
      */
     private final BlockHashSignerFactory blockHashSignerFactory;
@@ -427,6 +434,7 @@ public final class Hedera
      * @param historyServiceFactory  the factory for the history service
      * @param blockHashSignerFactory the factory for the block hash signer
      * @param metrics                the metrics object to use for reporting
+     * @param platformStateFacade    the facade object to access platform state
      */
     public Hedera(
             @NonNull final ConstructableRegistry constructableRegistry,
@@ -437,7 +445,8 @@ public final class Hedera
             @NonNull final HintsServiceFactory hintsServiceFactory,
             @NonNull final HistoryServiceFactory historyServiceFactory,
             @NonNull final BlockHashSignerFactory blockHashSignerFactory,
-            @NonNull final Metrics metrics) {
+            @NonNull final Metrics metrics,
+            @NonNull final PlatformStateFacade platformStateFacade) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         requireNonNull(hintsServiceFactory);
@@ -447,6 +456,7 @@ public final class Hedera
         this.startupNetworksFactory = requireNonNull(startupNetworksFactory);
         this.blockHashSignerFactory = requireNonNull(blockHashSignerFactory);
         this.storeMetricsService = new StoreMetricsServiceImpl(metrics);
+        this.platformStateFacade = requireNonNull(platformStateFacade);
         logger.info(
                 """
 
@@ -480,6 +490,7 @@ public final class Hedera
                 configSupplier,
                 () -> daggerApp.networkInfo().selfNodeInfo(),
                 () -> this.metrics,
+                () -> daggerApp.appFeeCharging(),
                 new AppThrottleFactory(
                         configSupplier,
                         () -> daggerApp.workingStateAccessor().getState(),
@@ -490,7 +501,7 @@ public final class Hedera
         hintsService = hintsServiceFactory.apply(appContext, bootstrapConfig);
         historyService = historyServiceFactory.apply(appContext, bootstrapConfig);
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);
-        scheduleServiceImpl = new ScheduleServiceImpl();
+        scheduleServiceImpl = new ScheduleServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
@@ -512,7 +523,11 @@ public final class Hedera
                         new CongestionThrottleService(),
                         new NetworkServiceImpl(),
                         new AddressBookServiceImpl(),
-                        new RosterService(this::canAdoptRoster, this::onAdoptRoster, () -> requireNonNull(initState)),
+                        new RosterService(
+                                this::canAdoptRoster,
+                                this::onAdoptRoster,
+                                () -> requireNonNull(initState),
+                                platformStateFacade),
                         PLATFORM_STATE_SERVICE)
                 .forEach(servicesRegistry::register);
         try {
@@ -630,7 +645,7 @@ public final class Hedera
         requireNonNull(state);
         requireNonNull(platformConfig);
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
-        final var deserializedVersion = serviceMigrator.creationVersionOf(state);
+        final var deserializedVersion = platformStateFacade.creationSemanticVersionOf(state);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
                 version,
@@ -662,8 +677,8 @@ public final class Hedera
         final var readableStore = new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
         logger.info(
                 "Platform state includes freeze time={} and last frozen={}",
-                readableStore.getFreezeTime(),
-                readableStore.getLastFrozenTime());
+                platformStateFacade.freezeTimeOf(state),
+                platformStateFacade.lastFrozenTimeOf(state));
     }
 
     /**
@@ -752,7 +767,8 @@ public final class Hedera
                 metrics,
                 startupNetworks,
                 storeMetricsService,
-                configProvider);
+                configProvider,
+                platformStateFacade);
         this.initState = null;
         migrationStateChanges = new ArrayList<>(migrationChanges);
         kvStateChangeListener.reset();

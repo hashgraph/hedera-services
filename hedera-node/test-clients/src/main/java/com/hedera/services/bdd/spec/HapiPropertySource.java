@@ -501,26 +501,33 @@ public interface HapiPropertySource {
     }
 
     static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
+        byte[] unhex = CommonUtils.unhex(hexedEvm);
         return ContractID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 4, 12)))
-                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(unhex, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 4, 12)))
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 12, 20)))
                 .build();
     }
 
     static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
+        byte[] unhex = CommonUtils.unhex(hexedEvm);
         return AccountID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 4, 12)))
-                .setAccountNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(unhex, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 4, 12)))
+                .setAccountNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 12, 20)))
                 .build();
     }
 
     static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
+        byte[] unhex = CommonUtils.unhex(hexedEvm);
         return HapiPropertySource.asContractString(ContractID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 4, 12)))
-                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)))
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(unhex, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 4, 12)))
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(unhex, 12, 20)))
                 .build());
+    }
+
+    static String asEntityString(final long num) {
+        return String.format(ENTITY_STRING, shard, realm, num);
     }
 }
