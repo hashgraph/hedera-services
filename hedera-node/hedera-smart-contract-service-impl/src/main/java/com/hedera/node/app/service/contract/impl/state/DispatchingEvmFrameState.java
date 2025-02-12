@@ -397,9 +397,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
 
         final var evmAddress = extractEvmAddress(account.alias());
-        return evmAddress == null
-                ? asLongZeroAddress(account.accountIdOrThrow().accountNum())
-                : pbjToBesuAddress(evmAddress);
+        return evmAddress == null ? asLongZeroAddress(accountID) : pbjToBesuAddress(evmAddress);
     }
 
     @Override

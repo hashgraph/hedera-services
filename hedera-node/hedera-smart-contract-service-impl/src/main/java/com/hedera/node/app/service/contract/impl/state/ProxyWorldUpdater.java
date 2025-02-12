@@ -132,7 +132,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             address = pbjToBesuAddress(accountId.aliasOrThrow());
         } else {
             try {
-                address = evmFrameState.getAddress(accountId.accountNumOrElse(0L));
+                address = evmFrameState.getAddress(accountId);
             } catch (IllegalArgumentException ignore) {
                 return null;
             }

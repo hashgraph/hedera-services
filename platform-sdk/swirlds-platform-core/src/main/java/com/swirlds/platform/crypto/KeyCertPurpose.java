@@ -2,6 +2,7 @@
 package com.swirlds.platform.crypto;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.roster.RosterUtils;
 
 /**
  * Denotes which of the three purposes a key or certificate serves
@@ -22,7 +23,7 @@ public enum KeyCertPurpose {
      * @return the name of the key or certificate used in a KeyStore for this member and key type
      */
     public String storeName(final NodeId nodeId) {
-        return prefix + "-" + nodeId.nameString();
+        return prefix + "-" + RosterUtils.formatNodeName(nodeId);
     }
 
     /**

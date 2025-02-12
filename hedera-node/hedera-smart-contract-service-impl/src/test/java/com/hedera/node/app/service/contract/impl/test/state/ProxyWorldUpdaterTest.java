@@ -131,7 +131,7 @@ class ProxyWorldUpdaterTest {
     void getsHederaAccountByNumber() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = AccountID.newBuilder().accountNum(num).build();
-        given(evmFrameState.getAddress(num)).willReturn(ADDRESS_6);
+        given(evmFrameState.getAddress(numericId)).willReturn(ADDRESS_6);
         given(evmFrameState.getAccount(ADDRESS_6)).willReturn(proxyEvmContract);
         assertSame(proxyEvmContract, subject.getHederaAccount(numericId));
     }
@@ -150,7 +150,7 @@ class ProxyWorldUpdaterTest {
     void returnsNullHederaAccountIfMissing() {
         final var num = ADDRESS_6.toBigInteger().longValueExact();
         final var numericId = AccountID.newBuilder().accountNum(num).build();
-        doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(num);
+        doThrow(IllegalArgumentException.class).when(evmFrameState).getAddress(numericId);
         assertNull(subject.getHederaAccount(numericId));
     }
 

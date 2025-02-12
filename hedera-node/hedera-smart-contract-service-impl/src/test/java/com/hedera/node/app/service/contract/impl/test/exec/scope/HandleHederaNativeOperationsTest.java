@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.SortedSet;
@@ -293,6 +294,11 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void settingNonceUsesApi() {
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("hedera.shard", 0)
+                .withValue("hedera.realm", 0)
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(configuration);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
