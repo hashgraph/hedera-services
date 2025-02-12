@@ -1690,9 +1690,14 @@ enum HederaFunctionality {
     HistoryProofVote = 106;
 
     /**
+     * Publish a random CRS to the network.
+     */
+    CrsPublication = 107;
+
+    /**
      * Submit a batch of transactions to run atomically
      */
-    AtomicBatch = 107;
+    AtomicBatch = 108;
 }
 
 /**
