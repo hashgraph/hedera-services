@@ -57,4 +57,6 @@ testModuleInfo {
     requires("com.swirlds.component.framework")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.junit.jupiter.api")
+    requires("com.hedera.node.hapi")
+    requires("com.swirlds.common.test.fixtures")
 }

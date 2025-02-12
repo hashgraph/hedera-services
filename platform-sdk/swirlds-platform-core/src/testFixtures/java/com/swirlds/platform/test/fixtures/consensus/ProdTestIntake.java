@@ -16,21 +16,17 @@
 
 package com.swirlds.platform.test.fixtures.consensus;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.component.framework.model.WiringModelBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.DefaultEventWindowManager;
@@ -45,14 +41,12 @@ import com.swirlds.platform.event.validation.RosterUpdate;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.consensus.framework.ConsensusOutput;
-import com.swirlds.platform.test.fixtures.state.FakeStateLifecycles;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import com.swirlds.platform.wiring.PlatformWiring;
@@ -89,8 +83,7 @@ public class ProdTestIntake implements Intake {
                 .getPropertyNames()
                 .forEach(name -> builder.withValue(
                         name, platformContext.getConfiguration().getValue(name)));
-        var configuration = builder
-                .withValue(PlatformSchedulersConfig_.EVENT_HASHER, "DIRECT")
+        var configuration = builder.withValue(PlatformSchedulersConfig_.EVENT_HASHER, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.EVENT_DEDUPLICATOR, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.EVENT_SIGNATURE_VALIDATOR, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.INTERNAL_EVENT_VALIDATOR, "DIRECT")
@@ -269,5 +262,4 @@ public class ProdTestIntake implements Intake {
         loadSnapshot(GENESIS_SNAPSHOT);
         output.clear();
     }
-
 }
