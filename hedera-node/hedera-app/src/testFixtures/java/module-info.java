@@ -38,5 +38,6 @@ module com.hedera.node.app.test.fixtures {
     requires com.swirlds.state.impl.test.fixtures;
     requires org.apache.logging.log4j;
     requires org.assertj.core;
+    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
 }

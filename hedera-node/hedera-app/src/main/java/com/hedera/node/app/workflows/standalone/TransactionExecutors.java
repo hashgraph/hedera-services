@@ -44,6 +44,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NodeInfo;
@@ -87,7 +88,7 @@ public enum TransactionExecutors {
      * @param customOps the custom operations to use
      */
     public record Properties(
-            @NonNull State state,
+            @NonNull MerkeNodeState state,
             @NonNull Map<String, String> appProperties,
             @Nullable TracerBinding customTracerBinding,
             @NonNull Set<Operation> customOps,
@@ -104,7 +105,7 @@ public enum TransactionExecutors {
          * Builder for {@link Properties}.
          */
         public static class Builder {
-            private State state;
+            private MerkeNodeState state;
             private TracerBinding customTracerBinding;
             private final Map<String, String> appProperties = new HashMap<>();
             private final Set<Operation> customOps = new HashSet<>();
@@ -113,7 +114,7 @@ public enum TransactionExecutors {
             /**
              * Set the required {@link State} field.
              */
-            public Builder state(@NonNull final State state) {
+            public Builder state(@NonNull final MerkeNodeState state) {
                 this.state = requireNonNull(state);
                 return this;
             }
@@ -215,7 +216,7 @@ public enum TransactionExecutors {
      */
     @Deprecated(since = "0.58")
     public TransactionExecutor newExecutor(
-            @NonNull final State state,
+            @NonNull final MerkeNodeState state,
             @NonNull final Map<String, String> properties,
             @Nullable final TracerBinding customTracerBinding,
             @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
@@ -231,7 +232,7 @@ public enum TransactionExecutors {
      * @return a new {@link TransactionExecutor}
      */
     private TransactionExecutor newExecutor(
-            @NonNull final State state,
+            @NonNull final MerkeNodeState state,
             @NonNull final Map<String, String> properties,
             @Nullable final TracerBinding customTracerBinding,
             @NonNull final Set<Operation> customOps,

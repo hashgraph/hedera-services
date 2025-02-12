@@ -21,6 +21,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.State;
@@ -54,7 +55,7 @@ public interface ServiceMigrator {
      * @return The list of builders for state changes that occurred during the migrations
      */
     List<StateChanges.Builder> doMigrations(
-            @NonNull State state,
+            @NonNull MerkeNodeState state,
             @NonNull ServicesRegistry servicesRegistry,
             @Nullable SoftwareVersion previousVersion,
             @NonNull SoftwareVersion currentVersion,

@@ -312,22 +312,6 @@ public abstract class MerkleStateRoot<T extends MerkleStateRoot<T>> extends Part
     /**
      * Puts the defined service state and its associated node into the merkle tree. The precondition
      * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied. If the node is already present, then this method does nothing
-     * else.
-     *
-     * @param md The metadata associated with the state
-     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
-     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     * it doesn't have a label, or if the label isn't right.
-     */
-    public void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<? extends MerkleNode> nodeSupplier) {
-        putServiceStateIfAbsent(md, nodeSupplier, n -> {});
-    }
-
-    /**
-     * Puts the defined service state and its associated node into the merkle tree. The precondition
-     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
      * MUST have a correct label applied. No matter if the resulting node is newly created or already
      * present, calls the provided initialization consumer with the node.
      *

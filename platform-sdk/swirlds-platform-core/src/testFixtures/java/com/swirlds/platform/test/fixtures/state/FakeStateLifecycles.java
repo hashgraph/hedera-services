@@ -153,16 +153,13 @@ public enum FakeStateLifecycles implements StateLifecycles<MerkeNodeState> {
     }
 
     public List<StateChanges.Builder> initRosterState(@NonNull final MerkeNodeState state) {
-        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
-            throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
-        }
         final var schema = new V0540RosterBaseSchema();
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var md = new StateMetadata<>(RosterStateId.NAME, schema, def);
                     if (def.singleton()) {
-                        merkleStateRoot.putServiceStateIfAbsent(
+                        state.putServiceStateIfAbsent(
                                 md,
                                 () -> new SingletonNode<>(
                                         md.serviceName(),
@@ -171,7 +168,7 @@ public enum FakeStateLifecycles implements StateLifecycles<MerkeNodeState> {
                                         md.stateDefinition().valueCodec(),
                                         null));
                     } else if (def.onDisk()) {
-                        merkleStateRoot.putServiceStateIfAbsent(md, () -> {
+                        state.putServiceStateIfAbsent(md, () -> {
                             final var keySerializer = new OnDiskKeySerializer<>(
                                     md.onDiskKeySerializerClassId(),
                                     md.onDiskKeyClassId(),

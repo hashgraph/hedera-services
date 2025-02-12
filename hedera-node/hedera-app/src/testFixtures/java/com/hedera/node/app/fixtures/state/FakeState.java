@@ -23,10 +23,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.spi.EmptyReadableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
@@ -51,12 +55,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * A useful test double for {@link State}. Works together with {@link MapReadableStates} and other fixtures.
  */
-public class FakeState implements State {
+public class FakeState implements MerkeNodeState {
     // Key is Service, value is Map of state name to HashMap or List or Object (depending on state type)
     private final Map<String, Map<String, Object>> states = new ConcurrentHashMap<>();
     private final Map<String, ReadableStates> readableStates = new ConcurrentHashMap<>();
@@ -269,5 +275,71 @@ public class FakeState implements State {
     @Override
     public void setHash(Hash hash) {
         // no-op
+    }
+
+    @Override
+    public @NonNull MerkeNodeState copy() {
+        return this;
+    }
+
+    @Override
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull StateMetadata<?, ?> md, @NonNull Supplier<T> nodeSupplier, @NonNull Consumer<T> nodeInitializer) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void unregisterService(@NonNull String serviceName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reserve() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean tryReserve() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean release() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getReservationCount() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getClassId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getVersion() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public MerkleRoute getRoute() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setRoute(MerkleRoute route) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isLeaf() {
+        throw new UnsupportedOperationException();
     }
 }
