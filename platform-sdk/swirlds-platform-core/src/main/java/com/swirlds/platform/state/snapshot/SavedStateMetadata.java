@@ -172,7 +172,7 @@ public record SavedStateMetadata(
             @NonNull final Instant now,
             @NonNull final PlatformStateFacade platformStateFacade) {
         Objects.requireNonNull(signedState, "signedState must not be null");
-        State state = signedState.getState();
+        final State state = signedState.getState();
         Objects.requireNonNull(state.getHash(), "state must be hashed");
         Objects.requireNonNull(now, "now must not be null");
 
