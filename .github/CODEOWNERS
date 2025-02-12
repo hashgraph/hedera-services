@@ -108,7 +108,7 @@
 /.github/                                           @hiero-ledger/github-maintainers
 /.github/workflows/                                 @hiero-ledger/github-maintainers @hiero-ledger/github-committers
 /.github/workflows/node-zxf-deploy-integration.yaml @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners @hiero-ledger/github-committers
-/.github/workflows/node-zxf-deploy-preview.yaml     @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners @hiero-ledger/github-maintainers
+/.github/workflows/node-zxf-deploy-preview.yaml     @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners @hiero-ledger/github-committers
 
 # Legacy Maven project files
 **/pom.xml                                          @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners
