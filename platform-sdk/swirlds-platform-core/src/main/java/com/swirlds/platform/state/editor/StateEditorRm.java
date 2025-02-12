@@ -58,7 +58,7 @@ public class StateEditorRm extends StateEditorOperation {
         final int indexInParent = parentInfo.indexInParent();
 
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorRm.run()")) {
-            MerkleTraversable state =
+            final MerkleTraversable state =
                     (MerkleTraversable) reservedSignedState.get().getState();
             final MerkleNode child = state.getNodeAtRoute(destinationRoute);
 
