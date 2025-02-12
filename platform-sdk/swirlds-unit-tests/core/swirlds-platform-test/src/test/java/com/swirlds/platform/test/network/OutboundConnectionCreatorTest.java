@@ -67,7 +67,10 @@ class OutboundConnectionCreatorTest {
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
-        final int otherNodeIndex = r.nextInt(numNodes);
+        int otherNodeIndex = r.nextInt(numNodes);
+        while (otherNodeIndex == thisNodeIndex) {
+            otherNodeIndex = r.nextInt(numNodes);
+        }
         final NodeId thisNode =
                 NodeId.of(roster.rosterEntries().get(thisNodeIndex).nodeId());
         final NodeId otherNode =
@@ -152,7 +155,10 @@ class OutboundConnectionCreatorTest {
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
-        final int otherNodeIndex = r.nextInt(numNodes);
+        int otherNodeIndex = r.nextInt(numNodes);
+        while (otherNodeIndex == thisNodeIndex) {
+            otherNodeIndex = r.nextInt(numNodes);
+        }
         final NodeId thisNode =
                 NodeId.of(roster.rosterEntries().get(thisNodeIndex).nodeId());
         final NodeId otherNode =
