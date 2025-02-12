@@ -24,6 +24,7 @@ import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.component.framework.model.WiringModel;
@@ -126,22 +127,22 @@ public class SyncGossipModular implements Gossip {
         } else {
             peers = Utilities.createPeerInfoList(roster, selfId);
         }
-        var selfPeer = Utilities.toPeerInfo(selfEntry);
+        final PeerInfo selfPeer = Utilities.toPeerInfo(selfEntry);
 
         this.network = new PeerCommunication(platformContext, peers, selfPeer, keysAndCerts);
 
-        var shadowgraph = new Shadowgraph(platformContext, peers.size() + 1, intakeEventCounter);
+        final Shadowgraph shadowgraph = new Shadowgraph(platformContext, peers.size() + 1, intakeEventCounter);
 
-        var fallenBehindManager = new FallenBehindManagerImpl(
+        final FallenBehindManagerImpl fallenBehindManager = new FallenBehindManagerImpl(
                 selfId,
                 this.network.getTopology(),
                 statusActionSubmitter,
                 () -> sharedState.fallenBehindCallback().get().run(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
 
-        var syncManager = new SyncManagerImpl(platformContext, fallenBehindManager);
+        final SyncManagerImpl syncManager = new SyncManagerImpl(platformContext, fallenBehindManager);
 
-        var syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
         final int permitCount;
         if (syncConfig.onePermitPerPeer()) {
             permitCount = peers.size();
@@ -149,7 +150,7 @@ public class SyncGossipModular implements Gossip {
             permitCount = syncConfig.syncProtocolPermitCount();
         }
 
-        var syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
+        final SyncPermitProvider syncPermitProvider = new SyncPermitProvider(platformContext, permitCount);
 
         sharedState = new SyncGossipSharedProtocolState(
                 this.network.getNetworkMetrics(),
@@ -186,7 +187,7 @@ public class SyncGossipModular implements Gossip {
                 new VersionCompareHandshake(appVersion, !protocolConfig.tolerateMismatchedVersion());
         final List<ProtocolRunnable> handshakeProtocols = List.of(versionCompareHandshake);
 
-        var threads = network.buildProtocolThreads(threadManager, selfId, handshakeProtocols, protocols);
+        final List<StoppableThread> threads = network.buildProtocolThreads(threadManager, selfId, handshakeProtocols, protocols);
 
         controller.registerThingToStartButNotStop(sharedState.shadowgraphExecutor());
         controller.registerThingsToStart(threads);

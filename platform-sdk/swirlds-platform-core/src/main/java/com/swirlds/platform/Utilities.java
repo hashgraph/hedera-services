@@ -384,7 +384,12 @@ public final class Utilities {
                 .toList();
     }
 
-    public static @NonNull PeerInfo toPeerInfo(RosterEntry entry) {
+    /**
+     * Converts single roster entry to PeerInfo, which is more abstract class representing information about possible node connection
+     * @param entry data to convert
+     * @return PeerInfo with extracted hostname, port and certificate for remote host
+     */
+    public static @NonNull PeerInfo toPeerInfo(@NonNull RosterEntry entry) {
         Objects.requireNonNull(entry);
         return new PeerInfo(
                 NodeId.of(entry.nodeId()),

@@ -45,7 +45,7 @@ public record PeerInfo(
         return RosterUtils.formatNodeName(nodeId.id());
     }
 
-    public static @NonNull PeerInfo find(@NonNull Collection<PeerInfo> peers, NodeId nodeId) {
+    public static @NonNull PeerInfo find(@NonNull Collection<PeerInfo> peers, @NonNull NodeId nodeId) {
         for (PeerInfo peer : peers) {
             if (peer.nodeId().equals(nodeId)) {
                 return peer;

@@ -100,6 +100,10 @@ public class PeerCommunication implements ConnectionTracker {
         return networkMetrics;
     }
 
+    /**
+     *
+     * @return list of peers for current static topology
+     */
     public List<PeerInfo> getPeers() {
         return peers;
     }

@@ -132,9 +132,9 @@ public class ReconnectProtocol implements Protocol {
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
 
-        var reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
+        final ReconnectThrottle reconnectThrottle = new ReconnectThrottle(reconnectConfig, platformContext.getTime());
 
-        var reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), peers);
+        final ReconnectMetrics reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics(), peers);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
@@ -148,7 +148,7 @@ public class ReconnectProtocol implements Protocol {
             }
         };
 
-        var reconnectHelper = new ReconnectHelper(
+        final ReconnectHelper reconnectHelper = new ReconnectHelper(
                 gossipController::pause,
                 clearAllPipelinesForReconnect::run,
                 swirldStateManager::getConsensusState,
@@ -169,7 +169,7 @@ public class ReconnectProtocol implements Protocol {
                         platformStateFacade),
                 stateConfig,
                 platformStateFacade);
-        var reconnectController =
+        final ReconnectController reconnectController =
                 new ReconnectController(reconnectConfig, threadManager, reconnectHelper, gossipController::resume);
 
         sharedState.fallenBehindCallback().set(reconnectController::start);
