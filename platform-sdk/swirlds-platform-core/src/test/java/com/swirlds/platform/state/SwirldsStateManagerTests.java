@@ -15,6 +15,7 @@ import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Round;
@@ -37,7 +38,8 @@ class SwirldsStateManagerTests {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
         final Roster roster = RandomRosterBuilder.create(Randotron.create()).build();
         when(platform.getRoster()).thenReturn(roster);
-        initialState = newState();
+        PlatformStateFacade platformStateFacade = new PlatformStateFacade(v -> new BasicSoftwareVersion(v.major()));
+        initialState = newState(platformStateFacade);
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
@@ -47,7 +49,8 @@ class SwirldsStateManagerTests {
                 NodeId.of(0L),
                 mock(StatusActionSubmitter.class),
                 new BasicSoftwareVersion(1),
-                FAKE_MERKLE_STATE_LIFECYCLES);
+                FAKE_MERKLE_STATE_LIFECYCLES,
+                platformStateFacade);
         swirldStateManager.setInitialState(initialState);
     }
 
@@ -115,15 +118,12 @@ class SwirldsStateManagerTests {
                         + "decremented.");
     }
 
-    private static PlatformMerkleStateRoot newState() {
+    private static PlatformMerkleStateRoot newState(PlatformStateFacade platformStateFacade) {
         final PlatformMerkleStateRoot state =
                 new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()));
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(state);
 
-        final PlatformStateModifier platformState = mock(PlatformStateModifier.class);
-        when(platformState.getCreationSoftwareVersion()).thenReturn(new BasicSoftwareVersion(nextInt(1, 100)));
-
-        state.updatePlatformState(platformState);
+        platformStateFacade.setCreationSoftwareVersionTo(state, new BasicSoftwareVersion(nextInt(1, 100)));
 
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;

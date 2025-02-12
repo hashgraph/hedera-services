@@ -56,6 +56,7 @@ import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
@@ -256,6 +257,7 @@ public class Browser {
                     MerkleCryptographyFactory.create(configuration, CryptographyHolder.get()));
             // Each platform needs a different temporary state on disk.
             MerkleDb.resetDefaultInstancePath();
+            PlatformStateFacade platformStateFacade = new PlatformStateFacade(v -> appMain.getSoftwareVersion());
             // Create the initial state for the platform
             StateLifecycles stateLifecycles = appMain.newStateLifecycles();
             final HashedReservedSignedState reservedState = getInitialState(
@@ -266,7 +268,8 @@ public class Browser {
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     nodeId,
-                    appDefinition.getConfigAddressBook());
+                    appDefinition.getConfigAddressBook(),
+                    platformStateFacade);
             final var initialState = reservedState.state();
 
             // Initialize the address book
@@ -276,7 +279,8 @@ public class Browser {
                     initialState,
                     appDefinition.getConfigAddressBook(),
                     platformContext,
-                    stateLifecycles);
+                    stateLifecycles,
+                    platformStateFacade);
 
             // Build the platform with the given values
             final PlatformBuilder builder = PlatformBuilder.create(
@@ -287,7 +291,8 @@ public class Browser {
                     stateLifecycles,
                     nodeId,
                     AddressBookUtils.formatConsensusEventStreamName(addressBook, nodeId),
-                    RosterUtils.buildRosterHistory(initialState.get().getState()));
+                    RosterUtils.buildRosterHistory(initialState.get().getState(), platformStateFacade),
+                    platformStateFacade);
             if (showUi && index == 0) {
                 builder.withPreconsensusEventCallback(guiEventStorage::handlePreconsensusEvent);
                 builder.withConsensusSnapshotOverrideCallback(guiEventStorage::handleSnapshotOverride);

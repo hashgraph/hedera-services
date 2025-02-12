@@ -6,6 +6,7 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,10 +36,11 @@ public final class BirthRoundStateMigration {
     public static void modifyStateForBirthRoundMigration(
             @NonNull final SignedState initialState,
             @NonNull final AncientMode ancientMode,
-            @NonNull final SoftwareVersion appVersion) {
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
-            if (initialState.getState().getReadablePlatformState().getFirstVersionInBirthRoundMode() != null) {
+            if (platformStateFacade.firstVersionInBirthRoundModeOf(initialState.getState()) != null) {
                 throw new IllegalStateException(
                         "Cannot revert to generation mode after birth round migration has been completed.");
             }
@@ -49,18 +51,17 @@ public final class BirthRoundStateMigration {
         }
 
         final PlatformMerkleStateRoot state = initialState.getState();
-        final PlatformStateModifier writablePlatformState = state.getWritablePlatformState();
-
-        final boolean alreadyMigrated = writablePlatformState.getFirstVersionInBirthRoundMode() != null;
+        final boolean alreadyMigrated = platformStateFacade.firstVersionInBirthRoundModeOf(state) != null;
         if (alreadyMigrated) {
             // Birth round migration was completed at a prior time, no action needed.
             logger.info(STARTUP.getMarker(), "Birth round state migration has already been completed.");
             return;
         }
 
-        final long lastRoundBeforeMigration = writablePlatformState.getRound();
+        final long lastRoundBeforeMigration = platformStateFacade.roundOf(state);
 
-        final ConsensusSnapshot consensusSnapshot = Objects.requireNonNull(writablePlatformState.getSnapshot());
+        final ConsensusSnapshot consensusSnapshot =
+                Objects.requireNonNull(platformStateFacade.consensusSnapshotOf(state));
         final List<MinimumJudgeInfo> judgeInfoList = consensusSnapshot.getMinimumJudgeInfoList();
         final long lowestJudgeGenerationBeforeMigration =
                 judgeInfoList.getLast().minimumJudgeAncientThreshold();
@@ -73,9 +74,11 @@ public final class BirthRoundStateMigration {
                 lastRoundBeforeMigration,
                 lowestJudgeGenerationBeforeMigration);
 
-        writablePlatformState.setFirstVersionInBirthRoundMode(appVersion);
-        writablePlatformState.setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
-        writablePlatformState.setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
+        platformStateFacade.bulkUpdateOf(state, v -> {
+            v.setFirstVersionInBirthRoundMode(appVersion);
+            v.setLastRoundBeforeBirthRoundMode(lastRoundBeforeMigration);
+            v.setLowestJudgeGenerationBeforeBirthRoundMode(lowestJudgeGenerationBeforeMigration);
+        });
 
         final List<MinimumJudgeInfo> modifiedJudgeInfoList = new ArrayList<>(judgeInfoList.size());
         for (final MinimumJudgeInfo judgeInfo : judgeInfoList) {
@@ -87,7 +90,7 @@ public final class BirthRoundStateMigration {
                 modifiedJudgeInfoList,
                 consensusSnapshot.nextConsensusNumber(),
                 consensusSnapshot.consensusTimestamp());
-        writablePlatformState.setSnapshot(modifiedConsensusSnapshot);
+        platformStateFacade.setSnapshotTo(state, modifiedConsensusSnapshot);
 
         state.invalidateHash();
         MerkleCryptoFactory.getInstance().digestTreeSync(state);

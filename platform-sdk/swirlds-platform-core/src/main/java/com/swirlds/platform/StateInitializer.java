@@ -12,6 +12,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -44,7 +45,8 @@ public final class StateInitializer {
             @NonNull final Platform platform,
             @NonNull final PlatformContext platformContext,
             @NonNull final SignedState signedState,
-            @NonNull final StateLifecycles stateLifecycles) {
+            @NonNull final StateLifecycles stateLifecycles,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         final SoftwareVersion previousSoftwareVersion;
         final InitTrigger trigger;
@@ -53,8 +55,7 @@ public final class StateInitializer {
             previousSoftwareVersion = NO_VERSION;
             trigger = GENESIS;
         } else {
-            previousSoftwareVersion =
-                    signedState.getState().getReadablePlatformState().getCreationSoftwareVersion();
+            previousSoftwareVersion = platformStateFacade.creationSoftwareVersionOf(signedState.getState());
             trigger = RESTART;
         }
 

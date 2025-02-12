@@ -12,6 +12,7 @@ import com.swirlds.platform.FreezePeriodChecker;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.StateMetrics;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -61,6 +62,8 @@ public class SwirldStateManager implements FreezePeriodChecker {
 
     private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
 
+    private final PlatformStateFacade platformStateFacade;
+
     /**
      * Constructor.
      *
@@ -77,12 +80,15 @@ public class SwirldStateManager implements FreezePeriodChecker {
             @NonNull final NodeId selfId,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles) {
+            @NonNull final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles,
+            @NonNull final PlatformStateFacade platformStateFacade) {
+
         requireNonNull(platformContext);
         requireNonNull(roster);
         requireNonNull(selfId);
         requireNonNull(stateLifecycles);
 
+        this.platformStateFacade = requireNonNull(platformStateFacade);
         this.stateLifecycles = stateLifecycles;
         this.stats = new StateMetrics(platformContext.getMetrics());
         requireNonNull(statusActionSubmitter);
@@ -93,7 +99,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     /**
-     * Set the initial eventHandler for the platform. This method should only be called once.
+     * Set the initial State for the platform. This method should only be called once.
      *
      * @param state the initial state
      */
@@ -104,11 +110,10 @@ public class SwirldStateManager implements FreezePeriodChecker {
         state.throwIfImmutable("state must be mutable");
 
         if (stateRef.get() != null) {
-            throw new IllegalStateException(
-                    "Attempt to set initial eventHandler when there is already a eventHandler reference.");
+            throw new IllegalStateException("Attempt to set initial state when there is already a state reference.");
         }
 
-        // Create a fast copy so there is always an immutable eventHandler to
+        // Create a fast copy so there is always an immutable state to
         // invoke handleTransaction on for pre-consensus transactions
         fastCopyAndUpdateRefs(state);
     }
@@ -153,9 +158,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     public void savedStateInFreezePeriod() {
         // set current DualState's lastFrozenTime to be current freezeTime
-        stateRef.get()
-                .getWritablePlatformState()
-                .setLastFrozenTime(stateRef.get().getReadablePlatformState().getFreezeTime());
+        platformStateFacade.updateLastFrozenTime(stateRef.get());
     }
 
     /**
@@ -173,7 +176,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     private void fastCopyAndUpdateRefs(final PlatformMerkleStateRoot state) {
-        PlatformMerkleStateRoot newState = fastCopy(state, stats, softwareVersion);
+        PlatformMerkleStateRoot newState = fastCopy(state, stats, softwareVersion, platformStateFacade);
 
         // Set latest immutable first to prevent the newly immutable stateRoot from being deleted between setting the
         // stateRef and the latestImmutableState
@@ -210,9 +213,10 @@ public class SwirldStateManager implements FreezePeriodChecker {
      */
     @Override
     public boolean isInFreezePeriod(final Instant timestamp) {
-        final PlatformStateAccessor platformState = getConsensusState().getReadablePlatformState();
-        return SwirldStateManagerUtils.isInFreezePeriod(
-                timestamp, platformState.getFreezeTime(), platformState.getLastFrozenTime());
+        return PlatformStateFacade.isInFreezePeriod(
+                timestamp,
+                platformStateFacade.freezeTimeOf(getConsensusState()),
+                platformStateFacade.lastFrozenTimeOf(getConsensusState()));
     }
 
     /**

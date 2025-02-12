@@ -3,6 +3,7 @@ package com.hedera.node.app.hints.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.hints.handlers.CrsPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsHandlers;
 import com.hedera.node.app.hints.handlers.HintsKeyPublicationHandler;
 import com.hedera.node.app.hints.handlers.HintsPartialSignatureHandler;
@@ -49,7 +50,9 @@ public interface HintsModule {
     static HintsHandlers provideHintsHandlers(
             @NonNull final HintsKeyPublicationHandler keyPublicationHandler,
             @NonNull final HintsPreprocessingVoteHandler preprocessingVoteHandler,
-            @NonNull final HintsPartialSignatureHandler partialSignatureHandler) {
-        return new HintsHandlers(keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler);
+            @NonNull final HintsPartialSignatureHandler partialSignatureHandler,
+            @NonNull final CrsPublicationHandler crsPublicationHandler) {
+        return new HintsHandlers(
+                keyPublicationHandler, preprocessingVoteHandler, partialSignatureHandler, crsPublicationHandler);
     }
 }

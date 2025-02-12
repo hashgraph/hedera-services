@@ -3,6 +3,7 @@ package com.hedera.node.app.platform;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.SoftwareVersion;
 import dagger.Module;
 import dagger.Provides;
@@ -16,5 +17,11 @@ public interface PlatformStateModule {
     @Singleton
     static Function<SemanticVersion, SoftwareVersion> softwareVersionFactory() {
         return ServicesSoftwareVersion::new;
+    }
+
+    @Provides
+    @Singleton
+    static PlatformStateFacade platformStateFacade(Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+        return new PlatformStateFacade(ServicesSoftwareVersion::new);
     }
 }

@@ -2,18 +2,23 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES;
+import static com.swirlds.platform.test.fixtures.state.FakeStateLifecycles.registerMerkleStateRootClassIds;
+import static com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade.TEST_PLATFORM_STATE_FACADE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -63,19 +68,21 @@ class PlatformStateTests {
     @DisplayName("Platform State Serialization Test")
     @SuppressWarnings("resource")
     void platformStateSerializationTest() throws IOException, ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        registerMerkleStateRootClassIds();
+        final MerkleStateRoot root = new PlatformMerkleStateRoot(v -> new BasicSoftwareVersion(1));
+        FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(root);
 
         final InputOutputStream io = new InputOutputStream();
-        final PlatformState state = (PlatformState) randomPlatformState(new PlatformState());
-        io.getOutput().writeMerkleTree(testDirectory, state);
+        randomPlatformState(root, TEST_PLATFORM_STATE_FACADE);
+        io.getOutput().writeMerkleTree(testDirectory, root);
 
         io.startReading();
 
-        final PlatformState decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+        final MerkleStateRoot decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
 
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
+        MerkleCryptoFactory.getInstance().digestTreeSync(root);
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);
 
-        assertEquals(state.getHash(), decodedState.getHash(), "expected deserialized object to be equal");
+        assertEquals(root.getHash(), decodedState.getHash(), "expected deserialized object to be equal");
     }
 }

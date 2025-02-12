@@ -43,6 +43,7 @@ import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -73,6 +74,7 @@ public final class PlatformBuilder {
     private final ReservedSignedState initialState;
 
     private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
+    private final PlatformStateFacade platformStateFacade;
 
     private final NodeId selfId;
     private final String swirldName;
@@ -144,6 +146,7 @@ public final class PlatformBuilder {
      * @param stateLifecycles          the state lifecycle events handler
      * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
+     * @param platformStateFacade      the facade to access the platform state
      * @param rosterHistory            the roster history provided by the application to use at startup
      */
     @NonNull
@@ -155,7 +158,8 @@ public final class PlatformBuilder {
             @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
-            @NonNull final RosterHistory rosterHistory) {
+            @NonNull final RosterHistory rosterHistory,
+            @NonNull final PlatformStateFacade platformStateFacade) {
         return new PlatformBuilder(
                 appName,
                 swirldName,
@@ -164,7 +168,8 @@ public final class PlatformBuilder {
                 stateLifecycles,
                 selfId,
                 consensusEventStreamName,
-                rosterHistory);
+                rosterHistory,
+                platformStateFacade);
     }
 
     /**
@@ -179,6 +184,7 @@ public final class PlatformBuilder {
      * @param selfId                   the ID of this node
      * @param consensusEventStreamName a part of the name of the directory where the consensus event stream is written
      * @param rosterHistory            the roster history provided by the application to use at startup
+     * @param platformStateFacade      the facade to access the platform state
      */
     private PlatformBuilder(
             @NonNull final String appName,
@@ -188,7 +194,8 @@ public final class PlatformBuilder {
             @NonNull final StateLifecycles stateLifecycles,
             @NonNull final NodeId selfId,
             @NonNull final String consensusEventStreamName,
-            @NonNull final RosterHistory rosterHistory) {
+            @NonNull final RosterHistory rosterHistory,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         this.appName = Objects.requireNonNull(appName);
         this.swirldName = Objects.requireNonNull(swirldName);
@@ -198,6 +205,7 @@ public final class PlatformBuilder {
         this.selfId = Objects.requireNonNull(selfId);
         this.consensusEventStreamName = Objects.requireNonNull(consensusEventStreamName);
         this.rosterHistory = Objects.requireNonNull(rosterHistory);
+        this.platformStateFacade = Objects.requireNonNull(platformStateFacade);
     }
 
     /**
@@ -434,7 +442,8 @@ public final class PlatformBuilder {
                 selfId,
                 x -> statusActionSubmitterAtomicReference.get().submitStatusAction(x),
                 softwareVersion,
-                stateLifecycles);
+                stateLifecycles,
+                platformStateFacade);
 
         if (model == null) {
             final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
@@ -490,7 +499,8 @@ public final class PlatformBuilder {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 firstPlatform,
-                stateLifecycles);
+                stateLifecycles,
+                platformStateFacade);
 
         return new PlatformComponentBuilder(buildingBlocks);
     }

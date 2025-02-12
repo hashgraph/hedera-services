@@ -15,6 +15,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.PeerProtocol;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -41,6 +42,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
     private final SignedStateValidator validator;
+    private final PlatformStateFacade platformStateFacade;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final FallenBehindManager fallenBehindManager;
@@ -84,6 +86,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
      * @param platformStatusSupplier  provides the platform status
      * @param configuration           platform configuration
      * @param time                    the time object to use
+     * @param platformStateFacade     provides access to the platform state
      */
     public ReconnectPeerProtocol(
             @NonNull final PlatformContext platformContext,
@@ -98,7 +101,8 @@ public class ReconnectPeerProtocol implements PeerProtocol {
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final Configuration configuration,
-            @NonNull final Time time) {
+            @NonNull final Time time,
+            @NonNull final PlatformStateFacade platformStateFacade) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
@@ -112,6 +116,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
         this.platformStatusSupplier = Objects.requireNonNull(platformStatusSupplier);
         this.configuration = Objects.requireNonNull(configuration);
+        this.platformStateFacade = Objects.requireNonNull(platformStateFacade);
         Objects.requireNonNull(time);
 
         final Duration minimumTimeBetweenReconnects =
@@ -299,7 +304,8 @@ public class ReconnectPeerProtocol implements PeerProtocol {
                             connection.getOtherId(),
                             state.get().getRound(),
                             reconnectMetrics,
-                            configuration)
+                            configuration,
+                            platformStateFacade)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();

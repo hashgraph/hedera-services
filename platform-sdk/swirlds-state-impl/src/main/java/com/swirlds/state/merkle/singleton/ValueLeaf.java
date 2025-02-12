@@ -19,6 +19,7 @@ import java.io.IOException;
  * #classId}.
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
+
     /**
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
@@ -28,6 +29,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     private final long classId;
     private final Codec<T> codec;
     /** The actual value. For example, it could be an Account or SmartContract. */
+    @Nullable
     private T val;
 
     /**

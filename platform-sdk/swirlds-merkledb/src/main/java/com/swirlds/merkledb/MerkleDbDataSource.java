@@ -1066,6 +1066,10 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                             (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS);
                     return true; // turns this into a callable, so it can throw checked
                     // exceptions
+                } catch (final Throwable t) {
+                    // log and rethrow
+                    logger.error(EXCEPTION.getMarker(), "[{}] Snapshot {} failed", tableName, taskName, t);
+                    throw t;
                 } finally {
                     countDownLatch.countDown();
                 }

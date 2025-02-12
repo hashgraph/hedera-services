@@ -16,6 +16,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
@@ -46,6 +47,7 @@ public class ReconnectLearner {
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
+    private final PlatformStateFacade platformStateFacade;
 
     private SigSet sigSet;
     private final PlatformContext platformContext;
@@ -69,6 +71,8 @@ public class ReconnectLearner {
      * 		the amount of time that should be used for the socket timeout
      * @param statistics
      * 		reconnect metrics
+     * @param platformStateFacade
+     *      the facade to access the platform state
      */
     public ReconnectLearner(
             @NonNull final PlatformContext platformContext,
@@ -77,7 +81,9 @@ public class ReconnectLearner {
             @NonNull final Roster roster,
             @NonNull final PlatformMerkleStateRoot currentState,
             @NonNull final Duration reconnectSocketTimeout,
-            @NonNull final ReconnectMetrics statistics) {
+            @NonNull final ReconnectMetrics statistics,
+            @NonNull final PlatformStateFacade platformStateFacade) {
+        this.platformStateFacade = platformStateFacade;
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");
@@ -91,7 +97,7 @@ public class ReconnectLearner {
         this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
-        this.stateValidationData = new SignedStateValidationData(currentState.getReadablePlatformState(), roster);
+        this.stateValidationData = new SignedStateValidationData(currentState, roster, platformStateFacade);
     }
 
     /**
@@ -198,7 +204,8 @@ public class ReconnectLearner {
                 "ReconnectLearner.reconnect()",
                 false,
                 false,
-                false);
+                false,
+                platformStateFacade);
         SignedStateFileReader.registerServiceStates(newSignedState);
         newSignedState.setSigSet(sigSet);
 
