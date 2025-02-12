@@ -202,7 +202,7 @@ public class SignedState implements SignedStateInfo {
             final boolean pcesRound,
             @NonNull final PlatformStateFacade platformStateFacade) {
         this.platformStateFacade = platformStateFacade;
-        Reservable reservable = state.cast();
+        final Reservable reservable = state.cast();
         reservable.reserve();
 
         this.signatureVerifier = requireNonNull(signatureVerifier);
