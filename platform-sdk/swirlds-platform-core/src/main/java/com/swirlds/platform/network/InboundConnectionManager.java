@@ -95,4 +95,12 @@ public class InboundConnectionManager implements ConnectionManager {
             newConnection.signalAll();
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOutbound() {
+        return false;
+    }
 }

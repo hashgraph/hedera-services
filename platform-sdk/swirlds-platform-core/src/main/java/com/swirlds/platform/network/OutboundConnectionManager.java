@@ -55,4 +55,12 @@ public class OutboundConnectionManager implements ConnectionManager {
     public void newConnection(final Connection connection) {
         throw new UnsupportedOperationException("Does not accept connections");
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOutbound() {
+        return true;
+    }
 }

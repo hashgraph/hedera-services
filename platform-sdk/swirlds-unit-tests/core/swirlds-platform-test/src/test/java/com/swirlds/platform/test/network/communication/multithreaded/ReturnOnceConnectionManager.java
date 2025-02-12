@@ -33,4 +33,12 @@ public class ReturnOnceConnectionManager implements ConnectionManager {
     public void newConnection(final Connection connection) {
         throw new IllegalStateException("unsupported");
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOutbound() {
+        return connection.isOutbound();
+    }
 }

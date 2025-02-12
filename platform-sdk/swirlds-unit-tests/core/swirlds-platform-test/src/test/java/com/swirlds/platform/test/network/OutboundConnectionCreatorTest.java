@@ -16,6 +16,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.platform.Utilities;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
@@ -51,7 +52,10 @@ class OutboundConnectionCreatorTest {
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
-        final int otherNodeIndex = r.nextInt(numNodes);
+        int otherNodeIndex = r.nextInt(numNodes);
+        while (otherNodeIndex == thisNodeIndex) {
+            otherNodeIndex = r.nextInt(numNodes);
+        }
         final NodeId thisNode =
                 NodeId.of(roster.rosterEntries().get(thisNodeIndex).nodeId());
         final NodeId otherNode =
@@ -85,7 +89,11 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, roster);
+                platformContext,
+                thisNode,
+                mock(ConnectionTracker.class),
+                socketFactory,
+                Utilities.createPeerInfoList(roster, thisNode));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -132,7 +140,10 @@ class OutboundConnectionCreatorTest {
                 .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
-        final int otherNodeIndex = r.nextInt(numNodes);
+        int otherNodeIndex = r.nextInt(numNodes);
+        while (otherNodeIndex == thisNodeIndex) {
+            otherNodeIndex = r.nextInt(numNodes);
+        }
         final NodeId thisNode =
                 NodeId.of(roster.rosterEntries().get(thisNodeIndex).nodeId());
         final NodeId otherNode =
@@ -166,7 +177,11 @@ class OutboundConnectionCreatorTest {
                 .build();
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
-                platformContext, thisNode, mock(ConnectionTracker.class), socketFactory, roster);
+                platformContext,
+                thisNode,
+                mock(ConnectionTracker.class),
+                socketFactory,
+                Utilities.createPeerInfoList(roster, thisNode));
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");

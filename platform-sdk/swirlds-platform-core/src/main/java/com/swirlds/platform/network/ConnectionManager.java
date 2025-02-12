@@ -33,4 +33,11 @@ public interface ConnectionManager {
      * 		thrown if the thread is interrupted while handing over the new connection
      */
     void newConnection(final Connection connection) throws InterruptedException;
+
+    /**
+     * Returns whenever connection is supposed to be outbound
+     *
+     * @return true if connection is outbound (we connect to remote node), false if we are listening for incoming connection
+     */
+    boolean isOutbound();
 }

@@ -4,15 +4,16 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_10_0;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.units.TimeUnit;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.network.PeerInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -75,12 +76,12 @@ public class ReconnectMetrics {
      *
      * @param metrics
      * 		reference to the metrics-system
-     * @param roster the roster reflecting the address book to register metrics for
+     * @param peers the list of peers reflecting the address book to register metrics for
      * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
-    public ReconnectMetrics(@NonNull final Metrics metrics, @NonNull final Roster roster) {
+    public ReconnectMetrics(@NonNull final Metrics metrics, @NonNull final List<PeerInfo> peers) {
         Objects.requireNonNull(metrics, "metrics");
-        Objects.requireNonNull(roster, "roster");
+        Objects.requireNonNull(peers, "peers");
         senderStartTimes = metrics.getOrCreate(SENDER_START_TIMES_CONFIG);
         receiverStartTimes = metrics.getOrCreate(RECEIVER_START_TIMES_CONFIG);
         senderEndTimes = metrics.getOrCreate(SENDER_END_TIMES_CONFIG);
@@ -88,8 +89,8 @@ public class ReconnectMetrics {
         senderReconnectDurationSeconds = metrics.getOrCreate(SENDER_DURATION_CONFIG);
         receiverReconnectDurationSeconds = metrics.getOrCreate(RECEIVER_DURATION_CONFIG);
 
-        roster.rosterEntries().forEach(entry -> {
-            final long nodeId = entry.nodeId();
+        peers.forEach(entry -> {
+            final long nodeId = entry.nodeId().id();
             rejectionFrequency.put(
                     nodeId,
                     new CountPerSecond(
