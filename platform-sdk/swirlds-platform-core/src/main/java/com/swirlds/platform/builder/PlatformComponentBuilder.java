@@ -109,6 +109,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -230,15 +232,26 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Binds a custom input wire to the consensus engine output wire.
+     * Binds additional custom input wires to the specified output wires on top of the default wirings that are
+     * already created.
      *
-     * @param inputWire with matching type of consensus engine output to bind
+     * @param inputWires map between an output wire type and an input wire to solder it to
      */
-    public void withInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
+    public void appendAdditionalInputWires(final Map<SolderWireType, InputWire<?>> inputWires) {
         final PlatformWiring platformWiring = blocks.platformWiring();
-        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
-                platformWiring.getConsensusEngineWiring();
-        consensusEngineWiring.getOutputWire().solderTo(inputWire);
+
+        for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : inputWires.entrySet()) {
+            switch (inputWireEntry.getKey()) {
+                case CONSENSUS_ENGINE -> {
+                    final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                            platformWiring.getConsensusEngineWiring();
+                    if (inputWireEntry.getValue() != null) {
+                        consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
+                                inputWireEntry.getValue());
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1392,5 +1405,12 @@ public class PlatformComponentBuilder {
             latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
         }
         return latestCompleteStateNotifier;
+    }
+
+    public static enum SolderWireType {
+        /**
+         * Solder a wire to the consensus engine output
+         */
+        CONSENSUS_ENGINE
     }
 }

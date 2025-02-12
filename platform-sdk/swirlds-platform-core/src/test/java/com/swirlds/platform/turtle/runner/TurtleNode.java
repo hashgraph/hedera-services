@@ -42,6 +42,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
+import com.swirlds.platform.builder.PlatformComponentBuilder.SolderWireType;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -60,7 +61,9 @@ import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Encapsulates a single node running in a TURTLE network.
@@ -176,7 +179,11 @@ public class TurtleNode {
 
         final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
                 consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
-        platformComponentBuilder.withInputWireToConsensusEngine(consensusRoundsHolderInputWire);
+
+        final Map<SolderWireType, InputWire<?>> additionalWires = new HashMap<>();
+        additionalWires.put(SolderWireType.CONSENSUS_ENGINE, consensusRoundsHolderInputWire);
+
+        platformComponentBuilder.appendAdditionalInputWires(additionalWires);
     }
 
     /**
