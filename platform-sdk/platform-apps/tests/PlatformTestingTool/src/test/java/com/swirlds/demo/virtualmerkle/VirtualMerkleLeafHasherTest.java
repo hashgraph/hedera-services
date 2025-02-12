@@ -213,7 +213,7 @@ class VirtualMerkleLeafHasherTest {
             hash.getBytes().writeTo(bb);
         }
 
-        // key serializaion
+        // key serialization
         bb.putLong(keyInput);
 
         // value serialization

@@ -86,7 +86,7 @@ public class SignaturePool {
     private boolean signed;
 
     /**
-     * the standard psuedo-random number generator
+     * the standard pseudo-random number generator
      */
     private Random random;
 

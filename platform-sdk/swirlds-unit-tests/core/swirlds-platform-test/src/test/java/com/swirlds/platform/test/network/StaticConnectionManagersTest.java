@@ -112,7 +112,7 @@ class StaticConnectionManagersTest {
             assertNotNull(manager, "should have a manager for this connection");
             assertTrue(
                     manager.waitForConnection().connected(),
-                    "outbound connections should be esablished by the manager");
+                    "outbound connections should be established by the manager");
         } else {
             final ConnectionManager manager = managers.getManager(neighbor, true);
             assertNull(manager, "should not have a manager for this connection");

@@ -47,7 +47,7 @@ public class MerkleTreeSnapshotReader {
      */
     public static final byte VERSIONED_FILE_BYTE = Byte.MAX_VALUE;
     /**
-     * Fun trivia: the file extension ".swh" stands for "SWirlds Hashgraph", although this is a bit misleading... as
+     * Fun trivia: the file extension ".swh" stands for "Swirlds Hashgraph", although this is a bit misleading... as
      * this file nor actually contains a hashgraph neither a set of signatures.
      */
     public static final String SIGNED_STATE_FILE_NAME = "SignedState.swh";

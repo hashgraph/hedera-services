@@ -21,7 +21,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 /**
- * Settimgs for the benchmarks
+ * Settings for the benchmarks
  *
  * @param benchmarkData
  * 		parameter had no description in the old settings

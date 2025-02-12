@@ -321,7 +321,7 @@ class MockFCQueueTest {
 
         final FCQueue<FCInt> qc = SerializationUtils.serializeDeserialize(q);
 
-        assertEquals(q.getHash(), qc.getHash(), "Hash value after serialization/deserializeation changed");
+        assertEquals(q.getHash(), qc.getHash(), "Hash value after serialization/deserialization changed");
     }
 
     /**
@@ -798,7 +798,7 @@ class MockFCQueueTest {
 
     /**
      * add the same element to a MockFCQueue instance and a Queue instance
-     * if queue is null, we only add elements into the MockFCQueue isntance
+     * if queue is null, we only add elements into the MockFCQueue instance
      *
      * @param fcq
      * 		a MockFCQueue instance

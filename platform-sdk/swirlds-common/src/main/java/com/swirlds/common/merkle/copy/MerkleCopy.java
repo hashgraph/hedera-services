@@ -101,7 +101,7 @@ public final class MerkleCopy {
      * </p>
      *
      * @param parent
-     * 		the destination parent where that will hold the subree
+     * 		the destination parent where that will hold the subtree
      * @param index
      * 		the destination index where the subtree will sit
      * @param child

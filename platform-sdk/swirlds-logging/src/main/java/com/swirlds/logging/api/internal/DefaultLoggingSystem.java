@@ -55,7 +55,7 @@ public class DefaultLoggingSystem {
     private static final EmergencyLogger EMERGENCY_LOGGER = EmergencyLoggerProvider.getEmergencyLogger();
 
     /**
-     * The singleton instance holder for a more flexible singelton instantiation.
+     * The singleton instance holder for a more flexible singleton instantiation.
      */
     private static final class InstanceHolder {
 

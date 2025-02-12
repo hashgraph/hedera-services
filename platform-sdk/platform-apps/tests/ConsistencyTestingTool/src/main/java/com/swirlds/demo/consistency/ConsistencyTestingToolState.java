@@ -144,7 +144,7 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
 
     /**
      * Sets the state
-     * @param stateLong state represtented by a long
+     * @param stateLong state represented by a long
      */
     void setStateLong(final long stateLong) {
         this.stateLong = stateLong;
