@@ -210,7 +210,7 @@ public class SwirldsPlatform implements Platform {
         logger.info(STARTUP.getMarker(), "Starting with roster history:\n{}", blocks.rosterHistory());
         currentRoster = blocks.rosterHistory().getCurrentRoster();
 
-        platformWiring = new PlatformWiring(platformContext, blocks.model(), blocks.applicationCallbacks());
+        platformWiring = blocks.platformWiring();
 
         registerRosterMetrics(platformContext.getMetrics(), currentRoster, selfId);
 

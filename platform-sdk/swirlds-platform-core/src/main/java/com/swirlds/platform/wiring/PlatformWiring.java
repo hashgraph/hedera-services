@@ -949,6 +949,16 @@ public class PlatformWiring {
     }
 
     /**
+     * Get the wiring for the consensus engine
+     *
+     * @return the wiring for the consensus engine
+     */
+    @NonNull
+    public ComponentWiring<ConsensusEngine, List<ConsensusRound>> getConsensusEngineWiring() {
+        return consensusEngineWiring;
+    }
+
+    /**
      * Update the running hash for all components that need it.
      *
      * @param runningHashUpdate the object containing necessary information to update the running hash
