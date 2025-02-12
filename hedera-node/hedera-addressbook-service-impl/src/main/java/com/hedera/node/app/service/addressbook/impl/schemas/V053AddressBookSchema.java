@@ -142,7 +142,6 @@ public class V053AddressBookSchema extends Schema {
     private Key getAccountAdminKey(@NonNull final MigrationContext ctx) {
         var adminKey = Key.DEFAULT;
 
-        final var accountConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
         ReadableKVState<AccountID, Account> readableAccounts = null;
 
         try {
@@ -151,7 +150,11 @@ public class V053AddressBookSchema extends Schema {
             log.info("AccountStore is not found, can be ignored.");
         }
         if (readableAccounts != null) {
+            final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
+            final var accountConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
             final var adminAccount = readableAccounts.get(AccountID.newBuilder()
+                    .shardNum(hederaConfig.shard())
+                    .realmNum(hederaConfig.realm())
                     .accountNum(accountConfig.addressBookAdmin())
                     .build());
             if (adminAccount != null) {
@@ -164,7 +167,6 @@ public class V053AddressBookSchema extends Schema {
     private Map<Long, NodeAddress> getNodeAddressMap(@NonNull final MigrationContext ctx) {
         Map<Long, NodeAddress> nodeDetailMap = null;
 
-        final var fileConfig = ctx.appConfig().getConfigData(FilesConfig.class);
         ReadableKVState<FileID, File> readableFiles = null;
         try {
             readableFiles = ctx.newStates().get(FILES_KEY);
@@ -173,7 +175,8 @@ public class V053AddressBookSchema extends Schema {
         }
 
         if (readableFiles != null) {
-            var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
+            final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
+            final var fileConfig = ctx.appConfig().getConfigData(FilesConfig.class);
             final var nodeDetailFile = readableFiles.get(FileID.newBuilder()
                     .shardNum(hederaConfig.shard())
                     .realmNum(hederaConfig.realm())
