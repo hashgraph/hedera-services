@@ -231,7 +231,8 @@ public class StandaloneDispatchFactory {
                 getTxnCategory(preHandleResult),
                 tokenContext,
                 preHandleResult,
-                HandleContext.ConsensusThrottling.ON);
+                HandleContext.ConsensusThrottling.ON,
+                null);
     }
 
     public static HandleContext.TransactionCategory getTxnCategory(final PreHandleResult preHandleResult) {
