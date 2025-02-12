@@ -376,6 +376,7 @@ public record DispatchOptions<T extends StreamBuilder>(
                 streamBuilderType,
                 ReversingBehavior.REVERSIBLE,
                 NOOP_TRANSACTION_CUSTOMIZER,
-                EMPTY_METADATA);
+                EMPTY_METADATA,
+                NOOP_FEE_CHARGING);
     }
 }
