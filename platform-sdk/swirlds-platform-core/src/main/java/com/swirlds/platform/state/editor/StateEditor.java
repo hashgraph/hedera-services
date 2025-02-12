@@ -228,7 +228,7 @@ public class StateEditor {
      */
     public MerkleNode getRelativeNode(final String path) {
         try (final ReservedSignedState reservedSignedState = getState("StateEditor.getRelativeNode()")) {
-            MerkleTraversable merkleTraversable =
+            final MerkleTraversable merkleTraversable =
                     reservedSignedState.get().getState().cast();
             return merkleTraversable.getNodeAtRoute(getRelativeRoute(path));
         }
