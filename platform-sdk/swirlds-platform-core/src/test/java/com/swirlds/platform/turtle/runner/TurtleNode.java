@@ -176,7 +176,7 @@ public class TurtleNode {
 
         final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
                 consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
-        platformComponentBuilder.bindInputWireToConsensusEngine(consensusRoundsHolderInputWire);
+        platformComponentBuilder.withInputWireToConsensusEngine(consensusRoundsHolderInputWire);
     }
 
     /**

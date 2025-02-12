@@ -103,6 +103,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -229,12 +230,15 @@ public class PlatformComponentBuilder {
     }
 
     /**
-     * Binds a custom input wire to the consensus engine output wire. This method is mainly created for test purposes.
+     * Binds a custom input wire to the consensus engine output wire.
      *
-     * @param inputWire to bind
+     * @param inputWire with matching type of consensus engine output to bind
      */
-    public void bindInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
-        swirldsPlatform.bindInputWireToConsensusEngine(inputWire);
+    public void withInputWireToConsensusEngine(final InputWire<List<ConsensusRound>> inputWire) {
+        final PlatformWiring platformWiring = blocks.platformWiring();
+        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                platformWiring.getConsensusEngineWiring();
+        consensusEngineWiring.getOutputWire().solderTo(inputWire);
     }
 
     /**
