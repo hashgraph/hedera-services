@@ -192,7 +192,7 @@ public class SwirldStateManager implements FreezePeriodChecker {
     }
 
     private void fastCopyAndUpdateRefs(final State state) {
-        State newState = fastCopy(state, stats, softwareVersion, platformStateFacade);
+        final State newState = fastCopy(state, stats, softwareVersion, platformStateFacade);
 
         // Set latest immutable first to prevent the newly immutable stateRoot from being deleted between setting the
         // stateRef and the latestImmutableState
