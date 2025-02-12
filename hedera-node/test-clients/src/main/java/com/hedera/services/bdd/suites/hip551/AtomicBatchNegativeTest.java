@@ -16,7 +16,22 @@
 
 package com.hedera.services.bdd.suites.hip551;
 
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
 
 @HapiTestLifecycle
 public class AtomicBatchNegativeTest {
@@ -33,17 +48,17 @@ public class AtomicBatchNegativeTest {
     //            return hapiTest(atomicBatch().hasPrecheck(BATCH_LIST_EMPTY));
     //        }
     //
-    //        @HapiTest
-    //        @DisplayName("Batch with invalid duration should fail")
-    //        // BATCH_39
-    //        public Stream<DynamicTest> batchWithInvalidDurationShouldFail() {
-    //            return hapiTest(
-    //                    cryptoCreate("batchOperator").balance(FIVE_HBARS),
-    //                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
-    //                            .validDurationSecs(-5)
-    //                            .payingWith("batchOperator")
-    //                            .hasPrecheck(INVALID_TRANSACTION_DURATION));
-    //        }
+    @HapiTest
+    @DisplayName("Batch with invalid duration should fail")
+    // BATCH_39
+    public Stream<DynamicTest> batchWithInvalidDurationShouldFail() {
+        return hapiTest(
+                cryptoCreate("batchOperator").balance(FIVE_HBARS),
+                atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                        .validDurationSecs(-5)
+                        .payingWith("batchOperator")
+                        .hasPrecheck(INVALID_TRANSACTION_DURATION));
+    }
     //
     //        @HapiTest
     //        @DisplayName("Batch containing inner txn with invalid duration should fail")
@@ -57,41 +72,41 @@ public class AtomicBatchNegativeTest {
     //                            .hasPrecheck(INVALID_TRANSACTION_DURATION));
     //        }
     //
-    //        @HapiTest
-    //        @DisplayName("Submit same batch twice should fail")
-    //        // BATCH_42 BATCH_43
-    //        public Stream<DynamicTest> submitSameBatch() {
-    //
-    //            return hapiTest(
-    //                    cryptoCreate("batchOperator").balance(FIVE_HBARS),
-    //                    usableTxnIdNamed("successfulBatch").payerId("batchOperator"),
-    //                    usableTxnIdNamed("failingBatch").payerId("batchOperator"),
-    //                    cryptoCreate("sender").balance(0L),
-    //                    cryptoCreate("receiver"),
-    //
-    //                    // successful batch duplication
-    //                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
-    //                            .txnId("successfulBatch")
-    //                            .payingWith("batchOperator"),
-    //                    atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
-    //                            .txnId("successfulBatch")
-    //                            .payingWith("batchOperator")
-    //                            .hasPrecheck(DUPLICATE_TRANSACTION),
-    //
-    //                    // failing batch duplication
-    //                    atomicBatch(cryptoTransfer(movingHbar(10L).between("sender", "receiver"))
-    //                                    .batchKey("batchOperator")
-    //                                    .signedByPayerAnd("sender"))
-    //                            .txnId("failingBatch")
-    //                            .payingWith("batchOperator")
-    //                            .hasKnownStatus(INNER_TRANSACTION_FAILED),
-    //                    atomicBatch(cryptoTransfer(movingHbar(10L).between("sender", "receiver"))
-    //                                    .batchKey("batchOperator")
-    //                                    .signedByPayerAnd("sender"))
-    //                            .txnId("failingBatch")
-    //                            .payingWith("batchOperator")
-    //                            .hasPrecheck(DUPLICATE_TRANSACTION));
-    //        }
+    @HapiTest
+    @DisplayName("Submit same batch twice should fail")
+    // BATCH_42 BATCH_43
+    public Stream<DynamicTest> submitSameBatch() {
+
+        return hapiTest(
+                cryptoCreate("batchOperator").balance(FIVE_HBARS),
+                usableTxnIdNamed("successfulBatch").payerId("batchOperator"),
+                usableTxnIdNamed("failingBatch").payerId("batchOperator"),
+                cryptoCreate("sender").balance(0L),
+                cryptoCreate("receiver"),
+
+                // successful batch duplication
+                atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                        .txnId("successfulBatch")
+                        .payingWith("batchOperator"),
+                atomicBatch(cryptoCreate("foo").batchKey("batchOperator"))
+                        .txnId("successfulBatch")
+                        .payingWith("batchOperator")
+                        .hasPrecheck(DUPLICATE_TRANSACTION),
+
+                // failing batch duplication
+                atomicBatch(cryptoTransfer(movingHbar(10L).between("sender", "receiver"))
+                                .batchKey("batchOperator")
+                                .signedByPayerAnd("sender"))
+                        .txnId("failingBatch")
+                        .payingWith("batchOperator")
+                        .hasKnownStatus(INNER_TRANSACTION_FAILED),
+                atomicBatch(cryptoTransfer(movingHbar(10L).between("sender", "receiver"))
+                                .batchKey("batchOperator")
+                                .signedByPayerAnd("sender"))
+                        .txnId("failingBatch")
+                        .payingWith("batchOperator")
+                        .hasPrecheck(DUPLICATE_TRANSACTION));
+    }
     //
     //        @HapiTest
     //        @DisplayName("Submit batch with duplicated inner txn should fail")
