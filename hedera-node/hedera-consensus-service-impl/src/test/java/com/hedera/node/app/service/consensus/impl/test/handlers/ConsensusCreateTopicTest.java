@@ -114,6 +114,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     private Configuration config;
     private ConsensusCreateTopicHandler subject;
 
+    private final long SHARD = 5;
+    private final long REALM = 10L;
+
     private TransactionBody newCreateTxn(Key adminKey, Key submitKey, boolean hasAutoRenewAccount) {
         return newCreateTxn(adminKey, submitKey, hasAutoRenewAccount, null, null);
     }
@@ -292,16 +295,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     void handleWorksAsExpected() {
         final var adminKey = SIMPLE_KEY_A;
         final var submitKey = SIMPLE_KEY_B;
-        final var shard = 5;
-        final var realm = 10L;
         final var txnBody = newCreateTxn(adminKey, submitKey, true);
         final var op = txnBody.consensusCreateTopic();
-        final var configuration = HederaTestConfigBuilder.create()
-                .withValue("topics.maxNumber", 10L)
-                .withValue("hedera.shard", shard)
-                .withValue("hedera.realm", realm)
-                .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(configuration);
+
+        // mock configuration
+        mockConfigurations();
+
         given(handleContext.body()).willReturn(txnBody);
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
@@ -316,12 +315,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var topicID = TopicID.newBuilder()
-                .shardNum(shard)
-                .realmNum(realm)
+        final var expectedTopicID = TopicID.newBuilder()
+                .shardNum(SHARD)
+                .realmNum(REALM)
                 .topicNum(1_234L)
                 .build();
-        final var createdTopic = topicStore.getTopic(topicID);
+        final var createdTopic = topicStore.getTopic(expectedTopicID);
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -332,8 +331,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1234667, actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
-        verify(recordBuilder).topicID(topicID);
-        assertNotNull(topicStore.getTopic(topicID));
+        verify(recordBuilder).topicID(expectedTopicID);
+        assertNotNull(topicStore.getTopic(expectedTopicID));
     }
 
     @Test
@@ -342,6 +341,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         final var txnBody = newCreateTxn(SIMPLE_KEY_A, null, true);
         final var op = txnBody.consensusCreateTopic();
         given(handleContext.body()).willReturn(txnBody);
+
+        // mock configuration
+        mockConfigurations();
 
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -355,8 +357,12 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic =
-                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
+        final var expectedTopicId = TopicID.newBuilder()
+                .shardNum(SHARD)
+                .realmNum(REALM)
+                .topicNum(1_234L)
+                .build();
+        final var createdTopic = topicStore.getTopic(expectedTopicId);
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -367,9 +373,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
-        final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
-        verify(recordBuilder).topicID(topicID);
-        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
+        verify(recordBuilder).topicID(expectedTopicId);
+        assertNotNull(topicStore.getTopic(expectedTopicId));
     }
 
     @Test
@@ -505,6 +510,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         given(accountStore.getAliasedAccountById(any())).willReturn(Account.DEFAULT);
 
+        // mock configuration
+        mockConfigurations();
         // mock validators
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -520,8 +527,9 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
 
         subject.handle(handleContext);
 
-        final var createdTopic =
-                topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build());
+        final var expectedTopicId =
+                TopicID.newBuilder().shardNum(5).realmNum(10).topicNum(1_234L).build();
+        final var createdTopic = topicStore.getTopic(expectedTopicId);
         assertNotNull(createdTopic);
 
         final var actualTopic = createdTopic;
@@ -531,9 +539,8 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         assertEquals(1_234_567L + op.autoRenewPeriod().seconds(), actualTopic.expirationSecond());
         assertEquals(op.autoRenewPeriod().seconds(), actualTopic.autoRenewPeriod());
         assertEquals(autoRenewId, actualTopic.autoRenewAccountId());
-        final var topicID = TopicID.newBuilder().topicNum(1_234L).build();
-        verify(recordBuilder).topicID(topicID);
-        assertNotNull(topicStore.getTopic(TopicID.newBuilder().topicNum(1_234L).build()));
+        verify(recordBuilder).topicID(expectedTopicId);
+        assertNotNull(topicStore.getTopic(expectedTopicId));
     }
 
     @Test
@@ -600,6 +607,15 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
     }
 
     // Note: there are more tests in ConsensusCreateTopicHandlerParityTest.java
+
+    private void mockConfigurations() {
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("topics.maxNumber", 10L)
+                .withValue("hedera.shard", 5)
+                .withValue("hedera.realm", 10L)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(configuration);
+    }
 
     private Key mockPayerLookup(Key key) {
         final var account = mock(Account.class);
