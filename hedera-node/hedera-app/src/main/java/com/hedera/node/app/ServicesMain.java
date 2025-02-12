@@ -89,6 +89,7 @@ import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.ReadableRosterStoreImpl;
 import com.swirlds.platform.state.signed.HashedReservedSignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.StartupStateUtils;
 import com.swirlds.platform.system.InitTrigger;
@@ -303,8 +304,16 @@ public class ServicesMain implements SwirldMain<State> {
         final var recycleBin =
                 RecycleBin.create(metrics, platformConfig, getStaticThreadManager(), time, fileSystemManager, selfId);
         StateLifecycles<State> stateLifecycles = hedera.newStateLifecycles();
-        final var maybeDiskAddressBook = loadLegacyAddressBook();
-        final var reservedState = loadInitialState(
+        final PlatformContext platformContext = PlatformContext.create(
+                platformConfig,
+                Time.getCurrent(),
+                metrics,
+                cryptography,
+                FileSystemManager.create(platformConfig),
+                recycleBin,
+                merkleCryptography);
+        final Optional<AddressBook> maybeDiskAddressBook = loadLegacyAddressBook();
+        final HashedReservedSignedState reservedState = loadInitialState(
                 platformConfig,
                 recycleBin,
                 version,
@@ -324,9 +333,10 @@ public class ServicesMain implements SwirldMain<State> {
                 Hedera.APP_NAME,
                 Hedera.SWIRLD_NAME,
                 selfId,
-                platformStateFacade);
-        final var initialState = reservedState.state();
-        final var state = initialState.get().getState();
+                platformStateFacade,
+                platformContext);
+        final ReservedSignedState initialState = reservedState.state();
+        final State state = initialState.get().getState();
         if (!isGenesis.get()) {
             hedera.initializeStatesApi(state, RESTART, null, platformConfig);
         }
@@ -343,14 +353,6 @@ public class ServicesMain implements SwirldMain<State> {
         final var networkKeysAndCerts = initNodeSecurity(addressBook, platformConfig, Set.copyOf(nodesToRun));
         final var keysAndCerts = networkKeysAndCerts.get(selfId);
         cryptography.digestSync(addressBook);
-        final var platformContext = PlatformContext.create(
-                platformConfig,
-                Time.getCurrent(),
-                metrics,
-                cryptography,
-                FileSystemManager.create(platformConfig),
-                recycleBin,
-                merkleCryptography);
 
         // --- Now build the platform and start it ---
         final var rosterHistory = RosterUtils.createRosterHistory(rosterStore);
@@ -509,16 +511,24 @@ public class ServicesMain implements SwirldMain<State> {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
-            @NonNull final PlatformStateFacade platformStateFacade) {
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext) {
         final var loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, platformStateFacade);
+                configuration,
+                recycleBin,
+                selfId,
+                mainClassName,
+                swirldName,
+                softwareVersion,
+                platformStateFacade,
+                platformContext);
         try (loadedState) {
             if (loadedState.isNotNull()) {
                 logger.info(
                         STARTUP.getMarker(),
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-                return copyInitialSignedState(configuration, loadedState.get(), platformStateFacade);
+                return copyInitialSignedState(configuration, loadedState.get(), platformStateFacade, platformContext);
             }
         }
         final var stateRoot = stateRootSupplier.get();
@@ -531,9 +541,11 @@ public class ServicesMain implements SwirldMain<State> {
                 false,
                 false,
                 platformStateFacade);
+        signedState.init(platformContext);
         final var reservedSignedState = signedState.reserve("initial reservation on genesis state");
         try (reservedSignedState) {
-            return copyInitialSignedState(configuration, reservedSignedState.get(), platformStateFacade);
+            return copyInitialSignedState(
+                    configuration, reservedSignedState.get(), platformStateFacade, platformContext);
         }
     }
 

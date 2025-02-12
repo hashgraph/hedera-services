@@ -37,6 +37,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.state.merkle.memory.InMemoryReadableKVState;
@@ -304,22 +305,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal implements Merkle
                     + " The minimum supported version is " + getMinimumSupportedVersion());
         }
         return this;
-    }
-
-    /**
-     * Puts the defined service state and its associated node into the merkle tree. The precondition
-     * for calling this method is that node MUST be a {@link MerkleMap} or {@link VirtualMap} and
-     * MUST have a correct label applied. If the node is already present, then this method does nothing
-     * else.
-     *
-     * @param md The metadata associated with the state
-     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
-     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
-     * it doesn't have a label, or if the label isn't right.
-     */
-    public void putServiceStateIfAbsent(
-            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<? extends MerkleNode> nodeSupplier) {
-        putServiceStateIfAbsent(md, nodeSupplier, n -> {});
     }
 
     /**

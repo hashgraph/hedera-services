@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.swirlds.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.test.fixtures.merkle.MerkleTestBase;
 import java.util.HashSet;
 import org.junit.jupiter.api.DisplayName;
@@ -32,13 +33,13 @@ class StateUtilsTest extends MerkleTestBase {
     @DisplayName("Validating a null service name throws an NPE")
     void nullServiceNameThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> StateUtils.validateServiceName(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> StateMetadata.validateServiceName(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     @DisplayName("Validating a service name with no characters throws an exception")
     void emptyServiceNameThrows() {
-        assertThatThrownBy(() -> StateUtils.validateServiceName(""))
+        assertThatThrownBy(() -> StateMetadata.validateServiceName(""))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("service name");
     }
@@ -47,7 +48,7 @@ class StateUtilsTest extends MerkleTestBase {
     @MethodSource("com.swirlds.state.test.fixtures.merkle.TestArgumentUtils#illegalIdentifiers")
     @DisplayName("Service Names with illegal characters throw an exception")
     void invalidServiceNameThrows(final String serviceName) {
-        assertThatThrownBy(() -> StateUtils.validateServiceName(serviceName))
+        assertThatThrownBy(() -> StateMetadata.validateServiceName(serviceName))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -55,7 +56,7 @@ class StateUtilsTest extends MerkleTestBase {
     @MethodSource("com.swirlds.state.test.fixtures.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("Service names with legal characters are valid")
     void validServiceNameWorks(final String serviceName) {
-        assertThat(StateUtils.validateServiceName(serviceName)).isEqualTo(serviceName);
+        assertThat(StateMetadata.validateServiceName(serviceName)).isEqualTo(serviceName);
     }
 
     @Test
@@ -84,27 +85,27 @@ class StateUtilsTest extends MerkleTestBase {
     @MethodSource("com.swirlds.state.test.fixtures.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("State keys with legal characters are valid")
     void validStateKeyWorks(final String stateKey) {
-        assertThat(StateUtils.validateServiceName(stateKey)).isEqualTo(stateKey);
+        assertThat(StateMetadata.validateServiceName(stateKey)).isEqualTo(stateKey);
     }
 
     @Test
     @DisplayName("Validating a null identifier throws an NPE")
     void nullIdentifierThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> StateUtils.validateIdentifier(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> StateMetadata.validateIdentifier(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     @DisplayName("Validating an identifier with no characters throws an exception")
     void emptyIdentifierThrows() {
-        assertThatThrownBy(() -> StateUtils.validateIdentifier("")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> StateMetadata.validateIdentifier("")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
     @MethodSource("com.swirlds.state.test.fixtures.merkle.TestArgumentUtils#illegalIdentifiers")
     @DisplayName("Identifiers with illegal characters throw an exception")
     void invalidIdentifierThrows(final String identifier) {
-        assertThatThrownBy(() -> StateUtils.validateIdentifier(identifier))
+        assertThatThrownBy(() -> StateMetadata.validateIdentifier(identifier))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -112,7 +113,7 @@ class StateUtilsTest extends MerkleTestBase {
     @MethodSource("com.swirlds.state.test.fixtures.merkle.TestArgumentUtils#legalIdentifiers")
     @DisplayName("Identifiers with legal characters are valid")
     void validIdentifierWorks(final String identifier) {
-        assertThat(StateUtils.validateIdentifier(identifier)).isEqualTo(identifier);
+        assertThat(StateMetadata.validateIdentifier(identifier)).isEqualTo(identifier);
     }
 
     @Test
@@ -152,8 +153,9 @@ class StateUtilsTest extends MerkleTestBase {
     @Test
     @DisplayName("`computeClassId` is always {serviceName}:{stateKey}:v{version}:{extra}")
     void computeClassId() {
-        final var classId = StateUtils.hashString("A:B:v1.0.0:C");
-        assertThat(StateUtils.computeClassId("A", "B", version(1, 0, 0), "C")).isEqualTo(classId);
+        final var classId = StateMetadata.hashString("A:B:v1.0.0:C");
+        assertThat(StateMetadata.computeClassId("A", "B", version(1, 0, 0), "C"))
+                .isEqualTo(classId);
     }
 
     /**
@@ -166,7 +168,7 @@ class StateUtilsTest extends MerkleTestBase {
     @DisplayName("`computeClassId` with metadata is always {serviceName}:{stateKey}:v{version}:{extra}")
     void computeClassId_withMetadata() {
         setupFruitMerkleMap();
-        final var classId = StateUtils.hashString(FIRST_SERVICE
+        final var classId = StateMetadata.hashString(FIRST_SERVICE
                 + ":"
                 + FRUIT_STATE_KEY
                 + ":v"
@@ -176,7 +178,7 @@ class StateUtilsTest extends MerkleTestBase {
                 + "."
                 + TEST_VERSION.patch()
                 + ":C");
-        assertThat(StateUtils.computeClassId(FIRST_SERVICE, FRUIT_STATE_KEY, TEST_VERSION, "C"))
+        assertThat(StateMetadata.computeClassId(FIRST_SERVICE, FRUIT_STATE_KEY, TEST_VERSION, "C"))
                 .isEqualTo(classId);
     }
 
@@ -192,7 +194,7 @@ class StateUtilsTest extends MerkleTestBase {
         // When I call computeValueClassId with those and collect the resulting hash
         for (final var serviceName : fakeServiceNames) {
             for (final var stateKey : fakeStateKeys) {
-                final var hash = StateUtils.computeClassId(serviceName, stateKey, TEST_VERSION, "extra string");
+                final var hash = StateMetadata.computeClassId(serviceName, stateKey, TEST_VERSION, "extra string");
                 hashes.add(hash);
             }
         }

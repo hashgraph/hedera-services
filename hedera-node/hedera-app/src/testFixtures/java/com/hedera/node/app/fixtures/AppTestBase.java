@@ -46,6 +46,7 @@ import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -63,6 +64,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import com.swirlds.state.spi.ReadableStates;
@@ -79,7 +81,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * Most of the components in this module have rich and interesting dependencies. While we can (and at times must) mock
@@ -162,6 +166,14 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
             @Override
             public void setHash(Hash hash) {
+                // no-op
+            }
+
+            @Override
+            public <T extends MerkleNode> void putServiceStateIfAbsent(
+                    @NonNull StateMetadata<?, ?> md,
+                    @NonNull Supplier<T> nodeSupplier,
+                    @NonNull Consumer<T> nodeInitializer) {
                 // no-op
             }
         };

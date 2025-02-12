@@ -20,15 +20,19 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
@@ -115,5 +119,14 @@ public class WrappedState implements State {
     @Override
     public void setHash(Hash hash) {
         delegate.setHash(hash);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull StateMetadata<?, ?> md, @NonNull Supplier<T> nodeSupplier, @NonNull Consumer<T> nodeInitializer) {
+        delegate.putServiceStateIfAbsent(md, nodeSupplier, nodeInitializer);
     }
 }

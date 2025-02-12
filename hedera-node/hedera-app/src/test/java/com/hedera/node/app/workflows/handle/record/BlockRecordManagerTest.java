@@ -55,11 +55,13 @@ import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -73,7 +75,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -470,6 +474,14 @@ final class BlockRecordManagerTest extends AppTestBase {
 
             @Override
             public void setHash(Hash hash) {
+                throw new UnsupportedOperationException("Shouldn't be needed for this test");
+            }
+
+            @Override
+            public <T extends MerkleNode> void putServiceStateIfAbsent(
+                    @NonNull StateMetadata<?, ?> md,
+                    @NonNull Supplier<T> nodeSupplier,
+                    @NonNull Consumer<T> nodeInitializer) {
                 throw new UnsupportedOperationException("Shouldn't be needed for this test");
             }
         };

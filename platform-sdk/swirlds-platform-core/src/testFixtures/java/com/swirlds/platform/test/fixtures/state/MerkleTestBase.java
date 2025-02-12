@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.merkle.MerkleStateRoot;
-import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.merkle.memory.InMemoryKey;
