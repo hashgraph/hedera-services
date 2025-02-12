@@ -377,7 +377,8 @@ public class UserTxnFactory {
                 preHandleResult,
                 transactionCategory == SCHEDULED
                         ? HandleContext.ConsensusThrottling.OFF
-                        : HandleContext.ConsensusThrottling.ON);
+                        : HandleContext.ConsensusThrottling.ON,
+                null);
     }
 
     /**

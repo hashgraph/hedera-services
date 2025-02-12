@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_S
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
+import static com.hedera.node.app.spi.fees.NoopFeeCharging.NOOP_FEE_CHARGING;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
@@ -96,6 +97,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -591,7 +593,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES)))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatch(subDispatch(
                             AccountID.DEFAULT,
@@ -600,7 +604,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             null,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -615,9 +621,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.OFF,
-                            UsePresetTxnId.NO))),
-                    Arguments.of((Consumer<HandleContext>) context ->
-                            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES))),
+                    Arguments.of((Consumer<HandleContext>) context -> context.dispatch(
+                            setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class, NOOP_FEE_CHARGING)))));
         }
 
         @ParameterizedTest
@@ -682,7 +690,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
-            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class));
+            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class, NOOP_FEE_CHARGING));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -713,7 +721,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     emptySet(),
                     StreamBuilder.class,
                     StakingRewards.ON,
-                    UsePresetTxnId.NO));
+                    UsePresetTxnId.NO,
+                    NOOP_FEE_CHARGING,
+                    PropagateFeeChargingStrategy.YES));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

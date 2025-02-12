@@ -31,7 +31,6 @@ package proto;
  */
 
 option java_package = "com.hederahashgraph.api.proto.java";
-// <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
 option java_multiple_files = true;
 
 import "basic_types.proto";
@@ -108,6 +107,7 @@ import "event/state_signature_transaction.proto";
 import "auxiliary/hints/hints_key_publication.proto";
 import "auxiliary/hints/hints_preprocessing_vote.proto";
 import "auxiliary/hints/hints_partial_signature.proto";
+import "auxiliary/hints/crs_publication.proto";
 
 import "auxiliary/history/history_proof_signature.proto";
 import "auxiliary/history/history_proof_key_publication.proto";
@@ -127,6 +127,7 @@ import "auxiliary/history/history_proof_vote.proto";
  * The four deprecated fields will be removed and reserved in a future release.
  */
 message Transaction {
+    // <<<pbj.java_package = "com.hedera.hapi.node.base">>> This comment is special code for setting PBJ Compiler java package
     /**
      * Replaced with `signedTransactionBytes`.<br/>
      * The body of the transaction.
@@ -256,7 +257,7 @@ message TransactionBody {
      *
      * Only Ed25519 and ECDSA(secp256k1) keys and hence signatures are currently supported.
      */
-    Key batchKey = 72;
+    Key batchKey = 73;
 
     // The fields here are ordered in strictly ascending field ordinal
     // order due to limitations in PBJ.
@@ -655,7 +656,12 @@ message TransactionBody {
          */
         com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody history_proof_vote = 71;
 
-        AtomicBatchTransactionBody atomicBatch = 73;
+        /**
+         * A transaction body for broadcasting a node's crs publication
+         */
+        com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody crs_publication = 72;
+
+        AtomicBatchTransactionBody atomicBatch = 74;
     }
 
     /**
