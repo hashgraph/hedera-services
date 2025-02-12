@@ -711,8 +711,6 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
         initAppStat();
 
-        registerAccountBalanceExportListener();
-
         if (waitForSaveStateDuringFreeze) {
             registerFinishAfterSaveStateDuringFreezeListener();
         }
@@ -1064,26 +1062,6 @@ public class PlatformTestingToolMain implements SwirldMain<PlatformTestingToolSt
 
             return Pair.of(maxAccountIdFromLoadedState.get(), maxSmartContractIdFromLoadedState.get());
         }
-    }
-
-    /**
-     * Register a {@link StateWriteToDiskCompleteListener} that writes an
-     * account balance export to the saved state folder.
-     */
-    private void registerAccountBalanceExportListener() {
-        platform.getNotificationEngine().register(StateWriteToDiskCompleteListener.class, notification -> {
-            if (!(notification.getState() instanceof PlatformTestingToolState)) {
-                return;
-            }
-
-            final PlatformTestingToolState state = (PlatformTestingToolState) notification.getState();
-
-            final AccountBalanceExport export = new AccountBalanceExport(0L);
-            final String balanceFile = export.exportAccountsBalanceCSVFormat(
-                    state, notification.getConsensusTimestamp(), notification.getFolder());
-
-            export.signAccountBalanceFile(platform, balanceFile);
-        });
     }
 
     /**

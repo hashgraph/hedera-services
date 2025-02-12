@@ -56,26 +56,6 @@ public class StateWriteToDiskCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * Deprecated method, always returns null
-     * @return null
-     * @deprecated used by PTT for an obsolete feature
-     */
-    @Deprecated(forRemoval = true)
-    public State getState() {
-        return null;
-    }
-
-    /**
-     * Deprecated method, always returns null
-     * @return null
-     * @deprecated used by PTT for an obsolete feature
-     */
-    @Deprecated(forRemoval = true)
-    public Path getFolder() {
-        return null;
-    }
-
-    /**
      * Gets whether this is a freeze state
      *
      * @return whether this is a freeze state
