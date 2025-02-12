@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.util.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static java.util.Objects.requireNonNull;
@@ -75,34 +76,34 @@ public class AtomicBatchHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var batchConfig = context.configuration().getConfigData(AtomicBatchConfig.class);
         final var op = context.body().atomicBatchOrThrow();
-        if (batchConfig.isEnabled()) {
-            final var transactions = op.transactions();
-            final var txnBodies = new ArrayList<TransactionBody>();
-            // validate all the inner transactions
-            for (final var transaction : transactions) {
-                TransactionBody body;
-                try {
-                    body = context.bodyFromTransaction(transaction);
-                    context.checkTimeBox(requireNonNull(body));
-                    context.checkDuplication(body.transactionIDOrThrow());
-                    txnBodies.add(body);
-                } catch (HandleException e) {
-                    // Do we need to keep the specific ResponseCodeEnum here?
-                    throw new HandleException(INNER_TRANSACTION_FAILED);
-                }
+        if (!context.configuration().getConfigData(AtomicBatchConfig.class).isEnabled()) {
+            throw new HandleException(NOT_SUPPORTED);
+        }
+        final var transactions = op.transactions();
+        final var txnBodies = new ArrayList<TransactionBody>();
+        // validate all the inner transactions
+        for (final var transaction : transactions) {
+            TransactionBody body;
+            try {
+                body = context.bodyFromTransaction(transaction);
+                context.checkTimeBox(requireNonNull(body));
+                context.checkDuplication(body.transactionIDOrThrow());
+                txnBodies.add(body);
+            } catch (HandleException e) {
+                // Do we need to keep the specific ResponseCodeEnum here?
+                throw new HandleException(INNER_TRANSACTION_FAILED);
             }
-            // dispatch all the inner transactions
-            for (final var body : txnBodies) {
-                final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+        }
+        // dispatch all the inner transactions
+        for (final var body : txnBodies) {
+            final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
 
-                // all the inner transactions' keys are verified in PreHandleWorkflow
-                final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
-                final var streamBuilder = context.dispatch(dispatchOptions);
-                if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
-                    throw new HandleException(INNER_TRANSACTION_FAILED);
-                }
+            // all the inner transactions' keys are verified in PreHandleWorkflow
+            final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
+            final var streamBuilder = context.dispatch(dispatchOptions);
+            if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
+                throw new HandleException(INNER_TRANSACTION_FAILED);
             }
         }
     }

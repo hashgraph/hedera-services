@@ -119,6 +119,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     // in an atomic batch, null otherwise
     @Nullable
     private final List<PreHandleResult> preHandleResults;
+
     private final DeduplicationCache deduplicationCache;
 
     public DispatchHandleContext(
