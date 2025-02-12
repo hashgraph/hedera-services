@@ -959,6 +959,16 @@ public class PlatformWiring {
     }
 
     /**
+     * Get the wiring for the state signature collector
+     *
+     * @return the wiring for the state signature collector
+     */
+    @NonNull
+    public ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> getStateSignatureCollectorWiring() {
+        return stateSignatureCollectorWiring;
+    }
+
+    /**
      * Update the running hash for all components that need it.
      *
      * @param runningHashUpdate the object containing necessary information to update the running hash

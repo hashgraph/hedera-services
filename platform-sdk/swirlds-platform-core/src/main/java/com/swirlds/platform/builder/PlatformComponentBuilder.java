@@ -93,6 +93,7 @@ import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateSentinel;
 import com.swirlds.platform.state.signed.StateGarbageCollector;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
 import com.swirlds.platform.state.signer.DefaultStateSigner;
 import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.DefaultStateSnapshotManager;
@@ -241,14 +242,22 @@ public class PlatformComponentBuilder {
         final PlatformWiring platformWiring = blocks.platformWiring();
 
         for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : inputWires.entrySet()) {
+            if (inputWireEntry.getValue() == null) {
+                return;
+            }
+
             switch (inputWireEntry.getKey()) {
                 case CONSENSUS_ENGINE -> {
                     final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
                             platformWiring.getConsensusEngineWiring();
-                    if (inputWireEntry.getValue() != null) {
-                        consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
-                                inputWireEntry.getValue());
-                    }
+                    consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
+                            inputWireEntry.getValue());
+                }
+                case STATE_SIGNATURE_COLLECTOR -> {
+                    final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>
+                            stateSignatureCollectorWiring = platformWiring.getStateSignatureCollectorWiring();
+                    stateSignatureCollectorWiring.getOutputWire().solderTo((InputWire<List<ReservedSignedState>>)
+                            inputWireEntry.getValue());
                 }
             }
         }
@@ -1411,6 +1420,11 @@ public class PlatformComponentBuilder {
         /**
          * Solder a wire to the consensus engine output
          */
-        CONSENSUS_ENGINE
+        CONSENSUS_ENGINE,
+
+        /**
+         * Solder a wire to the state signature collector output
+         */
+        STATE_SIGNATURE_COLLECTOR
     }
 }
