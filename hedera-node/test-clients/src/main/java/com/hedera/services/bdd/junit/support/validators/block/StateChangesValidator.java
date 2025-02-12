@@ -699,6 +699,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case HINTS_CONSTRUCTION_VALUE -> singletonUpdateChange.hintsConstructionValueOrThrow();
             case ENTITY_COUNTS_VALUE -> singletonUpdateChange.entityCountsValueOrThrow();
             case HISTORY_PROOF_CONSTRUCTION_VALUE -> singletonUpdateChange.historyProofConstructionValueOrThrow();
+            case CRS_STATE_VALUE -> singletonUpdateChange.crsStateValueOrThrow();
         };
     }
 
@@ -765,6 +766,7 @@ public class StateChangesValidator implements BlockStreamValidator {
             case TSS_VOTE_VALUE -> mapChangeValue.tssVoteValueOrThrow();
             case HINTS_KEY_SET_VALUE -> mapChangeValue.hintsKeySetValueOrThrow();
             case PREPROCESSING_VOTE_VALUE -> mapChangeValue.preprocessingVoteValueOrThrow();
+            case CRS_PUBLICATION_VALUE -> mapChangeValue.crsPublicationValueOrThrow();
         };
     }
 
