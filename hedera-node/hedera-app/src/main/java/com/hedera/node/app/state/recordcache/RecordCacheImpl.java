@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -418,14 +418,6 @@ public class RecordCacheImpl implements HederaRecordCache {
                                     "Non-duplicate {} not cached for either payer or submitting node {}",
                                     txnId,
                                     payerId);
-                            logger.warn("Actual status: {}", receipt.status());
-                            final var history = historySources.get(txnId);
-                            if (history != null) {
-                                final var records = history.historyOf(txnId).duplicateRecords();
-                                records.forEach(record -> logger.warn("Record: {}", record));
-                            } else {
-                                logger.warn("No history found for {}", txnId);
-                            }
                         }
                     }
                     if (txnIds.isEmpty()) {
