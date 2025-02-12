@@ -24,6 +24,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -489,6 +490,7 @@ public final class ConsensusTestDefinitions {
         // Phase 2: node 0 is never used as an other-parent
         orchestrator.setOtherParentAffinity(createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), 0));
         orchestrator.generateEvents(0.8);
+        orchestrator.runGui();
 
         // Phase 3: all nodes are used as other-parents, again
         orchestrator.setOtherParentAffinity(createBalancedOtherParentMatrix(input.numberOfNodes()));
@@ -581,6 +583,7 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         final Instant snapshotTimestamp = Instant.now();
+        final Configuration configuration = input.platformContext().getConfiguration();
         orchestrator.getNodes().forEach(n -> {
             final int numEvents = orchestrator.getEventFraction(0.5);
             n.getEventEmitter().setCheckpoint(numEvents);
@@ -592,10 +595,8 @@ public final class ConsensusTestDefinitions {
                     round,
                     lastConsensusOrder,
                     snapshotTimestamp,
-                    ConfigurationBuilder.create()
-                            .withConfigDataType(ConsensusConfig.class)
-                            .build()
-                            .getConfigData(ConsensusConfig.class),
+                    configuration.getConfigData(ConsensusConfig.class),
+                    configuration.getConfigData(EventConfig.class).getAncientMode(),
                     maxGenEvent.orElseThrow().getBaseEvent());
             n.getIntake().loadSnapshot(syntheticSnapshot);
         });

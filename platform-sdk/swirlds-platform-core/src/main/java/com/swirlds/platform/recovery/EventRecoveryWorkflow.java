@@ -395,7 +395,8 @@ public final class EventRecoveryWorkflow {
                     getHashEventsCons(previousReadablePlatformState.getLegacyRunningEventHash(), round));
             v.setConsensusTimestamp(currentRoundTimestamp);
             v.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
-                    round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
+                    round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config,
+                    platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode(), lastEvent));
             v.setCreationSoftwareVersion(previousReadablePlatformState.getCreationSoftwareVersion());
         });
 
