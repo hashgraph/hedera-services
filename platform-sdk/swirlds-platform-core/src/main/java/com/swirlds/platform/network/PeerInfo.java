@@ -51,6 +51,6 @@ public record PeerInfo(
                 return peer;
             }
         }
-        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in peer list: " + peers);
+        throw new RosterEntryNotFoundException("No RosterEntry with nodeId: " + nodeId + " in peer list: " + peers.stream().map(it -> it.hostname).toList());
     }
 }
