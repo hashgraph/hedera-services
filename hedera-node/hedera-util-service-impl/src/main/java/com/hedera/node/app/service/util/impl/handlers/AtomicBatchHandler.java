@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.util.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_BATCH_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
@@ -24,6 +25,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -37,6 +39,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -45,11 +48,15 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AtomicBatchHandler implements TransactionHandler {
+    private final Function<Transaction, TransactionBody> bodyParser;
+
     /**
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {}
+    public AtomicBatchHandler(Function<Transaction, TransactionBody> bodyParser) {
+        this.bodyParser = bodyParser;
+    }
 
     /**
      * Performs checks independent of state or context.
@@ -59,7 +66,20 @@ public class AtomicBatchHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
-        // TODO
+        final var op = context.body().atomicBatchOrThrow();
+        for (final var transaction : op.transactions()) {
+            final TransactionBody txBody;
+            try {
+                txBody = bodyParser.apply(transaction);
+            } catch (HandleException e) {
+                throw new PreCheckException(e.getStatus());
+            }
+
+            // validate batch key exists on each inner transaction
+            if (!txBody.hasBatchKey()) {
+                throw new PreCheckException(MISSING_BATCH_KEY);
+            }
+        }
     }
 
     /**
@@ -83,10 +103,8 @@ public class AtomicBatchHandler implements TransactionHandler {
         }
         final var txnBodies = new ArrayList<TransactionBody>();
         for (final var transaction : op.transactions()) {
-            TransactionBody body;
             try {
-                body = context.bodyFromTransaction(transaction);
-                txnBodies.add(body);
+                txnBodies.add(bodyParser.apply(transaction));
             } catch (HandleException e) {
                 // Do we need to keep the specific ResponseCodeEnum here?
                 throw new HandleException(INNER_TRANSACTION_FAILED);

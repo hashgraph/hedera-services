@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollow
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_BATCH_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
 import com.google.protobuf.ByteString;
@@ -119,7 +120,7 @@ public class AtomicBatchTest {
                 cryptoCreate(innerTnxPayer).balance(ONE_HBAR),
                 usableTxnIdNamed(innerTxnId).payerId(innerTnxPayer),
                 // Since the inner txn doesn't have batchKey, it should fail
-                atomicBatch(innerTxn).payingWith(batchOperator).hasKnownStatus(INNER_TRANSACTION_FAILED));
+                atomicBatch(innerTxn).payingWith(batchOperator).hasPrecheck(MISSING_BATCH_KEY));
     }
 
     @HapiTest

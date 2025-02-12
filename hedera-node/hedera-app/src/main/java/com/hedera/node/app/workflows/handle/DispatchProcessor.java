@@ -220,6 +220,7 @@ public class DispatchProcessor {
      */
     private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final FeeCharging.Validation validation) {
         dispatch.recordBuilder().status(validation.errorStatusOrThrow());
+        // If the transaction is a batch inner transaction, we don't charge the creator
         if (isBatchInnerTxn(dispatch.txnInfo().txBody())) {
             return;
         }

@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
@@ -428,16 +427,5 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public DispatchMetadata dispatchMetadata() {
         return dispatchMetaData;
-    }
-
-    @Nullable
-    @Override
-    public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws HandleException {
-        try {
-            final var transactionInfo = transactionChecker.check(tx, null);
-            return transactionInfo.txBody();
-        } catch (PreCheckException e) {
-            throw new HandleException(e.responseCode());
-        }
     }
 }

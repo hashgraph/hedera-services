@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -43,6 +44,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +58,9 @@ class AtomicBatchHandlerTest {
 
     @Mock
     private StreamBuilder recordBuilder;
+
+    @Mock
+    private Function<Transaction, TransactionBody> bodyParser;
 
     private AtomicBatchHandler subject;
 
@@ -75,7 +80,7 @@ class AtomicBatchHandlerTest {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
 
-        subject = new AtomicBatchHandler();
+        subject = new AtomicBatchHandler(bodyParser);
     }
 
     @Test
@@ -88,6 +93,7 @@ class AtomicBatchHandlerTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
+        given(bodyParser.apply(any())).willReturn(innerTxnBody);
         final var dispatchOptions = atomicBatchDispatch(payerId2, innerTxnBody, StreamBuilder.class);
         given(handleContext.dispatch(dispatchOptions)).willReturn(recordBuilder);
         given(recordBuilder.status()).willReturn(UNKNOWN);
@@ -106,6 +112,7 @@ class AtomicBatchHandlerTest {
         given(handleContext.body()).willReturn(txnBody);
         final var dispatchOptions = atomicBatchDispatch(payerId2, innerTxnBody, StreamBuilder.class);
         given(handleContext.dispatch(dispatchOptions)).willReturn(recordBuilder);
+        given(bodyParser.apply(any())).willReturn(innerTxnBody);
         given(recordBuilder.status()).willReturn(SUCCESS);
         subject.handle(handleContext);
         verify(handleContext).dispatch(dispatchOptions);
@@ -126,6 +133,7 @@ class AtomicBatchHandlerTest {
                         ConsensusDeleteTopicTransactionBody.newBuilder().build())
                 .build();
         given(handleContext.body()).willReturn(txnBody);
+        given(bodyParser.apply(any())).willReturn(innerTxnBody1).willReturn(innerTxnBody2);
         final var dispatchOptions1 = atomicBatchDispatch(payerId2, innerTxnBody1, StreamBuilder.class);
         final var dispatchOptions2 = atomicBatchDispatch(payerId3, innerTxnBody2, StreamBuilder.class);
         given(handleContext.dispatch(dispatchOptions1)).willReturn(recordBuilder);

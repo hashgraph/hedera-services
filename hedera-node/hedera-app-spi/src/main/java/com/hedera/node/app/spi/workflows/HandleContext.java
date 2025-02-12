@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -38,7 +37,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,7 +81,8 @@ public interface HandleContext {
         /**
          * A transaction submitted by Node for TSS service
          */
-        NODE
+        NODE,
+        //        BATCH_INNER_TXN
     }
 
     /**
@@ -453,11 +452,4 @@ public interface HandleContext {
      * be used to pass additional information to the targeted handlers.
      */
     DispatchMetadata dispatchMetadata();
-
-    /**
-     * Returns the TransactionBogy from the given transaction.
-     * @return the TransactionBogy
-     */
-    @Nullable
-    TransactionBody bodyFromTransaction(@NonNull final Transaction tx);
 }

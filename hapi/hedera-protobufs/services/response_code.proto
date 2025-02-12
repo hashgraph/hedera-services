@@ -1731,4 +1731,8 @@ enum ResponseCodeEnum {
      * The inner transaction failed
      */
     INNER_TRANSACTION_FAILED = 391;
+    /**
+     * The inner batch transaction is missing a batch key
+     */
+    MISSING_BATCH_KEY = 392;
 }
