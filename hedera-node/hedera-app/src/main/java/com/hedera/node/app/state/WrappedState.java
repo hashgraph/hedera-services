@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
@@ -35,7 +34,7 @@ import java.util.function.LongSupplier;
  * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
  * commits all modifications to the underlying state.
  */
-public class WrappedState implements State, Hashable {
+public class WrappedState implements State {
 
     private final State delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();

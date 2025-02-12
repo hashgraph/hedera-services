@@ -26,7 +26,7 @@ package com.swirlds.demo.iss;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.platform.state.service.PlatformStateFacade.DEFAULT_PLATFORM_STATE_FACADE;
+import static com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade.TEST_PLATFORM_STATE_FACADE;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
@@ -104,7 +104,7 @@ public class ISSTestingToolState extends MerkleStateRoot {
                 platformContext.getTime(),
                 platformContext.getMetrics(),
                 platformContext.getMerkleCryptography(),
-                () -> DEFAULT_PLATFORM_STATE_FACADE.roundOf(this));
+                () -> TEST_PLATFORM_STATE_FACADE.roundOf(this));
 
         // since the test occurrences are relative to the genesis timestamp, the data only needs to be parsed at genesis
         if (trigger == InitTrigger.GENESIS) {
