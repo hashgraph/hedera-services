@@ -167,6 +167,7 @@ public class ProdTestIntake implements Intake {
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 false,
+                mock(),
                 mock());
 
         platformWiring = new PlatformWiring(context, model, mock(), output::consensusRound);

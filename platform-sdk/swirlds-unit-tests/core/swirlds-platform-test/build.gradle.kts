@@ -59,4 +59,5 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.state.api")
 }
