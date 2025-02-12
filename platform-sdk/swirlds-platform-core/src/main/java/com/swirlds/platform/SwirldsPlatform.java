@@ -187,8 +187,10 @@ public class SwirldsPlatform implements Platform {
 
         // This method is a no-op if we are not in birth round mode, or if we have already migrated.
         final SoftwareVersion appVersion = blocks.appVersion();
+        System.out.println("A hash: " + initialState.getState().getHash());
         modifyStateForBirthRoundMigration(initialState, ancientMode, appVersion);
 
+        System.out.println("B hash: " + initialState.getState().getHash());
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             try {
                 // This method is a no-op if we have already completed birth round migration or if we are at genesis.
@@ -203,6 +205,8 @@ public class SwirldsPlatform implements Platform {
             } catch (final IOException e) {
                 throw new UncheckedIOException("Birth round migration failed during PCES migration.", e);
             }
+
+            System.out.println("C hash: " + initialState.getState().getHash());
         }
 
         selfId = blocks.selfId();
@@ -244,6 +248,8 @@ public class SwirldsPlatform implements Platform {
                 platformWiring::flushTransactionHandler,
                 () -> latestImmutableStateNexus.getState("PCES replay"),
                 () -> isLessThan(blocks.model().getUnhealthyDuration(), replayHealthThreshold));
+
+        System.out.println("D hash: " + initialState.getState().getHash());
 
         initializeState(this, platformContext, initialState, stateLifecycles);
 
