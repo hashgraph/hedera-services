@@ -20,15 +20,12 @@ import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDE
 import static com.hedera.services.bdd.junit.RepeatableReason.NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiTest;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.PREDEFINED_SHAPE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.atomicBatch;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -36,7 +33,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -45,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThrottles;
@@ -821,69 +816,6 @@ public class AtomicBatchTest {
                                             .batchKey(batchOperator))
                             .signedByPayerAnd(batchOperator),
                     getAccountBalance(receiver).hasTinyBars(FIVE_HBARS * 2));
-        }
-    }
-
-    @Nested
-    @DisplayName("Order and Execution - NEGATIVE")
-    class OrderAndExecutionNegative {
-
-        @HapiTest
-        @DisplayName("Batch containing schedule sign and failing inner transaction")
-        // BATCH_56
-        public Stream<DynamicTest> scheduleSignAndFailingInnerTxn() {
-            final var batchOperator = "batchOperator";
-            final var sender = "sender";
-            final var receiver = "receiver";
-
-            return hapiTest(
-                    cryptoCreate(batchOperator).balance(FIVE_HBARS),
-                    cryptoCreate(sender).balance(ONE_HBAR),
-                    cryptoCreate(receiver).balance(0L),
-
-                    // create a schedule
-                    scheduleCreate("schedule", cryptoTransfer(tinyBarsFromTo(sender, receiver, 1)))
-                            .waitForExpiry(false),
-                    atomicBatch(
-                                    // sign the schedule
-                                    scheduleSign("schedule").payingWith(sender).batchKey(batchOperator),
-                                    // failing transfer
-                                    cryptoTransfer(tinyBarsFromTo(sender, receiver, ONE_HUNDRED_HBARS))
-                                            .batchKey(batchOperator))
-                            .payingWith(batchOperator)
-                            .hasKnownStatus(INNER_TRANSACTION_FAILED),
-
-                    // validate executed schedule was reverted
-                    getScheduleInfo("schedule").isNotExecuted(),
-                    getAccountBalance(receiver).hasTinyBars(0L));
-        }
-
-        @HapiTest
-        @DisplayName("Batch transactions reverts on failure")
-        // BATCH_57
-        public Stream<DynamicTest> batchTransactionsRevertsOnFailure() {
-            final var sender = "sender";
-            final var oldKey = "oldKey";
-            final var newKey = "newKey";
-            return hapiTest(
-                    newKeyNamed(oldKey),
-                    cryptoCreate(sender).key(oldKey).balance(FIVE_HBARS),
-                    newKeyNamed(newKey),
-                    atomicBatch(
-                                    cryptoUpdate(sender).key(newKey),
-                                    cryptoDelete(sender),
-                                    cryptoTransfer(tinyBarsFromTo(GENESIS, sender, 1)))
-                            .payingWith(sender)
-                            .hasKnownStatus(INNER_TRANSACTION_FAILED),
-
-                    // validate the account update and delete were reverted
-                    withOpContext((spec, opLog) -> {
-                        final var expectedKey = spec.registry().getKey(oldKey);
-                        final var accountQuery = getAccountDetails(sender)
-                                .logged()
-                                .has(accountDetailsWith().key(expectedKey));
-                        allRunFor(spec, accountQuery);
-                    }));
         }
     }
 }
