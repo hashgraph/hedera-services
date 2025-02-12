@@ -200,7 +200,7 @@ public class FCMTransactionUtils {
     }
 
     /**
-     * A FCMTransaction message has a one of type field body,
+     * A FCMTransaction message has a oneof type field body,
      * it can be CreateAccount, TransferBalance, etc.
      * This method return the specific body object contained in this FCMTransaction Message
      *

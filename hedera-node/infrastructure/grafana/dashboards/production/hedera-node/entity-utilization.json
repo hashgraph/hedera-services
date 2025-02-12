@@ -1663,7 +1663,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Entity Utilization",
-  "uid": "entity-utilization-prom",
+  "uid": "entity-utlization-prom",
   "version": 7,
   "weekStart": ""
 }

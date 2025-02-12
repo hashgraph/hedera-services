@@ -309,7 +309,7 @@ public class ActionStack {
      */
     public void sanitizeFinalActionsAndLogAnomalies(
             @NonNull final MessageFrame frame, @NonNull final Logger log, @NonNull final Level level) {
-        // Two possible error conditions are that invalid actions (mainly `one of` fields that
+        // Two possible error conditions are that invalid actions (mainly `oneof` fields that
         // don't have _exactly_ one alternative set) are added to the set of actions (which can
         // cause problems when ingesting sidecar records elsewhere) and that the current actions
         // stack is out-of-sync (due to some error elsewhere).  (The latter condition has not yet
@@ -357,7 +357,7 @@ public class ActionStack {
         return (type == CONTRACT_CREATION) ? withUnsetRecipient(action) : action;
     }
 
-    // (FUTURE) Use builder for simplicity when PBJ lets us set the one of recipient to UNSET;
+    // (FUTURE) Use builder for simplicity when PBJ lets us set the oneof recipient to UNSET;
     // c.f., https://github.com/hashgraph/pbj/issues/160
     private ContractAction withUnsetRecipient(@NonNull final ContractAction action) {
         return new ContractAction(

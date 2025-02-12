@@ -1450,7 +1450,7 @@ public class ContractCallSuite {
                 contractCreate(PAY_RECEIVABLE_CONTRACT),
                 submitModified(withSuccessivelyVariedBodyIds(), () -> contractCall(PAY_RECEIVABLE_CONTRACT)),
                 // It's also ok to use a default PBJ ContractID (i.e. an id with
-                // UNSET contract one of) to make a no-op call to address 0x00...00
+                // UNSET contract oneof) to make a no-op call to address 0x00...00
                 contractCall(DEFAULT_ID_SENTINEL));
     }
 

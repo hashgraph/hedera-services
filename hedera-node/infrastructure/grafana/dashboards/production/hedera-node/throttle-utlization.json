@@ -1059,7 +1059,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Throttle Utilization",
-  "uid": "throttle-utilization-prom",
+  "uid": "throttle-utlization-prom",
   "version": 9,
   "weekStart": ""
 }
