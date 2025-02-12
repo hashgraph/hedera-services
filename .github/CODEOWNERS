@@ -114,12 +114,12 @@
 **/pom.xml                                          @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners
 
 # Gradle project files and inline plugins
-/gradle/                                            @hiero-ledger/github-maintainers
-gradlew                                             @hiero-ledger/github-maintainers
-gradlew.bat                                         @hiero-ledger/github-maintainers
-**/build-logic/                                     @hiero-ledger/github-maintainers
-**/gradle.*                                         @hiero-ledger/github-maintainers
-**/*.gradle.*                                       @hiero-ledger/github-maintainers
+/gradle/                                            @hiero-ledger/github-maintainers @hiero-ledger/github-committers
+gradlew                                             @hiero-ledger/github-maintainers @hiero-ledger/github-committers
+gradlew.bat                                         @hiero-ledger/github-maintainers @hiero-ledger/github-committers
+**/build-logic/                                     @hiero-ledger/github-maintainers @hiero-ledger/github-committers
+**/gradle.*                                         @hiero-ledger/github-maintainers @hiero-ledger/github-committers
+**/*.gradle.*                                       @hiero-ledger/github-maintainers @hiero-ledger/github-committers
 
 # Codacy Tool Configurations
 /config/                                            @hiero-ledger/github-maintainers
