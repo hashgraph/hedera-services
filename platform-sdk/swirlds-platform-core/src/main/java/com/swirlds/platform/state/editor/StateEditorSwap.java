@@ -54,7 +54,7 @@ public class StateEditorSwap extends StateEditorOperation {
             final StateEditor.ParentInfo parentInfoA = getStateEditor().getParentInfo(pathA);
             final StateEditor.ParentInfo parentInfoB = getStateEditor().getParentInfo(pathB);
 
-            MerkleTraversable merkleTraversable =
+            final MerkleTraversable merkleTraversable =
                     reservedSignedState.get().getState().cast();
             final MerkleNode nodeA = merkleTraversable.getNodeAtRoute(parentInfoA.target());
             final MerkleNode nodeB = merkleTraversable.getNodeAtRoute(parentInfoB.target());
