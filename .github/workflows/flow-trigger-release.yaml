@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       build_number:
-        description: "Build Number (ex: 43 = build_00043):"
+        description: "Build Number (ex: 43 = build-00043):"
         type: string
         required: true
 
