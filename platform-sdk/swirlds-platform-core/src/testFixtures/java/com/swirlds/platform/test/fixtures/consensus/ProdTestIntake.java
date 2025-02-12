@@ -20,9 +20,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.consensus.SyntheticSnapshot.GENESIS_SNAPSHOT;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.time.Time;
@@ -79,12 +76,12 @@ public class ProdTestIntake implements Intake {
      */
     public ProdTestIntake(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
         final NodeId selfId = NodeId.of(0);
+        final Time time = platformContext.getTime();
         final var roundsNonAncient = platformContext
                 .getConfiguration()
                 .getConfigData(ConsensusConfig.class)
                 .roundsNonAncient();
 
-        final Time time = Time.getCurrent();
         output = new ConsensusOutput(time);
         final TestConfigBuilder builder = new TestConfigBuilder();
         platformContext
@@ -92,7 +89,8 @@ public class ProdTestIntake implements Intake {
                 .getPropertyNames()
                 .forEach(name -> builder.withValue(
                         name, platformContext.getConfiguration().getValue(name)));
-        var configuration = builder.withValue(PlatformSchedulersConfig_.EVENT_HASHER, "DIRECT")
+        var configuration = builder
+                .withValue(PlatformSchedulersConfig_.EVENT_HASHER, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.EVENT_DEDUPLICATOR, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.EVENT_SIGNATURE_VALIDATOR, "DIRECT")
                 .withValue(PlatformSchedulersConfig_.INTERNAL_EVENT_VALIDATOR, "DIRECT")
@@ -121,7 +119,7 @@ public class ProdTestIntake implements Intake {
                 .withValue(PlatformSchedulersConfig_.LATEST_COMPLETE_STATE_NOTIFIER, "NO_OP")
                 .getOrCreateConfig();
 
-        var model = WiringModelBuilder.create(platformContext)
+        final var model = WiringModelBuilder.create(platformContext)
                 .withDeterministicModeEnabled(true)
                 .build();
 
@@ -135,12 +133,20 @@ public class ProdTestIntake implements Intake {
                 .withFileSystemManager(platformContext.getFileSystemManager())
                 .build();
 
-        final Randotron randotron = Randotron.create();
-        // Mock the ReadableRosterStore
+        final var randotron = Randotron.create();
+        final var roster = RosterRetriever.buildRoster(addressBook);
+        final var hash = RosterUtils.hash(roster).getBytes();
+        final RosterHistory rosterHistory = new RosterHistory(
+                IntStream.range(0, roundsNonAncient)
+                        .boxed()
+                        .map(i -> RoundRosterPair.newBuilder()
+                                .roundNumber(i)
+                                .activeRosterHash(hash)
+                                .build())
+                        .toList(),
+                Map.of(hash, roster));
 
-        var roster = RosterRetriever.buildRoster(addressBook);
-        var hash = RosterUtils.hash(roster).getBytes();
-        final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
+        final var buildingBlocks = new PlatformBuildingBlocks(
                 context,
                 model,
                 mock(KeysAndCerts.class),
@@ -149,37 +155,28 @@ public class ProdTestIntake implements Intake {
                 "swirldName",
                 new BasicSoftwareVersion(1),
                 mock(),
-                new RosterHistory(
-                        IntStream.range(0, roundsNonAncient)
-                                .boxed()
-                                .map(i -> RoundRosterPair.newBuilder()
-                                        .roundNumber(i)
-                                        .activeRosterHash(hash)
-                                        .build())
-                                .toList(),
-                        Map.of(hash, roster)),
-                new ApplicationCallbacks(x -> {}, x -> {}, x -> {}, x -> Bytes.EMPTY),
+                rosterHistory,
+                mock(),
                 x -> {},
                 x -> {},
                 new NoOpIntakeEventCounter(),
                 new RandomBuilder(randotron.nextLong()),
-                new TransactionPoolNexus(platformContext),
+                mock(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 mock(),
                 "name",
                 mock(),
-                NotificationEngine.buildEngine(getStaticThreadManager()),
+                mock(),
                 new AtomicReference<>(),
                 mock(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 new AtomicReference<>(),
                 false,
-                FakeStateLifecycles.FAKE_MERKLE_STATE_LIFECYCLES);
+                mock());
 
-        platformWiring =
-                new PlatformWiring(context, model, buildingBlocks.applicationCallbacks(), output::consensusRound);
+        platformWiring = new PlatformWiring(context, model, mock(), output::consensusRound);
         platformWiring.bind(
                 new PlatformComponentBuilder(buildingBlocks)
                         .withGossip(mock())
@@ -273,27 +270,4 @@ public class ProdTestIntake implements Intake {
         output.clear();
     }
 
-    static Roster buildValidRoster() {
-        return Roster.newBuilder()
-                .rosterEntries(
-                        RosterEntry.newBuilder()
-                                .nodeId(0)
-                                .weight(1)
-                                .gossipCaCertificate(Bytes.wrap("test"))
-                                .gossipEndpoint(ServiceEndpoint.newBuilder()
-                                        .domainName("domain.com")
-                                        .port(666)
-                                        .build())
-                                .build(),
-                        RosterEntry.newBuilder()
-                                .nodeId(1)
-                                .weight(2)
-                                .gossipCaCertificate(Bytes.wrap("test"))
-                                .gossipEndpoint(ServiceEndpoint.newBuilder()
-                                        .domainName("domain.com")
-                                        .port(666)
-                                        .build())
-                                .build())
-                .build();
-    }
 }
