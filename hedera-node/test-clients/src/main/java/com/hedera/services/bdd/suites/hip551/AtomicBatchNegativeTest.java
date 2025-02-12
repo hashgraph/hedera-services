@@ -94,9 +94,10 @@ public class AtomicBatchNegativeTest {
                     cryptoCreate(sender).key(oldKey).balance(FIVE_HBARS),
                     newKeyNamed(newKey),
                     atomicBatch(
-                                    cryptoUpdate(sender).key(newKey),
-                                    cryptoDelete(sender),
-                                    cryptoTransfer(tinyBarsFromTo(GENESIS, sender, 1)))
+                                    cryptoUpdate(sender).key(newKey).batchKey(sender),
+                                    cryptoDelete(sender).batchKey(sender),
+                                    cryptoTransfer(tinyBarsFromTo(GENESIS, sender, 1))
+                                            .batchKey(sender))
                             .payingWith(sender)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
 
