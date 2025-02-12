@@ -1147,7 +1147,7 @@ public class HapiSpec implements Runnable, Executable {
         // directly from the network's HederaNode instances instead of this "nodes" property
         final var specNodes =
                 targetNetwork.nodes().stream().map(HederaNode::hapiSpecInfo).collect(joining(","));
-        spec.addOverrideProperties(Map.of("nodes", specNodes));
+        spec.addOverrideProperties(Map.of("nodes", specNodes, "memo.useSpecName", "true"));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
             final Map<String, String> overrides;
