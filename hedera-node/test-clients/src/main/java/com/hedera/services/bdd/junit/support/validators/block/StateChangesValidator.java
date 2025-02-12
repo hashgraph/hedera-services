@@ -297,6 +297,11 @@ public class StateChangesValidator implements BlockStreamValidator {
                         computeBlockHash(startOfStateHash, previousBlockHash, inputTreeHasher, outputTreeHasher);
                 validateBlockProof(blockProof, expectedBlockHash);
                 previousBlockHash = expectedBlockHash;
+            } else {
+                previousBlockHash = i < n - 1
+                        ? requireNonNull(blocks.get(i + 1).items().getFirst().blockProof())
+                                .previousBlockRootHash()
+                        : Bytes.EMPTY;
             }
         }
         logger.info("Summary of changes by service:\n{}", stateChangesSummary);
