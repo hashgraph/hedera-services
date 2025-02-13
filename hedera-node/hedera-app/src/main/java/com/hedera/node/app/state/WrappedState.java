@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,21 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
@@ -42,6 +51,14 @@ public class WrappedState implements State {
      */
     public WrappedState(@NonNull final State delegate) {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography, LongSupplier roundSupplier) {
+        delegate.init(time, metrics, merkleCryptography, roundSupplier);
     }
 
     /**
@@ -94,5 +111,22 @@ public class WrappedState implements State {
         for (final var writableStates : writableStatesMap.values()) {
             writableStates.commit();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setHash(Hash hash) {
+        delegate.setHash(hash);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull StateMetadata<?, ?> md, @NonNull Supplier<T> nodeSupplier, @NonNull Consumer<T> nodeInitializer) {
+        delegate.putServiceStateIfAbsent(md, nodeSupplier, nodeInitializer);
     }
 }

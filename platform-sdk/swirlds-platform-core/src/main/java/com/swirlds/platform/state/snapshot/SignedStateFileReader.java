@@ -22,10 +22,10 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.SUPPORTED
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.RosterStateId;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -35,9 +35,9 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
-import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -65,7 +65,8 @@ public final class SignedStateFileReader {
     public static @NonNull DeserializedSignedState readStateFile(
             @NonNull final Configuration configuration,
             @NonNull final Path stateFile,
-            @NonNull final PlatformStateFacade stateFacade)
+            @NonNull final PlatformStateFacade stateFacade,
+            @NonNull final PlatformContext platformContext)
             throws IOException {
 
         Objects.requireNonNull(configuration);
@@ -86,12 +87,13 @@ public final class SignedStateFileReader {
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (PlatformMerkleStateRoot) data.stateRoot(),
+                (State) data.stateRoot(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
                 false,
                 stateFacade);
+        newSignedState.init(platformContext);
 
         registerServiceStates(newSignedState);
 
@@ -167,15 +169,12 @@ public final class SignedStateFileReader {
 
     private static void registerServiceState(
             @NonNull final State state, @NonNull final Schema schema, @NonNull final String name) {
-        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
-            throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
-        }
         schema.statesToCreate().stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var md = new StateMetadata<>(name, schema, def);
                     if (def.singleton() || def.onDisk()) {
-                        merkleStateRoot.putServiceStateIfAbsent(md, () -> {
+                        state.putServiceStateIfAbsent(md, () -> {
                             throw new IllegalStateException(
                                     "State nodes " + md.stateDefinition().stateKey() + " for service " + name
                                             + " are supposed to exist in the state snapshot already.");

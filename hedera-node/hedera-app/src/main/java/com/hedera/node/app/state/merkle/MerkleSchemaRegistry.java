@@ -46,9 +46,9 @@ import com.swirlds.state.lifecycle.SchemaRegistry;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
-import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
 import com.swirlds.state.merkle.disk.OnDiskValueSerializer;
@@ -293,7 +293,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Configuration nodeConfiguration,
             @NonNull final Configuration platformConfiguration,
             @NonNull final Metrics metrics,
-            @NonNull final MerkleStateRoot<?> stateRoot) {
+            @NonNull final MerkleStateRoot stateRoot) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
         schema.statesToCreate(nodeConfiguration).stream()

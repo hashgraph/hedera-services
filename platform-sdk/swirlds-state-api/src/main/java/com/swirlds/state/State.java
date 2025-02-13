@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,14 @@
 
 package com.swirlds.state;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Hashable;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -27,13 +33,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * The full state used of the app. The primary implementation is based on a merkle tree, and the data
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
-public interface State extends FastCopyable {
+public interface State extends FastCopyable, Hashable {
+
+    void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography, LongSupplier roundSupplier);
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
@@ -54,6 +65,39 @@ public interface State extends FastCopyable {
      */
     @NonNull
     WritableStates getWritableStates(@NonNull String serviceName);
+
+    /**
+     * Puts the defined service state and its associated node into the merkle tree. The precondition
+     * for calling this method is that node MUST be a {@code MerkleMap} or {@code VirtualMap} and
+     * MUST have a correct label applied. If the node is already present, then this method does nothing
+     * else.
+     *
+     * @param md The metadata associated with the state
+     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
+     * it doesn't have a label, or if the label isn't right.
+     */
+    default void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md, @NonNull final Supplier<? extends MerkleNode> nodeSupplier) {
+        putServiceStateIfAbsent(md, nodeSupplier, n -> {});
+    }
+
+    /**
+     * Puts the defined service state and its associated node into the merkle tree. The precondition
+     * for calling this method is that node MUST be a {@code MerkleMap} or {@code VirtualMap} and
+     * MUST have a correct label applied. No matter if the resulting node is newly created or already
+     * present, calls the provided initialization consumer with the node.
+     *
+     * @param md The metadata associated with the state
+     * @param nodeSupplier Returns the node to add. Cannot be null. Can be used to create the node on-the-fly.
+     * @param nodeInitializer The node's initialization logic.
+     * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
+     * it doesn't have a label, or if the label isn't right.
+     */
+    <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull final StateMetadata<?, ?> md,
+            @NonNull final Supplier<T> nodeSupplier,
+            @NonNull final Consumer<T> nodeInitializer);
 
     /**
      * Registers a listener to be notified on each commit if the {@link WritableStates} created by this {@link State}
@@ -114,5 +158,16 @@ public interface State extends FastCopyable {
      */
     default State loadSnapshot(final @NonNull Path targetPath) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Blindly cast this state into the given type, will fail if node is not actually that type.
+     *
+     * @param <T>
+     * 		this node will be cast into this type
+     */
+    @SuppressWarnings("unchecked")
+    default <T extends State> T cast() {
+        return (T) this;
     }
 }

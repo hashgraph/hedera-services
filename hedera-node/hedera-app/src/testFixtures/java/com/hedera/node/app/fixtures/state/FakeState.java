@@ -21,8 +21,14 @@ import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StateMetadata;
 import com.swirlds.state.spi.EmptyReadableStates;
 import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.KVChangeListener;
@@ -47,6 +53,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * A useful test double for {@link State}. Works together with {@link MapReadableStates} and other fixtures.
@@ -254,5 +263,21 @@ public class FakeState implements State {
     private void purgeStatesCaches(@NonNull final String serviceName) {
         readableStates.remove(serviceName);
         writableStates.remove(serviceName);
+    }
+
+    @Override
+    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography, LongSupplier roundSupplier) {
+        // no-op
+    }
+
+    @Override
+    public void setHash(Hash hash) {
+        // no-op
+    }
+
+    @Override
+    public <T extends MerkleNode> void putServiceStateIfAbsent(
+            @NonNull StateMetadata<?, ?> md, @NonNull Supplier<T> nodeSupplier, @NonNull Consumer<T> nodeInitializer) {
+        // no-op
     }
 }
