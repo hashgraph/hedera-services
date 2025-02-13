@@ -83,8 +83,7 @@ public class TestIntake {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        final Time time = Time.getCurrent();
-        output = new ConsensusOutput(time);
+        output = new ConsensusOutput(ancientMode);
 
         model = WiringModelBuilder.create(platformContext).build();
 

@@ -35,7 +35,7 @@ import java.util.List;
  * Stores all output of consensus used in testing. This output can be used to validate consensus results.
  */
 public class ConsensusOutput implements Clearable {
-    private final Time time;
+    private final AncientMode ancientMode;
     private final LinkedList<ConsensusRound> consensusRounds;
     private final LinkedList<PlatformEvent> addedEvents;
     private final LinkedList<PlatformEvent> staleEvents;
@@ -45,23 +45,31 @@ public class ConsensusOutput implements Clearable {
 
     private long latestRound;
 
-    private EventWindow eventWindow = EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD);
+    private EventWindow eventWindow;
 
     /**
      * Creates a new instance.
      *
-     * @param time the time to use for marking events
+     * @param ancientMode the ancient mode
      */
-    public ConsensusOutput(@NonNull final Time time) {
-        this.time = time;
+    public ConsensusOutput(@NonNull final AncientMode ancientMode) {
+        this.ancientMode = ancientMode;
         addedEvents = new LinkedList<>();
         consensusRounds = new LinkedList<>();
         staleEvents = new LinkedList<>();
 
-        // FUTURE WORK: birth round compatibility
-        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, PlatformEvent::getGeneration);
+        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true,
+                e->ancientMode.selectIndicator(
+                        e.getGeneration(),
+                        e.getBirthRound()
+                ));
         nonAncientConsensusEvents = new StandardSequenceSet<>(
-                0, 1024, true, ed -> ed.eventDescriptor().generation());
+                0, 1024, true,
+                ed -> ancientMode.selectIndicator(
+                        ed.eventDescriptor().generation(),
+                        ed.eventDescriptor().birthRound()
+                ));
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
     }
 
     public void eventAdded(@NonNull final PlatformEvent event) {
