@@ -29,7 +29,7 @@ permissions:
 jobs:
   snyk:
     name: Snyk Monitor
-    runs-on: hiero-network-node-linux-medium
+    runs-on: hiero-network-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
@@ -69,4 +69,4 @@ jobs:
       - name: Run Snyk Monitor
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor --all-projects --policy-path=.snyk --trust-policies --org=hiero-consensus-node --print-depths --debug --log-level=trace
+        run: snyk monitor --all-projects --policy-path=.snyk --trust-policies --org=hiero-consensus-node --debug
