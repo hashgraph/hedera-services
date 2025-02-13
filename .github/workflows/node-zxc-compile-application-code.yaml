@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2022-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ env:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: network-node-linux-large
+    runs-on: hiero-network-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0080882f6c36860b6ba35c610c98ce87d4e2f26f # v2.10.2
@@ -570,8 +570,6 @@ jobs:
           touch build.gradle.kts
 
       - name: Setup Snyk
-        env:
-          SNYK_TOKEN: ${{ secrets.snyk-token }}
         if: >-
           ${{
             inputs.enable-snyk-scan &&
@@ -584,6 +582,20 @@ jobs:
             !cancelled()
           }}
         run: ${CG_EXEC} npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+
+      - name: Snyk Version
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: snyk --version
 
       - name: Snyk Scan
         id: snyk
@@ -600,7 +612,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --policy-path=.snyk --json-file-output=snyk-test.json --org=hedera-services
+        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --policy-path=.snyk --json-file-output=snyk-test.json --org=hiero-consensus-node
 
       - name: Snyk Code
         id: snyk-code
@@ -617,7 +629,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ${CG_EXEC} snyk code test --severity-threshold=high --json-file-output=snyk-code.json --org=hedera-services
+        run: ${CG_EXEC} snyk code test --severity-threshold=high --json-file-output=snyk-code.json --org=hiero-consensus-node
 
       - name: Publish Snyk Results
         if: >-

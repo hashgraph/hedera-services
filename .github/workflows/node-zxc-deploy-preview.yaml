@@ -1,5 +1,5 @@
 ##
-# Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+# Copyright (C) 2023-2025 Hedera Hashgraph, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ permissions:
 jobs:
   Deploy-Preview:
     name: ${{ inputs.custom-job-label || 'Deploy Preview' }}
-    runs-on: network-node-linux-large
+    runs-on: hiero-network-node-linux-large
     if: ${{ !github.event.workflow_call.repository.fork }}
     outputs:
       version: ${{ steps.effective-version.outputs.number }}
