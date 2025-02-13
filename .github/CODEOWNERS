@@ -32,7 +32,7 @@
 /hedera-node/infrastructure/**                  @hiero-ledger/github-maintainers @hiero-ledger/hcn-devops-codeowners @hiero-ledger/hcn-execution-codeowners
 
 # Hedera Node Docker Definitions
-/hedera-node/docker/                            @hiero-ledger/hcn-execution-codeowners @hiero-ledger/github-maintainers @hiero-ledger/release-engineering @hiero-ledger/github-maintainers
+/hedera-node/docker/                            @hiero-ledger/hcn-execution-codeowners @hiero-ledger/github-maintainers @hiero-ledger/github-committers
 
 # Hedera Node Modules
 /hedera-node/hapi*/                             @hiero-ledger/hcn-execution-codeowners
