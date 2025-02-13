@@ -19,6 +19,7 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
@@ -125,7 +126,7 @@ class AtomicBatchHandlerTest {
                 .nodeAccountID(AccountID.newBuilder().accountNum(0).build())
                 .build();
         given(pureChecksContext.body()).willReturn(txnBody);
-        given(pureChecksContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
+        given(bodyParser.apply(any())).willReturn(innerTxnBody);
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
         assertEquals(BATCH_LIST_CONTAINS_DUPLICATES, msg.responseCode());
@@ -142,7 +143,7 @@ class AtomicBatchHandlerTest {
                 .nodeAccountID(AccountID.newBuilder().accountNum(1).build())
                 .build();
         given(pureChecksContext.body()).willReturn(txnBody);
-        given(pureChecksContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
+        given(bodyParser.apply(any())).willReturn(innerTxnBody);
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
         assertEquals(INVALID_NODE_ACCOUNT_ID, msg.responseCode());
@@ -157,8 +158,8 @@ class AtomicBatchHandlerTest {
                         ConsensusCreateTopicTransactionBody.newBuilder().build())
                 .nodeAccountID(AccountID.newBuilder().accountNum(1).build())
                 .build();
+        given(bodyParser.apply(any())).willReturn(innerTxnBody);
         given(pureChecksContext.body()).willReturn(txnBody);
-        given(pureChecksContext.bodyFromTransaction(transaction)).willReturn(innerTxnBody);
 
         final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
         assertEquals(MISSING_BATCH_KEY, msg.responseCode());

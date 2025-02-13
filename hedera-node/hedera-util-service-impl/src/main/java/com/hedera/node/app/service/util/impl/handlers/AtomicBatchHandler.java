@@ -107,7 +107,7 @@ public class AtomicBatchHandler implements TransactionHandler {
                 throw new PreCheckException(MISSING_BATCH_KEY);
             }
 
-            if (!innerTrxBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)) {
+            if (!txBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)) {
                 throw new PreCheckException(INVALID_NODE_ACCOUNT_ID);
             }
         }
