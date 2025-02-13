@@ -37,7 +37,7 @@ import java.util.Random;
 /**
  * A source of events.
  */
-public abstract class AbstractEventSource<T extends AbstractEventSource<T>> implements EventSource {
+public abstract class AbstractEventSource implements EventSource {
 
     /**
      * The unique ID of this source/node. Is set by the StandardEventGenerator.
@@ -133,7 +133,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
         recentEventRetentionSize = 100;
     }
 
-    protected AbstractEventSource(final AbstractEventSource<T> that) {
+    protected AbstractEventSource(final AbstractEventSource that) {
         this.useFakeHashes = that.useFakeHashes;
         this.transactionGenerator = that.transactionGenerator;
         this.weight = that.weight;
