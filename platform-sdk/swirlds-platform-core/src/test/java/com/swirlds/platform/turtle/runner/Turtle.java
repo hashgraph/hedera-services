@@ -22,9 +22,12 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.consensus.framework.validation.ConsensusRoundValidation;
+import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.turtle.gossip.SimulatedNetwork;
 import com.swirlds.state.merkle.MerkleStateRoot;
@@ -137,6 +140,24 @@ public class Turtle {
     public void start() {
         for (final TurtleNode node : nodes) {
             node.start();
+        }
+    }
+
+    public void validate() {
+        final Validations validations = Validations.standard();
+
+        final TurtleNode node1 = nodes.getFirst();
+        final List<ConsensusRound> collectedRoundsForNode1 =
+                node1.getConsensusRoundsHolder().getCollectedRounds();
+
+        for (int i = 1; i < nodes.size(); i++) {
+            final TurtleNode node2 = nodes.get(i);
+            for (final ConsensusRoundValidation validator : validations.getConsensusRoundValidationsList()) {
+                final List<ConsensusRound> collectedRoundsForNode2 =
+                        node2.getConsensusRoundsHolder().getCollectedRounds();
+
+                validator.validate(collectedRoundsForNode1, collectedRoundsForNode2);
+            }
         }
     }
 
