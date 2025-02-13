@@ -46,6 +46,7 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
+import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -189,23 +190,23 @@ class FileGetContentsHandlerTest extends FileTestBase {
         assertNull(op.fileContents());
     }
 
-    //    @Test
-    //    void getsResponseIfOkResponse() {
-    //        givenValidFile();
-    //        final var responseHeader = ResponseHeader.newBuilder()
-    //                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
-    //                .build();
-    //        final var expectedContent = getExpectedContent();
-    //
-    //        final var query = createGetFileContentQuery(fileId);
-    //        when(context.query()).thenReturn(query);
-    //        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
-    //
-    //        final var response = subject.findResponse(context, responseHeader);
-    //        final var fileContentResponse = response.fileGetContentsOrThrow();
-    //        assertEquals(ResponseCodeEnum.OK, fileContentResponse.header().nodeTransactionPrecheckCode());
-    //        assertEquals(expectedContent, fileContentResponse.fileContents());
-    //    }
+    @Test
+    void getsResponseIfOkResponse() {
+        givenValidFile();
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedContent = getExpectedContent();
+
+        final var query = createGetFileContentQueryFromEntityId(fileId.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileContentResponse = response.fileGetContentsOrThrow();
+        assertEquals(ResponseCodeEnum.OK, fileContentResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedContent, fileContentResponse.fileContents());
+    }
 
     @Test
     void getsResponseIfInvalidFileID() {
@@ -240,6 +241,16 @@ class FileGetContentsHandlerTest extends FileTestBase {
         final var fileId = FileID.newBuilder().fileNum(fileNum).build();
         final var data = FileGetContentsQuery.newBuilder()
                 .fileID(fileId)
+                .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
+                .build();
+
+        return Query.newBuilder().fileGetContents(data).build();
+    }
+
+    private Query createGetFileContentQueryFromEntityId(long fileNum) {
+        final FileID fileID = new EntityIdFactoryImpl(5L, 10L).newFileId(fileNum);
+        final var data = FileGetContentsQuery.newBuilder()
+                .fileID(fileID)
                 .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 
