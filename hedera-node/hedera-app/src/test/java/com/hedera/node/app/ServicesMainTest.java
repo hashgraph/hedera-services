@@ -33,9 +33,9 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.merkle.MerkleStateRoot;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +58,7 @@ final class ServicesMainTest {
     private Hedera hedera;
 
     @Mock
-    private PlatformMerkleStateRoot merkleStateRoot;
+    private MerkleStateRoot state;
 
     private final ServicesMain subject = new ServicesMain();
 
@@ -102,10 +102,10 @@ final class ServicesMainTest {
     }
 
     @Test
-    void createsNewMerkleStateRoot() {
+    void createsNewStateRoot() {
         ServicesMain.initGlobal(hedera, metrics);
-        given(hedera.newMerkleStateRoot()).willReturn(merkleStateRoot);
-        assertSame(merkleStateRoot, subject.newMerkleStateRoot());
+        given(hedera.newStateRoot()).willReturn(state);
+        assertSame(state, subject.newStateRoot());
     }
 
     private void withBadCommandLineArgs() {

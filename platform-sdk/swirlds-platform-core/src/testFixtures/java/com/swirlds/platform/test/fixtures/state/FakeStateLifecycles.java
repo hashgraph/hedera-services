@@ -39,7 +39,6 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.BasicConfig;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -74,7 +73,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
-public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRoot> {
+public enum FakeStateLifecycles implements StateLifecycles<State> {
     FAKE_MERKLE_STATE_LIFECYCLES;
 
     public static final Configuration CONFIGURATION = ConfigurationBuilder.create()
@@ -94,9 +93,7 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     public static void registerMerkleStateRootClassIds() {
         try {
             ConstructableRegistry registry = ConstructableRegistry.getInstance();
-            registry.registerConstructable(new ClassConstructorPair(
-                    PlatformMerkleStateRoot.class,
-                    () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()))));
+            registry.registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
             registry.registerConstructable(new ClassConstructorPair(SingletonNode.class, SingletonNode::new));
             registry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             registry.registerConstructable(new ClassConstructorPair(
@@ -128,7 +125,7 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     }
 
     public List<StateChanges.Builder> initPlatformState(@NonNull final State state) {
-        if (!(state instanceof PlatformMerkleStateRoot merkleStateRoot)) {
+        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
             throw new IllegalArgumentException("Can only be used with MerkleStateRoot instances");
         }
         final var schema = new V0540PlatformStateSchema(config -> new BasicSoftwareVersion(1));
@@ -209,7 +206,7 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     @Override
     public void onPreHandle(
             @NonNull Event event,
-            @NonNull PlatformMerkleStateRoot state,
+            @NonNull State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
@@ -217,13 +214,13 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
     @Override
     public void onHandleConsensusRound(
             @NonNull Round round,
-            @NonNull PlatformMerkleStateRoot state,
+            @NonNull State state,
             @NonNull Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTransactionCallback) {
         // no-op
     }
 
     @Override
-    public boolean onSealConsensusRound(@NonNull Round round, @NonNull PlatformMerkleStateRoot state) {
+    public boolean onSealConsensusRound(@NonNull Round round, @NonNull State state) {
         // Touch this round
         round.getRoundNum();
         return true;
@@ -231,7 +228,7 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
 
     @Override
     public void onStateInitialized(
-            @NonNull PlatformMerkleStateRoot state,
+            @NonNull State state,
             @NonNull Platform platform,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
@@ -240,14 +237,12 @@ public enum FakeStateLifecycles implements StateLifecycles<PlatformMerkleStateRo
 
     @Override
     public void onUpdateWeight(
-            @NonNull PlatformMerkleStateRoot state,
-            @NonNull AddressBook configAddressBook,
-            @NonNull PlatformContext context) {
+            @NonNull State state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context) {
         // no-op
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull PlatformMerkleStateRoot recoveredState) {
+    public void onNewRecoveredState(@NonNull State recoveredState) {
         // no-op
     }
 }

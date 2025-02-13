@@ -30,9 +30,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -84,7 +82,7 @@ class PlatformStateTests {
     @SuppressWarnings("resource")
     void platformStateSerializationTest() throws IOException, ConstructableRegistryException {
         registerMerkleStateRootClassIds();
-        final MerkleStateRoot root = new PlatformMerkleStateRoot(v -> new BasicSoftwareVersion(1));
+        final MerkleStateRoot root = new MerkleStateRoot();
         FAKE_MERKLE_STATE_LIFECYCLES.initPlatformState(root);
 
         final InputOutputStream io = new InputOutputStream();

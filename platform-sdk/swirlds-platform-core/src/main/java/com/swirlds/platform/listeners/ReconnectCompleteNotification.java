@@ -17,7 +17,7 @@
 package com.swirlds.platform.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.state.State;
 import java.time.Instant;
 
 /**
@@ -27,17 +27,16 @@ public class ReconnectCompleteNotification extends AbstractNotification {
 
     private long roundNumber;
     private Instant consensusTimestamp;
-    private PlatformMerkleStateRoot state;
+    private State state;
 
-    public ReconnectCompleteNotification(
-            final long roundNumber, final Instant consensusTimestamp, final PlatformMerkleStateRoot state) {
+    public ReconnectCompleteNotification(final long roundNumber, final Instant consensusTimestamp, final State state) {
         this.roundNumber = roundNumber;
         this.consensusTimestamp = consensusTimestamp;
         this.state = state;
     }
 
     /**
-     * get round number from the {@link PlatformMerkleStateRoot}
+     * get round number from the {@link State}
      *
      * @return round number
      */
@@ -55,11 +54,11 @@ public class ReconnectCompleteNotification extends AbstractNotification {
     }
 
     /**
-     * get the {@link PlatformMerkleStateRoot} instance
+     * get the {@link State} instance
      *
-     * @return PlatformMerkleStateRoot
+     * @return State
      */
-    public PlatformMerkleStateRoot getState() {
+    public State getState() {
         return state;
     }
 }

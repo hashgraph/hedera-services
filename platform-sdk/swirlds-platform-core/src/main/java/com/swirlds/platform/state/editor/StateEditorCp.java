@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class StateEditorCp extends StateEditorOperation {
 
         // Invalidate hashes in path down from root
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorCp.run()")) {
-            new MerkleRouteIterator(reservedSignedState.get().getState(), parent.getRoute())
+            new MerkleRouteIterator(reservedSignedState.get().getState().cast(), parent.getRoute())
                     .forEachRemaining(Hashable::invalidateHash);
         }
     }

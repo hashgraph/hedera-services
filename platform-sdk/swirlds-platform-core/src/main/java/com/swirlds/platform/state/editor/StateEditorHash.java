@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class StateEditorHash extends StateEditorOperation {
     public void run() {
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorHash.run()")) {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(reservedSignedState.get().getState())
+                    .digestTreeAsync(reservedSignedState.get().getState().cast())
                     .get();
         } catch (final InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
