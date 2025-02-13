@@ -24,6 +24,7 @@ import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputV
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.gui.GeneratorEventProvider;
+import com.swirlds.platform.test.gui.ListEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -31,13 +32,15 @@ import java.util.function.Consumer;
 
 /** A type which orchestrates the generation of events and the validation of the consensus output */
 public class ConsensusTestOrchestrator {
+    private final PlatformContext platformContext;
     private final List<ConsensusTestNode> nodes;
     private long currentSequence = 0;
     private final List<Long> weights;
     private final int totalEventNum;
 
-    public ConsensusTestOrchestrator(
+    public ConsensusTestOrchestrator(final PlatformContext platformContext,
             final List<ConsensusTestNode> nodes, final List<Long> weights, final int totalEventNum) {
+        this.platformContext = platformContext;
         this.nodes = nodes;
         this.weights = weights;
         this.totalEventNum = totalEventNum;
@@ -64,16 +67,13 @@ public class ConsensusTestOrchestrator {
     @SuppressWarnings("unused") // useful for debugging
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
-
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final AddressBook addressBook =
                 node.getEventEmitter().getGraphGenerator().getAddressBook();
 
         new TestGuiSource(
                         platformContext,
                         addressBook,
-                        new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
+                        new ListEventProvider(node.getOutput().getAddedEvents()))
                 .runGui();
     }
 

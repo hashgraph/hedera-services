@@ -490,7 +490,7 @@ public final class ConsensusTestDefinitions {
         // Phase 2: node 0 is never used as an other-parent
         orchestrator.setOtherParentAffinity(createShunnedNodeOtherParentAffinityMatrix(input.numberOfNodes(), 0));
         orchestrator.generateEvents(0.8);
-        orchestrator.runGui();
+        //orchestrator.runGui();
 
         // Phase 3: all nodes are used as other-parents, again
         orchestrator.setOtherParentAffinity(createBalancedOtherParentMatrix(input.numberOfNodes()));
