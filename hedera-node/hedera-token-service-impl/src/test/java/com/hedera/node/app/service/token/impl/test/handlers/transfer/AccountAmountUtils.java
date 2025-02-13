@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,10 +99,7 @@ public final class AccountAmountUtils {
      * @param amount the amount
      * @return the {@link AccountAmount} object
      */
-    public static AccountAmount aaAlias(final Bytes alias, final long amount) {
-        return AccountAmount.newBuilder()
-                .amount(amount)
-                .accountID(AccountID.newBuilder().alias(alias).build())
-                .build();
+    public static AccountAmount aaAlias(final AccountID alias, final long amount) {
+        return AccountAmount.newBuilder().amount(amount).accountID(alias).build();
     }
 }

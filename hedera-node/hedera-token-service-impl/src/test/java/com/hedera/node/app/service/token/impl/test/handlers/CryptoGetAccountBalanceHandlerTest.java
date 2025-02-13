@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -272,7 +271,6 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableStore = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
-        ;
 
         final var query = createGetAccountBalanceQueryWithContract(deleteAccountNum);
         when(context.query()).thenReturn(query);
@@ -515,7 +513,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQuery(final long accountId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(accountId).build())
+                .accountID(entityIdFactory.newAccountId(accountId))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 
@@ -533,7 +531,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
 
     private Query createGetAccountBalanceQueryWithContract(final long contractId) {
         final var data = CryptoGetAccountBalanceQuery.newBuilder()
-                .contractID(ContractID.newBuilder().contractNum(contractId).build())
+                .contractID(entityIdFactory.newContractId(contractId))
                 .header(QueryHeader.newBuilder().build())
                 .build();
 

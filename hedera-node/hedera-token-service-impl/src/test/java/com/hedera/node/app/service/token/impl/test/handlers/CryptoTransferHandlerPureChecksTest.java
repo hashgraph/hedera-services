@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.mockito.BDDMockito.given;
@@ -101,7 +100,10 @@ class CryptoTransferHandlerPureChecksTest extends CryptoTransferHandlerTestBase 
     void pureChecksHbarTransfersHasAccountIdWithIllegalNumber() {
         final var txn = newCryptoTransfer(
                 ACCT_3333_MINUS_10,
-                ACCT_4444_PLUS_10.copyBuilder().accountID(asAccount(0)).build());
+                ACCT_4444_PLUS_10
+                        .copyBuilder()
+                        .accountID(idFactory.newAccountId(0))
+                        .build());
         given(pureChecksContext.body()).willReturn(txn);
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(pureChecksContext))
