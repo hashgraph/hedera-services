@@ -114,19 +114,6 @@ class AtomicBatchHandlerTest {
         assertEquals(BATCH_LIST_EMPTY, msg.responseCode());
     }
 
-    //    @Test
-    //    void failsIfInnerTxNull() {
-    //        final var atomicBatchBuilder = AtomicBatchTransactionBody.newBuilder().transactions((Transaction) null);
-    //        final var txnBody = newTxnBodyBuilder(payerId1, consensusTimestamp)
-    //                .atomicBatch(atomicBatchBuilder)
-    //                .build();
-    //
-    //        given(pureChecksContext.body()).willReturn(txnBody);
-    //
-    //        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-    //        assertEquals(BATCH_LIST_CONTAINS_NULL_VALUES, msg.responseCode());
-    //    }
-
     @Test
     void failsIfInnerTxDuplicate() throws PreCheckException {
         final var transaction = mock(Transaction.class);

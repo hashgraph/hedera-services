@@ -88,10 +88,6 @@ public class AtomicBatchHandler implements TransactionHandler {
 
         Set<Transaction> set = new HashSet<>();
         for (final Transaction transaction : transactions) {
-            if (transaction == null) { // I think this can never happen
-                throw new PreCheckException(BATCH_LIST_CONTAINS_NULL_VALUES);
-            }
-
             if (!set.add(transaction)) throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
 
             final var innerTrxBody = context.bodyFromTransaction(transaction);
