@@ -114,18 +114,18 @@ class AtomicBatchHandlerTest {
         assertEquals(BATCH_LIST_EMPTY, msg.responseCode());
     }
 
-//    @Test
-//    void failsIfInnerTxNull() {
-//        final var atomicBatchBuilder = AtomicBatchTransactionBody.newBuilder().transactions((Transaction) null);
-//        final var txnBody = newTxnBodyBuilder(payerId1, consensusTimestamp)
-//                .atomicBatch(atomicBatchBuilder)
-//                .build();
-//
-//        given(pureChecksContext.body()).willReturn(txnBody);
-//
-//        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
-//        assertEquals(BATCH_LIST_CONTAINS_NULL_VALUES, msg.responseCode());
-//    }
+    //    @Test
+    //    void failsIfInnerTxNull() {
+    //        final var atomicBatchBuilder = AtomicBatchTransactionBody.newBuilder().transactions((Transaction) null);
+    //        final var txnBody = newTxnBodyBuilder(payerId1, consensusTimestamp)
+    //                .atomicBatch(atomicBatchBuilder)
+    //                .build();
+    //
+    //        given(pureChecksContext.body()).willReturn(txnBody);
+    //
+    //        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(pureChecksContext));
+    //        assertEquals(BATCH_LIST_CONTAINS_NULL_VALUES, msg.responseCode());
+    //    }
 
     @Test
     void failsIfInnerTxDuplicate() throws PreCheckException {
@@ -214,6 +214,8 @@ class AtomicBatchHandlerTest {
                 .build();
         given(preHandleContext.body()).willReturn(txnBody);
         given(preHandleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
+        given(preHandleContext.requireKeyOrThrow(innerTxnBody1.batchKey(), BAD_ENCODING))
+                .willThrow(new PreCheckException(BAD_ENCODING));
         final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
         assertEquals(ResponseCodeEnum.BAD_ENCODING, msg.responseCode());
     }
@@ -236,7 +238,6 @@ class AtomicBatchHandlerTest {
         given(preHandleContext.bodyFromTransaction(transaction1)).willReturn(innerTxnBody1);
         given(preHandleContext.bodyFromTransaction(transaction2)).willReturn(innerTxnBody2);
         assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
-
     }
 
     @Test
