@@ -71,4 +71,4 @@ jobs:
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor --all-sub-projects --policy-path=.snyk --trust-policies
+        run: snyk monitor --all-sub-projects --policy-path=.snyk --trust-policies --org=hiero-consensus-node

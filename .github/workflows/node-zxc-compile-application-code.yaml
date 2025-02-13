@@ -599,7 +599,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --policy-path=.snyk --json-file-output=snyk-test.json --org=hedera-services
+        run: ${CG_EXEC} snyk test --all-sub-projects --severity-threshold=high --policy-path=.snyk --json-file-output=snyk-test.json --org=hiero-consensus-node
 
       - name: Snyk Code
         id: snyk-code
@@ -616,7 +616,7 @@ jobs:
             ) &&
             !cancelled()
           }}
-        run: ${CG_EXEC} snyk code test --severity-threshold=high --json-file-output=snyk-code.json --org=hedera-services
+        run: ${CG_EXEC} snyk code test --severity-threshold=high --json-file-output=snyk-code.json --org=hiero-consensus-node
 
       - name: Publish Snyk Results
         if: >-
