@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /**
  * # Gossip Event
  * An event that is sent and received via gossip

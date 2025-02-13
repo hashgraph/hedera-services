@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
 # script to test update feature on local macOS

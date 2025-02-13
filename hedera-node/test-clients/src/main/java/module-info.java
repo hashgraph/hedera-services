@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.dsl;
     exports com.hedera.services.bdd.spec.dsl.contracts;
