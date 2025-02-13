@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.turtle.runner;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -23,6 +25,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
@@ -219,6 +222,18 @@ public class Turtle {
                 throw new RuntimeException("Interrupted while ticking nodes", e);
             } catch (final ExecutionException e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void validate() {
+        for (final TurtleNode node : nodes) {
+            List<ReservedSignedState> reservedSignedStates =
+                    node.getSignedStateHolder().getCollectedSignedStates();
+
+            for (ReservedSignedState reservedSignedState : reservedSignedStates) {
+                assertTrue(reservedSignedState.get().isComplete());
+                assertTrue(reservedSignedState.get().isVerifiable());
             }
         }
     }
