@@ -54,7 +54,8 @@
 ###############################
 ##### Hedera Cryptography #####
 ###############################
-/hedera-cryptography/                               @hiero-ledger/hcn-tools-and-libs-codeowners @rsinha
+# add @rsinha as an explicit codeowner once hiero-invite has been added
+/hedera-cryptography/                               @hiero-ledger/hcn-tools-and-libs-codeowners
 
 #########################
 ##### Platform SDK ######
