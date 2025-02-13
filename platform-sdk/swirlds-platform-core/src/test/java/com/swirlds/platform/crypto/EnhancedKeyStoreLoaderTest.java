@@ -200,7 +200,7 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(loader).isNotNull();
         assertThatCode(loader::migrate).doesNotThrowAnyException();
         assertThatCode(loader::scan).doesNotThrowAnyException();
-        assertThatCode(loader::generate).isInstanceOf(KeyGeneratingException.class);
+        assertThatCode(loader::generate).doesNotThrowAnyException();
         assertThatCode(loader::verify).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::injectInAddressBook).isInstanceOf(KeyLoadingException.class);
         assertThatCode(loader::keysAndCerts).isInstanceOf(KeyLoadingException.class);
