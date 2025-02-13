@@ -67,8 +67,8 @@ jobs:
       - name: Check Milestone
         if: ${{ github.event.pull_request.milestone == null }}
         run: |
-            echo "Milestone is not set. Failing the workflow."
-            exit 1
+          echo "Milestone is not set. Failing the workflow."
+          exit 1
 
   assignee-check:
     name: Assignee Check
@@ -83,5 +83,5 @@ jobs:
       - name: Check Assignee
         if: ${{ github.event.pull_request.assignees == null || github.event.pull_request.assignees[0] == null }}
         run: |
-            echo "Assignee is not set. Failing the workflow."
-            exit 1
+          echo "Assignee is not set. Failing the workflow."
+          exit 1

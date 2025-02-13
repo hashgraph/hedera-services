@@ -51,7 +51,7 @@ on:
   push:
     branches:
       - main
-      - 'release/*'
+      - "release/*"
 
 defaults:
   run:
@@ -101,6 +101,7 @@ jobs:
           repo: hashgraph/hedera-services # ensure we are executing in the hashgraph org
           ref: main # ensure we are always using the workflow definition from the main branch
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          inputs: '{
-            "ref": "${{ github.ref }}"
-          }'
+          inputs: |
+            {
+              "ref": "${{ github.ref }}"
+            }
