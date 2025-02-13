@@ -49,7 +49,7 @@ permissions:
 jobs:
   prepare-tag-release:
     name: Prepare Release [Tag]
-    runs-on: network-node-linux-medium
+    runs-on: hiero-network-node-linux-medium
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
       version: ${{ steps.tag.outputs.version }}
@@ -142,7 +142,7 @@ jobs:
 
   deploy-ci-trigger:
     name: Trigger CI Flows
-    runs-on: network-node-linux-medium
+    runs-on: hiero-network-node-linux-medium
     needs:
       - release-branch
     steps:
@@ -211,7 +211,7 @@ jobs:
 
   update-hedera-protobufs:
     name: Update Hedera Protobufs
-    runs-on: network-node-linux-medium
+    runs-on: hiero-network-node-linux-medium
     needs:
       - prepare-tag-release
     steps:
