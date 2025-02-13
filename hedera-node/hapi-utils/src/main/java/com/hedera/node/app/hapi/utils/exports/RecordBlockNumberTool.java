@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ public class RecordBlockNumberTool {
         if (currentBlockNumber <= prevBlockNumber) {
             LOGGER.error(
                     MARKER,
-                    "Found new block number is equal or less than the prevous one, current {} vs" + " prev {}",
+                    "Found new block number is equal or less than the previous one, current {} vs" + " prev {}",
                     currentBlockNumber,
                     prevBlockNumber);
         }
