@@ -45,6 +45,7 @@ import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchem
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
 import com.hedera.node.app.spi.ids.ReadableEntityIdStore;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -106,8 +107,10 @@ public class AddressBookTestBase {
                                     A_COMPLEX_KEY)))
             .build();
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
-    protected static final long SHARD = 1L;
-    protected static final long REALM = 2L;
+    protected static final long SHARD =
+            DEFAULT_CONFIG.getConfigData(HederaConfig.class).shard();
+    protected static final long REALM =
+            DEFAULT_CONFIG.getConfigData(HederaConfig.class).realm();
     protected EntityIdFactory idFactory = new EntityIdFactoryImpl(SHARD, REALM);
 
     protected final Key key = A_COMPLEX_KEY;
