@@ -25,6 +25,8 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.DefaultSavedStateController;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -86,6 +88,8 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
+import com.swirlds.platform.state.nexus.LockFreeStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -101,6 +105,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
+import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -160,6 +165,21 @@ public class PlatformComponentBuilder {
     private StateSigner stateSigner;
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
+    /**
+     * Controls which states are saved to disk
+     */
+    private final SavedStateController savedStateController;
+    /**
+     * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
+     * signatures. State is returned with a reservation.
+     * <p>
+     * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
+     * new state is created, before it is hashed.
+     */
+    private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
+
+    private PlatformWiring platformWiring;
+    private SwirldsPlatform swirldsPlatform;
 
     private boolean metricsDocumentationEnabled = true;
 
@@ -174,8 +194,11 @@ public class PlatformComponentBuilder {
      * @param blocks the build context for the platform under construction, contains all data needed to construct
      *               platform components
      */
-    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks blocks) {
+    public PlatformComponentBuilder(
+            @NonNull final PlatformBuildingBlocks blocks, @NonNull final PlatformWiring platformWiring) {
         this.blocks = Objects.requireNonNull(blocks);
+        this.platformWiring = Objects.requireNonNull(platformWiring);
+        this.savedStateController = new DefaultSavedStateController(blocks.platformContext());
     }
 
     /**
@@ -186,6 +209,21 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformBuildingBlocks getBuildingBlocks() {
         return blocks;
+    }
+
+    @NonNull
+    public PlatformWiring getPlatformWiring() {
+        return platformWiring;
+    }
+
+    @NonNull
+    public SignedStateNexus getLatestImmutableStateNexus() {
+        return latestImmutableStateNexus;
+    }
+
+    @NonNull
+    public SavedStateController getSavedStateController() {
+        return savedStateController;
     }
 
     /**
@@ -208,7 +246,8 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            return new SwirldsPlatform(this);
+            swirldsPlatform = new SwirldsPlatform(this);
+            return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {
                 // Future work: eliminate the static variables that require this code to exist
@@ -1374,5 +1413,12 @@ public class PlatformComponentBuilder {
             latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
         }
         return latestCompleteStateNotifier;
+    }
+
+    public static enum SolderWireType {
+        /**
+         * Solder a wire to the consensus engine output
+         */
+        CONSENSUS_ENGINE
     }
 }

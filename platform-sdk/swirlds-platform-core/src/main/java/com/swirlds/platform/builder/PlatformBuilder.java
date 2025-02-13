@@ -18,6 +18,7 @@ package com.swirlds.platform.builder;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_CONFIG_FILE_NAME;
@@ -29,46 +30,80 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.concurrent.ExecutorFactory;
+import com.swirlds.common.config.StateCommonConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.stream.RunningEventHashOverride;
 import com.swirlds.component.framework.WiringConfig;
+import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.component.framework.model.WiringModelBuilder;
+import com.swirlds.component.framework.wires.input.InputWire;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.builder.PlatformComponentBuilder.SolderWireType;
+import com.swirlds.platform.components.AppNotifier;
+import com.swirlds.platform.components.DefaultAppNotifier;
+import com.swirlds.platform.components.DefaultEventWindowManager;
+import com.swirlds.platform.components.EventWindowManager;
+import com.swirlds.platform.components.consensus.ConsensusEngine;
+import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
+import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.TransactionPoolNexus;
+import com.swirlds.platform.publisher.DefaultPlatformPublisher;
+import com.swirlds.platform.publisher.PlatformPublisher;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
 import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.service.PlatformStateFacade;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.StateSignatureCollector;
+import com.swirlds.platform.state.snapshot.SavedStateInfo;
+import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
+import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,10 +171,13 @@ public final class PlatformBuilder {
      */
     private PlatformContext platformContext;
 
+    private LatestCompleteStateNexus latestCompleteStateNexus;
+
     private Consumer<PlatformEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private Consumer<PlatformEvent> staleEventConsumer;
     private Function<StateSignatureTransaction, Bytes> systemTransactionEncoder;
+    private Map<SolderWireType, InputWire<?>> additionalInputWires;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -359,6 +397,18 @@ public final class PlatformBuilder {
     }
 
     /**
+     * Binds additional custom input wires to the specified output wires on top of the default wirings that are
+     * already created.
+     *
+     * @param inputWires map between an output wire type and an input wire to solder it to
+     */
+    public PlatformBuilder withAdditionalInputWires(final Map<SolderWireType, InputWire<?>> inputWires) {
+        throwIfAlreadyUsed();
+        this.additionalInputWires = inputWires;
+        return this;
+    }
+
+    /**
      * Provide the source of non-cryptographic randomness for this platform.
      *
      * @param randomBuilder the source of non-cryptographic randomness
@@ -486,6 +536,8 @@ public final class PlatformBuilder {
             randomBuilder = new RandomBuilder();
         }
 
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, model, callbacks);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
                 platformContext,
                 model,
@@ -517,7 +569,104 @@ public final class PlatformBuilder {
                 stateLifecycles,
                 platformStateFacade);
 
-        return new PlatformComponentBuilder(buildingBlocks);
+        final PlatformComponentBuilder platformComponentBuilder =
+                new PlatformComponentBuilder(buildingBlocks, platformWiring);
+
+        final Duration replayHealthThreshold = platformContext
+                .getConfiguration()
+                .getConfigData(PcesConfig.class)
+                .replayHealthThreshold();
+
+        final Hash legacyRunningEventHash =
+                platformStateFacade.legacyRunningEventHashOf(initialState.get().getState()) == null
+                        ? platformContext.getCryptography().getNullHash()
+                        : platformStateFacade.legacyRunningEventHashOf(
+                                (initialState.get().getState()));
+        final RunningEventHashOverride runningEventHashOverride =
+                new RunningEventHashOverride(legacyRunningEventHash, false);
+        platformWiring.updateRunningHash(runningEventHashOverride);
+
+        final SignedStateNexus latestImmutableStateNexus = platformComponentBuilder.getLatestImmutableStateNexus();
+        final PcesReplayer pcesReplayer = new PcesReplayer(
+                platformContext,
+                platformWiring.getPcesReplayerEventOutput(),
+                platformWiring::flushIntakePipeline,
+                platformWiring::flushTransactionHandler,
+                () -> latestImmutableStateNexus.getState("PCES replay"),
+                () -> isLessThan(buildingBlocks.model().getUnhealthyDuration(), replayHealthThreshold));
+
+        final SignedStateMetrics signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        final StateSignatureCollector stateSignatureCollector =
+                new DefaultStateSignatureCollector(platformContext, signedStateMetrics);
+
+        final EventWindowManager eventWindowManager = new DefaultEventWindowManager();
+
+        final AncientMode ancientMode = platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .getAncientMode();
+
+        final BirthRoundMigrationShim birthRoundMigrationShim =
+                buildBirthRoundMigrationShim(initialState.get(), ancientMode, platformStateFacade);
+
+        latestCompleteStateNexus = new DefaultLatestCompleteStateNexus(platformContext);
+
+        buildingBlocks
+                .getLatestCompleteStateReference()
+                .set(() -> latestCompleteStateNexus.getState("get latest complete state for reconnect"));
+        buildingBlocks
+                .statusActionSubmitterReference()
+                .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));
+
+        final AppNotifier appNotifier = new DefaultAppNotifier(buildingBlocks.notificationEngine());
+        final PlatformPublisher publisher = new DefaultPlatformPublisher(buildingBlocks.applicationCallbacks());
+
+        platformWiring.bind(
+                platformComponentBuilder,
+                pcesReplayer,
+                stateSignatureCollector,
+                eventWindowManager,
+                birthRoundMigrationShim,
+                latestImmutableStateNexus,
+                latestCompleteStateNexus,
+                appNotifier,
+                publisher);
+
+        if (additionalInputWires != null) {
+            for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : additionalInputWires.entrySet()) {
+                switch (inputWireEntry.getKey()) {
+                    case CONSENSUS_ENGINE -> {
+                        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
+                                platformWiring.getConsensusEngineWiring();
+                        if (inputWireEntry.getValue() != null) {
+                            consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
+                                    inputWireEntry.getValue());
+                        }
+                    }
+                }
+            }
+        }
+
+        // Load the minimum generation into the pre-consensus event writer
+        final String actualMainClassName = platformContext
+                .getConfiguration()
+                .getConfigData(StateConfig.class)
+                .getMainClassName(buildingBlocks.mainClassName());
+        final SignedStateFilePath statePath =
+                new SignedStateFilePath(platformContext.getConfiguration().getConfigData(StateCommonConfig.class));
+        final List<SavedStateInfo> savedStates =
+                statePath.getSavedStateFiles(actualMainClassName, selfId, buildingBlocks.swirldName());
+        if (!savedStates.isEmpty()) {
+            // The minimum generation of non-ancient events for the oldest state snapshot on disk.
+            final long minimumGenerationNonAncientForOldestState =
+                    savedStates.get(savedStates.size() - 1).metadata().minimumGenerationNonAncient();
+            platformWiring.getPcesMinimumGenerationToStoreInput().inject(minimumGenerationNonAncientForOldestState);
+        }
+
+        buildingBlocks.clearAllPipelinesForReconnectReference().set(platformWiring::clear);
+        buildingBlocks.latestImmutableStateProviderReference().set(latestImmutableStateNexus::getState);
+
+        return platformComponentBuilder;
     }
 
     /**
@@ -528,5 +677,32 @@ public final class PlatformBuilder {
     @NonNull
     public Platform build() {
         return buildComponentBuilder().build();
+    }
+
+    /**
+     * Builds the birth round migration shim if necessary.
+     *
+     * @param initialState the initial state
+     * @param ancientMode  the ancient mode
+     * @return the birth round migration shim, or null if it is not needed
+     */
+    @Nullable
+    private BirthRoundMigrationShim buildBirthRoundMigrationShim(
+            @NonNull final SignedState initialState,
+            @NonNull final AncientMode ancientMode,
+            @NonNull final PlatformStateFacade platformStateFacade) {
+
+        if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
+            // We don't need the shim if we haven't migrated to birth round mode.
+            return null;
+        }
+
+        final PlatformMerkleStateRoot state = initialState.getState();
+
+        return new DefaultBirthRoundMigrationShim(
+                platformContext,
+                platformStateFacade.firstVersionInBirthRoundModeOf(state),
+                platformStateFacade.lastRoundBeforeBirthRoundModeOf(state),
+                platformStateFacade.lowestJudgeGenerationBeforeBirthRoundModeOf(state));
     }
 }
