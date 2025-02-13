@@ -234,8 +234,8 @@ jobs:
           #- ubuntu-20.04
           #- macos-12
           #- macos-11
-          - network-node-linux-medium
-          - network-node-linux-large
+          - hiero-network-node-linux-medium
+          - hiero-network-node-linux-large
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
