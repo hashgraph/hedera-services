@@ -569,7 +569,6 @@ public class AtomicBatchTest {
                                     .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
                                     .batchKey(batchOperator))
                             .payingWith(alias)
-                            .batchKey(batchOperator)
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(alias))
                             .signedBy(alias, batchOperator),
                     getAliasedAccountInfo(alias)
