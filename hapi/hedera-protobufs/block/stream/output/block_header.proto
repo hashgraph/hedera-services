@@ -56,16 +56,6 @@ import "timestamp.proto";
  */
 message BlockHeader {
 
-    /*
-      * Prevents future use of field number 4
-     */
-    reserved 4;
-
-    /*
-      * Prevents future use of field name "previous_block_hash"
-     */
-    reserved "previous_block_hash";
-
     /**
      * A version of the HAPI specification.<br/>
      * This is the API version that was used to serialize the block.
@@ -95,12 +85,12 @@ message BlockHeader {
      * This SHALL be the timestamp assigned by the hashgraph consensus
      * algorithm to the first transaction of this block.
      */
-    proto.Timestamp first_transaction_consensus_time = 5;
+    proto.Timestamp first_transaction_consensus_time = 4;
 
     /**
      * A hash algorithm used for this block, including the block proof.
      * <p>
      * This SHOULD always be `SHA2_384`, currently.
      */
-    proto.BlockHashAlgorithm hash_algorithm = 6;
+    proto.BlockHashAlgorithm hash_algorithm = 5;
 }
