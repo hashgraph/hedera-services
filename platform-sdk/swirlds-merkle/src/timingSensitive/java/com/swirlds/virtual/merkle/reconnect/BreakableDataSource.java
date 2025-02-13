@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public final class BreakableDataSource implements VirtualDataSource {
         final List<VirtualLeafBytes> leaves = leafRecordsToAddOrUpdate.toList();
 
         if (builder.numTimesBroken < builder.numTimesToBreak) {
-            // Syncronization block is not required here, as this code is never called in parallel
+            // Synchronization block is not required here, as this code is never called in parallel
             // (though from different threads). `volatile` modifier is sufficient to ensure visibility.
             builder.numCalls += leaves.size();
             if (builder.numCalls > builder.numCallsBeforeThrow) {

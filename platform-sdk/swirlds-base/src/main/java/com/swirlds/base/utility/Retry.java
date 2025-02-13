@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public final class Retry {
      */
     static final Duration DEFAULT_RETRY_DELAY = Duration.ofMillis(500);
     /**
-     * The default amount of time to wait for the file, directory, block device, or symlink to be avaliable.
+     * The default amount of time to wait for the file, directory, block device, or symlink to be available.
      */
     static final Duration DEFAULT_WAIT_TIME = Duration.ofSeconds(10);
 

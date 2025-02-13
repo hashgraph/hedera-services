@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * This interface is used to log emergency events. It is used in the logger api to log events. An implementation must
- * not be dependend on any other logging system and must be directly usable in the logger api. Next to that an
+ * not be dependent on any other logging system and must be directly usable in the logger api. Next to that an
  * implementation must be bullet proof and must not throw any exceptions.
  */
 public interface EmergencyLogger {

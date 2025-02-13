@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class RandomDelayCfg implements SelfSerializable, FastCopyable {
                 int low = 0;
                 int high = 0;
 
-                // random select a deley type
+                // random select a delay type
                 for (int i = 0; i < possibilities.length; i++) {
                     if (randomNumber >= sum && randomNumber < (sum + possibilities[i])) {
                         delayTypeSelected = delayType[i];

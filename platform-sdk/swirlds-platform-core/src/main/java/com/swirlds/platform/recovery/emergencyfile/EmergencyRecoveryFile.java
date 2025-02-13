@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
      * Creates a record with the data contained in the emergency recovery file in the directory specified, or null if
      * the file does not exist.
      *
-     * @param stateConfig state configuration from the platfrom
+     * @param stateConfig state configuration from the platform
      * @param directory the directory containing the emergency recovery file. Must exist and be readable.
      * @param failOnMissingFields if true, throw an exception if the file is missing any fields. If false, ignore
      * @return a new record containing the emergency recovery data in the file, or null if no emergency recovery file

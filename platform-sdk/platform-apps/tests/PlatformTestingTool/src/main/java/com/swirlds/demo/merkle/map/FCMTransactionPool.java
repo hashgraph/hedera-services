@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class FCMTransactionPool implements FastCopyable {
     public static final Marker DEMO_TRANSACTION_INFO = MarkerManager.getMarker("DEMO_TRANSACTION_INFO");
 
     /**
-     * the standard psuedo-random number generator
+     * the standard pseudo-random number generator
      */
     private Random random;
 

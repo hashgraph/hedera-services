@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -891,7 +891,7 @@ class MerkleBinaryTreeTests {
         assertEquals(1, rootLChild.getReservationCount(), "left child has only root as parent");
         assertTrue(isPathUnique(tree, rootLChild.getRoute()), "the path should have been unique");
         final Value leaf = tree.getRightMostLeaf();
-        assertEquals(1, leaf.getReservationCount(), "leaf has only root as paarent");
+        assertEquals(1, leaf.getReservationCount(), "leaf has only root as parent");
         assertTrue(isPathUnique(tree, leaf.getRoute()), "the path should have been unique");
 
         final MerkleBinaryTree<Value> tree01 = tree.copy();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -359,7 +359,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
      * 		if it is true, return a MapKey in corresponding selfEntitiesList
      * @param restrictedCount
      * 		if non-zero, this will only select a subset of this many items out of the appropriate entity list
-     * 		convering the range.  So if there were 9 entities in the list and this was 2, you'd get either 0 or 8
+     * 		converting the range.  So if there were 9 entities in the list and this was 2, you'd get either 0 or 8
      * 		randomly. 3 would select from 0, 4, and 8, etc.
      * @return MapKey if found
      */
@@ -516,7 +516,7 @@ public final class ExpectedFCMFamilyImpl implements ExpectedFCMFamily {
      * 		corresponding SelfEntitiesList
      * @param restrictedCount
      * 		if non-zero, this will only select a subset of this many items out of the appropriate entity list
-     * 		convering the range.  So if there were 9 entities in the list and this was 2, you'd get either 0 or 8
+     * 		converting the range.  So if there were 9 entities in the list and this was 2, you'd get either 0 or 8
      * 		randomly. 3 would select from 0, 4, and 8, etc.
      * @return Random MapKey
      */
