@@ -98,7 +98,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.iss.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
@@ -110,7 +111,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.gossip.sync.config to
             com.swirlds.config.impl,
             com.swirlds.common,
-            com.hedera.node.test.clients;
+            com.hedera.node.test.clients,
+            com.swirlds.platform.core.test.fixtures;
 
     opens com.swirlds.platform.cli to
             info.picocli;
@@ -142,6 +144,14 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.builder.internal;
     exports com.swirlds.platform.config.internal;
     exports com.swirlds.platform.roster;
+    exports com.swirlds.platform.state.hashlogger;
+    exports com.swirlds.platform.state.hasher;
+    exports com.swirlds.platform.event.stream;
+    exports com.swirlds.platform.event.preconsensus.durability;
+    exports com.swirlds.platform.event.stale;
+    exports com.swirlds.platform.event.resubmitter;
+    exports com.swirlds.platform.event.branching;
+    exports com.swirlds.platform.state.nexus;
 
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;

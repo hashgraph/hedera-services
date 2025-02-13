@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.fixtures.consensus.ConsensusTestArgs.BIRTH_ROUND_PLATFORM_CONTEXT;
+import static com.swirlds.platform.test.fixtures.consensus.ConsensusTestArgs.DEFAULT_PLATFORM_CONTEXT;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.isEventOrderValid;
@@ -29,11 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.event.emitter.CollectingEventEmitter;
-import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
-import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
-import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
+import com.swirlds.platform.test.fixtures.event.emitter.CollectingEventEmitter;
+import com.swirlds.platform.test.fixtures.event.emitter.EventEmitter;
+import com.swirlds.platform.test.fixtures.event.emitter.PriorityEventEmitter;
+import com.swirlds.platform.test.fixtures.event.emitter.ShuffledEventEmitter;
+import com.swirlds.platform.test.fixtures.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import java.util.List;
