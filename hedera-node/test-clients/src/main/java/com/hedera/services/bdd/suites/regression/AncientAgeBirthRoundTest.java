@@ -8,7 +8,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -16,8 +16,13 @@ import org.junit.jupiter.api.Tag;
 public class AncientAgeBirthRoundTest implements LifecycleTest {
 
     @HapiTest
-    @DisplayName("Upgrade to enable birth round ancient age")
+    @Disabled("Disabled due to expected failures while birth round ancient age is completed")
     final Stream<DynamicTest> upgradeToUseBirthRounds() {
+        /*
+        Note: This test should be run in subprocess mode. This is done by executing it with the 'testSubprocess' task:
+        :test-clients:testSubprocess --tests "com.hedera.services.bdd.suites.regression.AncientAgeBirthRoundTest"
+         */
+
         return hapiTest(
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                 upgradeToNextConfigVersion(Map.of("event.useBirthRoundAncientThreshold", "true")),

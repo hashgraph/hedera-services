@@ -104,10 +104,7 @@ public final class BirthRoundStateMigration {
                 consensusSnapshot.consensusTimestamp());
         writablePlatformState.setSnapshot(modifiedConsensusSnapshot);
 
-        System.out.println("A.1 hash: " + state.getHash());
         state.invalidateHash();
-        System.out.println("A.2 hash: " + state.getHash());
         MerkleCryptoFactory.getInstance().digestTreeSync(state);
-        System.out.println("A.3 hash: " + state.getHash());
     }
 }
