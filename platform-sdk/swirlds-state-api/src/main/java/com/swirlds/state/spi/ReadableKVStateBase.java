@@ -143,8 +143,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
 
     /**
      * Returns the underlying map of all read values from the data source.
-     * @return a cache of all values read from this {@link ReadableKVState}.
+     * @return a cache map of all values read from this {@link ReadableKVState}. Cannot be null.
      */
+    @NonNull
     protected Map<K, V> getReadCache() {
         return readCache;
     }

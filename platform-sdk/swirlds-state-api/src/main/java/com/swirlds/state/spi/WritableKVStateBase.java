@@ -221,8 +221,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
 
     /**
      * Returns a map of all modified values buffered in this mutable state.
-     * @return map of all modified values
+     * @return map of all modified values. Cannot be null.
      */
+    @NonNull
     protected Map<K, V> getModifications() {
         return modifications;
     }
