@@ -52,6 +52,7 @@ public abstract class ConsensusUtils {
                     .orElse(Instant.MIN);
             lastTimestamp = Collections.max(Arrays.asList(lastTimestamp, creatorMax));
         }
+        // TODO generator does not have accurate birth rounds since its internal consensus state is not updated
         generator.setPreviousTimestamp(lastTimestamp);
     }
 }
