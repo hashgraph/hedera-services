@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,14 @@ public record BlockTransactionParts(
      */
     public String memo() {
         return transactionParts.body().memo();
+    }
+
+    /**
+     * Returns the parent consensus timestamp.
+     * @return the parent consensus timestamp
+     */
+    public Timestamp parentConsensusTimestamp() {
+        return transactionResult.parentConsensusTimestamp();
     }
 
     /**

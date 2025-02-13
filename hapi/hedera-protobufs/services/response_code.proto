@@ -1711,4 +1711,32 @@ enum ResponseCodeEnum {
      * Max custom fees list is not supported for this operation.
      */
     MAX_CUSTOM_FEES_IS_NOT_SUPPORTED = 387;
+
+    /**
+    * The list of batch transactions is empty
+    */
+    BATCH_LIST_EMPTY = 388;
+
+    /**
+    * The list of batch transactions contains duplicated transactions
+    */
+    BATCH_LIST_CONTAINS_DUPLICATES = 389;
+
+    /**
+    * The list of batch transactions contains null values
+    */
+    BATCH_LIST_CONTAINS_NULL_VALUES = 390;
+
+    /**
+     * The inner transaction failed
+     */
+    INNER_TRANSACTION_FAILED = 391;
+    /**
+     * The inner batch transaction is missing a batch key
+     */
+    MISSING_BATCH_KEY = 392;
+    /**
+     * The batch key is set for atomic batch user transaction
+     */
+    BATCH_KEY_SET_FOR_ATOMIC_BATCH = 393;
 }
