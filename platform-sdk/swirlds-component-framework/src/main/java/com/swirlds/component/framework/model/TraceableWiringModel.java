@@ -225,7 +225,7 @@ public abstract class TraceableWiringModel implements WiringModel {
             @NonNull final SolderType solderType) {
         throwIfStarted();
 
-        final boolean blockingEdge = solderType == SolderType.PUT;
+        final boolean blockingEdge = solderType == SolderType.PUT || solderType == SolderType.DIRECT;
 
         final ModelVertex origin = getVertex(originVertex);
         final ModelVertex destination = getVertex(destinationVertex);
