@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
+import static com.hedera.services.bdd.spec.HapiPropertySource.realm;
+import static com.hedera.services.bdd.spec.HapiPropertySource.shard;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForConstructor;
@@ -258,7 +260,11 @@ public class TxnUtils {
 
     public static AccountID asIdForKeyLookUp(final String s, final HapiSpec lookupSpec) {
         if (isLiteralEvmAddress(s)) {
-            return AccountID.newBuilder().setAlias(asLiteralEvmAddress(s)).build();
+            return AccountID.newBuilder()
+                    .setShardNum(shard)
+                    .setRealmNum(realm)
+                    .setAlias(asLiteralEvmAddress(s))
+                    .build();
         }
         return isIdLiteral(s)
                 ? asAccount(s)
@@ -315,6 +321,8 @@ public class TxnUtils {
         final var effS = s.startsWith("0x") ? s.substring(2) : s;
         if (effS.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
+                    .setShardNum(shard)
+                    .setRealmNum(realm)
                     .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effS)))
                     .build();
         }
@@ -341,13 +349,14 @@ public class TxnUtils {
     }
 
     public static ContractID asContractId(final byte[] bytes) {
+        final int shard = Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
         final long realm = Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12));
         final long accountNum = Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20));
 
         return ContractID.newBuilder()
                 .setContractNum(accountNum)
                 .setRealmNum(realm)
-                .setShardNum(0L)
+                .setShardNum(shard)
                 .build();
     }
 

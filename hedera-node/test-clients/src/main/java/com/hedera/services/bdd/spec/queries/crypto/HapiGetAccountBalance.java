@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.crypto;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityString;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
@@ -106,7 +107,7 @@ public class HapiGetAccountBalance extends HapiQueryOp<HapiGetAccountBalance> {
             repr = "KeyAlias(" + aliasKeySource + ")";
         } else if (type == ReferenceType.HEXED_CONTRACT_ALIAS) {
             literalHexedAlias = reference;
-            repr = "0.0." + reference;
+            repr = asEntityString(Long.parseLong(reference));
         } else {
             account = reference;
             repr = account;
