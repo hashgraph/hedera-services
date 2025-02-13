@@ -73,7 +73,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
             final var value = readFromDataSource(key);
             markRead(key, value);
         }
-        final var value = readCache.get(key);
+        final var value = getReadCache().get(key);
         return (value == marker) ? null : value;
     }
 
@@ -97,7 +97,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     /** Clears all cached data, including the set of all read keys. */
     /*@OverrideMustCallSuper*/
     public void reset() {
-        readCache.clear();
+        getReadCache().clear();
     }
 
     /**
@@ -125,9 +125,9 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      */
     protected final void markRead(@NonNull K key, @Nullable V value) {
         if (value == null) {
-            readCache.put(key, (V) marker);
+            getReadCache().put(key, (V) marker);
         } else {
-            readCache.put(key, value);
+            getReadCache().put(key, value);
         }
     }
 
@@ -138,6 +138,15 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
      * @return Whether it has been read
      */
     protected final boolean hasBeenRead(@NonNull K key) {
-        return readCache.containsKey(key);
+        return getReadCache().containsKey(key);
+    }
+
+    /**
+     * Returns the underlying map of all read values from the data source.
+     * @return a cache map of all values read from this {@link ReadableKVState}. Cannot be null.
+     */
+    @NonNull
+    protected Map<K, V> getReadCache() {
+        return readCache;
     }
 }
