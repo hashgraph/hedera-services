@@ -35,7 +35,7 @@ public final class ScheduleUtils {
     static final String CREATE_TXN = "createTx";
     static final String CREATION = "creation";
     static final String DEFERRED_XFER = "deferredXfer";
-    static final String DESIGNATING_PAYER = "1.2.3";
+    static final String DESIGNATING_PAYER = "111.222.333";
     static final String ENTITY_MEMO = "This was Mr. Bleaney's room. He stayed";
     static final String FAILED_XFER = "failedXfer";
     static final String FAILING_TXN = "failingTxn";

@@ -70,6 +70,7 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,6 +83,9 @@ import org.junit.jupiter.api.DynamicTest;
  */
 @HapiTestLifecycle
 public class FutureSchedulableOpsTest {
+    private static final String SHARD = JutilPropertySource.getDefaultInstance().get("default.shard");
+    private static final String REALM = JutilPropertySource.getDefaultInstance().get("default.realm");
+
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.overrideInClass(Map.of(
@@ -119,7 +123,7 @@ public class FutureSchedulableOpsTest {
         return hapiTest(
                 cryptoCreate(PAYING_ACCOUNT),
                 cryptoCreate(PAYING_ACCOUNT_2),
-                scheduleCreate(A_SCHEDULE, fileUpdate("0.0.150").contents("fooo!"))
+                scheduleCreate(A_SCHEDULE, fileUpdate(String.format("%s.%s.150", SHARD, REALM)).contents("fooo!"))
                         .withEntityMemo(randomUppercase(100))
                         .designatingPayer(PAYING_ACCOUNT_2)
                         .payingWith(PAYING_ACCOUNT)
@@ -175,7 +179,7 @@ public class FutureSchedulableOpsTest {
         return hapiTest(
                 doWithStartupConfig(
                         "accounts.lastThrottleExempt",
-                        value -> doAdhoc(() -> unprivilegedThrottleExemptPayerId.set("0.0." + value))),
+                        value -> doAdhoc(() -> unprivilegedThrottleExemptPayerId.set(String.format("%s.%s.%s", SHARD, REALM, value)))),
                 cryptoCreate(PAYING_ACCOUNT),
                 fileCreate("misc").lifetime(THREE_MONTHS_IN_SECONDS).contents(ORIG_FILE),
                 sourcing(() -> scheduleCreate(
