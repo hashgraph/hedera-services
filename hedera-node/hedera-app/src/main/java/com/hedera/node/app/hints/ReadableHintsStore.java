@@ -129,5 +129,4 @@ public interface ReadableHintsStore {
      * Returns the current CRS publication for all nodes.
      */
     Map<Long, CrsPublicationTransactionBody> getCrsPublicationsByNodeIds(@NonNull final Set<Long> nodeIds);
-
 }
