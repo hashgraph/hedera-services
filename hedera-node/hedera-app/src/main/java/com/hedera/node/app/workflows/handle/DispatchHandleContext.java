@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
@@ -60,8 +61,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -110,6 +113,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private Map<AccountID, Long> dispatchPaidRewards;
     private final DispatchMetadata dispatchMetaData;
     private final TransactionChecker transactionChecker;
+    private final DeduplicationCache deduplicationCache;
 
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
@@ -135,7 +139,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final DispatchMetadata handleMetaData,
-            @NonNull final TransactionChecker transactionChecker) {
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final DeduplicationCache deduplicationCache) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -162,6 +167,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.networkInfo = requireNonNull(networkInfo);
         this.dispatchMetaData = requireNonNull(handleMetaData);
         this.transactionChecker = requireNonNull(transactionChecker);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     @NonNull
@@ -423,6 +429,23 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             return transactionInfo.txBody();
         } catch (PreCheckException e) {
             throw new HandleException(e.responseCode());
+        }
+    }
+
+    @Override
+    public void checkTimeBox(@NonNull final TransactionBody txBody) throws HandleException {
+        try {
+            // set to RequireMinValidLifetimeBuffer.NO as this is called in handle context
+            transactionChecker.checkTimeBox(txBody, consensusNow, RequireMinValidLifetimeBuffer.NO);
+        } catch (PreCheckException e) {
+            throw new HandleException(e.responseCode());
+        }
+    }
+
+    @Override
+    public void checkDuplication(@NonNull final TransactionID transactionID) throws HandleException {
+        if (deduplicationCache.contains(transactionID)) {
+            throw new HandleException(DUPLICATE_TRANSACTION);
         }
     }
 }

@@ -70,6 +70,8 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.RepeatableHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Disabled;
@@ -176,6 +178,86 @@ public class AtomicBatchTest {
                 getTxnRecord(atomicTxn).logged(),
                 getTxnRecord(innerTxnId1).assertingNothingAboutHashes().logged(),
                 getTxnRecord(innerTxnId2).assertingNothingAboutHashes().logged());
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> duplicatedInnerTransactionsFail() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId1 = "innerId1";
+        final var innerTxnId2 = "innerId2";
+        final var account1 = "foo1";
+        final var account2 = "foo2";
+
+        final var innerTxn1 = cryptoCreate(account1)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId1)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+        final var innerTxn2 = cryptoCreate(account2)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId2)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+
+        return hapiTest(
+                cryptoCreate(innerTnxPayer).balance(ONE_HUNDRED_HBARS),
+                usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
+                usableTxnIdNamed(innerTxnId2).payerId(innerTnxPayer),
+                cryptoCreate(batchOperator)
+                        .txnId(innerTxnId1)
+                        .payingWith(innerTnxPayer)
+                        .balance(ONE_HBAR),
+                atomicBatch(innerTxn1, innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED),
+                atomicBatch(innerTxn2));
+        // PreHandleWorkflowImpl.preHandleTransaction() added inner transaction id to deduplicationCache, uncommented
+        // below after neeha's pr 17763
+        // atomicBatch(innerTxn2).hasKnownStatus(INNER_TRANSACTION_FAILED));
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> invalidTransactionStartFailed() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId1 = "innerId1";
+        final var account1 = "foo1";
+
+        final var innerTxn1 = cryptoCreate(account1)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId1)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer);
+        final var validStart = Timestamp.newBuilder()
+                .setSeconds(Instant.now().getEpochSecond() + 1000)
+                .setNanos(1)
+                .build();
+
+        return hapiTest(
+                cryptoCreate(innerTnxPayer).balance(ONE_HUNDRED_HBARS),
+                usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer).validStart(validStart),
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                atomicBatch(innerTxn1).hasKnownStatus(INNER_TRANSACTION_FAILED));
+    }
+
+    @HapiTest
+    public Stream<DynamicTest> invalidTransactionDurationFailed() {
+        final var batchOperator = "batchOperator";
+        final var innerTnxPayer = "innerPayer";
+        final var innerTxnId1 = "innerId1";
+        final var account1 = "foo1";
+
+        final var innerTxn1 = cryptoCreate(account1)
+                .balance(ONE_HBAR)
+                .txnId(innerTxnId1)
+                .batchKey(batchOperator)
+                .payingWith(innerTnxPayer)
+                .validDurationSecs(200);
+
+        return hapiTest(
+                cryptoCreate(innerTnxPayer).balance(ONE_HUNDRED_HBARS),
+                usableTxnIdNamed(innerTxnId1).payerId(innerTnxPayer),
+                cryptoCreate(batchOperator).balance(ONE_HBAR),
+                atomicBatch(innerTxn1).hasKnownStatus(INNER_TRANSACTION_FAILED));
     }
 
     @Nested
@@ -295,7 +377,6 @@ public class AtomicBatchTest {
 
         @HapiTest
         @DisplayName("Following batch with same inner txn")
-        @Disabled // TODO: enable this test when we have deduplication logic for inner txn.
         //  BATCH_06
         public Stream<DynamicTest> followingBatchWithSameButNonExecutedTxn() {
             final var payer = "payer";
@@ -323,7 +404,10 @@ public class AtomicBatchTest {
                             .signedByPayerAnd(batchOperator)
                             .hasKnownStatus(INNER_TRANSACTION_FAILED),
                     // create a successful batch, containing the second (non-executed) transaction
-                    atomicBatch(cryptoCreate("bar").txnId(secondTxnId).payingWith(payer)));
+                    atomicBatch(cryptoCreate("bar")
+                            .txnId(secondTxnId)
+                            .payingWith(payer)
+                            .batchKey(batchOperator)));
         }
 
         @HapiTest
@@ -460,10 +544,7 @@ public class AtomicBatchTest {
                     createHollowAccountFrom(alias),
                     getAliasedAccountInfo(alias).isHollow(),
                     atomicBatch(
-                                    cryptoCreate("foo")
-                                            .payingWith(alias)
-                                            .batchKey(batchOperator)
-                                            .batchKey(batchOperator),
+                                    cryptoCreate("foo").payingWith(alias).batchKey(batchOperator),
                                     cryptoCreate("bar")
                                             .alias(ByteString.EMPTY)
                                             .payingWith(alias)

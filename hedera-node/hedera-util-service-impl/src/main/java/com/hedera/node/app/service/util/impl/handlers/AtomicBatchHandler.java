@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.data.AtomicBatchConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -78,15 +79,24 @@ public class AtomicBatchHandler implements TransactionHandler {
         final var op = context.body().atomicBatchOrThrow();
         if (batchConfig.isEnabled()) {
             final var transactions = op.transactions();
+            final var txnBodies = new ArrayList<TransactionBody>();
+            // validate all the inner transactions
             for (final var transaction : transactions) {
                 TransactionBody body;
                 try {
                     body = context.bodyFromTransaction(transaction);
+                    context.checkTimeBox(requireNonNull(body));
+                    context.checkDuplication(body.transactionIDOrThrow());
+                    txnBodies.add(body);
                 } catch (HandleException e) {
-                    // we should have validated the inner transaction in preChecks already, so this should not happen.
+                    // Do we need to keep the specific ResponseCodeEnum here?
                     throw new HandleException(INNER_TRANSACTION_FAILED);
                 }
+            }
+            // dispatch all the inner transactions
+            for (final var body : txnBodies) {
                 final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+
                 // all the inner transactions' keys are verified in PreHandleWorkflow
                 final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
                 final var streamBuilder = context.dispatch(dispatchOptions);

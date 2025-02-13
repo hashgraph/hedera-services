@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.fees.NoopFeeCharging.NOOP_FEE_CHARGING;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,8 +47,10 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -136,6 +139,9 @@ class ChildDispatchFactoryTest {
     @Mock
     private TransactionChecker transactionChecker;
 
+    @Mock
+    private DeduplicationCache deduplicationCache;
+
     private ChildDispatchFactory subject;
 
     private static final AccountID payerId =
@@ -155,6 +161,7 @@ class ChildDispatchFactoryTest {
                 serviceScopeLookup,
                 exchangeRateManager,
                 transactionChecker,
+                deduplicationCache,
                 ServicesSoftwareVersion::new);
     }
 
@@ -258,7 +265,9 @@ class ChildDispatchFactoryTest {
                                 emptySet(),
                                 StreamBuilder.class,
                                 DispatchOptions.StakingRewards.ON,
-                                DispatchOptions.UsePresetTxnId.NO)));
+                                DispatchOptions.UsePresetTxnId.NO,
+                                NOOP_FEE_CHARGING,
+                                PropagateFeeChargingStrategy.YES)));
         assertInstanceOf(UnknownHederaFunctionality.class, exception.getCause());
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
