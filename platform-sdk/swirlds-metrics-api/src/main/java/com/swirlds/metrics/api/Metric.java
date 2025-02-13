@@ -18,6 +18,7 @@ package com.swirlds.metrics.api;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * A single metric that is monitored here.
@@ -157,4 +158,24 @@ public interface Metric {
      */
     @Override
     int hashCode();
+
+    /**
+     * Returns all labels that are defined for this metric.
+     *
+     * @return the labels
+     * @see Label
+     * @see #getSupportedLabelKeys()
+     */
+    @NonNull
+    Set<Label> getLabels();
+
+    /**
+     * Returns all supported keys that can be used by labels for this metric.
+     *
+     * @return the supported label keys
+     * @see Label
+     * @see #getLabels()
+     */
+    @NonNull
+    Set<String> getSupportedLabelKeys();
 }
