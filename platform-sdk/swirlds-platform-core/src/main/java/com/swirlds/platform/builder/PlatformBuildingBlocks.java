@@ -39,7 +39,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
-import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -98,7 +97,6 @@ import java.util.function.Supplier;
  *                                               reconnect, can be removed once reconnect is made compatible with the
  *                                               wiring framework
  * @param platformStateFacade                    the facade to access the platform state
- * @param platformWiring                         the wiring to use inside the platform
  */
 public record PlatformBuildingBlocks(
         @NonNull PlatformContext platformContext,
@@ -129,8 +127,7 @@ public record PlatformBuildingBlocks(
         @NonNull AtomicReference<Runnable> clearAllPipelinesForReconnectReference,
         boolean firstPlatform,
         @NonNull StateLifecycles stateLifecycles,
-        @NonNull PlatformStateFacade platformStateFacade,
-        @NonNull PlatformWiring platformWiring) {
+        @NonNull PlatformStateFacade platformStateFacade) {
 
     public PlatformBuildingBlocks {
         requireNonNull(platformContext);
@@ -157,6 +154,5 @@ public record PlatformBuildingBlocks(
         requireNonNull(getLatestCompleteStateReference);
         requireNonNull(loadReconnectStateReference);
         requireNonNull(clearAllPipelinesForReconnectReference);
-        requireNonNull(platformWiring);
     }
 }

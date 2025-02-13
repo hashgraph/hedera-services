@@ -144,6 +144,19 @@ public class TurtleNode {
                 addressBook,
                 platformStateFacade);
         final var initialState = reservedState.state();
+
+        final ComponentWiring<ConsensusRoundsHolder, Void> consensusRoundsHolderWiring =
+                new ComponentWiring<>(model, ConsensusRoundsHolder.class, TaskSchedulerConfiguration.parse("DIRECT"));
+
+        consensusRoundsHolder = new ConsensusRoundsListContainer();
+        consensusRoundsHolderWiring.bind(consensusRoundsHolder);
+
+        final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
+                consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
+
+        final Map<SolderWireType, InputWire<?>> additionalWires = new HashMap<>();
+        additionalWires.put(SolderWireType.CONSENSUS_ENGINE, consensusRoundsHolderInputWire);
+
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
                         "foo",
                         "bar",
@@ -159,7 +172,8 @@ public class TurtleNode {
                 .withKeysAndCerts(privateKeys)
                 .withPlatformContext(platformContext)
                 .withConfiguration(configuration)
-                .withSystemTransactionEncoderCallback(StateSignatureTransaction.PROTOBUF::toBytes);
+                .withSystemTransactionEncoderCallback(StateSignatureTransaction.PROTOBUF::toBytes)
+                .withAdditionalInputWires(additionalWires);
 
         final PlatformComponentBuilder platformComponentBuilder = platformBuilder.buildComponentBuilder();
 
@@ -170,20 +184,6 @@ public class TurtleNode {
         platformComponentBuilder.withMetricsDocumentationEnabled(false).withGossip(network.getGossipInstance(nodeId));
 
         platform = platformComponentBuilder.build();
-
-        final ComponentWiring<ConsensusRoundsHolder, Void> consensusRoundsHolderWiring =
-                new ComponentWiring<>(model, ConsensusRoundsHolder.class, TaskSchedulerConfiguration.parse("DIRECT"));
-
-        consensusRoundsHolder = new ConsensusRoundsListContainer();
-        consensusRoundsHolderWiring.bind(consensusRoundsHolder);
-
-        final InputWire<List<ConsensusRound>> consensusRoundsHolderInputWire =
-                consensusRoundsHolderWiring.getInputWire(ConsensusRoundsHolder::interceptRounds);
-
-        final Map<SolderWireType, InputWire<?>> additionalWires = new HashMap<>();
-        additionalWires.put(SolderWireType.CONSENSUS_ENGINE, consensusRoundsHolderInputWire);
-
-        platformComponentBuilder.appendAdditionalInputWires(additionalWires);
     }
 
     /**

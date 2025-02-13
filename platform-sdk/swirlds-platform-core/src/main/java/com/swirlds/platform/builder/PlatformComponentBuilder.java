@@ -24,8 +24,9 @@ import static com.swirlds.platform.state.iss.IssDetector.DO_NOT_IGNORE_ROUNDS;
 import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.component.framework.component.ComponentWiring;
-import com.swirlds.component.framework.wires.input.InputWire;
 import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.platform.components.DefaultSavedStateController;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -76,7 +77,6 @@ import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
 import com.swirlds.platform.gossip.config.GossipConfig;
 import com.swirlds.platform.gossip.modular.SyncGossipModular;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.DefaultTransactionPool;
 import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.DefaultStateHasher;
@@ -88,6 +88,8 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
+import com.swirlds.platform.state.nexus.LockFreeStateNexus;
+import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -108,9 +110,6 @@ import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 /**
@@ -166,6 +165,20 @@ public class PlatformComponentBuilder {
     private StateSigner stateSigner;
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
+    /**
+     * Controls which states are saved to disk
+     */
+    private final SavedStateController savedStateController;
+    /**
+     * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
+     * signatures. State is returned with a reservation.
+     * <p>
+     * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
+     * new state is created, before it is hashed.
+     */
+    private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
+
+    private PlatformWiring platformWiring;
     private SwirldsPlatform swirldsPlatform;
 
     private boolean metricsDocumentationEnabled = true;
@@ -181,8 +194,11 @@ public class PlatformComponentBuilder {
      * @param blocks the build context for the platform under construction, contains all data needed to construct
      *               platform components
      */
-    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks blocks) {
+    public PlatformComponentBuilder(
+            @NonNull final PlatformBuildingBlocks blocks, @NonNull final PlatformWiring platformWiring) {
         this.blocks = Objects.requireNonNull(blocks);
+        this.platformWiring = Objects.requireNonNull(platformWiring);
+        this.savedStateController = new DefaultSavedStateController(blocks.platformContext());
     }
 
     /**
@@ -193,6 +209,21 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformBuildingBlocks getBuildingBlocks() {
         return blocks;
+    }
+
+    @NonNull
+    public PlatformWiring getPlatformWiring() {
+        return platformWiring;
+    }
+
+    @NonNull
+    public SignedStateNexus getLatestImmutableStateNexus() {
+        return latestImmutableStateNexus;
+    }
+
+    @NonNull
+    public SavedStateController getSavedStateController() {
+        return savedStateController;
     }
 
     /**
@@ -226,29 +257,6 @@ public class PlatformComponentBuilder {
                             getPlatforms(),
                             blocks.platformContext().getConfiguration());
                     getMetricsProvider().start();
-                }
-            }
-        }
-    }
-
-    /**
-     * Binds additional custom input wires to the specified output wires on top of the default wirings that are
-     * already created.
-     *
-     * @param inputWires map between an output wire type and an input wire to solder it to
-     */
-    public void appendAdditionalInputWires(final Map<SolderWireType, InputWire<?>> inputWires) {
-        final PlatformWiring platformWiring = blocks.platformWiring();
-
-        for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : inputWires.entrySet()) {
-            switch (inputWireEntry.getKey()) {
-                case CONSENSUS_ENGINE -> {
-                    final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
-                            platformWiring.getConsensusEngineWiring();
-                    if (inputWireEntry.getValue() != null) {
-                        consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
-                                inputWireEntry.getValue());
-                    }
                 }
             }
         }

@@ -29,7 +29,6 @@ import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
-import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.branching.BranchDetector;
@@ -104,7 +103,7 @@ class PlatformWiringTests {
         final PlatformWiring wiring = new PlatformWiring(platformContext, model, applicationCallbacks);
 
         final PlatformComponentBuilder componentBuilder =
-                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class), mock(PlatformWiring.class));
 
         componentBuilder
                 .withEventHasher(mock(EventHasher.class))
@@ -169,7 +168,6 @@ class PlatformWiringTests {
                 mock(BirthRoundMigrationShim.class),
                 mock(SignedStateNexus.class),
                 mock(LatestCompleteStateNexus.class),
-                mock(SavedStateController.class),
                 mock(AppNotifier.class),
                 mock(PlatformPublisher.class));
 
