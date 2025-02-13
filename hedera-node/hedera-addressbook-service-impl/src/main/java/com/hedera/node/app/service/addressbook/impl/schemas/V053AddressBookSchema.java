@@ -39,7 +39,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -86,20 +85,18 @@ public class V053AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+        final var bootstrapConfig = ctx.appConfig().getConfigData(BootstrapConfig.class);
         // Since this schema's version is several releases behind the current version,
         // its migrate() will only be called at genesis in any case, but this makes it
         // explicit that the override admin keys apply only at genesis
-        final Map<Long, Key> nodeAdminKeys = ctx.isGenesis()
-                ? parseEd25519NodeAdminKeysFrom(
-                        ctx.appConfig().getConfigData(BootstrapConfig.class).nodeAdminKeysPath())
-                : emptyMap();
+        final Map<Long, Key> nodeAdminKeys =
+                ctx.isGenesis() ? parseEd25519NodeAdminKeysFrom(bootstrapConfig.nodeAdminKeysPath()) : emptyMap();
         final var networkInfo = ctx.genesisNetworkInfo();
         if (networkInfo == null) {
             throw new IllegalStateException("Genesis network info is not found");
         }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
-        final var bootstrapConfig = ctx.appConfig().getConfigData(BootstrapConfig.class);
 
         log.info("Started migrating nodes from address book");
         final var adminKey = getAccountAdminKey(ctx);
@@ -150,13 +147,9 @@ public class V053AddressBookSchema extends Schema {
             log.info("AccountStore is not found, can be ignored.");
         }
         if (readableAccounts != null) {
-            final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
             final var accountConfig = ctx.appConfig().getConfigData(AccountsConfig.class);
-            final var adminAccount = readableAccounts.get(AccountID.newBuilder()
-                    .shardNum(hederaConfig.shard())
-                    .realmNum(hederaConfig.realm())
-                    .accountNum(accountConfig.addressBookAdmin())
-                    .build());
+            final var adminAccount =
+                    readableAccounts.get(ctx.entityIdFactory().newAccountId(accountConfig.addressBookAdmin()));
             if (adminAccount != null) {
                 adminKey = adminAccount.keyOrElse(Key.DEFAULT);
             }
@@ -175,13 +168,8 @@ public class V053AddressBookSchema extends Schema {
         }
 
         if (readableFiles != null) {
-            final var hederaConfig = ctx.appConfig().getConfigData(HederaConfig.class);
             final var fileConfig = ctx.appConfig().getConfigData(FilesConfig.class);
-            final var nodeDetailFile = readableFiles.get(FileID.newBuilder()
-                    .shardNum(hederaConfig.shard())
-                    .realmNum(hederaConfig.realm())
-                    .fileNum(fileConfig.nodeDetails())
-                    .build());
+            final var nodeDetailFile = readableFiles.get(ctx.entityIdFactory().newFileId(fileConfig.nodeDetails()));
 
             if (nodeDetailFile != null) {
                 try {

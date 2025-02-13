@@ -34,6 +34,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.ids.AppEntityIdFactory;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
@@ -41,7 +42,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
@@ -71,10 +71,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     private static final Key NODE1_ADMIN_KEY = Key.newBuilder()
             .ed25519(Bytes.fromHex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
             .build();
-    private static final long shard =
-            DEFAULT_CONFIG.getConfigData(HederaConfig.class).shard();
-    private static final long realm =
-            DEFAULT_CONFIG.getConfigData(HederaConfig.class).realm();
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -275,6 +271,8 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
 
     @Test
     void failedNullNetworkinfo() {
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        given(migrationContext.appConfig()).willReturn(config);
         given(migrationContext.genesisNetworkInfo()).willReturn(null);
         assertThatCode(() -> subject.migrate(migrationContext))
                 .isInstanceOf(IllegalStateException.class)
@@ -315,12 +313,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     private void setupMigrationContext2() {
         setupMigrationContext();
         accounts.put(
-                AccountID.newBuilder()
-                        .shardNum(shard)
-                        .realmNum(realm)
-                        .accountNum(55)
-                        .build(),
-                Account.newBuilder().key(anotherKey).build());
+                idFactory.newAccountId(55), Account.newBuilder().key(anotherKey).build());
         writableStates = MapWritableStates.builder()
                 .state(writableAccounts)
                 .state(writableNodes)
@@ -341,6 +334,8 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("accounts.addressBookAdmin", "55")
                 .getOrCreateConfig();
         given(migrationContext.appConfig()).willReturn(config);
+        final var entityIdFactory = new AppEntityIdFactory(config);
+        given(migrationContext.entityIdFactory()).willReturn(entityIdFactory);
     }
 
     private void setupMigrationContext3() {
@@ -361,7 +356,7 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
         final Bytes fileContent = NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
         files.put(
-                FileID.newBuilder().shardNum(shard).realmNum(realm).fileNum(102).build(),
+                idFactory.newFileId(102),
                 File.newBuilder().contents(fileContent).build());
         writableStates = MapWritableStates.builder()
                 .state(writableAccounts)
@@ -376,13 +371,15 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
         given(migrationContext.appConfig()).willReturn(config);
+        final var entityIdFactory = new AppEntityIdFactory(config);
+        given(migrationContext.entityIdFactory()).willReturn(entityIdFactory);
     }
 
     private void setupMigrationContext4() {
         setupMigrationContext2();
 
         files.put(
-                FileID.newBuilder().shardNum(shard).realmNum(realm).fileNum(102).build(),
+                idFactory.newFileId(102),
                 File.newBuilder().contents(Bytes.wrap("NotGoodNodeDetailFile")).build());
         writableStates = MapWritableStates.builder()
                 .state(writableAccounts)
@@ -397,6 +394,8 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
                 .withValue("files.nodeDetails", "102")
                 .getOrCreateConfig();
         given(migrationContext.appConfig()).willReturn(config);
+        final var entityIdFactory = new AppEntityIdFactory(config);
+        given(migrationContext.entityIdFactory()).willReturn(entityIdFactory);
     }
 
     private String nodeAdminKeysJson() {
