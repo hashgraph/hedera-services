@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.types;
+package com.hedera.services.bdd.junit.hedera;
 
 /**
- * Initially we will write block streams to files, but in the next phases we will support writing
- * them to a gRPC stream.
+ * Defines the different modes for block node operation in tests.
  */
-public enum BlockStreamWriterMode {
-    /**
-     * Write block streams to a gRPC stream.
-     */
-    FILE_AND_GRPC,
-    /**
-     * Write block streams to files.
-     */
-    FILE
+public enum BlockNodeMode {
+    /** Use Docker containers for block nodes */
+    CONTAINERS,
+
+    /** Use a simulated block node */
+    SIMULATOR,
+
+    /** User is already running a local hedera block node. SubProcessNode 1 will connect to it. */
+    LOCAL_NODE,
+
+    /** Don't use any block nodes */
+    NONE
 }
