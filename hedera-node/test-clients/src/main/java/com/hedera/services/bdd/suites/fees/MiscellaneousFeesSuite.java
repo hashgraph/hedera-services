@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -108,8 +107,6 @@ public class MiscellaneousFeesSuite {
     }
 
     @HapiTest
-    // enable when atomic batch handler is implemented
-    @Disabled
     @DisplayName("USD base fee as expected for atomic batch transaction")
     public Stream<DynamicTest> simpleBatchTest() {
         final var batchOperator = "batchOperator";
