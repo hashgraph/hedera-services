@@ -39,11 +39,14 @@ import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
+import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -63,6 +66,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public class TokenHandlerTestBase {
+    protected static final Configuration configuration = HederaTestConfigBuilder.createConfig();
+    protected static final long SHARD =
+            configuration.getConfigData(HederaConfig.class).shard();
+    protected static final long REALM =
+            configuration.getConfigData(HederaConfig.class).realm();
+    protected static final EntityIdFactory entityIdFactory = new EntityIdFactoryImpl(SHARD, REALM);
     protected static final String TOKENS = "TOKENS";
     protected static final Key payerKey = A_COMPLEX_KEY;
     protected final Key adminKey = A_COMPLEX_KEY;
@@ -210,7 +219,7 @@ public class TokenHandlerTestBase {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.INFINITE,
-                BaseCryptoHandler.asAccount(autoRenewAccountNumber),
+                entityIdFactory.newAccountId(autoRenewAccountNumber),
                 autoRenewSecs,
                 expirationTime,
                 memo,

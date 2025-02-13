@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,13 +51,18 @@ import com.hedera.node.app.service.token.records.CryptoCreateStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropStreamBuilder;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
@@ -71,6 +76,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 public class StepsBase extends CryptoTokenHandlerTestBase {
+    protected static final Configuration configuration = HederaTestConfigBuilder.createConfig();
+    protected static final long SHARD =
+            configuration.getConfigData(HederaConfig.class).shard();
+    protected static final long REALM =
+            configuration.getConfigData(HederaConfig.class).realm();
+    protected static final EntityIdFactory entityIdFactory = new EntityIdFactoryImpl(SHARD, REALM);
+
     @Mock
     protected CryptoTransferStreamBuilder xferRecordBuilder;
 
@@ -131,7 +143,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     protected static final ProtoBytes ecKeyAlias = new ProtoBytes(Bytes.wrap(ecdsaKeyBytes));
 
-    protected static final byte[] evmAddress = unhex("0000000000000000000000000000000000000003");
+    protected static final byte[] evmAddress = unhex(entityIdFactory.hexLongZero(3));
     protected static final ProtoBytes mirrorAlias = new ProtoBytes(Bytes.wrap(evmAddress));
 
     protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
