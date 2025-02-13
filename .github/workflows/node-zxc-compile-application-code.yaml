@@ -569,8 +569,6 @@ jobs:
           touch build.gradle.kts
 
       - name: Setup Snyk
-        env:
-          SNYK_TOKEN: ${{ secrets.snyk-token }}
         if: >-
           ${{
             inputs.enable-snyk-scan &&
@@ -583,6 +581,20 @@ jobs:
             !cancelled()
           }}
         run: ${CG_EXEC} npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+
+      - name: Snyk Version
+        if: >-
+          ${{
+            inputs.enable-snyk-scan &&
+            steps.gradle-build.conclusion == 'success' &&
+            (
+              github.event.pull_request.head.repo.full_name == github.repository ||
+              github.event_name == 'push' ||
+              github.event_name == 'workflow_dispatch'
+            ) &&
+            !cancelled()
+          }}
+        run: snyk --version
 
       - name: Snyk Scan
         id: snyk
