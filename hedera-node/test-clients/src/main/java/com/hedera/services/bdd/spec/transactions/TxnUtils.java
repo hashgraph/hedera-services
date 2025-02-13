@@ -19,8 +19,10 @@ package com.hedera.services.bdd.spec.transactions;
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
@@ -451,8 +453,8 @@ public class TxnUtils {
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
             String message = String.format(
-                    "Unable to look up current expiration timestamp of file 0.0.%d",
-                    spec.registry().getFileId(file).getFileNum());
+                    "Unable to look up current expiration timestamp of file %s",
+                    asFileString(spec.registry().getFileId(file)));
             log.error(message);
             throw error.get();
         }
@@ -468,8 +470,8 @@ public class TxnUtils {
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {
             String message = String.format(
-                    "Unable to look up current expiration timestamp of contract 0.0.%d",
-                    spec.registry().getContractId(contract).getContractNum());
+                    "Unable to look up current expiration timestamp of contract %s",
+                    asContractString(spec.registry().getContractId(contract)));
             log.error(message);
             throw error.get();
         }
