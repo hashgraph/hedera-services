@@ -49,6 +49,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -103,6 +104,7 @@ public class StandaloneDispatchFactory {
     private final NetworkUtilizationManager networkUtilizationManager;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
     private final TransactionChecker transactionChecker;
+    private final DeduplicationCache deduplicationCache;
 
     @Inject
     public StandaloneDispatchFactory(
@@ -119,7 +121,8 @@ public class StandaloneDispatchFactory {
             @NonNull final TransactionDispatcher transactionDispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory,
-            @NonNull final TransactionChecker transactionChecker) {
+            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final DeduplicationCache deduplicationCache) {
         this.feeManager = requireNonNull(feeManager);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
@@ -134,6 +137,7 @@ public class StandaloneDispatchFactory {
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.softwareVersionFactory = softwareVersionFactory;
         this.transactionChecker = requireNonNull(transactionChecker);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     /**
@@ -164,8 +168,8 @@ public class StandaloneDispatchFactory {
         final var entityIdStore = new WritableEntityIdStore(stack.getWritableStates(EntityIdService.NAME));
         final var consensusTransaction = consensusTransactionFor(transactionBody);
         final var creatorInfo = creatorInfoFor(transactionBody);
-        final var preHandleResult =
-                preHandleWorkflow.getCurrentPreHandleResult(creatorInfo, consensusTransaction, readableStoreFactory);
+        final var preHandleResult = preHandleWorkflow.getCurrentPreHandleResult(
+                creatorInfo, consensusTransaction, readableStoreFactory, ignore -> {});
         final var tokenContext =
                 new TokenContextImpl(config, stack, consensusNow, entityIdStore, softwareVersionFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
@@ -206,7 +210,8 @@ public class StandaloneDispatchFactory {
                 throttleAdvisor,
                 feeAccumulator,
                 EMPTY_METADATA,
-                transactionChecker);
+                transactionChecker,
+                preHandleResult.innerResults());
         final var fees = transactionDispatcher.dispatchComputeFees(dispatchHandleContext);
         return new RecordDispatch(
                 baseBuilder,
@@ -226,7 +231,8 @@ public class StandaloneDispatchFactory {
                 getTxnCategory(preHandleResult),
                 tokenContext,
                 preHandleResult,
-                HandleContext.ConsensusThrottling.ON);
+                HandleContext.ConsensusThrottling.ON,
+                null);
     }
 
     public static HandleContext.TransactionCategory getTxnCategory(final PreHandleResult preHandleResult) {

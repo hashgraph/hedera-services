@@ -18,13 +18,11 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.service.schedule.impl.handlers.HandlerUtility.functionalityForType;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId.NO;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Collections.emptyMap;
@@ -57,8 +55,7 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.key.KeyComparator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -66,9 +63,12 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.ConsensusThrottling;
+import com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -125,6 +125,7 @@ public class ChildDispatchFactory {
     private final ExchangeRateManager exchangeRateManager;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
     private final TransactionChecker transactionChecker;
+    private final DeduplicationCache deduplicationCache;
 
     @Inject
     public ChildDispatchFactory(
@@ -136,6 +137,7 @@ public class ChildDispatchFactory {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionChecker transactionChecker,
+            @NonNull final DeduplicationCache deduplicationCache,
             @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
         this.dispatcher = requireNonNull(dispatcher);
         this.authorizer = requireNonNull(authorizer);
@@ -146,20 +148,22 @@ public class ChildDispatchFactory {
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.softwareVersionFactory = requireNonNull(softwareVersionFactory);
         this.transactionChecker = requireNonNull(transactionChecker);
+        this.deduplicationCache = requireNonNull(deduplicationCache);
     }
 
     /**
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction. This method also computes a pre-handle result for the child transaction.
      *
-     * @param config the configuration
-     * @param stack the savepoint stack
-     * @param readableStoreFactory the readable store factory
-     * @param creatorInfo the node info of the creator
-     * @param topLevelFunction the top level functionality
-     * @param consensusNow the consensus time
-     * @param blockRecordInfo the block record info
-     * @param options the dispatch options
+     * @param config                  the configuration
+     * @param stack                   the savepoint stack
+     * @param readableStoreFactory    the readable store factory
+     * @param creatorInfo             the node info of the creator
+     * @param topLevelFunction        the top level functionality
+     * @param consensusNow            the consensus time
+     * @param blockRecordInfo         the block record info
+     * @param options                 the dispatch options
+     * @param overridePreHandleResult the override pre-handle result for the inner transaction from atomic batch
      * @return the child dispatch
      * @throws HandleException if the child stack base builder cannot be created
      */
@@ -172,7 +176,8 @@ public class ChildDispatchFactory {
             @NonNull final ThrottleAdviser throttleAdviser,
             @NonNull final Instant consensusNow,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final DispatchOptions<?> options) {
+            @NonNull final DispatchOptions<?> options,
+            @Nullable final PreHandleResult overridePreHandleResult) {
         requireNonNull(config);
         requireNonNull(stack);
         requireNonNull(readableStoreFactory);
@@ -182,9 +187,16 @@ public class ChildDispatchFactory {
         requireNonNull(consensusNow);
         requireNonNull(blockRecordInfo);
         requireNonNull(options);
-
-        final var preHandleResult = preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
-        final var childVerifier = getKeyVerifier(options.effectiveKeyVerifier(), config, options.authorizingKeys());
+        // If there is an override pre-handle result, then this is an atomic batch inner transaction.
+        // If there is an override pre-handle result, we re-use it, and this dispatch will check signatures using the
+        // results from the override pre-handle result
+        final var preHandleResult = overridePreHandleResult != null
+                ? overridePreHandleResult
+                : preHandleChild(options.body(), options.payerId(), config, readableStoreFactory);
+        final var childVerifier = overridePreHandleResult != null
+                ? new DefaultKeyVerifier(
+                        0, config.getConfigData(HederaConfig.class), overridePreHandleResult.getVerificationResults())
+                : getKeyVerifier(options.effectiveKeyVerifier(), config, options.authorizingKeys());
         boolean isLastAllowedPreset = false;
         if (options.body().hasScheduleCreate()) {
             final var scheduledFunction = functionalityForType(options.body()
@@ -215,6 +227,8 @@ public class ChildDispatchFactory {
                 childVerifier,
                 consensusNow,
                 options.dispatchMetadata(),
+                options.throttling(),
+                options.customFeeCharging(),
                 creatorInfo,
                 config,
                 topLevelFunction,
@@ -226,8 +240,7 @@ public class ChildDispatchFactory {
                 blockRecordInfo,
                 serviceScopeLookup,
                 exchangeRateManager,
-                dispatcher,
-                options.throttling());
+                dispatcher);
     }
 
     private RecordDispatch newChildDispatch(
@@ -240,7 +253,9 @@ public class ChildDispatchFactory {
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
-            @NonNull final HandleContext.DispatchMetadata dispatchMetadata,
+            @NonNull final DispatchMetadata dispatchMetadata,
+            @NonNull final ConsensusThrottling consensusThrottling,
+            @Nullable FeeCharging customFeeCharging,
             // @UserTxnScope
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
@@ -254,8 +269,7 @@ public class ChildDispatchFactory {
             @NonNull final BlockRecordInfo blockRecordInfo,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HandleContext.ConsensusThrottling throttleStrategy) {
+            @NonNull final TransactionDispatcher dispatcher) {
         final var readableStoreFactory = new ReadableStoreFactory(childStack, softwareVersionFactory);
         final var writableEntityIdStore = new WritableEntityIdStore(childStack.getWritableStates(EntityIdService.NAME));
         final var entityNumGenerator = new EntityNumGeneratorImpl(writableEntityIdStore);
@@ -291,9 +305,9 @@ public class ChildDispatchFactory {
                 throttleAdviser,
                 childFeeAccumulator,
                 dispatchMetadata,
-                transactionChecker);
-        final var childFees =
-                computeChildFees(payerId, dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+                transactionChecker,
+                null);
+        final var childFees = dispatchHandleContext.dispatchComputeFees(txnInfo.txBody(), payerId);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
                 txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
         if (congestionMultiplier > 1) {
@@ -319,38 +333,17 @@ public class ChildDispatchFactory {
                 category,
                 childTokenContext,
                 preHandleResult,
-                throttleStrategy);
-    }
-
-    private static Fees computeChildFees(
-            @NonNull final AccountID payerId,
-            @NonNull final FeeContext feeContext,
-            @NonNull final HandleContext.TransactionCategory childCategory,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final TransactionInfo childTxnInfo) {
-        return switch (childCategory) {
-            case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
-            case PRECEDING -> {
-                if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
-                    yield Fees.FREE;
-                } else {
-                    yield feeContext.dispatchComputeFees(childTxnInfo.txBody(), payerId);
-                }
-            }
-            case CHILD -> Fees.FREE;
-            case USER, NODE -> throw new IllegalStateException(
-                    "Should not dispatch child with user transaction category");
-        };
+                consensusThrottling,
+                customFeeCharging);
     }
 
     /**
      * Dispatches the pre-handle checks for the child transaction. This runs pureChecks and then dispatches pre-handle
      * for child transaction.
      *
-     * @param txBody the transaction body
-     * @param syntheticPayerId the synthetic payer id
-     * @param config the configuration
+     * @param txBody               the transaction body
+     * @param syntheticPayerId     the synthetic payer id
+     * @param config               the configuration
      * @param readableStoreFactory the readable store factory
      * @return the pre-handle result
      */
@@ -436,8 +429,8 @@ public class ChildDispatchFactory {
      * A null callback is useful for internal dispatches that do not need further signature verifications;
      * for example, hollow account completion and auto account creation.
      *
-     * @param callback the callback
-     * @param config the configuration
+     * @param callback        the callback
+     * @param config          the configuration
      * @param authorizingKeys any simple keys that authorized this verifier
      * @return the key verifier
      */
@@ -497,7 +490,7 @@ public class ChildDispatchFactory {
      * Provides the transaction information for the given dispatched transaction body.
      *
      * @param payerId the payer id
-     * @param txBody the transaction body
+     * @param txBody  the transaction body
      * @return the transaction information
      */
     public static TransactionInfo getTxnInfoFrom(
@@ -538,6 +531,7 @@ public class ChildDispatchFactory {
 
     /**
      * Initializes the user stream item builder with the transaction information.
+     *
      * @param builder the stream item builder
      * @param txnInfo the transaction info
      */
@@ -556,6 +550,7 @@ public class ChildDispatchFactory {
 
     /**
      * Returns the given set of keys as a sorted set.
+     *
      * @param keys the keys
      * @return the sorted set
      */

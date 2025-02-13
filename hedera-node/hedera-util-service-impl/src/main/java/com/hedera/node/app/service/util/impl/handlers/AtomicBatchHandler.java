@@ -18,6 +18,7 @@ package com.hedera.node.app.service.util.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.atomicBatchDispatch;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -40,6 +41,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -48,6 +51,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class AtomicBatchHandler implements TransactionHandler {
+    private final Function<Transaction, TransactionBody> bodyParser;
+
 
     private static final AccountID ATOMIC_BATCH_NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).shardNum(0).realmNum(0).build();
@@ -55,8 +60,8 @@ public class AtomicBatchHandler implements TransactionHandler {
      * Constructs a {@link AtomicBatchHandler}
      */
     @Inject
-    public AtomicBatchHandler() {
-        // exists for Dagger injection
+    public AtomicBatchHandler(Function<Transaction, TransactionBody> bodyParser) {
+        this.bodyParser = bodyParser;
     }
 
     /**
@@ -65,7 +70,7 @@ public class AtomicBatchHandler implements TransactionHandler {
      * @param context the pure checks context
      */
     @Override
-    public void pureChecks(@NonNull PureChecksContext context) throws PreCheckException {
+    public void pureChecks(@NonNull final PureChecksContext context) throws PreCheckException {
         requireNonNull(context);
         final TransactionBody txn = context.body();
         requireNonNull(txn);
@@ -87,11 +92,18 @@ public class AtomicBatchHandler implements TransactionHandler {
         }
 
         Set<Transaction> set = new HashSet<>();
-        for (final Transaction transaction : transactions) {
+        for (final var transaction : transactions) {
             if (!set.add(transaction)) throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
 
-            final var innerTrxBody = context.bodyFromTransaction(transaction);
-            if (!innerTrxBody.hasBatchKey()) {
+            final TransactionBody txBody;
+            try {
+                txBody = bodyParser.apply(transaction);
+            } catch (HandleException e) {
+                throw new PreCheckException(e.getStatus());
+            }
+
+            // validate batch key exists on each inner transaction
+            if (!txBody.hasBatchKey()) {
                 throw new PreCheckException(MISSING_BATCH_KEY);
             }
 
@@ -134,25 +146,30 @@ public class AtomicBatchHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var batchConfig = context.configuration().getConfigData(AtomicBatchConfig.class);
         final var op = context.body().atomicBatchOrThrow();
-        if (batchConfig.isEnabled()) {
-            final var transactions = op.transactions();
-            for (final var transaction : transactions) {
-                TransactionBody body;
-                try {
-                    body = context.bodyFromTransaction(transaction);
-                } catch (HandleException e) {
-                    // we should have validated the inner transaction in preChecks already, so this should not happen.
-                    throw new HandleException(INNER_TRANSACTION_FAILED);
-                }
-                final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
-                // all the inner transactions' keys are verified in PreHandleWorkflow
-                final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
-                final var streamBuilder = context.dispatch(dispatchOptions);
-                if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
-                    throw new HandleException(INNER_TRANSACTION_FAILED);
-                }
+        if (!context.configuration().getConfigData(AtomicBatchConfig.class).isEnabled()) {
+            throw new HandleException(NOT_SUPPORTED);
+        }
+        final var txnBodies = new ArrayList<TransactionBody>();
+        for (final var transaction : op.transactions()) {
+            try {
+                txnBodies.add(bodyParser.apply(transaction));
+            } catch (HandleException e) {
+                // Do we need to keep the specific ResponseCodeEnum here?
+                throw new HandleException(INNER_TRANSACTION_FAILED);
+            }
+        }
+        // The parsing check, timebox, and duplication checks are done in the pre-handle workflow
+        // So, no need to repeat here
+        // dispatch all the inner transactions
+        for (final var body : txnBodies) {
+            final var payerId = body.transactionIDOrThrow().accountIDOrThrow();
+
+            // all the inner transactions' keys are verified in PreHandleWorkflow
+            final var dispatchOptions = atomicBatchDispatch(payerId, body, StreamBuilder.class);
+            final var streamBuilder = context.dispatch(dispatchOptions);
+            if (streamBuilder == null || streamBuilder.status() != SUCCESS) {
+                throw new HandleException(INNER_TRANSACTION_FAILED);
             }
         }
     }

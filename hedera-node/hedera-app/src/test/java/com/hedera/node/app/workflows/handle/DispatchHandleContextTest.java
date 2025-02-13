@@ -19,11 +19,13 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBLE;
+import static com.hedera.node.app.spi.fees.NoopFeeCharging.NOOP_FEE_CHARGING;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.independentDispatch;
 import static com.hedera.node.app.spi.workflows.DispatchOptions.setupDispatch;
@@ -95,6 +97,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
+import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -102,6 +105,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -115,6 +119,7 @@ import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -130,6 +135,7 @@ import com.swirlds.state.test.fixtures.MapWritableStates;
 import com.swirlds.state.test.fixtures.StateTestBase;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -256,6 +262,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private Predicate<Key> signatureTest;
 
+    @Mock
+    private DeduplicationCache deduplicationCache;
+
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -286,6 +295,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Bytes.EMPTY,
             CRYPTO_TRANSFER,
             null);
+
+    final PreHandleResult result =
+            PreHandleResult.preHandleFailure(payerId, null, INVALID_PAYER_ACCOUNT_ID, txnInfo, null, null, null, null);
 
     @BeforeEach
     void setup() {
@@ -392,14 +404,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             throttleAdviser,
             feeAccumulator,
             EMPTY_METADATA,
-            transactionChecker
+            transactionChecker,
+            List.of(result)
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
         for (int i = 0; i < allArgs.length; i++) {
             final var index = i;
-            // Skip signatureMapSize and payerKey
-            if (index == 2 || index == 4) {
+            // Skip signatureMapSize, payerKey, and preHandleResults
+            if (index == 2 || index == 4 || index == 24) {
                 continue;
             }
             assertThatThrownBy(() -> {
@@ -587,7 +600,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES)))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatch(subDispatch(
                             AccountID.DEFAULT,
@@ -596,7 +611,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             null,
                             StakingRewards.ON,
-                            UsePresetTxnId.NO)))
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES)))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -611,9 +628,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             emptySet(),
                             StreamBuilder.class,
                             StakingRewards.OFF,
-                            UsePresetTxnId.NO))),
-                    Arguments.of((Consumer<HandleContext>) context ->
-                            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class)))));
+                            UsePresetTxnId.NO,
+                            NOOP_FEE_CHARGING,
+                            PropagateFeeChargingStrategy.YES))),
+                    Arguments.of((Consumer<HandleContext>) context -> context.dispatch(
+                            setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class, NOOP_FEE_CHARGING)))));
         }
 
         @ParameterizedTest
@@ -678,7 +697,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
-            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class));
+            context.dispatch(setupDispatch(ALICE.accountID(), txBody, StreamBuilder.class, NOOP_FEE_CHARGING));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -709,7 +728,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     emptySet(),
                     StreamBuilder.class,
                     StakingRewards.ON,
-                    UsePresetTxnId.NO));
+                    UsePresetTxnId.NO,
+                    NOOP_FEE_CHARGING,
+                    PropagateFeeChargingStrategy.YES));
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -757,6 +778,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 Bytes.EMPTY,
                 function,
                 null);
+        final var result = PreHandleResult.preHandleFailure(
+                payerId, null, INVALID_PAYER_ACCOUNT_ID, txnInfo, null, null, null, null);
+        final var results = new ArrayList<PreHandleResult>();
+        results.add(result);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
                 creatorInfo,
@@ -781,13 +806,14 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 throttleAdviser,
                 feeAccumulator,
                 EMPTY_METADATA,
-                transactionChecker);
+                transactionChecker,
+                results);
     }
 
     private void mockNeeded() {
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
-                        any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                        any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()

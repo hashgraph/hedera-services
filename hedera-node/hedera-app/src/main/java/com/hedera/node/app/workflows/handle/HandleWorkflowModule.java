@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandle
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
+import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.hedera.node.config.ConfigProvider;
@@ -52,6 +54,12 @@ import javax.inject.Singleton;
 
 @Module
 public interface HandleWorkflowModule {
+    @Provides
+    @Singleton
+    static EntityIdFactory provideEntityIdFactory(@NonNull final AppContext appContext) {
+        return appContext.idFactory();
+    }
+
     @Provides
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers(@NonNull final ContractServiceImpl contractService) {
@@ -173,6 +181,9 @@ public interface HandleWorkflowModule {
                 addressBookHandlers.nodeUpdateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),
                 tokenHandlers.tokenClaimAirdropHandler(),
+                hintsHandlers.keyPublicationHandler(),
+                hintsHandlers.preprocessingVoteHandler(),
+                hintsHandlers.partialSignatureHandler(),
                 utilHandlers.prngHandler(),
                 utilHandlers.atomicBatchHandler());
     }
