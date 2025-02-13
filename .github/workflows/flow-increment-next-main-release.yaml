@@ -14,7 +14,7 @@
 # limitations under the License.
 ##
 
-name: "[Main] Prepare Next Release Version"
+name: "[Main] Increment to Next Release Version"
 on:
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   next-main-release:
-    name: Prepare Next Release Version
+    name: Increment to Next Release Version
     runs-on: network-node-linux-medium
     steps:
       - name: Harden Runner
