@@ -226,6 +226,7 @@ public class HintsControllerImpl implements HintsController {
         final var crsState = hintsStore.getCrsState();
         // If all nodes have contributed
         if (!crsState.hasNextContributingNodeId()) {
+            final var thresholdMet = validateWeightOfContributions(now, hintsStore);
             if (crsState.stage() == CRSStage.GATHERING_CONTRIBUTIONS) {
                 final var delay = configurationSupplier
                         .get()
@@ -251,6 +252,15 @@ public class HintsControllerImpl implements HintsController {
                 && now.isAfter(asInstant(crsState.contributionEndTimeOrThrow()))) {
             moveToNextNode(now, hintsStore);
         }
+    }
+
+    private boolean validateWeightOfContributions(final Instant now, final WritableHintsStore hintsStore) {
+        final var crsContributions = hintsStore.getCrsPublicationsByNodeIds(weights.sourceNodeIds());
+        final var totalWeight = crsContributions.keySet().stream()
+                .mapToLong(weights::sourceWeightOf)
+                .sum();
+
+        return totalWeight >= weights.sourceWeightThreshold();
     }
 
     /**
@@ -305,10 +315,10 @@ public class HintsControllerImpl implements HintsController {
     }
 
     /**
-     * Generates secure 128-bit entropy.
+     * Generates secure 256-bit entropy.
      */
     public Bytes generateEntropy() {
-        byte[] entropyBytes = new byte[16];
+        byte[] entropyBytes = new byte[32];
         SECURE_RANDOM.nextBytes(entropyBytes);
         return Bytes.wrap(entropyBytes);
     }

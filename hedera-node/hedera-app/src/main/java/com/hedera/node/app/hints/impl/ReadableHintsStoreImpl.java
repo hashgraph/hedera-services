@@ -41,6 +41,7 @@ import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,6 +149,18 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
                         Spliterators.spliteratorUnknownSize(crsPublications.keys(), Spliterator.ORDERED), false)
                 .map(crsPublications::get)
                 .toList();
+    }
+
+    @Override
+    public Map<Long, CrsPublicationTransactionBody> getCrsPublicationsByNodeIds(@NonNull final Set<Long> nodeIds) {
+        final Map<Long, CrsPublicationTransactionBody> publications = new HashMap<>();
+        for (final var nodeId : nodeIds) {
+            final var publication = crsPublications.get(new NodeId(nodeId));
+            if (publication != null) {
+                publications.put(nodeId, publication);
+            }
+        }
+        return publications;
     }
 
     private boolean constructionIsFor(
