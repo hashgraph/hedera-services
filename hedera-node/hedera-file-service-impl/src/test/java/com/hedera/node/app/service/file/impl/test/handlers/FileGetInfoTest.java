@@ -74,11 +74,13 @@ class FileGetInfoTest extends FileTestBase {
         subject = new FileGetInfoHandler(fileOpsUsage);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(context.configuration()).thenReturn(configuration);
+        //        lenient().when(context.createStore(ReadableUpgradeFileStore.class))
+        //                .thenReturn(readableUpgradeFileStore);
     }
 
     @Test
     void extractsHeader() {
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery(fileId);
         final var header = subject.extractHeader(query);
         final var op = query.fileGetInfoOrThrow();
         assertEquals(op.header(), header);
@@ -116,7 +118,7 @@ class FileGetInfoTest extends FileTestBase {
     void validatesQueryWhenValidFile() {
         givenValidFile();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery(fileId);
         given(context.query()).willReturn(query);
         given(context.createStore(ReadableFileStore.class)).willReturn(readableStore);
 
@@ -138,7 +140,7 @@ class FileGetInfoTest extends FileTestBase {
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates, readableEntityCounters);
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery(fileId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
@@ -151,7 +153,7 @@ class FileGetInfoTest extends FileTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.FAIL_FEE)
                 .build();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery(fileId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
@@ -169,7 +171,7 @@ class FileGetInfoTest extends FileTestBase {
                 .build();
         final var expectedInfo = getExpectedInfo();
 
-        final var query = createGetFileInfoQuery(fileId.fileNum());
+        final var query = createGetFileInfoQuery(fileId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
@@ -186,7 +188,7 @@ class FileGetInfoTest extends FileTestBase {
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
 
-        final var query = createGetFileInfoQuery(fileIdNotExist.fileNum());
+        final var query = createGetFileInfoQuery(fileIdNotExist);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
@@ -205,7 +207,7 @@ class FileGetInfoTest extends FileTestBase {
                 .build();
         final var expectedInfo = getExpectedUpgradeInfo();
 
-        final var query = createGetFileInfoQuery(fileUpgradeFileId.fileNum());
+        final var query = createGetFileInfoQuery(fileUpgradeFileId);
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableUpgradeFileStore.class)).thenReturn(readableUpgradeFileStore);
         final var response = subject.findResponse(context, responseHeader);
@@ -226,24 +228,11 @@ class FileGetInfoTest extends FileTestBase {
                 .build();
     }
 
-    private FileInfo getExpectedSystemInfo() {
-        final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
-        return FileInfo.newBuilder()
-                .memo(upgradeHash)
-                .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
-                .keys(keys)
-                .expirationTime(Timestamp.newBuilder().seconds(file.expirationSecond()))
-                .ledgerId(ledgerId)
-                .deleted(false)
-                .size(8)
-                .build();
-    }
-
     private FileInfo getExpectedUpgradeInfo() {
         final var upgradeHash = hex(CryptographyHolder.get().digestBytesSync(contents));
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
-                .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())
+                .fileID(fileUpgradeFileId)
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationSecond()))
                 .ledgerId(ledgerId)
@@ -252,9 +241,9 @@ class FileGetInfoTest extends FileTestBase {
                 .build();
     }
 
-    private Query createGetFileInfoQuery(final long fileId) {
+    private Query createGetFileInfoQuery(final FileID fileID) {
         final var data = FileGetInfoQuery.newBuilder()
-                .fileID(FileID.newBuilder().fileNum(fileId).build())
+                .fileID(fileID)
                 .header(QueryHeader.newBuilder().payment(Transaction.DEFAULT).build())
                 .build();
 

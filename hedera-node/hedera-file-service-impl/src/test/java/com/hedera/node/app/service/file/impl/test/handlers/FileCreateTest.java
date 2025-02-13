@@ -51,7 +51,9 @@ import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileStreamBuilder;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -110,7 +112,14 @@ class FileCreateTest extends FileTestBase {
     private WritableFileStore fileStore;
     private FileCreateHandler subject;
 
+    private long SHARD = 5L;
+    private long REALM = 10L;
+
     private TransactionBody newCreateTxn(KeyList keys, long expirationTime) {
+        return newCreateTxn(keys, expirationTime, ShardID.DEFAULT.shardNum(), RealmID.DEFAULT.realmNum());
+    }
+
+    private TransactionBody newCreateTxn(KeyList keys, long expirationTime, long shardId, long realmId) {
         final var txnId = TransactionID.newBuilder().accountID(ACCOUNT_ID_3).build();
         final var createFileBuilder = FileCreateTransactionBody.newBuilder();
         if (keys != null) {
@@ -118,8 +127,8 @@ class FileCreateTest extends FileTestBase {
         }
         createFileBuilder.memo("memo");
         createFileBuilder.contents(Bytes.wrap(contents));
-        createFileBuilder.shardID(ShardID.DEFAULT);
-        createFileBuilder.realmID(RealmID.DEFAULT);
+        createFileBuilder.shardID(new ShardID(shardId));
+        createFileBuilder.realmID(new RealmID(shardId, realmId));
 
         if (expirationTime > 0) {
             createFileBuilder.expirationTime(
@@ -208,7 +217,7 @@ class FileCreateTest extends FileTestBase {
     @DisplayName("Handle works as expected")
     void handleWorksAsExpected() {
         final var keys = anotherKeys;
-        final var txBody = newCreateTxn(keys, expirationTime);
+        final var txBody = newCreateTxn(keys, expirationTime, SHARD, REALM);
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -222,7 +231,8 @@ class FileCreateTest extends FileTestBase {
 
         subject.handle(handleContext);
 
-        final FileID createdFileId = FileID.newBuilder().fileNum(1_234L).build();
+        final EntityIdFactory idFactory = new EntityIdFactoryImpl(5L, 10L);
+        final FileID createdFileId = idFactory.newFileId(1_234L);
         final var createdFile = fileStore.get(createdFileId);
         assertTrue(createdFile.isPresent());
 
@@ -233,14 +243,14 @@ class FileCreateTest extends FileTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
-        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
+        verify(recordBuilder).fileID(fileId);
         assertTrue(fileStore.get(createdFileId).isPresent());
     }
 
     @Test
     @DisplayName("Handle works as expected without keys")
     void handleDoesntRequireKeys() {
-        final var txBody = newCreateTxn(keys, expirationTime);
+        final var txBody = newCreateTxn(keys, expirationTime, SHARD, REALM);
 
         given(configuration.getConfigData(HederaConfig.class))
                 .willReturn(DEFAULT_CONFIG.getConfigData(HederaConfig.class));
@@ -256,7 +266,8 @@ class FileCreateTest extends FileTestBase {
 
         subject.handle(handleContext);
 
-        final FileID createdFileId = FileID.newBuilder().fileNum(1_234L).build();
+        final EntityIdFactory idFactory = new EntityIdFactoryImpl(5L, 10L);
+        final FileID createdFileId = idFactory.newFileId(1_234L);
         final var createdFile = fileStore.get(createdFileId);
         assertTrue(createdFile.isPresent());
 
@@ -267,14 +278,14 @@ class FileCreateTest extends FileTestBase {
         assertEquals(contentsBytes, actualFile.contents());
         assertEquals(fileId, actualFile.fileId());
         assertFalse(actualFile.deleted());
-        verify(recordBuilder).fileID(FileID.newBuilder().fileNum(1_234L).build());
+        verify(recordBuilder).fileID(fileId);
         assertTrue(fileStore.get(createdFileId).isPresent());
     }
 
     @Test
     @DisplayName("Translates INVALID_EXPIRATION_TIME to AUTO_RENEW_DURATION_NOT_IN_RANGE")
     void translatesInvalidExpiryException() {
-        final var txBody = newCreateTxn(keys, expirationTime);
+        final var txBody = newCreateTxn(keys, expirationTime, SHARD, REALM);
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
@@ -290,7 +301,7 @@ class FileCreateTest extends FileTestBase {
     @DisplayName("Memo Validation Failure will throw")
     void handleThrowsIfAttributeValidatorFails() {
         final var keys = anotherKeys;
-        final var txBody = newCreateTxn(keys, expirationTime);
+        final var txBody = newCreateTxn(keys, expirationTime, SHARD, REALM);
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
@@ -311,7 +322,7 @@ class FileCreateTest extends FileTestBase {
     @DisplayName("Fails when the file are already created")
     void failsWhenMaxRegimeExceeds() {
         final var keys = anotherKeys;
-        final var txBody = newCreateTxn(keys, expirationTime);
+        final var txBody = newCreateTxn(keys, expirationTime, SHARD, REALM);
         given(handleContext.body()).willReturn(txBody);
         final var writableState = writableFileStateWithOneKey();
         givenEntityCounters(2);

@@ -36,6 +36,8 @@ import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
+import com.hedera.node.app.spi.fixtures.ids.EntityIdFactoryImpl;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.ids.ReadableEntityCounters;
 import com.hedera.node.app.spi.ids.WritableEntityCounters;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -113,12 +115,15 @@ public class FileTestBase {
     protected final KeyList keys = A_KEY_LIST.keyList();
 
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
-    protected final FileID WELL_KNOWN_FILE_ID =
-            FileID.newBuilder().fileNum(1_234L).build();
-    protected final FileID WELL_KNOWN_UPGRADE_FILE_ID =
-            FileID.newBuilder().fileNum(150L).shardNum(0L).realmNum(0L).build();
-    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
-            FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
+
+    private final long SHARD = 5L;
+    private final long REALM = 10L;
+
+    private final EntityIdFactory idFactory = new EntityIdFactoryImpl(SHARD, REALM);
+
+    protected final FileID WELL_KNOWN_FILE_ID = idFactory.newFileId(1_234L);
+    protected final FileID WELL_KNOWN_UPGRADE_FILE_ID = idFactory.newFileId(150L);
+    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID = idFactory.newFileId(122L);
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
     protected final FileID fileIdNotExist = FileID.newBuilder().fileNum(6_789L).build();
     protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
