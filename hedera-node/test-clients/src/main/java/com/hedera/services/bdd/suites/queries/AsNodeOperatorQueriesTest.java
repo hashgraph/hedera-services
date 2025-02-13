@@ -16,6 +16,44 @@
 
 package com.hedera.services.bdd.suites.queries;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import io.grpc.ConnectivityState;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.customizedHapiTest;
@@ -52,43 +90,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import io.grpc.ConnectivityState;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 /**
  * A class with Node Operator Queries tests
@@ -135,21 +136,23 @@ public class AsNodeOperatorQueriesTest extends NodeOperatorQueriesBase implement
 
     @HapiTest
     final Stream<DynamicTest> nodeOperatorQueryVerifyPayerBalanceForAccountInfo() {
-        return hapiTest(flattened(
-                nodeOperatorAccount(),
-                payerAccount(),
-                balanceSnapshot("payerInitialBalance", PAYER),
-                // perform getAccountInfo() query, pay for the query with payer account
-                // the grpc client performs the query to different ports
-                getAccountInfo(NODE_OPERATOR).payingWith(PAYER),
-                sleepFor(3_000),
-                // assert payer is charged
-                getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST)),
-                // perform free query to local port with asNodeOperator() method
-                getAccountInfo(NODE_OPERATOR).payingWith(PAYER).asNodeOperator(),
-                sleepFor(3_000),
-                // assert payer is not charged as the query is performed as node operator
-                getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST))));
+        return customizedHapiTest(
+                Map.of("memo.useSpecName", "false"),
+                flattened(
+                        nodeOperatorAccount(),
+                        payerAccount(),
+                        balanceSnapshot("payerInitialBalance", PAYER),
+                        // perform getAccountInfo() query, pay for the query with payer account
+                        // the grpc client performs the query to different ports
+                        getAccountInfo(NODE_OPERATOR).payingWith(PAYER),
+                        sleepFor(3_000),
+                        // assert payer is charged
+                        getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST)),
+                        // perform free query to local port with asNodeOperator() method
+                        getAccountInfo(NODE_OPERATOR).payingWith(PAYER).asNodeOperator(),
+                        sleepFor(3_000),
+                        // assert payer is not charged as the query is performed as node operator
+                        getAccountBalance(PAYER).hasTinyBars(changeFromSnapshot("payerInitialBalance", -QUERY_COST))));
     }
 
     /**

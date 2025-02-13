@@ -118,7 +118,8 @@ public class CryptoServiceFeesSuite {
     final Stream<DynamicTest> cryptoDeleteBaseUSDFee() {
         final var cryptoCreate = "cryptoCreate";
         final var cryptoDelete = "cryptoDelete";
-        return hapiTest(
+        return customizedHapiTest(
+                Map.of("memo.useSpecName", "false"),
                 cryptoCreate(cryptoCreate).balance(5 * ONE_HUNDRED_HBARS).key(CIVILIAN),
                 cryptoDelete(cryptoCreate)
                         .via(cryptoDelete)
@@ -513,7 +514,8 @@ public class CryptoServiceFeesSuite {
     @HapiTest
     @DisplayName("CryptoGetAccountInfo query has expected base fee")
     final Stream<DynamicTest> cryptoGetAccountInfoBaseUSDFee() {
-        return hapiTest(
+        return customizedHapiTest(
+                Map.of("memo.useSpecName", "false"),
                 getAccountInfo(CIVILIAN).via("basicGetInfo").payingWith(FEES_ACCOUNT),
                 sleepFor(1000),
                 validateChargedUsd("basicGetInfo", BASE_FEE_CRYPTO_GET_ACCOUNT_INFO));
