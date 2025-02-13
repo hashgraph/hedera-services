@@ -69,4 +69,4 @@ jobs:
       - name: Run Snyk Monitor
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor --all-projects --policy-path=.snyk --trust-policies --org=hiero-consensus-node
+        run: snyk monitor --all-projects --policy-path=.snyk --trust-policies --org=hiero-consensus-node --print-depths --debug --log-level=trace
