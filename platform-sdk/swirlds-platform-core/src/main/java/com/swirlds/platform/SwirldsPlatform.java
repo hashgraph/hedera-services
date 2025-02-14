@@ -172,8 +172,7 @@ public class SwirldsPlatform implements Platform {
      * @param builder this object is responsible for building platform components and other things needed by the
      *                platform
      */
-    public SwirldsPlatform(
-            @NonNull final PlatformComponentBuilder builder, @NonNull final PlatformWiring platformWiring) {
+    public SwirldsPlatform(@NonNull final PlatformComponentBuilder builder) {
         final PlatformBuildingBlocks blocks = builder.getBuildingBlocks();
         platformContext = blocks.platformContext();
         final StateLifecycles stateLifecycles = blocks.stateLifecycles();
@@ -227,7 +226,7 @@ public class SwirldsPlatform implements Platform {
         final StateSignatureCollector stateSignatureCollector =
                 new DefaultStateSignatureCollector(platformContext, signedStateMetrics);
 
-        this.platformWiring = platformWiring;
+        this.platformWiring = blocks.platformWiring();
 
         blocks.statusActionSubmitterReference()
                 .set(x -> platformWiring.getStatusActionSubmitter().submitStatusAction(x));

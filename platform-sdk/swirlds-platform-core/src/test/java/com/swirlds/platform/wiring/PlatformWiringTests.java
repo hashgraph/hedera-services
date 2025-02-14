@@ -104,7 +104,7 @@ class PlatformWiringTests {
         final PlatformWiring wiring = new PlatformWiring(platformContext, model, applicationCallbacks);
 
         final PlatformComponentBuilder componentBuilder =
-                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class), wiring);
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class));
 
         componentBuilder
                 .withEventHasher(mock(EventHasher.class))

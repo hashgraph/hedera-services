@@ -101,7 +101,6 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.status.DefaultStatusStateMachine;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.util.MetricsDocUtils;
-import com.swirlds.platform.wiring.PlatformWiring;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -162,7 +161,6 @@ public class PlatformComponentBuilder {
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
 
-    private final PlatformWiring platformWiring;
     private SwirldsPlatform swirldsPlatform;
 
     private boolean metricsDocumentationEnabled = true;
@@ -178,10 +176,8 @@ public class PlatformComponentBuilder {
      * @param blocks the build context for the platform under construction, contains all data needed to construct
      *               platform components
      */
-    public PlatformComponentBuilder(
-            @NonNull final PlatformBuildingBlocks blocks, @NonNull final PlatformWiring platformWiring) {
+    public PlatformComponentBuilder(@NonNull final PlatformBuildingBlocks blocks) {
         this.blocks = Objects.requireNonNull(blocks);
-        this.platformWiring = Objects.requireNonNull(platformWiring);
     }
 
     /**
@@ -192,11 +188,6 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformBuildingBlocks getBuildingBlocks() {
         return blocks;
-    }
-
-    @NonNull
-    public PlatformWiring getPlatformWiring() {
-        return platformWiring;
     }
 
     /**
@@ -219,7 +210,7 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            swirldsPlatform = new SwirldsPlatform(this, platformWiring);
+            swirldsPlatform = new SwirldsPlatform(this);
             return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {
@@ -1386,12 +1377,5 @@ public class PlatformComponentBuilder {
             latestCompleteStateNotifier = new DefaultLatestCompleteStateNotifier();
         }
         return latestCompleteStateNotifier;
-    }
-
-    public static enum SolderWireType {
-        /**
-         * Solder a wire to the consensus engine output
-         */
-        CONSENSUS_ENGINE
     }
 }

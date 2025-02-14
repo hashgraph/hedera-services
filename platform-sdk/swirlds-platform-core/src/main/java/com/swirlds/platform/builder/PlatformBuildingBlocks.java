@@ -39,6 +39,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
+import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -52,6 +53,7 @@ import java.util.function.Supplier;
  * This record contains core utilities and basic objects needed to build a platform. It should not contain any platform
  * components.
  *
+ * @param platformWiring                         the wiring for this platform
  * @param platformContext                        the context for this platform
  * @param model                                  the wiring model for this platform
  * @param keysAndCerts                           an object holding all the public/private key pairs and the CSPRNG state
@@ -99,6 +101,7 @@ import java.util.function.Supplier;
  * @param platformStateFacade                    the facade to access the platform state
  */
 public record PlatformBuildingBlocks(
+        @NonNull PlatformWiring platformWiring,
         @NonNull PlatformContext platformContext,
         @NonNull WiringModel model,
         @NonNull KeysAndCerts keysAndCerts,
@@ -130,6 +133,7 @@ public record PlatformBuildingBlocks(
         @NonNull PlatformStateFacade platformStateFacade) {
 
     public PlatformBuildingBlocks {
+        requireNonNull(platformWiring);
         requireNonNull(platformContext);
         requireNonNull(model);
         requireNonNull(keysAndCerts);

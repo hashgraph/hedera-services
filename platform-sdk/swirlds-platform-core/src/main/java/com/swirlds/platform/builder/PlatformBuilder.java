@@ -34,14 +34,10 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.component.framework.WiringConfig;
-import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.component.framework.model.WiringModelBuilder;
-import com.swirlds.component.framework.wires.input.InputWire;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.builder.PlatformComponentBuilder.SolderWireType;
-import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -55,7 +51,6 @@ import com.swirlds.platform.gossip.DefaultIntakeEventCounter;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.NoOpIntakeEventCounter;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.pool.TransactionPoolNexus;
 import com.swirlds.platform.roster.RosterHistory;
 import com.swirlds.platform.scratchpad.Scratchpad;
@@ -75,9 +70,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -149,7 +141,6 @@ public final class PlatformBuilder {
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private Consumer<PlatformEvent> staleEventConsumer;
     private Function<StateSignatureTransaction, Bytes> systemTransactionEncoder;
-    private Map<SolderWireType, InputWire<?>> additionalInputWires;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -369,18 +360,6 @@ public final class PlatformBuilder {
     }
 
     /**
-     * Binds additional custom input wires to the specified output wires on top of the default wirings that are
-     * already created.
-     *
-     * @param inputWires map between an output wire type and an input wire to solder it to
-     */
-    public PlatformBuilder withAdditionalInputWires(final Map<SolderWireType, InputWire<?>> inputWires) {
-        throwIfAlreadyUsed();
-        this.additionalInputWires = inputWires;
-        return this;
-    }
-
-    /**
      * Provide the source of non-cryptographic randomness for this platform.
      *
      * @param randomBuilder the source of non-cryptographic randomness
@@ -508,7 +487,10 @@ public final class PlatformBuilder {
             randomBuilder = new RandomBuilder();
         }
 
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, model, callbacks);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
+                platformWiring,
                 platformContext,
                 model,
                 keysAndCerts,
@@ -539,25 +521,7 @@ public final class PlatformBuilder {
                 stateLifecycles,
                 platformStateFacade);
 
-        final PlatformWiring platformWiring =
-                new PlatformWiring(platformContext, buildingBlocks.model(), buildingBlocks.applicationCallbacks());
-
-        if (additionalInputWires != null) {
-            for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : additionalInputWires.entrySet()) {
-                switch (inputWireEntry.getKey()) {
-                    case CONSENSUS_ENGINE -> {
-                        final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring =
-                                platformWiring.getConsensusEngineWiring();
-                        if (inputWireEntry.getValue() != null) {
-                            consensusEngineWiring.getOutputWire().solderTo((InputWire<List<ConsensusRound>>)
-                                    inputWireEntry.getValue());
-                        }
-                    }
-                }
-            }
-        }
-
-        return new PlatformComponentBuilder(buildingBlocks, platformWiring);
+        return new PlatformComponentBuilder(buildingBlocks);
     }
 
     /**
