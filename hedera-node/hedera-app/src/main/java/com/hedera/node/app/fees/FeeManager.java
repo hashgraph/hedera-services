@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +148,7 @@ public final class FeeManager {
         } else {
             // If we don't have an expiration time, then we default to 0, which will effectively expire the
             // current schedule immediately. This is the safest option.
-            logger.warn("The current fee schedule has no expiry time, defaulting to 0, effectively expiring it"
+            logger.warn("The current fee schedule has no expiry time, defaulting to 0, effectively expiring it "
                     + "immediately");
             this.currentScheduleExpirationSeconds = 0;
         }
