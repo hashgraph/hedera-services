@@ -28,7 +28,6 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -219,11 +218,9 @@ public class StakeInfoHelper {
             @NonNull final WritableStakingInfoStore store,
             @NonNull final List<NodeInfo> nodeInfos,
             @NonNull final Configuration config) {
-        final var numberOfNodesInAddressBook = nodeInfos.size();
-        final long maxStakePerNode =
-                config.getConfigData(LedgerConfig.class).totalTinyBarFloat() / numberOfNodesInAddressBook;
-        final var numRewardHistoryStoredPeriods =
-                config.getConfigData(StakingConfig.class).rewardHistoryNumStoredPeriods();
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+        final long maxStakePerNode = stakingConfig.maxStake();
         for (final var nodeId : nodeInfos) {
             final var stakingInfo = store.get(nodeId.nodeId());
             if (stakingInfo != null) {
@@ -236,7 +233,7 @@ public class StakeInfoHelper {
                 final var newNodeStakingInfo = StakingNodeInfo.newBuilder()
                         .nodeNumber(nodeId.nodeId())
                         .maxStake(maxStakePerNode)
-                        .minStake(0L)
+                        .minStake(stakingConfig.minStake())
                         .rewardSumHistory(
                                 nCopies(numRewardHistoryStoredPeriods + 1, 0L).toArray(Long[]::new))
                         .weight(0)
