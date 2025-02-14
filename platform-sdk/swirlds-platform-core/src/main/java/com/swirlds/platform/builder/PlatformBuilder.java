@@ -46,7 +46,6 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
-import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
@@ -66,16 +65,12 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BirthRoundMigrationShim;
-import com.swirlds.platform.system.events.DefaultBirthRoundMigrationShim;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
 import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -573,32 +568,5 @@ public final class PlatformBuilder {
     @NonNull
     public Platform build() {
         return buildComponentBuilder().build();
-    }
-
-    /**
-     * Builds the birth round migration shim if necessary.
-     *
-     * @param initialState the initial state
-     * @param ancientMode  the ancient mode
-     * @return the birth round migration shim, or null if it is not needed
-     */
-    @Nullable
-    private BirthRoundMigrationShim buildBirthRoundMigrationShim(
-            @NonNull final SignedState initialState,
-            @NonNull final AncientMode ancientMode,
-            @NonNull final PlatformStateFacade platformStateFacade) {
-
-        if (ancientMode == AncientMode.GENERATION_THRESHOLD) {
-            // We don't need the shim if we haven't migrated to birth round mode.
-            return null;
-        }
-
-        final PlatformMerkleStateRoot state = initialState.getState();
-
-        return new DefaultBirthRoundMigrationShim(
-                platformContext,
-                platformStateFacade.firstVersionInBirthRoundModeOf(state),
-                platformStateFacade.lastRoundBeforeBirthRoundModeOf(state),
-                platformStateFacade.lowestJudgeGenerationBeforeBirthRoundModeOf(state));
     }
 }
