@@ -45,6 +45,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.components.DefaultSavedStateController;
@@ -160,8 +161,10 @@ class StateFileManagerTests {
         assertEquals(-1, originalState.getReservationCount(), "invalid reservation count");
 
         MerkleDb.resetDefaultInstancePath();
+        Configuration configuration =
+                TestPlatformContextBuilder.create().build().getConfiguration();
         final DeserializedSignedState deserializedSignedState = readStateFile(
-                TestPlatformContextBuilder.create().build().getConfiguration(), stateFile, TEST_PLATFORM_STATE_FACADE);
+                configuration, stateFile, TEST_PLATFORM_STATE_FACADE, PlatformContext.create(configuration));
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());
@@ -358,13 +361,14 @@ class StateFileManagerTests {
 
                     final SavedStateInfo savedStateInfo = currentStatesOnDisk.get(index);
 
+                    Configuration configuration =
+                            TestPlatformContextBuilder.create().build().getConfiguration();
                     final SignedState stateFromDisk = assertDoesNotThrow(
                             () -> SignedStateFileReader.readStateFile(
-                                            TestPlatformContextBuilder.create()
-                                                    .build()
-                                                    .getConfiguration(),
+                                            configuration,
                                             savedStateInfo.stateFile(),
-                                            TEST_PLATFORM_STATE_FACADE)
+                                            TEST_PLATFORM_STATE_FACADE,
+                                            PlatformContext.create(configuration))
                                     .reservedSignedState()
                                     .get(),
                             "should be able to read state on disk");

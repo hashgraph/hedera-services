@@ -48,7 +48,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
@@ -111,7 +111,7 @@ class SignedStateFileReadWriteTest {
         final SignedState signedState = new RandomSignedStateGenerator()
                 .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
                 .build();
-        PlatformMerkleStateRoot state = signedState.getState();
+        final MerkeNodeState state = signedState.getState();
         writeHashInfoFile(platformContext, testDirectory, state, stateFacade);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
@@ -151,8 +151,10 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(signatureSetFile), "signature set file should be present");
 
         MerkleDb.resetDefaultInstancePath();
+        Configuration configuration =
+                TestPlatformContextBuilder.create().build().getConfiguration();
         final DeserializedSignedState deserializedSignedState = readStateFile(
-                TestPlatformContextBuilder.create().build().getConfiguration(), stateFile, TEST_PLATFORM_STATE_FACADE);
+                configuration, stateFile, TEST_PLATFORM_STATE_FACADE, PlatformContext.create(configuration));
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());

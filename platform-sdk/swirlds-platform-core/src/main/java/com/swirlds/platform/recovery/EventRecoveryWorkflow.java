@@ -52,7 +52,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
 import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -67,6 +67,7 @@ import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -152,7 +153,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext.getConfiguration(), signedStateFile, platformStateFacade)
+                        platformContext.getConfiguration(), signedStateFile, platformStateFacade, platformContext)
                 .reservedSignedState()) {
             logger.info(
                     STARTUP.getMarker(),
@@ -184,7 +185,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             // Make one more copy to force the state in recoveredState to be immutable.
-            final PlatformMerkleStateRoot mutableStateCopy =
+            final State mutableStateCopy =
                     recoveredState.state().get().getState().copy();
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
@@ -350,7 +351,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Hashing resulting signed state");
         try {
             MerkleCryptoFactory.getInstance()
-                    .digestTreeAsync(signedState.get().getState().cast())
+                    .digestTreeAsync(signedState.get().getState())
                     .get();
         } catch (final InterruptedException e) {
             throw new RuntimeException("interrupted while attempting to hash the state", e);
@@ -387,7 +388,7 @@ public final class EventRecoveryWorkflow {
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         final SignedState previousState = previousSignedState.get();
         previousState.getState().throwIfImmutable();
-        final PlatformMerkleStateRoot newState = previousState.getState().copy();
+        final MerkeNodeState newState = previousState.getState().copy();
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new DefaultEventHasher().hashEvent(lastEvent);
 
@@ -411,19 +412,20 @@ public final class EventRecoveryWorkflow {
             platformStateFacade.updateLastFrozenTime(newState);
         }
 
-        final ReservedSignedState signedState = new SignedState(
-                        platformContext.getConfiguration(),
-                        CryptoStatic::verifySignature,
-                        newState,
-                        "EventRecoveryWorkflow.handleNextRound()",
-                        isFreezeState,
-                        false,
-                        false,
-                        platformStateFacade)
-                .reserve("recovery");
+        SignedState signedState = new SignedState(
+                platformContext.getConfiguration(),
+                CryptoStatic::verifySignature,
+                newState,
+                "EventRecoveryWorkflow.handleNextRound()",
+                isFreezeState,
+                false,
+                false,
+                platformStateFacade);
+        signedState.init(platformContext);
+        final ReservedSignedState reservedSignedState = signedState.reserve("recovery");
         previousSignedState.close();
 
-        return signedState;
+        return reservedSignedState;
     }
 
     /**
@@ -479,9 +481,9 @@ public final class EventRecoveryWorkflow {
      * @param round          the current round
      */
     static void applyTransactions(
-            final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles,
-            final PlatformMerkleStateRoot immutableState,
-            final PlatformMerkleStateRoot mutableState,
+            final StateLifecycles<MerkeNodeState> stateLifecycles,
+            final MerkeNodeState immutableState,
+            final MerkeNodeState mutableState,
             final Round round) {
 
         mutableState.throwIfImmutable();

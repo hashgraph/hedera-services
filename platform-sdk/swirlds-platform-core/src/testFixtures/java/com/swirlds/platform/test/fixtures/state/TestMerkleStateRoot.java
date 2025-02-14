@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.swirlds.state.test.fixtures.merkle;
+package com.swirlds.platform.test.fixtures.state;
 
-import com.swirlds.common.constructable.ConstructableIgnored;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.state.merkle.MerkleStateRoot;
 
-@ConstructableIgnored
-public class TestMerkleStateRoot extends MerkleStateRoot<TestMerkleStateRoot> {
+public class TestMerkleStateRoot extends MerkleStateRoot<TestMerkleStateRoot> implements MerkeNodeState {
 
-    @Override
-    protected TestMerkleStateRoot copyingConstructor() {
-        return new TestMerkleStateRoot();
+    public TestMerkleStateRoot() {
+        // empty constructor
+    }
+
+    protected TestMerkleStateRoot(TestMerkleStateRoot that) {
+        super(that);
     }
 
     @Override
-    public long getCurrentRound() {
-        return 0;
+    protected TestMerkleStateRoot copyingConstructor() {
+        return new TestMerkleStateRoot(this);
     }
 }

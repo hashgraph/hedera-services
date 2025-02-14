@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.platform.state.MerkeNodeState;
+import com.swirlds.platform.state.MerkleNodeStateAdapter;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -29,7 +31,7 @@ import java.util.Map;
  * A {@link State} that wraps another {@link State} and provides a {@link #commit()} method that
  * commits all modifications to the underlying state.
  */
-public class WrappedState implements State {
+public class WrappedState extends MerkleNodeStateAdapter {
 
     private final State delegate;
     private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
@@ -40,7 +42,8 @@ public class WrappedState implements State {
      * @param delegate the {@link State} to wrap
      * @throws NullPointerException if {@code delegate} is {@code null}
      */
-    public WrappedState(@NonNull final State delegate) {
+    public WrappedState(@NonNull final MerkeNodeState delegate) {
+        super(delegate);
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 

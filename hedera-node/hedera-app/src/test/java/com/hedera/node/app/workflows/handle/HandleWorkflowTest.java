@@ -55,11 +55,11 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.lifecycle.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -134,7 +134,7 @@ class HandleWorkflowTest {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private State state;
+    private MerkeNodeState state;
 
     @Mock
     private Round round;

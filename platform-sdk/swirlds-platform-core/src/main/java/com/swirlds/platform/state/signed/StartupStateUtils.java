@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStat
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.common.config.StateCommonConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -36,7 +37,7 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.internal.SignedStateLoadingException;
 import com.swirlds.platform.roster.RosterRetriever;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SavedStateInfo;
@@ -84,12 +85,13 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<PlatformMerkleStateRoot> genesisStateBuilder,
+            @NonNull final Supplier<MerkeNodeState> genesisStateBuilder,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook configAddressBook,
-            @NonNull final PlatformStateFacade platformStateFacade)
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext)
             throws SignedStateLoadingException {
 
         requireNonNull(configuration);
@@ -99,7 +101,14 @@ public final class StartupStateUtils {
         requireNonNull(configAddressBook);
 
         final ReservedSignedState loadedState = StartupStateUtils.loadStateFile(
-                configuration, recycleBin, selfId, mainClassName, swirldName, softwareVersion, platformStateFacade);
+                configuration,
+                recycleBin,
+                selfId,
+                mainClassName,
+                swirldName,
+                softwareVersion,
+                platformStateFacade,
+                platformContext);
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
@@ -108,15 +117,20 @@ public final class StartupStateUtils {
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
 
-                return copyInitialSignedState(configuration, loadedState.get(), platformStateFacade);
+                return copyInitialSignedState(configuration, loadedState.get(), platformStateFacade, platformContext);
             }
         }
 
         final ReservedSignedState genesisState = buildGenesisState(
-                configuration, configAddressBook, softwareVersion, genesisStateBuilder.get(), platformStateFacade);
+                configuration,
+                configAddressBook,
+                softwareVersion,
+                genesisStateBuilder.get(),
+                platformStateFacade,
+                platformContext);
 
         try (genesisState) {
-            return copyInitialSignedState(configuration, genesisState.get(), platformStateFacade);
+            return copyInitialSignedState(configuration, genesisState.get(), platformStateFacade, platformContext);
         }
     }
 
@@ -140,7 +154,8 @@ public final class StartupStateUtils {
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion currentSoftwareVersion,
-            @NonNull final PlatformStateFacade platformStateFacade) {
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext) {
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
@@ -156,7 +171,12 @@ public final class StartupStateUtils {
         }
 
         final ReservedSignedState state = loadLatestState(
-                configuration, recycleBin, currentSoftwareVersion, savedStateFiles, platformStateFacade);
+                configuration,
+                recycleBin,
+                currentSoftwareVersion,
+                savedStateFiles,
+                platformStateFacade,
+                platformContext);
         return state;
     }
 
@@ -171,11 +191,12 @@ public final class StartupStateUtils {
     public static @NonNull HashedReservedSignedState copyInitialSignedState(
             @NonNull final Configuration configuration,
             @NonNull final SignedState initialSignedState,
-            @NonNull final PlatformStateFacade platformStateFacade) {
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext) {
         requireNonNull(configuration);
         requireNonNull(initialSignedState);
 
-        final PlatformMerkleStateRoot stateCopy = initialSignedState.getState().copy();
+        final MerkeNodeState stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
@@ -185,9 +206,10 @@ public final class StartupStateUtils {
                 false,
                 false,
                 platformStateFacade);
+        signedStateCopy.init(platformContext);
         signedStateCopy.setSigSet(initialSignedState.getSigSet());
 
-        final var hash = MerkleCryptoFactory.getInstance().digestTreeSync(initialSignedState.getState());
+        final Hash hash = MerkleCryptoFactory.getInstance().digestTreeSync(initialSignedState.getState());
         return new HashedReservedSignedState(signedStateCopy.reserve("Copied initial state"), hash);
     }
 
@@ -222,14 +244,20 @@ public final class StartupStateUtils {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final List<SavedStateInfo> savedStateFiles,
-            @NonNull final PlatformStateFacade platformStateFacade)
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading latest state from disk.");
 
         for (final SavedStateInfo savedStateFile : savedStateFiles) {
             final ReservedSignedState state = loadStateFile(
-                    configuration, recycleBin, currentSoftwareVersion, savedStateFile, platformStateFacade);
+                    configuration,
+                    recycleBin,
+                    currentSoftwareVersion,
+                    savedStateFile,
+                    platformStateFacade,
+                    platformContext);
             if (state != null) {
                 return state;
             }
@@ -252,14 +280,16 @@ public final class StartupStateUtils {
             @NonNull final RecycleBin recycleBin,
             @NonNull final SoftwareVersion currentSoftwareVersion,
             @NonNull final SavedStateInfo savedStateFile,
-            @NonNull final PlatformStateFacade platformStateFacade)
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext)
             throws SignedStateLoadingException {
 
         logger.info(STARTUP.getMarker(), "Loading signed state from disk: {}", savedStateFile.stateFile());
 
         final DeserializedSignedState deserializedSignedState;
         try {
-            deserializedSignedState = readStateFile(configuration, savedStateFile.stateFile(), platformStateFacade);
+            deserializedSignedState =
+                    readStateFile(configuration, savedStateFile.stateFile(), platformStateFacade, platformContext);
         } catch (final IOException e) {
             logger.error(EXCEPTION.getMarker(), "unable to load state file {}", savedStateFile.stateFile(), e);
 
@@ -272,7 +302,7 @@ public final class StartupStateUtils {
             }
         }
 
-        final PlatformMerkleStateRoot state =
+        final MerkeNodeState state =
                 deserializedSignedState.reservedSignedState().get().getState();
 
         final Hash oldHash = deserializedSignedState.originalHash();
@@ -333,8 +363,9 @@ public final class StartupStateUtils {
             @NonNull final Configuration configuration,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final PlatformMerkleStateRoot stateRoot,
-            @NonNull final PlatformStateFacade platformStateFacade) {
+            @NonNull final MerkeNodeState stateRoot,
+            @NonNull final PlatformStateFacade platformStateFacade,
+            @NonNull final PlatformContext platformContext) {
         initGenesisState(configuration, stateRoot, platformStateFacade, addressBook, appVersion);
 
         final SignedState signedState = new SignedState(
@@ -346,6 +377,7 @@ public final class StartupStateUtils {
                 false,
                 false,
                 platformStateFacade);
+        signedState.init(platformContext);
         return signedState.reserve("initial reservation on genesis state");
     }
 

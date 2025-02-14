@@ -33,6 +33,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.base;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
@@ -52,7 +53,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.file;
     requires com.hedera.node.app.service.network.admin;
     requires com.hedera.node.app.service.util;
-    requires com.swirlds.base;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
@@ -68,9 +68,10 @@ module com.hedera.node.app {
     requires io.netty.transport.classes.epoll;
     requires io.netty.transport;
     requires org.apache.commons.lang3;
+    requires org.jetbrains.annotations;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static java.compiler;
 
     exports com.hedera.node.app;
     exports com.hedera.node.app.state;

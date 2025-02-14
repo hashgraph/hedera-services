@@ -27,9 +27,9 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.test.fixtures.MapWritableStates;
@@ -48,7 +48,7 @@ public class FakeServiceMigrator implements ServiceMigrator {
 
     @Override
     public List<StateChanges.Builder> doMigrations(
-            @NonNull final State state,
+            @NonNull final MerkeNodeState state,
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SoftwareVersion previousVersion,
             @NonNull final SoftwareVersion currentVersion,

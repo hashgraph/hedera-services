@@ -35,12 +35,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.logging.legacy.payload.StateSavedToDiskPayload;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.state.State;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -73,7 +72,7 @@ public final class SignedStateFileWriter {
     public static void writeHashInfoFile(
             @NonNull final PlatformContext platformContext,
             @NonNull final Path directory,
-            @NonNull final PlatformMerkleStateRoot state,
+            @NonNull final MerkeNodeState state,
             @NonNull final PlatformStateFacade platformStateFacade)
             throws IOException {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
@@ -88,7 +87,7 @@ public final class SignedStateFileWriter {
 
         final Path hashInfoFile = directory.resolve(HASH_INFO_FILE_NAME);
 
-        final String hashInfo = new MerkleTreeVisualizer(state.cast())
+        final String hashInfo = new MerkleTreeVisualizer(state)
                 .setDepth(stateConfig.debugHashDepth())
                 .render();
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(hashInfoFile.toFile()))) {
@@ -161,9 +160,6 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(signedState);
 
         final State state = signedState.getState();
-        if (state instanceof MerkleStateRoot merkleStateRoot) {
-            merkleStateRoot.setTime(platformContext.getTime());
-        }
 
         state.createSnapshot(directory);
         writeSignatureSetFile(directory, signedState);

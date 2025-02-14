@@ -55,6 +55,11 @@ import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
 import com.hedera.node.config.types.StreamMode;
+import com.swirlds.base.time.Time;
+import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkeNodeState;
+import com.swirlds.platform.state.MerkleNodeStateAdapter;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -69,14 +74,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 /**
  * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link State} at the time
  * the savepoint was created and all the changes made to the state from the time savepoint was created, along with all
  * the stream builders created in the savepoint.
  */
-public class SavepointStackImpl implements HandleContext.SavepointStack, State {
-    private final State state;
+public class SavepointStackImpl extends MerkleNodeStateAdapter implements HandleContext.SavepointStack {
+    private final MerkeNodeState state;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
     /**
@@ -112,7 +118,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @return the root {@link SavepointStackImpl}
      */
     public static SavepointStackImpl newRootStack(
-            @NonNull final State state,
+            @NonNull final MerkeNodeState state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener,
@@ -158,12 +164,13 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
      * @param streamMode the stream mode
      */
     private SavepointStackImpl(
-            @NonNull final State state,
+            @NonNull final MerkeNodeState state,
             final int maxBuildersBeforeUser,
             final int maxBuildersAfterUser,
             @NonNull final BoundaryStateChangeListener roundStateChangeListener,
             @NonNull final KVStateChangeListener kvStateChangeListener,
             @NonNull final StreamMode streamMode) {
+        super(state);
         this.state = requireNonNull(state);
         this.kvStateChangeListener = requireNonNull(kvStateChangeListener);
         this.roundStateChangeListener = requireNonNull(roundStateChangeListener);
@@ -191,6 +198,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             @NonNull final TransactionCategory category,
             @NonNull final StreamBuilder.TransactionCustomizer customizer,
             @NonNull final StreamMode streamMode) {
+        super(parent.state);
         requireNonNull(reversingBehavior);
         requireNonNull(customizer);
         requireNonNull(category);
@@ -202,6 +210,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
         setupFirstSavepoint(category);
         baseBuilder = peek().createBuilder(reversingBehavior, category, customizer, streamMode, true);
         presetIdsAllowed = false;
+    }
+
+    @Override
+    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography, LongSupplier roundSupplier) {
+        state.init(time, metrics, merkleCryptography, roundSupplier);
     }
 
     @Override

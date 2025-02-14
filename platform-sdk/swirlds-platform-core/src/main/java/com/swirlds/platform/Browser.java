@@ -279,12 +279,13 @@ public class Browser {
                     configuration,
                     recycleBin,
                     appMain.getSoftwareVersion(),
-                    appMain::newMerkleStateRoot,
+                    appMain::newStateRoot,
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     nodeId,
                     appDefinition.getConfigAddressBook(),
-                    platformStateFacade);
+                    platformStateFacade,
+                    platformContext);
             final var initialState = reservedState.state();
 
             // Initialize the address book

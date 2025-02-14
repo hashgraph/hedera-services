@@ -46,12 +46,12 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.platform.config.StateConfig_;
 import com.swirlds.platform.internal.SignedStateLoadingException;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.snapshot.SignedStateFilePath;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.RandomSignedStateGenerator;
+import com.swirlds.platform.test.fixtures.state.TestMerkleStateRoot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -108,9 +108,7 @@ public class StartupStateUtilsTests {
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(
-                        PlatformMerkleStateRoot.class,
-                        () -> new PlatformMerkleStateRoot(version -> new BasicSoftwareVersion(version.major()))));
+                .registerConstructable(new ClassConstructorPair(TestMerkleStateRoot.class, TestMerkleStateRoot::new));
     }
 
     @NonNull
@@ -185,7 +183,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformStateFacade)
+                        platformStateFacade,
+                        platformContext)
                 .getNullable();
 
         assertNull(loadedState);
@@ -215,7 +214,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformStateFacade)
+                        platformStateFacade,
+                        platformContext)
                 .get();
 
         loadedState.getState().throwIfImmutable();
@@ -249,7 +249,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformStateFacade)
+                        platformStateFacade,
+                        platformContext)
                 .get());
     }
 
@@ -295,7 +296,8 @@ public class StartupStateUtilsTests {
                         mainClassName,
                         swirldName,
                         currentSoftwareVersion,
-                        platformStateFacade)
+                        platformStateFacade,
+                        platformContext)
                 .getNullable();
 
         if (latestUncorruptedState != null) {

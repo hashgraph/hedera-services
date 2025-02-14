@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.hedera.node.app.blocks.impl.BlockStreamBuilder;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.KVStateChangeListener;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
-import com.swirlds.state.State;
+import com.swirlds.platform.state.MerkeNodeState;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SavepointStackImplBlocksStreamModeTest {
     @Mock
-    private State state;
+    private MerkeNodeState state;
 
     @Mock
     private StreamBuilder streamBuilder;

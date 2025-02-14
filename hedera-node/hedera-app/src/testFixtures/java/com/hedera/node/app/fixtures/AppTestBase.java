@@ -58,6 +58,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.state.TestMerkleStateRoot;
 import com.swirlds.state.State;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
@@ -133,7 +134,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 .state(entityCountsState)
                 .build();
 
-        state = new State() {
+        state = new TestMerkleStateRoot() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull String serviceName) {
