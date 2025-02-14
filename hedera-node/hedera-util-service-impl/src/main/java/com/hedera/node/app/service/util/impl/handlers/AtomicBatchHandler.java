@@ -89,9 +89,8 @@ public class AtomicBatchHandler implements TransactionHandler {
             throw new PreCheckException(BATCH_LIST_EMPTY);
         }
 
-        Set<Transaction> set = new HashSet<>();
+        Set<TransactionBody> set = new HashSet<>();
         for (final var transaction : transactions) {
-            if (!set.add(transaction)) throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
 
             final TransactionBody txBody;
             try {
@@ -99,6 +98,8 @@ public class AtomicBatchHandler implements TransactionHandler {
             } catch (HandleException e) {
                 throw new PreCheckException(e.getStatus());
             }
+
+            if (!set.add(txBody)) throw new PreCheckException(BATCH_LIST_CONTAINS_DUPLICATES);
 
             // validate batch key exists on each inner transaction
             if (!txBody.hasBatchKey()) {
@@ -108,6 +109,8 @@ public class AtomicBatchHandler implements TransactionHandler {
             if (!txBody.nodeAccountID().equals(ATOMIC_BATCH_NODE_ACCOUNT_ID)) {
                 throw new PreCheckException(INVALID_NODE_ACCOUNT_ID);
             }
+
+            context.executeInnerPureCheck(txBody);
         }
     }
 
