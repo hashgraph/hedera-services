@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ACCOUNTS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.ALIASES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -192,7 +191,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAliases = emptyReadableAliasStateBuilder()
-                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), entityIdFactory.newAccountId(accountNum))
                 .build();
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
 
@@ -216,15 +215,13 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         readableAccounts = emptyReadableAccountStateBuilder().value(id, account).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
         readableAliases = emptyReadableAliasStateBuilder()
-                .value(new ProtoBytes(Bytes.wrap(evmAddress)), asAccount(accountNum))
+                .value(new ProtoBytes(Bytes.wrap(evmAddress)), entityIdFactory.newAccountId(accountNum))
                 .build();
         given(readableStates.<ProtoBytes, AccountID>get(ALIASES)).willReturn(readableAliases);
 
         subject = new ReadableAccountStoreImpl(readableStates, readableEntityCounters);
 
-        final var protoKeyId = AccountID.newBuilder()
-                .alias(Key.PROTOBUF.toBytes(aSecp256K1Key))
-                .build();
+        final var protoKeyId = entityIdFactory.newAccountId(Key.PROTOBUF.toBytes(aSecp256K1Key));
         final var result = subject.getAliasedAccountById(protoKeyId);
         assertThat(result).isNotNull();
     }

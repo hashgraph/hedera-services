@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.spi.ids;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 
 /**
  * A strategy for creating entity ids.
@@ -41,4 +44,12 @@ public interface EntityIdFactory {
      * @param number the number
      */
     ScheduleID newScheduleId(long number);
+
+    ContractID newContractId(long number);
+
+    AccountID newAccountId(long number);
+
+    AccountID newAccountId(Bytes alias);
+
+    String hexLongZero(long number);
 }
