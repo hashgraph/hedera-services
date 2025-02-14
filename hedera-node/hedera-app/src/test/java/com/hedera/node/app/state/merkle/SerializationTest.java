@@ -18,10 +18,10 @@ package com.hedera.node.app.state.merkle;
 
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade.TEST_PLATFORM_STATE_FACADE;
+import static com.swirlds.state.merkle.MerkleStateRoot.CURRENT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.HederaStateRoot;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.config.data.HederaConfig;
@@ -54,7 +54,6 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
@@ -211,7 +210,7 @@ class SerializationTest extends MerkleTestBase {
             serializedBytes = writeTree(originalTree, dir);
         }
 
-        final MerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
+        final TestMerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
 
         assertTree(loadedTree);
     }
@@ -267,7 +266,7 @@ class SerializationTest extends MerkleTestBase {
         CRYPTO.digestTreeSync(copy);
         final byte[] serializedBytes = writeTree(copy, dir);
 
-        MerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
+        TestMerkleStateRoot loadedTree = loadedMerkleTree(schemaV1, serializedBytes);
         ((OnDiskReadableKVState) originalTree.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY)).reset();
         populateVmCache(loadedTree);
 
@@ -279,7 +278,7 @@ class SerializationTest extends MerkleTestBase {
         final byte[] serializedBytesWithCache = writeTree(loadedTree, dir);
 
         // let's load it again and see if it works
-        MerkleStateRoot loadedTreeWithCache = loadedMerkleTree(schemaV1, serializedBytesWithCache);
+        TestMerkleStateRoot loadedTreeWithCache = loadedMerkleTree(schemaV1, serializedBytesWithCache);
         ((OnDiskReadableKVState)
                         loadedTreeWithCache.getReadableStates(FIRST_SERVICE).get(ANIMAL_STATE_KEY))
                 .reset();
@@ -287,16 +286,16 @@ class SerializationTest extends MerkleTestBase {
         assertTree(loadedTreeWithCache);
     }
 
-    private MerkleStateRoot loadedMerkleTree(Schema schemaV1, byte[] serializedBytes)
+    private TestMerkleStateRoot loadedMerkleTree(Schema schemaV1, byte[] serializedBytes)
             throws ConstructableRegistryException, IOException {
 
-        // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
+        // Register the TestMerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = TestMerkleStateRoot::new;
-        final var pair = new ClassConstructorPair(HederaStateRoot.class, constructor);
+        final var pair = new ClassConstructorPair(TestMerkleStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
-        final HederaStateRoot loadedTree = parseTree(serializedBytes, dir);
+        final TestMerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
         initServices(schemaV1, loadedTree);
 
         return loadedTree;
@@ -319,7 +318,7 @@ class SerializationTest extends MerkleTestBase {
                 migrationStateChanges,
                 startupNetworks,
                 TEST_PLATFORM_STATE_FACADE);
-        ((MerkleStateRoot) loadedTree).migrate(MerkleStateRoot.CURRENT_VERSION);
+        ((TestMerkleStateRoot) loadedTree).migrate(CURRENT_VERSION);
     }
 
     private MerkeNodeState createMerkleHederaState(Schema schemaV1) {
