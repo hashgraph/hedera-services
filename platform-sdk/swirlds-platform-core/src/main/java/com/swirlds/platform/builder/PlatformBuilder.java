@@ -544,8 +544,8 @@ public final class PlatformBuilder {
                 stateLifecycles,
                 platformStateFacade);
 
-        final PlatformWiring platformWiring = new PlatformWiring(platformContext, buildingBlocks.model(),
-                buildingBlocks.applicationCallbacks());
+        final PlatformWiring platformWiring =
+                new PlatformWiring(platformContext, buildingBlocks.model(), buildingBlocks.applicationCallbacks());
 
         if (additionalInputWires != null) {
             for (final Entry<SolderWireType, InputWire<?>> inputWireEntry : additionalInputWires.entrySet()) {
