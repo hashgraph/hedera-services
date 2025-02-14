@@ -17,6 +17,7 @@
 package com.swirlds.platform.test;
 
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -86,7 +87,7 @@ class PlatformStateTests {
 
         io.startReading();
 
-        final PlatformState decodedState = io.getInput().readMerkleTree(testDirectory, Integer.MAX_VALUE);
+        final PlatformState decodedState = io.getInput().readMerkleTree(CONFIGURATION, testDirectory, Integer.MAX_VALUE);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(state);
         MerkleCryptoFactory.getInstance().digestTreeSync(decodedState);

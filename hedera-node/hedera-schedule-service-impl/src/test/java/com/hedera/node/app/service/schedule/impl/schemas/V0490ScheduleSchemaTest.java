@@ -28,6 +28,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
@@ -94,9 +95,9 @@ class V0490ScheduleSchemaTest {
 
     private WritableStates newEmptySchedulesWritableStates() {
         final var writableStates = MapWritableStates.builder()
-                .state(new MapWritableKVState<>(SCHEDULES_BY_ID_KEY))
-                .state(new MapWritableKVState<>(SCHEDULES_BY_EQUALITY_KEY))
-                .state(new MapWritableKVState<>(SCHEDULES_BY_EXPIRY_SEC_KEY))
+                .state(new MapWritableKVState<>(ScheduleService.NAME, SCHEDULES_BY_ID_KEY))
+                .state(new MapWritableKVState<>(ScheduleService.NAME, SCHEDULES_BY_EQUALITY_KEY))
+                .state(new MapWritableKVState<>(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY))
                 .build();
         verifyEmptyById(writableStates);
         verifyEmptyByExpiry(writableStates);

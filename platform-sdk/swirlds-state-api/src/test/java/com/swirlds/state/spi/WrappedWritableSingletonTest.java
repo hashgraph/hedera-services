@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.concurrent.atomic.AtomicReference;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +34,22 @@ class WrappedWritableSingletonTest extends StateTestBase {
     protected AtomicReference<String> backingStore = new AtomicReference<>(AUSTRALIA);
 
     private WritableSingletonStateBase<String> createState() {
-        delegate = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
+        delegate = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, COUNTRY_SERVICE_NAME) {
+            @Override
+            protected String readFromDataSource() {
+                return backingStore.get();
+            }
+
+            @Override
+            protected void putIntoDataSource(@NonNull String value) {
+                backingStore.set(value);
+            }
+
+            @Override
+            protected void removeFromDataSource() {
+                backingStore.set("");
+            }
+        };
         return new WrappedWritableSingletonState<>(delegate);
     }
 

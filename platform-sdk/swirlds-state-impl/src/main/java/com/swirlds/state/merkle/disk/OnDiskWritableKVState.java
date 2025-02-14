@@ -16,6 +16,8 @@
 
 package com.swirlds.state.merkle.disk;
 
+import static com.swirlds.state.merkle.StateUtils.computeLabel;
+import static com.swirlds.state.merkle.StateUtils.getVirtualMapKey;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGet;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapGetSize;
 import static com.swirlds.state.merkle.logging.StateLogger.logMapIterate;
@@ -30,6 +32,7 @@ import com.swirlds.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.metrics.StoreMetrics;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Iterator;
 
 /**
@@ -55,17 +58,19 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /**
      * Create a new instance
      *
+     * @param serviceName  the service name
      * @param stateKey     the state key
      * @param keyCodec     the codec for the key
      * @param valueCodec   the codec for the value
      * @param virtualMap   the backing merkle data structure to use
      */
     public OnDiskWritableKVState(
-            String stateKey,
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
             @NonNull final VirtualMap virtualMap) {
-        super(stateKey);
+        super(serviceName, stateKey);
         this.keyCodec = keyCodec;
         this.valueCodec = valueCodec;
         this.virtualMap = requireNonNull(virtualMap);
@@ -74,10 +79,9 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
-        final var kb = keyCodec.toBytes(key);
-        final var value = virtualMap.get(kb, valueCodec);
+        final var value = virtualMap.get(getVirtualMapKey(serviceName, stateKey, key, keyCodec), valueCodec);
         // Log to transaction state log, what was read
-        logMapGet(getStateKey(), key, value);
+        logMapGet(computeLabel(serviceName, stateKey), key, value);
         return value;
     }
 
@@ -86,7 +90,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @Override
     protected Iterator<K> iterateFromDataSource() {
         // Log to transaction state log, what was iterated
-        logMapIterate(getStateKey(), virtualMap, keyCodec);
+        logMapIterate(computeLabel(serviceName, stateKey), virtualMap, keyCodec);
         return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
@@ -98,18 +102,17 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // If we expect a lot of empty values, Bytes.EMPTY optimization below may be helpful, but
         // for now it just adds a call to measureRecord(), but benefits are unclear
         // final Bytes v = valueCodec.measureRecord(value) == 0 ? Bytes.EMPTY : valueCodec.toBytes(value);
-        virtualMap.put(kb, value, valueCodec);
+        virtualMap.put(getVirtualMapKey(serviceName, stateKey, key, keyCodec), value, valueCodec);
         // Log to transaction state log, what was put
-        logMapPut(getStateKey(), key, value);
+        logMapPut(computeLabel(serviceName, stateKey), key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
-        final var k = keyCodec.toBytes(key);
-        final var removed = virtualMap.remove(k, valueCodec);
+        final var removed = virtualMap.remove(getVirtualMapKey(serviceName, stateKey, key, keyCodec), valueCodec);
         // Log to transaction state log, what was removed
-        logMapRemove(getStateKey(), key, removed);
+        logMapRemove(computeLabel(serviceName, stateKey), key, removed);
     }
 
     /** {@inheritDoc} */
@@ -117,7 +120,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     public long sizeOfDataSource() {
         final var size = virtualMap.size();
         // Log to transaction state log, size of map
-        logMapGetSize(getStateKey(), size);
+        logMapGetSize(computeLabel(serviceName, stateKey), size);
         return size;
     }
 

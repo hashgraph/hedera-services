@@ -37,6 +37,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoAllowance;
 import com.hedera.hapi.node.token.TokenAllowance;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -290,22 +291,22 @@ public class CryptoHandlerTestBase {
 
     @NonNull
     protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
-        return MapReadableKVState.builder(ACCOUNTS);
+        return MapReadableKVState.builder(TokenService.NAME, ACCOUNTS);
     }
 
     @NonNull
     protected MapWritableKVState.Builder<AccountID, Account> emptyWritableAccountStateBuilder() {
-        return MapWritableKVState.builder(ACCOUNTS);
+        return MapWritableKVState.builder(TokenService.NAME, ACCOUNTS);
     }
 
     @NonNull
     protected MapWritableKVState.Builder<ProtoBytes, AccountID> emptyWritableAliasStateBuilder() {
-        return MapWritableKVState.builder(ALIASES);
+        return MapWritableKVState.builder(TokenService.NAME, ALIASES);
     }
 
     @NonNull
     protected MapReadableKVState.Builder<ProtoBytes, AccountID> emptyReadableAliasStateBuilder() {
-        return MapReadableKVState.builder(ALIASES);
+        return MapReadableKVState.builder(TokenService.NAME, ALIASES);
     }
 
     protected Account givenValidAccount(final long accountNum) {

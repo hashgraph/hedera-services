@@ -63,6 +63,7 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -526,7 +527,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             writableNftStore = new WritableNftStore(
                     new MapWritableStates(
-                            Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
+                            Map.of("NFTS", MapWritableKVState.builder(TokenService.NAME, "NFTS").build())),
                     configuration,
                     mock(StoreMetricsService.class));
 

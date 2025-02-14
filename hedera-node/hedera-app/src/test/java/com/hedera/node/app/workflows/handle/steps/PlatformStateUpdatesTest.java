@@ -51,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,8 +84,23 @@ public class PlatformStateUpdatesTest implements TransactionFactory {
         freezeTimeBackingStore = new AtomicReference<>(null);
         platformStateBackingStore = new AtomicReference<>(V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE);
         when(writableStates.getSingleton(FREEZE_TIME_KEY))
-                .then(invocation -> new WritableSingletonStateBase<>(
-                        FREEZE_TIME_KEY, freezeTimeBackingStore::get, freezeTimeBackingStore::set));
+                .then(invocation -> new WritableSingletonStateBase<Timestamp>(
+                        FreezeService.NAME, FREEZE_TIME_KEY) {
+                    @Override
+                    protected Timestamp readFromDataSource() {
+                        return freezeTimeBackingStore.get();
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull Timestamp value) {
+                        freezeTimeBackingStore.set(value);
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        freezeTimeBackingStore.set(null);
+                    }
+                });
 
         state = new FakeState()
                 .addService(FreezeService.NAME, Map.of(FREEZE_TIME_KEY, freezeTimeBackingStore))

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.roster.RosterEntry;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
@@ -69,7 +70,7 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
     void missingNodeIsNull() {
         readableNodeState.reset();
         final var state =
-                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+                MapReadableKVState.<EntityNumber, Node>builder(AddressBookService.NAME, NODES_KEY).build();
         given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(state);
         subject = new ReadableNodeStoreImpl(readableStates);
 

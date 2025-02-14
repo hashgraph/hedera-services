@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -228,22 +229,22 @@ public class FileTestBase {
 
     @NonNull
     protected MapWritableKVState<FileID, File> emptyWritableFileState() {
-        return MapWritableKVState.<FileID, File>builder(FILES).build();
+        return MapWritableKVState.<FileID, File>builder(FileService.NAME, FILES).build();
     }
 
     @NonNull
     protected ListWritableQueueState<ProtoBytes> emptyUpgradeDataState() {
-        return ListWritableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY).build();
+        return ListWritableQueueState.<ProtoBytes>builder(FileService.NAME, UPGRADE_DATA_KEY).build();
     }
 
     @NonNull
     protected MapWritableKVState<FileID, File> emptyUpgradeFileState() {
-        return MapWritableKVState.<FileID, File>builder(FILES).build();
+        return MapWritableKVState.<FileID, File>builder(FileService.NAME, FILES).build();
     }
 
     @NonNull
     protected MapWritableKVState<FileID, File> writableFileStateWithOneKey() {
-        return MapWritableKVState.<FileID, File>builder(FILES)
+        return MapWritableKVState.<FileID, File>builder(FileService.NAME, FILES)
                 .value(fileId, file)
                 .value(fileSystemFileId, fileSystem)
                 .build();
@@ -251,35 +252,35 @@ public class FileTestBase {
 
     @NonNull
     protected MapReadableKVState<FileID, File> readableFileState() {
-        return MapReadableKVState.<FileID, File>builder(FILES)
+        return MapReadableKVState.<FileID, File>builder(FileService.NAME, FILES)
                 .value(fileId, file)
                 .build();
     }
 
     @NonNull
     protected ListReadableQueueState<ProtoBytes> readableUpgradeDataState() {
-        return ListReadableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY)
+        return ListReadableQueueState.<ProtoBytes>builder(FileService.NAME, UPGRADE_DATA_KEY)
                 .value(new ProtoBytes(fileSystem.contents()))
                 .build();
     }
 
     @NonNull
     protected ListWritableQueueState<ProtoBytes> writableUpgradeDataState() {
-        return ListWritableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY)
+        return ListWritableQueueState.<ProtoBytes>builder(FileService.NAME, UPGRADE_DATA_KEY)
                 .value(new ProtoBytes(fileSystem.contents()))
                 .build();
     }
 
     @NonNull
     protected MapReadableKVState<FileID, File> readableUpgradeFileState() {
-        return MapReadableKVState.<FileID, File>builder(FILES)
+        return MapReadableKVState.<FileID, File>builder(FileService.NAME, FILES)
                 .value(fileUpgradeFileId, upgradeFile)
                 .build();
     }
 
     @NonNull
     protected MapWritableKVState<FileID, File> writableUpgradeFileState() {
-        return MapWritableKVState.<FileID, File>builder(FILES)
+        return MapWritableKVState.<FileID, File>builder(FileService.NAME, FILES)
                 .value(fileUpgradeFileId, upgradeFile)
                 .build();
     }

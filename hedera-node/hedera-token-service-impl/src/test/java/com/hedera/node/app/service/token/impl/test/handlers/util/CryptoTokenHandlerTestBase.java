@@ -116,6 +116,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -626,7 +628,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenReadableStakingInfoStore() {
-        readableStakingInfoState = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder("STAKING_INFOS")
+        readableStakingInfoState = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder(TOKEN_SERVICE, "STAKING_INFOS")
                 .value(node0Id, node0Info)
                 .value(node1Id, node1Info)
                 .build();
@@ -635,7 +637,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenWritableStakingInfoStore() {
-        writableStakingInfoState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder("STAKING_INFOS")
+        writableStakingInfoState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(TOKEN_SERVICE, "STAKING_INFOS")
                 .value(node0Id, node0Info)
                 .value(node1Id, node1Info)
                 .build();
@@ -646,7 +648,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenReadableStakingRewardsStore() {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
-        final var stakingRewardsState = new ReadableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get);
+        final var stakingRewardsState = new ReadableSingletonStateBase<>(TOKEN_SERVICE, NETWORK_REWARDS) {
+            @Override
+            protected Object readFromDataSource() {
+                return backingValue.get();
+            }
+        };
         given(readableStates.getSingleton(NETWORK_REWARDS)).willReturn((ReadableSingletonState) stakingRewardsState);
         readableRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(readableStates);
     }
@@ -655,7 +662,22 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
         final var stakingRewardsState =
-                new WritableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get, backingValue::set);
+                new WritableSingletonStateBase<NetworkStakingRewards>(TOKEN_SERVICE, NETWORK_REWARDS) {
+                    @Override
+                    protected NetworkStakingRewards readFromDataSource() {
+                        return backingValue.get();
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull NetworkStakingRewards value) {
+                        backingValue.set(value);
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        backingValue.set(null);
+                    }
+                };
         given(writableStates.getSingleton(NETWORK_REWARDS)).willReturn((WritableSingletonState) stakingRewardsState);
         writableRewardsStore = new WritableNetworkStakingRewardsStore(writableStates);
     }

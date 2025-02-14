@@ -146,7 +146,8 @@ public class RandomSignedStateGenerator {
                 stateInstance = new PlatformMerkleStateRoot(
                         FAKE_MERKLE_STATE_LIFECYCLES, version -> new BasicSoftwareVersion(version.major()));
             }
-            stateInstance.setTime(Time.getCurrent());
+            // will be updated -- added for helping to solve compile issues
+//            stateInstance.setTime(Time.getCurrent());
         } else {
             stateInstance = state;
         }

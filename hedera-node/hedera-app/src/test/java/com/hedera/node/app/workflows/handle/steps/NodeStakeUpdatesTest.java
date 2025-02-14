@@ -44,6 +44,7 @@ import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.roster.RosterService;
 import com.hedera.node.app.roster.schemas.V0540RosterSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
@@ -416,7 +417,7 @@ public class NodeStakeUpdatesTest {
         final Map<EntityNumber, Node> translated = Arrays.stream(nodes)
                 .collect(Collectors.toMap(
                         n -> EntityNumber.newBuilder().number(n.nodeId()).build(), node -> node));
-        final WritableKVState<EntityNumber, Node> nodeWritableKVState = new MapWritableKVState<>(NODES_KEY, translated);
+        final WritableKVState<EntityNumber, Node> nodeWritableKVState = new MapWritableKVState<>(AddressBookService.NAME, NODES_KEY, translated);
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(nodeWritableKVState);
         final ReadableNodeStore nodeStore = new ReadableNodeStoreImpl(writableStates);
         given(context.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
@@ -436,12 +437,14 @@ public class NodeStakeUpdatesTest {
                 .willReturn(rosterState);
         given(writableStates.<ProtoBytes, Roster>get(V0540RosterSchema.ROSTER_KEY))
                 .willReturn(new MapWritableKVState<>(
+                        RosterService.NAME,
                         V0540RosterSchema.ROSTER_KEY,
                         Map.of(
                                 RosterCase.CANDIDATE_ROSTER_HASH,
                                 RosterCase.CURRENT_CANDIDATE_ROSTER,
                                 RosterCase.ACTIVE_ROSTER_HASH,
-                                RosterCase.ACTIVE_ROSTER)));
+                                RosterCase.ACTIVE_ROSTER)
+                ));
     }
 
     private Configuration newPeriodMinsConfig() {

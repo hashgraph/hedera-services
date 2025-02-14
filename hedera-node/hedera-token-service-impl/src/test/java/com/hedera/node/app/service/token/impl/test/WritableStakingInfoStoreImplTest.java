@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.swirlds.state.spi.WritableStates;
@@ -45,7 +46,7 @@ public class WritableStakingInfoStoreImplTest {
     @BeforeEach
     void setUp() {
         final var wrappedState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(
-                        V0490TokenSchema.STAKING_INFO_KEY)
+                        TokenService.NAME, V0490TokenSchema.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()

@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
@@ -163,26 +164,26 @@ public class ConsensusTestBase {
 
     @NonNull
     protected MapWritableKVState<TopicID, Topic> emptyWritableTopicState() {
-        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
+        return MapWritableKVState.<TopicID, Topic>builder(ConsensusService.NAME, TOPICS_KEY).build();
     }
 
     @NonNull
     protected MapWritableKVState<TopicID, Topic> writableTopicStateWithOneKey() {
-        return MapWritableKVState.<TopicID, Topic>builder(TOPICS_KEY)
+        return MapWritableKVState.<TopicID, Topic>builder(ConsensusService.NAME, TOPICS_KEY)
                 .value(topicId, topic)
                 .build();
     }
 
     @NonNull
     protected MapReadableKVState<TopicID, Topic> readableTopicState() {
-        return MapReadableKVState.<TopicID, Topic>builder(TOPICS_KEY)
+        return MapReadableKVState.<TopicID, Topic>builder(ConsensusService.NAME, TOPICS_KEY)
                 .value(topicId, topic)
                 .build();
     }
 
     @NonNull
     protected MapReadableKVState<TopicID, Topic> emptyReadableTopicState() {
-        return MapReadableKVState.<TopicID, Topic>builder(TOPICS_KEY).build();
+        return MapReadableKVState.<TopicID, Topic>builder(ConsensusService.NAME, TOPICS_KEY).build();
     }
 
     protected void givenValidTopic() {

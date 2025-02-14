@@ -130,12 +130,13 @@ public enum PlatformStateService implements Service {
                         .round();
     }
 
+    // will be updated -- added for helping to solve compile issues
     @SuppressWarnings("unchecked")
     public @Nullable PlatformState platformStateOf(@NonNull final MerkleStateRoot<?> root) {
-        final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
-        if (index == -1) {
+//        final var index = root.findNodeIndex(NAME, PLATFORM_STATE_KEY);
+//        if (index == -1) {
             return null;
-        }
-        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue();
+//        }
+//        return ((SingletonNode<PlatformState>) root.getChild(index)).getValue();
     }
 }

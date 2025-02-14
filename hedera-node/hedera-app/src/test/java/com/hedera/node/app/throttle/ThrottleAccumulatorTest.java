@@ -252,8 +252,8 @@ class ThrottleAccumulatorTest {
                 .build();
         final var account = Account.newBuilder().numberAssociations(2).build();
         final var states = MapReadableStates.builder()
-                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
-                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ALIASES", Map.of()))
                 .build();
         lenient().when(state.getReadableStates(TokenService.NAME)).thenReturn(states);
 
@@ -295,8 +295,8 @@ class ThrottleAccumulatorTest {
                 .build();
         final var account = Account.newBuilder().numberAssociations(2).build();
         final var states = MapReadableStates.builder()
-                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
-                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ALIASES", Map.of()))
                 .build();
         given(state.getReadableStates(TokenService.NAME)).willReturn(states);
 
@@ -334,8 +334,8 @@ class ThrottleAccumulatorTest {
                 .build();
         final var account = Account.newBuilder().numberAssociations(0).build();
         final var states = MapReadableStates.builder()
-                .state(new MapReadableKVState<>("ACCOUNTS", Map.of(RECEIVER_ID, account)))
-                .state(new MapReadableKVState<>("ALIASES", Map.of()))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ACCOUNTS", Map.of(RECEIVER_ID, account)))
+                .state(new MapReadableKVState<>(TokenService.NAME, "ALIASES", Map.of()))
                 .build();
         given(state.getReadableStates(TokenService.NAME)).willReturn(states);
 

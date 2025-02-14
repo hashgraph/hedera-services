@@ -448,9 +448,19 @@ final class BlockRecordManagerTest extends AppTestBase {
             public ReadableStates getReadableStates(@NonNull final String serviceName) {
                 return new MapReadableStates(Map.of(
                         V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
-                        new ReadableSingletonStateBase<>(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> blockInfo),
+                        new ReadableSingletonStateBase<BlockInfo>(BlockRecordService.NAME, V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY) {
+                            @Override
+                            protected BlockInfo readFromDataSource() {
+                                return blockInfo;
+                            }
+                        },
                         RUNNING_HASHES_STATE_KEY,
-                        new ReadableSingletonStateBase<>(RUNNING_HASHES_STATE_KEY, () -> RunningHashes.DEFAULT)));
+                        new ReadableSingletonStateBase<RunningHashes>(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY) {
+                            @Override
+                            protected RunningHashes readFromDataSource() {
+                                return RunningHashes.DEFAULT;
+                            }
+                        }));
             }
 
             @NonNull

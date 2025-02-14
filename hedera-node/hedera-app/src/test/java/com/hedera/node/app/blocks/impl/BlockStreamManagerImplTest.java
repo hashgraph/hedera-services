@@ -25,8 +25,10 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.combine;
 import static com.hedera.node.app.blocks.impl.BlockStreamManagerImpl.classifyPendingWork;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_KEY;
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_SERVICE;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.swirlds.platform.state.service.PlatformStateService.NAME;
 import static com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema.PLATFORM_STATE_KEY;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -66,7 +68,6 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import com.swirlds.state.State;
@@ -81,6 +82,8 @@ import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -508,14 +511,44 @@ class BlockStreamManagerImplTest {
                 hashInfo,
                 SemanticVersion.DEFAULT);
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(readableStates);
-        given(state.getReadableStates(PlatformStateService.NAME)).willReturn(readableStates);
+        given(state.getReadableStates(NAME)).willReturn(readableStates);
         infoRef.set(blockStreamInfo);
         stateRef.set(platformState);
-        blockStreamInfoState = new WritableSingletonStateBase<>(BLOCK_STREAM_INFO_KEY, infoRef::get, infoRef::set);
+        blockStreamInfoState = new WritableSingletonStateBase<>(BLOCK_STREAM_INFO_SERVICE, BLOCK_STREAM_INFO_KEY) {
+            @Override
+            protected BlockStreamInfo readFromDataSource() {
+                return infoRef.get();
+            }
+
+            @Override
+            protected void putIntoDataSource(@NotNull BlockStreamInfo value) {
+                infoRef.set(value);
+            }
+
+            @Override
+            protected void removeFromDataSource() {
+                infoRef.set(null);
+            }
+        };
         given(readableStates.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY))
                 .willReturn(blockStreamInfoState);
         given(readableStates.<PlatformState>getSingleton(PLATFORM_STATE_KEY))
-                .willReturn(new WritableSingletonStateBase<>(PLATFORM_STATE_KEY, stateRef::get, stateRef::set));
+                .willReturn(new WritableSingletonStateBase<>(NAME, PLATFORM_STATE_KEY) {
+                    @Override
+                    protected PlatformState readFromDataSource() {
+                        return stateRef.get();
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull PlatformState value) {
+                        stateRef.set(value);
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        stateRef.set(null);
+                    }
+                });
     }
 
     private void givenEndOfRoundSetup() {

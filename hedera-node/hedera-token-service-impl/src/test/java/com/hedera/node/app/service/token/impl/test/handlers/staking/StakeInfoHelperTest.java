@@ -38,6 +38,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
@@ -54,6 +55,7 @@ import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,7 +86,7 @@ class StakeInfoHelperTest {
         "20, 15", "9, 14", "10, 15",
     })
     void increaseUnclaimedStartToLargerThanCurrentStakeReward(int amount, int expectedResult) {
-        final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(V0490TokenSchema.STAKING_INFO_KEY)
+        final var state = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(TokenService.NAME, V0490TokenSchema.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
@@ -113,7 +115,7 @@ class StakeInfoHelperTest {
     void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() throws ParseException {
         final var captor = ArgumentCaptor.forClass(Transaction.class);
         // State has nodeIds 1, 2, 3
-        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+        final var stakingInfosState = new MapWritableKVState.Builder<EntityNumber, StakingNodeInfo>(TokenService.NAME, STAKING_INFO_KEY)
                 .value(NODE_NUM_1, STAKING_INFO_1)
                 .value(NODE_NUM_2, STAKING_INFO_2)
                 .value(NODE_NUM_3, STAKING_INFO_3)
@@ -165,7 +167,22 @@ class StakeInfoHelperTest {
         //noinspection ReturnOfNull
         return MapWritableStates.builder()
                 .state(stakingInfo)
-                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(new WritableSingletonStateBase<>(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY) {
+                    @Override
+                    protected Object readFromDataSource() {
+                        return null;
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull Object value) {
+                        // no-op
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        // no-op
+                    }
+                })
                 .build();
     }
 

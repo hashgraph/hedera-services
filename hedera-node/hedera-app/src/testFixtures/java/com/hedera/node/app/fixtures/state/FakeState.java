@@ -41,6 +41,8 @@ import com.swirlds.state.test.fixtures.MapReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -115,11 +117,16 @@ public class FakeState implements State {
                 final var stateName = entry.getKey();
                 final var state = entry.getValue();
                 if (state instanceof Queue queue) {
-                    states.put(stateName, new ListReadableQueueState(stateName, queue));
+                    states.put(stateName, new ListReadableQueueState(serviceName, stateName, queue));
                 } else if (state instanceof Map map) {
-                    states.put(stateName, new MapReadableKVState(stateName, map));
+                    states.put(stateName, new MapReadableKVState(serviceName, stateName, map));
                 } else if (state instanceof AtomicReference ref) {
-                    states.put(stateName, new ReadableSingletonStateBase<>(stateName, ref::get));
+                    states.put(stateName, new ReadableSingletonStateBase<>(serviceName, stateName) {
+                        @Override
+                        protected Object readFromDataSource() {
+                            return ref.get();
+                        }
+                    });
                 }
             }
             return new MapReadableStates(states);
@@ -142,11 +149,11 @@ public class FakeState implements State {
                 if (state instanceof Queue<?> queue) {
                     data.put(
                             stateName,
-                            withAnyRegisteredListeners(serviceName, new ListWritableQueueState<>(stateName, queue)));
+                            withAnyRegisteredListeners(serviceName, new ListWritableQueueState<>(serviceName, stateName, queue)));
                 } else if (state instanceof Map<?, ?> map) {
                     data.put(
                             stateName,
-                            withAnyRegisteredListeners(serviceName, new MapWritableKVState<>(stateName, map)));
+                            withAnyRegisteredListeners(serviceName, new MapWritableKVState<>(serviceName, stateName, map)));
                 } else if (state instanceof AtomicReference<?> ref) {
                     data.put(stateName, withAnyRegisteredListeners(serviceName, stateName, ref));
                 }
@@ -180,7 +187,22 @@ public class FakeState implements State {
 
     private <V> WritableSingletonStateBase<V> withAnyRegisteredListeners(
             @NonNull final String serviceName, @NonNull final String stateKey, @NonNull final AtomicReference<V> ref) {
-        final var state = new WritableSingletonStateBase<>(stateKey, ref::get, ref::set);
+        final var state = new WritableSingletonStateBase<V>(stateKey, serviceName) {
+            @Override
+            protected V readFromDataSource() {
+                return ref.get();
+            }
+
+            @Override
+            protected void putIntoDataSource(@NotNull V value) {
+                ref.set(value);
+            }
+
+            @Override
+            protected void removeFromDataSource() {
+                ref.set(null);
+            }
+        };
         listeners.forEach(listener -> {
             if (listener.stateTypes().contains(SINGLETON)) {
                 registerSingletonListener(serviceName, state, listener);

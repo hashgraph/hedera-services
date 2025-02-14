@@ -12,11 +12,14 @@ open module com.swirlds.merkle.test.fixtures {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
+    requires com.swirlds.merkledb;
+    requires com.swirlds.virtualmap;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;

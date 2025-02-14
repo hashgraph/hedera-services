@@ -40,6 +40,7 @@ import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.merkle.MerkleStateRoot;
 import com.swirlds.state.merkle.MerkleTreeSnapshotReader;
+import com.swirlds.state.merkle.NewStateRoot;
 import com.swirlds.state.merkle.StateMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
@@ -94,7 +95,7 @@ public final class SignedStateFileReader {
         checkSignedStatePath(stateFile);
 
         final DeserializedSignedState returnState;
-        final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(stateFile);
+        final MerkleTreeSnapshotReader.StateFileData data = MerkleTreeSnapshotReader.readStateFileData(configuration, stateFile);
         final File sigSetFile =
                 stateFile.getParent().resolve(SIGNATURE_SET_FILE_NAME).toFile();
         final SigSet sigSet = deserializeAndDebugOnFailure(
@@ -194,11 +195,12 @@ public final class SignedStateFileReader {
                 .forEach(def -> {
                     final var md = new StateMetadata<>(name, schema, def);
                     if (def.singleton() || def.onDisk()) {
-                        merkleStateRoot.putServiceStateIfAbsent(md, () -> {
-                            throw new IllegalStateException(
-                                    "State nodes " + md.stateDefinition().stateKey() + " for service " + name
-                                            + " are supposed to exist in the state snapshot already.");
-                        });
+                        // will be updated -- added for helping to solve compile issues
+//                        merkleStateRoot.putServiceStateIfAbsent(md, () -> {
+//                            throw new IllegalStateException(
+//                                    "State nodes " + md.stateDefinition().stateKey() + " for service " + name
+//                                            + " are supposed to exist in the state snapshot already.");
+//                        });
                     } else {
                         throw new IllegalStateException(
                                 "Only singletons and onDisk virtual maps are supported as stub states");
@@ -219,7 +221,8 @@ public final class SignedStateFileReader {
      */
     public static void unregisterServiceStates(@NonNull final SignedState signedState) {
         final MerkleStateRoot state = (MerkleStateRoot) signedState.getState();
-        state.unregisterService(PlatformStateService.NAME);
-        state.unregisterService(RosterStateId.NAME);
+        // will be updated -- added for helping to solve compile issues
+//        state.unregisterService(PlatformStateService.NAME);
+//        state.unregisterService(RosterStateId.NAME);
     }
 }

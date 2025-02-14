@@ -17,6 +17,7 @@
 package com.hedera.node.app.records;
 
 import static com.hedera.hapi.node.base.Timestamp.newBuilder;
+import static com.hedera.node.app.records.BlockRecordService.NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -55,9 +56,13 @@ class ReadableBlockRecordStoreTest {
                 .build();
 
         final var blockState = new MapReadableStates(Map.of(
-                V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
-                new ReadableSingletonStateBase<>(
-                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> expectedBlockInfo)));
+                V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, new ReadableSingletonStateBase<BlockInfo>(NAME,
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY) {
+                    @Override
+                    protected BlockInfo readFromDataSource() {
+                        return expectedBlockInfo;
+                    }
+                }));
         final var subject = new ReadableBlockRecordStore(blockState);
 
         // When
