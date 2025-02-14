@@ -166,6 +166,7 @@ public class ProcessUtils {
                     + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
                     + (FIRST_AGENT_PORT + metadata.nodeId()));
         }
+        commandLine.add("-XX:+UseZGC");
         commandLine.addAll(List.of(
                 "-classpath",
                 // Use the same classpath that started this process, excluding test-clients
