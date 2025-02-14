@@ -21,7 +21,6 @@ import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLog
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventCore;
-import com.hedera.hapi.platform.event.EventTransaction;
 import com.hedera.hapi.platform.event.GossipEvent;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -338,10 +337,6 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
         Objects.requireNonNull(consensusData.consensusTimestamp(), "consensusData.consensusTimestamp");
         this.consensusData = consensusData;
         this.consensusTimestamp = HapiUtils.asInstant(consensusData.consensusTimestamp());
-    }
-
-    public List<EventTransaction> getEventTransactions() {
-        return gossipEvent.eventTransaction();
     }
 
     /**
