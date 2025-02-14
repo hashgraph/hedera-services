@@ -18,19 +18,18 @@ package com.swirlds.platform.wiring;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.component.framework.model.WiringModelBuilder;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.builder.PlatformBuildingBlocks;
 import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.EventWindowManager;
+import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
 import com.swirlds.platform.event.branching.BranchDetector;
@@ -104,12 +103,8 @@ class PlatformWiringTests {
 
         final PlatformWiring wiring = new PlatformWiring(platformContext, model, applicationCallbacks);
 
-        final PlatformBuildingBlocks buildingBlocksMock = mock(PlatformBuildingBlocks.class);
-        final PlatformContext platformContextMock = mock(PlatformContext.class);
-        when(platformContextMock.getConfiguration()).thenReturn(mock(Configuration.class));
-        when(buildingBlocksMock.platformContext()).thenReturn(platformContextMock);
         final PlatformComponentBuilder componentBuilder =
-                new PlatformComponentBuilder(buildingBlocksMock, mock(PlatformWiring.class));
+                new PlatformComponentBuilder(mock(PlatformBuildingBlocks.class), wiring);
 
         componentBuilder
                 .withEventHasher(mock(EventHasher.class))
@@ -174,6 +169,7 @@ class PlatformWiringTests {
                 mock(BirthRoundMigrationShim.class),
                 mock(SignedStateNexus.class),
                 mock(LatestCompleteStateNexus.class),
+                mock(SavedStateController.class),
                 mock(AppNotifier.class),
                 mock(PlatformPublisher.class));
 

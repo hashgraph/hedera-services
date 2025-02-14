@@ -25,8 +25,6 @@ import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.DefaultSavedStateController;
-import com.swirlds.platform.components.SavedStateController;
 import com.swirlds.platform.components.appcomm.DefaultLatestCompleteStateNotifier;
 import com.swirlds.platform.components.appcomm.LatestCompleteStateNotifier;
 import com.swirlds.platform.components.consensus.ConsensusEngine;
@@ -88,8 +86,6 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.iss.IssScratchpad;
 import com.swirlds.platform.state.iss.internal.DefaultIssHandler;
-import com.swirlds.platform.state.nexus.LockFreeStateNexus;
-import com.swirlds.platform.state.nexus.SignedStateNexus;
 import com.swirlds.platform.state.signed.DefaultSignedStateSentinel;
 import com.swirlds.platform.state.signed.DefaultStateGarbageCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -165,20 +161,8 @@ public class PlatformComponentBuilder {
     private StateSigner stateSigner;
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
-    /**
-     * Controls which states are saved to disk
-     */
-    private final SavedStateController savedStateController;
-    /**
-     * Holds the latest state that is immutable. May be unhashed (in the future), may or may not have all required
-     * signatures. State is returned with a reservation.
-     * <p>
-     * NOTE: This is currently set when a state has finished hashing. In the future, this will be set at the moment a
-     * new state is created, before it is hashed.
-     */
-    private final SignedStateNexus latestImmutableStateNexus = new LockFreeStateNexus();
 
-    private PlatformWiring platformWiring;
+    private final PlatformWiring platformWiring;
     private SwirldsPlatform swirldsPlatform;
 
     private boolean metricsDocumentationEnabled = true;
@@ -198,7 +182,6 @@ public class PlatformComponentBuilder {
             @NonNull final PlatformBuildingBlocks blocks, @NonNull final PlatformWiring platformWiring) {
         this.blocks = Objects.requireNonNull(blocks);
         this.platformWiring = Objects.requireNonNull(platformWiring);
-        this.savedStateController = new DefaultSavedStateController(blocks.platformContext());
     }
 
     /**
@@ -214,16 +197,6 @@ public class PlatformComponentBuilder {
     @NonNull
     public PlatformWiring getPlatformWiring() {
         return platformWiring;
-    }
-
-    @NonNull
-    public SignedStateNexus getLatestImmutableStateNexus() {
-        return latestImmutableStateNexus;
-    }
-
-    @NonNull
-    public SavedStateController getSavedStateController() {
-        return savedStateController;
     }
 
     /**
@@ -246,7 +219,7 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            swirldsPlatform = new SwirldsPlatform(this);
+            swirldsPlatform = new SwirldsPlatform(this, platformWiring);
             return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {

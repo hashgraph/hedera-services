@@ -765,6 +765,7 @@ public class PlatformWiring {
      *                                  yet happened, must not be null if birth round migration has happened
      * @param latestImmutableStateNexus the latest immutable state nexus to bind
      * @param latestCompleteStateNexus  the latest complete state nexus to bind
+     * @param savedStateController      the saved state controller to bind
      * @param notifier                  the notifier to bind
      * @param platformPublisher         the platform publisher to bind
      */
@@ -776,6 +777,7 @@ public class PlatformWiring {
             @Nullable final BirthRoundMigrationShim birthRoundMigrationShim,
             @NonNull final SignedStateNexus latestImmutableStateNexus,
             @NonNull final LatestCompleteStateNexus latestCompleteStateNexus,
+            @NonNull final SavedStateController savedStateController,
             @NonNull final AppNotifier notifier,
             @NonNull final PlatformPublisher platformPublisher) {
 
@@ -811,7 +813,7 @@ public class PlatformWiring {
         latestCompleteStateNotifierWiring.bind(builder::buildLatestCompleteStateNotifier);
         latestImmutableStateNexusWiring.bind(latestImmutableStateNexus);
         latestCompleteStateNexusWiring.bind(latestCompleteStateNexus);
-        savedStateControllerWiring.bind(builder::getSavedStateController);
+        savedStateControllerWiring.bind(savedStateController);
         stateHasherWiring.bind(builder::buildStateHasher);
         notifierWiring.bind(notifier);
         platformPublisherWiring.bind(platformPublisher);
