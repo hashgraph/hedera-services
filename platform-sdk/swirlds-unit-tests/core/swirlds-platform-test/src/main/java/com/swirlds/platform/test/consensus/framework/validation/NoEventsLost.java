@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,8 @@ public final class NoEventsLost {
             // no consensus reached, nothing to check
             return;
         }
-        final long nonAncientGen = output.getConsensusRounds()
-                .getLast()
-                .getSnapshot()
-                .getMinimumGenerationNonAncient(CONFIG.roundsNonAncient());
+        final long nonAncientGen =
+                output.getConsensusRounds().getLast().getSnapshot().getAncientThreshold(CONFIG.roundsNonAncient());
 
         for (final PlatformEvent event : output.getAddedEvents()) {
             if (event.getGeneration() >= nonAncientGen) {

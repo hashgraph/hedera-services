@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
-import com.swirlds.platform.test.gui.GeneratorEventProvider;
+import com.swirlds.platform.test.gui.ListEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -31,13 +31,18 @@ import java.util.function.Consumer;
 
 /** A type which orchestrates the generation of events and the validation of the consensus output */
 public class ConsensusTestOrchestrator {
+    private final PlatformContext platformContext;
     private final List<ConsensusTestNode> nodes;
     private long currentSequence = 0;
     private final List<Long> weights;
     private final int totalEventNum;
 
     public ConsensusTestOrchestrator(
-            final List<ConsensusTestNode> nodes, final List<Long> weights, final int totalEventNum) {
+            final PlatformContext platformContext,
+            final List<ConsensusTestNode> nodes,
+            final List<Long> weights,
+            final int totalEventNum) {
+        this.platformContext = platformContext;
         this.nodes = nodes;
         this.weights = weights;
         this.totalEventNum = totalEventNum;
@@ -64,16 +69,13 @@ public class ConsensusTestOrchestrator {
     @SuppressWarnings("unused") // useful for debugging
     public void runGui() {
         final ConsensusTestNode node = nodes.stream().findAny().orElseThrow();
-
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final AddressBook addressBook =
                 node.getEventEmitter().getGraphGenerator().getAddressBook();
 
         new TestGuiSource(
                         platformContext,
                         addressBook,
-                        new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
+                        new ListEventProvider(node.getOutput().getAddedEvents()))
                 .runGui();
     }
 
@@ -149,6 +151,10 @@ public class ConsensusTestOrchestrator {
             node.getEventEmitter().setCheckpoint(currentSequence);
             node.addEvents(currentSequence);
         }
+    }
+
+    public void removeNode(final NodeId nodeId){
+        nodes.forEach(node -> node.removeNode(nodeId));
     }
 
     /**

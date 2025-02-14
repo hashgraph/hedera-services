@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,9 +128,9 @@ public class ConsensusSnapshot implements SelfSerializable {
      * @param roundsNonAncient the number of non-ancient rounds
      * @return minimum non-ancient generation
      */
-    public long getMinimumGenerationNonAncient(final int roundsNonAncient) {
-        return RoundCalculationUtils.getMinGenNonAncient(
-                roundsNonAncient, round, this::getMinimumJudgeAncientThreshold);
+    public long getAncientThreshold(final int roundsNonAncient) {
+        final long oldestNonAncientRound = RoundCalculationUtils.getOldestNonAncientRound(roundsNonAncient, round);
+        return getMinimumJudgeAncientThreshold(oldestNonAncientRound);
     }
 
     /**

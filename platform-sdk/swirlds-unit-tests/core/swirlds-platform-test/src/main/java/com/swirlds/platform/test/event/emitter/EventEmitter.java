@@ -117,13 +117,4 @@ public interface EventEmitter<T extends EventEmitter<T>> {
             emitEvent();
         }
     }
-
-    /**
-     * Creates a clean copy of the underlying {@link GraphGenerator} with the supplied seed, forcing it to create a
-     * different graph.
-     *
-     * @param seed
-     * 		the new seed to use
-     */
-    void setGraphGeneratorSeed(final long seed);
 }

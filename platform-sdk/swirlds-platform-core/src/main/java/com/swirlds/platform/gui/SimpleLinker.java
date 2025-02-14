@@ -59,6 +59,7 @@ public class SimpleLinker {
      */
     private final Map<Hash, EventImpl> parentHashMap = new HashMap<>(INITIAL_CAPACITY);
 
+    private final AncientMode ancientMode;
     private long nonAncientThreshold = 0;
 
     /**
@@ -67,12 +68,13 @@ public class SimpleLinker {
      * @param ancientMode the ancient mode
      */
     public SimpleLinker(@NonNull final AncientMode ancientMode) {
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            throw new UnsupportedOperationException("not yet supported");
-        } else {
-            this.parentDescriptorMap = new StandardSequenceMap<>(
-                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
-        }
+        this.ancientMode = ancientMode;
+        this.parentDescriptorMap = new StandardSequenceMap<>(
+                0, INITIAL_CAPACITY,
+                true,
+                ed -> ancientMode.selectIndicator(ed.eventDescriptor().generation(),
+                        ed.eventDescriptor().birthRound()));
+
     }
 
     /**
@@ -140,7 +142,7 @@ public class SimpleLinker {
      */
     @Nullable
     public EventImpl linkEvent(@NonNull final PlatformEvent event) {
-        if (event.getAncientIndicator(AncientMode.GENERATION_THRESHOLD) < nonAncientThreshold) {
+        if (event.getAncientIndicator(ancientMode) < nonAncientThreshold) {
             // This event is ancient, so we don't need to link it.
             return null;
         }

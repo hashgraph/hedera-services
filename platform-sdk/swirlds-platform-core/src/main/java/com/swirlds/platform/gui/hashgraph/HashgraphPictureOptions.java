@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,11 @@ public interface HashgraphPictureOptions {
      * @return should the generation be written for every event
      */
     boolean writeGeneration();
+
+    /**
+     * @return should the birth round be written for every event
+     */
+    boolean writeBirthRound();
 
     /**
      * @return should simple colors be used in the picture

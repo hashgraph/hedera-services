@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event.generator;
 
+import com.hedera.hapi.platform.event.GossipEvent;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
@@ -68,14 +69,6 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * Get an exact copy of this event generator as it was when it was first created.
      */
     T cleanCopy();
-
-    /**
-     * Get a clean copy but with a different seed.
-     *
-     * @param seed
-     * 		The new seed to use.
-     */
-    T cleanCopy(long seed);
 
     /**
      * Reset this generator to its original state. Does not undo settings changes, just the events that have been
@@ -171,4 +164,13 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
      * @param previousTimestamp the timestamp to set
      */
     void setPreviousTimestamp(final Instant previousTimestamp);
+
+    /**
+     * Remove a node from the generator. This will remove it from the address book and it will remove its event source,
+     * so that this node will not generate any more events.
+     * NOTE: This method is created specifically for a single node removal. For more complex address book changes this
+     * functionality should be expanded.
+     * @param nodeId the node to remove
+     */
+    void removeNode(final NodeId nodeId);
 }

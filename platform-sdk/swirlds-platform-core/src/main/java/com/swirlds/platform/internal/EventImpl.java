@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -527,6 +528,20 @@ public class EventImpl implements Clearable {
      */
     public long getBirthRound() {
         return baseEvent.getBirthRound();
+    }
+
+    /**
+     * Get the age value of this event based on the ancient mode. The age value is either the generation or the birth
+     * round of this event.
+     *
+     * @param ancientMode the ancient mode
+     * @return the age value of this event
+     */
+    public long getAgeValue(@NonNull final AncientMode ancientMode) {
+        return switch (ancientMode) {
+            case GENERATION_THRESHOLD -> getGeneration();
+            case BIRTH_ROUND_THRESHOLD -> getBirthRound();
+        };
     }
 
     /**
