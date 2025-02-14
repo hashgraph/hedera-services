@@ -19,6 +19,7 @@ package com.swirlds.platform.test.consensus.framework;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.test.consensus.TestIntake;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
@@ -71,6 +72,15 @@ public class ConsensusTestNode {
                         getOutput().getConsensusRounds().peekLast())
                 .getSnapshot();
         intake.reset();
+        intake.loadSnapshot(snapshot);
+    }
+
+    public void removeNode(final NodeId nodeId){
+        eventEmitter.getGraphGenerator().removeNode(nodeId);
+        final ConsensusSnapshot snapshot = Objects.requireNonNull(
+                        getOutput().getConsensusRounds().peekLast())
+                .getSnapshot();
+        //intake.reset();
         intake.loadSnapshot(snapshot);
     }
 

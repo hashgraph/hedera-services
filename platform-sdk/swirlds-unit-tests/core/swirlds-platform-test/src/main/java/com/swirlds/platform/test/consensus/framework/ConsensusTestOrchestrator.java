@@ -17,6 +17,7 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
@@ -150,6 +151,10 @@ public class ConsensusTestOrchestrator {
             node.getEventEmitter().setCheckpoint(currentSequence);
             node.addEvents(currentSequence);
         }
+    }
+
+    public void removeNode(final NodeId nodeId){
+        nodes.forEach(node -> node.removeNode(nodeId));
     }
 
     /**

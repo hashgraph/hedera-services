@@ -153,11 +153,6 @@ public class TestIntake {
     }
 
     public void loadSnapshot(@NonNull final ConsensusSnapshot snapshot) {
-
-        // FUTURE WORK: remove the fourth variable setting useBirthRound to false when we switch from comparing
-        // minGenNonAncient to comparing birthRound to minRoundNonAncient.  Until then, it is always false in
-        // production.
-
         final EventWindow eventWindow = new EventWindow(
                 snapshot.round(),
                 snapshot.getAncientThreshold(roundsNonAncient),
