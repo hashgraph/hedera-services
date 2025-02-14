@@ -30,7 +30,6 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.TestMerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade;
-import com.swirlds.state.merkle.MerkleStateRoot;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
