@@ -292,8 +292,8 @@ public class EnhancedKeyStoreLoader {
         logger.debug(STARTUP.getMarker(), "Starting key store enumeration");
         final KeyStore legacyPublicStore = resolveLegacyPublicStore();
 
-        iterateAddressBook(addressBook, (i, nodeId, address) -> {
-            logger.debug(STARTUP.getMarker(), "Attempting to locate key stores for nodeId {} [ id = {}]", i, nodeId);
+        iterateAddressBook(addressBook, (nodeId, address) -> {
+            logger.debug(STARTUP.getMarker(), "Attempting to locate key stores for nodeId {}", nodeId);
 
             if (localNodes.contains(address.getNodeId())) {
                 sigPrivateKeys.compute(nodeId, (k, v) -> resolveNodePrivateKey(nodeId, KeyCertPurpose.SIGNING));
@@ -319,16 +319,16 @@ public class EnhancedKeyStoreLoader {
     public EnhancedKeyStoreLoader generate()
             throws NoSuchAlgorithmException, NoSuchProviderException, KeyGeneratingException {
 
-        for (final NodeId node : localNodes) {
-            if (!agrPrivateKeys.containsKey(node)) {
-                logger.info(STARTUP.getMarker(), "Generating agreement key pair for local node {}", node);
+        for (final NodeId nodeId : localNodes) {
+            if (!agrPrivateKeys.containsKey(nodeId)) {
+                logger.info(STARTUP.getMarker(), "Generating agreement key pair for local nodeId {}", nodeId);
                 // Generate a new agreement key since it does not exist
                 final KeyPair agrKeyPair = KeysAndCerts.generateAgreementKeyPair();
-                agrPrivateKeys.put(node, agrKeyPair.getPrivate());
+                agrPrivateKeys.put(nodeId, agrKeyPair.getPrivate());
 
                 // recover signing key pair to be root of trust on agreement certificate
-                final PrivateKey privateSigningKey = sigPrivateKeys.get(node);
-                final X509Certificate signingCert = (X509Certificate) sigCertificates.get(node);
+                final PrivateKey privateSigningKey = sigPrivateKeys.get(nodeId);
+                final X509Certificate signingCert = (X509Certificate) sigCertificates.get(nodeId);
                 if (privateSigningKey == null || signingCert == null) {
                     continue;
                 }
@@ -336,14 +336,14 @@ public class EnhancedKeyStoreLoader {
                 final KeyPair signingKeyPair = new KeyPair(publicSigningKey, privateSigningKey);
 
                 // generate the agreement certificate
-                final String dnA = CryptoStatic.distinguishedName(KeyCertPurpose.AGREEMENT.storeName(node));
+                final String dnA = CryptoStatic.distinguishedName(KeyCertPurpose.AGREEMENT.storeName(nodeId));
                 final X509Certificate agrCert = CryptoStatic.generateCertificate(
                         dnA,
                         agrKeyPair,
                         signingCert.getSubjectX500Principal().getName(),
                         signingKeyPair,
                         SecureRandom.getInstanceStrong());
-                agrCertificates.put(node, agrCert);
+                agrCertificates.put(nodeId, agrCert);
             }
         }
         return this;
@@ -382,7 +382,7 @@ public class EnhancedKeyStoreLoader {
                             .formatted(validatingBook.getSize(), addressBook.getSize()));
         }
 
-        iterateAddressBook(validatingBook, (i, nodeId, address) -> {
+        iterateAddressBook(validatingBook, (nodeId, address) -> {
             try {
                 if (localNodes.contains(address.getNodeId())) {
                     if (!sigPrivateKeys.containsKey(nodeId)) {
@@ -447,7 +447,7 @@ public class EnhancedKeyStoreLoader {
         final Map<NodeId, KeysAndCerts> keysAndCerts = HashMap.newHashMap(validatingBook.getSize());
         final PublicStores publicStores = publicStores(validatingBook);
 
-        iterateAddressBook(validatingBook, (i, nodeId, address) -> {
+        iterateAddressBook(validatingBook, (nodeId, address) -> {
             final X509Certificate sigCert = publicStores.getCertificate(KeyCertPurpose.SIGNING, nodeId);
 
             if (sigCert == null) {
@@ -530,7 +530,7 @@ public class EnhancedKeyStoreLoader {
             throws KeyStoreException, KeyLoadingException {
         final PublicStores publicStores = new PublicStores();
 
-        iterateAddressBook(validatingBook, (i, nodeId, address) -> {
+        iterateAddressBook(validatingBook, (nodeId, address) -> {
             final Certificate sigCert = sigCertificates.get(nodeId);
             final Certificate agrCert = agrCertificates.get(nodeId);
 
@@ -1113,7 +1113,7 @@ public class EnhancedKeyStoreLoader {
         for (int i = 0; i < addressBook.getSize(); i++) {
             final NodeId nodeId = addressBook.getNodeId(i);
             final Address address = addressBook.getAddress(nodeId);
-            function.apply(i, nodeId, address);
+            function.apply(nodeId, address);
         }
     }
 
@@ -1123,7 +1123,7 @@ public class EnhancedKeyStoreLoader {
      */
     @FunctionalInterface
     private interface AddressBookCallback {
-        void apply(int index, NodeId nodeId, Address address) throws KeyStoreException, KeyLoadingException;
+        void apply(NodeId nodeId, Address address) throws KeyStoreException, KeyLoadingException;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1212,7 +1212,7 @@ public class EnhancedKeyStoreLoader {
         final KeyStore legacyPublicStore = resolveLegacyPublicStore();
         final AtomicLong errorCount = new AtomicLong(0);
 
-        iterateAddressBook(addressBook, (i, nodeId, address) -> {
+        iterateAddressBook(addressBook, (nodeId, address) -> {
             if (localNodes.contains(nodeId)) {
                 // extract private keys for local nodes
                 final Path sPrivateKeyLocation = keyStoreDirectory.resolve(
@@ -1309,7 +1309,7 @@ public class EnhancedKeyStoreLoader {
             final Map<NodeId, PrivateKey> pfxPrivateKeys, final Map<NodeId, Certificate> pfxCertificates)
             throws KeyStoreException, KeyLoadingException {
         final AtomicLong errorCount = new AtomicLong(0);
-        iterateAddressBook(addressBook, (i, nodeId, address) -> {
+        iterateAddressBook(addressBook, (nodeId, address) -> {
             if (localNodes.contains(nodeId) && pfxCertificates.containsKey(nodeId)) {
                 // validate private keys for local nodes
                 final Path ksLocation = privateKeyStore(nodeId, KeyCertPurpose.SIGNING);
@@ -1362,7 +1362,7 @@ public class EnhancedKeyStoreLoader {
             throws KeyStoreException, KeyLoadingException {
 
         final AtomicLong cleanupErrorCount = new AtomicLong(0);
-        iterateAddressBook(addressBook, (i, nodeId, address) -> {
+        iterateAddressBook(addressBook, (nodeId, address) -> {
             // private key rollback
             if (localNodes.contains(nodeId) && pfxPrivateKeys.containsKey(address.getNodeId())) {
                 try {
@@ -1420,7 +1420,7 @@ public class EnhancedKeyStoreLoader {
                 return;
             }
         }
-        iterateAddressBook(addressBook, (i, nodeId, address) -> {
+        iterateAddressBook(addressBook, (nodeId, address) -> {
             if (localNodes.contains(nodeId)) {
                 // move private key PFX files per local node
                 final File sPrivatePfx = legacyPrivateKeyStore(nodeId).toFile();
