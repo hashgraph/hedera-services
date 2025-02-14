@@ -53,5 +53,4 @@ testModuleInfo {
     requires("com.swirlds.state.impl")
     requires("org.mockito")
     requires("org.hiero.consensus.gossip")
-    requiresStatic("com.github.spotbugs.annotations")
 }
