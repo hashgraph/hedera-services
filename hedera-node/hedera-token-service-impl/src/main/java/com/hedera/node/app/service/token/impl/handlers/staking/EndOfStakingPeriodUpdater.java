@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_STAKE_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.asStakingRewardBuilder;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeExtendedRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNewStakes;
@@ -38,10 +37,10 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateStreamBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -69,7 +68,7 @@ public class EndOfStakingPeriodUpdater {
 
     private final AccountsConfig accountsConfig;
     private final StakingRewardsHelper stakeRewardsHelper;
-    private final HederaConfig hederaConfig;
+    private final EntityIdFactory entityIdFactory;
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
@@ -78,11 +77,13 @@ public class EndOfStakingPeriodUpdater {
      */
     @Inject
     public EndOfStakingPeriodUpdater(
-            @NonNull final StakingRewardsHelper stakeRewardsHelper, @NonNull final ConfigProvider configProvider) {
+            @NonNull final StakingRewardsHelper stakeRewardsHelper,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final EntityIdFactory entityIdFactory) {
         this.stakeRewardsHelper = stakeRewardsHelper;
         final var config = configProvider.getConfiguration();
         this.accountsConfig = config.getConfigData(AccountsConfig.class);
-        this.hederaConfig = config.getConfigData(HederaConfig.class);
+        this.entityIdFactory = entityIdFactory;
     }
 
     /**
@@ -280,7 +281,7 @@ public class EndOfStakingPeriodUpdater {
 
     private long getRewardsBalance(@NonNull final ReadableAccountStore accountStore) {
         return requireNonNull(accountStore.getAccountById(
-                        asAccount(hederaConfig.shard(), hederaConfig.realm(), accountsConfig.stakingRewardAccount())))
+                        entityIdFactory.newAccountId(accountsConfig.stakingRewardAccount())))
                 .tinybarBalance();
     }
 }

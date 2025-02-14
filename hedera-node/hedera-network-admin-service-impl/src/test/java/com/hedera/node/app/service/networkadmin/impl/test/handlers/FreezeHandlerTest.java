@@ -52,6 +52,7 @@ import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -102,6 +103,9 @@ class FreezeHandlerTest {
     @Mock
     private ReadableStakingInfoStore stakingInfoStore;
 
+    @Mock
+    private EntityIdFactory entityIdFactory;
+
     private final FileID fileUpgradeFileId = FileID.newBuilder().fileNum(150L).build();
     private final FileID anotherFileUpgradeFileId =
             FileID.newBuilder().fileNum(157).build();
@@ -113,8 +117,13 @@ class FreezeHandlerTest {
             .build();
     private final AccountID nonAdminAccount =
             AccountID.newBuilder().accountNum(9999L).build();
-    private final FreezeHandler subject = new FreezeHandler(new ForkJoinPool(
-            1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true));
+    private final FreezeHandler subject = new FreezeHandler(
+            new ForkJoinPool(
+                    1,
+                    ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+                    Thread.getDefaultUncaughtExceptionHandler(),
+                    true),
+            entityIdFactory);
 
     @BeforeEach
     void setUp() {

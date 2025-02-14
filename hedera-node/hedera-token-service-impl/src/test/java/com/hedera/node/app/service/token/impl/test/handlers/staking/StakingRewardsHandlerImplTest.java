@@ -41,6 +41,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.records.CryptoDeleteStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import java.lang.reflect.Constructor;
@@ -69,6 +70,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Mock
     private CryptoDeleteStreamBuilder recordBuilder;
 
+    @Mock
+    private EntityIdFactory entityIdFactory;
+
     private final InstantSource instantSource = InstantSource.system();
 
     private StakingRewardsHandlerImpl subject;
@@ -95,7 +99,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
-        subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);
+        subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper, entityIdFactory);
     }
 
     @Test
@@ -348,7 +352,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(manager.firstNonRewardableStakePeriod(readableRewardsStore)).willReturn(3L);
         given(account.stakePeriodStart()).willReturn(2L);
 
-        final StakingRewardsHandlerImpl impl = new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper);
+        final StakingRewardsHandlerImpl impl =
+                new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper, entityIdFactory);
 
         assertThat(impl.shouldUpdateStakeAtStartOfLastRewardPeriod(
                         account, true, 0L, readableRewardsStore, consensusInstant))

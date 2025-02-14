@@ -24,6 +24,7 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -55,6 +56,7 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
     private final ConfigProvider configProvider;
     private final StartupNetworks startupNetworks;
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
+    private final EntityIdFactory entityIdFactory;
 
     @Inject
     public WriteStateToDiskListener(
@@ -62,12 +64,14 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StartupNetworks startupNetworks,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory,
+            @NonNull final EntityIdFactory entityIdFactory) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
         this.startupNetworks = requireNonNull(startupNetworks);
         this.softwareVersionFactory = softwareVersionFactory;
+        this.entityIdFactory = requireNonNull(entityIdFactory);
     }
 
     @Override
@@ -92,7 +96,8 @@ public class WriteStateToDiskListener implements StateWriteToDiskCompleteListene
                         executor,
                         readableUpgradeFileStore,
                         readableNodeStore,
-                        readableStakingInfoStore);
+                        readableStakingInfoStore,
+                        entityIdFactory);
                 log.info("Externalizing freeze if upgrade is pending");
                 upgradeActions.externalizeFreezeIfUpgradePending();
             } catch (Exception e) {

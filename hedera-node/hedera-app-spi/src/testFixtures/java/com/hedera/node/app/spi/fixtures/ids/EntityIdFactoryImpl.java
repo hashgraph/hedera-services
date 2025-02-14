@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi.fixtures.ids;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
@@ -46,5 +48,29 @@ public class EntityIdFactoryImpl implements EntityIdFactory {
     @Override
     public ScheduleID newScheduleId(long number) {
         return new ScheduleID(shard, realm, number);
+    }
+
+    @Override
+    public AccountID newAccountId(long number) {
+        return AccountID.newBuilder()
+                .shardNum(shard)
+                .realmNum(realm)
+                .accountNum(number)
+                .build();
+    }
+
+    @Override
+    public FileID newFileId(long number) {
+        return new FileID(shard, realm, number);
+    }
+
+    @Override
+    public long getShard() {
+        return shard;
+    }
+
+    @Override
+    public long getRealm() {
+        return realm;
     }
 }
