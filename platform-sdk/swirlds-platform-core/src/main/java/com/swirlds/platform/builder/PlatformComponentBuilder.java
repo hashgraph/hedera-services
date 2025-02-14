@@ -161,6 +161,8 @@ public class PlatformComponentBuilder {
     private TransactionHandler transactionHandler;
     private LatestCompleteStateNotifier latestCompleteStateNotifier;
 
+    private SwirldsPlatform swirldsPlatform;
+
     private boolean metricsDocumentationEnabled = true;
 
     /**
@@ -208,7 +210,8 @@ public class PlatformComponentBuilder {
         used = true;
 
         try (final ReservedSignedState initialState = blocks.initialState()) {
-            return new SwirldsPlatform(this);
+            swirldsPlatform = new SwirldsPlatform(this);
+            return swirldsPlatform;
         } finally {
             if (metricsDocumentationEnabled) {
                 // Future work: eliminate the static variables that require this code to exist

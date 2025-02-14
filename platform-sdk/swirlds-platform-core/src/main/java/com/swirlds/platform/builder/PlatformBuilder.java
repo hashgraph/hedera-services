@@ -64,6 +64,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.RandomBuilder;
+import com.swirlds.platform.wiring.PlatformWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -486,7 +487,10 @@ public final class PlatformBuilder {
             randomBuilder = new RandomBuilder();
         }
 
+        final PlatformWiring platformWiring = new PlatformWiring(platformContext, model, callbacks);
+
         final PlatformBuildingBlocks buildingBlocks = new PlatformBuildingBlocks(
+                platformWiring,
                 platformContext,
                 model,
                 keysAndCerts,
