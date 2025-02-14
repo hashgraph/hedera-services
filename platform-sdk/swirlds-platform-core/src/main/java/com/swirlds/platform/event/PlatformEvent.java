@@ -149,7 +149,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      *
      * @return a copy of this event
      */
-    public PlatformEvent copyGossipedData() {
+    public @NonNull PlatformEvent copyGossipedData() {
         final PlatformEvent platformEvent = new PlatformEvent(gossipEvent);
         platformEvent.setHash(getHash());
         return platformEvent;

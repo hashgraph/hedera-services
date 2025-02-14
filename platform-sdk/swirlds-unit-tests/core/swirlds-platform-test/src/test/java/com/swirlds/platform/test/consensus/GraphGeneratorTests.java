@@ -437,17 +437,6 @@ public class GraphGeneratorTests {
     }
 
     /**
-     * Make sure the copy constructor that changes the seed works.
-     */
-    public void validateCopyWithNewSeed(final GraphGenerator<?> generator) {
-        System.out.println("Validate Copy With New Seed");
-        final GraphGenerator<?> generator1 = generator.cleanCopy();
-        final GraphGenerator<?> generator2 = generator.cleanCopy(1234);
-
-        assertNotEquals(generator1.generateEvents(1000), generator2.generateEvents(1000));
-    }
-
-    /**
      * Run a generator through a gauntlet of sanity checks.
      */
     public void generatorSanityChecks(final GraphGenerator<?> generator) {
@@ -458,7 +447,6 @@ public class GraphGeneratorTests {
         validateParentDistribution(generator);
         validateOtherParentDistribution(generator);
         validateEventOrder(generator);
-        validateCopyWithNewSeed(generator);
         validateMaxGeneration(generator);
         validateBirthRoundAdvancing(generator);
     }

@@ -96,7 +96,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * The platform context containing configuration for the internal consensus.
      */
-    private PlatformContext platformContext;
+    private final PlatformContext platformContext;
 
     /**
      * The linker for events to use with the internal consensus.
@@ -125,7 +125,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * @param eventSources    One or more event sources.
      */
     public StandardGraphGenerator(
-            @NonNull PlatformContext platformContext,
+            @NonNull final PlatformContext platformContext,
             final long seed,
             @NonNull final List<EventSource<?>> eventSources) {
         super(seed);
@@ -290,40 +290,6 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     }
 
     /**
-     * Get the average difference in the timestamp between two adjacent events (in seconds).
-     */
-    public double getEventPeriodMean() {
-        return eventPeriodMean;
-    }
-
-    /**
-     * Set the average difference in the timestamp between two adjacent events (in seconds).
-     *
-     * @return this
-     */
-    public StandardGraphGenerator setEventPeriodMean(final double eventPeriodMean) {
-        this.eventPeriodMean = eventPeriodMean;
-        return this;
-    }
-
-    /**
-     * Get the standard deviation of the difference of the timestamp between two adjacent events (in seconds).
-     */
-    public double getEventPeriodStandardDeviation() {
-        return eventPeriodStandardDeviation;
-    }
-
-    /**
-     * Set the standard deviation of the difference of the timestamp between two adjacent events (in seconds).
-     *
-     * @return this
-     */
-    public StandardGraphGenerator setEventPeriodStandardDeviation(final double eventPeriodStandardDeviation) {
-        this.eventPeriodStandardDeviation = eventPeriodStandardDeviation;
-        return this;
-    }
-
-    /**
      * Set the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If the
      * proceeding event has the same self parent then this is ignored and the events are not made to be simultaneous.
      */
@@ -334,12 +300,9 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * Get the probability, as a fraction of 1.0, that an event has the same timestamp as the proceeding event. If the
      * proceeding event has the same self parent then this is ignored and the events are not made to be simultaneous.
-     *
-     * @return this
      */
-    public StandardGraphGenerator setSimultaneousEventFraction(final double simultaneousEventFraction) {
+    public void setSimultaneousEventFraction(final double simultaneousEventFraction) {
         this.simultaneousEventFraction = simultaneousEventFraction;
-        return this;
     }
 
     /**
@@ -362,17 +325,8 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * {@inheritDoc}
      */
     @Override
-    public EventSource<?> getSource(final NodeId nodeID) {
+    public EventSource<?> getSource(@NonNull final NodeId nodeID) {
         final int nodeIndex = addressBook.getIndexOfNodeId(nodeID);
-        return sources.get(nodeIndex);
-    }
-
-    /**
-     * Get the event source for a particular node index.
-     *
-     * @return the event source
-     */
-    public EventSource<?> getSourceByIndex(final int nodeIndex) {
         return sources.get(nodeIndex);
     }
 
@@ -380,7 +334,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * {@inheritDoc}
      */
     @Override
-    public AddressBook getAddressBook() {
+    public @NonNull AddressBook getAddressBook() {
         return addressBook;
     }
 
@@ -399,14 +353,6 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         }
 
         return sourceWeights;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public StandardGraphGenerator cleanCopy(final long newSeed) {
-        return new StandardGraphGenerator(this, newSeed);
     }
 
     /**
@@ -503,7 +449,10 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
         new DefaultEventHasher().hashEvent(next.getBaseEvent());
         final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
-        consensus.addEvent(inOrderLinker.linkEvent(tmp));
+        final EventImpl linkedEvent = inOrderLinker.linkEvent(tmp);
+        if (linkedEvent != null) {
+            consensus.addEvent(linkedEvent);
+        }
 
         return next;
     }

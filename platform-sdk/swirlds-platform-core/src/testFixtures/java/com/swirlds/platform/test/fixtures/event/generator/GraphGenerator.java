@@ -70,14 +70,6 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     T cleanCopy();
 
     /**
-     * Get a clean copy but with a different seed.
-     *
-     * @param seed
-     * 		The new seed to use.
-     */
-    T cleanCopy(long seed);
-
-    /**
      * Reset this generator to its original state. Does not undo settings changes, just the events that have been
      * emitted.
      */
