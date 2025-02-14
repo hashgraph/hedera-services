@@ -3,6 +3,7 @@ package com.swirlds.state.merkle;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
@@ -93,6 +94,8 @@ public class NewStateRoot implements State {
      */
     private final List<StateChangeListener> listeners = new ArrayList<>();
 
+    private Configuration configuration;
+
     private VirtualMap virtualMap;
 
     // not sure if it is needed though!
@@ -112,8 +115,9 @@ public class NewStateRoot implements State {
         }
     }
 
-    // This is how MerkleStateRoot was init -- maybe need to work out new way here
-    public void init(Time time, Metrics metrics, MerkleCryptography merkleCryptography) {
+    // This is how MerkleStateRoot was init (except configuration) -- maybe need to work out new way here
+    public void init(Configuration configuration, Time time, Metrics metrics, MerkleCryptography merkleCryptography) {
+        this.configuration = configuration;
         this.time = time;
         this.metrics = metrics;
         this.merkleCryptography = merkleCryptography;
@@ -216,8 +220,9 @@ public class NewStateRoot implements State {
      */
     @Override
     public MerkleStateRoot<?> loadSnapshot(@NonNull Path targetPath) throws IOException {
+        requireNonNull(configuration);
         return (MerkleStateRoot<?>)
-                MerkleTreeSnapshotReader.readStateFileData(targetPath).stateRoot();
+                MerkleTreeSnapshotReader.readStateFileData(configuration, targetPath).stateRoot();
     }
 
     // Getters and setters
@@ -516,6 +521,7 @@ public class NewStateRoot implements State {
         /**
          * Create a new instance
          *
+         * @param serviceName cannot be null
          * @param stateMetadata cannot be null
          */
         MerkleWritableStates(

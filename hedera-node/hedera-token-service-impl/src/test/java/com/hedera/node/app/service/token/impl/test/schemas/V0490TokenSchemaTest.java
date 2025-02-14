@@ -34,6 +34,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.services.MigrationContextImpl;
@@ -52,6 +53,7 @@ import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.util.HashMap;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,12 +90,12 @@ final class V0490TokenSchemaTest {
 
     @BeforeEach
     void setUp() {
-        accounts = MapWritableKVState.<AccountID, Account>builder(V0490TokenSchema.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(TokenService.NAME, V0490TokenSchema.ACCOUNTS_KEY)
                 .build();
 
         newStates = newStatesInstance(
                 accounts,
-                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                MapWritableKVState.<Bytes, AccountID>builder(TokenService.NAME, ALIASES_KEY).build(),
                 newWritableEntityIdState());
 
         entityIdStore = new WritableEntityIdStore(newStates);
@@ -106,12 +108,12 @@ final class V0490TokenSchemaTest {
     @Test
     void nonGenesisDoesntCreate() {
         // To simulate a non-genesis case, we'll add a single account object to the `previousStates` param
-        accounts = MapWritableKVState.<AccountID, Account>builder(V0490TokenSchema.ACCOUNTS_KEY)
+        accounts = MapWritableKVState.<AccountID, Account>builder(TokenService.NAME, V0490TokenSchema.ACCOUNTS_KEY)
                 .value(ACCT_IDS[1], Account.DEFAULT)
                 .build();
         final var nonEmptyPrevStates = newStatesInstance(
                 accounts,
-                MapWritableKVState.<Bytes, AccountID>builder(ALIASES_KEY).build(),
+                MapWritableKVState.<Bytes, AccountID>builder(TokenService.NAME, ALIASES_KEY).build(),
                 newWritableEntityIdState());
         final var schema = newSubjectWithAllExpected();
         final var migrationContext = new MigrationContextImpl(
@@ -296,7 +298,22 @@ final class V0490TokenSchemaTest {
 
     private WritableSingletonState<EntityNumber> newWritableEntityIdState() {
         return new WritableSingletonStateBase<>(
-                V0490EntityIdSchema.ENTITY_ID_STATE_KEY, () -> new EntityNumber(BEGINNING_ENTITY_ID), c -> {});
+                TokenService.NAME, V0490EntityIdSchema.ENTITY_ID_STATE_KEY) {
+            @Override
+            protected EntityNumber readFromDataSource() {
+                return new EntityNumber(BEGINNING_ENTITY_ID);
+            }
+
+            @Override
+            protected void putIntoDataSource(@NotNull EntityNumber value) {
+                // no-op
+            }
+
+            @Override
+            protected void removeFromDataSource() {
+                // no-op
+            }
+        };
     }
 
     private MapWritableStates newStatesInstance(
@@ -307,9 +324,24 @@ final class V0490TokenSchemaTest {
         return MapWritableStates.builder()
                 .state(accts)
                 .state(aliases)
-                .state(MapWritableKVState.builder(V0490TokenSchema.STAKING_INFO_KEY)
+                .state(MapWritableKVState.builder(TokenService.NAME, V0490TokenSchema.STAKING_INFO_KEY)
                         .build())
-                .state(new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, () -> null, c -> {}))
+                .state(new WritableSingletonStateBase<>(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY) {
+                    @Override
+                    protected Object readFromDataSource() {
+                        return null;
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull Object value) {
+                        // no-op
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        // no-op
+                    }
+                })
                 .state(entityIdState)
                 .build();
     }

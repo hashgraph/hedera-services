@@ -40,6 +40,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -69,6 +70,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -441,7 +444,7 @@ public class EndOfStakingPeriodUpdaterTest {
 
         // Create staking info store (with data)
         MapWritableKVState<EntityNumber, StakingNodeInfo> stakingInfosState = new MapWritableKVState.Builder<
-                        EntityNumber, StakingNodeInfo>(STAKING_INFO_KEY)
+                        EntityNumber, StakingNodeInfo>(TokenService.NAME, STAKING_INFO_KEY)
                 .value(NODE_NUM_1, info1)
                 .value(NODE_NUM_2, info2)
                 .value(NODE_NUM_3, info3)
@@ -453,7 +456,22 @@ public class EndOfStakingPeriodUpdaterTest {
         // Create staking reward store (with data)
         final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, totalStakeRewardStart, 0, 0));
         WritableSingletonState<NetworkStakingRewards> stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+                new WritableSingletonStateBase<>(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY) {
+                    @Override
+                    protected NetworkStakingRewards readFromDataSource() {
+                        return backingValue.get();
+                    }
+
+                    @Override
+                    protected void putIntoDataSource(@NotNull NetworkStakingRewards value) {
+                        backingValue.set(value);
+                    }
+
+                    @Override
+                    protected void removeFromDataSource() {
+                        backingValue.set(null);
+                    }
+                };
         final var states = mock(WritableStates.class);
         given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
                 .willReturn((WritableSingletonState) stakingRewardsState);

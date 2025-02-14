@@ -16,8 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import com.swirlds.state.lifecycle.Schema;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
@@ -27,20 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *
  * @param <T> The type of the state, such as an AddressBook or NetworkData.
  */
-public interface ReadableSingletonState<T> {
-
-    /**
-     * Gets the "state key" that uniquely identifies this {@link ReadableSingletonState} within the
-     * {@link Schema} which are scoped to the service implementation. The key is therefore not globally
-     * unique, only unique within the service implementation itself.
-     *
-     * <p>The call is idempotent, always returning the same value. It must never return null.
-     *
-     * @return The state key. This will never be null, and will always be the same value for an
-     *     instance of {@link ReadableSingletonState}.
-     */
-    @NonNull
-    String getStateKey();
+public interface ReadableSingletonState<T> extends ReadableState {
 
     /**
      * Gets the singleton value.

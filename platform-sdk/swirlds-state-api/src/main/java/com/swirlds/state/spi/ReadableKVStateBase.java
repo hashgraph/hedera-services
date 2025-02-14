@@ -54,6 +54,7 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     /**
      * Create a new StateBase.
      *
+     * @param serviceName The name of the service that owns the state. Cannot be null.
      * @param stateKey The state key. Cannot be null.
      */
     protected ReadableKVStateBase(@NonNull final String serviceName, @NonNull String stateKey) {
@@ -66,6 +67,12 @@ public abstract class ReadableKVStateBase<K, V> implements ReadableKVState<K, V>
     @NonNull
     public final String getStateKey() {
         return stateKey;
+    }
+
+    @Override
+    @NonNull
+    public final String getServiceName() {
+        return serviceName;
     }
 
     /** {@inheritDoc} */

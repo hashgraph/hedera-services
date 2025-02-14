@@ -111,14 +111,14 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     protected State state;
 
     protected void setupStandardStates() {
-        accountsState = new MapWritableKVState<>(ACCOUNTS_KEY);
+        accountsState = new MapWritableKVState<>(TokenService.NAME, ACCOUNTS_KEY);
         accountsState.put(ALICE.accountID(), ALICE.account());
         accountsState.put(ERIN.accountID(), ERIN.account());
         accountsState.put(STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account());
         accountsState.put(FUNDING_ACCOUNT.accountID(), FUNDING_ACCOUNT.account());
         accountsState.put(nodeSelfAccountId, nodeSelfAccount);
         accountsState.commit();
-        aliasesState = new MapWritableKVState<>(ALIASES_KEY);
+        aliasesState = new MapWritableKVState<>(TokenService.NAME, ALIASES_KEY);
         final var writableStates = MapWritableStates.builder()
                 .state(accountsState)
                 .state(aliasesState)

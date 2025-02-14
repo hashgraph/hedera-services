@@ -58,7 +58,7 @@ public interface MerkleMigratable {
      * automatically migrated by the merkle utilities.
      * </p>
      *
-     * @param configuration
+     * @param configuration the configuration for this node
      * @param version       the version of this class when it was deserialized. This parameter may be useful if migration needs
      *                      to be performed only on transitions between specific versions.
      * @return this node if no migration is needed, a new node if this node should be replaced, or null if this

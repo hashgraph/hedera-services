@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,44 +42,69 @@ public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
 
     @Override
     protected WritableSingletonStateBase<String> createState() {
-        return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
+        return new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, COUNTRY_SERVICE_NAME) {
+            @Override
+            protected String readFromDataSource() {
+                return backingStore.get();
+            }
+
+            @Override
+            protected void putIntoDataSource(@NonNull String value) {
+                backingStore.set(value);
+            }
+
+            @Override
+            protected void removeFromDataSource() {
+                backingStore.set("");
+            }
+        };
     }
 
     @Nested
     @DisplayName("Constructor Tests")
     class ConstructorTest {
         @Test
+        @DisplayName("Constructor throws NPE if serviceName is null")
+        void nullServiceName() {
+            //noinspection DataFlowIssue
+            assertThatThrownBy(() -> new WritableSingletonStateBase<String>(null, COUNTRY_STATE_KEY) {
+                @Override
+                protected String readFromDataSource() {
+                    return AUSTRALIA;
+                }
+
+                @Override
+                protected void putIntoDataSource(@NonNull String value) {
+                    // no-op
+                }
+
+                @Override
+                protected void removeFromDataSource() {
+                    // no-op
+                }
+            }).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
         @DisplayName("Constructor throws NPE if stateKey is null")
         void nullStateKey() {
             //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new WritableSingletonStateBase<>(null, () -> AUSTRALIA, val -> {}))
-                    .isInstanceOf(NullPointerException.class);
-        }
+            assertThatThrownBy(() -> new WritableSingletonStateBase<String>(COUNTRY_SERVICE_NAME, null) {
+                @Override
+                protected String readFromDataSource() {
+                    return AUSTRALIA;
+                }
 
-        /**
-         * Make sure the constructor is holding onto the state key properly
-         */
-        @Test
-        @DisplayName("The state key must match what was provided in the constructor")
-        void testStateKey() {
-            final var state = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, val -> {});
-            assertThat(state.getStateKey()).isEqualTo(COUNTRY_STATE_KEY);
-        }
+                @Override
+                protected void putIntoDataSource(@NonNull String value) {
+                    // no-op
+                }
 
-        @Test
-        @DisplayName("Constructor throws NPE if backingStoreAccessor is null")
-        void nullAccessor() {
-            //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, null, val -> {}))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        @DisplayName("Constructor throws NPE if backingStoreMutator is null")
-        void nullMutator() {
-            //noinspection DataFlowIssue
-            assertThatThrownBy(() -> new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> AUSTRALIA, null))
-                    .isInstanceOf(NullPointerException.class);
+                @Override
+                protected void removeFromDataSource() {
+                    // no-op
+                }
+            }).isInstanceOf(NullPointerException.class);
         }
     }
 

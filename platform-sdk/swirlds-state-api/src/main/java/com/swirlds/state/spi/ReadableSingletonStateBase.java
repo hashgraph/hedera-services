@@ -36,11 +36,18 @@ public abstract class ReadableSingletonStateBase<T> implements ReadableSingleton
     /**
      * Creates a new instance.
      *
+     * @param serviceName The name of the service that owns the state.
      * @param stateKey The state key for this instance.
      */
     public ReadableSingletonStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {
         this.serviceName = requireNonNull(serviceName);
         this.stateKey = requireNonNull(stateKey);
+    }
+
+    @Override
+    @NonNull
+    public final String getServiceName() {
+        return serviceName;
     }
 
     @Override

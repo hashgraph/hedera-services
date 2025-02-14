@@ -192,6 +192,8 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
     /**
      * Read a merkle tree from a stream.
      *
+     * @param configuration
+     *      the configuration for this node
      * @param directory
      * 		the directory from which data is being read
      * @param maxNumberOfNodes

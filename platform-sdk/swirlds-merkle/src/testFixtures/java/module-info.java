@@ -17,6 +17,8 @@ open module com.swirlds.merkle.test.fixtures {
     requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
+    requires com.swirlds.merkledb;
+    requires com.swirlds.virtualmap;
     requires com.hedera.pbj.runtime;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;

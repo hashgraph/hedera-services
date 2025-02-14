@@ -35,7 +35,8 @@ public final class MerkleInitialize {
 
     /**
      * Initialize the tree after deserialization.
-     *
+     * @param configuration
+     *      the configuration for this node
      * @param root
      * 		the tree (or subtree) to initialize
      * @param deserializationVersions

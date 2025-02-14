@@ -58,6 +58,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     /**
      * Create a new instance
      *
+     * @param serviceName  the service name
      * @param stateKey     the state key
      * @param keyCodec     the codec for the key
      * @param valueCodec   the codec for the value

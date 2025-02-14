@@ -45,6 +45,7 @@ import com.hedera.hapi.node.token.TokenGrantKycTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
@@ -143,7 +144,7 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
                 Collections.emptyList(),
                 Bytes.wrap(new byte[] {0}),
                 Key.DEFAULT);
-        final var readableState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+        final var readableState = MapReadableKVState.<TokenID, Token>builder(TokenService.NAME, TOKENS)
                 .value(TokenID.newBuilder().tokenNum(tokenNum).build(), storedToken)
                 .build();
         given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableState);

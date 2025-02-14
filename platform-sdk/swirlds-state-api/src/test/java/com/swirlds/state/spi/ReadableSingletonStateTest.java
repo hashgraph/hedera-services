@@ -28,7 +28,12 @@ public class ReadableSingletonStateTest extends StateTestBase {
     protected AtomicReference<String> backingStore = new AtomicReference<>(AUSTRALIA);
 
     ReadableSingletonStateBase<String> createState() {
-        return new ReadableSingletonStateBase<>(COUNTRY_STATE_KEY, () -> backingStore.get());
+        return new ReadableSingletonStateBase<>(COUNTRY_STATE_KEY, COUNTRY_SERVICE_NAME) {
+            @Override
+            protected String readFromDataSource() {
+                return backingStore.get();
+            }
+        };
     }
 
     /**

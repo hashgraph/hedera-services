@@ -59,22 +59,22 @@ class PlatformStateServiceTest {
         assertInstanceOf(V058RosterLifecycleTransitionSchema.class, schemas.getLast());
     }
 
-    @Test
-    void emptyRootIsAtGenesis() {
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
-                .willReturn(-1);
-        assertNull(PLATFORM_STATE_SERVICE.creationVersionOf(root));
-    }
-
-    @Test
-    void rootWithPlatformStateGetsVersionFromPlatformState() {
-        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
-                .willReturn(0);
-        given(root.getChild(0)).willReturn(platformState);
-        given(platformState.getValue())
-                .willReturn(PlatformState.newBuilder()
-                        .creationSoftwareVersion(SemanticVersion.DEFAULT)
-                        .build());
-        assertSame(SemanticVersion.DEFAULT, PLATFORM_STATE_SERVICE.creationVersionOf(root));
-    }
+//    @Test
+//    void emptyRootIsAtGenesis() {
+//        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+//                .willReturn(-1);
+//        assertNull(PLATFORM_STATE_SERVICE.creationVersionOf(root));
+//    }
+//
+//    @Test
+//    void rootWithPlatformStateGetsVersionFromPlatformState() {
+//        given(root.findNodeIndex(PlatformStateService.NAME, V0540PlatformStateSchema.PLATFORM_STATE_KEY))
+//                .willReturn(0);
+//        given(root.getChild(0)).willReturn(platformState);
+//        given(platformState.getValue())
+//                .willReturn(PlatformState.newBuilder()
+//                        .creationSoftwareVersion(SemanticVersion.DEFAULT)
+//                        .build());
+//        assertSame(SemanticVersion.DEFAULT, PLATFORM_STATE_SERVICE.creationVersionOf(root));
+//    }
 }

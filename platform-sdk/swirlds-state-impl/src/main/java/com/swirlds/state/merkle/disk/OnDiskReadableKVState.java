@@ -53,6 +53,7 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
     /**
      * Create a new instance
      *
+     * @param serviceName
      * @param stateKey
      * @param keyCodec
      * @param valueCodec
@@ -88,7 +89,10 @@ public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V>
         return new OnDiskIterator<>(virtualMap, keyCodec);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @deprecated state sizes will be tracked using a different mechanism.
+     */
     @Override
     @Deprecated
     public long size() {

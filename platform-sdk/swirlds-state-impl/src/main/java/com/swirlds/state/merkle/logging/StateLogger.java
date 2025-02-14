@@ -41,7 +41,6 @@ import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO: double check methods -- some accept `Objects` and other `T`
 /**
  * This utility class provides convenient methods for logging state operations for different types of state types.
  */
@@ -56,12 +55,15 @@ public class StateLogger {
 
     /**
      * Log the read of a singleton.
+     * <p>
+     * This is only used in {@link com.swirlds.state.merkle.singleton.SingletonNode}
+     * and can be removed if that class is deleted.
      *
      * @param label The label of the singleton
      * @param value The value of the singleton
      * @param <T> The type of the singleton
      */
-    @SuppressWarnings("LoggingSimilarMessage") // TODO: remove this outdated method
+    @SuppressWarnings("LoggingSimilarMessage")
     public static <T> void logSingletonRead(@NonNull final String label, @Nullable final ValueLeaf<T> value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      READ singleton {} value {}", label, value == null ? "null" : value.getValue());
@@ -86,6 +88,7 @@ public class StateLogger {
      *
      * @param label The label of the singleton
      * @param value The value of the singleton
+     * @param <T> The type of the singleton
      */
     public static <T> void logSingletonWrite(@NonNull final String label, @Nullable final T value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
@@ -111,8 +114,9 @@ public class StateLogger {
      *
      * @param label The label of the queue
      * @param value The value added to the queue
+     * @param <T> The type of the queue values
      */
-    public static void logQueueAdd(@NonNull final String label, @Nullable final Object value) {
+    public static <T> void logQueueAdd(@NonNull final String label, @Nullable final T value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      ADD to queue {} value {}", label, value == null ? "null" : value.toString());
         }
@@ -123,8 +127,9 @@ public class StateLogger {
      *
      * @param label The label of the queue
      * @param value The value removed from the queue
+     * @param <T> The type of the queue values
      */
-    public static void logQueueRemove(@NonNull final String label, @Nullable final Object value) {
+    public static <T> void logQueueRemove(@NonNull final String label, @Nullable final T value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      REMOVE from queue {} value {}", label, value == null ? "null" : value.toString());
         }
@@ -135,16 +140,19 @@ public class StateLogger {
      *
      * @param label The label of the queue
      * @param value The value peeked from the queue
+     * @param <T> The type of the queue values
      */
-    public static void logQueuePeek(@NonNull final String label, @Nullable final Object value) {
+    public static <T> void logQueuePeek(@NonNull final String label, @Nullable final T value) {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug("      PEEK on queue {} value {}", label, value == null ? "null" : value.toString());
         }
     }
 
-    // TODO: remove?
     /**
      * Log the iteration over a queue.
+     * <p>
+     * This is only used in {@link com.swirlds.state.merkle.queue.QueueNode}
+     * and can be removed if that class is deleted.
      *
      * @param label The label of the queue
      * @param queue The queue that was iterated
@@ -275,27 +283,6 @@ public class StateLogger {
         if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
             logger.debug(
                     "      GET on map {} key {} value {}",
-                    label,
-                    formatKey(key),
-                    value == null ? "null" : value.toString());
-        }
-    }
-
-    // TODO: remove
-    /**
-     * Log the get of an entry from a map for modification.
-     *
-     * @param label The label of the map
-     * @param key The key fetched to the map
-     * @param value The value fetched to the map
-     * @param <K> The type of the key
-     * @param <V> The type of the value
-     */
-    public static <K, V> void logMapGetForModify(
-            @NonNull final String label, @NonNull final K key, @Nullable final V value) {
-        if (logger.isDebugEnabled() && Thread.currentThread().getName().equals(TRANSACTION_HANDLING_THREAD_NAME)) {
-            logger.debug(
-                    "      GET_FOR_MODIFY on map {} key {} value {}",
                     label,
                     formatKey(key),
                     value == null ? "null" : value.toString());

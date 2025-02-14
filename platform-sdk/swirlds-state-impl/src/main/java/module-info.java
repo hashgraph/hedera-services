@@ -8,6 +8,7 @@ module com.swirlds.state.impl {
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.virtualmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.merkledb;
 }

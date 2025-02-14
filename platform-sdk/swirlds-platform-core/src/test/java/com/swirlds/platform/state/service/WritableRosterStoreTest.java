@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.service;
 
 import static com.swirlds.platform.state.service.WritableRosterStore.MAXIMUM_ROSTER_HISTORY_SIZE;
+import static com.swirlds.platform.test.fixtures.config.ConfigUtils.CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,6 +35,10 @@ import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RosterState.Builder;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.platform.roster.InvalidRosterException;
 import com.swirlds.platform.roster.RosterUtils;
 import com.swirlds.state.merkle.singleton.SingletonNode;
@@ -47,6 +52,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,20 +69,29 @@ class WritableRosterStoreTest {
 
     @BeforeEach
     void setUp() {
-        final SingletonNode<RosterState> rosterStateSingleton = new SingletonNode<>(
-                PlatformStateService.NAME,
-                WritableRosterStore.ROSTER_STATES_KEY,
-                0,
-                RosterState.PROTOBUF,
-                new RosterState(null, new LinkedList<>()));
+        final MerkleDbConfig merkleDbConfig = CONFIGURATION.getConfigData(MerkleDbConfig.class);
+        final var tableConfig = new MerkleDbTableConfig(
+                (short) 1,
+                DigestType.SHA_384,
+                1,
+                merkleDbConfig.hashesRamToDiskThreshold());
+        final var virtualMapLabel = "VirtualMap";
+        final var dsBuilder = new MerkleDbDataSourceBuilder(tableConfig, CONFIGURATION);
+        final var virtualMap = new VirtualMap(virtualMapLabel, dsBuilder, CONFIGURATION);
+
         final WritableKVState<ProtoBytes, Roster> rosters = MapWritableKVState.<ProtoBytes, Roster>builder(
+                        PlatformStateService.NAME,
                         WritableRosterStore.ROSTER_KEY)
                 .build();
         when(writableStates.<ProtoBytes, Roster>get(WritableRosterStore.ROSTER_KEY))
                 .thenReturn(rosters);
         when(writableStates.<RosterState>getSingleton(WritableRosterStore.ROSTER_STATES_KEY))
                 .thenReturn(
-                        new OnDiskWritableSingletonState<>(WritableRosterStore.ROSTER_STATES_KEY, rosterStateSingleton));
+                        new OnDiskWritableSingletonState<>(
+                                PlatformStateService.NAME,
+                                WritableRosterStore.ROSTER_STATES_KEY,
+                                RosterState.PROTOBUF,
+                                virtualMap));
 
         readableRosterStore = new ReadableRosterStoreImpl(writableStates);
         writableRosterStore = new WritableRosterStore(writableStates);

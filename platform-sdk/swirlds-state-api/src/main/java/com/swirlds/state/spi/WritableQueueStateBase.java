@@ -56,6 +56,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /** The cached most recent peeked element */
     private E peekedElement = null;
 
+    /** The service name. */
     protected final String serviceName;
 
     /** The state key. */
@@ -128,6 +129,12 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     @Override
     public String getStateKey() {
         return stateKey;
+    }
+
+    @Override
+    @NonNull
+    public final String getServiceName() {
+        return serviceName;
     }
 
     @Nullable

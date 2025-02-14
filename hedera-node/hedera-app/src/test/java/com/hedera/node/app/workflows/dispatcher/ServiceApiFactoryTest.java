@@ -62,7 +62,7 @@ class ServiceApiFactoryTest {
     @Test
     void canCreateTokenServiceApi() {
         given(stack.getWritableStates(TokenService.NAME)).willReturn(writableStates);
-        given(writableStates.get(any())).willReturn(new MapWritableKVState<>("ACCOUNTS"));
+        given(writableStates.get(any())).willReturn(new MapWritableKVState<>(TokenService.NAME, "ACCOUNTS"));
         assertNotNull(subject.getApi(TokenServiceApi.class));
     }
 

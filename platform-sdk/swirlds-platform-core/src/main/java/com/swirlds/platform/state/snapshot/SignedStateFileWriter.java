@@ -151,7 +151,8 @@ public final class SignedStateFileWriter {
         Objects.requireNonNull(signedState);
 
         final PlatformMerkleStateRoot state = signedState.getState();
-        state.setTime(platformContext.getTime());
+        // will be updated -- added for helping to solve compile issues
+//        state.setTime(platformContext.getTime());
         state.createSnapshot(directory);
         writeSignatureSetFile(directory, signedState);
         writeHashInfoFile(platformContext, directory, signedState.getState());

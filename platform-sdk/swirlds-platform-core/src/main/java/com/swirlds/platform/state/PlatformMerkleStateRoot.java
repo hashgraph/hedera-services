@@ -93,7 +93,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     }
 
     protected PlatformMerkleStateRoot(@NonNull PlatformMerkleStateRoot from) {
-        super(from);
+//        super(from);
         this.lifecycles = from.lifecycles;
         this.versionFactory = from.versionFactory;
     }
@@ -110,7 +110,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
             @NonNull final InitTrigger trigger,
             @Nullable final SoftwareVersion deserializedVersion) {
         final PlatformContext platformContext = platform.getContext();
-        super.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
+//        super.init(platformContext.getTime(), platformContext.getMetrics(), platformContext.getMerkleCryptography());
 
         // If we are initialized for event stream recovery, we have to register an
         // extra listener to make sure we call all the required Hedera lifecycles
@@ -214,9 +214,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
      */
     @NonNull
     public PlatformStateAccessor getReadablePlatformState() {
-        return getServices().isEmpty()
-                ? new SnapshotPlatformStateAccessor(getPlatformState(), versionFactory)
-                : readablePlatformStateStore();
+        return null; // will be removed -- added for helping to solve compile issues
     }
 
     private ReadablePlatformStateStore readablePlatformStateStore() {
@@ -228,10 +226,7 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     }
 
     private com.hedera.hapi.platform.state.PlatformState getPlatformState() {
-        final var index = findNodeIndex(PlatformStateService.NAME, PLATFORM_STATE_KEY);
-        return index == -1
-                ? V0540PlatformStateSchema.UNINITIALIZED_PLATFORM_STATE
-                : ((SingletonNode<PlatformState>) getChild(index)).getValue();
+        return null; // will be removed -- added for helping to solve compile issues
     }
 
     /**
@@ -257,5 +252,20 @@ public class PlatformMerkleStateRoot extends MerkleStateRoot<PlatformMerkleState
     @NonNull
     public String getInfoString(final int hashDepth) {
         return createInfoString(hashDepth, getReadablePlatformState(), getHash(), this);
+    }
+
+
+    // methods below will be removed -- added for helping to solve compile issues
+
+    @NonNull
+    @Override
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return null;
+    }
+
+    @NonNull
+    @Override
+    public WritableStates getWritableStates(@NonNull String serviceName) {
+        return null;
     }
 }

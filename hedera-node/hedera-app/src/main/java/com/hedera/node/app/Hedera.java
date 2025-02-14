@@ -151,6 +151,7 @@ import com.swirlds.state.StateChangeListener;
 import com.swirlds.state.lifecycle.StartupNetworks;
 import com.swirlds.state.lifecycle.info.NetworkInfo;
 import com.swirlds.state.merkle.MerkleStateRoot;
+import com.swirlds.state.merkle.NewStateRoot;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -806,7 +807,7 @@ public final class Hedera implements SwirldMain, PlatformStatusChangeListener, A
         if (daggerApp != null) {
             logger.debug("Shutting down the state");
             final var state = daggerApp.workingStateAccessor().getState();
-            if (state instanceof MerkleStateRoot msr) {
+            if (state instanceof NewStateRoot msr) {
                 msr.close();
             }
 

@@ -26,12 +26,29 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableStates;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 class WritableEntityIdStoreTest {
     private final AtomicReference<EntityNumber> nextEntityNumber = new AtomicReference<>();
     private final WritableSingletonState<EntityNumber> entityIdState =
-            new WritableSingletonStateBase<>(ENTITY_ID_STATE_KEY, nextEntityNumber::get, nextEntityNumber::set);
+            new WritableSingletonStateBase<>(EntityIdService.NAME, ENTITY_ID_STATE_KEY) {
+                @Override
+                protected EntityNumber readFromDataSource() {
+                    return nextEntityNumber.get();
+                }
+
+                @Override
+                protected void putIntoDataSource(@NotNull EntityNumber value) {
+                    nextEntityNumber.set(value);
+                }
+
+                @Override
+                protected void removeFromDataSource() {
+                    nextEntityNumber.set(null);
+                }
+            };
     private final WritableStates writableStates = new MapWritableStates(Map.of(ENTITY_ID_STATE_KEY, entityIdState));
 
     private final WritableEntityIdStore subject = new WritableEntityIdStore(writableStates);

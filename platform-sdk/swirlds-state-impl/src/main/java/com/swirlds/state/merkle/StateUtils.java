@@ -94,8 +94,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -518,14 +518,24 @@ public final class StateUtils {
     }
 
     /**
-     * Computes the label for a merkle node given the service name and state key
+     * A static cache to store and retrieve pre-computed labels for specific service states.
+     */
+    private static final Map<String, String> LABEL_CACHE = new HashMap<>();
+
+    /**
+     * Computes the label for a Merkle node given the service name and state key.
+     * <p>
+     * The label is computed as "serviceName.stateKey". The result is cached so that repeated calls
+     * with the same parameters return the same string without redoing the concatenation.
+     * </p>
      *
-     * @param serviceName The service name
-     * @param stateKey The state key
-     * @return The computed label
+     * @param serviceName the service name
+     * @param stateKey    the state key
+     * @return the computed label
      */
     public static String computeLabel(@NonNull final String serviceName, @NonNull final String stateKey) {
-        return Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
+        final String key = Objects.requireNonNull(serviceName) + "." + Objects.requireNonNull(stateKey);
+        return LABEL_CACHE.computeIfAbsent(key, k -> k);
     }
 
     /**
@@ -590,7 +600,6 @@ public final class StateUtils {
      *   <li>2 bytes: the state ID (big‑endian)</li>
      *   <li>8 bytes: the index (big‑endian)</li>
      * </ul>
-     * </p>
      *
      * @param serviceName the service name
      * @param stateKey    the state key
@@ -619,7 +628,6 @@ public final class StateUtils {
      *   <li>N bytes: the key bytes (serialized form of the provided key)</li>
      * </ul>
      * If an {@link IOException} occurs during serialization, it is wrapped in a {@link RuntimeException}.
-     * </p>
      *
      * @param <K>         the type of the key
      * @param serviceName the service name

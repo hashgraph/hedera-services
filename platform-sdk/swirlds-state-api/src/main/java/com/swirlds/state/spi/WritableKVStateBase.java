@@ -39,6 +39,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     /**
      * Create a new StateBase.
      *
+     * @param serviceName The name of the service that owns the state. Cannot be null.
      * @param stateKey The state key. Cannot be null.
      */
     protected WritableKVStateBase(@NonNull final String serviceName, @NonNull final String stateKey) {

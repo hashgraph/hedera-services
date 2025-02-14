@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
 import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -93,9 +94,9 @@ class TokenServiceApiImplTest {
             .build();
 
     private final WritableKVState<Bytes, AccountID> aliasesState =
-            new MapWritableKVState<>(V0490TokenSchema.ALIASES_KEY);
+            new MapWritableKVState<>(TokenService.NAME, V0490TokenSchema.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
-            new MapWritableKVState<>(V0490TokenSchema.ACCOUNTS_KEY);
+            new MapWritableKVState<>(TokenService.NAME, V0490TokenSchema.ACCOUNTS_KEY);
     private final WritableStates writableStates = new MapWritableStates(Map.of(
             V0490TokenSchema.ACCOUNTS_KEY, accountState,
             V0490TokenSchema.ALIASES_KEY, aliasesState));

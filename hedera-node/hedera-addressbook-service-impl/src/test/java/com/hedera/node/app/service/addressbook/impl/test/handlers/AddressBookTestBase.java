@@ -32,6 +32,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
@@ -207,19 +208,19 @@ public class AddressBookTestBase {
 
     @NonNull
     protected MapWritableKVState<EntityNumber, Node> emptyWritableNodeState() {
-        return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        return MapWritableKVState.<EntityNumber, Node>builder(AddressBookService.NAME, NODES_KEY).build();
     }
 
     @NonNull
     protected MapWritableKVState<EntityNumber, Node> writableNodeStateWithOneKey() {
-        return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY)
+        return MapWritableKVState.<EntityNumber, Node>builder(AddressBookService.NAME, NODES_KEY)
                 .value(nodeId, node)
                 .build();
     }
 
     @NonNull
     protected MapWritableKVState<EntityNumber, Node> writableNodeStateWithMoreKeys() {
-        return MapWritableKVState.<EntityNumber, Node>builder(NODES_KEY)
+        return MapWritableKVState.<EntityNumber, Node>builder(AddressBookService.NAME, NODES_KEY)
                 .value(nodeId, node)
                 .value(nodeId2, mock(Node.class))
                 .build();
@@ -227,14 +228,14 @@ public class AddressBookTestBase {
 
     @NonNull
     protected MapReadableKVState<EntityNumber, Node> readableNodeState() {
-        return MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
+        return MapReadableKVState.<EntityNumber, Node>builder(AddressBookService.NAME, NODES_KEY)
                 .value(nodeId, node)
                 .build();
     }
 
     @NonNull
     protected MapReadableKVState.Builder<EntityNumber, Node> emptyReadableNodeStateBuilder() {
-        return MapReadableKVState.builder(NODES_KEY);
+        return MapReadableKVState.builder(AddressBookService.NAME, NODES_KEY);
     }
 
     protected void givenValidNode() {

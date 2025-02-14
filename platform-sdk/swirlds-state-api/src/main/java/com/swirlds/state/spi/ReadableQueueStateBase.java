@@ -48,6 +48,12 @@ public abstract class ReadableQueueStateBase<E> implements ReadableQueueState<E>
         return stateKey;
     }
 
+    @Override
+    @NonNull
+    public final String getServiceName() {
+        return serviceName;
+    }
+
     @Nullable
     @Override
     public E peek() {

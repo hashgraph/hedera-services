@@ -64,6 +64,8 @@ public class MerkleTreeSnapshotReader {
 
     /**
      * Reads a state file from disk
+     *
+     * @param configuration the configuration for this node
      * @param stateFile the file to read from
      * @return a signed state with it's associated hash (as computed when the state was serialized)
      * @throws IOException if there is any problems with reading from a file
