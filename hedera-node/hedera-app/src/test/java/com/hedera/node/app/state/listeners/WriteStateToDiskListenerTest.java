@@ -18,6 +18,7 @@ package com.hedera.node.app.state.listeners;
 
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.version.ServicesSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -49,12 +50,20 @@ class WriteStateToDiskListenerTest {
     @Mock
     private StateWriteToDiskCompleteNotification notification;
 
+    @Mock
+    private EntityIdFactory entityIdFactory;
+
     private WriteStateToDiskListener subject;
 
     @BeforeEach
     void setUp() {
         subject = new WriteStateToDiskListener(
-                stateAccessor, executor, configProvider, startupNetworks, ServicesSoftwareVersion::new);
+                stateAccessor,
+                executor,
+                configProvider,
+                startupNetworks,
+                ServicesSoftwareVersion::new,
+                entityIdFactory);
     }
 
     @Test

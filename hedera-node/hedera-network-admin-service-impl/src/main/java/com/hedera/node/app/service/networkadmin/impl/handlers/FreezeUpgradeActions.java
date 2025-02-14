@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -52,8 +53,9 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
             @NonNull final Executor executor,
             @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final ReadableNodeStore nodeStore,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        super(configuration, freezeStore, executor, upgradeFileStore, nodeStore, stakingInfoStore);
+            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final EntityIdFactory entityIdFactory) {
+        super(configuration, freezeStore, executor, upgradeFileStore, nodeStore, stakingInfoStore, entityIdFactory);
         this.freezeStore = freezeStore;
     }
 

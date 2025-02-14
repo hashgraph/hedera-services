@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
@@ -92,6 +93,9 @@ class FreezeUpgradeActionsTest {
     private ReadableStakingInfoStore stakingInfoStore;
 
     @Mock
+    private EntityIdFactory entityIdFactory;
+
+    @Mock
     private Configuration configuration;
 
     @Mock
@@ -118,7 +122,13 @@ class FreezeUpgradeActionsTest {
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
-                configuration, freezeStore, freezeExectuor, upgradeFileStore, nodeStore, stakingInfoStore);
+                configuration,
+                freezeStore,
+                freezeExectuor,
+                upgradeFileStore,
+                nodeStore,
+                stakingInfoStore,
+                entityIdFactory);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

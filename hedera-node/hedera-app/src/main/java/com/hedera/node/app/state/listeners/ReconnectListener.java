@@ -24,6 +24,7 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
@@ -49,6 +50,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
 
     private final Executor executor;
     private final ConfigProvider configProvider;
+    private final EntityIdFactory entityIdFactory;
 
     @NonNull
     private final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory;
@@ -57,10 +59,12 @@ public class ReconnectListener implements ReconnectCompleteListener {
     public ReconnectListener(
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory) {
+            @NonNull final Function<SemanticVersion, SoftwareVersion> softwareVersionFactory,
+            @NonNull final EntityIdFactory entityIdFactory) {
         this.executor = requireNonNull(executor);
         this.configProvider = requireNonNull(configProvider);
         this.softwareVersionFactory = softwareVersionFactory;
+        this.entityIdFactory = entityIdFactory;
     }
 
     @Override
@@ -85,7 +89,8 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 executor,
                 upgradeFileStore,
                 upgradeNodeStore,
-                upgradeStakingInfoStore);
+                upgradeStakingInfoStore,
+                entityIdFactory);
         try {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state

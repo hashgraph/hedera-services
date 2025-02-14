@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.service.token.records.ChildStreamBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.ids.EntityIdFactory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
@@ -125,13 +126,16 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private ConfigProvider configProvider;
 
+    @Mock
+    private EntityIdFactory entityIdFactory;
+
     private FinalizeRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         when(configProvider.getConfiguration()).thenReturn(versionedConfig);
-        subject = new FinalizeRecordHandler(stakingRewardsHandler, configProvider);
+        subject = new FinalizeRecordHandler(stakingRewardsHandler, configProvider, entityIdFactory);
     }
 
     @Test
