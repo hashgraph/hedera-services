@@ -142,7 +142,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.roster.RosterUtils;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
+import com.swirlds.platform.state.MerkeNodeState;
 import com.swirlds.platform.state.StateLifecycles;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.PlatformStateService;
@@ -211,8 +211,7 @@ import org.apache.logging.log4j.Logger;
  * including its state. It constructs the Dagger dependency tree, and manages the gRPC server, and in all other ways,
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
-public final class Hedera
-        implements SwirldMain<PlatformMerkleStateRoot>, PlatformStatusChangeListener, AppContext.Gossip {
+public final class Hedera implements SwirldMain<MerkeNodeState>, PlatformStatusChangeListener, AppContext.Gossip {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
 
     // FUTURE: This should come from configuration, not be hardcoded.
@@ -313,7 +312,7 @@ public final class Hedera
      */
     private final StartupNetworksFactory startupNetworksFactory;
 
-    private final StateLifecycles<PlatformMerkleStateRoot> stateLifecycles;
+    private final StateLifecycles<MerkeNodeState> stateLifecycles;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -362,7 +361,7 @@ public final class Hedera
     /**
      * The state root supplier to use for creating a new state root.
      */
-    private final Supplier<PlatformMerkleStateRoot> stateRootSupplier;
+    private final Supplier<MerkeNodeState> stateRootSupplier;
 
     /**
      * The action to take, if any, when a consensus round is sealed.
@@ -505,6 +504,7 @@ public final class Hedera
         contractServiceImpl = new ContractServiceImpl(appContext, metrics);
         scheduleServiceImpl = new ScheduleServiceImpl(appContext);
         blockStreamService = new BlockStreamService();
+
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
@@ -534,16 +534,15 @@ public final class Hedera
                 .forEach(servicesRegistry::register);
         try {
             stateLifecycles = new StateLifecyclesImpl(this);
-            final Supplier<PlatformMerkleStateRoot> baseSupplier =
-                    () -> new PlatformMerkleStateRoot(ServicesSoftwareVersion::new);
+            final Supplier<MerkeNodeState> baseSupplier = HederaStateRoot::new;
             final var blockStreamsEnabled = isBlockStreamEnabled();
             stateRootSupplier = blockStreamsEnabled ? () -> withListeners(baseSupplier.get()) : baseSupplier;
             onSealConsensusRound = blockStreamsEnabled ? this::manageBlockEndRound : (round, state) -> true;
             // And the factory for the MerkleStateRoot class id must be our constructor
             constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(PlatformMerkleStateRoot.class, stateRootSupplier));
+                    new ClassConstructorPair(HederaStateRoot.class, stateRootSupplier::get));
         } catch (final ConstructableRegistryException e) {
-            logger.error("Failed to register " + MerkleStateRoot.class + " factory with ConstructableRegistry", e);
+            logger.error("Failed to register " + HederaStateRoot.class + " factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
     }
@@ -577,7 +576,7 @@ public final class Hedera
      */
     @Override
     @NonNull
-    public PlatformMerkleStateRoot newMerkleStateRoot() {
+    public MerkeNodeState newStateRoot() {
         return stateRootSupplier.get();
     }
 
@@ -585,7 +584,7 @@ public final class Hedera
      * {@inheritDoc}
      */
     @Override
-    public StateLifecycles<PlatformMerkleStateRoot> newStateLifecycles() {
+    public StateLifecycles<MerkeNodeState> newStateLifecycles() {
         return stateLifecycles;
     }
 
@@ -667,7 +666,7 @@ public final class Hedera
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
-     * {@link SwirldMain#init(Platform, NodeId)} and after {@link #newMerkleStateRoot()}.
+     * {@link SwirldMain#init(Platform, NodeId)} and after {@link #newStateRoot()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     public void onStateInitialized(
@@ -778,7 +777,7 @@ public final class Hedera
      * {@inheritDoc}
      *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
-     * {@link #newMerkleStateRoot()} or an instance of {@link MerkleStateRoot} created by the platform and
+     * {@link #newStateRoot()} or an instance of {@link MerkleStateRoot} created by the platform and
      * loaded from the saved state).
      *
      * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(State, Platform, InitTrigger)}
@@ -1152,6 +1151,7 @@ public final class Hedera
                 .historyService(historyService)
                 .blockHashSigner(blockHashSigner)
                 .appContext(appContext)
+                .platformStateFacade(platformStateFacade)
                 .build();
         // Initialize infrastructure for fees, exchange rates, and throttles from the working state
         daggerApp.initializer().accept(state);
@@ -1279,7 +1279,7 @@ public final class Hedera
         }
     }
 
-    private PlatformMerkleStateRoot withListeners(@NonNull final PlatformMerkleStateRoot root) {
+    private MerkeNodeState withListeners(@NonNull final MerkeNodeState root) {
         root.registerCommitListener(boundaryStateChangeListener);
         root.registerCommitListener(kvStateChangeListener);
         return root;

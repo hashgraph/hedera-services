@@ -25,7 +25,6 @@ import com.swirlds.common.RosterStateId;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.state.PlatformMerkleStateRoot;
 import com.swirlds.platform.state.service.PlatformStateFacade;
 import com.swirlds.platform.state.service.PlatformStateService;
 import com.swirlds.platform.state.service.schemas.V0540PlatformStateSchema;
@@ -86,7 +85,7 @@ public final class SignedStateFileReader {
         final SignedState newSignedState = new SignedState(
                 configuration,
                 CryptoStatic::verifySignature,
-                (PlatformMerkleStateRoot) data.stateRoot(),
+                data.stateRoot().cast(),
                 "SignedStateFileReader.readStateFile()",
                 false,
                 false,
