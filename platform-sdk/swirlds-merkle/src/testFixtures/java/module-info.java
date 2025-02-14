@@ -12,6 +12,7 @@ open module com.swirlds.merkle.test.fixtures {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.core;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
