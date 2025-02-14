@@ -142,15 +142,6 @@ public class TestIntake {
     }
 
     /**
-     * Same as {@link #addEvent(PlatformEvent)} but for a list of events
-     */
-    public void addEvents(@NonNull final List<EventImpl> events) {
-        for (final EventImpl event : events) {
-            addEvent(event.getBaseEvent());
-        }
-    }
-
-    /**
      * @return a queue of all rounds that have reached consensus
      */
     public @NonNull LinkedList<ConsensusRound> getConsensusRounds() {
