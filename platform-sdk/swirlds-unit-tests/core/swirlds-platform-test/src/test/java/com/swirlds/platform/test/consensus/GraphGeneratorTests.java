@@ -755,4 +755,34 @@ public class GraphGeneratorTests {
 
         assertTrue(deviation < 0.01, "OOB");
     }
+
+    /**
+     * Tests if the node removal functionality works as expected.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @DisplayName("Node Remove Test")
+    void nodeRemoveTest(final boolean birthRoundAsAncientThreshold) {
+
+        final int numberOfEvents = 10_000;
+
+        // A default generator uses a power distribution with alpha = 0.95
+        final PlatformContext platformContext =
+                birthRoundAsAncientThreshold ? BIRTH_ROUND_PLATFORM_CONTEXT : DEFAULT_PLATFORM_CONTEXT;
+        final StandardGraphGenerator generator = new StandardGraphGenerator(
+                platformContext,
+                0,
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource(),
+                new StandardEventSource());
+        final List<EventImpl> preRemovalEvents = generator.generateEvents(numberOfEvents/2);
+
+        final NodeId removalNode = generator.getAddressBook().getNodeId(0);
+        generator.removeNode(removalNode);
+
+        final List<EventImpl> postRemovalEvents = generator.generateEvents(numberOfEvents/2);
+    }
 }

@@ -23,10 +23,12 @@ import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.DefaultEventHasher;
-import com.swirlds.platform.event.linking.ConsensusLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
+import com.swirlds.platform.eventhandling.EventConfig;
+import com.swirlds.platform.gui.SimpleLinker;
+import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.roster.RosterRetriever;
@@ -92,6 +94,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
      * The consensus implementation for determining birth rounds of events.
      */
     private ConsensusImpl consensus;
+    private ConsensusSnapshot consensusSnapshot;
 
     /**
      * The platform context containing configuration for the internal consensus.
@@ -101,7 +104,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     /**
      * The linker for events to use with the internal consensus.
      */
-    private InOrderLinker inOrderLinker;
+    private SimpleLinker linker;
 
     /**
      * Construct a new StandardEventGenerator.
@@ -199,7 +202,7 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     private void initializeInternalConsensus() {
         consensus = new ConsensusImpl(
                 platformContext, new NoOpConsensusMetrics(), RosterRetriever.buildRoster(addressBook));
-        inOrderLinker = new ConsensusLinker(platformContext, NodeId.of(0));
+        linker = new SimpleLinker(platformContext.getConfiguration().getConfigData(EventConfig.class).getAncientMode());
     }
 
     /**
@@ -442,16 +445,20 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 birthRound);
 
         // The event given to the internal consensus needs its own EventImpl & PlatformEvent for metadata to be kept
-        // separate from the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl
-        // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
-        // This may leak memory, but is fine in the current testing framework.
-        // When the test ends any memory used will be released.
+        // separate from the event that is returned to the caller.  This SimpleLinker wraps the event in an EventImpl
+        // and links it. The event must be hashed and have a descriptor built for its use in the SimpleLinker.
         new DefaultEventHasher().hashEvent(next.getBaseEvent());
         final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
-        final EventImpl linkedEvent = inOrderLinker.linkEvent(tmp);
-        if (linkedEvent != null) {
-            consensus.addEvent(linkedEvent);
+        final EventImpl linkedEvent = linker.linkEvent(tmp);
+        if (linkedEvent == null) {
+            return next;
+        }
+
+        final List<ConsensusRound> consensusRounds = consensus.addEvent(linkedEvent);
+        if (!consensusRounds.isEmpty()) {
+            consensusSnapshot = consensusRounds.getLast().getSnapshot();
+            linker.setNonAncientThreshold(consensusRounds.getLast().getEventWindow().getAncientThreshold());
         }
 
         return next;
@@ -460,5 +467,17 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
     @Override
     public void setPreviousTimestamp(final Instant previousTimestamp) {
         this.previousTimestamp = previousTimestamp;
+    }
+
+    @Override
+    public void removeNode(final NodeId nodeId) {
+        final int nodeIndex = addressBook.getIndexOfNodeId(nodeId);
+        sources.remove(nodeIndex);
+        addressBook = addressBook.remove(nodeId);
+        buildDefaultOtherParentAffinityMatrix();
+        consensus.loadSnapshot(consensusSnapshot);
+        for (final EventImpl event : linker.getNonAncientEvents()) {
+            consensus.addEvent(event);
+        }
     }
 }
