@@ -87,8 +87,7 @@ public class GenesisPlatformStateCommand extends AbstractCommand {
                 System.out.printf("Replacing platform data %n");
                 v.setRound(PlatformStateAccessor.GENESIS_ROUND);
                 v.setSnapshot(SyntheticSnapshot.getGenesisSnapshot(
-                        configuration.getConfigData(EventConfig.class).getAncientMode()
-                ));
+                        configuration.getConfigData(EventConfig.class).getAncientMode()));
 
                 // FUTURE WORK: remove once the AddressBook setters are deprecated and the fields are nullified.
                 // For now, we have to keep these calls to ensure RosterRetriever won't fall back to using these values.

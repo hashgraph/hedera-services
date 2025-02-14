@@ -482,9 +482,10 @@ public class ConsensusImpl implements Consensus {
         });
         // This value is normally updated when a round gets decided, but since we are starting from
         // a snapshot, we need to set it here.
-        rounds.setConsensusRelevantGeneration(
-                initJudges.getJudges().stream().map(EventImpl::getGeneration).min(Long::compareTo)
-                        .orElse(EventConstants.FIRST_GENERATION));
+        rounds.setConsensusRelevantGeneration(initJudges.getJudges().stream()
+                .map(EventImpl::getGeneration)
+                .min(Long::compareTo)
+                .orElse(EventConstants.FIRST_GENERATION));
         initJudges = null;
 
         return true;

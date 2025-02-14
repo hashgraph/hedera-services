@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
@@ -58,17 +57,14 @@ public class ConsensusOutput implements Clearable {
         consensusRounds = new LinkedList<>();
         staleEvents = new LinkedList<>();
 
-        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true,
-                e->ancientMode.selectIndicator(
-                        e.getGeneration(),
-                        e.getBirthRound()
-                ));
+        nonAncientEvents = new StandardSequenceSet<>(
+                0, 1024, true, e -> ancientMode.selectIndicator(e.getGeneration(), e.getBirthRound()));
         nonAncientConsensusEvents = new StandardSequenceSet<>(
-                0, 1024, true,
+                0,
+                1024,
+                true,
                 ed -> ancientMode.selectIndicator(
-                        ed.eventDescriptor().generation(),
-                        ed.eventDescriptor().birthRound()
-                ));
+                        ed.eventDescriptor().generation(), ed.eventDescriptor().birthRound()));
         eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,7 @@ import com.swirlds.common.test.fixtures.WeightGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public record ConsensusTestParams(
-        int numNodes,
-        @NonNull WeightGenerator weightGenerator,
-        @NonNull String weightDesc,
-        long... seeds) {
+        int numNodes, @NonNull WeightGenerator weightGenerator, @NonNull String weightDesc, long... seeds) {
     @Override
     public String toString() {
         return numNodes + " nodes, " + weightDesc;

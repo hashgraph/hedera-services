@@ -18,7 +18,6 @@ package com.swirlds.platform.test.consensus;
 
 import static com.swirlds.component.framework.wires.SolderType.INJECT;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.component.framework.component.ComponentWiring;

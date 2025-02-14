@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,11 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
-import com.swirlds.platform.test.gui.GeneratorEventProvider;
 import com.swirlds.platform.test.gui.ListEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,8 +36,11 @@ public class ConsensusTestOrchestrator {
     private final List<Long> weights;
     private final int totalEventNum;
 
-    public ConsensusTestOrchestrator(final PlatformContext platformContext,
-            final List<ConsensusTestNode> nodes, final List<Long> weights, final int totalEventNum) {
+    public ConsensusTestOrchestrator(
+            final PlatformContext platformContext,
+            final List<ConsensusTestNode> nodes,
+            final List<Long> weights,
+            final int totalEventNum) {
         this.platformContext = platformContext;
         this.nodes = nodes;
         this.weights = weights;

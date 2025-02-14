@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,22 +55,22 @@ public class ConsensusTestRunner {
     }
 
     public void run() {
-            for (final long seed : params.seeds()) {
-                runWithSeed(seed);
-            }
+        for (final long seed : params.seeds()) {
+            runWithSeed(seed);
+        }
 
-            for (int i = 0; i < iterations; i++) {
-                final long seed = new Random().nextLong();
-                runWithSeed(seed);
-            }
+        for (int i = 0; i < iterations; i++) {
+            final long seed = new Random().nextLong();
+            runWithSeed(seed);
+        }
     }
 
     private void runWithSeed(final long seed) {
         System.out.println("Running seed: " + seed);
         try {
             for (final PlatformContext context : contexts) {
-                test.accept(new TestInput(
-                        context, params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                test.accept(
+                        new TestInput(context, params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
             }
         } catch (final Throwable e) {
             throw new RuntimeException(e);

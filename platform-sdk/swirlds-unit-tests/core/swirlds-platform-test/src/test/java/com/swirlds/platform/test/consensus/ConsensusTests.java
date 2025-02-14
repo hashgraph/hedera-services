@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2018-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,14 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 import static com.swirlds.common.test.fixtures.WeightGenerators.RANDOM;
-import static com.swirlds.platform.test.consensus.ConsensusTestArgs.BALANCED_WEIGHT_DESC;
 import static com.swirlds.platform.test.consensus.ConsensusTestArgs.RANDOM_WEIGHT_DESC;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
-import com.swirlds.component.framework.component.ComponentWiring;
-import com.swirlds.component.framework.model.WiringModel;
-import com.swirlds.component.framework.model.WiringModelBuilder;
-import com.swirlds.component.framework.schedulers.builders.TaskSchedulerType;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.event.orphan.OrphanBuffer;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.test.PlatformTest;
-import com.swirlds.platform.test.consensus.framework.ConsensusTestOrchestrator;
-import com.swirlds.platform.test.consensus.framework.OrchestratorBuilder;
-import com.swirlds.platform.test.consensus.framework.TestInput;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +31,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 @DisplayName("Consensus Tests")
 class ConsensusTests extends PlatformTest {
@@ -71,20 +59,18 @@ class ConsensusTests extends PlatformTest {
         assertMarkerFile(ConsensusImpl.CONSENSUS_EXCEPTION_MARKER_FILE, false);
     }
 
-    private List<PlatformContext> contexts(){
+    private List<PlatformContext> contexts() {
         return List.of(
-//            createPlatformContext(
-//                null,
-//                configBuilder -> configBuilder.withValue(
-//                    EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
-//                   false))
-//                ,
-            createPlatformContext(
-                null,
-                configBuilder -> configBuilder.withValue(
-                    EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
-                    true))
-        );
+                //            createPlatformContext(
+                //                null,
+                //                configBuilder -> configBuilder.withValue(
+                //                    EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD,
+                //                   false))
+                //                ,
+                createPlatformContext(
+                        null,
+                        configBuilder ->
+                                configBuilder.withValue(EventConfig_.USE_BIRTH_ROUND_ANCIENT_THRESHOLD, true)));
     }
 
     @ParameterizedTest

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
@@ -618,9 +617,11 @@ public final class ConsensusTestDefinitions {
         final ConsensusTestOrchestrator orchestrator =
                 OrchestratorBuilder.builder().setTestInput(input).build();
         for (final ConsensusTestNode node : orchestrator.getNodes()) {
-            node.getIntake().loadSnapshot(SyntheticSnapshot.getGenesisSnapshot(
-                    input.platformContext().getConfiguration().getConfigData(EventConfig.class).getAncientMode()
-            ));
+            node.getIntake()
+                    .loadSnapshot(SyntheticSnapshot.getGenesisSnapshot(input.platformContext()
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .getAncientMode()));
         }
 
         orchestrator

@@ -60,7 +60,10 @@ public class ConsensusRounds {
     private long consensusRelevantGeneration = EventConstants.GENERATION_UNDEFINED;
 
     /** Constructs an empty object */
-    public ConsensusRounds(@NonNull final ConsensusConfig config, @NonNull final AncientMode ancientMode, @NonNull final Roster roster) {
+    public ConsensusRounds(
+            @NonNull final ConsensusConfig config,
+            @NonNull final AncientMode ancientMode,
+            @NonNull final Roster roster) {
         this.config = Objects.requireNonNull(config);
         this.ancientMode = Objects.requireNonNull(ancientMode);
         this.minimumJudgeStorage =

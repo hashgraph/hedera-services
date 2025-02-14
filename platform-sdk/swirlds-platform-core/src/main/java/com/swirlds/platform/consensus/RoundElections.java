@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,10 +138,8 @@ public class RoundElections {
      * @return create a {@link MinimumJudgeInfo} instance for this round
      */
     public @NonNull MinimumJudgeInfo createMinimumJudgeInfo(final AncientMode ancientMode) {
-        return new MinimumJudgeInfo(round,
-                ancientMode == AncientMode.GENERATION_THRESHOLD
-                        ? getMinGeneration()
-                        : getMinBirthRound());
+        return new MinimumJudgeInfo(
+                round, ancientMode == AncientMode.GENERATION_THRESHOLD ? getMinGeneration() : getMinBirthRound());
     }
 
     /**
