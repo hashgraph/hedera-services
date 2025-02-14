@@ -240,6 +240,7 @@ public class HapiUtils {
             case HISTORY_PROOF_KEY_PUBLICATION -> HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION;
             case HISTORY_PROOF_VOTE -> HederaFunctionality.HISTORY_PROOF_VOTE;
             case CRS_PUBLICATION -> HederaFunctionality.CRS_PUBLICATION;
+            case ATOMIC_BATCH -> HederaFunctionality.ATOMIC_BATCH;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-module com.hedera.node.app.service.util {
-    exports com.hedera.node.app.service.util;
+package com.hedera.node.config.data;
 
-    uses com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.config.NetworkProperty;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-    requires transitive com.hedera.node.app.spi;
-    requires transitive com.hedera.pbj.runtime;
-    requires transitive com.swirlds.state.api;
-    requires com.hedera.node.hapi;
-    requires static com.github.spotbugs.annotations;
-}
+@ConfigData("atomicBatch")
+public record AtomicBatchConfig(@ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled) {}
