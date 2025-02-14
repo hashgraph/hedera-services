@@ -62,7 +62,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * cast and commit unless you own the instance!
      */
     public void commit() {
-        for (final var entry : modifications.entrySet()) {
+        for (final var entry : getModifications().entrySet()) {
             final var key = entry.getKey();
             final var value = entry.getValue();
             if (value == null) {
@@ -85,7 +85,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @Override
     public final void reset() {
         super.reset();
-        modifications.clear();
+        getModifications().clear();
     }
 
     /** {@inheritDoc} */
@@ -94,6 +94,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final V get(@NonNull K key) {
         // If there is a modification, then we've already done a "put" or "remove"
         // and should return based on the modification
+        final var modifications = getModifications();
         if (modifications.containsKey(key)) {
             return modifications.get(key);
         } else {
@@ -113,14 +114,14 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     public final void put(@NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(value);
-        modifications.put(key, value);
+        getModifications().put(key, value);
     }
 
     /** {@inheritDoc} */
     @Override
     public final void remove(@NonNull final K key) {
         Objects.requireNonNull(key);
-        modifications.put(key, null);
+        getModifications().put(key, null);
     }
 
     /**
@@ -138,7 +139,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         // Capture the set of keys that have been removed, and the set of keys that have been added.
         final var removedKeys = new HashSet<K>();
         final var maybeAddedKeys = new HashSet<K>();
-        for (final var mod : modifications.entrySet()) {
+        for (final var mod : getModifications().entrySet()) {
             final var key = mod.getKey();
             final var val = mod.getValue();
             if (val == null) {
@@ -161,7 +162,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
     @NonNull
     @Override
     public final Set<K> modifiedKeys() {
-        return modifications.keySet();
+        return getModifications().keySet();
     }
 
     /**
@@ -184,7 +185,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         int numAdditions = 0;
         int numRemovals = 0;
 
-        for (final var mod : modifications.entrySet()) {
+        for (final var mod : getModifications().entrySet()) {
             boolean isPresentInBackingMap = readFromDataSource(mod.getKey()) != null;
             boolean isRemovedInMod = mod.getValue() == null;
 
@@ -217,6 +218,15 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * @return size of the underlying data source.
      */
     protected abstract long sizeOfDataSource();
+
+    /**
+     * Returns a map of all modified values buffered in this mutable state.
+     * @return map of all modified values. Cannot be null.
+     */
+    @NonNull
+    protected Map<K, V> getModifications() {
+        return modifications;
+    }
 
     /**
      * A special iterator which includes all keys in the backend iterator, and all keys that have
