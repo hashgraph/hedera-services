@@ -21,6 +21,7 @@ import static com.swirlds.platform.test.fixtures.state.TestPlatformStateFacade.T
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.HederaStateRoot;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.MigrationStateChanges;
 import com.hedera.node.config.data.HederaConfig;
@@ -292,10 +293,10 @@ class SerializationTest extends MerkleTestBase {
         // Register the MerkleStateRoot so, when found in serialized bytes, it will register with
         // our migration callback, etc. (normally done by the Hedera main method)
         final Supplier<RuntimeConstructable> constructor = TestMerkleStateRoot::new;
-        final var pair = new ClassConstructorPair(MerkleStateRoot.class, constructor);
+        final var pair = new ClassConstructorPair(HederaStateRoot.class, constructor);
         registry.registerConstructable(pair);
 
-        final MerkleStateRoot loadedTree = parseTree(serializedBytes, dir);
+        final HederaStateRoot loadedTree = parseTree(serializedBytes, dir);
         initServices(schemaV1, loadedTree);
 
         return loadedTree;

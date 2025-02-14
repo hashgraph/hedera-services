@@ -79,27 +79,27 @@ class StateRegistryTests {
 
         assertEquals(
                 0,
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(TestMerkleStateRoot.class),
                 "no states have been created yet");
 
-        final List<MerkleStateRoot> states = new LinkedList<>();
+        final List<TestMerkleStateRoot> states = new LinkedList<>();
         // Create a bunch of states
         for (int i = 0; i < 100; i++) {
             states.add(new TestMerkleStateRoot());
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(TestMerkleStateRoot.class),
                     "actual count should match expected count");
         }
 
         // Fast copy a state
-        final MerkleStateRoot stateToCopy = new TestMerkleStateRoot();
+        final TestMerkleStateRoot stateToCopy = new TestMerkleStateRoot();
         states.add(stateToCopy);
-        final MerkleStateRoot copyOfStateToCopy = stateToCopy.copy();
+        final TestMerkleStateRoot copyOfStateToCopy = stateToCopy.copy();
         states.add(copyOfStateToCopy);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(TestMerkleStateRoot.class),
                 "actual count should match expected count");
 
         final Path dir = testDirectory;
@@ -118,11 +118,11 @@ class StateRegistryTests {
         final InputOutputStream io = new InputOutputStream();
         io.getOutput().writeMerkleTree(dir, stateToSerialize);
         io.startReading();
-        final MerkleStateRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
+        final TestMerkleStateRoot deserializedState = io.getInput().readMerkleTree(dir, 5);
         states.add(deserializedState);
         assertEquals(
                 states.size(),
-                RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                RuntimeObjectRegistry.getActiveObjectsCount(TestMerkleStateRoot.class),
                 "actual count should match expected count");
 
         // Deleting states in a random order should cause the number of states to decrease
@@ -131,7 +131,7 @@ class StateRegistryTests {
             states.remove(random.nextInt(states.size())).release();
             assertEquals(
                     states.size(),
-                    RuntimeObjectRegistry.getActiveObjectsCount(MerkleStateRoot.class),
+                    RuntimeObjectRegistry.getActiveObjectsCount(TestMerkleStateRoot.class),
                     "actual count should match expected count");
         }
     }
