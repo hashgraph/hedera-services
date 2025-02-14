@@ -161,21 +161,6 @@ class StatsSigningTestingToolStateTest {
         assertThat(consumedSystemTransactions.size()).isEqualTo(3);
     }
 
-    @Test
-    void handleConsensusRoundWithDeprecatedSystemTransaction() {
-        // Given
-        givenRoundAndEvent();
-
-        when(consensusTransaction.getApplicationTransaction()).thenReturn(Bytes.EMPTY);
-        when(consensusTransaction.isSystem()).thenReturn(true);
-
-        // When
-        stateLifecycles.onHandleConsensusRound(round, state, consumer);
-
-        // Then
-        assertThat(consumedSystemTransactions.size()).isZero();
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void preHandleConsensusRoundWithApplicationTransaction(final boolean signedTransaction) throws SignatureException {
@@ -203,10 +188,9 @@ class StatsSigningTestingToolStateTest {
         givenRoundAndEvent();
 
         final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
-        final var eventTransaction =
-                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
         final var eventCore = mock(EventCore.class);
-        final var gossipEvent = new GossipEvent(eventCore, null, List.of(eventTransaction), Collections.emptyList());
+        final var gossipEvent =
+                new GossipEvent(eventCore, null, Collections.emptyList(), List.of(stateSignatureTransactionBytes));
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
         event = new PlatformEvent(gossipEvent);
 
@@ -224,18 +208,15 @@ class StatsSigningTestingToolStateTest {
 
         final var stateSignatureTransactionBytes = main.encodeSystemTransaction(stateSignatureTransaction);
 
-        final var eventTransaction =
-                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var secondEventTransaction =
-                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
-        final var thirdEventTransaction =
-                new EventTransaction(new OneOf<>(APPLICATION_TRANSACTION, stateSignatureTransactionBytes));
         final var eventCore = mock(EventCore.class);
         final var gossipEvent = new GossipEvent(
                 eventCore,
                 null,
-                List.of(eventTransaction, secondEventTransaction, thirdEventTransaction),
-                Collections.emptyList());
+                Collections.emptyList(),
+                List.of(
+                        stateSignatureTransactionBytes,
+                        stateSignatureTransactionBytes,
+                        stateSignatureTransactionBytes));
         when(eventCore.timeCreated()).thenReturn(Timestamp.DEFAULT);
         event = new PlatformEvent(gossipEvent);
 

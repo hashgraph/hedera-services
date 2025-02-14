@@ -225,10 +225,6 @@ public class ConsistencyTestingToolState extends PlatformMerkleStateRoot {
      */
     private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
         Objects.requireNonNull(transaction);
-        if (transaction.isSystem()) {
-            return;
-        }
-
         final long transactionContents = getTransactionContents(transaction);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
