@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WritableUpgradeFileStoreTest extends FileTestBase {
     private File file;
-    protected final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
+    protected final FileID UPGRADE_FILE_ID = new FileID(5, 10, 150);
 
     @Test
     void throwsIfNullValuesAsArgs() {
