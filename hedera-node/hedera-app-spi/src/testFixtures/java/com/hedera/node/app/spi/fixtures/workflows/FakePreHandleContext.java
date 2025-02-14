@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2025 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.KeyOneOfType;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -424,6 +425,19 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     @Override
     public TransactionKeys allKeysForTransaction(@NonNull TransactionBody body, @NonNull AccountID payerId) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @NonNull
+    @Override
+    public void executeInnerPreHandle(@NonNull TransactionBody body, @NonNull AccountID payerId)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Nullable
+    @Override
+    public TransactionBody bodyFromTransaction(@NonNull final Transaction tx) throws PreCheckException {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

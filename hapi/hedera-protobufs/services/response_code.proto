@@ -1430,6 +1430,7 @@ enum ResponseCodeEnum {
      * does not exist or is not valid.<br/>
      * One common source of this error is providing a node account identifier
      * using the "alias" form rather than "numeric" form.
+     * It is also used for atomic batch transaction for child transaction if the node account id is not 0.0.0.
      */
     INVALID_NODE_ACCOUNT_ID = 341;
 
