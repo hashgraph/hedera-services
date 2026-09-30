@@ -602,10 +602,24 @@ public class ThrottleAccumulator {
         }
 
         if (isJumboTransactionsEnabled) {
+<<<<<<< HEAD
             final var allowedHederaFunctionalities =
                     configuration.getConfigData(JumboTransactionsConfig.class).allowedHederaFunctionalities();
             if (allowedHederaFunctionalities.contains(fromPbj(txnInfo.functionality()))) {
                 final var bytesUsage = txnInfo.signedTx().protobufSize();
+=======
+            final var jumboConfig = configuration.getConfigData(JumboTransactionsConfig.class);
+            if (jumboConfig.allowedHederaFunctionalities().contains(fromPbj(txnInfo.functionality()))) {
+                long bytesUsage = txnInfo.wireSize();
+                // Count the decoded size of file-referenced callData so a file-delivered payload is metered
+                // by size like an inline one, rather than only by its (small) on-wire size.
+                if (jumboConfig.chargeHydratedCallDataSize()) {
+                    final var fileStore = new ReadableStoreFactoryImpl(state).readableStore(ReadableFileStore.class);
+                    final var firstUserEntity =
+                            configuration.getConfigData(HederaConfig.class).firstUserEntity();
+                    bytesUsage += HydratedCallDataSize.fileReferencedCallDataBytes(txBody, fileStore, firstUserEntity);
+                }
+>>>>>>> d036d02 (fix: Bound transaction size checks by retained wire length (#575))
                 final var maxRegularTxnSize =
                         configuration.getConfigData(HederaConfig.class).transactionMaxBytes();
 
