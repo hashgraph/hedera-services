@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app;
 
+import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_OVERRIDES_YAML_FILE_NAME;
 import static com.swirlds.platform.builder.PlatformBuildConstants.DEFAULT_SETTINGS_FILE_NAME;
@@ -16,6 +17,11 @@ import static java.util.Objects.requireNonNull;
 import static org.hiero.base.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.hiero.base.file.FileUtils.getAbsolutePath;
 import static org.hiero.base.file.FileUtils.rethrowIO;
+<<<<<<< HEAD
+=======
+import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSemanticVersionOf;
+>>>>>>> 06d42b4 (fix: (0.78) truncate `wrapped-record-hashes.pb` on upgrade without jumpstart (#593))
 import static org.hiero.consensus.system.SystemExitCode.NODE_ID_NOT_PROVIDED;
 import static org.hiero.consensus.system.SystemExitUtils.exitSystem;
 
@@ -196,6 +202,8 @@ public class ServicesMain {
 
         // Determine whether we are starting from genesis or restarting from a saved state.
         final boolean isGenesis = initialState.get().isGenesisState();
+        final boolean isUpgrade =
+                !isGenesis && SEMANTIC_VERSION_COMPARATOR.compare(version, creationSemanticVersionOf(state)) > 0;
 
         if (isGenesis) {
             // Genesis path: initialize the States API on the genesis state created by the manager.
@@ -232,8 +240,10 @@ public class ServicesMain {
         // BlockRecordManagerImpl is constructed during DI initialization.
         // The migration itself is gated by the appropriate feature flags, so this is safe to invoke.
         // If migration voting has already completed in state, skip the migration entirely.
+        // On an upgrade, also truncate the wrapped record hashes file if no jumpstart will consume it.
         final var hederaConfig = hedera.configProvider().getConfiguration();
         final var migrationAlreadyApplied = isMigrationVotingComplete(state);
+<<<<<<< HEAD
         hedera.wrappedRecordBlockHashMigration()
                 .execute(
                         hederaConfig.getConfigData(BlockStreamConfig.class).streamMode(),
@@ -241,6 +251,19 @@ public class ServicesMain {
                         hederaConfig.getConfigData(BlockStreamJumpstartConfig.class),
                         migrationAlreadyApplied,
                         hederaConfig.getConfigData(BlockStreamConfig.class).digestType());
+=======
+        final var blockRecordConfig = hederaConfig.getConfigData(BlockRecordStreamConfig.class);
+        final var jumpstartConfig = hederaConfig.getConfigData(BlockStreamJumpstartConfig.class);
+        final var migration = hedera.wrappedRecordBlockHashMigration();
+        migration.execute(
+                hederaConfig.getConfigData(BlockStreamConfig.class).streamMode(),
+                blockRecordConfig,
+                jumpstartConfig,
+                migrationAlreadyApplied);
+        if (isUpgrade) {
+            migration.truncateHashesFileOnUpgrade(blockRecordConfig, jumpstartConfig);
+        }
+>>>>>>> 06d42b4 (fix: (0.78) truncate `wrapped-record-hashes.pb` on upgrade without jumpstart (#593))
 
         final var transactionOffsetNanos = transactionOffsetNanos(hederaConfig);
         hedera.setTxnOffsetNanos(transactionOffsetNanos);
