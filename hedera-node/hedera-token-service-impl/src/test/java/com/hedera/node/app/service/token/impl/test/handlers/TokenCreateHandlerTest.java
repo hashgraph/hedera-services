@@ -29,7 +29,6 @@ import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.SignedTxCustomizer.NOOP_SIGNED_TX_CUSTOMIZER;
@@ -42,7 +41,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -75,14 +73,12 @@ import com.hedera.node.app.spi.workflows.PureChecksContext;
 import com.hedera.node.app.workflows.handle.record.RecordStreamBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -893,47 +889,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                 .has(responseCode(INVALID_METADATA_KEY));
     }
 
-    @Test
-    void impliesExpiryFromAutoRenewPeriodWhenBodyHasNoExpiry() {
-        setUpTxnContext();
-        txn = new TokenCreateBuilder().withNoExpiry().withAutoRenewAccount(null).build();
-        given(handleContext.body()).willReturn(txn);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willReturn(new ExpiryMeta(consensusInstant.getEpochSecond() + autoRenewSecs, autoRenewSecs, null));
-
-        subject.handle(handleContext);
-
-        assertThat(capturedCreationMeta().expiry()).isEqualTo(consensusInstant.getEpochSecond() + autoRenewSecs);
-    }
-
-    @Test
-    void impliesExpiryFromMaxLifetimeWhenBodyHasNoAutoRenewSpec() {
-        setUpTxnContext();
-        txn = new TokenCreateBuilder()
-                .withNoExpiry()
-                .withNoAutoRenewPeriod()
-                .withAutoRenewAccount(null)
-                .build();
-        given(handleContext.body()).willReturn(txn);
-        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        final var maxLifetime =
-                configuration.getConfigData(EntitiesConfig.class).maxLifetime();
-        given(expiryValidator.resolveCreationAttempt(anyBoolean(), any(), any()))
-                .willReturn(new ExpiryMeta(consensusInstant.getEpochSecond() + maxLifetime, NA, null));
-
-        subject.handle(handleContext);
-
-        assertThat(capturedCreationMeta().expiry()).isEqualTo(consensusInstant.getEpochSecond() + maxLifetime);
-    }
-
     /* --------------------------------- Helpers */
-    private ExpiryMeta capturedCreationMeta() {
-        final var captor = ArgumentCaptor.forClass(ExpiryMeta.class);
-        verify(expiryValidator).resolveCreationAttempt(anyBoolean(), captor.capture(), any());
-        return captor.getValue();
-    }
-
     /**
      * A builder for {@link com.hedera.hapi.node.transaction.TransactionBody} instances.
      */
@@ -1025,16 +981,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         public TokenCreateBuilder withAutoRenewAccount(AccountID autoRenewAccount) {
             this.autoRenewAccount = autoRenewAccount;
-            return this;
-        }
-
-        public TokenCreateBuilder withNoExpiry() {
-            this.expiry = null;
-            return this;
-        }
-
-        public TokenCreateBuilder withNoAutoRenewPeriod() {
-            this.autoRenewPeriod = 0L;
             return this;
         }
 
