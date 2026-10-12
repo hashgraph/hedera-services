@@ -347,9 +347,11 @@ jobs:
           COMMIT=$(git rev-list -n 1 "${BUILD_TAG}")
           EMAIL=$(git log -1 --pretty=format:'%ae' "${COMMIT}")
           AUTHOR=$(git log -1 --pretty=format:'%an' "${COMMIT}")
-          echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
-          echo "commit-author=${AUTHOR}" >> "${GITHUB_OUTPUT}"
-          echo "commit-email=${EMAIL}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "commit=${COMMIT}"
+            echo "commit-author=${AUTHOR}"
+            echo "commit-email=${EMAIL}"
+          } >> "${GITHUB_OUTPUT}"
           bash "${{ github.workspace }}/.github/workflows/support/scripts/find-commit-author-slack.sh"
           echo "slack-user-id=${SLACK_USER_ID}" >> "${GITHUB_OUTPUT}"
 
@@ -444,7 +446,7 @@ jobs:
             gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/hiero-ledger/hiero-consensus-node/actions/jobs/$job_id/logs >> run.log
+            "/repos/hiero-ledger/hiero-consensus-node/actions/jobs/${job_id}/logs" >> run.log
           done
 
       - name: Upload log as artifact
@@ -489,10 +491,12 @@ jobs:
       - name: Log Rootly Summary
         run: |
           echo "## Rootly Summary:"
-          echo "### Title: ${{ steps.rootly-summary.outputs.title }}" >> "${GITHUB_STEP_SUMMARY}"
-          echo "${{ steps.rootly-summary.outputs.summary }}" >> "${GITHUB_STEP_SUMMARY}"
-          echo "### Service" >> "${GITHUB_STEP_SUMMARY}"
-          echo "${{ steps.set-service.outputs.service }}" >> "${GITHUB_STEP_SUMMARY}"
+          {
+            echo "### Title: ${{ steps.rootly-summary.outputs.title }}"
+            echo "${{ steps.rootly-summary.outputs.summary }}"
+            echo "### Service"
+            echo "${{ steps.set-service.outputs.service }}"
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Create Rootly Alert
         id: create-rootly-alert

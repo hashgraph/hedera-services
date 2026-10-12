@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# actionlint configuration. The self-hosted runner labels used by the workflows, so actionlint doesn't
+# report them as unknown. Add a label here when a workflow starts using a new runner pool.
+self-hosted-runner:
+  labels:
+    - hl-cn-benchmark-lin
+    - hl-cn-bn-regression-lin-lg
+    - hl-cn-bn-regression-lin-sm
+    - hl-cn-chewie-lin-sm
+    - hl-cn-compile-app-lin
+    - hl-cn-default-lin-lg
+    - hl-cn-default-lin-md
+    - hl-cn-default-lin-sm
+    - hl-cn-default-lin-ss
+    - hl-cn-docker-determinism-lin-d12-lg
+    - hl-cn-docker-determinism-lin-lg
+    - hl-cn-docker-determinism-lin-md
+    - hl-cn-docker-determinism-lin-u24-lg
+    - hl-cn-gradle-determinism-lin-d12-lg
+    - hl-cn-gradle-determinism-lin-d12-md
+    - hl-cn-gradle-determinism-lin-lg
+    - hl-cn-gradle-determinism-lin-md
+    - hl-cn-gradle-determinism-lin-ss
+    - hl-cn-gradle-determinism-lin-u24-lg
+    - hl-cn-gradle-determinism-lin-u24-md
+    - hl-cn-hammer-lin
+    - hl-cn-hapi-bn-lin-xl
+    - hl-cn-hapi-lin-lg
+    - hl-cn-hapi-lin-xl
+    - hl-cn-hapi-wraps-lin-lg
+    - hl-cn-integration-lin
+    - hl-cn-jrs-regression-lin-lg
+    - hl-cn-mdlt-lin-lg
+    - hl-cn-mdlt-lin-sm
+    - hl-cn-mem-profiler-lin
+    - hl-cn-migration-lin-lg
+    - hl-cn-migration-lin-sm
+    - hl-cn-mn-regression-lin-lg
+    - hl-cn-mn-regression-lin-sm
+    - hl-cn-otter-chaos-lin
+    - hl-cn-otter-fast-lin
+    - hl-cn-otter-full-lin
+    - hl-cn-rpc-relay-lin-lg
+    - hl-cn-rpc-relay-lin-sm
+    - hl-cn-sdct-lin-sm
+    - hl-cn-sdk-tck-lin-lg
+    - hl-cn-sdk-tck-lin-sm
+    - hl-cn-sdlt-lin-lg
+    - hl-cn-sdlt-lin-sm
+    - hl-cn-sdpt-lin-lg
+    - hl-cn-sdpt-lin-sm
+    - hl-cn-snyk-check-lin
+    - hl-cn-state-validator-lin
+    - hl-cn-timing-sensitive-lin
+    - hl-cn-unit-test-lin
