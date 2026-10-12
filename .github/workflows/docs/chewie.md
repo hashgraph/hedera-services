@@ -126,7 +126,9 @@ scheduling labels, and tolerations. The rest of the test run deploys into that n
 ### Pod scheduling
 
 Chewie marks each allocated machine with its group's scheduling labels and matching `NoSchedule` taints, so a pod runs
-on the allocation only if it carries that group's labels as its `nodeSelector` and its tolerations. Every pod spec in
+on the allocation only if it carries that group's labels as its `nodeSelector` and its tolerations. The response
+publishes them per group as `.instances[].node_selectors` and `.instances[].tolerations` (Chewie v3.9.0 and later);
+`.instances[].labels` is the descriptive label set, which must never reach a `nodeSelector`. Every pod spec in
 the CITR values templates under `support/citr/` (and in `103`'s remote Solo values files) names its group with a
 `chewie-group: cn` or `chewie-group: aux` placeholder. `support/chewie/apply-allocation-scheduling.sh` renders the
 placeholders from the allocation's `cn-`/`aux-labels` and `cn-`/`aux-tolerations` outputs before each deploy, and fails

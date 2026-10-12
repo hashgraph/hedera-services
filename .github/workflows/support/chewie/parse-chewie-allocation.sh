@@ -134,7 +134,9 @@ parse_chewie_allocation() {
     group="${entry#*:}"
 
     QTY=$(jq -r --arg g "${group}" '(.instances // [])[] | select(.group==$g) | .spec.quantity' <<< "${response}")
-    LABELS=$(jq -c --arg g "${group}" '(.instances // [])[] | select(.group==$g) | .labels' <<< "${response}")
+    # A group's nodeSelector is .node_selectors (Chewie >= v3.9.0); .labels is the descriptive label set, which
+    # must never reach a nodeSelector. The output keeps its <prefix>-labels name.
+    LABELS=$(jq -c --arg g "${group}" '(.instances // [])[] | select(.group==$g) | .node_selectors' <<< "${response}")
     TOLERATIONS=$(jq -c --arg g "${group}" '(.instances // [])[] | select(.group==$g) | .tolerations' <<< "${response}")
 
     # A named group the caller requested must be present with scheduling labels; an unapproved

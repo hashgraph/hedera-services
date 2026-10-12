@@ -122,6 +122,8 @@ jobs:
         id: resolve-commit
         env:
           REF: ${{ inputs.ref || github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           COMMIT="$(git rev-parse HEAD)"
 
@@ -129,6 +131,27 @@ jobs:
           REF_NAME="${REF#refs/heads/}"
           if [[ "${REF}" == refs/heads/* ]] || git ls-remote --exit-code --heads origin "${REF_NAME}" >/dev/null 2>&1; then
             BRANCH="${REF_NAME}"
+          fi
+
+          # Chewie refuses a report whose commit is not reachable from the reported branch, or from the
+          # default branch when none is named. A tag or SHA off the default branch (a release tag, say)
+          # therefore needs a branch that contains it: take the newest release branch that does, using
+          # the same GitHub compare Chewie checks with.
+          commit_on() {
+            local status
+            status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${1}...${COMMIT}" --jq .status 2>/dev/null || true)"
+            [[ "${status}" == "identical" || "${status}" == "behind" ]]
+          }
+          if [[ -z "${BRANCH}" ]] && ! commit_on "${DEFAULT_BRANCH}"; then
+            while IFS= read -r candidate; do
+              if commit_on "${candidate}"; then
+                BRANCH="${candidate}"
+                break
+              fi
+            done < <(gh api "repos/${GITHUB_REPOSITORY}/branches" --paginate --jq '.[].name | select(startswith("release/"))' | sort -rV)
+            if [[ -z "${BRANCH}" ]]; then
+              echo "::warning title=Commit Not On A Release Branch::${COMMIT} is not on ${DEFAULT_BRANCH} or any release branch; Chewie will refuse the AdHoc report."
+            fi
           fi
 
           BUILD_TAG_NUMBER=""

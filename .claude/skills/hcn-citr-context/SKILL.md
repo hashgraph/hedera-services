@@ -155,7 +155,7 @@ By exact `jq` path in `parse-chewie-allocation.sh`:
 
 - `.status`, `.namespace`, `.cluster_fqdn`, `.expires_at`
 - `(.instances // [])[] | select(.group==$g) | .spec.quantity` — still nested under `.spec`
-- `(.instances // [])[] | select(.group==$g) | .labels` and `.tolerations` (compact JSON, passed through untouched)
+- `(.instances // [])[] | select(.group==$g) | .node_selectors` and `.tolerations` (compact JSON, passed through untouched; emitted as `<prefix>-labels` / `<prefix>-tolerations`). Chewie v3.9.0 renamed the selector map from `labels` to `node_selectors` and moved the descriptive set to `labels`, so reading `.labels` would put descriptive labels into a nodeSelector.
 
 When the caller names its groups (`-g`/`-x`), a group that is missing or has no labels is fatal — that covers an unapproved allocation (no `instances`) and one approved before the 3.x upgrade (groups named by operator role). A response without `instances` is otherwise tolerated, so `225` can summarize an already-released allocation.
 

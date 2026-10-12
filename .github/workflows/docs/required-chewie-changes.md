@@ -269,9 +269,12 @@ Must be in place before this repository's changes are relied on in production:
 9. **Scheduling cutover — this blocks merging.** This repository schedules pods from the 3.x allocation response's
    per-group labels and tolerations (see [Pod scheduling](chewie.md#pod-scheduling)), so it works only against a
    release that writes those labels and taints onto the allocated machines: one carrying #606, #643, #817 and #825.
-   Never deploy `v3.8.0`, which has #606 and #643 without #817.
+   Never deploy `v3.8.0`, which has #606 and #643 without #817. The first release with all four is `v3.9.0`; this
+   repository is aligned with `v3.10.0`. From `v3.9.0` a group's selector is `.instances[].node_selectors` and
+   `.instances[].labels` is the descriptive label set; `parse-chewie-allocation.sh` reads `node_selectors`, so an
+   older release fails at acquisition with no scheduling labels for the group.
    - **Verify on chewie-testing first.** Before any HCN run against the release, take an approved allocation's
-     `cn-nodes` group from `GET /api/v1/compute/allocation/:id`. A pause pod with that group's `labels` as its
+     `cn-nodes` group from `GET /api/v1/compute/allocation/:id`. A pause pod with that group's `node_selectors` as its
      `nodeSelector` and its `tolerations` must reach `Running` on one of the group's machines; the same pod without the
      tolerations must stay `Pending`.
    - **Clear the legacy `solo-*-nN` namespaces.** #826 removes the guard that kept Chewie from allocating machines those
@@ -279,8 +282,10 @@ Must be in place before this repository's changes are relied on in production:
      would share hardware with a new allocation. `902` deletes only the boxes enabled on its schedule (by default
      Dallas `n1`/`n2`), so delete the rest, or confirm they are empty, on both perf clusters before #826 ships.
    - **Deploy on the same day as this repository's changes**, in the order tracked by swirldslabs/chewie#818:
-     1. Label every machine CITR may use `inventory.citr.hashgraph.io/eligible=true`, then confirm the count Chewie has
-        mirrored.
+     1. Label the reserved machines `inventory.citr.hashgraph.io/role=reserved-control` (in production Chicago, the
+        nodes already labeled `solo.hashgraph.io/role=reserved-control`), then confirm the count Chewie has mirrored.
+        Chewie allocates every machine not labeled that way (#881), so an unlabeled fleet offers its control-plane and
+        block-node machines to the next allocation.
      2. Disable any enabled `compute_reservations` row.
      3. Drain live allocations and pause the CITR controllers. An MDLT allocation lives up to six days, so start the
         drain that far ahead or release MDLT allocations early through `225`. An allocation approved before the upgrade
@@ -293,8 +298,10 @@ Must be in place before this repository's changes are relied on in production:
     `adhoc_sdlt`, against the commit under test, with its branch when the ref is a branch and its build number when the
     ref is a `build-NNNNN` tag. Chewie must accept these types, and `adhoc_sdct` for a future AdHoc SDCT controller,
     before this repository's changes merge: reporting is required, so an unknown type fails the AdHoc run. They are
-    never gates — an AdHoc result must not change a build's colour, outstanding suites or promotion. Tracked by
-    swirldslabs/chewie#882.
+    never gates — an AdHoc result must not change a build's colour, outstanding suites or promotion. Chewie refuses a
+    report whose commit is not reachable from the reported branch, or from the default branch when none is named, so for
+    a tag or SHA off the default branch `201`/`202` send the newest release branch that contains it, found with the same
+    GitHub compare Chewie uses. Tracked by swirldslabs/chewie#882.
 
 ## Follow-Ups in This Repository
 

@@ -7,12 +7,12 @@ description: What Chewie (the CI compute-allocation backplane this repo's CITR w
 
 This repo's CITR workflows (see the companion skill `hcn-citr-context`) call Chewie for every SDPT/SDLT/MDLT allocation. This skill is the reverse view: what Chewie is, its wire contract, and what's moving. Chewie is a fast-moving internal project; treat anything here as dated evidence and re-verify against `github.com/swirldslabs/chewie` before depending on a specific detail.
 
-Verified 2026-09-30 against `origin/main` `27397fd439ba868ce16a3a37f6a6b715e9ee89b1` (`v3.8.0`) and `origin/release/2.11` `cbeab042a61f263ae884c794b59b0d1695c21c65` (one docs-only commit past `v2.11.5`, no newer 2.x tag).
+Verified 2026-10-12 against `origin/main` `031d4d28` (`v3.10.0`, 2026-10-08); the rest of this file was last fully verified 2026-09-30 against `27397fd439ba868ce16a3a37f6a6b715e9ee89b1` (`v3.8.0`) and `origin/release/2.11` `cbeab042a61f263ae884c794b59b0d1695c21c65` (one docs-only commit past `v2.11.5`, no newer 2.x tag).
 
 ## Which line is in production — unknown, and it matters a lot
 
 - **`release/2.11`** (`v2.11.5`, 2026-09-08) is the line this repo's workflows were written against. Network-based allocation, `solo.hashgraph.io/*` labels in the response.
-- **`main`** is at **`v3.8.0`** (2026-09-30) — seven minor releases (`v3.2.0`–`v3.8.0`, 2026-09-11 → 09-30) past the `v3.1.0` this skill last tracked. The Helm chart on `main` is `3.8.0`.
+- **`main`** is at **`v3.10.0`** (2026-10-08). `v3.9.0` (2026-10-07) shipped the node-mark applier (#819, for #817) and eligibility-label selection (#826, for #825), so it is the first release whose scheduling labels actually schedule; see "v3.9.0–v3.10.0" below.
 
 **Nothing in the Chewie repo says which line is deployed.** There are no deploy manifests, environment values, or "production runs vX" notes — the only production facts in its docs are about the database (YugabyteDB `15.12-YB-2025.2.2.2-b0`). Two pieces of evidence point toward 2.11 still being live, but neither proves it:
 
@@ -36,10 +36,10 @@ Confirm the deployed version with whoever operates Chewie before trusting either
 
 ### Scheduling labels — **breaks HCN's parser** (#353, #606, #643 in v3.8.0)
 
-On `main`, `instances[].labels` is a pod **nodeSelector** and nothing more. It contains exactly:
+On `main` (since `v3.9.0`), `instances[].node_selectors` is a pod **nodeSelector** and nothing more; on `v3.8.0` the same map was `instances[].labels`. It contains exactly:
 
 - `scheduling.citr.hashgraph.io/allocation-id` — the allocation id, on every group
-- `test.citr.hashgraph.io/role` — `cn` or `tc` (**not** `consensus-node`/`auxiliary-services`). `tc` is the scheme's name for the auxiliary-services group.
+- `test.citr.hashgraph.io/role` — the group's name (`cn-nodes`/`aux-nodes` for HCN); an unnamed group gets `alpha`, `beta`, …. On `v3.8.0` it was `cn`/`tc`.
 
 `tolerations` are one `Equal`/`NoSchedule` entry per label, sorted by key. **There is no owner and no network-id in the response anymore.** Chewie allocates individual machines and has no network to name. The `chewie.hashgraph.io/*` namespace annotations were retired in favour of `lifecycle.`/`scheduling.citr.hashgraph.io/*`. Chewie still *reads* the operator's `solo.hashgraph.io/role` and `solo.hashgraph.io/network-id` node labels to select hardware (`internal/compute/matching.go`), but it never publishes them.
 
@@ -47,9 +47,18 @@ Effect on HCN's `parse-chewie-allocation.sh` against a 3.8.0 daemon: the named-g
 
 **On v3.8.0 as tagged, those labels don't schedule anything.** The allocation response publishes the CITR keys, but provisioning doesn't write those labels and taints onto the claimed nodes yet, so a pod built from the response matches no machine. The fix is on branch `00817-apply-node-marks-on-provisioning` (see "In flight").
 
+### v3.9.0–v3.10.0 — what HCN's branch had to follow (2026-10-12)
+
+- **Selector field renamed.** `.instances[].node_selectors` is the nodeSelector; `.instances[].labels` (and top-level `.labels`) is the descriptive set. HCN's parser reads `node_selectors` and fails loudly on an older response.
+- **Eligibility inverted (#881).** Chewie allocates every node except those labeled `inventory.citr.hashgraph.io/role=reserved-control`; operators label the reserved machines rather than the eligible ones.
+- **Suite reporting contract** is `docs/dev/suite_result_reporting.md`. AdHoc types `adhoc_sdpt`/`adhoc_sdlt`/`adhoc_sdct` (codes 7–9, #882/#883) are never gates. A report for a commit Chewie hasn't recorded is verified with GitHub: the commit must be reachable from the reported branch, or the default branch when none is named, else `400 CommitNotOnBranch` — so HCN's AdHoc controllers send a containing release branch for tags/SHAs off `main`. `build_number` may be combined with `commit` only if the commit is in that build. Chewie's §4 plan calls for **non-blocking** reports during dual-write; HCN's `864` is blocking by the user's choice.
+- **Promotion (#865/#866).** At most one build per day from the latest XTS pass; candidacies registered from pushes and suite reports. Still behind `CHEWIE_BUILD_LIFECYCLE_ENABLED`; HCN's `901` must be disabled before it is enabled.
+- **No workflow dispatch code** on `main`: Chewie does not dispatch HCN workflows yet, so HCN's restored crons (`900`/`901`/`903`) remain the triggers.
+- **Unchanged:** `POST /api/v1/auth/token` (bare base64 key), allocation `DELETE` codes (204/410/404), the request body, `instances[].group`/`spec.quantity`/`tolerations`, and the status vocabulary. Every REST error now uses a coded, severity-tagged envelope (#834).
+
 ### Descriptive labels — additive (#605)
 
-When approved, the response adds `descriptive_labels {telemetry, kubernetes}` at both the top level and per instance (the per-group map is complete, with allocation-wide values merged in). These are for stamping pods and resources and OTel/Loki telemetry, using the `citr.hashgraph.io` family: `test.citr.hashgraph.io/run-id`, `/category`, `latitude.citr.hashgraph.io/cluster`, `consensus.citr.hashgraph.io/build-num`, `lifecycle.citr.hashgraph.io/instance-group`. A dimension Chewie can't determine is **absent**, never empty. **Never put these in a nodeSelector.** The approved response also adds `nodes[]` (the individual machines held: `node_id`, `name`, …) and, for suite-aware allocations, `profile {suite, version}`.
+When approved, the response adds the descriptive set `{telemetry, kubernetes}` — named `descriptive_labels` on `v3.8.0`, **`labels`** since `v3.9.0` — at both the top level and per instance (the per-group map is complete, with allocation-wide values merged in). These are for stamping pods and resources and OTel/Loki telemetry, using the `citr.hashgraph.io` family: `test.citr.hashgraph.io/run-id`, `/category`, `latitude.citr.hashgraph.io/cluster`, `consensus.citr.hashgraph.io/build-num`, `lifecycle.citr.hashgraph.io/instance-group`. A dimension Chewie can't determine is **absent**, never empty. **Never put these in a nodeSelector.** The approved response also adds `nodes[]` (the individual machines held: `node_id`, `name`, …) and, for suite-aware allocations, `profile {suite, version}`.
 
 ### Per-node allocation — the network model is gone (v3.2.0)
 
@@ -85,9 +94,9 @@ Chewie now has a CITR build-number and build-tag service: atomic per-repository 
 
 ## In flight — check before assuming any of this is settled
 
-- **`00817-apply-node-marks-on-provisioning`** (remote branch, 7 commits on top of `v3.8.0`, 2026-10-01, unmerged). It applies node labels and taints during allocation provisioning, inside the provisioning transaction (`80eddfd`). This is the prerequisite for the 3.x scheduling labels working at all. Until it merges and ships, a 3.x deployment hands HCN a nodeSelector no node satisfies.
+- **Node marks on provisioning** — merged as #819 and released in `v3.9.0`. Never deploy `v3.8.0`.
 - **HCN-side migration off `solo.hashgraph.io/*`** — required before HCN can run against 3.x. Done on branch `27342-citr-workflows-must-be-triggerable-via-chewie`, not yet on `main`. It must ship the same day as a Chewie release carrying #606, #643, #817 and #825, in the order in HCN's `required-chewie-changes.md` item 9.
-- **Phase C of identity/grants** — deferred until no running binary reads the legacy columns.
+- **Phase C of identity/grants** — #877 (in `v3.10.0`) replaced the legacy identity columns with grants and an identity source; #837 also accepts Teleport application JWTs. The repo-key token exchange `858` uses is unchanged.
 - **`.github/chewie.yaml` server-side reads** — still unwired. Re-check whenever `allocation_config.go`'s "NOT wired up" comment disappears.
 
 ## Process notes
