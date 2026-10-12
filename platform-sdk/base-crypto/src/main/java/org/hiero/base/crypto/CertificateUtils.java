@@ -2,10 +2,9 @@
 package org.hiero.base.crypto;
 
 import com.hedera.cryptography.security.der.model.AVA;
-import com.hedera.cryptography.security.der.model.BasicConstraintsExtension;
+import com.hedera.cryptography.security.der.model.BasicConstraints;
 import com.hedera.cryptography.security.der.model.DN;
 import com.hedera.cryptography.security.der.model.DerString;
-import com.hedera.cryptography.security.der.model.Extension;
 import com.hedera.cryptography.security.der.model.Extensions;
 import com.hedera.cryptography.security.der.model.Interval;
 import com.hedera.cryptography.security.der.model.OID;
@@ -82,8 +81,7 @@ public final class CertificateUtils {
                     new Interval(CryptoConstants.DEFAULT_VALID_FROM, CryptoConstants.DEFAULT_VALID_TO),
                     new SignatureAlgorithm(signatureAlgorithm),
                     withBasicConstraintsAsCA
-                            ? new Extensions(List.of(new Extension(
-                                    BasicConstraintsExtension.OID, true, new BasicConstraintsExtension(true, null))))
+                            ? new Extensions(List.of(new BasicConstraints(true, null).newExtension(true)))
                             : null);
 
             return X509CertificateSigner.sign(info, caPair.getPrivate());
