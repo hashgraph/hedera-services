@@ -633,7 +633,16 @@ jobs:
   sdct-verdict:
     name: SDCT Verdict
     runs-on: hl-cn-sdct-lin
-    needs: [canonical-test, follow-1, follow-2, follow-3, follow-4, follow-5, follow-6]
+    needs:
+      [
+        canonical-test,
+        follow-1,
+        follow-2,
+        follow-3,
+        follow-4,
+        follow-5,
+        follow-6,
+      ]
     # Always runs: the only place that decides the verdict, and it stops a build nobody follows any more
     if: ${{ always() }}
     outputs:
