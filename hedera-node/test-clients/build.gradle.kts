@@ -130,6 +130,8 @@ val prCheckTags =
         "hapiTestClprMultinetwork" to "MULTINETWORK",
     )
 
+val clprTasks = setOf("hapiTestClpr", "hapiTestClprEmbedded", "hapiTestClprMultinetwork")
+
 val prRemoteCheckTags =
     prCheckTags
         .filterNot {
@@ -140,7 +142,7 @@ val prRemoteCheckTags =
                     "hapiTestWrapsDownload",
                     "hapiTestToken",
                     "hapiTestTokenSerial",
-                )
+                ) || it.key in clprTasks
         }
         .mapKeys { (key, _) -> key.replace("hapiTest", "remoteTest") }
 val prCheckStartPorts =
@@ -525,13 +527,12 @@ fun TaskContainer.registerHapiTest(
                     if (ciTagExpression.isBlank()) defaultTags
                     else if (name == "testEmbedded" && ciTagExpression.contains("CLPR"))
                         "(${ciTagExpression})"
-                    // We don't want to run stream or log validation for ISS or BLOCK_NODE cases
+                    // We don't want to run stream or log validation for ISS, BLOCK_NODE or CLPR
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
                             (ciTagExpression.contains("ISS") ||
                                 ciTagExpression.contains("BLOCK_NODE") ||
-                                ciTagExpression.contains("CLPR") ||
-                                ciTagExpression.contains("MULTINETWORK"))
+                                name in clprTasks)
                     )
                         "(${ciTagExpression}${ciDefaultTagsWithoutStreamAndLogValidation})"
                     else "(${ciTagExpression}${ciDefaultTags})"
@@ -561,12 +562,8 @@ fun TaskContainer.registerHapiTest(
                 parallelismValue,
             )
         }
-        // MULTINETWORK groups run in parallel with CLASSES concurrent. Per-network serialization is
-        // JUnit's job via the class-level @ResourceLock(<network>) on each multi-network suite:
-        // suites sharing a network run one after another, disjoint groups run in parallel, and
-        // JUnit runs the methods of a locked suite sequentially. Applies only when MULTINETWORK is
-        // selected.
-        if (ciTagExpression.contains("MULTINETWORK")) {
+        // MULTINETWORK groups run in parallel with CLASSES concurrent.
+        if (name == "hapiTestClprMultinetwork") {
             systemProperty("junit.jupiter.execution.parallel.enabled", true)
             systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
             systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "concurrent")
