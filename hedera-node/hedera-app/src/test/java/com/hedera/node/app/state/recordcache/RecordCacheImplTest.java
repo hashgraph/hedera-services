@@ -454,6 +454,37 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(receipts).hasSize(MAX_QUERYABLE_PER_ACCOUNT);
         }
 
+        @Test
+        @DisplayName("Query for duplicate receipts tolerates a duplicate added while it iterates")
+        void queryForDuplicateReceiptsToleratesDuplicateAddedMidIteration() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            final var txId = transactionID();
+            final var record = TransactionRecord.newBuilder()
+                    .transactionID(txId)
+                    .receipt(TransactionReceipt.newBuilder().status(SUCCESS).build())
+                    .build();
+            final var duplicate = new PartialRecordSource(record.copyBuilder()
+                    .receipt(TransactionReceipt.newBuilder()
+                            .status(DUPLICATE_TRANSACTION)
+                            .build())
+                    .build());
+            // Adds the duplicate mid-iteration, as the handle thread can while a query thread iterates
+            final var source = new PartialRecordSource(record) {
+                @Override
+                public TransactionReceipt receiptOf(@NonNull final TransactionID txnId) {
+                    cache.addRecordSource(1, txId, DueDiligenceFailure.NO, duplicate);
+                    return super.receiptOf(txnId);
+                }
+            };
+            cache.addRecordSource(0, txId, DueDiligenceFailure.NO, source);
+
+            // The in-flight query sees the history as it started; the next query sees the duplicate
+            assertThat(Objects.requireNonNull(cache.getReceipts(txId)).duplicateReceipts(txId))
+                    .isEmpty();
+            assertThat(Objects.requireNonNull(cache.getReceipts(txId)).duplicateReceipts(txId))
+                    .hasSize(1);
+        }
+
         static Stream<Arguments> receiptStatusCodes() {
             final var allValues =
                     new HashSet<>(Arrays.asList(ResponseCodeEnum.values()).subList(0, RESPONSE_CODES_TO_TEST));
