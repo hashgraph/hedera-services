@@ -32,7 +32,20 @@ public interface Cryptography {
      * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
     default Hash digestSync(@NonNull final SelfSerializable serializable) {
-        return new Hash(digestBytesSync(serializable), DEFAULT_DIGEST_TYPE);
+        return digestSync(serializable, DEFAULT_DIGEST_TYPE);
+    }
+
+    /**
+     * Computes a cryptographic hash for the {@link SelfSerializable} instance by serializing it and hashing the bytes
+     * using the specified digest type. The hash is then returned by this method
+     *
+     * @param serializable the object to be hashed
+     * @param digestType the digest type to use when hashing
+     * @return the cryptographic hash for the {@link SelfSerializable} object
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
+     */
+    default Hash digestSync(@NonNull final SelfSerializable serializable, @NonNull DigestType digestType) {
+        return new Hash(digestBytesSync(serializable), digestType);
     }
 
     /**
@@ -50,10 +63,23 @@ public interface Cryptography {
      * @return the cryptographic hash for the {@link SelfSerializable} object
      * @throws CryptographyException if an unrecoverable error occurs while computing the digest
      */
-    Hash digestSync(@NonNull final SerializableHashable serializableHashable, boolean setHash);
+    Hash digestSync(
+            @NonNull final SerializableHashable serializableHashable,
+            @NonNull final DigestType digestType,
+            boolean setHash);
 
-    default Hash digestSync(@NonNull final SerializableHashable serializableHashable) {
-        return digestSync(serializableHashable, DEFAULT_SET_HASH);
+    /**
+     * Computes a cryptographic hash for the {@link SerializableHashable} instance by serializing it and hashing the
+     * bytes. The hash is then passed to the object by calling {@link Hashable#setHash(Hash)}.
+     *
+     * @param serializableHashable the object to be hashed
+     * @param digestType           the digest type to use
+     * @return the cryptographic hash for the {@link SelfSerializable} object
+     * @throws CryptographyException if an unrecoverable error occurs while computing the digest
+     */
+    default Hash digestSync(
+            @NonNull final SerializableHashable serializableHashable, @NonNull final DigestType digestType) {
+        return digestSync(serializableHashable, digestType, DEFAULT_SET_HASH);
     }
 
     /**

@@ -10,6 +10,7 @@ import java.util.Objects;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.CryptographyException;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.Message;
 import org.hiero.base.crypto.SerializableHashable;
@@ -111,8 +112,11 @@ public class CryptoEngine implements Cryptography {
      * {@inheritDoc}
      */
     @Override
-    public Hash digestSync(@NonNull final SerializableHashable serializableHashable, final boolean setHash) {
-        final Hash hash = new Hash(digestBytesSync(serializableHashable), DEFAULT_DIGEST_TYPE);
+    public Hash digestSync(
+            @NonNull final SerializableHashable serializableHashable,
+            @NonNull final DigestType digestType,
+            final boolean setHash) {
+        final Hash hash = new Hash(digestBytesSync(serializableHashable), digestType);
         if (setHash) {
             serializableHashable.setHash(hash);
         }

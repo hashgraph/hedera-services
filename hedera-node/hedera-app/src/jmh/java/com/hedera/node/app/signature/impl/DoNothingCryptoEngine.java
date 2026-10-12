@@ -4,6 +4,7 @@ package com.hedera.node.app.signature.impl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.hiero.base.crypto.Cryptography;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.SerializableHashable;
 import org.hiero.base.crypto.SignatureType;
@@ -24,12 +25,15 @@ public class DoNothingCryptoEngine implements Cryptography {
     }
 
     @Override
-    public Hash digestSync(@NonNull SelfSerializable selfSerializable) {
+    public Hash digestSync(
+            @org.jspecify.annotations.NonNull SerializableHashable serializableHashable,
+            @org.jspecify.annotations.NonNull DigestType digestType,
+            boolean setHash) {
         return null;
     }
 
     @Override
-    public Hash digestSync(@NonNull SerializableHashable serializableHashable, boolean b) {
+    public Hash digestSync(@NonNull SelfSerializable selfSerializable) {
         return null;
     }
 

@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.CryptographyProvider;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.Signature;
 import org.hiero.base.crypto.SignatureType;
@@ -197,7 +198,7 @@ public final class LinkedObjectStreamValidateUtils {
                 break;
             }
             objectsCount++;
-            Hash objectHash = CRYPTOGRAPHY.digestSync(selfSerializable);
+            Hash objectHash = CRYPTOGRAPHY.digestSync(selfSerializable, DigestType.SHA_384);
             runningHash = CRYPTOGRAPHY.calcRunningHash(runningHash, objectHash);
             logger.info(
                     OBJECT_STREAM.getMarker(),
