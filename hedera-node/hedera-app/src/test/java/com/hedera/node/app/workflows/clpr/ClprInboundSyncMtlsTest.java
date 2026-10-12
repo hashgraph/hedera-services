@@ -25,7 +25,6 @@ import io.netty.handler.ssl.SslContext;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -37,7 +36,6 @@ import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hiero.base.crypto.CertificateUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -124,8 +122,8 @@ class ClprInboundSyncMtlsTest {
     @Test
     @DisplayName("the ephemeral leaf presented is an Ed25519 certificate")
     void leafIsEd25519() {
-        assertThat(serverLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("Ed25519");
-        assertThat(clientLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("Ed25519");
+        assertThat(serverLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("EdDSA");
+        assertThat(clientLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("EdDSA");
     }
 
     @Test
@@ -232,8 +230,7 @@ class ClprInboundSyncMtlsTest {
      * BC-provider Ed25519 key, signed by the CA with {@code SHA384withECDSA}.
      */
     private static ClprLeafCredentials ed25519Leaf(final ClprTestCa ca, final String cn) throws Exception {
-        final var leafKeyPair = KeyPairGenerator.getInstance("Ed25519", BouncyCastleProvider.PROVIDER_NAME)
-                .generateKeyPair();
+        final var leafKeyPair = ClprTestCa.newEd25519KeyPair();
         final var caCert = ca.caCert();
         final var leafCert = CertificateUtils.generateCertificate(
                 CertificateUtils.distinguishedName(cn),
@@ -259,7 +256,7 @@ class ClprInboundSyncMtlsTest {
      */
     private ManagedChannel noCertClientChannel(final int port) throws Exception {
         ClprMtlsContexts.ensureProvidersRegistered();
-        final var ctx = SSLContext.getInstance("TLS", "BCJSSE");
+        final var ctx = SSLContext.getInstance("TLS");
         ctx.init(
                 null,
                 new TrustManager[] {ClprMtlsTrust.pinnedServerTrustManager(serverCa.caCert())},

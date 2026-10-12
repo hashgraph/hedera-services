@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.clpr;
 
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
@@ -11,16 +10,9 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
-import java.time.Instant;
+import java.security.spec.NamedParameterSpec;
 import java.util.Base64;
-import java.util.Date;
-import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.hiero.base.crypto.CertificateUtils;
 
 /**
@@ -55,22 +47,9 @@ public final class ClprTestCa {
         this.issuerDn = "CN=" + cn;
         this.caKeyPair = newP384KeyPair();
 
-        final var now = Instant.now();
-        final var principal = new X500Principal(issuerDn);
-        final var builder = new JcaX509v3CertificateBuilder(
-                principal,
-                BigInteger.ONE,
-                Date.from(now.minusSeconds(86400)),
-                Date.from(now.plusSeconds(86400L * 365)),
-                principal,
-                caKeyPair.getPublic());
-        builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
-        final var signer = new JcaContentSignerBuilder(SIGNATURE_ALGORITHM)
-                .setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                .build(caKeyPair.getPrivate());
-        this.caCert = new JcaX509CertificateConverter()
-                .setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                .getCertificate(builder.build(signer));
+        // Pass `true` to request a critical BasicConstraints(cA == true) extension:
+        this.caCert = CertificateUtils.generateCertificate(
+                issuerDn, caKeyPair, issuerDn, caKeyPair, new SecureRandom(), SIGNATURE_ALGORITHM, true);
     }
 
     /** The CA certificate (the trust anchor peers pin). */
@@ -113,6 +92,12 @@ public final class ClprTestCa {
     private static KeyPair newP384KeyPair() throws Exception {
         final var gen = KeyPairGenerator.getInstance("EC");
         gen.initialize(new ECGenParameterSpec("secp384r1"), new SecureRandom());
+        return gen.generateKeyPair();
+    }
+
+    public static KeyPair newEd25519KeyPair() throws Exception {
+        final var gen = KeyPairGenerator.getInstance("EdDSA", "SunEC");
+        gen.initialize(new NamedParameterSpec("Ed25519"));
         return gen.generateKeyPair();
     }
 

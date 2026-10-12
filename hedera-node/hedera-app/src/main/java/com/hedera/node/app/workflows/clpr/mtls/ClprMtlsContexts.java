@@ -130,7 +130,7 @@ public final class ClprMtlsContexts {
             throws SSLException {
         ensureProvidersRegistered();
         try {
-            final var sslContext = SSLContext.getInstance("TLS", BCJSSE);
+            final var sslContext = SSLContext.getInstance("TLS");
             sslContext.init(keyManagersFor(leaf), new TrustManager[] {trustManager}, new SecureRandom());
 
             return new JdkSslContext(
@@ -158,10 +158,10 @@ public final class ClprMtlsContexts {
 
     /** Builds the BCJSSE key managers presenting {@code leaf} — a BC {@code PKCS12} keystore + PKIX KMF. */
     private static KeyManager[] buildKeyManagers(final ClprLeafCredentials leaf) throws Exception {
-        final var keyStore = KeyStore.getInstance("PKCS12", BouncyCastleProvider.PROVIDER_NAME);
+        final var keyStore = KeyStore.getInstance("PKCS12");
         keyStore.load(null, null);
         keyStore.setKeyEntry("clpr-leaf", leaf.privateKey(), new char[0], new Certificate[] {leaf.certificate()});
-        final var kmf = KeyManagerFactory.getInstance("PKIX", BCJSSE);
+        final var kmf = KeyManagerFactory.getInstance("PKIX");
         kmf.init(keyStore, new char[0]);
         return kmf.getKeyManagers();
     }

@@ -9,11 +9,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
+import java.security.spec.NamedParameterSpec;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hiero.base.crypto.CertificateUtils;
 
 /**
@@ -75,8 +75,8 @@ public class ClprLeafCertManager {
     }
 
     private static KeyPair generateEd25519KeyPair() throws Exception {
-        // BC provider so the key is a BC EdDSA key (BCJSSE's TLS crypto rejects a SunEC Ed25519 key).
-        return KeyPairGenerator.getInstance("Ed25519", BouncyCastleProvider.PROVIDER_NAME)
-                .generateKeyPair();
+        final var gen = KeyPairGenerator.getInstance("EdDSA", "SunEC");
+        gen.initialize(new NamedParameterSpec("Ed25519"));
+        return gen.generateKeyPair();
     }
 }
