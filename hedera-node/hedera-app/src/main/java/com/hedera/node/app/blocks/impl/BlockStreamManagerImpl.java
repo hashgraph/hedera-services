@@ -1125,7 +1125,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Independent of the circuit breaker above: in {@code StreamMode.BLOCKS}, tracks the same running size against
      * the same {@code maxBlockSizeBytes} limit, but never suppresses output. Once tripped, {@link
      * #hasReachedMaxBlockSize()} reports {@code true} for the rest of the block, and {@code HandleWorkflow}
-     * is expected to reject further non-signature submitted transactions with {@code THROTTLED_AT_CONSENSUS} using normal consensus throttle fee charging rather than let them run.
+     * is expected to reject further non-exempt submitted transactions with {@code THROTTLED_AT_CONSENSUS} using normal consensus throttle fee charging rather than let them run.
      * Scheduled executions are deferred by {@code HandleWorkflow}; block signatures remain eligible to run.
      */
     private void trackMaxBlockSizeThrottle(@NonNull final List<BlockItem> items) {

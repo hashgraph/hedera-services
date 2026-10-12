@@ -107,6 +107,7 @@ import com.hedera.node.app.workflows.handle.steps.ParentTxnFactory;
 import com.hedera.node.app.workflows.handle.steps.StakePeriodChanges;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow.ShortCircuitCallback;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ClprConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -905,6 +906,21 @@ public class HandleWorkflow {
                 exchangeRateManager.exchangeRates(), executableTxn.builderType(), executableTxn.builderSpec());
     }
 
+    /** Returns whether this transaction supports network protocols that must progress after the block budget is full. */
+    private static boolean isExecutionBudgetExempt(@NonNull final HederaFunctionality functionality) {
+        return switch (functionality) {
+            case HINTS_PARTIAL_SIGNATURE,
+                    MIGRATION_ROOT_HASH_VOTE,
+                    HINTS_KEY_PUBLICATION,
+                    HINTS_PREPROCESSING_VOTE,
+                    CRS_PUBLICATION,
+                    HISTORY_PROOF_KEY_PUBLICATION,
+                    HISTORY_ASSEMBLY_SIGNATURE,
+                    HISTORY_PROOF_VOTE -> true;
+            default -> false;
+        };
+    }
+
     /**
      * Executes the user transaction and returns the output that should be externalized in the
      * block stream. (And if still producing records, the precomputed records.)
@@ -924,9 +940,16 @@ public class HandleWorkflow {
         try {
             final var platformStateStore =
                     new ReadablePlatformStateStore(state.getReadableStates(PlatformStateService.NAME));
-            // Block-full submissions follow normal consensus throttle fee charging.
+            final long payerNum = parentTxn.txnInfo().payerID().accountNumOrElse(0L);
+            final long lastThrottleExempt = configProvider
+                    .getConfiguration()
+                    .getConfigData(AccountsConfig.class)
+                    .lastThrottleExempt();
+            final boolean payerThrottleExempt = payerNum >= 1 && payerNum <= lastThrottleExempt;
+            // Non-exempt block-full submissions follow normal consensus throttle fee charging.
             final boolean blockFull = streamMode == BLOCKS
-                    && parentTxn.functionality() != HederaFunctionality.HINTS_PARTIAL_SIGNATURE
+                    && !isExecutionBudgetExempt(parentTxn.functionality())
+                    && !payerThrottleExempt
                     && blockStreamManager.hasReachedMaxBlockSize();
             if (this.initTrigger != EVENT_STREAM_RECOVERY
                     && eventBirthRound <= platformStateStore.getLatestFreezeRound()) {

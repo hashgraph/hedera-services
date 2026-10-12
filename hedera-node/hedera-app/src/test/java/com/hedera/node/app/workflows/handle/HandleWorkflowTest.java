@@ -165,6 +165,9 @@ import org.hiero.consensus.platformstate.V0540PlatformStateSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -1069,11 +1072,58 @@ class HandleWorkflowTest {
         verify(blockStreamManager).recordSubmittedTransaction(List.of(), false, true);
     }
 
-    @Test
-    void fullBlockStillDispatchesBlockSignatures() throws Exception {
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+    @ParameterizedTest
+    @CsvSource({"0,false", "1,true", "37,true", "38,false"})
+    void fullBlockRespectsConfiguredThrottleExemptPayerRange(final long payerNum, final boolean exempt)
+            throws Exception {
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("accounts.lastThrottleExempt", "37"));
+        lenient().when(blockStreamManager.hasReachedMaxBlockSize()).thenReturn(true);
         final var parent = mock(ParentTxn.class, RETURNS_DEEP_STUBS);
-        given(parent.functionality()).willReturn(HederaFunctionality.HINTS_PARTIAL_SIGNATURE);
+        given(parent.functionality()).willReturn(HederaFunctionality.CRYPTO_TRANSFER);
+        given(parent.txnInfo().payerID())
+                .willReturn(AccountID.newBuilder().accountNum(payerNum).build());
+        given(parent.consensusNow()).willReturn(NOW);
+        final var dispatch = mock(Dispatch.class);
+        given(parentTxnFactory.createDispatch(eq(parent), any())).willReturn(dispatch);
+        given(parent.stack().buildHandleOutput(any(), any(), any()))
+                .willReturn(new HandleOutput(new BlockRecordSource(List.of()), null, NOW));
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "executeSubmittedParent", ParentTxn.class, long.class, State.class);
+        method.setAccessible(true);
+
+        method.invoke(subject, parent, 100L, state);
+
+        if (exempt) {
+            verify(dispatchProcessor).processDispatch(eq(dispatch), any());
+            verify(dispatchProcessor, never()).processDispatch(any(), any(), eq(true));
+            verify(blockStreamManager, never()).hasReachedMaxBlockSize();
+        } else {
+            verify(dispatchProcessor).processDispatch(eq(dispatch), any(), eq(true));
+        }
+        verify(blockStreamManager).recordSubmittedTransaction(List.of(), false, false);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = HederaFunctionality.class,
+            names = {
+                "HINTS_PARTIAL_SIGNATURE",
+                "MIGRATION_ROOT_HASH_VOTE",
+                "HINTS_KEY_PUBLICATION",
+                "HINTS_PREPROCESSING_VOTE",
+                "CRS_PUBLICATION",
+                "HISTORY_PROOF_KEY_PUBLICATION",
+                "HISTORY_ASSEMBLY_SIGNATURE",
+                "HISTORY_PROOF_VOTE"
+            })
+    void fullBlockStillDispatchesProtocolTransactionsWithNonExemptPayer(final HederaFunctionality functionality)
+            throws Exception {
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        lenient().when(blockStreamManager.hasReachedMaxBlockSize()).thenReturn(true);
+        final var parent = mock(ParentTxn.class, RETURNS_DEEP_STUBS);
+        given(parent.functionality()).willReturn(functionality);
+        given(parent.txnInfo().payerID())
+                .willReturn(AccountID.newBuilder().accountNum(1001L).build());
         given(parent.consensusNow()).willReturn(NOW);
         final var dispatch = mock(Dispatch.class);
         given(parentTxnFactory.createDispatch(eq(parent), any())).willReturn(dispatch);
@@ -1086,6 +1136,7 @@ class HandleWorkflowTest {
         method.invoke(subject, parent, 100L, state);
 
         verify(dispatchProcessor).processDispatch(eq(dispatch), any());
+        verify(dispatchProcessor, never()).processDispatch(any(), any(), eq(true));
         verify(blockStreamManager, never()).hasReachedMaxBlockSize();
         verify(opWorkflowMetrics, never()).incrementThrottled(any());
     }

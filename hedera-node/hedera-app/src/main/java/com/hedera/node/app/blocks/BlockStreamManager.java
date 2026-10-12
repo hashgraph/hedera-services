@@ -225,7 +225,9 @@ public interface BlockStreamManager extends BlockRecordInfo, StateHashedListener
      * Returns whether the current block has already reached its configured maximum serialized size, in {@code
      * StreamMode.BLOCKS} (canonical block stream). Unlike {@link #isSavepointOutputSuppressed()}, reaching this
      * limit never suppresses any block-stream output — every dispatch that already completed is recorded normally.
-     * Callers (namely {@code HandleWorkflow}) are expected to reject further non-signature submitted transactions with {@code THROTTLED_AT_CONSENSUS} using normal consensus throttle fee charging
+     * Callers (namely {@code HandleWorkflow}) are expected to reject further non-exempt submitted transactions with {@code THROTTLED_AT_CONSENSUS} using normal consensus throttle fee charging
+     * (migration root hash votes, hints/CRS and history proof protocol transactions, and payers in
+     * {@code 1..accounts.lastThrottleExempt} are exempt)
      * once this returns {@code true}, rather than let them run. Always {@code false} in any other stream mode.
      *
      * @return whether the current block has reached its configured maximum size, in {@code StreamMode.BLOCKS}

@@ -21,7 +21,9 @@ import java.time.Duration;
  *                          zero disables the circuit breaker. In {@code StreamMode.BOTH} (preview block stream),
  *                          the circuit breaker suppresses further block-stream savepoint output for the rest of the
  *                          block. In {@code StreamMode.BLOCKS} (canonical block stream), it additionally causes
- *                          subsequent non-signature submitted transactions in that block to be rejected with {@code THROTTLED_AT_CONSENSUS}
+ *                          subsequent submitted transactions in that block to be rejected with {@code THROTTLED_AT_CONSENSUS},
+ *                          except migration root hash votes, hints/CRS and history proof protocol transactions,
+ *                          and transactions paid by accounts in {@code 1..accounts.lastThrottleExempt},
  *                          with normal consensus throttle fees; scheduled executions are deferred until capacity is available
  * @param maxBlockSizeLimitEnabled feature flag for the canonical block execution budget; does not affect
  *                                 the preview-mode savepoint-output circuit breaker
