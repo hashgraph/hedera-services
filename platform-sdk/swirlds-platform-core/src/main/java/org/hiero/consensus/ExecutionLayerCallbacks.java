@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus;
 
-import java.time.Duration;
 import java.util.List;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.Round;

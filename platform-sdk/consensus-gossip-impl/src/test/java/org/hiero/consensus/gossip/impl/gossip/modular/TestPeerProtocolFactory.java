@@ -3,10 +3,9 @@ package org.hiero.consensus.gossip.impl.gossip.modular;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
-import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
 
 public class TestPeerProtocolFactory implements PeerProtocolFactory {
 
@@ -14,7 +13,8 @@ public class TestPeerProtocolFactory implements PeerProtocolFactory {
     private final List<CommunicationEvent> events;
     private final List<TestPeerProtocol> peerProtocols;
 
-    public TestPeerProtocolFactory(NodeId selfId, List<CommunicationEvent> events, List<TestPeerProtocol> peerProtocols) {
+    public TestPeerProtocolFactory(
+            NodeId selfId, List<CommunicationEvent> events, List<TestPeerProtocol> peerProtocols) {
         this.selfId = selfId;
         this.events = events;
         this.peerProtocols = peerProtocols;

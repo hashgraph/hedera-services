@@ -22,7 +22,6 @@ import org.hiero.base.iterator.TypedIterator;
 import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.main.model.EventDescriptorWrapper;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.main.model.Transaction;
 import org.hiero.consensus.model.hashgraph.ConsensusConstants;
 import org.hiero.consensus.model.transaction.TransactionWrapper;
 

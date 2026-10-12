@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.gossip.impl.reconnect;
 
 import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
@@ -15,9 +16,9 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.concurrent.throttle.RateLimitedLogger;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
-import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
 import org.hiero.consensus.metrics.extensions.CountPerSecond;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
@@ -62,7 +63,7 @@ public class ReconnectProxyProtocol implements PeerProtocol {
         this.reconnectRejectionMetrics = new CountPerSecond(
                 metrics,
                 new CountPerSecond.Config(
-                        PLATFORM_CATEGORY, String.format("reconnectRejections_per_sec_%02d", peerId.id()))
+                                PLATFORM_CATEGORY, String.format("reconnectRejections_per_sec_%02d", peerId.id()))
                         .withDescription(String.format(
                                 "number of reconnections rejected per second from node %02d", peerId.id()))
                         .withUnit("rejectionsPerSec")
@@ -136,5 +137,4 @@ public class ReconnectProxyProtocol implements PeerProtocol {
     private void reconnectRejected() {
         reconnectRejectionMetrics.count();
     }
-
 }

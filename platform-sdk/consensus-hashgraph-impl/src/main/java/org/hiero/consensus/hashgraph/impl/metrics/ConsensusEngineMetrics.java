@@ -19,7 +19,6 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
 import java.util.Objects;
 import org.hiero.consensus.hashgraph.impl.EventImpl;
 import org.hiero.consensus.main.model.NodeId;
@@ -113,7 +112,7 @@ public class ConsensusEngineMetrics {
     private final LongGauge consensusTime;
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
-            INTERNAL_CATEGORY, "consensusTimeDeviation")
+                    INTERNAL_CATEGORY, "consensusTimeDeviation")
             .withDescription("The difference between the consensus time of the round currently being handled and this"
                     + " node's wall clock time. Positive values mean that this node's clock is behind the consensus"
                     + "time, negative values mean that it's ahead.")
@@ -121,7 +120,7 @@ public class ConsensusEngineMetrics {
     private final LongGauge consensusTimeDeviation;
 
     private static final LongGauge.Config eventsPerRoundConfig = new LongGauge.Config(
-            INTERNAL_CATEGORY, "eventsPerRound")
+                    INTERNAL_CATEGORY, "eventsPerRound")
             .withDescription("The number of events per round")
             .withUnit("count");
     private final LongGauge eventsPerRound;

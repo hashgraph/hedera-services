@@ -34,8 +34,8 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform;
-    exports org.hiero.consensus;
     exports org.hiero.consensus.exception;
+    exports org.hiero.consensus;
 
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
@@ -80,8 +80,8 @@ module com.swirlds.platform.core {
     requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires static transitive com.github.spotbugs.annotations;
     requires org.jspecify;
+    requires static transitive com.github.spotbugs.annotations;
 
     uses EventCreatorModule;
     uses EventIntakeModule;

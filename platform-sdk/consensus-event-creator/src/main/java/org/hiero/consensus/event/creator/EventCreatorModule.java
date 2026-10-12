@@ -21,7 +21,6 @@ import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
-import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 
 /**
  * Creates and signs events. Will sometimes decide not to create new events based on external rules.

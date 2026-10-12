@@ -25,10 +25,10 @@ import org.hiero.consensus.concurrent.manager.ThreadManager;
 import org.hiero.consensus.concurrent.throttle.RateLimitedLogger;
 import org.hiero.consensus.exceptions.ThrowableUtilities;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
-import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.reconnect.config.ReconnectConfig;
 import org.hiero.consensus.state.config.StateConfig;
@@ -50,7 +50,6 @@ public class ReconnectPeerProtocol implements PeerProtocol {
     private final ReconnectMetrics reconnectMetrics;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
-
 
     private ReservedSignedState teacherState;
     /**

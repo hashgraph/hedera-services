@@ -24,7 +24,6 @@ import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.concurrent.throttle.RateLimiter;
 import org.hiero.consensus.event.creator.EventCreatorModule;
 import org.hiero.consensus.event.intake.EventIntakeModule;
-import org.hiero.consensus.gossip.GossipModule;
 import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.io.IOIterator;
 import org.hiero.consensus.model.event.EventConstants;
@@ -139,8 +138,8 @@ public class PcesReplayer {
                 commaSeparatedNumber(elapsedRounds),
                 elapsedConsensusTime != null
                         ? new UnitFormatter(elapsedConsensusTime.toMillis(), UNIT_MILLISECONDS)
-                        .setAbbreviate(false)
-                        .render()
+                                .setAbbreviate(false)
+                                .render()
                         : "n/a",
                 commaSeparatedNumber(roundAfterReplay),
                 new UnitFormatter(elapsedTime.toMillis(), UNIT_MILLISECONDS)
@@ -173,7 +172,7 @@ public class PcesReplayer {
             while (eventIterator.hasNext()) {
                 // If the system is not keeping up with the rate at which we are replaying PCES, we need to wait
                 // until it catches up before we can continue.
-//                waitUntilHealthy();
+                //                waitUntilHealthy();
 
                 if (config.limitReplayFrequency() && !rateLimiter.requestAndTrigger()) {
                     continue;
@@ -205,8 +204,8 @@ public class PcesReplayer {
         logger.info(STARTUP.getMarker(), "After flushing hashgraph module");
         eventCreatorModule.flush();
         logger.info(STARTUP.getMarker(), "After flushing event creator module");
-//        transactionHandlingModule.flush();
-//        stateModule.flush();
+        //        transactionHandlingModule.flush();
+        //        stateModule.flush();
 
         logger.info(STARTUP.getMarker(), "Flushed all modules");
 

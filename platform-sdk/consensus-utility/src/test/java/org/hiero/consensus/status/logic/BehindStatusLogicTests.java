@@ -6,18 +6,15 @@ import static org.hiero.consensus.status.logic.StatusLogicTestUtils.assertNoTran
 import static org.hiero.consensus.status.logic.StatusLogicTestUtils.assertTransition;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.temporal.ChronoUnit;
-import org.hiero.consensus.config.PlatformStatusConfig;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
+import org.hiero.consensus.status.actions.FreezeCompleteAction;
 import org.hiero.consensus.status.actions.FreezePeriodEnteredAction;
 import org.hiero.consensus.status.actions.SelfEventReachedConsensusAction;
 import org.hiero.consensus.status.actions.StartedReplayingEventsAction;
-import org.hiero.consensus.status.actions.FreezeCompleteAction;
 import org.hiero.consensus.status.actions.TimeElapsedAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

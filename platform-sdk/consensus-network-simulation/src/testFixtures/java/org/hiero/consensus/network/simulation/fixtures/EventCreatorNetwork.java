@@ -87,8 +87,8 @@ public class EventCreatorNetwork {
                     nodeId,
                     () -> List.of(new TimestampedTransaction(Bytes.EMPTY, time.now())));
 
-            final DefaultEventCreationManager eventCreationManager = new DefaultEventCreationManager(
-                    configuration, metrics, time, eventCreator, roster, nodeId);
+            final DefaultEventCreationManager eventCreationManager =
+                    new DefaultEventCreationManager(configuration, metrics, time, eventCreator, roster, nodeId);
 
             // Set platform status to ACTIVE so events can be created
             eventCreationManager.updatePlatformStatus(PlatformStatus.ACTIVE);

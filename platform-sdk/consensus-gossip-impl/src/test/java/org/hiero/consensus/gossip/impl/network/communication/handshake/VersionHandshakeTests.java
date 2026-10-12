@@ -11,10 +11,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncInputStreamImpl;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncOutputStreamImpl;
-import org.hiero.consensus.main.model.reconnect.Connection;
-import org.hiero.consensus.main.model.reconnect.ProtocolRunnable;
 import org.hiero.consensus.gossip.impl.test.fixtures.sync.ConnectionFactory;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
+import org.hiero.consensus.main.model.reconnect.ProtocolRunnable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,9 +32,9 @@ class VersionHandshakeTests {
     private static void clearWriteFlush(@NonNull final Connection connection, @Nullable final SemanticVersion version)
             throws IOException {
         if (connection.getDis().asInputStream().available() > 0) {
-            ((SyncInputStreamImpl)connection.getDis()).readPbjRecord(SemanticVersion.PROTOBUF);
+            ((SyncInputStreamImpl) connection.getDis()).readPbjRecord(SemanticVersion.PROTOBUF);
         }
-        ((SyncOutputStreamImpl)connection.getDos()).writePbjRecord(version, SemanticVersion.PROTOBUF);
+        ((SyncOutputStreamImpl) connection.getDos()).writePbjRecord(version, SemanticVersion.PROTOBUF);
         connection.getDos().flush();
     }
 

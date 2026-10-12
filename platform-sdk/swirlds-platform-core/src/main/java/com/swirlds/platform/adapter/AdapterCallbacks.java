@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.swirlds.platform.adapter;
 
-import static com.swirlds.component.framework.wires.SolderType.INJECT;
 import static java.util.Objects.requireNonNull;
 
 import com.swirlds.component.framework.component.ComponentWiring;
@@ -11,7 +10,6 @@ import com.swirlds.platform.state.ConsensusStateEventHandler;
 import com.swirlds.platform.system.StaleEventConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.base.concurrent.ResettableLatch;
@@ -109,7 +107,9 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
     @Override
     public void onPlatformStatusChange(@NonNull final PlatformStatus status) {
         executionLayer.newPlatformStatus(status);
-        notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification).inject(status);
+        notifierWiring
+                .getInputWire(AppNotifier::sendPlatformStatusChangeNotification)
+                .inject(status);
         stateModule.platformStatusInputWire().inject(status);
         platformStatusReference.set(status);
         if (status == PlatformStatus.BEHIND) {

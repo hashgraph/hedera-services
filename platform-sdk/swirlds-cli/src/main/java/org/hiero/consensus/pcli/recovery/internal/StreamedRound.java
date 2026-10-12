@@ -80,7 +80,7 @@ public class StreamedRound implements Round {
 
     @Override
     @NonNull
-    public  ConsensusSnapshot getConsensusSnapshot() {
+    public ConsensusSnapshot getConsensusSnapshot() {
         return null;
     }
 

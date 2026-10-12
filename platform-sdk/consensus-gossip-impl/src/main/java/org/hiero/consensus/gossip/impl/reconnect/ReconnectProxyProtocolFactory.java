@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.gossip.impl.reconnect;
 
 import static java.util.Objects.requireNonNull;
@@ -15,10 +16,13 @@ public class ReconnectProxyProtocolFactory implements PeerProtocolFactory {
 
     @NonNull
     private final Metrics metrics;
+
     @NonNull
     private final Time time;
+
     @NonNull
     private final FallenBehindMonitor fallenBehindMonitor;
+
     @Nullable
     private PeerProtocolFactory executionProtocolFactory;
 
@@ -39,11 +43,6 @@ public class ReconnectProxyProtocolFactory implements PeerProtocolFactory {
     @Override
     public PeerProtocol createPeerInstance(@NonNull final NodeId peerId) {
         return new ReconnectProxyProtocol(
-                metrics,
-                time,
-                peerId,
-                () -> executionProtocolFactory.createPeerInstance(peerId),
-                fallenBehindMonitor
-        );
+                metrics, time, peerId, () -> executionProtocolFactory.createPeerInstance(peerId), fallenBehindMonitor);
     }
 }

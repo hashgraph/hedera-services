@@ -21,7 +21,6 @@ import org.hiero.base.io.streams.SerializableDataOutputStream;
 import org.hiero.consensus.main.model.ConsensusEvent;
 import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.main.model.Transaction;
 import org.hiero.consensus.model.stream.StreamAligned;
 import org.hiero.consensus.model.stream.Timestamped;
 
@@ -185,14 +184,10 @@ public class CesEvent extends AbstractSerializableHashable
     }
 
     @Override
-    public void awaitPrehandleCompletion() {
-
-    }
+    public void awaitPrehandleCompletion() {}
 
     @Override
-    public void signalPrehandleCompletion() {
-
-    }
+    public void signalPrehandleCompletion() {}
 
     /**
      * @return the round in which this event received a consensus order and timestamp

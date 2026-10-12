@@ -112,7 +112,8 @@ public class ShadowgraphSynchronizer {
         this.nonAncestorFilterThreshold = syncConfig.nonAncestorFilterThreshold();
         this.ancestorFilterThreshold = syncConfig.ancestorFilterThreshold();
         this.selfFilterThreshold = syncConfig.selfFilterThreshold();
-        this.farFutureEventThreshold = configuration.getConfigData(GossipConfig.class).farFutureEventThreshold();
+        this.farFutureEventThreshold =
+                configuration.getConfigData(GossipConfig.class).farFutureEventThreshold();
 
         this.filterLikelyDuplicates = syncConfig.filterLikelyDuplicates();
         this.maximumEventsPerSync = syncConfig.maxSyncEventCount();
@@ -202,8 +203,8 @@ public class ShadowgraphSynchronizer {
             sendList = eventsTheyMayNeed;
         }
 
-        List<PlatformEvent> nonFarFutureEventsToSend = filterFarFutureEvents(
-                theirEventWindow.getPendingConsensusRound(), sendList);
+        List<PlatformEvent> nonFarFutureEventsToSend =
+                filterFarFutureEvents(theirEventWindow.getPendingConsensusRound(), sendList);
 
         if (maximumEventsPerSync > 0 && nonFarFutureEventsToSend.size() > maximumEventsPerSync) {
             nonFarFutureEventsToSend = nonFarFutureEventsToSend.subList(0, maximumEventsPerSync);
@@ -212,10 +213,12 @@ public class ShadowgraphSynchronizer {
         return nonFarFutureEventsToSend;
     }
 
-    private List<PlatformEvent> filterFarFutureEvents(final long theirPendingRound,
-            @NonNull final List<PlatformEvent> sendList) {
+    private List<PlatformEvent> filterFarFutureEvents(
+            final long theirPendingRound, @NonNull final List<PlatformEvent> sendList) {
         final long minimumPeerRejectedBirthRound = theirPendingRound + farFutureEventThreshold;
-        return sendList.stream().filter(e -> e.getBirthRound() < minimumPeerRejectedBirthRound).toList();
+        return sendList.stream()
+                .filter(e -> e.getBirthRound() < minimumPeerRejectedBirthRound)
+                .toList();
     }
 
     /**

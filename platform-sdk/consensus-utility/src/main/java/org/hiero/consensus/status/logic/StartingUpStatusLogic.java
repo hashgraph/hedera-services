@@ -5,9 +5,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hiero.consensus.config.PlatformStatusConfig;
 import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.status.actions.FreezeCompleteAction;
 import org.hiero.consensus.status.actions.SelfEventReachedConsensusAction;
 import org.hiero.consensus.status.actions.StartedReplayingEventsAction;
-import org.hiero.consensus.status.actions.FreezeCompleteAction;
 
 /**
  * Class containing the state machine logic for the {@link PlatformStatus#STARTING_UP} status.

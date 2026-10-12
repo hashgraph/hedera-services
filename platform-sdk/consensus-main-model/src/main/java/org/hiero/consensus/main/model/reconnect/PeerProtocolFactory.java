@@ -14,5 +14,4 @@ public interface PeerProtocolFactory {
      * @return a network protocol for connectivity over the bidirectional network
      */
     PeerProtocol createPeerInstance(@NonNull final NodeId peerId);
-
 }

@@ -104,12 +104,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.bouncycastle.util.Arrays;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.test.fixtures.CryptoRandomUtils;
 import org.hiero.consensus.main.model.ConsensusEvent;
 import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.model.transaction.TransactionWrapper;
 import org.hiero.consensus.platformstate.PlatformStateService;
 import org.junit.jupiter.api.BeforeEach;
@@ -1720,8 +1718,7 @@ class BlockStreamManagerImplTest {
         given(mockEvent.getConsensusTimestamp()).willReturn(asInstant(CONSENSUS_THEN));
         given(round.getRoundNum()).willReturn(ROUND_NO);
         given(round.getConsensusTimestamp()).willReturn(roundEnd);
-        given(round.getConsensusEvents())
-                .willReturn(List.of(nullTimestampEvent, mockEvent));
+        given(round.getConsensusEvents()).willReturn(List.of(nullTimestampEvent, mockEvent));
 
         subject.startRound(round, state);
         subject.endRound(state, ROUND_NO);
@@ -2215,9 +2212,7 @@ class BlockStreamManagerImplTest {
 
         final var txn = new TransactionWrapper(Bytes.fromHex("abcdefABCDEF"));
         txn.setConsensusTimestamp(timestamp);
-        lenient()
-                .when(mockEvent.getTransactions())
-                .thenReturn(List.of(txn));
+        lenient().when(mockEvent.getTransactions()).thenReturn(List.of(txn));
     }
 
     @Test

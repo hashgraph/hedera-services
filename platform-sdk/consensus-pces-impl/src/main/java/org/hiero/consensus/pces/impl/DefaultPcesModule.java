@@ -2,7 +2,6 @@
 package org.hiero.consensus.pces.impl;
 
 import static com.swirlds.component.framework.wires.SolderType.INJECT;
-import static java.util.Objects.hash;
 import static java.util.Objects.requireNonNull;
 import static org.hiero.base.CompareTo.isLessThan;
 
@@ -24,7 +23,6 @@ import java.util.function.Function;
 import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.event.creator.EventCreatorModule;
 import org.hiero.consensus.event.intake.EventIntakeModule;
-import org.hiero.consensus.gossip.GossipModule;
 import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;

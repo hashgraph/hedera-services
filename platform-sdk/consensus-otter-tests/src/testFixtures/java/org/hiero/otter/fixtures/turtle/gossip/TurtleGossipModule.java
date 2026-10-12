@@ -27,13 +27,13 @@ import org.hiero.consensus.event.IntakeEventCounter;
 import org.hiero.consensus.gossip.GossipModule;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
 import org.hiero.consensus.gossip.impl.gossip.GossipWiring;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.state.signed.ReservedSignedState;
@@ -195,8 +195,7 @@ public class TurtleGossipModule implements GossipModule {
     }
 
     @Override
-    public void setReconnectPeerProtocolFactory(
-            @NonNull PeerProtocolFactory reconnectPeerProtocolFactory) {
+    public void setReconnectPeerProtocolFactory(@NonNull PeerProtocolFactory reconnectPeerProtocolFactory) {
         // intentional no-op
     }
 

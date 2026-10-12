@@ -61,18 +61,19 @@ public class CacheWarmer {
             final ReadableStoreFactory storeFactory = new ReadableStoreFactoryImpl(state);
             final ReadableAccountStore accountStore = storeFactory.readableStore(ReadableAccountStore.class);
             for (final ConsensusEvent event : round.getConsensusEvents()) {
-                event.getTransactions().forEach(platformTransaction -> executor.execute(() -> {
-                    final TransactionBody txBody = extractTransactionBody(platformTransaction);
-                    if (txBody != null) {
-                        final AccountID payerID = txBody.transactionIDOrElse(TransactionID.DEFAULT)
-                                .accountID();
-                        if (payerID != null) {
-                            accountStore.warm(payerID);
-                        }
-                        final var context = new WarmupContextImpl(txBody, storeFactory);
-                        dispatcher.dispatchWarmup(context);
-                    }
-                }));
+                event.getTransactions()
+                        .forEach(platformTransaction -> executor.execute(() -> {
+                            final TransactionBody txBody = extractTransactionBody(platformTransaction);
+                            if (txBody != null) {
+                                final AccountID payerID = txBody.transactionIDOrElse(TransactionID.DEFAULT)
+                                        .accountID();
+                                if (payerID != null) {
+                                    accountStore.warm(payerID);
+                                }
+                                final var context = new WarmupContextImpl(txBody, storeFactory);
+                                dispatcher.dispatchWarmup(context);
+                            }
+                        }));
             }
         });
     }

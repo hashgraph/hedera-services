@@ -14,7 +14,6 @@ import org.hiero.consensus.hashgraph.impl.ConsensusEngineOutput;
 import org.hiero.consensus.hashgraph.impl.DefaultConsensusEngine;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.network.simulation.fixtures.EventCreatorNetwork;
 import org.hiero.consensus.network.simulation.fixtures.NetworkLatency;
 import org.junit.jupiter.api.Disabled;
@@ -356,11 +355,11 @@ public class NetworkSimulationTest {
             final List<ConsensusEngineOutput> engineOutputs =
                     events.stream().map(consensusEngine::addEvent).toList();
             // TODO
-//            engineOutputs.stream()
-//                    .map(ConsensusEngineOutput::consensusRounds)
-//                    .flatMap(List::stream)
-//                    .map(ConsensusRound::getEventWindow)
-//                    .forEach(creatorNetwork::setEventWindow);
+            //            engineOutputs.stream()
+            //                    .map(ConsensusEngineOutput::consensusRounds)
+            //                    .flatMap(List::stream)
+            //                    .map(ConsensusRound::getEventWindow)
+            //                    .forEach(creatorNetwork::setEventWindow);
             stats.record(engineOutputs);
         }
         final Duration timePassed = Duration.between(

@@ -26,9 +26,9 @@ import org.hiero.consensus.gossip.impl.network.PeerCommunication;
 import org.hiero.consensus.gossip.impl.network.PeerInfo;
 import org.hiero.consensus.gossip.impl.network.communication.handshake.VersionCompareHandshake;
 import org.hiero.consensus.gossip.impl.network.protocol.HeartbeatPeerProtocolFactory;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.main.model.reconnect.ProtocolRunnable;
-import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.junit.jupiter.api.AfterEach;
@@ -112,7 +112,8 @@ public class PeerCommunicationTests {
             List<PeerProtocolFactory> protocolFactories = new ArrayList<>();
             var testProtocol = new TestPeerProtocolFactory(selfPeer.nodeId(), events, protocolsForDebug);
             protocolFactories.add(testProtocol);
-            protocolFactories.add(HeartbeatPeerProtocolFactory.create(configuration, Time.getCurrent(), pc.getNetworkMetrics()));
+            protocolFactories.add(
+                    HeartbeatPeerProtocolFactory.create(configuration, Time.getCurrent(), pc.getNetworkMetrics()));
 
             pc.initialize(threadManager, handshakeProtocols, protocolFactories);
 

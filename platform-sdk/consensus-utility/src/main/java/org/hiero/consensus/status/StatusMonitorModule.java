@@ -8,7 +8,6 @@ import com.swirlds.component.framework.component.ComponentWiring;
 import com.swirlds.component.framework.component.InputWireLabel;
 import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.component.framework.wires.input.InputWire;
-import com.swirlds.component.framework.wires.input.NoInput;
 import com.swirlds.component.framework.wires.output.OutputWire;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
@@ -18,9 +17,7 @@ import org.hiero.consensus.config.PlatformStatusConfig;
 import org.hiero.consensus.freeze.FreezePeriodChecker;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
-import org.hiero.consensus.model.notification.IssNotification;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.state.StateSavingResult;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 import org.hiero.consensus.status.internal.DefaultPlatformMonitor;
@@ -63,7 +60,8 @@ public class StatusMonitorModule {
         platformMonitorWiring.getInputWire(PlatformMonitor::submitStatusAction);
         platformMonitorWiring.getInputWire(PlatformMonitor::quiescenceCommand);
 
-        final PlatformMonitor platformMonitor = new DefaultPlatformMonitor(configuration, metrics, time, selfId, freezePeriodChecker);
+        final PlatformMonitor platformMonitor =
+                new DefaultPlatformMonitor(configuration, metrics, time, selfId, freezePeriodChecker);
         platformMonitorWiring.bind(platformMonitor);
     }
 

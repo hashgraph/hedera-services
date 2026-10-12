@@ -104,7 +104,8 @@ public class SwirldsPlatform implements Platform {
         inputs.metrics().start();
         buildingBlocks.wiringModel().start();
 
-        final ConsensusLayer consensusLayer = buildingBlocks.consensusLayerLifecycleManager().get();
+        final ConsensusLayer consensusLayer =
+                buildingBlocks.consensusLayerLifecycleManager().get();
         consensusLayer.start();
 
         // TODO: Make configurable, check if there is a freeze time

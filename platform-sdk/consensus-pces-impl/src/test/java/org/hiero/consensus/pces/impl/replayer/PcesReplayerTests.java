@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.hiero.consensus.event.creator.EventCreatorModule;
 import org.hiero.consensus.event.intake.EventIntakeModule;
-import org.hiero.consensus.gossip.GossipModule;
 import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.io.IOIterator;
 import org.hiero.consensus.model.event.PlatformEvent;
@@ -65,9 +64,9 @@ class PcesReplayerTests {
 
         // whenever an event is forwarded to the output wire, increment the count
         doAnswer(invocation -> {
-            eventOutputCount.incrementAndGet();
-            return null;
-        })
+                    eventOutputCount.incrementAndGet();
+                    return null;
+                })
                 .when(eventOutputWire)
                 .forward(any());
 
@@ -108,9 +107,16 @@ class PcesReplayerTests {
                 .withValue(PcesConfig_.LIMIT_REPLAY_FREQUENCY, false)
                 .getOrCreateConfig();
 
-        final PcesReplayer replayer =
-                new PcesReplayer(configuration, time, pcesModule, eventIntakeModule, eventCreatorModule,
-                        hashgraphModule, flushGossipModule, eventOutputWire, () -> true);
+        final PcesReplayer replayer = new PcesReplayer(
+                configuration,
+                time,
+                pcesModule,
+                eventIntakeModule,
+                eventCreatorModule,
+                hashgraphModule,
+                flushGossipModule,
+                eventOutputWire,
+                () -> true);
 
         replayer.replayPces(ioIterator);
 
@@ -130,9 +136,16 @@ class PcesReplayerTests {
                 .withValue(PcesConfig_.MAX_EVENT_REPLAY_FREQUENCY, 10)
                 .getOrCreateConfig();
 
-        final PcesReplayer replayer =
-                new PcesReplayer(configuration, time, pcesModule, eventIntakeModule, eventCreatorModule,
-                        hashgraphModule, flushGossipModule, eventOutputWire, () -> true);
+        final PcesReplayer replayer = new PcesReplayer(
+                configuration,
+                time,
+                pcesModule,
+                eventIntakeModule,
+                eventCreatorModule,
+                hashgraphModule,
+                flushGossipModule,
+                eventOutputWire,
+                () -> true);
 
         final Thread thread = new Thread(() -> {
             replayer.replayPces(ioIterator);
@@ -157,17 +170,12 @@ class PcesReplayerTests {
         assertFlushEventuallyCalled(() -> verify(eventIntakeModule, times(1)).flush(), "Event Intake");
         assertFlushEventuallyCalled(() -> verify(hashgraphModule, times(1)).flush(), "Hashgraph");
         assertEventuallyTrue(
-                () -> gossipFlushCalled.get(),
-                Duration.ofSeconds(1),
-                "Flush gossip runnable should have been called");
+                () -> gossipFlushCalled.get(), Duration.ofSeconds(1), "Flush gossip runnable should have been called");
     }
 
-    private void assertFlushEventuallyCalled(@NonNull final Runnable flushRunnable,
-            @NonNull final String runnableName) {
+    private void assertFlushEventuallyCalled(
+            @NonNull final Runnable flushRunnable, @NonNull final String runnableName) {
         assertEventuallyDoesNotThrow(
-                flushRunnable,
-                Duration.ofSeconds(1),
-                runnableName + " module flush should have been called"
-        );
+                flushRunnable, Duration.ofSeconds(1), runnableName + " module flush should have been called");
     }
 }

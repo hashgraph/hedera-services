@@ -255,7 +255,7 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
         // don't log an error if this is a freeze state. they are expected to lack signatures
         if (reservedState.isFreezeState()) {
             final double signingWeightPercent = (((double) reservedState.getSigningWeight())
-                    / ((double) RosterUtils.computeTotalWeight(reservedState.getRoster())))
+                            / ((double) RosterUtils.computeTotalWeight(reservedState.getRoster())))
                     * 100.0;
 
             logger.info(
@@ -277,15 +277,15 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
                     This log adds debug information for #11422.
                     Pre-check weight: %d/%d (%f%%)  Post-check weight: %d/%d (%f%%)
                     Pre-check threshold: %s   Post-check threshold: %s""".formatted(
-                    reservedState.getRound(),
-                    signingWeight1,
-                    totalWeight1,
-                    signingWeight1Percent,
-                    signingWeight2,
-                    totalWeight2,
-                    signingWeight2Percent,
-                    Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
-                    Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)))));
+                            reservedState.getRound(),
+                            signingWeight1,
+                            totalWeight1,
+                            signingWeight1Percent,
+                            signingWeight2,
+                            totalWeight2,
+                            signingWeight2Percent,
+                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight1, totalWeight1),
+                            Threshold.SUPER_MAJORITY.isSatisfiedBy(signingWeight2, totalWeight2)))));
         }
     }
 
@@ -329,12 +329,13 @@ public class DefaultStateSnapshotManager implements StateSnapshotManager {
         try {
             return SignedStateFileUtils.getConsensusSnapshot(oldestStateMetadata.stateDirectory());
         } catch (final IOException | ParseException e) {
-            logger.warn(SIGNED_STATE.getMarker(),
+            logger.warn(
+                    SIGNED_STATE.getMarker(),
                     "Unable to read {} file from round {} on disk - PCES for this round will be maintained "
                             + "until the next oldest state on disk has a readable consensus snapshot file.",
-                    CONSENSUS_SNAPSHOT_FILE_NAME, savedStates.get(index).metadata().round());
+                    CONSENSUS_SNAPSHOT_FILE_NAME,
+                    savedStates.get(index).metadata().round());
             return null;
         }
     }
-
 }

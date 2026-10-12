@@ -58,7 +58,8 @@ public class TestIntake {
     private final Queue<Throwable> componentExceptions = new LinkedList<>();
     private final DeterministicWiringModel model;
     private final int roundsNonAncient;
-    private final AtomicReference<FreezePeriodChecker> freezeCheckHolder = new AtomicReference<>(new FreezePeriodChecker(null));
+    private final AtomicReference<FreezePeriodChecker> freezeCheckHolder =
+            new AtomicReference<>(new FreezePeriodChecker(null));
     private final FakeTime time = new FakeTime(Duration.of(1, ChronoUnit.SECONDS));
 
     /**

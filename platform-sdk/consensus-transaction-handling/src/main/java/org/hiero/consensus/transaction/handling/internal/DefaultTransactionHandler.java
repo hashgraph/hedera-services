@@ -274,8 +274,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
      *
      * @param round the round to handle
      */
-    private Queue<ScopedSystemTransaction<StateSignatureTransaction>> doHandleConsensusRound(
-            final Round round) {
+    private Queue<ScopedSystemTransaction<StateSignatureTransaction>> doHandleConsensusRound(final Round round) {
         final State state = stateLifecycleManager.getMutableState();
         final Queue<ScopedSystemTransaction<StateSignatureTransaction>> scopedSystemTransactions =
                 new ConcurrentLinkedQueue<>();
@@ -309,7 +308,9 @@ public class DefaultTransactionHandler implements TransactionHandler {
     }
 
     private int getNumTransactions(@NonNull final Round round) {
-        return round.getConsensusEvents().stream().mapToInt(e -> e.getTransactions().size()).sum();
+        return round.getConsensusEvents().stream()
+                .mapToInt(e -> e.getTransactions().size())
+                .sum();
     }
 
     /**
@@ -349,7 +350,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
             // Future work: this is a redundant check, since empty rounds are currently ignored entirely. The check is
             // here anyway, for when that changes in the future.
             if (!round.isEmpty()) {
-                previousRoundLegacyRunningEventHash = round.getLastEventRunningHash().getFutureHash().getAndRethrow();
+                previousRoundLegacyRunningEventHash =
+                        round.getLastEventRunningHash().getFutureHash().getAndRethrow();
             }
 
             setLegacyRunningEventHashTo(consensusState, previousRoundLegacyRunningEventHash);
@@ -381,8 +383,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
                 logger.error(EXCEPTION.getMarker(), """
                                 The freeze round {} is not a boundary round. The freeze state will be saved to disk, \
                                 but the app may not have done some work that it needs to (like finishing a block). The \
-                                app must ensure that the freeze round is always a boundary round.""",
-                        consensusRound.getRoundNum());
+                                app must ensure that the freeze round is always a boundary round.""", consensusRound.getRoundNum());
             }
             handlerMetrics.setPhase(GETTING_STATE_TO_SIGN);
             stateLifecycleManager.copyMutableState();

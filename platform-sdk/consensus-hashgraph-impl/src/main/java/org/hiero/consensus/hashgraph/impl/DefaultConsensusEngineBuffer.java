@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.hashgraph.impl;
-
-import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.swirlds.config.api.Configuration;
@@ -40,11 +39,11 @@ public class DefaultConsensusEngineBuffer implements ConsensusEngineBuffer {
 
     private final int roundsNonAncient;
 
-
-    public record ConsensusEngineBufferOutput(@NonNull List<PlatformEvent> preConsensusEvents,
-                                              @NonNull List<ConsensusResult> consensusResults) {
-        public static final ConsensusEngineBufferOutput EMPTY_INSTANCE = new ConsensusEngineBufferOutput(List.of(),
-                List.of());
+    public record ConsensusEngineBufferOutput(
+            @NonNull List<PlatformEvent> preConsensusEvents,
+            @NonNull List<ConsensusResult> consensusResults) {
+        public static final ConsensusEngineBufferOutput EMPTY_INSTANCE =
+                new ConsensusEngineBufferOutput(List.of(), List.of());
     }
 
     public DefaultConsensusEngineBuffer(

@@ -1,40 +1,41 @@
+// SPDX-License-Identifier: Apache-2.0
 //// SPDX-License-Identifier: Apache-2.0
-//package org.hiero.consensus.pcli.recovery.internal;
+// package org.hiero.consensus.pcli.recovery.internal;
 //
-//import static org.hiero.base.utility.test.fixtures.RandomUtils.getRandomPrintSeed;
-//import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.generateRandomEvents;
-//import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.getLastEventStreamFile;
-//import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.getMiddleEventStreamFile;
-//import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.writeRandomEventStream;
-//import static org.hiero.consensus.pcli.recovery.internal.StreamFileTestUtils.truncateFile;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertSame;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
-//import static org.mockito.Mockito.mock;
+// import static org.hiero.base.utility.test.fixtures.RandomUtils.getRandomPrintSeed;
+// import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.generateRandomEvents;
+// import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.getLastEventStreamFile;
+// import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.getMiddleEventStreamFile;
+// import static org.hiero.consensus.event.stream.test.fixtures.EventStreamTestUtils.writeRandomEventStream;
+// import static org.hiero.consensus.pcli.recovery.internal.StreamFileTestUtils.truncateFile;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertSame;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+// import static org.mockito.Mockito.mock;
 //
-//import com.hedera.hapi.node.state.roster.Roster;
-//import java.io.IOException;
-//import java.nio.file.Files;
-//import java.nio.file.Path;
-//import java.time.Duration;
-//import java.util.ArrayList;
-//import java.util.List;
-//import java.util.NoSuchElementException;
-//import java.util.Random;
-//import org.hiero.base.constructable.ConstructableRegistryException;
-//import org.hiero.base.file.FileUtils;
-//import org.hiero.consensus.constructable.ConstructableRegistration;
-//import org.hiero.consensus.io.IOIterator;
-//import org.hiero.consensus.model.event.CesEvent;
-//import org.junit.jupiter.api.BeforeAll;
-//import org.junit.jupiter.api.Disabled;
-//import org.junit.jupiter.api.DisplayName;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.io.TempDir;
+// import com.hedera.hapi.node.state.roster.Roster;
+// import java.io.IOException;
+// import java.nio.file.Files;
+// import java.nio.file.Path;
+// import java.time.Duration;
+// import java.util.ArrayList;
+// import java.util.List;
+// import java.util.NoSuchElementException;
+// import java.util.Random;
+// import org.hiero.base.constructable.ConstructableRegistryException;
+// import org.hiero.base.file.FileUtils;
+// import org.hiero.consensus.constructable.ConstructableRegistration;
+// import org.hiero.consensus.io.IOIterator;
+// import org.hiero.consensus.model.event.CesEvent;
+// import org.junit.jupiter.api.BeforeAll;
+// import org.junit.jupiter.api.Disabled;
+// import org.junit.jupiter.api.DisplayName;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.io.TempDir;
 //
-//@DisplayName("EventStreamRoundIterator Test")
-//class EventStreamRoundIteratorTest {
+// @DisplayName("EventStreamRoundIterator Test")
+// class EventStreamRoundIteratorTest {
 //
 //    @TempDir
 //    private Path directory;
@@ -119,7 +120,8 @@
 //                assertSame(peekRound, nextRound, "peek returned wrong object");
 //
 //                assertTrue(
-//                        nextRound.getRoundNum() >= firstRoundToRead, "low rounds should not be returned for this test");
+//                        nextRound.getRoundNum() >= firstRoundToRead, "low rounds should not be returned for this
+// test");
 //
 //                nextRound.getConsensusEvents().iterator().forEachRemaining(event -> {
 //                    deserializedEvents.add(event);
@@ -203,7 +205,8 @@
 //        final int durationInSeconds = 100;
 //        final int secondsPerFile = 2;
 //
-//        final List<CesEvent> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
+//        final List<CesEvent> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1,
+// 20);
 //
 //        writeRandomEventStream(random, directory, secondsPerFile, events);
 //
@@ -314,4 +317,4 @@
 //            FileUtils.deleteDirectory(directory);
 //        }
 //    }
-//}
+// }

@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.transaction.handling.internal;
 
-import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static java.util.Objects.requireNonNull;
 import static org.hiero.consensus.transaction.handling.internal.TransactionHandlerPhase.IDLE;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import org.hiero.consensus.metrics.extensions.PhaseTimer;
 import org.hiero.consensus.metrics.extensions.PhaseTimerBuilder;
 

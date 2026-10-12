@@ -10,8 +10,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.translators.inputs.TransactionParts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.main.model.Event;
@@ -110,14 +108,10 @@ public class FakeEvent implements Event {
     }
 
     @Override
-    public void awaitPrehandleCompletion() {
-
-    }
+    public void awaitPrehandleCompletion() {}
 
     @Override
-    public void signalPrehandleCompletion() {
-
-    }
+    public void signalPrehandleCompletion() {}
 
     @NonNull
     public HederaFunctionality function() {

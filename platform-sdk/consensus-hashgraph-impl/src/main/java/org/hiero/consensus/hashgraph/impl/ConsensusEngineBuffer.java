@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.hashgraph.impl;
 
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
@@ -7,7 +8,6 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.status.PlatformStatus;
 
 public interface ConsensusEngineBuffer {
-
 
     @NonNull
     ConsensusEngineBufferOutput requestRound();

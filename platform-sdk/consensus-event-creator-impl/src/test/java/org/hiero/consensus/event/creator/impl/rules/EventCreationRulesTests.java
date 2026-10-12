@@ -26,7 +26,6 @@ import org.hiero.consensus.event.creator.config.EventCreationConfig_;
 import org.hiero.consensus.event.creator.impl.EventCreator;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

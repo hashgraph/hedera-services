@@ -4,10 +4,10 @@ package org.hiero.consensus.gossip.impl.gossip.modular;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
-import org.hiero.consensus.main.model.NodeId;
 
 public class TestPeerProtocol implements PeerProtocol {
 

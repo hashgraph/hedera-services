@@ -9,12 +9,10 @@ import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSoftw
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload.CauseOfFailure;
-import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
@@ -30,14 +28,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.concurrent.BlockingResourceProvider;
 import org.hiero.base.concurrent.ResettableLatch;
 import org.hiero.base.concurrent.locks.locked.LockedResource;
 import org.hiero.base.crypto.Hash;
-import org.hiero.consensus.ConsensusLayer;
 import org.hiero.consensus.ConsensusLayerLifecycleManager;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
 import org.hiero.consensus.main.model.NodeId;
@@ -193,7 +189,7 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
         // unblocked
         logger.info(RECONNECT.getMarker(), "Waiting for a state to be obtained from a peer");
         try (final LockedResource<ReservedSignedStateResult> reservedStateResource =
-                requireNonNull(peerReservedSignedStateResultProvider.waitForResource());
+                        requireNonNull(peerReservedSignedStateResultProvider.waitForResource());
                 final ReservedSignedStateResult result = requireNonNull(reservedStateResource.getResource())) {
             if (result.isError()) {
                 return AttemptReconnectResult.error(requireNonNull(result.throwable()));
@@ -340,7 +336,9 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
     }
 
     private record AttemptReconnectResult(
-            boolean success, @Nullable ReservedSignedState acquiredState, @Nullable Throwable throwable) {
+            boolean success,
+            @Nullable ReservedSignedState acquiredState,
+            @Nullable Throwable throwable) {
         static AttemptReconnectResult ok(@NonNull final ReservedSignedState acquiredState) {
             return new AttemptReconnectResult(true, acquiredState, null);
         }

@@ -100,8 +100,8 @@ public class ConsensusLayerImpl implements ConsensusLayer {
             if (consensusSnapshot.round() == GENESIS_ROUND) {
                 return ConsensusConstants.ROUND_FIRST;
             }
-            throw new IllegalStateException(
-                    String.format("No minimum judge info found in state for round %d, list is empty", consensusSnapshot.round()));
+            throw new IllegalStateException(String.format(
+                    "No minimum judge info found in state for round %d, list is empty", consensusSnapshot.round()));
         }
         return minimumJudgeInfos.getFirst().minimumJudgeBirthRound();
     }
@@ -139,16 +139,17 @@ public class ConsensusLayerImpl implements ConsensusLayer {
     }
 
     @Override
-    public void setReconnectPeerProtocolFactory(
-            @NonNull final PeerProtocolFactory reconnectPeerProtocolFactory) {
+    public void setReconnectPeerProtocolFactory(@NonNull final PeerProtocolFactory reconnectPeerProtocolFactory) {
         gossipModule.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory);
     }
 
     @Override
     public void onStatusUpdate(@NonNull final StatusUpdate status) {
         switch (status) {
-            case FREEZE_COMPLETE -> statusMonitorModule.platformStatusActionInputWire().inject(new FreezeCompleteAction());
-            case CATASTROPHIC_FAILURE -> statusMonitorModule.platformStatusActionInputWire().inject(new CatastrophicFailureAction());
+            case FREEZE_COMPLETE ->
+                statusMonitorModule.platformStatusActionInputWire().inject(new FreezeCompleteAction());
+            case CATASTROPHIC_FAILURE ->
+                statusMonitorModule.platformStatusActionInputWire().inject(new CatastrophicFailureAction());
             default -> throw new IllegalArgumentException("Unknown status: " + status);
         }
     }

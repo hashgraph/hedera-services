@@ -5,12 +5,12 @@ import static org.awaitility.Awaitility.await;
 
 import com.swirlds.base.utility.Pair;
 import java.util.concurrent.TimeUnit;
-import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.gossip.impl.test.fixtures.communication.TestPeerProtocol;
 import org.hiero.consensus.gossip.impl.test.fixtures.communication.multithreaded.ExpiringConnection;
 import org.hiero.consensus.gossip.impl.test.fixtures.communication.multithreaded.NegotiatorPair;
 import org.hiero.consensus.gossip.impl.test.fixtures.sync.ConnectionFactory;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

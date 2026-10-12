@@ -7,7 +7,6 @@ import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.List;
 import org.hiero.base.crypto.RunningHash;
 import org.hiero.consensus.main.model.ConsensusEvent;

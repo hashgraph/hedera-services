@@ -5,7 +5,6 @@ import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.BOTH;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.hiero.consensus.platformstate.PlatformStateService.NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,10 +85,9 @@ import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.test.fixtures.CryptoRandomUtils;
 import org.hiero.consensus.main.model.ConsensusEvent;
 import org.hiero.consensus.main.model.EventDescriptorWrapper;
-import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.platformstate.V0540PlatformStateSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -264,9 +262,7 @@ class HandleWorkflowTest {
 
     @Test
     void writesEachMigrationStateChangeWithBlockTimestamp() {
-        given(round.getConsensusEvents())
-                .willReturn(List.of(event))
-                .willReturn(List.of(event));
+        given(round.getConsensusEvents()).willReturn(List.of(event)).willReturn(List.of(event));
         given(event.allParentsIterator()).willReturn(List.of(wrapper).iterator());
         given(event.getConsensusTimestamp()).willReturn(NOW);
         given(systemTransactions.firstReservedSystemTimeFor(any())).willReturn(NOW);
@@ -325,8 +321,7 @@ class HandleWorkflowTest {
         NodeId creatorId = NodeId.of(0);
         given(event.getCreatorId()).willReturn(creatorId);
         given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
-        given(event.getTransactions())
-                .willReturn(List.of());
+        given(event.getTransactions()).willReturn(List.of());
 
         // Create subject with BLOCKS mode
         givenSubjectWith(StreamMode.BLOCKS, BlockStreamWriterMode.FILE, List.of());

@@ -11,7 +11,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import org.hiero.base.crypto.AbstractHashable;
 import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.main.model.EventDescriptorWrapper;
@@ -92,10 +91,10 @@ public class EventMetadata extends AbstractHashable {
             this.otherParents = allParents;
         }
         this.timeCreated = requireNonNull(timeCreated);
-        this.transactions = transactionBytes.stream()
-                .map(TransactionWrapper::new)
-                .toList();
-        this.consensusTransactions = transactions.stream().map(ConsensusTransaction.class::cast).toList();
+        this.transactions =
+                transactionBytes.stream().map(TransactionWrapper::new).toList();
+        this.consensusTransactions =
+                transactions.stream().map(ConsensusTransaction.class::cast).toList();
         this.birthRound = birthRound;
     }
 
@@ -108,11 +107,9 @@ public class EventMetadata extends AbstractHashable {
         this(
                 NodeId.of(requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null")
                         .creatorNodeId()),
-                gossipEvent.parents().stream()
-                        .map(EventDescriptorWrapper::new)
-                        .toList(),
-                HapiUtils.asInstant(requireNonNull(
-                        gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null")),
+                gossipEvent.parents().stream().map(EventDescriptorWrapper::new).toList(),
+                HapiUtils.asInstant(
+                        requireNonNull(gossipEvent.eventCore().timeCreated(), "The timeCreated must not be null")),
                 gossipEvent.transactions(),
                 gossipEvent.eventCore().birthRound());
     }

@@ -13,8 +13,8 @@ import java.util.function.Supplier;
 import org.hiero.base.concurrent.BlockingResourceProvider;
 import org.hiero.consensus.concurrent.manager.ThreadManager;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
-import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 
@@ -34,7 +34,6 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
     private final Duration reconnectSocketTimeout;
     private final BlockingResourceProvider<ReservedSignedStateResult> reservedSignedStateResultPromise;
     private final StateLifecycleManager stateLifecycleManager;
-
 
     public ReconnectPeerProtocolFactory(
             @NonNull final Configuration configuration,

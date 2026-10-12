@@ -28,14 +28,11 @@ import java.util.function.Consumer;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.state.nexus.SignedStateNexus;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 import org.hiero.consensus.state.signed.StateWithHashComplexity;
-import org.hiero.consensus.status.StatusMonitorModule;
 import org.hiero.consensus.transaction.handling.config.TransactionHandlingWiringConfig;
 import org.hiero.consensus.transaction.handling.internal.DefaultTransactionHandler;
 import org.hiero.consensus.transaction.handling.internal.DefaultTransactionPrehandler;
@@ -48,7 +45,8 @@ import org.hiero.consensus.transaction.handling.internal.TransactionPrehandler;
 
 public class TransactionHandlingModule {
 
-    public record RoundRequest(@Nullable Roster roster, @Nullable Instant freezeTime) {}
+    public record RoundRequest(
+            @Nullable Roster roster, @Nullable Instant freezeTime) {}
 
     public static final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> NO_OP_CONSUMER = _ -> {};
 
@@ -127,7 +125,9 @@ public class TransactionHandlingModule {
                 prehanderWiring.getInputWire(TransactionPrehandler::prehandleApplicationTransactions);
         this.handleConsensusRoundInputWire = handlerWiring.getInputWire(TransactionHandler::handleConsensusRound);
 
-        this.roundRequestOutputWire = new StandardOutputWire<>((TraceableWiringModel) model, "nextRoundRequester",
+        this.roundRequestOutputWire = new StandardOutputWire<>(
+                (TraceableWiringModel) model,
+                "nextRoundRequester",
                 ExceptionHandlers.defaultExceptionHandler("nextRoundRequester"));
 
         // Create and bind components

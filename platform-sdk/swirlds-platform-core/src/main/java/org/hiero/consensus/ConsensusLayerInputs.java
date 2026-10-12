@@ -20,6 +20,43 @@ import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.roster.RosterHistory;
 import org.hiero.consensus.transaction.TransactionLimits;
 
+/**
+ * This record contains all the required and optional inputs when creating the {@link ConsensusLayer}.
+ * <p>
+ * initialization notes: If a freeze time is provided during construction of the consensus layer, that is the freeze *
+ * time and it must be honored. If there is no freeze time provided at construction time, there is no known future *
+ * freeze until this method is called.
+ *
+ * <p>The consensus layer does not need to know about lastFrozenTime. If a
+ * freeze time is provided * during construction of the consensus layer, that is the freeze time and it must be honored.
+ * If there is no freeze * time provided at construction time, there is no known future freeze until this method is
+ * called.
+ *
+ * @param configuration            the configuration the consensus layer should use
+ * @param metrics                  the metrics framework for recording metric values
+ * @param time                     the source of time
+ * @param rosterHistory            the history of rosters for all non-ancient rounds based on the provided
+ *                                 {@code consensusSnapshot}. Will be replaced with {@code ConsensusLayerRosterInputs}.
+ * @param keysAndCerts             the keys and certificates the local node
+ * @param selfId                   the unique id of this local node
+ * @param recycleBin               the instance of the recycle bin for the consensus layer to use
+ * @param fileSystemManager        the instance of the file system manager for the consensus layer to use
+ * @param executionLayerCallbacks  the execution layer API used by the consensus layer to communicate
+ * @param consensusSnapshot        the snapshot of the hashgraph where the consensus layer should continue from. A
+ *                                 snapshot is available in every consensus round provided to the execution layer. If
+ *                                 not provided, the consensus layer will start a new hashgraph from genesis.
+ * @param runningEventHashOverride the starting hash of the consensus event stream. Must be provided if a
+ *                                 {@code consensusSnapshot} is provided in order for the consensus event stream to
+ *                                 match that of other nodes
+ * @param consensusEventStreamName the name of the consensus event stream directory on disk
+ * @param version                  the version of the consensus node software currently running
+ * @param transactionOffsetNanos   the number of nanoseconds to add to the first transaction's consensus timestamp in each event
+ * @param transactionLimits        the configured limits regarding transactions in events that the consensus layer should enforce when validating events
+ * @param freezeTime               the current freeze time, or {@code null} if there is no current freeze time.
+ * @param wiringModel
+ * @param secureRandom
+ * @param additionalProperties
+ */
 public record ConsensusLayerInputs(
         @NonNull Configuration configuration,
         @NonNull Metrics metrics,
@@ -42,7 +79,8 @@ public record ConsensusLayerInputs(
         @Nullable SecureRandom secureRandom,
         @NonNull Map<String, Object> additionalProperties) {
 
-    public ConsensusLayerInputs copyWithNewValues(@NonNull final ConsensusSnapshot newSnapshot,
+    public ConsensusLayerInputs copyWithNewValues(
+            @NonNull final ConsensusSnapshot newSnapshot,
             @NonNull final RunningEventHashOverride newRunningEventHashOverride) {
         return new ConsensusLayerInputs(
                 configuration(),

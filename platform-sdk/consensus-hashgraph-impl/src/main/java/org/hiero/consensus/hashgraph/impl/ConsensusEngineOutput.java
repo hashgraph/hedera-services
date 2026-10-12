@@ -2,10 +2,8 @@
 package org.hiero.consensus.hashgraph.impl;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.hashgraph.ConsensusRound;
 
 /**
  * Output of the {@link ConsensusEngine}. For more details, see {@link ConsensusEngine#addEvent(PlatformEvent)}
@@ -18,8 +16,7 @@ public record ConsensusEngineOutput(
         @NonNull List<ConsensusResult> consensusResult) {
 
     /** Empty singleton instance */
-    private static final ConsensusEngineOutput EMPTY_INSTANCE =
-            new ConsensusEngineOutput(List.of(), List.of());
+    private static final ConsensusEngineOutput EMPTY_INSTANCE = new ConsensusEngineOutput(List.of(), List.of());
 
     /**
      * Returns an instance of {@link ConsensusEngineOutput} which contains no rounds, no pre-consensus events and no

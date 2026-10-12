@@ -36,7 +36,6 @@ import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 
 /**
  * Default implementation of the {@link EventCreationManager}.

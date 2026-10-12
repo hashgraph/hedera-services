@@ -6,9 +6,7 @@ import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * An event created by a node with zero or more transactions.

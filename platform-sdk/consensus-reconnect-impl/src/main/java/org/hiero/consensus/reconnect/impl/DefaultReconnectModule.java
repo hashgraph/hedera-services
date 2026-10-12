@@ -8,7 +8,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.reconnect.ReconnectModule;
 import com.swirlds.platform.state.ConsensusStateEventHandler;
@@ -17,10 +16,8 @@ import com.swirlds.state.StateLifecycleManager;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.hiero.base.concurrent.BlockingResourceProvider;
-import org.hiero.consensus.ConsensusLayer;
 import org.hiero.consensus.ConsensusLayerAdapterBuildingBlocks;
 import org.hiero.consensus.ConsensusLayerLifecycleManager;
 import org.hiero.consensus.concurrent.framework.config.ThreadConfiguration;
@@ -75,8 +72,7 @@ public class DefaultReconnectModule implements ReconnectModule {
                 reconnectMetrics,
                 reservedSignedStateResultPromise,
                 stateLifecycleManager,
-                buildingBlocks.platformStatusReference()::get
-        );
+                buildingBlocks.platformStatusReference()::get);
 
         final ReconnectCoordinator reconnectCoordinator = new ReconnectCoordinator(buildingBlocks);
 

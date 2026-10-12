@@ -4,11 +4,7 @@ package org.hiero.consensus;
 import static com.swirlds.component.framework.wires.SolderType.INJECT;
 
 import com.swirlds.component.framework.wires.output.OutputWire;
-import com.swirlds.platform.components.AppNotifier;
-import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
-import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.Objects;
 import org.hiero.consensus.event.stream.ConsensusEventStream;
 import org.hiero.consensus.gossip.GossipModule;
@@ -16,13 +12,8 @@ import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.notification.IssNotification;
-import org.hiero.consensus.model.state.StateSavingResult;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.pces.PcesModule;
-import org.hiero.consensus.state.StateModule;
-import org.hiero.consensus.state.signed.ReservedSignedState;
 
 /**
  * Encapsulates wiring for {@link ConsensusLayer}.
@@ -129,7 +120,8 @@ public class ConsensusLayerWiring {
 
         // pre-handle gets pre-consensus events from the consensus engine
         // the consensus engine ensures that all pre-consensus events either reach consensus of become stale
-        preconsensusEventOutputWire.solderTo("preHandleCallback", "pre-consensus events", executionLayerCallbacks::onPreHandle);
+        preconsensusEventOutputWire.solderTo(
+                "preHandleCallback", "pre-consensus events", executionLayerCallbacks::onPreHandle);
 
         final OutputWire<ConsensusRound> consensusRoundOutputWire = hashgraph.consensusRoundOutputWire();
 
@@ -149,8 +141,7 @@ public class ConsensusLayerWiring {
     /**
      * Solder the EventWindow output to all components that need it.
      */
-    private static void wireInitialEventWindowDispatcher(
-            @NonNull final ConsensusLayerBuildingBlocks buildingBlocks) {
+    private static void wireInitialEventWindowDispatcher(@NonNull final ConsensusLayerBuildingBlocks buildingBlocks) {
         final OutputWire<EventWindow> eventWindowOutputWire =
                 buildingBlocks.initialEventWindowDispatcher().getOutputWire();
 
@@ -172,6 +163,7 @@ public class ConsensusLayerWiring {
         platformStatus.solderTo(buildingBlocks.eventCreatorModule().platformStatusInputWire());
         platformStatus.solderTo(buildingBlocks.hashgraphModule().platformStatusInputWire(), INJECT);
         platformStatus.solderTo(buildingBlocks.gossipModule().platformStatusInputWire(), INJECT);
-        platformStatus.solderTo("ExecutionStatusHandler", "status updates", executionLayerCallbacks::onPlatformStatusChange);
+        platformStatus.solderTo(
+                "ExecutionStatusHandler", "status updates", executionLayerCallbacks::onPlatformStatusChange);
     }
 }

@@ -8,8 +8,8 @@ import java.io.OutputStream;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncInputStreamImpl;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncOutputStreamImpl;
 import org.hiero.consensus.gossip.impl.network.NetworkUtils;
-import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.SyncInputStream;
 import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
 

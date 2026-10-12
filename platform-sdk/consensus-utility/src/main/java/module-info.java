@@ -9,9 +9,9 @@ module org.hiero.consensus.utility {
     exports org.hiero.consensus.event.validation;
     exports org.hiero.consensus.event;
     exports org.hiero.consensus.exceptions;
+    exports org.hiero.consensus.freeze;
     exports org.hiero.consensus.io.counting;
     exports org.hiero.consensus.io;
-    exports org.hiero.consensus.freeze;
     exports org.hiero.consensus.monitoring;
     exports org.hiero.consensus.node;
     exports org.hiero.consensus.orphan;

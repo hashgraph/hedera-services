@@ -4,9 +4,9 @@ package org.hiero.consensus.gossip.impl.network.communication;
 import java.io.IOException;
 import java.util.List;
 import org.hiero.base.io.IOConsumer;
-import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.gossip.impl.test.fixtures.communication.ReadWriteFakeConnection;
 import org.hiero.consensus.gossip.impl.test.fixtures.communication.TestPeerProtocol;
+import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.junit.jupiter.api.Assertions;
 
 /**

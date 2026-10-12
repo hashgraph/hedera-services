@@ -9,9 +9,9 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import org.hiero.base.io.streams.SerializableDataOutputStream;
 import org.hiero.consensus.gossip.config.SocketConfig;
-import org.hiero.consensus.main.model.reconnect.ByteCounter;
 import org.hiero.consensus.io.counting.CounterType;
 import org.hiero.consensus.io.counting.CountingOutputStream;
+import org.hiero.consensus.main.model.reconnect.ByteCounter;
 import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
 
 /**

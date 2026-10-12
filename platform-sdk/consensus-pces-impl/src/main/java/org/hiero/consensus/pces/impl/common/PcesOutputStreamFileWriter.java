@@ -10,9 +10,9 @@ import java.io.IOException;
 import java.io.SyncFailedException;
 import java.nio.file.Path;
 import org.hiero.base.io.streams.SerializableDataOutputStream;
-import org.hiero.consensus.main.model.reconnect.ByteCounter;
 import org.hiero.consensus.io.counting.CounterType;
 import org.hiero.consensus.io.counting.CountingOutputStream;
+import org.hiero.consensus.main.model.reconnect.ByteCounter;
 
 /**
  * Writes events to a file using an output stream.

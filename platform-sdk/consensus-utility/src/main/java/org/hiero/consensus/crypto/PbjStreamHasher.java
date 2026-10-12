@@ -38,7 +38,8 @@ public class PbjStreamHasher implements EventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         Objects.requireNonNull(event);
-        final Hash hash = hashEvent(event.getEventCore(), event.getGossipEvent().parents(), event.getTransactionWrappers());
+        final Hash hash =
+                hashEvent(event.getEventCore(), event.getGossipEvent().parents(), event.getTransactionWrappers());
         event.setHash(hash);
         return event;
     }

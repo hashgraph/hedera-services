@@ -37,10 +37,10 @@ import org.hiero.consensus.ConsensusLayerAdapterBuildingBlocks;
 import org.hiero.consensus.config.PathsConfig;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.io.RecycleBinImpl;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.platform.SnapshotEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
 import org.hiero.consensus.otter.docker.app.metrics.ToFilePrometheusExporter;
 import org.hiero.consensus.platformstate.PlatformStateService;
@@ -168,10 +168,10 @@ public class ConsensusNodeManager {
         // Wiring: Forward consensus rounds to registered listeners
         final ConsensusLayerAdapterBuildingBlocks buildingBlocks = builder.buildingBlocks();
         // TODO fix this
-//        buildingBlocks
-//                .hashgraphModule()
-//                .consensusRoundOutputWire()
-//                .solderTo("dockerApp", "consensusRounds", this::notifyConsensusRoundListeners);
+        //        buildingBlocks
+        //                .hashgraphModule()
+        //                .consensusRoundOutputWire()
+        //                .solderTo("dockerApp", "consensusRounds", this::notifyConsensusRoundListeners);
     }
 
     /**

@@ -27,7 +27,6 @@ import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.crypto.PlatformSigner;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.state.StateSavingResult;
 import org.hiero.consensus.model.status.PlatformStatus;
@@ -109,8 +108,8 @@ public class StateModule {
             @NonNull final SavedStateController savedStateController) {
 
         // Set up wiring
-        this.roundExtractor = new WireTransformer<>(
-                model, "State_RoundExtractor", "consensus round", Round::getRoundNum);
+        this.roundExtractor =
+                new WireTransformer<>(model, "State_RoundExtractor", "consensus round", Round::getRoundNum);
         this.stateDispatcher =
                 new WireTransformer<>(model, "ReservedSignedStateDispatcher", "signed state", UnaryOperator.identity());
 

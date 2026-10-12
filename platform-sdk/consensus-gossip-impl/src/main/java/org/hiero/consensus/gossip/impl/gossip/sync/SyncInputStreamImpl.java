@@ -9,9 +9,9 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.hiero.base.io.streams.SerializableDataInputStream;
 import org.hiero.consensus.gossip.config.SocketConfig;
-import org.hiero.consensus.main.model.reconnect.ByteCounter;
 import org.hiero.consensus.io.counting.CounterType;
 import org.hiero.consensus.io.counting.CountingInputStream;
+import org.hiero.consensus.main.model.reconnect.ByteCounter;
 import org.hiero.consensus.main.model.reconnect.SyncInputStream;
 
 /**

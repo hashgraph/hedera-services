@@ -8,7 +8,6 @@ import static com.swirlds.platform.builder.ConsensusModuleBuilder.createModule;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.hiero.consensus.platformstate.PlatformStateUtils.isInFreezePeriod;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.latestFreezeRoundOf;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.legacyRunningEventHashOf;
 
@@ -54,9 +53,9 @@ import org.hiero.base.crypto.Hash;
 import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.concurrent.manager.AdHocThreadManager;
 import org.hiero.consensus.event.IntakeEventCounter;
+import org.hiero.consensus.freeze.FreezePeriodChecker;
 import org.hiero.consensus.gossip.GossipModule;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
-import org.hiero.consensus.freeze.FreezePeriodChecker;
 import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.iss.detection.IssDetectionModule;
@@ -224,10 +223,15 @@ public class ConsensusLayerAdapterFactory {
         ConsensusLayerStaticSetup.setup(configuration);
 
         final AtomicReference<PlatformStatus> platformStatusReference = new AtomicReference<>();
-        final ExecutionLayerCallbacks executionLayerCallbacks = createExecutionLayerCallbacks(latestImmutableStateNexus,
-                notifierWiring, stateModule, transactionHandlingModule, platformStatusReference);
+        final ExecutionLayerCallbacks executionLayerCallbacks = createExecutionLayerCallbacks(
+                latestImmutableStateNexus,
+                notifierWiring,
+                stateModule,
+                transactionHandlingModule,
+                platformStatusReference);
 
-        final ConsensusLayerLifecycleManager consensusLayerLifecycleManager = createConsensusLayerLifecycleManager(executionLayerCallbacks);
+        final ConsensusLayerLifecycleManager consensusLayerLifecycleManager =
+                createConsensusLayerLifecycleManager(executionLayerCallbacks);
 
         return new ConsensusLayerAdapterBuildingBlocks(
                 wiringModel,
@@ -245,7 +249,8 @@ public class ConsensusLayerAdapterFactory {
                 latestCompleteStateNexus);
     }
 
-    private ConsensusLayerLifecycleManager createConsensusLayerLifecycleManager(@NonNull final ExecutionLayerCallbacks executionLayerCallbacks) {
+    private ConsensusLayerLifecycleManager createConsensusLayerLifecycleManager(
+            @NonNull final ExecutionLayerCallbacks executionLayerCallbacks) {
         final ConsensusSnapshot consensusSnapshot = getInitialConsensusSnapshot(initialState);
 
         final Hash legacyRunningEventHash =
@@ -274,8 +279,7 @@ public class ConsensusLayerAdapterFactory {
                 freezeTime,
                 null,
                 secureRandom,
-                additionalProperties
-        );
+                additionalProperties);
         final ConsensusLayerLifecycleManager manager = new ConsensusLayerLifecycleManager(consensusLayerInputs);
         manager.createConsensusLayer();
         return manager;
@@ -287,8 +291,8 @@ public class ConsensusLayerAdapterFactory {
         final Instant freezeTime = PlatformStateUtils.freezeTimeOf(root);
         final Instant lastFrozenTime = PlatformStateUtils.lastFrozenTimeOf(root);
         final Instant initialStateConsensusTime = PlatformStateUtils.consensusTimestampOf(root);
-        if (initialStateConsensusTime != null && PlatformStateUtils.isInFreezePeriod(initialStateConsensusTime,
-                freezeTime, lastFrozenTime)) {
+        if (initialStateConsensusTime != null
+                && PlatformStateUtils.isInFreezePeriod(initialStateConsensusTime, freezeTime, lastFrozenTime)) {
             return freezeTime;
         }
         return null;
@@ -360,10 +364,13 @@ public class ConsensusLayerAdapterFactory {
                 selfId,
                 buildingBlocks.notificationEngine());
         final PeerProtocolFactory reconnectPeerProtocolFactory = reconnectModule.getReconnectPeerProtocolFactory();
-        final ConsensusLayer consensusLayer = buildingBlocks.consensusLayerLifecycleManager().get();
+        final ConsensusLayer consensusLayer =
+                buildingBlocks.consensusLayerLifecycleManager().get();
         requireNonNull(consensusLayer, "consensusLayer must not be null");
         consensusLayer.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory);
-        buildingBlocks.consensusLayerLifecycleManager().addListener(cl -> cl.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory));
+        buildingBlocks
+                .consensusLayerLifecycleManager()
+                .addListener(cl -> cl.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory));
     }
 
     @NonNull

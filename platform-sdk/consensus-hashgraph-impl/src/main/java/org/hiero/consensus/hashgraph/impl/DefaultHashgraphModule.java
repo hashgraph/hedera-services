@@ -69,20 +69,25 @@ public class DefaultHashgraphModule implements HashgraphModule {
 
         this.consensusRoundOutputWire = consensusEngineBufferWiring
                 .getOutputWire()
-                .buildTransformer("consensusResults", "consensusEngineBufferOutput",
-                        (output) -> output.consensusResults().stream().map(ConsensusResult::consensusRound).toList())
+                .buildTransformer(
+                        "consensusResults",
+                        "consensusEngineBufferOutput",
+                        (output) -> output.consensusResults().stream()
+                                .map(ConsensusResult::consensusRound)
+                                .toList())
                 .buildSplitter("ConsensusResultsSplitter", "consensus results");
         this.preconsensusEventOutputWire = consensusEngineBufferWiring
                 .getOutputWire()
                 .buildTransformer(
-                        "PreConsensusEvents", "consensusEngineBufferOutput",
+                        "PreConsensusEvents",
+                        "consensusEngineBufferOutput",
                         ConsensusEngineBufferOutput::preConsensusEvents)
                 .buildSplitter("PreConsensusEventsSplitter", "preconsensus events");
         this.staleEventOutputWire = consensusEngineBufferWiring
                 .getOutputWire()
-                .buildTransformer("staleEvents", "consensusEngineOutput",
-                        (output) -> output.consensusResults().stream().flatMap(result -> result.staleEvents().stream())
-                                .toList())
+                .buildTransformer("staleEvents", "consensusEngineOutput", (output) -> output.consensusResults().stream()
+                        .flatMap(result -> result.staleEvents().stream())
+                        .toList())
                 .buildSplitter("staleEventsSplitter", "stale events");
 
         // Force not soldered wires to be built
@@ -92,8 +97,8 @@ public class DefaultHashgraphModule implements HashgraphModule {
         // Create and bind components
         final ConsensusEngine consensusEngine = new DefaultConsensusEngine(
                 configuration, metrics, time, roster, selfId, freezeChecker, transactionOffsetNanos);
-        final ConsensusEngineBuffer consensusEngineBuffer = new DefaultConsensusEngineBuffer(configuration, metrics,
-                consensusEngine);
+        final ConsensusEngineBuffer consensusEngineBuffer =
+                new DefaultConsensusEngineBuffer(configuration, metrics, consensusEngine);
         consensusEngineBufferWiring.bind(consensusEngineBuffer);
 
         if (pipelineTracker != null) {
@@ -106,7 +111,8 @@ public class DefaultHashgraphModule implements HashgraphModule {
     @NonNull
     @Override
     public InputWire<NoInput> requestRoundInputWire() {
-        return requireNonNull(consensusEngineBufferWiring, "Not initialized").getInputWire(ConsensusEngineBuffer::requestRound);
+        return requireNonNull(consensusEngineBufferWiring, "Not initialized")
+                .getInputWire(ConsensusEngineBuffer::requestRound);
     }
 
     /**
@@ -115,7 +121,8 @@ public class DefaultHashgraphModule implements HashgraphModule {
     @NonNull
     @Override
     public InputWire<PlatformEvent> eventInputWire() {
-        return requireNonNull(consensusEngineBufferWiring, "Not initialized").getInputWire(ConsensusEngineBuffer::addEvent);
+        return requireNonNull(consensusEngineBufferWiring, "Not initialized")
+                .getInputWire(ConsensusEngineBuffer::addEvent);
     }
 
     /**

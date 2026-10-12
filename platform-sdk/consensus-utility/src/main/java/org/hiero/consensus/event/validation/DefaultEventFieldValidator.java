@@ -15,7 +15,6 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -141,7 +140,8 @@ public class DefaultEventFieldValidator implements EventFieldValidator {
     }
 
     private boolean isTransactionByteCountValid(@NonNull final PlatformEvent event) {
-        final long totalTransactionBytes = event.getTransactions().stream().mapToLong(Transaction::getSize).sum();
+        final long totalTransactionBytes =
+                event.getTransactions().stream().mapToLong(Transaction::getSize).sum();
 
         if (totalTransactionBytes > transactionLimits.maxTransactionBytesPerEvent()) {
             tooManyTransactionBytesLogger.error(

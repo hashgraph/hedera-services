@@ -4,10 +4,8 @@ package org.hiero.consensus.event.creator.impl.rules;
 import static org.hiero.consensus.event.creator.impl.EventCreationStatus.PLATFORM_STATUS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import org.hiero.consensus.event.creator.impl.EventCreationStatus;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 
 /**
  * Limits the creation of new events depending on the current platform status.
@@ -26,7 +24,9 @@ public class PlatformStatusRule implements EventCreationRule {
     public boolean isEventCreationPermitted() {
         final PlatformStatus currentStatus = this.platformStatus;
 
-        return currentStatus == PlatformStatus.ACTIVE || currentStatus == PlatformStatus.CHECKING || currentStatus == PlatformStatus.FREEZING;
+        return currentStatus == PlatformStatus.ACTIVE
+                || currentStatus == PlatformStatus.CHECKING
+                || currentStatus == PlatformStatus.FREEZING;
     }
 
     public void setPlatformStatus(final PlatformStatus platformStatus) {

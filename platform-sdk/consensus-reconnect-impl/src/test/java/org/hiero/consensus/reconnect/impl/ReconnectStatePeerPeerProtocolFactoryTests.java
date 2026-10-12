@@ -1,59 +1,60 @@
+// SPDX-License-Identifier: Apache-2.0
 //// SPDX-License-Identifier: Apache-2.0
-//package org.hiero.consensus.reconnect.impl;
+// package org.hiero.consensus.reconnect.impl;
 //
-//import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
-//import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-//import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-//import static org.hiero.consensus.state.signed.ReservedSignedState.createNullReservation;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.junit.jupiter.api.Assertions.assertFalse;
-//import static org.junit.jupiter.api.Assertions.assertThrows;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
-//import static org.junit.jupiter.api.Assertions.fail;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.doAnswer;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.spy;
-//import static org.mockito.Mockito.times;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
+// import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
+// import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+// import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
+// import static org.hiero.consensus.state.signed.ReservedSignedState.createNullReservation;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertFalse;
+// import static org.junit.jupiter.api.Assertions.assertThrows;
+// import static org.junit.jupiter.api.Assertions.assertTrue;
+// import static org.junit.jupiter.api.Assertions.fail;
+// import static org.mockito.ArgumentMatchers.any;
+// import static org.mockito.Mockito.doAnswer;
+// import static org.mockito.Mockito.mock;
+// import static org.mockito.Mockito.spy;
+// import static org.mockito.Mockito.times;
+// import static org.mockito.Mockito.verify;
+// import static org.mockito.Mockito.when;
 //
-//import com.swirlds.base.time.Time;
-//import com.swirlds.config.api.Configuration;
-//import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-//import com.swirlds.state.StateLifecycleManager;
-//import com.swirlds.state.merkle.VirtualMapState;
-//import java.time.Duration;
-//import java.time.temporal.ChronoUnit;
-//import java.util.ArrayList;
-//import java.util.List;
-//import java.util.stream.LongStream;
-//import java.util.stream.Stream;
-//import org.hiero.base.ValueReference;
-//import org.hiero.base.concurrent.BlockingResourceProvider;
-//import org.hiero.consensus.gossip.ReservedSignedStateResult;
-//import org.hiero.consensus.main.model.reconnect.Connection;
-//import org.hiero.consensus.main.model.reconnect.PeerProtocol;
-//import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
-//import org.hiero.consensus.main.model.NodeId;
-//import org.hiero.consensus.metrics.noop.NoOpMetrics;
-//import org.hiero.consensus.monitoring.FallenBehindMonitor;
-//import org.hiero.consensus.reconnect.config.ReconnectConfig;
-//import org.hiero.consensus.reconnect.config.ReconnectConfig_;
-//import org.hiero.consensus.state.signed.ReservedSignedState;
-//import org.hiero.consensus.state.signed.SignedState;
-//import org.hiero.consensus.state.test.fixtures.RandomSignedStateGenerator;
-//import org.junit.jupiter.api.AfterEach;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.DisplayName;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.params.ParameterizedTest;
-//import org.junit.jupiter.params.provider.Arguments;
-//import org.junit.jupiter.params.provider.MethodSource;
+// import com.swirlds.base.time.Time;
+// import com.swirlds.config.api.Configuration;
+// import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+// import com.swirlds.state.StateLifecycleManager;
+// import com.swirlds.state.merkle.VirtualMapState;
+// import java.time.Duration;
+// import java.time.temporal.ChronoUnit;
+// import java.util.ArrayList;
+// import java.util.List;
+// import java.util.stream.LongStream;
+// import java.util.stream.Stream;
+// import org.hiero.base.ValueReference;
+// import org.hiero.base.concurrent.BlockingResourceProvider;
+// import org.hiero.consensus.gossip.ReservedSignedStateResult;
+// import org.hiero.consensus.main.model.reconnect.Connection;
+// import org.hiero.consensus.main.model.reconnect.PeerProtocol;
+// import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
+// import org.hiero.consensus.main.model.NodeId;
+// import org.hiero.consensus.metrics.noop.NoOpMetrics;
+// import org.hiero.consensus.monitoring.FallenBehindMonitor;
+// import org.hiero.consensus.reconnect.config.ReconnectConfig;
+// import org.hiero.consensus.reconnect.config.ReconnectConfig_;
+// import org.hiero.consensus.state.signed.ReservedSignedState;
+// import org.hiero.consensus.state.signed.SignedState;
+// import org.hiero.consensus.state.test.fixtures.RandomSignedStateGenerator;
+// import org.junit.jupiter.api.AfterEach;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.DisplayName;
+// import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.params.ParameterizedTest;
+// import org.junit.jupiter.params.provider.Arguments;
+// import org.junit.jupiter.params.provider.MethodSource;
 //
-///**
+/// **
 // */
-//class ReconnectStatePeerPeerProtocolFactoryTests {
+// class ReconnectStatePeerPeerProtocolFactoryTests {
 //    private static final NodeId PEER_ID = NodeId.of(1L);
 //
 //    private ReconnectStateTeacherThrottle teacherThrottle;
@@ -530,4 +531,4 @@
 //        verify(reservedSignedStateResultPromise, times(1)).tryBlockProvidePermit();
 //        verify(reservedSignedStateResultPromise, times(0)).releaseProvidePermit();
 //    }
-//}
+// }

@@ -245,7 +245,8 @@ public class ReconnectStateLearner {
         logger.info(RECONNECT.getMarker(), "Receiving signed state signatures");
 
         sigSet = new SigSet();
-        final ReadableStreamingData streamingData = new ReadableStreamingData(connection.getDis().asInputStream());
+        final ReadableStreamingData streamingData =
+                new ReadableStreamingData(connection.getDis().asInputStream());
         sigSet.deserialize(streamingData);
 
         final StringBuilder sb = new StringBuilder();

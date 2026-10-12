@@ -5,7 +5,6 @@ import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.internal.StaticPlatformBuilder.getMetricsProvider;
 import static com.swirlds.platform.config.internal.PlatformConfigUtils.checkConfiguration;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.platformstate.PlatformStateUtils.ancientThresholdOf;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -20,28 +19,23 @@ import com.swirlds.state.StateLifecycleManager;
 import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.CryptoUtils;
 import org.hiero.base.crypto.Signature;
 import org.hiero.base.file.FileSystemManager;
-import org.hiero.consensus.ConsensusLayer;
 import org.hiero.consensus.ConsensusLayerAdapterBuildingBlocks;
 import org.hiero.consensus.ConsensusLayerAdapterFactory;
 import org.hiero.consensus.ConsensusLayerAdapterInputs;
 import org.hiero.consensus.ConsensusLayerAdapterWiring;
-import org.hiero.consensus.ConsensusLayerWiring;
 import org.hiero.consensus.crypto.PlatformSigner;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.platformstate.PlatformStateUtils;
 import org.hiero.consensus.reconnect.config.ReconnectConfig;
 import org.hiero.consensus.roster.RosterHistory;
 import org.hiero.consensus.state.signed.ReservedSignedState;
-import org.hiero.consensus.state.signed.SignedState;
 
 /**
  * Builds a {@link SwirldsPlatform} instance.
@@ -203,7 +197,8 @@ public class PlatformBuilder<T extends PlatformBuilder<T>> {
         InitialStateLoader.initializeModulesWithInitialState(platform, inputs, buildingBlocks);
 
         // Future work - capture the reconnect module, add a start() method to it, and call it later
-        final boolean reconnectActive = configuration.getConfigData(ReconnectConfig.class).active();
+        final boolean reconnectActive =
+                configuration.getConfigData(ReconnectConfig.class).active();
         if (reconnectActive) {
             factory.setupReconnectModule(platform, buildingBlocks);
         }

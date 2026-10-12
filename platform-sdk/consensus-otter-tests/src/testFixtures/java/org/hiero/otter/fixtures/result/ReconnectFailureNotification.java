@@ -12,5 +12,6 @@ import org.hiero.consensus.main.model.NodeId;
  * @param payload the reconnect failure payload that triggered this notification
  * @param nodeId the node ID that logged the payload, or null if the node ID is not available
  */
-public record ReconnectFailureNotification(@NonNull ReconnectFailurePayload payload, @Nullable NodeId nodeId)
+public record ReconnectFailureNotification(
+        @NonNull ReconnectFailurePayload payload, @Nullable NodeId nodeId)
         implements ReconnectNotification<ReconnectFailurePayload> {}

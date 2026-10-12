@@ -6,7 +6,6 @@ import com.swirlds.component.framework.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Queue;
 import org.hiero.consensus.main.model.Event;
-import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 
 /**
@@ -19,6 +18,5 @@ public interface TransactionPrehandler {
      * @param event the event to prehandle
      */
     @InputWireLabel("preconsensus event")
-    Queue<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(
-            @NonNull Event event);
+    Queue<ScopedSystemTransaction<StateSignatureTransaction>> prehandleApplicationTransactions(@NonNull Event event);
 }

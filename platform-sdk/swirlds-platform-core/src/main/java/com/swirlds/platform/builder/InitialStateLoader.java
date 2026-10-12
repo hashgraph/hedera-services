@@ -4,7 +4,6 @@ package com.swirlds.platform.builder;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
-import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static org.hiero.base.concurrent.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSoftwareVersionOf;
@@ -32,11 +31,8 @@ import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.ConsensusLayerAdapterBuildingBlocks;
 import org.hiero.consensus.ConsensusLayerAdapterInputs;
-import org.hiero.consensus.hashgraph.config.ConsensusConfig;
-import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.platformstate.PlatformStateUtils;
-import org.hiero.consensus.round.EventWindowUtils;
 import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.persistence.SignedStateFilePath;
 import org.hiero.consensus.state.persistence.SignedStateFileUtils;
@@ -94,13 +90,16 @@ public class InitialStateLoader {
         final List<SavedStateInfo> savedStates = statePath.getSavedStateFiles();
         if (!savedStates.isEmpty()) {
             try {
-                final ConsensusSnapshot consensusSnapshot = SignedStateFileUtils.getConsensusSnapshot(savedStates.getLast().stateDirectory());
+                final ConsensusSnapshot consensusSnapshot = SignedStateFileUtils.getConsensusSnapshot(
+                        savedStates.getLast().stateDirectory());
                 buildingBlocks.consensusLayerLifecycleManager().get().oldestRestartableSnapshot(consensusSnapshot);
             } catch (final IOException | ParseException e) {
-                logger.warn(STARTUP.getMarker(),
+                logger.warn(
+                        STARTUP.getMarker(),
                         "Unable to read {} file from round {} on disk - PCES for this round will be maintained "
                                 + "until the next oldest state on disk has a readable consensus snapshot file.",
-                        CONSENSUS_SNAPSHOT_FILE_NAME, savedStates.getLast().metadata().round());
+                        CONSENSUS_SNAPSHOT_FILE_NAME,
+                        savedStates.getLast().metadata().round());
             }
         }
 
@@ -110,7 +109,9 @@ public class InitialStateLoader {
             buildingBlocks.stateModule().sendState(signedState);
             final ConsensusSnapshot consensusSnapshot = PlatformStateUtils.consensusSnapshotOf(signedState.getState());
             if (consensusSnapshot == null) {
-                logger.error(STARTUP.getMarker(), "Initial state does not have a consensus snapshot. Unable to initialize the consensus node.");
+                logger.error(
+                        STARTUP.getMarker(),
+                        "Initial state does not have a consensus snapshot. Unable to initialize the consensus node.");
                 throw new IllegalStateException("Initial state does not have a consensus snapshot");
             }
             buildingBlocks.stateModule().initialConsensusRoundInputWire().inject(consensusSnapshot.round());

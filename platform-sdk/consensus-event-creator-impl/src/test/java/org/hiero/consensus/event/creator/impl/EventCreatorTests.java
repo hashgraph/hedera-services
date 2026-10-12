@@ -64,8 +64,7 @@ class EventCreatorTests {
 
         final Roster roster = new Roster(rosterEntries);
 
-        manager = new DefaultEventCreationManager(
-                configuration, metrics, time, creator, roster, NodeId.of(1));
+        manager = new DefaultEventCreationManager(configuration, metrics, time, creator, roster, NodeId.of(1));
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
     }

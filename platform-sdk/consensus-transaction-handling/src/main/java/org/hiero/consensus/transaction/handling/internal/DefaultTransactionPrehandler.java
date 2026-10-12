@@ -17,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.metrics.statistics.AverageTimeStat;
-import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.state.nexus.SignedStateNexus;
 import org.hiero.consensus.state.signed.ReservedSignedState;

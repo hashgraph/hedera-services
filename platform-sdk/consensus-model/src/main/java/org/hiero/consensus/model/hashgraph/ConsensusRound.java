@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import org.hiero.base.crypto.RunningHash;
 import org.hiero.consensus.main.model.ConsensusEvent;
 import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.main.model.Transaction;
 import org.hiero.consensus.model.event.CesEvent;
 import org.hiero.consensus.model.event.PlatformEvent;
 
@@ -185,7 +184,7 @@ public class ConsensusRound implements Round {
 
     @Override
     @NonNull
-    public  ConsensusSnapshot getConsensusSnapshot() {
+    public ConsensusSnapshot getConsensusSnapshot() {
         return snapshot;
     }
 

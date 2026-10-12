@@ -32,10 +32,10 @@ import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import org.hiero.consensus.main.model.ConsensusEvent;
-import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
+import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.main.model.TimestampedTransaction;
+import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 
 /**
  * An embedded Hedera node that handles transactions synchronously on ingest and thus

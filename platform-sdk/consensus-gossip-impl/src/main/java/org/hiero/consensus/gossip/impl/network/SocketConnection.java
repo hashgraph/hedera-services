@@ -14,8 +14,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.io.exceptions.BadIOException;
 import org.hiero.consensus.gossip.config.SocketConfig;
-import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.SyncInputStream;
 import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
 

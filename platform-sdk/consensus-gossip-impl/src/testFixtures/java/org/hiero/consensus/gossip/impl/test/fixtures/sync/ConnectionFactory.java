@@ -9,8 +9,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicReference;
-import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
 
 @FunctionalInterface
 public interface ConnectionFactory {

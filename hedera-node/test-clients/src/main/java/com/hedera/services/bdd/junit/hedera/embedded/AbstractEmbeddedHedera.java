@@ -53,11 +53,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.constructable.ConstructableRegistry;
 import org.hiero.base.crypto.Hash;
+import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.config.MetricsConfig;
 import org.hiero.consensus.metrics.platform.DefaultPlatformMetrics;
 import org.hiero.consensus.metrics.platform.MetricKeyRegistry;
 import org.hiero.consensus.metrics.platform.PlatformMetricsFactoryImpl;
-import org.hiero.consensus.main.model.NodeId;
 
 /**
  * Implementation support for {@link EmbeddedHedera}.

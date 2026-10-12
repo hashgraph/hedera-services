@@ -33,7 +33,6 @@ import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
 import org.hiero.consensus.model.status.PlatformStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
-import org.hiero.consensus.model.transaction.SignatureTransactionCheck;
 
 /**
  * Default implementation of the {@link EventCreatorModule}.
@@ -96,8 +95,8 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
         final BytesSigner bytesSigner = new PlatformSigner(keysAndCerts);
         final EventCreator eventCreator = new TipsetEventCreator(
                 configuration, metrics, time, random, bytesSigner, roster, selfId, transactionSupplier);
-        final DefaultEventCreationManager eventCreationManager = new DefaultEventCreationManager(
-                configuration, metrics, time, eventCreator, roster, selfId);
+        final DefaultEventCreationManager eventCreationManager =
+                new DefaultEventCreationManager(configuration, metrics, time, eventCreator, roster, selfId);
         eventCreationManagerWiring.bind(eventCreationManager);
     }
 

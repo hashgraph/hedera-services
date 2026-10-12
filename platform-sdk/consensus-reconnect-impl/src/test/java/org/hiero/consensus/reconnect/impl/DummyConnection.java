@@ -13,12 +13,12 @@ import java.net.Socket;
 import java.net.SocketException;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncInputStreamImpl;
 import org.hiero.consensus.gossip.impl.gossip.sync.SyncOutputStreamImpl;
-import org.hiero.consensus.main.model.reconnect.SyncInputStream;
-import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
-import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.gossip.impl.network.ConnectionTracker;
 import org.hiero.consensus.gossip.impl.network.SocketConnection;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.main.model.reconnect.Connection;
+import org.hiero.consensus.main.model.reconnect.SyncInputStream;
+import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
 
 /**
  * An implementation of {@link Connection} for local testing.

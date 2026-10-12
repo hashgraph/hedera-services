@@ -3,7 +3,6 @@ import com.swirlds.config.api.ConfigurationExtension;
 import org.hiero.consensus.state.config.StateConfigurationExtension;
 
 module org.hiero.consensus.state {
-    uses org.hiero.consensus.pces.PcesModule;
     exports org.hiero.consensus.state.config;
     exports org.hiero.consensus.state.nexus;
     exports org.hiero.consensus.state.saved;
@@ -37,6 +36,8 @@ module org.hiero.consensus.state {
     requires org.hiero.consensus.utility;
     requires org.apache.logging.log4j;
     requires static transitive com.github.spotbugs.annotations;
+
+    uses org.hiero.consensus.pces.PcesModule;
 
     provides ConfigurationExtension with
             StateConfigurationExtension;

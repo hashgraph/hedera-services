@@ -17,6 +17,7 @@ import java.time.Instant;
  *                                           must be able to restart from
  */
 public record StateSavingResult(
-        long round, boolean freezeState, @NonNull Instant consensusTimestamp,
-        @Nullable ConsensusSnapshot oldestRestartableConsensusSnapshot) {
-}
+        long round,
+        boolean freezeState,
+        @NonNull Instant consensusTimestamp,
+        @Nullable ConsensusSnapshot oldestRestartableConsensusSnapshot) {}

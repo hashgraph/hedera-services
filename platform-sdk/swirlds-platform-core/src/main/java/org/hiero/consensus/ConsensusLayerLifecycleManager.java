@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus;
 
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
@@ -6,15 +7,11 @@ import static java.util.Objects.requireNonNullElse;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.legacyRunningEventHashOf;
 
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
-import com.swirlds.state.merkle.VirtualMapState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.Cryptography;
@@ -50,7 +47,10 @@ public class ConsensusLayerLifecycleManager {
     public void createConsensusLayer() {
         final ConsensusLayerFactory consensusLayerFactory = new ConsensusLayerFactory(consensusLayerInputs);
         consensusLayer = consensusLayerFactory.create();
-        logger.info(STARTUP.getMarker(), "Notifying {} listeners that the consensus layer has been created", listeners.size());
+        logger.info(
+                STARTUP.getMarker(),
+                "Notifying {} listeners that the consensus layer has been created",
+                listeners.size());
         listeners.forEach(listener -> listener.accept(consensusLayer));
     }
 

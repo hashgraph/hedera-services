@@ -75,13 +75,15 @@ public class ConsensusLayerAdapterWiring {
         txnHandling.stateOutputWire().solderTo(state.garbageCollectorRegistrationInputWire());
 
         final Consumer<RoundRequest> roundRequestConsumer = (roundRequest) -> {
-            final ConsensusLayer consensusLayer = buildingBlocks.consensusLayerLifecycleManager().get();
+            final ConsensusLayer consensusLayer =
+                    buildingBlocks.consensusLayerLifecycleManager().get();
             if (consensusLayer != null) {
                 consensusLayer.requestNextRound(roundRequest.roster(), roundRequest.freezeTime());
             }
         };
-        txnHandling.roundRequestOutputWire().solderTo("consensusLayerRef_roundRequest", "roundRequest",
-                roundRequestConsumer);
+        txnHandling
+                .roundRequestOutputWire()
+                .solderTo("consensusLayerRef_roundRequest", "roundRequest", roundRequestConsumer);
     }
 
     /**
@@ -105,17 +107,21 @@ public class ConsensusLayerAdapterWiring {
                         inputs.executionLayer()::submitStateSignature);
 
         final OutputWire<StateSavingResult> stateSavingResultOutputWire = state.stateSavingResultOutputWire();
-        stateSavingResultOutputWire.buildTransformer("oldestSnapshotTransformer", "savedStateResult",
+        stateSavingResultOutputWire
+                .buildTransformer(
+                        "oldestSnapshotTransformer",
+                        "savedStateResult",
                         StateSavingResult::oldestRestartableConsensusSnapshot)
-                .solderTo("consensusLayerRef_snapshot", "oldestRestartableSnapshot",
-                        (snapshot) -> buildingBlocks.consensusLayerLifecycleManager().get().oldestRestartableSnapshot(snapshot));
+                .solderTo("consensusLayerRef_snapshot", "oldestRestartableSnapshot", (snapshot) -> buildingBlocks
+                        .consensusLayerLifecycleManager()
+                        .get()
+                        .oldestRestartableSnapshot(snapshot));
 
-        stateSavingResultOutputWire.solderTo("consensusLayerRef_status", "onFreezeCompleteStatusUpdate",
-                (result) -> {
-                    if (result.freezeState()) {
-                        buildingBlocks.consensusLayerLifecycleManager().get().onStatusUpdate(StatusUpdate.FREEZE_COMPLETE);
-                    }
-                });
+        stateSavingResultOutputWire.solderTo("consensusLayerRef_status", "onFreezeCompleteStatusUpdate", (result) -> {
+            if (result.freezeState()) {
+                buildingBlocks.consensusLayerLifecycleManager().get().onStatusUpdate(StatusUpdate.FREEZE_COMPLETE);
+            }
+        });
         stateSavingResultOutputWire
                 .buildTransformer(
                         "stateSavedNotifier",
@@ -134,12 +140,11 @@ public class ConsensusLayerAdapterWiring {
         final OutputWire<IssNotification> issNotification =
                 buildingBlocks.issDetectionModule().issNotificationOutputWire();
 
-        issNotification.solderTo("consensusLayerRef", "onIssStatusUpdate",
-                (notification) -> {
-                    if (notification.getIssType() == IssType.CATASTROPHIC_ISS) {
-                        buildingBlocks.consensusLayerLifecycleManager().get().onStatusUpdate(StatusUpdate.CATASTROPHIC_FAILURE);
-                    }
-                });
+        issNotification.solderTo("consensusLayerRef", "onIssStatusUpdate", (notification) -> {
+            if (notification.getIssType() == IssType.CATASTROPHIC_ISS) {
+                buildingBlocks.consensusLayerLifecycleManager().get().onStatusUpdate(StatusUpdate.CATASTROPHIC_FAILURE);
+            }
+        });
         issNotification.solderTo(buildingBlocks.notifierWiring().getInputWire(AppNotifier::sendIssNotification));
     }
 

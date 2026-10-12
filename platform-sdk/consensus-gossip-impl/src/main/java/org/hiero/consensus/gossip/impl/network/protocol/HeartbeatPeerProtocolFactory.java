@@ -10,7 +10,6 @@ import org.hiero.consensus.gossip.config.SyncConfig;
 import org.hiero.consensus.gossip.impl.network.NetworkMetrics;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
-import org.hiero.consensus.model.status.PlatformStatus;
 
 /**
  * Implementation of a factory for heartbeat protocol
@@ -54,7 +53,8 @@ public class HeartbeatPeerProtocolFactory implements PeerProtocolFactory {
             @NonNull final Time time,
             @NonNull final NetworkMetrics networkMetrics) {
         final SyncConfig syncConfig = configuration.getConfigData(SyncConfig.class);
-        return new HeartbeatPeerProtocolFactory(Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, time);
+        return new HeartbeatPeerProtocolFactory(
+                Duration.ofMillis(syncConfig.syncProtocolHeartbeatPeriod()), networkMetrics, time);
     }
 
     /**
