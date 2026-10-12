@@ -29,7 +29,7 @@ import java.util.SortedMap;
  * </ul>
  */
 public interface HintsLibrary {
-    /** Maximum power-of-two domain supported by hiero-cryptography 3.19.1. */
+    /** Maximum power-of-two domain supported by hiero-cryptography 3.20.1. */
     int MAX_PARTIES = HintsLibraryBridge.MAX_SIGNERS_NUM + 1;
 
     /** Whether the domain can be used by the pinned native hinTS library. */
@@ -50,7 +50,7 @@ public interface HintsLibrary {
     Bytes newCrs(short n);
 
     /**
-     * Reads the exact supported capacity of a serialized TSS 3.19.1 CRS. This validates its size,
+     * Reads the exact supported capacity of a serialized TSS 3.20.1 CRS. This validates its size,
      * not its curve points or ceremony transcript; those are verified by the native library.
      */
     default int crsPartySize(@NonNull final Bytes crs) {
@@ -60,7 +60,7 @@ public interface HintsLibrary {
     /** Reads the capacity without initializing the native library, for startup metadata validation. */
     static int crsPartySizeFrom(@NonNull final Bytes crs) {
         java.util.Objects.requireNonNull(crs);
-        // HintsLibraryBridge 3.19.1 serializes a 304-byte header and 288 bytes per party.
+        // HintsLibraryBridge 3.20.1 serializes a 304-byte header and 288 bytes per party.
         final long payloadLength = crs.length() - 304L;
         final long n = payloadLength / 288L;
         if (payloadLength <= 0 || payloadLength % 288L != 0 || n > MAX_PARTIES || !isSupportedPartySize((int) n)) {

@@ -66,7 +66,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         if (!isSupportedPartySize(n)) {
             throw new IllegalArgumentException("Unsupported hinTS CRS party count: " + n);
         }
-        // In 3.19.1, CRS ceremony operations deserialize their own inputs and never access
+        // In 3.20.1, CRS ceremony operations deserialize their own inputs and never access
         // the signing CRS/AK caches. They must not acquire the signing cache guard.
         return Bytes.wrap(BRIDGE.initCRS(n));
     }
