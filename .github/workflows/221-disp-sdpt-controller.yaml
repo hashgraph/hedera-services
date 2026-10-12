@@ -262,13 +262,11 @@ jobs:
       chewie-key: ${{ secrets.CHEWIE_REPO_IDENTITY_KEY }}
       chewie-host: ${{ secrets.CHEWIE_HOST }}
 
-  # Temporary and secondary: Chewie's report (report-sdpt-result) is the source of record. This tag is
-  # kept until Chewie's reporting has run in production for a while; when this job is removed, drop its
-  # TAG_RESULT payload fields, Rootly summary line, and `needs` entries in report-success/failure.
+  # Required: 224 checks the sdpt-pass-<build> tag before it starts MDLT, so a failed tag fails the run and
+  # raises the failure report. Chewie's report (report-sdpt-result) still carries the SDPT verdict itself.
   tag-sdpt-result:
     name: Tag SDPT Result
     runs-on: hl-cn-sdpt-lin-sm
-    continue-on-error: true # optional: Chewie's suite report (864) is the source of record
     needs:
       - run-single-day-performance-test
       - verify-tag
@@ -358,6 +356,7 @@ jobs:
       - run-single-day-performance-test
       - get-commit-info
     if: ${{ (needs.verify-tag.result == 'success' &&
+      needs.tag-sdpt-result.result == 'success' &&
       needs.run-single-day-performance-test.outputs.result == 'success' &&
       needs.get-commit-info.result == 'success') &&
       !cancelled() }}
@@ -407,6 +406,7 @@ jobs:
       - get-commit-info
       - report-success
     if: ${{ (needs.verify-tag.result != 'success' ||
+      needs.tag-sdpt-result.result != 'success' ||
       needs.run-single-day-performance-test.outputs.result != 'success' ||
       needs.get-commit-info.result != 'success' ||
       needs.report-success.result != 'success') &&
@@ -452,6 +452,7 @@ jobs:
         run: |
           ROOTLY_SERVICE="CITR SDPT"
           if [[ "${{ needs.verify-tag.result }}" =~ ^(cancelled|failure)$ ]] \
+            || [[ "${{ needs.tag-sdpt-result.result }}" =~ ^(cancelled|failure)$ ]] \
             || [[ "${{ needs.get-commit-info.result }}" =~ ^(cancelled|failure)$ ]] \
             || [[ "${{ needs.report-success.result }}" =~ ^(cancelled|failure)$ ]]; then
             ROOTLY_SERVICE="CI/CD Workflows"

@@ -133,14 +133,12 @@ Replaces dispatching MDLT by hand.
 
 - **When:** once **both** SDPT and SDLT have passed for a build, according to Chewie's own suite results
   (`report-sdpt-result` / `report-sdlt-result`). Chewie applies this gate when it dispatches `224`. Until Chewie
-  dispatches it, `224` also checks for the `sdpt-pass-`/`sdlt-pass-` tags that `221`/`222` still write, and refuses a
-  build without both; a refused build is reported as `not_run`. The adhoc `203` does not check.
+  dispatches it, `224` also checks for the `sdpt-pass-`/`sdlt-pass-` tags that `221`/`222` write, and refuses a build
+  without both; a refused build is reported as `not_run`. The adhoc `203` does not check, by design: a human picks the
+  build or commit it runs on.
 - **Inputs:** `{"build-tag": "build-NNNNN"}`.
 - **What follows:** `835` kicks off a multi-day run and `224` reports `running`. Progress and the verdict then arrive
   through `204`/`205`/`206` (see [below](#204205206-mdlt-follow-up)).
-- **Unresolved — `203` bypasses the gate.** Anyone who dispatches the adhoc `203` by hand can start a multi-day MDLT run
-  (and its six-day allocation) against a build that has **not** passed SDPT and SDLT. See
-  [Follow-Ups](#follow-ups-in-this-repository).
 
 ### 107: Clean CITR Namespaces
 
@@ -216,12 +214,12 @@ Example body (XTS):
 - **Authentication:** `864` exchanges the identity key for a token itself, at report time. Long suites therefore never
   report with a stale token.
 - **Reporting is required.** Chewie is the source of record for suite results, so a failed report — including a Chewie
-  outage — fails the run. The SDPT/SDLT/MDLT result tags (`sdpt-*`, `sdlt-*`, `mdlt-*`) are the optional, secondary
-  record and are being retired: those tagging jobs (`221`/`222` `tag-*-result`, `206` `tag-mdlt-result`) run with
-  `continue-on-error` and are excluded from the success/failure reporting, so a tagging problem never fails a run or
-  raises an alert. `224` still reads the `sdpt-pass-`/`sdlt-pass-` tags, though, so a failed SDPT or SDLT tag keeps that
-  build out of MDLT. `226`'s `tag-for-promotion` is the exception: while `900` and `901` run, the `xts-pass-*` tag
-  drives promotion, so a failed tag fails the run and raises an alert.
+  outage — fails the run. Some git result tags are still load-bearing, so their tagging jobs are required too:
+  `221`/`222`'s `tag-*-result` (`224` checks `sdpt-pass-`/`sdlt-pass-` before it starts MDLT) and `226`'s
+  `tag-for-promotion` (while `900` and `901` run, `xts-pass-*` drives promotion). A failed tag fails the run and raises
+  the failure report, but Chewie's suite result still carries the suite's own verdict. Only `206`'s `tag-mdlt-result`
+  (`mdlt-*`) is optional and secondary: it runs with `continue-on-error`, and a tagging problem there never fails a run
+  or raises an alert.
 
 ### Other signals
 
@@ -302,16 +300,14 @@ Must be in place before this repository's changes are relied on in production:
 
 Changes that depend on Chewie reaching a later state:
 
-- **MDLT gate on manual dispatch — `203` needs a decision before merge.** `224` checks the `sdpt-pass-`/`sdlt-pass-`
-  tags again, so it refuses a build that has not passed SDPT and SDLT. The adhoc `203` does not, so a human dispatching
-  it can start MDLT on a build that failed — or never ran — SDPT/SDLT, tying up a multi-day allocation for an ineligible
-  build. Options include restoring the same tag check in `203`, checking Chewie's suite results instead (`GET
-  /api/v1/suites/results?build_number=<n>&suite_type=sdpt&latest=true`, likewise `sdlt`), or accepting the risk for
-  adhoc runs.
+- **MDLT gate on manual dispatch — decided.** `224` checks the `sdpt-pass-`/`sdlt-pass-` tags, so it refuses a build
+  that has not passed SDPT and SDLT. The adhoc `203` deliberately does not: a human chooses what it runs on, and is
+  trusted to have chosen a valid build.
 - **Retire the crons when Chewie owns workflow dispatching.** Deprecate `302`, `900`, `901` and `903` (and `301`'s
   dispatch of `302`) once Chewie dispatches `226`, `227` and `107` and runs promotion.
 - **Retire the git result tags.** Chewie's reports are already the source of record; the tags are secondary. Remove
   `tag-for-promotion` from `226` once the crons are retired and Chewie's promotion has run in production for a while,
   together with its references in `report-success` and `report-failure`, and likewise the SDPT/SDLT/MDLT result tags
   (`221`/`222`/`206`) after the same period. Each tagging job carries a comment listing what to remove with it. The
-  `sdpt-pass-`/`sdlt-pass-` tags can go only once Chewie dispatches `224`, because `224` checks them until then.
+  `sdpt-pass-`/`sdlt-pass-` tags, and their required tagging jobs in `221`/`222`, can go only once Chewie dispatches
+  `224`, because `224` checks them until then.
