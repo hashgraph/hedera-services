@@ -4,6 +4,7 @@ run-name: "${{ inputs.mock && format('[MOCK] 223 SDCT {0} ({1})', inputs.build-t
 
 # NOTE: 901 dispatches this workflow with only `build-tag`. `ref` falls back to main when empty; `blocknode-version`
 #       and `mirrornode-version` are informational: when empty they are not sent to Jenkins, whose job defaults apply.
+#       `skip-rootly` is optional (default false: the full sdct test alerts on failure as before).
 # TODO: SDCT runs on the single perf1 network; the concurrency group below serializes runs of this workflow,
 #       overlapping runs from other sources will be prevented by the external framework changes.
 # TODO: add an ad hoc SDCT controller workflow for user dispatches, as 201 is to 221 for SDPT.
@@ -38,6 +39,11 @@ on:
           - sdct
           - mini
           - custom
+      skip-rootly:
+        required: false
+        default: false
+        description: "Skip the Rootly alert on failure, for any test and build. Default false: the full sdct test alerts as before."
+        type: boolean
       mock:
         required: false
         default: false
@@ -458,6 +464,7 @@ jobs:
             echo "- **Build Tag**: \`${{ inputs.build-tag }}\`"
             echo "- **SDCT Test**: \`${{ inputs.test-name || 'sdct' }}\`"
             echo "- **Mock**: ${{ inputs.mock && format('`{0}` on nightly/sdct-mock', inputs.mock-scenario) || 'no' }}"
+            echo "- **Rootly**: ${{ inputs.skip-rootly && 'alert skipped (skip-rootly)' || 'alert on failure (full sdct test only)' }}"
             echo
             echo "## Processing Results"
             echo "- **Generated Artifact Name**: \`${{ steps.check-if-exist.outputs.build-version || 'N/A' }}\`"
@@ -626,16 +633,7 @@ jobs:
   sdct-verdict:
     name: SDCT Verdict
     runs-on: hl-cn-sdct-lin
-    needs:
-      [
-        canonical-test,
-        follow-1,
-        follow-2,
-        follow-3,
-        follow-4,
-        follow-5,
-        follow-6,
-      ]
+    needs: [canonical-test, follow-1, follow-2, follow-3, follow-4, follow-5, follow-6]
     # Always runs: the only place that decides the verdict, and it stops a build nobody follows any more
     if: ${{ always() }}
     outputs:
@@ -927,12 +925,18 @@ jobs:
           ROOTLY_TITLE: ${{ steps.rootly-summary.outputs.title }}
           ROOTLY_SUMMARY: ${{ steps.rootly-summary.outputs.summary }}
           ROOTLY_SERVICE: ${{ steps.set-rootly-service.outputs.service }}
+          SKIP_ROOTLY: ${{ inputs.skip-rootly }}
         run: |
           echo "## Rootly Summary:"
           echo "### Title: ${ROOTLY_TITLE}" >> "${GITHUB_STEP_SUMMARY}"
           echo "${ROOTLY_SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
           echo "### Service" >> "${GITHUB_STEP_SUMMARY}"
           echo "${ROOTLY_SERVICE}" >> "${GITHUB_STEP_SUMMARY}"
+          if [[ "${SKIP_ROOTLY}" == "true" ]]; then
+            echo "Rootly alert: skipped (skip-rootly=true)" | tee -a "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "Rootly alert: will be sent" >> "${GITHUB_STEP_SUMMARY}"
+          fi
 
       - name: Log Rootly Alert (mock)
         if: ${{ inputs.mock }}
@@ -945,7 +949,7 @@ jobs:
 
       - name: Create Rootly Alert
         id: create-rootly-alert
-        if: ${{ !inputs.mock }}
+        if: ${{ !inputs.mock && !inputs.skip-rootly }}
         uses: pandaswhocode/rootly-alert-action@25cfdb8b2c006c1b130c183c7b1cbcffafb71f39 # v1.0.10
         continue-on-error: true # continue on error so we can get the incident reporting
         with:
