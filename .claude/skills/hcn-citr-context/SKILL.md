@@ -66,7 +66,7 @@ All SDPT, SDLT, and MDLT Kubernetes resources come from Chewie — scheduled and
 ### MDLT — 835 still acquires its own allocation
 
 ```
-203 (adhoc) or 224 (Chewie-dispatched once SDPT+SDLT passed)  — 862; no pass-tag gate (Chewie gates MDLT)
+203 (adhoc) or 224 (Chewie-dispatched once SDPT+SDLT passed)  — 862; 224 also checks sdpt-pass/sdlt-pass tags, 203 doesn't
   └─ 835-call-multi-day-longevity-test   858 → 861(mdlt) → 860 → 859; outputs allocation-id
        smoke run (~3 min) → launches the production run (mdlt-length) on the cluster, then EXITS
 then, out of band, keyed only by allocation-id:
@@ -226,7 +226,7 @@ Every CITR suite reports to Chewie's `POST /api/v1/suites/results` through `864`
 
 Each `report-*-running` job shares its test job's `needs`, so both start together; every terminal report job also `needs` the running job, so `running` always lands before the result, and the test jobs never wait on either report. MDLT reports many times per run; Chewie has to take the latest report per build (or commit), not count rows. `206` (Chewie-dispatched with the verdict) reports that verdict as `passed`/`failed` once `verify-build` succeeds — its run conclusion is not the verdict (a `failure` verdict still yields a green run), so the explicit report is the authoritative MDLT result. SDCT (`223`) reporting is a separate effort. **The endpoint exists only in Chewie 3.x (≥ v3.3.0); against 2.11 every report 404s and fails the run** — including MATS (`300`) on every push to `main`. So 3.x must be in production before this branch merges — and a release that actually schedules (carrying #817/#825, never `v3.8.0`), deployed in the order in `required-chewie-changes.md` item 9.
 
-Result tags are the integration surface, not workflow outputs: `221`/`201` tag `sdpt-pass-<build>`/`sdpt-fail-<build>`, `222`/`202` tag `sdlt-pass-`/`sdlt-fail-`, `206` tags `mdlt-pass-`/`mdlt-fail-` (build tag regex `build-(.{5})`), GPG-signed via `step-security/ghaction-import-gpg`. MDLT controllers no longer check pass tags — Chewie gates MDLT on SDPT/SDLT results, so nothing in this repo reads the result tags. `223-disp-sdct-controller.yaml` has zero Chewie references — SDCT allocation still runs out of band.
+Result tags are the integration surface, not workflow outputs: `221`/`201` tag `sdpt-pass-<build>`/`sdpt-fail-<build>`, `222`/`202` tag `sdlt-pass-`/`sdlt-fail-`, `206` tags `mdlt-pass-`/`mdlt-fail-` (build tag regex `build-(.{5})`), GPG-signed via `step-security/ghaction-import-gpg`. `224` checks the `sdpt-pass-`/`sdlt-pass-` tags again (`verify-prerequisite-tags`, restored because Chewie doesn't dispatch yet and `221`/`222` still tag), so a failed SDPT/SDLT tag job keeps a build out of MDLT even though those tag jobs are `continue-on-error`; `203` doesn't check. Chewie will also gate MDLT on its own SDPT/SDLT results once it dispatches `224`. `223-disp-sdct-controller.yaml` has zero Chewie references — SDCT allocation still runs out of band.
 
 ## 7. Traps
 

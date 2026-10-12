@@ -290,8 +290,8 @@ as a longer running version of SDLT to catch potential issues that may not surfa
 Kickoff (Chewie allocates the cluster and namespace; the kickoff prints them to the job summary):
 
 - Automated: [224: [DISP] CITR MDLT Controller](/.github/workflows/224-disp-mdlt-controller.yaml) — dispatched by Chewie
-  with a `build-tag` once SDPT and SDLT have both passed for that build. Chewie applies that gate; the workflow does
-  not check pass tags.
+  with a `build-tag` once SDPT and SDLT have both passed for that build. Until Chewie dispatches it, the workflow also
+  checks for the `sdpt-pass-`/`sdlt-pass-` tags and refuses a build without both.
 - Manual: [203: [USER] CITR MDLT Ctrl Adhoc](/.github/workflows/203-user-mdlt-controller-adhoc.yaml).
 - Both call the reusable
   [835: [CALL] CITR Exec MDLT](/.github/workflows/835-call-multi-day-longevity-test.yaml) executor.
