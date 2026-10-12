@@ -1612,15 +1612,26 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
             System.exit(1);
         }
 
-        // Loading the public parameters embedded in the WRAPS library takes a few seconds, so do it now rather
-        // than when a history proof is first constructed or verified while handling transactions (note the
-        // bridge instance must load its native library before the parameters can be loaded)
-        final var config = configProvider.getConfiguration();
-        if (config.getConfigData(TssConfig.class).historyEnabled()) {
-            WRAPSLibraryBridge.getInstance();
-            if (!WRAPSLibraryBridge.isProofSupported()) {
-                logger.error("History proofs enabled but this node cannot load the WRAPS library public parameters");
-            }
+        initializeWrapsLibraries(configProvider.getConfiguration());
+    }
+
+    /**
+     * Loads the independent WRAPS verification and proving material before handling transactions. CLPR verifies
+     * other ledgers' proofs even when this node does not construct history proofs, so it only needs the verifier.
+     */
+    static void initializeWrapsLibraries(@NonNull final Configuration config) {
+        requireNonNull(config);
+        final boolean historyEnabled = config.getConfigData(TssConfig.class).historyEnabled();
+        if (!historyEnabled && !config.getConfigData(ClprConfig.class).enabled()) {
+            return;
+        }
+        // The bridge instance must load its native library before either readiness check initializes native state.
+        WRAPSLibraryBridge.getInstance();
+        if (!WRAPSLibraryBridge.isVerificationSupported()) {
+            logger.error("WRAPS proof verification enabled but this node cannot load the compressed verification key");
+        }
+        if (historyEnabled && !WRAPSLibraryBridge.isProofSupported()) {
+            logger.error("History proofs enabled but this node cannot load the WRAPS library public parameters");
         }
     }
 

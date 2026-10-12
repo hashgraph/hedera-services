@@ -57,6 +57,9 @@ import java.util.concurrent.CompletableFuture;
  * work.
  */
 public interface HintsService extends Service {
+    /** Current allocation uses parties 1 through n-2; the native library reserves party n-1. */
+    int MAX_ROSTER_SIZE = HintsLibrary.MAX_PARTIES - 2;
+
     String NAME = "HintsService";
 
     /**

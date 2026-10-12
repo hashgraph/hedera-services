@@ -34,8 +34,8 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("nodes")
 public record NodesConfig(
-        // A WRAPS proof can only extend the ledger's chain of trust to an address book of at most 64 nodes
-        @ConfigProperty(defaultValue = "64") @NetworkProperty
+        // The 64-slot hinTS domain reserves its final slot; our allocation also leaves slot zero unused.
+        @ConfigProperty(defaultValue = "62") @NetworkProperty
         long maxNumber,
 
         @ConfigProperty(defaultValue = "100") @NetworkProperty

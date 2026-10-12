@@ -161,10 +161,16 @@ public final class TssStartupNetworks {
                         .build();
             }
             validateCompletedHints(activeConstruction, crs);
+            final int rosterNodeCount = nodeIdsFrom(network, null).size();
+            if (rosterNodeCount > HintsService.MAX_ROSTER_SIZE
+                    || (rosterNodeCount > 0
+                            && partySizeForRosterNodeCount(rosterNodeCount) > activeConstruction.numParties())) {
+                throw new IllegalArgumentException("Startup roster exceeds the supported hinTS construction capacity");
+            }
         }
         final var partySize = activeConstruction.numParties();
         for (final var node : network.nodeTssMetadata()) {
-            if (node.hintsKey().length() > 0 && (node.partyId() < 0 || node.partyId() >= partySize)) {
+            if (node.hintsKey().length() > 0 && !HintsLibrary.isValidPartyId(node.partyId(), partySize)) {
                 throw new IllegalArgumentException("Startup hint party is outside the bound CRS capacity");
             }
         }
@@ -506,7 +512,7 @@ public final class TssStartupNetworks {
                 || construction.numParties() != crs.numParties()
                 || crs.numParties() != HintsLibrary.crsPartySizeFrom(crs.crs())
                 || construction.hintsSchemeOrThrow().nodePartyIds().stream()
-                        .anyMatch(p -> p.partyId() < 0 || p.partyId() >= crs.numParties())) {
+                        .anyMatch(p -> !HintsLibrary.isValidPartyId(p.partyId(), crs.numParties()))) {
             throw new IllegalArgumentException(
                     "Startup metadata requires a completed hinTS construction and its bound CRS");
         }

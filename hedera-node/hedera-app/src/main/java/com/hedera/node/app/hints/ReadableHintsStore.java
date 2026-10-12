@@ -2,6 +2,8 @@
 package com.hedera.node.app.hints;
 
 import static com.hedera.hapi.node.state.hints.CRSStage.COMPLETED;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.hints.CRSState;
@@ -67,7 +69,9 @@ public interface ReadableHintsStore {
         return construction.hasHintsScheme()
                 && construction.targetRosterHash().equals(rosterHash)
                 && construction.crsId() > 0
-                && construction.numParties() > 0
+                && isSupportedPartySize(construction.numParties())
+                && construction.hintsSchemeOrThrow().nodePartyIds().stream()
+                        .allMatch(p -> isValidPartyId(p.partyId(), construction.numParties()))
                 && crs.stage() == COMPLETED
                 && crs.crs().length() > 0
                 && crs.numParties() == construction.numParties();
@@ -126,7 +130,7 @@ public interface ReadableHintsStore {
 
     /** Returns the CRS bound to a construction; unbound or stale references return the default state. */
     default @NonNull CRSState getCrsStateFor(@NonNull final HintsConstruction construction) {
-        if (construction.crsId() <= 0 || construction.numParties() <= 0) {
+        if (construction.crsId() <= 0 || !isSupportedPartySize(construction.numParties())) {
             return CRSState.DEFAULT;
         }
         final var active = getCrsState();
@@ -149,7 +153,9 @@ public interface ReadableHintsStore {
      */
     default @Nullable Bytes crsIfKnown() {
         final var active = getCrsState();
-        return active.stage() == COMPLETED && active.crs().length() > 0 ? active.crs() : null;
+        return active.stage() == COMPLETED && active.crs().length() > 0 && isSupportedPartySize(active.numParties())
+                ? active.crs()
+                : null;
     }
 
     /**

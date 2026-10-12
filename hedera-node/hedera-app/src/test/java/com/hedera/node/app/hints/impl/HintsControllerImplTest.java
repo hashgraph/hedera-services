@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -18,6 +19,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.cryptography.hints.AggregationAndVerificationKeys;
@@ -150,6 +152,39 @@ class HintsControllerImplTest {
     }
 
     @Test
+    void sixtyTwoNodeRosterUsesPartiesOneThroughSixtyTwo() {
+        final var targetWeights = new TreeMap<Long, Long>();
+        for (long nodeId = 100; nodeId < 162; nodeId++) {
+            targetWeights.put(nodeId, 1L);
+        }
+        given(weights.targetNodeIds()).willReturn(new TreeSet<>(targetWeights.keySet()));
+        setupWith(UNFINISHED_CONSTRUCTION.copyBuilder().numParties(64).build());
+        given(weights.targetNodeWeights()).willReturn(targetWeights);
+        given(weights.targetIncludes(anyLong())).willReturn(true);
+
+        for (long nodeId = 100; nodeId < 162; nodeId++) {
+            assertEquals(OptionalInt.of((int) (nodeId - 99)), subject.partyIdOf(nodeId));
+        }
+    }
+
+    @Test
+    void cannotConstructForSixtyThreeNodesWithASixtyFourPartyCrs() {
+        final var targetIds = new TreeSet<Long>();
+        for (long nodeId = 0; nodeId < 63; nodeId++) {
+            targetIds.add(nodeId);
+        }
+        given(weights.targetNodeIds()).willReturn(targetIds);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> setupWith(
+                        UNFINISHED_CONSTRUCTION.copyBuilder().numParties(64).build()));
+
+        assertTrue(scheduledTasks.isEmpty());
+        verifyNoInteractions(library, submissions, context);
+    }
+
+    @Test
     void ignoresKeyPublicationIfNotInGracePeriod() {
         setupWith(FINISHED_CONSTRUCTION);
 
@@ -165,6 +200,7 @@ class HintsControllerImplTest {
 
         subject.addHintsKeyPublication(UNEXPECTED_NODE_ONE_PUBLICATION, INITIAL_CRS);
 
+        verify(weights).targetNodeIds();
         verifyNoMoreInteractions(weights);
     }
 

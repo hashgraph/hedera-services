@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.state.hints.CRSStage;
@@ -23,9 +24,11 @@ import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.node.app.tss.TssKeyFiles;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.node.internal.network.NodeTssMetadata;
 import com.hedera.node.internal.network.TssMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,8 +43,12 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TssStartupNetworksTest {
     private static final long SELF_NODE_ID = 0L;
@@ -53,20 +60,21 @@ class TssStartupNetworksTest {
     @TempDir
     private Path tempDir;
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(ints = {16, 64})
     @SuppressWarnings("unchecked")
-    void restoresBoundCapacityAndEpochFromStartupJson() throws Exception {
+    void restoresBoundCapacityAndEpochFromStartupJson(final int capacity) throws Exception {
         final var crs = CRSState.newBuilder()
                 .ceremonyId(7L)
-                .numParties(16)
+                .numParties(capacity)
                 .lastUsedCeremonyId(9L)
-                .crs(Bytes.wrap(new byte[304 + 288 * 16]))
+                .crs(Bytes.wrap(new byte[304 + 288 * capacity]))
                 .stage(CRSStage.COMPLETED)
                 .build();
         final var construction = HintsConstruction.newBuilder()
                 .constructionId(11L)
                 .crsId(7L)
-                .numParties(16)
+                .numParties(capacity)
                 .hintsScheme(new HintsScheme(
                         new PreprocessedKeys(Bytes.wrap("ak"), Bytes.wrap("vk")), List.of(new NodePartyId(0L, 3, 1L))))
                 .build();
@@ -97,7 +105,82 @@ class TssStartupNetworksTest {
         verify(active).put(construction);
         verify(activeCrs).put(crs);
         verify(nextCrs).put(CRSState.DEFAULT);
-        verify(keys).put(eq(new HintsPartyId(3, 16, 7L)), argThat(k -> k.key().equals(Bytes.wrap("hint"))));
+        verify(keys)
+                .put(eq(new HintsPartyId(3, capacity, 7L)), argThat(k -> k.key().equals(Bytes.wrap("hint"))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 512})
+    void refusesOversizedStartupCrsBeforeWritingState(final int capacity) {
+        final var states = mock(WritableStates.class);
+        final var network = startupNetwork(capacity, 1, 1);
+
+        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+
+        verifyNoInteractions(states);
+    }
+
+    @Test
+    void refusesReservedPartyInStartupSchemeBeforeWritingState() {
+        final var states = mock(WritableStates.class);
+        final var network = startupNetwork(64, 63, 1);
+
+        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+
+        verifyNoInteractions(states);
+    }
+
+    @Test
+    void refusesReservedPartyInStartupHintBeforeWritingState() {
+        final var states = mock(WritableStates.class);
+        final var network = startupNetwork(64, 1, 63);
+
+        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+
+        verifyNoInteractions(states);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"64, 63", "32, 31"})
+    void refusesStartupRosterBeyondSupportedBoundCapacity(final int capacity, final int nodeCount) {
+        final var states = mock(WritableStates.class);
+        final var network = startupNetwork(capacity, 1, 1)
+                .copyBuilder()
+                .nodeMetadata(IntStream.range(0, nodeCount)
+                        .mapToObj(i -> NodeMetadata.newBuilder()
+                                .rosterEntry(RosterEntry.newBuilder().nodeId(i).weight(1))
+                                .build())
+                        .toList())
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+
+        verifyNoInteractions(states);
+    }
+
+    private static Network startupNetwork(final int capacity, final int schemeParty, final int hintParty) {
+        final var crs = CRSState.newBuilder()
+                .ceremonyId(7L)
+                .numParties(capacity)
+                .crs(Bytes.wrap(new byte[304 + 288 * capacity]))
+                .stage(CRSStage.COMPLETED)
+                .build();
+        final var construction = HintsConstruction.newBuilder()
+                .constructionId(11L)
+                .crsId(7L)
+                .numParties(capacity)
+                .hintsScheme(new HintsScheme(
+                        new PreprocessedKeys(Bytes.wrap("ak"), Bytes.wrap("vk")),
+                        List.of(new NodePartyId(0L, schemeParty, 1L))))
+                .build();
+        return Network.newBuilder()
+                .tssMetadata(TssMetadata.newBuilder().crsState(crs).activeHintsConstruction(construction))
+                .nodeTssMetadata(NodeTssMetadata.newBuilder()
+                        .nodeId(0L)
+                        .partyId(hintParty)
+                        .hintsKey(Bytes.wrap("hint"))
+                        .build())
+                .build();
     }
 
     @Test

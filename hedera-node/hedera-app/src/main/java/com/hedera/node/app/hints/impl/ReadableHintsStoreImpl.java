@@ -2,6 +2,7 @@
 package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.util.HapiUtils.asInstant;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID;
@@ -122,8 +123,11 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     public @NonNull List<HintsKeyPublication> getHintsKeyPublications(
             @NonNull final Set<Long> nodeIds, final int numParties, final long crsId) {
         requireNonNull(nodeIds);
+        if (!isSupportedPartySize(numParties)) {
+            return List.of();
+        }
         final List<HintsKeyPublication> publications = new ArrayList<>();
-        for (int partyId = 0; partyId < numParties; partyId++) {
+        for (int partyId = 0; partyId < numParties - 1; partyId++) {
             final var keySet = hintsKeys.get(new HintsPartyId(partyId, numParties, crsId));
             if (keySet != null) {
                 if (nodeIds.contains(keySet.nodeId())) {

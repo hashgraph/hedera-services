@@ -203,6 +203,38 @@ class HintsContextTest {
     }
 
     @Test
+    void refusesOversizedExistingCrsWithoutReplacingActiveSigning() {
+        subject.setConstruction(CONSTRUCTION, CRS_STATE);
+        final var oversized =
+                CONSTRUCTION.copyBuilder().constructionId(2).numParties(128).build();
+        final var oversizedCrs = CRS_STATE.copyBuilder().numParties(128).build();
+
+        assertThrows(IllegalArgumentException.class, () -> subject.setConstruction(oversized, oversizedCrs));
+
+        assertTrue(subject.isReady());
+        assertEquals(CONSTRUCTION.constructionId(), subject.constructionIdOrThrow());
+        assertEquals(VERIFICATION_KEY, subject.verificationKeyOrThrow());
+        assertEquals(CRS, subject.crsForConstruction(CONSTRUCTION.constructionId()));
+    }
+
+    @Test
+    void refusesReservedLastPartyWithoutReplacingActiveSigning() {
+        subject.setConstruction(CONSTRUCTION, CRS_STATE);
+        final var invalid = CONSTRUCTION
+                .copyBuilder()
+                .constructionId(2)
+                .numParties(64)
+                .hintsScheme(new HintsScheme(PREPROCESSED_KEYS, List.of(new NodePartyId(1, 63, 1))))
+                .build();
+        final var crs = CRS_STATE.copyBuilder().numParties(64).build();
+
+        assertThrows(IllegalArgumentException.class, () -> subject.setConstruction(invalid, crs));
+
+        assertEquals(CONSTRUCTION.constructionId(), subject.constructionIdOrThrow());
+        assertEquals(VERIFICATION_KEY, subject.verificationKeyOrThrow());
+    }
+
+    @Test
     void becomesReadyOnceConstructionSet() {
         assertFalse(subject.isReady());
         assertThrows(IllegalStateException.class, subject::constructionIdOrThrow);

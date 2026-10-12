@@ -508,6 +508,36 @@ class WritableHintsStoreImplTest {
     }
 
     @Test
+    void reservedPartyKeysCannotBeWrittenOrReusedFromSavedState() {
+        subject.setCrsState(completedCrs(1, 8));
+        final var validKey = Bytes.wrap("valid-key");
+        assertTrue(subject.setHintsKey(1, 6, 8, 1, validKey, CONSENSUS_NOW));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.setHintsKey(2, 7, 8, 1, Bytes.wrap("reserved-key"), CONSENSUS_NOW));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.setHintsKey(2, 7, 8, Bytes.wrap("legacy-reserved-key"), CONSENSUS_NOW));
+        // Old state may contain the reserved slot even though new publications cannot write it.
+        state.getWritableStates(HintsService.NAME)
+                .<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID)
+                .put(
+                        new HintsPartyId(7, 8, 1),
+                        HintsKeySet.newBuilder()
+                                .nodeId(2)
+                                .key(Bytes.wrap("persisted-reserved-key"))
+                                .adoptionTime(asTimestamp(CONSENSUS_NOW))
+                                .build());
+
+        final var publications = subject.getHintsKeyPublications(Set.of(1L, 2L), 8, 1);
+
+        assertEquals(1, publications.size());
+        assertEquals(6, publications.getFirst().partyId());
+        assertEquals(validKey, publications.getFirst().hintsKey());
+        assertTrue(subject.getHintsKeyPublications(Set.of(1L, 2L), 128, 1).isEmpty());
+    }
+
+    @Test
     void keyGracePeriodRequiresTheExactCompletedCrs() {
         final var construction = HintsConstruction.newBuilder()
                 .constructionId(2)
@@ -586,6 +616,52 @@ class WritableHintsStoreImplTest {
         assertSame(active, subject.getActiveConstruction());
         assertEquals(1, subject.getCrsState().ceremonyId());
         assertEquals(2, subject.getNextCrsState().ceremonyId());
+    }
+
+    @Test
+    void oversizedPersistedNextCrsCannotBeAdoptedEvenWithForceHandoff() {
+        final var active = HintsConstruction.newBuilder()
+                .constructionId(1)
+                .crsId(1)
+                .numParties(64)
+                .hintsScheme(HintsScheme.DEFAULT)
+                .build();
+        final var next = HintsConstruction.newBuilder()
+                .constructionId(2)
+                .crsId(2)
+                .numParties(128)
+                .targetRosterHash(B_ROSTER_HASH)
+                .hintsScheme(HintsScheme.DEFAULT)
+                .build();
+        setConstructions(active, next);
+        subject.setCrsState(completedCrs(1, 64));
+        // Populate the singleton directly to model an oversized CRS already present in saved state.
+        state.getWritableStates(HintsService.NAME)
+                .<CRSState>getSingleton(NEXT_CRS_STATE_ID)
+                .put(completedCrs(2, 128)
+                        .copyBuilder()
+                        .constructionId(2)
+                        .targetRosterHash(B_ROSTER_HASH)
+                        .build());
+
+        assertFalse(subject.isReadyToAdopt(B_ROSTER_HASH));
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH, true));
+
+        assertSame(active, subject.getActiveConstruction());
+        assertSame(next, subject.getNextConstruction());
+        assertEquals(1, subject.getCrsState().ceremonyId());
+        assertEquals(64, subject.getCrsState().numParties());
+        assertEquals(2, subject.getNextCrsState().ceremonyId());
+    }
+
+    @Test
+    void cannotBindConstructionToUnsupportedCrsCapacity() {
+        final var next = HintsConstruction.newBuilder().constructionId(2).build();
+        setConstructions(HintsConstruction.DEFAULT, next);
+
+        assertThrows(IllegalArgumentException.class, () -> subject.bindConstructionToCrs(2, 1, 128));
+
+        assertSame(next, subject.getNextConstruction());
     }
 
     @Test
@@ -814,7 +890,7 @@ class WritableHintsStoreImplTest {
         final var keySets = state.getWritableStates(HintsService.NAME)
                 .<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID);
         final int numParties = partySizeForRoster(roster);
-        for (int i = 0; i < numParties; i++) {
+        for (int i = 0; i < numParties - 1; i++) {
             final var partyId = new HintsPartyId(i, numParties, 1);
             final var keySet = HintsKeySet.newBuilder()
                     .nodeId(i)

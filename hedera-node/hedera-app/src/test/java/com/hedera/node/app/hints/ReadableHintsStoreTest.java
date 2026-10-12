@@ -116,6 +116,27 @@ class ReadableHintsStoreTest {
     }
 
     @Test
+    void onlyExposesKnownCrsWithinTheSupportedCapacity() {
+        doCallRealMethod().when(subject).crsIfKnown();
+        final var crs = Bytes.wrap("completed-crs");
+        given(subject.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .numParties(128)
+                        .stage(CRSStage.COMPLETED)
+                        .crs(crs)
+                        .build());
+        assertNull(subject.crsIfKnown());
+
+        given(subject.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .numParties(64)
+                        .stage(CRSStage.COMPLETED)
+                        .crs(crs)
+                        .build());
+        assertEquals(crs, subject.crsIfKnown());
+    }
+
+    @Test
     void returnsCrsState() {
         final var crsState = CRSState.newBuilder()
                 .crs(Bytes.wrap("test"))

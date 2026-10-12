@@ -8,6 +8,7 @@ import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_STATE_
 import static com.hedera.node.app.hints.schemas.V079HintsSchema.NEXT_CRS_STATE_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -124,6 +125,21 @@ class V079HintsSchemaTest {
     }
 
     @Test
+    void rejectsOversizedLegacyCrsWithoutRebindingItsSchemeOrKeys() {
+        givenLegacyScheme(128);
+        given(library.crsPartySize(CRS)).willThrow(new IllegalArgumentException("Unsupported CRS capacity"));
+        final var originalCrs = activeCrs.get();
+        final var originalConstruction = active.get();
+
+        assertThrows(IllegalArgumentException.class, () -> subject.migrate(ctx));
+
+        assertEquals(originalCrs, activeCrs.get());
+        assertEquals(originalConstruction, active.get());
+        assertNotNull(keys.get(new HintsPartyId(0, 128, 0)));
+        verifyNoInteractions(signingContext);
+    }
+
+    @Test
     void refusesAmbiguousLegacyCapacity() {
         givenLegacyScheme(4);
         given(library.crsPartySize(CRS)).willReturn(4);
@@ -143,6 +159,7 @@ class V079HintsSchemaTest {
 
     @Test
     void incompleteLegacyCeremonyStartsCleanWithAFreshHintsConstructionId() {
+        given(library.crsPartySize(CRS)).willReturn(4);
         activeCrs.put(CRSState.newBuilder()
                 .crs(CRS)
                 .stage(CRSStage.WAITING_FOR_ADOPTING_FINAL_CRS)
@@ -162,7 +179,8 @@ class V079HintsSchemaTest {
         assertFalse(active.get().hasGracePeriodEndTime());
         assertEquals(0, active.get().crsId());
         assertNull(keys.get(new HintsPartyId(0, 4, 0)));
-        verifyNoInteractions(library, signingContext);
+        verify(library).crsPartySize(CRS);
+        verifyNoInteractions(signingContext);
     }
 
     @Test
@@ -176,6 +194,79 @@ class V079HintsSchemaTest {
                         .getOrCreateConfig());
         subject.restart(ctx);
         verify(signingContext).setConstruction(active.get(), activeCrs.get());
+    }
+
+    @Test
+    void sameVersionRestartRejectsOversizedActiveCrs() {
+        givenBoundActiveScheme(128);
+        givenRestartConfiguration();
+
+        assertThrows(IllegalStateException.class, () -> subject.restart(ctx));
+
+        assertEquals(128, activeCrs.get().numParties());
+        verifyNoInteractions(library, signingContext);
+    }
+
+    @Test
+    void sameVersionRestartRejectsOversizedNextCrsBeforeRestoringSigning() {
+        givenBoundActiveScheme(64);
+        next.put(HintsConstruction.newBuilder()
+                .constructionId(8)
+                .crsId(2)
+                .numParties(128)
+                .build());
+        nextCrs.put(CRSState.newBuilder()
+                .ceremonyId(2)
+                .constructionId(8)
+                .numParties(128)
+                .stage(CRSStage.GATHERING_CONTRIBUTIONS)
+                .crs(Bytes.wrap("oversized-next-crs"))
+                .build());
+        lenient().when(library.crsPartySize(CRS)).thenReturn(64);
+        givenRestartConfiguration();
+
+        assertThrows(IllegalStateException.class, () -> subject.restart(ctx));
+
+        assertEquals(64, activeCrs.get().numParties());
+        assertEquals(128, nextCrs.get().numParties());
+        verifyNoInteractions(signingContext);
+    }
+
+    @Test
+    void sameVersionRestartRestoresMaximumSupportedCapacityAndLastAssignableParty() {
+        givenBoundActiveScheme(64);
+        given(library.crsPartySize(CRS)).willReturn(64);
+        givenRestartConfiguration();
+
+        subject.restart(ctx);
+
+        verify(signingContext).setConstruction(active.get(), activeCrs.get());
+        assertEquals(64, activeCrs.get().numParties());
+        assertEquals(
+                62, active.get().hintsSchemeOrThrow().nodePartyIds().getFirst().partyId());
+    }
+
+    private void givenBoundActiveScheme(final int capacity) {
+        activeCrs.put(CRSState.newBuilder()
+                .ceremonyId(1)
+                .numParties(capacity)
+                .crs(CRS)
+                .stage(CRSStage.COMPLETED)
+                .build());
+        active.put(HintsConstruction.newBuilder()
+                .constructionId(7)
+                .crsId(1)
+                .numParties(capacity)
+                .hintsScheme(new HintsScheme(PreprocessedKeys.DEFAULT, List.of(new NodePartyId(1, capacity - 2, 1))))
+                .build());
+        nextCrs.put(CRSState.DEFAULT);
+    }
+
+    private void givenRestartConfiguration() {
+        given(ctx.appConfig())
+                .willReturn(HederaTestConfigBuilder.create()
+                        .withValue("tss.hintsEnabled", "true")
+                        .getOrCreateConfig());
     }
 
     private void givenLegacyScheme(final int capacity) {

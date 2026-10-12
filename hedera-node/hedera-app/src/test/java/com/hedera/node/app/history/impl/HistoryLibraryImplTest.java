@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.cryptography.wraps.SchnorrKeys;
 import com.hedera.hapi.node.state.history.History;
+import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -49,6 +50,16 @@ class HistoryLibraryImplTest {
                 maxNodes <= HistoryLibrary.MAX_ADDRESS_BOOK_SIZE,
                 "nodes.maxNumber defaults to " + maxNodes + ", but a WRAPS address book holds at most "
                         + HistoryLibrary.MAX_ADDRESS_BOOK_SIZE + " nodes");
+    }
+
+    @Test
+    void defaultMaxNodesFitTheCurrentHintsPartyAllocation() {
+        final long maxNodes = HederaTestConfigBuilder.createConfig()
+                .getConfigData(NodesConfig.class)
+                .maxNumber();
+
+        assertEquals(62L, maxNodes);
+        assertEquals(64, HintsService.partySizeForRosterNodeCount(Math.toIntExact(maxNodes)));
     }
 
     @Test

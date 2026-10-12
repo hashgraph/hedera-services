@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.cryptography.hints.AggregationAndVerificationKeys;
@@ -61,10 +63,10 @@ public class HintsLibraryImpl implements HintsLibrary {
 
     @Override
     public Bytes newCrs(final short n) {
-        if (n <= 0 || n > 512 || (n & (n - 1)) != 0) {
+        if (!isSupportedPartySize(n)) {
             throw new IllegalArgumentException("Unsupported hinTS CRS party count: " + n);
         }
-        // In 3.18.0, CRS ceremony operations deserialize their own inputs and never access
+        // In 3.19.1, CRS ceremony operations deserialize their own inputs and never access
         // the signing CRS/AK caches. They must not acquire the signing cache guard.
         return Bytes.wrap(BRIDGE.initCRS(n));
     }
@@ -98,6 +100,7 @@ public class HintsLibraryImpl implements HintsLibrary {
             @NonNull final Bytes crs, @NonNull final Bytes blsPrivateKey, final int partyId, final int n) {
         requireNonNull(blsPrivateKey);
         requireExactCapacity(crs, n);
+        requireValidPartyId(partyId, n);
         final var hints = keyLibrary.computeHints(crs.toByteArray(), blsPrivateKey.toByteArray(), partyId, n);
         return hints == null ? null : Bytes.wrap(hints);
     }
@@ -108,6 +111,9 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(crs);
         requireNonNull(hintsKey);
         requireExactCapacity(crs, n);
+        if (!isValidPartyId(partyId, n)) {
+            return false;
+        }
         return keyLibrary.validateHintsKey(crs.toByteArray(), hintsKey.toByteArray(), partyId, n);
     }
 
@@ -124,6 +130,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         if (!hintsKeys.keySet().equals(weights.keySet())) {
             throw new IllegalArgumentException("The number of hint keys and weights must be the same");
         }
+        hintsKeys.keySet().forEach(partyId -> requireValidPartyId(partyId, n));
         final int[] parties =
                 hintsKeys.keySet().stream().mapToInt(Integer::intValue).toArray();
         final byte[][] hintsPublicKeys = Arrays.stream(parties)
@@ -154,7 +161,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(aggregationKey);
-        if (aggregationKey.length() < MIN_AGGREGATION_KEY_LENGTH) {
+        if (aggregationKey.length() < MIN_AGGREGATION_KEY_LENGTH || !isValidPartyId(partyId, crsPartySize(crs))) {
             return false;
         }
         return withNativeCache(
@@ -175,6 +182,10 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(verificationKey);
         requireNonNull(partialSignatures);
         if (aggregationKey.length() < MIN_AGGREGATION_KEY_LENGTH) {
+            return null;
+        }
+        final int numParties = crsPartySize(crs);
+        if (partialSignatures.keySet().stream().anyMatch(partyId -> !isValidPartyId(partyId, numParties))) {
             return null;
         }
         final int[] parties =
@@ -235,6 +246,12 @@ public class HintsLibraryImpl implements HintsLibrary {
     private static boolean cacheMatches(@Nullable final Bytes crs, @Nullable final Bytes aggregationKey) {
         return (crs == null || crs.equals(cachedCrs))
                 && (aggregationKey == null || aggregationKey.equals(cachedAggregationKey));
+    }
+
+    private static void requireValidPartyId(final int partyId, final int n) {
+        if (!isValidPartyId(partyId, n)) {
+            throw new IllegalArgumentException("Unsupported hinTS party ID " + partyId + " for capacity " + n);
+        }
     }
 
     @Override

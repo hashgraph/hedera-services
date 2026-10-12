@@ -204,8 +204,16 @@ the ledger id.
 Since computing a WRAPS proof is expensive, nodes stagger that work: each node waits `tss.wrapsVoteJitterPerRank` per
 rank it has before computing its own proof (nodes that published first-round signing messages for the construction rank
 first, so an offline node never holds up the proof), and votes congruent with any valid proof it sees in the meantime.
-And since a WRAPS proof covers an address book of at most 64 nodes, `nodes.maxNumber` defaults to 64; a construction
-for a larger roster fails.
+The 3.19.1 library supports a hinTS domain of at most 64 slots, with its final slot reserved, and a WRAPS address
+book of at most 63 nodes. Our party allocation also leaves slot zero unused, so `nodes.maxNumber` defaults to 62.
+TSS refuses larger candidate rosters even if configuration permits more node records. A retained CRS with a domain
+larger than 64 is unsupported and must never be truncated to fit; startup rejects such state.
+
+WRAPS proving parameters and its fixed compressed verification key remain bundled in the library. Prover and
+verifier initialization are separate and are warmed before use. Existing supported CRS values and full WRAPS proofs
+remain usable; the library no longer accepts the legacy Schnorr-only address book proof through its TSS API.
+The published 3.19.1 hinTS and WRAPS JARs currently include only Linux AMD64 native binaries, so native execution
+on other platforms requires a corrected library release.
 
 ### Integration with protocol components
 

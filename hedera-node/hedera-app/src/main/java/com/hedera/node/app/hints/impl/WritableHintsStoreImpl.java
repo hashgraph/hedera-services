@@ -3,6 +3,8 @@ package com.hedera.node.app.hints.impl;
 
 import static com.hedera.hapi.node.state.hints.CRSStage.COMPLETED;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static com.hedera.node.app.hints.HintsService.partySizeForRoster;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_STATE_ID;
@@ -104,6 +106,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             final int numParties,
             @NonNull final Bytes hintsKey,
             @NonNull final Instant now) {
+        requireValidPartyId(partyId, numParties);
         final var id = new HintsPartyId(partyId, numParties, 0);
         var keySet = hintsKeys.get(id);
         boolean inUse = false;
@@ -132,6 +135,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         if (crsId <= 0) {
             throw new IllegalArgumentException("A published hints key must identify its CRS generation");
         }
+        requireValidPartyId(partyId, numParties);
         final var id = new HintsPartyId(partyId, numParties, crsId);
         var keySet = hintsKeys.get(id);
         // A party released by a departing node can be reassigned under the same CRS. Its old
@@ -297,7 +301,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     @Override
     public HintsConstruction bindConstructionToCrs(final long constructionId, final long crsId, final int numParties) {
-        if (crsId <= 0 || numParties <= 0 || numParties > 512 || Integer.bitCount(numParties) != 1) {
+        if (crsId <= 0 || !isSupportedPartySize(numParties)) {
             throw new IllegalArgumentException("A construction requires a positive CRS ID and power-of-two capacity");
         }
         return updateOrThrow(constructionId, b -> {
@@ -330,7 +334,7 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                     || construction.hasHintsScheme()) {
                 return b;
             }
-            for (int partyId = 0; partyId < construction.numParties(); partyId++) {
+            for (int partyId = 0; partyId < construction.numParties() - 1; partyId++) {
                 final var keyId = new HintsPartyId(partyId, construction.numParties(), construction.crsId());
                 final var keySet = hintsKeys.get(keyId);
                 if (keySet != null && keySet.nextKey().length() > 0) {
@@ -453,6 +457,12 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private void purgeHintsKeys(final int numParties, final long crsId) {
         for (int partyId = 0; partyId < numParties; partyId++) {
             hintsKeys.remove(new HintsPartyId(partyId, numParties, crsId));
+        }
+    }
+
+    private static void requireValidPartyId(final int partyId, final int numParties) {
+        if (!isValidPartyId(partyId, numParties)) {
+            throw new IllegalArgumentException("Unsupported hinTS party ID " + partyId + " for capacity " + numParties);
         }
     }
 

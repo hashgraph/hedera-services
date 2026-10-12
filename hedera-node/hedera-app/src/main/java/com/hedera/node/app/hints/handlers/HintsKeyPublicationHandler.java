@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.hints.handlers;
 
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
@@ -62,7 +63,7 @@ public class HintsKeyPublicationHandler implements TransactionHandler {
             final long nodeId = context.creatorInfo().nodeId();
             final int partyId = controller.partyIdOf(nodeId).orElse(INVALID_PARTY_ID);
             // Ignore hinTS keys that nodes publish with party ids other than their consensus party id
-            if (partyId >= 0 && partyId < numParties && op.partyId() == partyId) {
+            if (isValidPartyId(partyId, numParties) && op.partyId() == partyId) {
                 final var hintsKey = op.hintsKey();
                 final var adoptionTime = context.consensusNow();
                 if (hintsStore.setHintsKey(nodeId, partyId, numParties, op.crsId(), hintsKey, adoptionTime)) {

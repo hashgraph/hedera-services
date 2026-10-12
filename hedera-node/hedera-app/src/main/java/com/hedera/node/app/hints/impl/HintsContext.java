@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.hints.impl;
 
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
@@ -145,11 +147,9 @@ public class HintsContext {
         if (crsState.stage() != CRSStage.COMPLETED
                 || crsState.crs().length() == 0
                 || crsState.ceremonyId() <= 0
-                || crsState.numParties() <= 0
-                || crsState.numParties() > 512
-                || (crsState.numParties() & (crsState.numParties() - 1)) != 0
+                || !isSupportedPartySize(crsState.numParties())
                 || construction.hintsSchemeOrThrow().nodePartyIds().stream()
-                        .anyMatch(p -> p.partyId() < 0 || p.partyId() >= crsState.numParties())
+                        .anyMatch(p -> !isValidPartyId(p.partyId(), crsState.numParties()))
                 || construction.crsId() != crsState.ceremonyId()
                 || construction.numParties() != crsState.numParties()) {
             throw new IllegalArgumentException("Construction must be bound to its completed CRS");

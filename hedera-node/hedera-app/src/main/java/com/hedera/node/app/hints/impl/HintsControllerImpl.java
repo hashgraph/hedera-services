@@ -7,6 +7,8 @@ import static com.hedera.hapi.node.state.hints.CRSStage.WAITING_FOR_ADOPTING_FIN
 import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static com.hedera.node.app.service.roster.impl.RosterTransitionWeights.moreThanTwoThirdsOfTotal;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
@@ -140,6 +142,9 @@ public class HintsControllerImpl implements HintsController {
         this.blsPrivateKey = requireNonNull(blsPrivateKey);
         this.weights = requireNonNull(weights);
         this.numParties = construction.numParties();
+        if (!isSupportedPartySize(numParties) || weights.targetNodeIds().size() > numParties - 2) {
+            throw new IllegalArgumentException("Construction exceeds supported hinTS party capacity");
+        }
         this.executor = requireNonNull(executor);
         this.context = requireNonNull(context);
         this.submissions = requireNonNull(submissions);
@@ -568,6 +573,9 @@ public class HintsControllerImpl implements HintsController {
      */
     private void updateHintsKey(@NonNull final Bytes crs, @NonNull final HintsKeyPublication publication) {
         final int partyId = publication.partyId();
+        if (!isValidPartyId(partyId, numParties)) {
+            return;
+        }
         final long nodeId = publication.nodeId();
         nodePartyIds.put(nodeId, partyId);
         partyNodeIds.put(partyId, nodeId);
@@ -585,21 +593,21 @@ public class HintsControllerImpl implements HintsController {
      * node ids and party ids by their indexes in these lists.
      * <p>
      * For example, suppose there are three nodes with ids {@code 7}, {@code 9}, and {@code 12};
-     * and the party size is four (hence party ids are {@code 0}, {@code 1}, {@code 2}, and {@code 3}).
+     * and the party size is eight. We allocate parties starting at one, excluding the final reserved slot.
      * Then we can think of two lists,
      * <ul>
      *     <Li>{@code (7, 9, 12)}</Li>
-     *     <Li>{@code (0, 1, 2, 3)}</Li>
+     *     <Li>{@code (1, 2, 3, 4, 5, 6)}</Li>
      * </ul>
-     * And do three assignments: {@code 7 -> 0}, {@code 9 -> 1}, and {@code 12 -> 2}.
+     * And do three assignments: {@code 7 -> 1}, {@code 9 -> 2}, and {@code 12 -> 3}.
      * <p>
      * The important thing about this strategy is that it doesn't matter the <b>order</b> in
      * which we do the assignments. For example, if the nodes publish their keys in the order
-     * {@code 9}, {@code 7}, {@code 12}, then after assigning {@code 9 -> 1}, the remaining
+     * {@code 9}, {@code 7}, {@code 12}, then after assigning {@code 9 -> 2}, the remaining
      * lists will be,
      * <ul>
      *     <Li>{@code (7, 12)}</Li>
-     *     <Li>{@code (0, 2, 3)}</Li>
+     *     <Li>{@code (1, 3, 4, 5, 6)}</Li>
      * </ul>
      * And no matter which node publishes their key next, they still get the same id as before.
      *
@@ -610,7 +618,7 @@ public class HintsControllerImpl implements HintsController {
                 .filter(id -> !nodePartyIds.containsKey(id))
                 .sorted()
                 .toList();
-        final var unusedPartyIds = IntStream.range(1, numParties)
+        final var unusedPartyIds = IntStream.range(1, numParties - 1)
                 .filter(id -> !partyNodeIds.containsKey(id))
                 .boxed()
                 .toList();

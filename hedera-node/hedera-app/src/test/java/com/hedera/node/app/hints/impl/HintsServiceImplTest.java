@@ -62,6 +62,8 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -144,6 +146,8 @@ class HintsServiceImplTest {
     @BeforeEach
     void setUp() {
         subject = new HintsServiceImpl(component, library);
+        lenient().when(hintsStore.getCrsState()).thenReturn(CRSState.DEFAULT);
+        lenient().when(activeRosters.targetRoster()).thenReturn(Roster.DEFAULT);
         lenient()
                 .when(writableStates.<CRSState>getSingleton(V079HintsSchema.NEXT_CRS_STATE_ID))
                 .thenReturn(nextCrsState);
@@ -475,6 +479,36 @@ class HintsServiceImplTest {
     }
 
     @Test
+    void growingFromThirtyToThirtyOneNodesStartsTheMaximumSupportedCeremony() {
+        final var selected = prepareTransition(31, 32);
+        final var seed = Bytes.wrap("fresh maximum-capacity seed");
+        given(library.newCrs((short) 64)).willReturn(seed);
+        given(hintsStore.allocateCrsId()).willReturn(2L);
+        given(activeRosters.transitionWeights(any())).willReturn(transitionWeights);
+        given(transitionWeights.sourceNodeWeights()).willReturn(new TreeMap<>(Map.of(42L, 2L, 99L, 1L)));
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig, true);
+
+        assertEquals(64, selected.get().numParties());
+        assertEquals(2, selected.get().ceremonyId());
+        assertEquals(seed, selected.get().initialCrs());
+        verify(hintsStore, never()).setCrsState(any());
+        verify(hintsStore, never()).startHintsKeyGracePeriod(anyLong(), any(), any());
+        verify(controller, never()).advanceConstruction(any(), any(), any(Boolean.class));
+    }
+
+    @Test
+    void sixtyTwoNodesReuseTheMaximumSupportedCrs() {
+        prepareTransition(62, 64);
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig, true);
+
+        verify(hintsStore).bindConstructionToCrs(2, 1, 64);
+        verifyNoInteractions(library);
+        verify(controller).advanceConstruction(CONSENSUS_NOW, hintsStore, true);
+    }
+
+    @Test
     void shrinkingFromSevenToSixNodesKeepsSixteenParties() {
         prepareTransition(6, 16);
         subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig, true);
@@ -497,7 +531,7 @@ class HintsServiceImplTest {
     void unsupportedCapacityLeavesActiveSigningAndCrsUntouched() {
         given(activeRosters.phase()).willReturn(ActiveRosters.Phase.TRANSITION);
         given(activeRosters.targetRoster())
-                .willReturn(new Roster(IntStream.range(0, 511)
+                .willReturn(new Roster(IntStream.range(0, 63)
                         .mapToObj(i ->
                                 RosterEntry.newBuilder().nodeId(i).weight(1).build())
                         .toList()));
@@ -505,6 +539,36 @@ class HintsServiceImplTest {
                 .willReturn(HintsConstruction.newBuilder().constructionId(99).build());
         given(component.controllers()).willReturn(controllers);
         subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig, true);
+        verify(controllers).stop();
+        verify(controllers, never()).getOrCreateFor(any(), any(), any(), any());
+        verify(hintsStore, never()).allocateCrsId();
+        verify(hintsStore, never()).setCrsState(any());
+        verify(hintsStore, never()).setNextCrsState(any());
+        verifyNoInteractions(context, library);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"128,64", "64,128"})
+    void refusesUnsupportedPersistedActiveOrBoundCapacityWithoutChangingSigning(
+            final int activeCapacity, final int boundCapacity) {
+        given(activeRosters.phase()).willReturn(ActiveRosters.Phase.TRANSITION);
+        given(hintsStore.getCrsState())
+                .willReturn(CRSState.newBuilder()
+                        .ceremonyId(1)
+                        .numParties(activeCapacity)
+                        .stage(COMPLETED)
+                        .crs(Bytes.wrap("persisted-active-crs"))
+                        .build());
+        given(hintsStore.getOrCreateConstruction(activeRosters, CONSENSUS_NOW, tssConfig))
+                .willReturn(HintsConstruction.newBuilder()
+                        .constructionId(99)
+                        .crsId(2)
+                        .numParties(boundCapacity)
+                        .build());
+        given(component.controllers()).willReturn(controllers);
+
+        subject.reconcile(activeRosters, hintsStore, CONSENSUS_NOW, tssConfig, true);
+
         verify(controllers).stop();
         verify(controllers, never()).getOrCreateFor(any(), any(), any(), any());
         verify(hintsStore, never()).allocateCrsId();

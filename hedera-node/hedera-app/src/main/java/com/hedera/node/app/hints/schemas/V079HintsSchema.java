@@ -3,6 +3,8 @@ package com.hedera.node.app.hints.schemas;
 
 import static com.hedera.hapi.node.state.hints.CRSStage.COMPLETED;
 import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
+import static com.hedera.node.app.hints.HintsLibrary.isValidPartyId;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID;
@@ -31,7 +33,8 @@ import java.util.Set;
 public class V079HintsSchema extends Schema<SemanticVersion> {
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().minor(79).build();
-    private static final int MAX_PARTIES = 512;
+    // Old namespaces still need cleanup even though the current native library only accepts n <= 64.
+    private static final int LEGACY_MAX_PARTIES = 512;
     public static final String NEXT_CRS_STATE_KEY = "NEXT_CRS_STATE";
     public static final int NEXT_CRS_STATE_ID = SingletonType.HINTSSERVICE_I_NEXT_CRS_STATE.protoOrdinal();
     public static final String NEXT_CRS_STATE_LABEL = computeLabel(HintsService.NAME, NEXT_CRS_STATE_KEY);
@@ -76,10 +79,14 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
         }
         final var legacy = requireNonNull(activeCrs.get());
         if (legacy.ceremonyId() > 0) {
+            validatePersistedState(legacy, requireNonNull(activeState.get()), "ACTIVE");
+            validatePersistedState(requireNonNull(nextCrs.get()), requireNonNull(nextState.get()), "NEXT");
             return;
         }
         final var active = requireNonNull(activeState.get());
         final var next = requireNonNull(nextState.get());
+        validateCapacityMetadata(legacy, active, "legacy ACTIVE");
+        validateCapacityMetadata(requireNonNull(nextCrs.get()), next, "legacy NEXT");
         final var keys = states.<HintsPartyId, HintsKeySet>get(HINTS_KEY_SETS_STATE_ID);
         long lastConstructionId = Math.max(active.constructionId(), next.constructionId());
         if (legacy.stage() == COMPLETED && legacy.crs().length() > 0) {
@@ -88,6 +95,7 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
                 throw new IllegalStateException(
                         "Legacy hinTS scheme capacity does not match its CRS; refusing migration");
             }
+            validateSchemeParties(active, capacity, "legacy ACTIVE");
             final long ceremonyId = Math.incrementExact(legacy.lastUsedCeremonyId());
             activeCrs.put(legacy.copyBuilder()
                     .ceremonyId(ceremonyId)
@@ -109,6 +117,10 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
         } else {
             if (active.hasHintsScheme()) {
                 throw new IllegalStateException("Completed legacy hinTS scheme has no completed CRS");
+            }
+            if (legacy.crs().length() > 0) {
+                // An old ceremony may be restarted, but never silently resized to fit the new library.
+                library.crsPartySize(legacy.crs());
             }
             // Legacy publications have no epoch or complete retry transcript. Never replay them.
             activeCrs.put(CRSState.newBuilder()
@@ -135,11 +147,59 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
         final var states = ctx.newStates();
         final var active = states.<HintsConstruction>getSingleton(ACTIVE_HINTS_CONSTRUCTION_STATE_ID)
                 .get();
-        if (active != null && active.hasHintsScheme()) {
-            signingContext.setConstruction(
-                    active,
-                    requireNonNull(
-                            states.<CRSState>getSingleton(CRS_STATE_STATE_ID).get()));
+        final var activeCrs =
+                requireNonNull(states.<CRSState>getSingleton(CRS_STATE_STATE_ID).get());
+        validatePersistedState(activeCrs, requireNonNull(active), "ACTIVE");
+        validatePersistedState(
+                requireNonNull(states.<CRSState>getSingleton(NEXT_CRS_STATE_ID).get()),
+                requireNonNull(states.<HintsConstruction>getSingleton(NEXT_HINTS_CONSTRUCTION_STATE_ID)
+                        .get()),
+                "NEXT");
+        if (active.hasHintsScheme()) {
+            signingContext.setConstruction(active, activeCrs);
+        }
+    }
+
+    /** Fail closed even when this schema already ran under an earlier cryptography library. */
+    private void validatePersistedState(final CRSState crs, final HintsConstruction construction, final String label) {
+        validateCapacityMetadata(crs, construction, label);
+        if (crs.crs().length() > 0) {
+            final int capacity;
+            try {
+                capacity = library.crsPartySize(crs.crs());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalStateException(label + " hinTS CRS is unsupported or malformed", e);
+            }
+            if (!isSupportedPartySize(capacity) || (crs.ceremonyId() > 0 && capacity != crs.numParties())) {
+                throw new IllegalStateException(label + " hinTS CRS capacity does not match its binding");
+            }
+            if (crs.initialCrs().length() > 0 && library.crsPartySize(crs.initialCrs()) != capacity) {
+                throw new IllegalStateException(label + " hinTS initial CRS capacity does not match its binding");
+            }
+        } else if (crs.ceremonyId() > 0) {
+            throw new IllegalStateException(label + " hinTS ceremony has no CRS");
+        }
+        if (construction.crsId() > 0 && !isSupportedPartySize(construction.numParties())) {
+            throw new IllegalStateException(label + " hinTS construction has no supported CRS capacity");
+        }
+        validateSchemeParties(construction, construction.numParties(), label);
+    }
+
+    private static void validateCapacityMetadata(
+            final CRSState crs, final HintsConstruction construction, final String label) {
+        if ((crs.numParties() != 0 && !isSupportedPartySize(crs.numParties()))
+                || (construction.numParties() != 0 && !isSupportedPartySize(construction.numParties()))) {
+            throw new IllegalStateException(label + " hinTS state has unsupported capacity; refusing restart");
+        }
+    }
+
+    private static void validateSchemeParties(
+            final HintsConstruction construction, final int capacity, final String label) {
+        if (construction.hasHintsScheme()
+                && (!isSupportedPartySize(capacity)
+                        || construction.hintsSchemeOrThrow().nodePartyIds().stream()
+                                .anyMatch(p -> !isValidPartyId(p.partyId(), capacity)))) {
+            throw new IllegalStateException(label + " hinTS scheme uses an unsupported or reserved party ID");
         }
     }
 
@@ -162,11 +222,11 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
             throw new IllegalStateException("Cannot determine legacy hinTS capacity from an empty scheme");
         }
         int matchingCapacity = 0;
-        for (int n = 1; n <= MAX_PARTIES; n *= 2) {
+        for (int n = 1; n <= LEGACY_MAX_PARTIES; n *= 2) {
             boolean matches = true;
             for (final var party : parties) {
                 final var key = keys.get(new HintsPartyId(party.partyId(), n, 0));
-                if (party.partyId() >= n || key == null || key.nodeId() != party.nodeId()) {
+                if (!isValidPartyId(party.partyId(), n) || key == null || key.nodeId() != party.nodeId()) {
                     matches = false;
                     break;
                 }
@@ -186,12 +246,12 @@ public class V079HintsSchema extends Schema<SemanticVersion> {
 
     private static void migrateKeys(
             final WritableKVState<HintsPartyId, HintsKeySet> keys, final int capacity, final long ceremonyId) {
-        for (int n = 1; n <= MAX_PARTIES; n *= 2) {
+        for (int n = 1; n <= LEGACY_MAX_PARTIES; n *= 2) {
             for (int partyId = 0; partyId < n; partyId++) {
                 final var oldId = new HintsPartyId(partyId, n, 0);
                 final var value = keys.get(oldId);
                 if (value != null) {
-                    if (n == capacity) {
+                    if (n == capacity && isValidPartyId(partyId, n)) {
                         keys.put(new HintsPartyId(partyId, n, ceremonyId), value);
                     }
                     keys.remove(oldId);

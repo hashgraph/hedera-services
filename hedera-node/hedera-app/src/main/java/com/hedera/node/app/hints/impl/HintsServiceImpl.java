@@ -4,6 +4,7 @@ package com.hedera.node.app.hints.impl;
 import static com.hedera.hapi.node.state.hints.CRSStage.COMPLETED;
 import static com.hedera.hapi.node.state.hints.CRSStage.GATHERING_CONTRIBUTIONS;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.hints.HintsLibrary.isSupportedPartySize;
 import static com.hedera.node.app.hints.HintsService.maybeWeightsFrom;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID;
@@ -226,20 +227,27 @@ public class HintsServiceImpl implements HintsService, OnHintsFinished {
         switch (activeRosters.phase()) {
             case BOOTSTRAP, TRANSITION -> {
                 var construction = hintsStore.getOrCreateConstruction(activeRosters, now, tssConfig);
-                if (construction.hasHintsScheme()) {
-                    component.controllers().stop();
-                    return;
-                }
-                // The 3.18 native bridge accepts n <= 1023, and n must be a power of two.
                 // Refuse an unsupported candidate without interrupting the active network's signing.
-                if (HintsService.partySizeForRoster(activeRosters.targetRoster()) > 512) {
+                final int requiredParties = HintsService.partySizeForRoster(activeRosters.targetRoster());
+                final int activeParties = hintsStore.getCrsState().numParties();
+                if (!isSupportedPartySize(requiredParties)
+                        || (activeParties != 0 && !isSupportedPartySize(activeParties))
+                        || (construction.numParties() != 0 && !isSupportedPartySize(construction.numParties()))) {
                     component.controllers().stop();
                     if (unsupportedConstructionId != construction.constructionId()) {
                         unsupportedConstructionId = construction.constructionId();
                         logger.warn(
-                                "Cannot construct hinTS for candidate #{}: required CRS capacity exceeds 512",
-                                construction.constructionId());
+                                "Cannot construct hinTS for candidate #{}: unsupported CRS capacity (required={}, active={}, bound={}, maximum={})",
+                                construction.constructionId(),
+                                requiredParties,
+                                activeParties,
+                                construction.numParties(),
+                                HintsLibrary.MAX_PARTIES);
                     }
+                    return;
+                }
+                if (construction.hasHintsScheme()) {
+                    component.controllers().stop();
                     return;
                 }
                 construction = bindCrs(activeRosters, hintsStore, construction, crsWorkTime, tssConfig);

@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 /**
  * A preparation context with its own copy of the hinTS native library and its native caches.
  *
- * <p>The 3.18 bridge has no native context API. Loading both the bridge and native-support classes
+ * <p>The 3.19.1 bridge has no native context API. Loading both the bridge and native-support classes
  * with a separate loader gives native-support its own extraction cache, so it extracts and loads a
  * distinct native image. Loading just the bridge would instead reuse the original library path.
  * A bootstrap-only parent deliberately prevents sharing either library with the application,
@@ -28,8 +28,9 @@ import java.util.function.Supplier;
  * <p>Each context still protects its own CRS cache. Key computation/validation and preprocessing
  * use separate instances so long preprocessing cannot block the key validations that round
  * handling may need. Neither instance shares native caches or a lock with active signing.
- * The pinned library's {@code jni_hints.rs} in v3.18.0 (commit
- * {@code 6fdf0faf5eff9ad54cc83e201641171e25d3e489}) caches the CRS in a native static for
+ * The pinned library's {@code jni_hints.rs} in v3.19.1 (commit
+ * {@code 110cc9e452ede2f6d8fbb2d40edfe816c937c905}) retains the 3.18.0 cache semantics,
+ * caching the CRS in a native static for
  * all three preparation operations, so isolation must include the native image itself.
  */
 class IsolatedHintsLibrary {

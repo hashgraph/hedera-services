@@ -32,8 +32,8 @@ class HintsLibraryImplTest {
     @Test
     void decodesExactCapacityAndRejectsInvalidSizes() {
         assertEquals(8, subject.crsPartySize(subject.newCrs((short) 8)));
-        assertEquals(512, subject.crsPartySize(Bytes.wrap(new byte[304 + 512 * 288])));
-        for (final int size : new int[] {0, 304, 304 + 8 * 288 + 1, 304 + 3 * 288, 304 + 1024 * 288}) {
+        assertEquals(64, subject.crsPartySize(subject.newCrs((short) 64)));
+        for (final int size : new int[] {0, 304, 304 + 8 * 288 + 1, 304 + 3 * 288, 304 + 128 * 288, 304 + 512 * 288}) {
             assertThrows(IllegalArgumentException.class, () -> subject.crsPartySize(Bytes.wrap(new byte[size])));
         }
     }
@@ -46,6 +46,29 @@ class HintsLibraryImplTest {
         assertThrows(IllegalArgumentException.class, () -> subject.validateHintsKey(crs, Bytes.EMPTY, 0, 4));
         assertThrows(
                 IllegalArgumentException.class, () -> subject.preprocess(crs, new TreeMap<>(), new TreeMap<>(), 4));
+    }
+
+    @Test
+    void rejectsReservedLastPartyAcrossHintAndSigningOperations() {
+        final var message = Bytes.wrap("reserved party must not sign");
+        final var crs = subject.newCrs((short) 8);
+        final var privateKey = subject.newBlsPrivateKey();
+        final var scheme = schemeFor(crs, 8, message);
+
+        assertThrows(IllegalArgumentException.class, () -> subject.computeHints(crs, privateKey, 7, 8));
+        assertFalse(subject.validateHintsKey(crs, Bytes.EMPTY, 7, 8));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.preprocess(crs, new TreeMap<>(Map.of(7, Bytes.EMPTY)), new TreeMap<>(Map.of(7, 1L)), 8));
+        assertFalse(subject.verifyBls(crs, scheme.signature(), message, scheme.ak(), 7));
+        assertNull(subject.aggregateSignatures(crs, scheme.ak(), scheme.vk(), Map.of(7, scheme.signature())));
+        assertSigns(scheme, message);
+    }
+
+    @Test
+    void rejectsCrsCapacitiesAboveThePinnedLibraryLimit() {
+        assertThrows(IllegalArgumentException.class, () -> subject.newCrs((short) 128));
+        assertThrows(IllegalArgumentException.class, () -> subject.newCrs((short) 512));
     }
 
     @Test
@@ -149,7 +172,7 @@ class HintsLibraryImplTest {
         final var crs = decodedCrsUpdate.crs();
 
         final int numParties = 4;
-        // (FUTURE) Understand why this test doesn't pass with List.of(1, 2, 3)
+        // The last party id is reserved by the library.
         final List<Integer> ids = List.of(0, 1, 2);
         final Map<Integer, Bytes> privateKeys = IntStream.range(0, numParties)
                 .boxed()
