@@ -26,9 +26,7 @@ public class DoNothingCryptoEngine implements Cryptography {
 
     @Override
     public Hash digestSync(
-            @org.jspecify.annotations.NonNull SerializableHashable serializableHashable,
-            @org.jspecify.annotations.NonNull DigestType digestType,
-            boolean setHash) {
+            @NonNull SerializableHashable serializableHashable, @NonNull DigestType digestType, boolean setHash) {
         return null;
     }
 
