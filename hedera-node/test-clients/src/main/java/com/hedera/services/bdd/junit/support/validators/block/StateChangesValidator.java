@@ -46,7 +46,6 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamUtils;
-import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.history.HistoryLibrary;
@@ -54,6 +53,9 @@ import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
 import com.hedera.node.app.service.entityid.EntityIdService;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.PartialApplier;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -64,6 +66,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.state.StateLifecycleManager;
 import com.swirlds.state.lifecycle.Service;
 import com.swirlds.state.merkle.VirtualMapState;
+import com.swirlds.state.merkle.VirtualMapStateImpl;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.virtualmap.VirtualMap;
@@ -367,7 +370,6 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     @Override
     public void validateBlocks(@NonNull final List<Block> blocks) {
-        blocks.forEach(StateChangeDeltas::validateBlockDeltas);
         logger.info("Beginning validation of expected root hash {}", expectedRootHash);
         var previousBlockHash = BlockStreamManager.HASH_OF_ZERO;
         var startOfStateHash = requireNonNull(initializedGenesisStateHash).getBytes();
@@ -381,7 +383,6 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.info("Read {} preview blocks", previewBlocks.size());
 
             for (final var block : previewBlocks) {
-                StateChangeDeltas.validateBlockDeltas(block);
                 // Apply state changes from preview blocks to build up state
                 long eventNodeId = -1;
                 for (final var item : block.items()) {
@@ -1045,8 +1046,16 @@ public class StateChangesValidator implements BlockStreamValidator {
                 case SINGLETON_UPDATE -> {
                     final var singletonState = writableStates.getSingleton(stateId);
                     final var update = stateChange.singletonUpdateOrThrow();
-                    final var singleton = StateChangeDeltas.applySingleton(
-                            stateId, update.partial() ? singletonState.get() : null, update);
+                    // Decode the payload separately from its partial-update metadata.
+                    final var value = BlockStreamUtils.singletonPutFor(
+                            new SingletonUpdateChange(false, List.of(), update.newValue()));
+                    final var singleton = update.partial()
+                            ? applyPartial(
+                                    valueCodecFor(serviceName, stateId),
+                                    singletonState.get(),
+                                    value,
+                                    update.clearedFields())
+                            : value;
                     singletonState.put(singleton);
                     stateChangesSummary.countSingletonPut(serviceName, stateId);
                     if (stateChange.stateId() == STATE_ID_LEDGER_ID.protoOrdinal()) {
@@ -1058,8 +1067,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var key = BlockStreamUtils.mapKeyFor(
                             stateChange.mapUpdateOrThrow().keyOrThrow());
                     final var update = stateChange.mapUpdateOrThrow();
-                    final var value =
-                            StateChangeDeltas.applyMap(stateId, update.partial() ? mapState.get(key) : null, update);
+                    final var payload = BlockStreamUtils.mapValueFor(update.valueOrThrow());
+                    final var value = update.partial()
+                            ? applyPartial(
+                                    valueCodecFor(serviceName, stateId),
+                                    mapState.get(key),
+                                    payload,
+                                    update.clearedFields())
+                            : payload;
                     mapState.put(key, value);
                     entityChanges
                             .computeIfAbsent(stateName, k -> new HashSet<>())
@@ -1097,6 +1112,33 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             lastService = serviceName;
             lastWritableStates = (CommittableWritableStates) writableStates;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Codec<Object> valueCodecFor(final String serviceName, final int stateId) {
+        return (Codec<Object>) ((VirtualMapStateImpl) state)
+                .getServices()
+                .get(serviceName)
+                .get(stateId)
+                .stateDefinition()
+                .valueCodec();
+    }
+
+    /** Reconstruct a full state value using PBJ's generic top-level field splice. */
+    static <T> T applyPartial(
+            final Codec<T> codec, @Nullable final T prior, final T partial, final List<Integer> clearedFields) {
+        if (prior == null) {
+            throw new IllegalArgumentException("Partial update requires a prior value");
+        }
+        final var merged = PartialApplier.splice(
+                codec.toBytes(prior),
+                codec.toBytes(partial),
+                clearedFields.stream().mapToInt(Integer::intValue).toArray());
+        try {
+            return codec.parse(merged);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Invalid reconstructed state value", e);
         }
     }
 

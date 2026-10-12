@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.support.validators.block;
 
+import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.applyPartial;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.currentBlockHashFromNextBlockFooter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,11 +13,99 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.output.BlockFooter;
 import com.hedera.hapi.block.stream.output.BlockHeader;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class StateChangesValidatorTest {
+
+    @Test
+    void partialMapReplayPreservesOmittedFieldsAndAppliesExplicitClears() {
+        final var prior = Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(123))
+                .tinybarBalance(10)
+                .memo("memo")
+                .deleted(true)
+                .build();
+        final var partial = Account.newBuilder().tinybarBalance(20).build();
+
+        assertEquals(
+                prior.copyBuilder().tinybarBalance(20).memo("").deleted(false).build(),
+                applyPartial(Account.PROTOBUF, prior, partial, List.of(6, 7)));
+    }
+
+    @Test
+    void successivePartialsUseThePreviouslyReconstructedValue() {
+        final var prior = Account.newBuilder().tinybarBalance(10).memo("memo").build();
+        final var first = applyPartial(
+                Account.PROTOBUF, prior, Account.newBuilder().tinybarBalance(20).build(), List.of());
+        final var second = applyPartial(
+                Account.PROTOBUF, first, Account.newBuilder().memo("updated").build(), List.of());
+
+        assertEquals(prior.copyBuilder().tinybarBalance(20).memo("updated").build(), second);
+        assertEquals(second, applyPartial(Account.PROTOBUF, second, Account.DEFAULT, List.of()));
+    }
+
+    @Test
+    void singletonReplayReplacesWholeNestedMessagesAndRepeatedFields() {
+        final var prior = ThrottleUsageSnapshots.newBuilder()
+                .tpsThrottles(List.of(new ThrottleUsageSnapshot(1, null), new ThrottleUsageSnapshot(2, null)))
+                .gasThrottle(new ThrottleUsageSnapshot(10, new Timestamp(1, 2)))
+                .build();
+        final var partial = ThrottleUsageSnapshots.newBuilder()
+                .tpsThrottles(List.of(new ThrottleUsageSnapshot(3, null)))
+                .gasThrottle(new ThrottleUsageSnapshot(20, null))
+                .build();
+
+        assertEquals(partial, applyPartial(ThrottleUsageSnapshots.PROTOBUF, prior, partial, List.of()));
+        assertEquals(
+                partial.copyBuilder().tpsThrottles(List.of()).build(),
+                applyPartial(ThrottleUsageSnapshots.PROTOBUF, partial, ThrottleUsageSnapshots.DEFAULT, List.of(1)));
+    }
+
+    @Test
+    void explicitOneofClearsSupportSwitchingToASelectedDefaultValue() {
+        final var node = Account.newBuilder().stakedNodeId(7).memo("memo").build();
+        final var account = Account.newBuilder()
+                .stakedAccountId(AccountID.newBuilder().accountNum(123))
+                .build();
+        final var switched = applyPartial(Account.PROTOBUF, node, account, List.of(11));
+        assertEquals(
+                node.copyBuilder().stakedAccountId(account.stakedAccountId()).build(), switched);
+
+        final var zeroNode = Account.newBuilder().stakedNodeId(0).build();
+        assertEquals(
+                node.copyBuilder().stakedNodeId(0).build(),
+                applyPartial(Account.PROTOBUF, switched, zeroNode, List.of(10)));
+    }
+
+    @Test
+    void primitiveStateWrappersCanBeClearedToTheirDefaults() {
+        assertEquals(
+                ProtoBytes.DEFAULT,
+                applyPartial(ProtoBytes.PROTOBUF, new ProtoBytes(Bytes.wrap("value")), ProtoBytes.DEFAULT, List.of(1)));
+        assertEquals(
+                ProtoString.DEFAULT,
+                applyPartial(ProtoString.PROTOBUF, new ProtoString("value"), ProtoString.DEFAULT, List.of(1)));
+        assertEquals(
+                EntityNumber.DEFAULT,
+                applyPartial(EntityNumber.PROTOBUF, new EntityNumber(123), EntityNumber.DEFAULT, List.of(1)));
+    }
+
+    @Test
+    void partialReplayRequiresAnExistingValue() {
+        final var exception = assertThrows(
+                IllegalArgumentException.class, () -> applyPartial(Account.PROTOBUF, null, Account.DEFAULT, List.of()));
+        assertEquals("Partial update requires a prior value", exception.getMessage());
+    }
 
     private static final Bytes PREV_BLOCK_ROOT_HASH = Bytes.wrap(new byte[] {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
