@@ -78,6 +78,15 @@ public class DynamicConnectionManagers {
     }
 
     /**
+     * Disconnects the current connection to every peer.
+     */
+    public void disconnectAll() {
+        for (final ConnectionManager manager : connectionManagers.values()) {
+            manager.getConnection().disconnect();
+        }
+    }
+
+    /**
      * Called when a new connection is established by a peer. After startup, we don't expect this to be called unless
      * there are networking issues. The connection is passed on to the appropriate connection manager if valid.
      *

@@ -14,6 +14,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.hiero.base.concurrent.ResettableLatch;
 import org.hiero.consensus.ExecutionLayerCallbacks;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.Round;
@@ -52,6 +53,12 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
     @NonNull
     private final AtomicReference<PlatformStatus> platformStatusReference;
 
+    /**
+     * Armed when the consensus layer reports that this node has fallen behind
+     */
+    @NonNull
+    private final ResettableLatch behindLatch;
+
     public AdapterCallbacks(
             @NonNull final ConsensusStateEventHandler consensusStateEventHandler,
             @NonNull final ExecutionLayer executionLayer,
@@ -60,7 +67,8 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
             @NonNull final ComponentWiring<AppNotifier, Void> notifierWiring,
             @NonNull final StateModule stateModule,
             @NonNull final TransactionHandlingModule transactionHandlingModule,
-            @NonNull final AtomicReference<PlatformStatus> platformStatusReference) {
+            @NonNull final AtomicReference<PlatformStatus> platformStatusReference,
+            @NonNull final ResettableLatch behindLatch) {
         this.consensusStateEventHandler = requireNonNull(consensusStateEventHandler);
         this.executionLayer = requireNonNull(executionLayer);
         this.latestImmutableStateNexus = requireNonNull(latestImmutableStateNexus);
@@ -69,10 +77,13 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
         this.stateModule = requireNonNull(stateModule);
         this.transactionHandlingModule = requireNonNull(transactionHandlingModule);
         this.platformStatusReference = requireNonNull(platformStatusReference);
+        this.behindLatch = requireNonNull(behindLatch);
     }
 
     @Override
-    public void onBehind() {}
+    public void onBehind() {
+        behindLatch.arm();
+    }
 
     @Override
     public List<TimestampedTransaction> getTransactionsForNewEvent() {
@@ -101,6 +112,9 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
         notifierWiring.getInputWire(AppNotifier::sendPlatformStatusChangeNotification).inject(status);
         stateModule.platformStatusInputWire().inject(status);
         platformStatusReference.set(status);
+        if (status == PlatformStatus.BEHIND) {
+            onBehind();
+        }
     }
 
     @Override

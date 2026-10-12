@@ -22,6 +22,15 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
     private final NodeId selfId;
     private final FileSyncOption fileSyncOption;
     private final PcesWriterPerEventMetrics pcesWriterPerEventMetrics;
+    /**
+     * Are we in the middle of component shutdown? If yes, ignore incoming events
+     */
+    private volatile boolean beingDestroyed;
+
+    /**
+     * Set to true while we are in the middle of processing events, to synchronize with destruction logic
+     */
+    private volatile boolean processingEvent;
 
     /**
      * Constructor
@@ -110,5 +119,17 @@ public class DefaultInlinePcesWriter implements InlinePcesWriter {
     @Override
     public void setMinimumBirthRoundToStore(@NonNull final Long minimumBirthRoundToStore) {
         commonPcesWriter.setMinimumBirthRoundToStore(minimumBirthRoundToStore);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void destroy() {
+        this.beingDestroyed = true;
+        while (this.processingEvent) {
+            Thread.yield();
+        }
+        this.commonPcesWriter.destroy();
     }
 }

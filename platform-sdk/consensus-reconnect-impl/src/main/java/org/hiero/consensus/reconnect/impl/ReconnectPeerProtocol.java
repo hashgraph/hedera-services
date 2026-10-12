@@ -30,7 +30,6 @@ import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.reconnect.config.ReconnectConfig;
 import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.signed.ReservedSignedState;
@@ -51,7 +50,6 @@ public class ReconnectPeerProtocol implements PeerProtocol {
     private final ReconnectMetrics reconnectMetrics;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
-    private final FallenBehindMonitor fallenBehindMonitor;
 
 
     private ReservedSignedState teacherState;
@@ -91,7 +89,6 @@ public class ReconnectPeerProtocol implements PeerProtocol {
      * @param lastCompleteSignedState provides the latest completely signed state
      * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
      * @param reconnectMetrics tracks reconnect metrics
-     * @param fallenBehindMonitor an instance of the fallenBehind Monitor which tracks if the node has fallen behind
      * @param reservedSignedStateResultProvider a mechanism to get a SignedState or block while it is not available
      * @param stateLifecycleManager the state lifecycle manager
      */
@@ -105,7 +102,6 @@ public class ReconnectPeerProtocol implements PeerProtocol {
             @NonNull final Supplier<ReservedSignedState> lastCompleteSignedState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
-            @NonNull final FallenBehindMonitor fallenBehindMonitor,
             @NonNull final BlockingResourceProvider<ReservedSignedStateResult> reservedSignedStateResultProvider,
             @NonNull final StateLifecycleManager stateLifecycleManager,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
@@ -118,7 +114,6 @@ public class ReconnectPeerProtocol implements PeerProtocol {
         this.lastCompleteSignedState = requireNonNull(lastCompleteSignedState);
         this.reconnectSocketTimeout = requireNonNull(reconnectSocketTimeout);
         this.reconnectMetrics = requireNonNull(reconnectMetrics);
-        this.fallenBehindMonitor = requireNonNull(fallenBehindMonitor);
         this.reservedSignedStateResultProvider = requireNonNull(reservedSignedStateResultProvider);
         this.stateLifecycleManager = requireNonNull(stateLifecycleManager);
         this.platformStatusSupplier = requireNonNull(platformStatusSupplier);

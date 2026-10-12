@@ -183,4 +183,10 @@ public interface GossipModule {
      * @param reconnectPeerProtocolFactory the peer protocol factory
      */
     void setReconnectPeerProtocolFactory(@NonNull PeerProtocolFactory reconnectPeerProtocolFactory);
+
+    /**
+     * Stops the gossip network, releasing the port it listens on and closing all peer connections. Blocks until the
+     * network has stopped.
+     */
+    void destroy();
 }

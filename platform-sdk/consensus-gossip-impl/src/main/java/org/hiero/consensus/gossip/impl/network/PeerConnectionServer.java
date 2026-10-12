@@ -36,6 +36,10 @@ public class PeerConnectionServer implements InterruptableRunnable {
     private volatile InboundConnectionHandler newConnectionHandler;
     /** a thread pool used to handle incoming connections - we need it, as ssl handshake takes long */
     private final ExecutorService incomingConnPool;
+    /** the server socket currently listening, if any */
+    private volatile ServerSocket serverSocket;
+    /** set once {@link #close()} is called, after which the server never binds again */
+    private volatile boolean closed;
 
     /**
      * @param threadManager            responsible for managing thread lifecycles
@@ -66,10 +70,20 @@ public class PeerConnectionServer implements InterruptableRunnable {
 
     @Override
     public void run() throws InterruptedException {
+        if (closed) {
+            // wait for the thread to be stopped without binding the port again
+            Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);
+            return;
+        }
         try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
-            listen(serverSocket);
+            this.serverSocket = serverSocket;
+            if (!closed) {
+                listen(serverSocket);
+            }
         } catch (final RuntimeException | IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket on port {}", port, e);
+            if (!closed) {
+                logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket on port {}", port, e);
+            }
         }
         // if the above fails, sleep a while before trying again
         Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);
@@ -91,7 +105,25 @@ public class PeerConnectionServer implements InterruptableRunnable {
                     throw new InterruptedException();
                 }
             } catch (final RuntimeException | IOException e) {
-                logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
+                if (!closed) {
+                    logger.error(EXCEPTION.getMarker(), "SyncServer serverSocket.accept() error", e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Closes the server socket, releasing the port immediately instead of waiting for accept() to time out. The server
+     * will not bind the port again.
+     */
+    public void close() {
+        closed = true;
+        final ServerSocket socket = serverSocket;
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (final IOException e) {
+                logger.error(EXCEPTION.getMarker(), "Failed to close ServerSocket on port {}", port, e);
             }
         }
     }

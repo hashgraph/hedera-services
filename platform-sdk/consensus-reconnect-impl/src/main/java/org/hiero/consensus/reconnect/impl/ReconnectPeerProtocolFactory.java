@@ -16,15 +16,12 @@ import org.hiero.consensus.gossip.ReservedSignedStateResult;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.status.PlatformStatus;
-import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 
 /**
  * This protocol is responsible for synchronizing a current state either local acting as lerner or remote acting as teacher.
  */
 public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
-
-    private final FallenBehindMonitor fallenBehindMonitor;
 
     private final Configuration configuration;
     private final Metrics metrics;
@@ -48,7 +45,6 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
             @NonNull final Supplier<ReservedSignedState> lastCompleteSignedState,
             @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics reconnectMetrics,
-            @NonNull final FallenBehindMonitor fallenBehindMonitor,
             @NonNull final BlockingResourceProvider<ReservedSignedStateResult> reservedSignedStateResultPromise,
             @NonNull final StateLifecycleManager stateLifecycleManager,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
@@ -61,7 +57,6 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
         this.lastCompleteSignedState = requireNonNull(lastCompleteSignedState);
         this.reconnectSocketTimeout = requireNonNull(reconnectSocketTimeout);
         this.reconnectMetrics = requireNonNull(reconnectMetrics);
-        this.fallenBehindMonitor = requireNonNull(fallenBehindMonitor);
         this.reservedSignedStateResultPromise = requireNonNull(reservedSignedStateResultPromise);
         this.stateLifecycleManager = requireNonNull(stateLifecycleManager);
         this.platformStatusSupplier = requireNonNull(platformStatusSupplier);
@@ -80,7 +75,6 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
                 lastCompleteSignedState,
                 reconnectSocketTimeout,
                 reconnectMetrics,
-                fallenBehindMonitor,
                 reservedSignedStateResultPromise,
                 stateLifecycleManager,
                 platformStatusSupplier);

@@ -73,6 +73,9 @@ public class DefaultPcesModule implements PcesModule {
     @Nullable
     private PcesCoordinator pcesCoordinator;
 
+    @Nullable
+    private InlinePcesWriter pcesWriter;
+
     /**
      * {@inheritDoc}
      */
@@ -138,8 +141,7 @@ public class DefaultPcesModule implements PcesModule {
             final PcesFileManager fileManager = new PcesFileManager(
                     configuration, metrics, time, initialPcesFiles, databaseDirectory, startingRound);
             commonPcesWriter = new CommonPcesWriter(configuration, fileManager);
-            final InlinePcesWriter pcesWriter =
-                    new DefaultInlinePcesWriter(configuration, metrics, time, commonPcesWriter, selfId);
+            pcesWriter = new DefaultInlinePcesWriter(configuration, metrics, time, commonPcesWriter, selfId);
             pcesWriterWiring.bind(pcesWriter);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
@@ -264,5 +266,13 @@ public class DefaultPcesModule implements PcesModule {
         requireNonNull(fileSystemManager, "Not initialized");
         BestEffortPcesFileCopy.copyPcesFilesRetryOnFailure(
                 configuration, selfId, destinationDirectory, fileSystemManager, lowerBound, round);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void destroy() {
+        requireNonNull(pcesWriter, "Not initialized").destroy();
     }
 }

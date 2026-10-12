@@ -5,6 +5,7 @@ import static com.swirlds.component.framework.schedulers.builders.TaskSchedulerC
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.builder.ConsensusModuleBuilder.createModule;
+import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.isInFreezePeriod;
@@ -47,6 +48,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.concurrent.BlockingResourceProvider;
 import org.hiero.base.concurrent.ExecutorFactory;
+import org.hiero.base.concurrent.ResettableLatch;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.file.FileSystemManager;
@@ -160,6 +162,8 @@ public class ConsensusLayerAdapterFactory {
 
     private ConsensusLayerInputs consensusLayerInputs;
 
+    private final ResettableLatch behindLatch = new ResettableLatch();
+
     /**
      * Creates a new factory with the inputs provided by the execution layer.
      *
@@ -201,9 +205,6 @@ public class ConsensusLayerAdapterFactory {
         final LatestCompleteStateNexus latestCompleteStateNexus =
                 new DefaultLatestCompleteStateNexus(configuration, metrics);
 
-        // TODO figure out what to do with this
-        final FallenBehindMonitor fallenBehindMonitor = createFallenBehindMonitor();
-
         final IssDetectionModule issDetectionModule = createIssDetectionModule();
 
         final SignedStateNexus latestImmutableStateNexus = createLatestImmutableStateNexus();
@@ -239,7 +240,7 @@ public class ConsensusLayerAdapterFactory {
                 notifierWiring,
                 notificationEngine,
                 savedStateController,
-                fallenBehindMonitor,
+                behindLatch,
                 platformStatusReference,
                 latestCompleteStateNexus);
     }
@@ -311,14 +312,8 @@ public class ConsensusLayerAdapterFactory {
                 notifierWiring,
                 stateModule,
                 transactionHandlingModule,
-                platformStatusReference);
-    }
-
-    @NonNull
-    private FallenBehindMonitor createFallenBehindMonitor() {
-        final double fallenBehindThreshold =
-                configuration.getConfigData(FallenBehindConfig.class).fallenBehindThreshold();
-        return new FallenBehindMonitor(rosterHistory.getCurrentRoster(), selfId, fallenBehindThreshold);
+                platformStatusReference,
+                behindLatch);
     }
 
     @NonNull
@@ -365,7 +360,10 @@ public class ConsensusLayerAdapterFactory {
                 selfId,
                 buildingBlocks.notificationEngine());
         final PeerProtocolFactory reconnectPeerProtocolFactory = reconnectModule.getReconnectPeerProtocolFactory();
-        buildingBlocks.consensusLayerLifecycleManager().addListener(consensusLayer -> consensusLayer.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory));
+        final ConsensusLayer consensusLayer = buildingBlocks.consensusLayerLifecycleManager().get();
+        requireNonNull(consensusLayer, "consensusLayer must not be null");
+        consensusLayer.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory);
+        buildingBlocks.consensusLayerLifecycleManager().addListener(cl -> cl.setReconnectPeerProtocolFactory(reconnectPeerProtocolFactory));
     }
 
     @NonNull

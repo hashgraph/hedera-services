@@ -108,7 +108,9 @@ public class ConsensusLayerImpl implements ConsensusLayer {
 
     @Override
     public void destroy() {
-        // TODO implement this
+        gossipModule.destroy();
+        pcesModule.destroy();
+        wiringModel.stop();
     }
 
     @Override

@@ -172,6 +172,14 @@ public class SyncGossipModular implements Gossip {
     }
 
     /**
+     * Stops the network threads, releasing the port so that a new gossip instance can bind to it, and closes all peer
+     * connections.
+     */
+    public void destroy() {
+        network.destroy();
+    }
+
+    /**
      * Modify list of current connected peers. Notify all underlying components and start needed threads. In the case
      * data for the same peer changes (one with the same nodeId), it should be present in both removed and added lists,
      * with old data in removed and fresh data in added. Internally it will be first removed and then added, so there

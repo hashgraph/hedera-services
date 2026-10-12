@@ -9,6 +9,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.components.AppNotifier;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.reconnect.ReconnectModule;
 import com.swirlds.platform.state.ConsensusStateEventHandler;
 import com.swirlds.platform.system.Platform;
@@ -72,7 +73,6 @@ public class DefaultReconnectModule implements ReconnectModule {
                 lastCompleteSignedState,
                 reconnectConfig.socketTimeout(),
                 reconnectMetrics,
-                buildingBlocks.fallenBehindMonitor(),
                 reservedSignedStateResultPromise,
                 stateLifecycleManager,
                 buildingBlocks.platformStatusReference()::get
@@ -91,9 +91,11 @@ public class DefaultReconnectModule implements ReconnectModule {
                 consensusStateEventHandler,
                 reservedSignedStateResultPromise,
                 selfId,
-                buildingBlocks.fallenBehindMonitor(),
+                buildingBlocks.behindLatch(),
                 new DefaultSignedStateValidator(),
                 notificationEngine);
+        // the controller recreates the consensus layer once the reconnect state has been written to disk
+        notificationEngine.register(StateWriteToDiskCompleteListener.class, reconnectController);
 
         final Thread reconnectControllerThread = new ThreadConfiguration(AdHocThreadManager.getStaticThreadManager())
                 .setComponent("platform-core")

@@ -217,4 +217,12 @@ public final class DefaultGossipModule implements GossipModule {
             @NonNull PeerProtocolFactory reconnectPeerProtocolFactory) {
         requireNonNull(gossip, "Not initialized").setExecutionProtocolFactory(reconnectPeerProtocolFactory);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void destroy() {
+        requireNonNull(gossip, "Not initialized").destroy();
+    }
 }

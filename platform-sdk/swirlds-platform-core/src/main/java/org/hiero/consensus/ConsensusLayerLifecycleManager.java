@@ -1,5 +1,6 @@
 package org.hiero.consensus;
 
+import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.legacyRunningEventHashOf;
@@ -9,10 +10,13 @@ import com.swirlds.state.merkle.VirtualMapState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
@@ -24,6 +28,8 @@ import org.hiero.consensus.state.signed.ReservedSignedState;
  * and remembers the previously provided inputs.
  */
 public class ConsensusLayerLifecycleManager {
+
+    private static final Logger logger = LogManager.getLogger();
 
     /** Listeners that are notified when the consensus layer is changed. */
     private final List<Consumer<ConsensusLayer>> listeners = new CopyOnWriteArrayList<>();
@@ -44,6 +50,7 @@ public class ConsensusLayerLifecycleManager {
     public void createConsensusLayer() {
         final ConsensusLayerFactory consensusLayerFactory = new ConsensusLayerFactory(consensusLayerInputs);
         consensusLayer = consensusLayerFactory.create();
+        logger.info(STARTUP.getMarker(), "Notifying {} listeners that the consensus layer has been created", listeners.size());
         listeners.forEach(listener -> listener.accept(consensusLayer));
     }
 
@@ -64,7 +71,14 @@ public class ConsensusLayerLifecycleManager {
 
         consensusLayerInputs = consensusLayerInputs.copyWithNewValues(consensusSnapshot, runningEventHashOverride);
 
+        logger.info(STARTUP.getMarker(), "Recreating the consensus layer");
         createConsensusLayer();
+        consensusLayer.start();
+
+        // TODO: Make configurable, check if there is a freeze time
+        consensusLayer.requestNextRound(null, null);
+        consensusLayer.requestNextRound(null, null);
+        consensusLayer.requestNextRound(null, null);
     }
 
     /**
@@ -74,7 +88,9 @@ public class ConsensusLayerLifecycleManager {
      * @param listener the listener to add
      */
     public void addListener(@NonNull final Consumer<ConsensusLayer> listener) {
+        logger.info(STARTUP.getMarker(), "Adding listener to ConsensusLayerLifecycleManager");
         listeners.add(requireNonNull(listener, "listener must not be null"));
+        logger.info(STARTUP.getMarker(), "Listeners count: {}", listeners.size());
     }
 
     private ConsensusSnapshot getInitialConsensusSnapshot(@NonNull final ReservedSignedState state) {

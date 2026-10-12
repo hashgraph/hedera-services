@@ -199,4 +199,9 @@ public class TurtleGossipModule implements GossipModule {
             @NonNull PeerProtocolFactory reconnectPeerProtocolFactory) {
         // intentional no-op
     }
+
+    @Override
+    public void destroy() {
+        // intentional no-op, the simulated network does not use ports
+    }
 }

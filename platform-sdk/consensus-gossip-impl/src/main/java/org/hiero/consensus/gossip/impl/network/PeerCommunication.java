@@ -250,6 +250,31 @@ public class PeerCommunication implements ConnectionTracker {
         }
     }
 
+    /**
+     * Stop all network threads, release the port, and close all peer connections so that peers reconnect immediately
+     * instead of waiting for their sockets to time out. Blocks until all network threads have stopped.
+     */
+    public void destroy() {
+        if (!started) {
+            throw new IllegalStateException("Gossip not started");
+        }
+
+        // release the port without waiting for accept() to time out
+        connectionServer.close();
+
+        // interrupt first so that the threads exit instead of reconnecting once their connection is closed
+        for (final DedicatedStoppableThread dst : dedicatedThreads.values()) {
+            dst.thread().interrupt();
+        }
+        // unblocks threads waiting on socket reads, and lets peers detect the disconnect immediately
+        connectionManagers.disconnectAll();
+
+        stop();
+
+        // close any connection a thread established before it observed the interrupt
+        connectionManagers.disconnectAll();
+    }
+
     private List<DedicatedStoppableThread<NodeId>> buildProtocolThreads(Collection<NodeId> peers) {
 
         final GossipConfig gossipConfig = configuration.getConfigData(GossipConfig.class);

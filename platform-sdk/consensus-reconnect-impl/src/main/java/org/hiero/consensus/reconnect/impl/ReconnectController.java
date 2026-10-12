@@ -34,13 +34,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.concurrent.BlockingResourceProvider;
+import org.hiero.base.concurrent.ResettableLatch;
 import org.hiero.base.concurrent.locks.locked.LockedResource;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.ConsensusLayer;
 import org.hiero.consensus.ConsensusLayerLifecycleManager;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.reconnect.config.ReconnectConfig;
 import org.hiero.consensus.roster.RosterRetriever;
 import org.hiero.consensus.state.SavedStateController;
@@ -60,7 +60,7 @@ import org.hiero.consensus.system.SystemExitUtils;
  * <p>This class blocks the caller until the fall behind condition is detected.
  * Callers are responsible to call this in a separated thread.
  *
- * @see FallenBehindMonitor
+ * @see ResettableLatch
  * @see BlockingResourceProvider
  */
 public class ReconnectController implements StateWriteToDiskCompleteListener, Runnable {
@@ -77,7 +77,7 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
     private final NodeId selfId;
     private final ReconnectConfig reconnectConfig;
     private final ConsensusLayerLifecycleManager consensusLayerLifecycleManager;
-    private final FallenBehindMonitor fallenBehindMonitor;
+    private final ResettableLatch behindLatch;
     private final AtomicBoolean run = new AtomicBoolean(true);
     private final ReconnectCoordinator reconnectCoordinator;
     private final NotificationEngine notificationEngine;
@@ -96,12 +96,12 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
             @NonNull final ConsensusStateEventHandler consensusStateEventHandler,
             @NonNull final BlockingResourceProvider<ReservedSignedStateResult> peerReservedSignedStateResultProvider,
             @NonNull final NodeId selfId,
-            @NonNull final FallenBehindMonitor fallenBehindMonitor,
+            @NonNull final ResettableLatch behindLatch,
             @NonNull final SignedStateValidator signedStateValidator,
             @NonNull final NotificationEngine notificationEngine) {
         this.roster = requireNonNull(roster);
         this.peerReservedSignedStateResultProvider = requireNonNull(peerReservedSignedStateResultProvider);
-        this.fallenBehindMonitor = requireNonNull(fallenBehindMonitor);
+        this.behindLatch = requireNonNull(behindLatch);
         this.signedStateValidator = requireNonNull(signedStateValidator);
         this.reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         this.platform = requireNonNull(platform);
@@ -125,10 +125,10 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
     /**
      * Once started, it manages the lifecycle of reconnection:
      * <ul>
-     *   <li>Waits a notification of a fallen-behind condition via {@link FallenBehindMonitor}</li>
-     *   <li>Coordinating platform state transitions during reconnect (BEHIND -> RECONNECT COMPLETE -> CHECKING)</li>
-     *   <li>Operates the platform to prepare for reconnect ( pausing gossip, flush and clearing queues)</li>
-     *   <li>Acquiring and validating signed states from peer nodes</li>
+     *   <li>Waits for the consensus layer to report that the node is behind, via the behind latch</li>
+     *   <li>Acquiring and validating signed states from peer nodes, while the consensus layer (and its gossip) keeps
+     *       running so that another teacher can be found if an attempt fails</li>
+     *   <li>Destroying the consensus layer once a valid state has been acquired</li>
      *   <li>Loading the validated state into the platform</li>
      *   <li>Managing retry logic with configurable limits</li>
      * </ul>
@@ -138,11 +138,9 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
         logger.info(RECONNECT.getMarker(), "Starting the ReconnectController");
         try {
             while (run.get()) {
-                fallenBehindMonitor.awaitFallenBehind(); // Block until the monitor notifies the node is behind
+                behindLatch.awaitArmed(); // Block until the consensus layer reports the node is behind
                 exitIfReconnectDisabled();
-                logger.info(RECONNECT.getMarker(), "Preparing for reconnect, destroying the consensus layer");
-                waitingForReconnectStateOnDisk.set(true);
-                consensusLayerLifecycleManager.get().destroy();
+                logger.info(RECONNECT.getMarker(), "Node has fallen behind, preparing for reconnect");
 
                 final State currentState = stateLifecycleManager.getMutableState();
                 currentState.getHash(); // hash the state
@@ -150,9 +148,10 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
                 do {
                     final AttemptReconnectResult result = attemptReconnect(currentState);
                     if (result.success()) {
-                        // reset the monitor to the initial state
-                        fallenBehindMonitor.clear();
-                        logger.info(RECONNECT.getMarker(), "Reconnect state acquired");
+                        loadReconnectState(requireNonNull(result.acquiredState()));
+                        // The old consensus layer has been destroyed, so it can no longer re-arm the latch
+                        behindLatch.disarm();
+                        logger.info(RECONNECT.getMarker(), "Reconnect state loaded");
                         break;
                     }
                     exitIfMaxRetriesOrWait(++failedReconnectsInARow, result.throwable());
@@ -179,7 +178,12 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
         }
     }
 
-    /** One reconnect attempt; returns true on success. */
+    /**
+     * One attempt to acquire and validate a state from a peer. Nothing in this method may modify the platform, so
+     * that a failed attempt can be retried with another teacher.
+     *
+     * @return the acquired state, reserved for the caller, on success
+     */
     private AttemptReconnectResult attemptReconnect(@NonNull final State currentState) throws InterruptedException {
         // This is a direct connection with the protocols at Gossip component.
         // reservedStateResource is a blocking data structure that will provide a signed state from one of the peers
@@ -198,23 +202,43 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
 
             // We validate the data in the peer state relative to our current state
             final SignedStateValidationData data = new SignedStateValidationData(currentState, roster);
-            acquiredReservedState = result.reservedSignedState().getAndReserve("ReconnectController.acquiredState");
-            final SignedState acquiredState = acquiredReservedState.get();
-            reconnectRoundNumber = acquiredState.getRound();
+            final SignedState peerState = result.reservedSignedState().get();
 
-            SignedStateFileReader.registerServiceStates(acquiredState);
-            signedStateValidator.validate(acquiredState, roster, data);
+            SignedStateFileReader.registerServiceStates(peerState);
+            signedStateValidator.validate(peerState, roster, data);
+            validateRoster(peerState);
             logger.info(RECONNECT.getMarker(), "The state obtained from a peer was validated");
 
-            initializeState(acquiredState);
-            savedStateController.reconnectStateReceived(
-                    acquiredReservedState.getAndReserve("savedStateController.reconnectStateReceived"));
-            reconnectCoordinator.loadReconnectState(acquiredState);
-
-            return AttemptReconnectResult.ok();
+            // Reserve the state before the resource is closed, closing it releases the learner's reservation.
+            // Closing the resource also unblocks the learner's gossip thread, which is waiting in provide(). That must
+            // happen before the consensus layer is destroyed, otherwise destroying gossip would wait on that thread.
+            return AttemptReconnectResult.ok(
+                    result.reservedSignedState().getAndReserve("ReconnectController.acquiredState"));
         } catch (final RuntimeException e) {
             return AttemptReconnectResult.error(e);
         }
+    }
+
+    /**
+     * Destroys the consensus layer and loads the acquired state into the platform. Failures here are not retryable,
+     * since the consensus layer (and the gossip that finds teachers) has already been destroyed.
+     *
+     * @param acquiredState the validated state, reserved for this controller
+     */
+    private void loadReconnectState(@NonNull final ReservedSignedState acquiredState) {
+        acquiredReservedState = acquiredState;
+        final SignedState signedState = acquiredState.get();
+        reconnectRoundNumber = signedState.getRound();
+        // Must be set before the state is sent to be written to disk, or the write may complete before we listen
+        waitingForReconnectStateOnDisk.set(true);
+
+        logger.info(RECONNECT.getMarker(), "Destroying the consensus layer");
+        consensusLayerLifecycleManager.get().destroy();
+
+        initializeState(signedState);
+        savedStateController.reconnectStateReceived(
+                acquiredState.getAndReserve("savedStateController.reconnectStateReceived"));
+        reconnectCoordinator.loadReconnectState(signedState);
     }
 
     @Override
@@ -239,6 +263,18 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
     }
 
     /**
+     * Verifies that the platform roster matches the roster in the state received from a peer.
+     */
+    private void validateRoster(@NonNull final SignedState signedState) {
+        final Roster stateRoster = RosterRetriever.retrieveActive(signedState.getState(), signedState.getRound());
+        if (!roster.equals(stateRoster)) {
+            throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes "
+                    + " (currentRoster=" + Roster.JSON.toJSON(roster) + ") (stateRoster="
+                    + Roster.JSON.toJSON(stateRoster) + ")");
+        }
+    }
+
+    /**
      * Initializes the received signed state.
      */
     private void initializeState(@NonNull final SignedState signedState) {
@@ -255,15 +291,6 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
                     "State hash is not permitted to change during a reconnect init() call. Previous hash was "
                             + reconnectHash + ", new hash is "
                             + signedState.getState().getHash());
-        }
-
-        // Before attempting to load the state, verify that the platform roster matches the state roster.
-        final long round = signedState.getRound();
-        final Roster stateRoster = RosterRetriever.retrieveActive(state, round);
-        if (!roster.equals(stateRoster)) {
-            throw new IllegalStateException("Current roster and state-based roster do not contain the same nodes "
-                    + " (currentRoster=" + Roster.JSON.toJSON(roster) + ") (stateRoster="
-                    + Roster.JSON.toJSON(stateRoster) + ")");
         }
 
         stateLifecycleManager.initWithState(state);
@@ -313,13 +340,13 @@ public class ReconnectController implements StateWriteToDiskCompleteListener, Ru
     }
 
     private record AttemptReconnectResult(
-            boolean success, @Nullable Throwable throwable) {
-        static AttemptReconnectResult ok() {
-            return new AttemptReconnectResult(true, null);
+            boolean success, @Nullable ReservedSignedState acquiredState, @Nullable Throwable throwable) {
+        static AttemptReconnectResult ok(@NonNull final ReservedSignedState acquiredState) {
+            return new AttemptReconnectResult(true, acquiredState, null);
         }
 
         static AttemptReconnectResult error(@NonNull final Throwable error) {
-            return new AttemptReconnectResult(false, error);
+            return new AttemptReconnectResult(false, null, error);
         }
     }
 }
