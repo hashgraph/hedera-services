@@ -22,7 +22,7 @@ state.saveStatePeriod,                    60
                                           #############################
 
 event.creation.maxCreationRate,           5
-platformStatus.observingStatusDelay,      1ms
+consensusLayerStatus.observingStatusDelay,      1ms
 
                                           #############################
                                           #        Event Stream       #

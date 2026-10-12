@@ -2,11 +2,11 @@
 package org.hiero.consensus.status.logic;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.FallenBehindAction;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#FREEZING} status.
+ * Class containing the state machine logic for the {@link ConsensusLayerStatus#FREEZING} status.
  */
 public class FreezingStatusLogic extends AbstractStatusLogic {
     /**
@@ -20,12 +20,12 @@ public class FreezingStatusLogic extends AbstractStatusLogic {
      * @param freezeRound the round number when the freeze started
      */
     public FreezingStatusLogic(final long freezeRound) {
-        super(PlatformStatus.FREEZING);
+        super(ConsensusLayerStatus.FREEZING);
         this.freezeRound = freezeRound;
     }
 
     /**
-     * Receiving a {@link FallenBehindAction} while in {@link PlatformStatus#FREEZING} has no effect on the state
+     * Receiving a {@link FallenBehindAction} while in {@link ConsensusLayerStatus#FREEZING} has no effect on the state
      * machine.
      */
     @NonNull

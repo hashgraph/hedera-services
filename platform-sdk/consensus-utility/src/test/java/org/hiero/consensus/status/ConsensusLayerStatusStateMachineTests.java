@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.status;
 
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.BEHIND;
-import static org.hiero.consensus.model.status.PlatformStatus.CATASTROPHIC_FAILURE;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
-import static org.hiero.consensus.model.status.PlatformStatus.OBSERVING;
-import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.BEHIND;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CATASTROPHIC_FAILURE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.OBSERVING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.REPLAYING_EVENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Traverses every edge of the state machine
  */
-class PlatformStatusStateMachineTests {
+class ConsensusLayerStatusStateMachineTests {
     private FakeTime time;
     private final boolean quiescing = false;
     private StatusStateMachine stateMachine;

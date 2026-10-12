@@ -54,7 +54,7 @@ import org.hiero.consensus.io.RecycleBinImpl;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.platformstate.PlatformStateService;
 import org.hiero.consensus.platformstate.ReadablePlatformStateStore;
 import org.hiero.consensus.roster.RosterHistory;
@@ -318,7 +318,7 @@ public class TurtleNode extends AbstractNode implements Node, TurtleTimeManager.
             //                            "platformStatus",
             //                            wrapConsumerWithNodeContext(this::handlePlatformStatusChange));
 
-            platformStatus = PlatformStatus.STARTING_UP;
+            consensusLayerStatus = ConsensusLayerStatus.STARTING_UP;
 
             platform.start();
 
@@ -343,7 +343,7 @@ public class TurtleNode extends AbstractNode implements Node, TurtleTimeManager.
             } catch (final InterruptedException e) {
                 throw new AssertionError("Unexpected interruption during platform shutdown", e);
             }
-            platformStatus = null;
+            consensusLayerStatus = null;
             platform = null;
             buildingBlocks = null;
             executionLayer = null;
@@ -538,10 +538,10 @@ public class TurtleNode extends AbstractNode implements Node, TurtleTimeManager.
         }
     }
 
-    private void handlePlatformStatusChange(@NonNull final PlatformStatus platformStatus) {
-        logToConsole(() -> log.info("Received platform status change from node {}: {}", selfId, platformStatus));
-        this.platformStatus = requireNonNull(platformStatus);
-        resultsCollector.addPlatformStatus(platformStatus);
+    private void handlePlatformStatusChange(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        logToConsole(() -> log.info("Received platform status change from node {}: {}", selfId, consensusLayerStatus));
+        this.consensusLayerStatus = requireNonNull(consensusLayerStatus);
+        resultsCollector.addPlatformStatus(consensusLayerStatus);
     }
 
     @NonNull

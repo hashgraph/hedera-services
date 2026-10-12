@@ -29,7 +29,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.state.StateSavingResult;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.config.StateWiringConfig;
@@ -280,12 +280,12 @@ public class StateModule {
     }
 
     /**
-     * Get the input wire for setting the latest {@link PlatformStatus}.
+     * Get the input wire for setting the latest {@link ConsensusLayerStatus}.
      *
      * @return the input wire for the transactions
      */
     @NonNull
-    public InputWire<PlatformStatus> platformStatusInputWire() {
+    public InputWire<ConsensusLayerStatus> platformStatusInputWire() {
         return latestCompleteStateNexusWiring.getInputWire(LatestCompleteStateNexus::updatePlatformStatus);
     }
 

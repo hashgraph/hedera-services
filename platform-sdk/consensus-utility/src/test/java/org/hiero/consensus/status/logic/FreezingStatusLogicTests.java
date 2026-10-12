@@ -6,7 +6,7 @@ import static org.hiero.consensus.status.logic.StatusLogicTestUtils.assertNoTran
 import static org.hiero.consensus.status.logic.StatusLogicTestUtils.assertTransition;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -36,13 +36,13 @@ class FreezingStatusLogicTests {
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Go to FREEZE_COMPLETE")
     void toFreezeComplete() {
-        assertTransition(logic, new FreezeCompleteAction(), PlatformStatus.FREEZE_COMPLETE);
+        assertTransition(logic, new FreezeCompleteAction(), ConsensusLayerStatus.FREEZE_COMPLETE);
     }
 
     @Test

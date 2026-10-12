@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.otter.test;
 
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.OBSERVING;
-import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.OBSERVING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.REPLAYING_EVENTS;
 import static org.hiero.otter.fixtures.OtterAssertions.assertContinuouslyThat;
 import static org.hiero.otter.fixtures.OtterAssertions.assertThat;
 import static org.hiero.otter.fixtures.assertions.StatusProgressionStep.target;
 
 import java.time.Duration;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.test.fixtures.WeightGenerators;
 import org.hiero.consensus.transaction.handling.config.TransactionHandlingWiringConfig_;
 import org.hiero.otter.fixtures.Capability;
@@ -20,13 +21,13 @@ import org.hiero.otter.fixtures.TestEnvironment;
 import org.hiero.otter.fixtures.TimeManager;
 
 /**
- * Tests to verify that a node can recover from {@link org.hiero.consensus.model.status.PlatformStatus#CHECKING} status
+ * Tests to verify that a node can recover from {@link ConsensusLayerStatus#CHECKING} status
  * after a period of synthetic bottlenecking.
  */
 public class CheckingRecoveryTest {
 
     /**
-     * Test to verify that a node can recover from {@link org.hiero.consensus.model.status.PlatformStatus#CHECKING}
+     * Test to verify that a node can recover from {@link ConsensusLayerStatus#CHECKING}
      * status after a period of synthetic bottlenecking.
      *
      * @param env the test environment for this test

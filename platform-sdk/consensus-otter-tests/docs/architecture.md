@@ -77,7 +77,7 @@ classDiagram
     class Node {
         <<interface>>
         +selfId: NodeId
-        +platformStatus: PlatformStatus
+        +consensusLayerStatus: PlatformStatus
         +version: SemanticVersion
         +configuration: NodeConfiguration
         +start()
@@ -92,7 +92,7 @@ classDiagram
         #selfId: NodeId
         #lifeCycle: LifeCycle
         #version: SemanticVersion
-        #platformStatus: PlatformStatus
+        #consensusLayerStatus: PlatformStatus
     }
 
     Network --> Node : manages

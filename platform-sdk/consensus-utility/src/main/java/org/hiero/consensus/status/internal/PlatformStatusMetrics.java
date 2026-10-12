@@ -5,14 +5,14 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.consensus.metrics.statistics.StatConstructor;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Encapsulates metrics for the platform status.
  */
 public class PlatformStatusMetrics {
 
-    private final AtomicReference<PlatformStatus> currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
+    private final AtomicReference<ConsensusLayerStatus> currentStatus = new AtomicReference<>(ConsensusLayerStatus.STARTING_UP);
 
     /**
      * Constructor
@@ -21,7 +21,7 @@ public class PlatformStatusMetrics {
      */
     public PlatformStatusMetrics(@NonNull final Metrics metrics) {
         metrics.getOrCreate(StatConstructor.createEnumStat(
-                "PlatformStatus", Metrics.PLATFORM_CATEGORY, PlatformStatus.values(), currentStatus::get));
+                "PlatformStatus", Metrics.PLATFORM_CATEGORY, ConsensusLayerStatus.values(), currentStatus::get));
     }
 
     /**
@@ -29,7 +29,7 @@ public class PlatformStatusMetrics {
      *
      * @param status the new status
      */
-    public void setCurrentStatus(@NonNull final PlatformStatus status) {
+    public void setCurrentStatus(@NonNull final ConsensusLayerStatus status) {
         currentStatus.set(status);
     }
 }

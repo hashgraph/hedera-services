@@ -27,7 +27,7 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.test.fixtures.hashgraph.EventWindowBuilder;
 import org.hiero.consensus.roster.test.fixtures.RandomRosterEntryBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +66,7 @@ class EventCreatorTests {
 
         manager = new DefaultEventCreationManager(configuration, metrics, time, creator, roster, NodeId.of(1));
 
-        manager.updatePlatformStatus(PlatformStatus.ACTIVE);
+        manager.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
     }
 
     @Test
@@ -100,13 +100,13 @@ class EventCreatorTests {
 
         time.tick(Duration.ofSeconds(1));
 
-        manager.updatePlatformStatus(PlatformStatus.BEHIND);
+        manager.updatePlatformStatus(ConsensusLayerStatus.BEHIND);
         assertNull(manager.maybeCreateEvent());
         verify(creator, times(1)).maybeCreateEvent();
 
         time.tick(Duration.ofSeconds(1));
 
-        manager.updatePlatformStatus(PlatformStatus.ACTIVE);
+        manager.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
         final PlatformEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();

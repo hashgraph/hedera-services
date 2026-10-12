@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.AbstractAssert;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.result.SingleNodeConsensusResult;
 import org.hiero.otter.fixtures.result.SingleNodePlatformStatusResult;
 
@@ -61,11 +61,11 @@ public class SingleNodePlatformStatusResultAssert
         }
 
         int currentStepIndex = 0;
-        final Set<PlatformStatus> observedStatuses = EnumSet.noneOf(PlatformStatus.class);
-        for (final Iterator<PlatformStatus> actualStatusesIterator =
+        final Set<ConsensusLayerStatus> observedStatuses = EnumSet.noneOf(ConsensusLayerStatus.class);
+        for (final Iterator<ConsensusLayerStatus> actualStatusesIterator =
                         actual.statusProgression().iterator();
                 actualStatusesIterator.hasNext(); ) {
-            final PlatformStatus actualStatus = actualStatusesIterator.next();
+            final ConsensusLayerStatus actualStatus = actualStatusesIterator.next();
             final StatusProgressionStep currentStep = expectedSteps.get(currentStepIndex);
             if (currentStep.targets().contains(actualStatus)) {
                 if (!observedStatuses.containsAll(currentStep.requiredInterim())) {

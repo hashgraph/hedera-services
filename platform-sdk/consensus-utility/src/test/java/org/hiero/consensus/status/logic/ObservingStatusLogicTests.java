@@ -11,7 +11,7 @@ import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.Duration;
 import org.hiero.consensus.config.PlatformStatusConfig;
 import org.hiero.consensus.config.PlatformStatusConfig_;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -54,7 +54,7 @@ class ObservingStatusLogicTests {
         assertTransition(
                 logic,
                 new TimeElapsedAction(time.now(), new TimeElapsedAction.QuiescingStatus(false, time.now())),
-                PlatformStatus.FREEZING);
+                ConsensusLayerStatus.FREEZING);
     }
 
     @Test
@@ -75,19 +75,19 @@ class ObservingStatusLogicTests {
         assertTransition(
                 logic,
                 new TimeElapsedAction(time.now(), new TimeElapsedAction.QuiescingStatus(false, time.now())),
-                PlatformStatus.CHECKING);
+                ConsensusLayerStatus.CHECKING);
     }
 
     @Test
     @DisplayName("Go to BEHIND")
     void toBehind() {
-        assertTransition(logic, new FallenBehindAction(), PlatformStatus.BEHIND);
+        assertTransition(logic, new FallenBehindAction(), ConsensusLayerStatus.BEHIND);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test

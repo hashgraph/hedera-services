@@ -88,7 +88,7 @@ ranges are accurate at last review and may shift with refactors.
 
 ### Platform status does not permit sync
 
-- Trigger: `PlatformStatus` is anything outside the allow-list `{ACTIVE,
+- Trigger: `ConsensusLayerStatus` is anything outside the allow-list `{ACTIVE,
   FREEZING, FREEZE_COMPLETE, OBSERVING, CHECKING, RECONNECT_COMPLETE}`.
 - Suppresses: sync initiation and sync acceptance with all peers.
 - Code anchor:

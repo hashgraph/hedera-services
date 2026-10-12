@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.otter.test;
 
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.BEHIND;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.OBSERVING;
-import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.BEHIND;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.OBSERVING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.REPLAYING_EVENTS;
 import static org.hiero.otter.fixtures.OtterAssertions.assertContinuouslyThat;
 import static org.hiero.otter.fixtures.OtterAssertions.assertThat;
 import static org.hiero.otter.fixtures.assertions.StatusProgressionStep.target;

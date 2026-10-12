@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.hashgraph.impl;
 
-import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.REPLAYING_EVENTS;
 
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
@@ -27,7 +27,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.round.EventWindowUtils;
 
 /**
@@ -84,8 +84,8 @@ public class DefaultConsensusEngine implements ConsensusEngine {
      * {@inheritDoc}
      */
     @Override
-    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        consensus.setPcesMode(platformStatus == REPLAYING_EVENTS);
+    public void updatePlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        consensus.setPcesMode(consensusLayerStatus == REPLAYING_EVENTS);
     }
 
     /**

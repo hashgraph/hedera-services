@@ -9,7 +9,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.result.PlatformStatusSubscriber;
 import org.hiero.otter.fixtures.result.SingleNodePlatformStatusResult;
 
@@ -55,8 +55,8 @@ public class SingleNodePlatformStatusResultContinuousAssert
      */
     @NonNull
     public SingleNodePlatformStatusResultContinuousAssert doesNotEnterAnyStatusesOf(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
-        final Set<PlatformStatus> statuses = toSet(first, rest);
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
+        final Set<ConsensusLayerStatus> statuses = toSet(first, rest);
         return checkContinuously(status -> {
             if (statuses.contains(status)) {
                 failWithMessage("Expected not to enter any of %s statuses, but entered %s", statuses, status);
@@ -73,8 +73,8 @@ public class SingleNodePlatformStatusResultContinuousAssert
      */
     @NonNull
     public SingleNodePlatformStatusResultContinuousAssert doesOnlyEnterStatusesOf(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
-        final Set<PlatformStatus> statuses = toSet(first, rest);
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
+        final Set<ConsensusLayerStatus> statuses = toSet(first, rest);
         return checkContinuously(status -> {
             if (!statuses.contains(status)) {
                 failWithMessage("Expected only to enter %s statuses, but entered %s", statuses, status);
@@ -82,7 +82,7 @@ public class SingleNodePlatformStatusResultContinuousAssert
         });
     }
 
-    private SingleNodePlatformStatusResultContinuousAssert checkContinuously(final Consumer<PlatformStatus> check) {
+    private SingleNodePlatformStatusResultContinuousAssert checkContinuously(final Consumer<ConsensusLayerStatus> check) {
         isNotNull();
 
         final PlatformStatusSubscriber subscriber = (nodeId, status) -> switch (state) {

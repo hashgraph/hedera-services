@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.Node;
 
 /**
@@ -67,7 +67,7 @@ public interface MultipleNodePlatformStatusResults extends OtterResult {
     }
 
     /**
-     * Subscribes to {@link PlatformStatus} changes the nodes go through.
+     * Subscribes to {@link ConsensusLayerStatus} changes the nodes go through.
      *
      * <p>The subscriber will be notified every time the status of one of the nodes changes.
      *

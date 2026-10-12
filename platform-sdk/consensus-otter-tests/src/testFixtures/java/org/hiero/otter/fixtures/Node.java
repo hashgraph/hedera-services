@@ -10,7 +10,7 @@ import java.util.List;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.network.transactions.OtterTransaction;
 import org.hiero.otter.fixtures.result.SingleNodeConsensusResult;
 import org.hiero.otter.fixtures.result.SingleNodeEventStreamResult;
@@ -172,42 +172,42 @@ public interface Node {
      * @return the status of the platform
      */
     @Nullable
-    PlatformStatus platformStatus();
+    ConsensusLayerStatus platformStatus();
 
     /**
-     * Checks if the node's {@link PlatformStatus} is {@link PlatformStatus#ACTIVE}.
+     * Checks if the node's {@link ConsensusLayerStatus} is {@link ConsensusLayerStatus#ACTIVE}.
      *
      * @return {@code true} if the node is active, {@code false} otherwise
      */
     default boolean isActive() {
-        return isInStatus(PlatformStatus.ACTIVE);
+        return isInStatus(ConsensusLayerStatus.ACTIVE);
     }
 
     /**
-     * Checks if the node's {@link PlatformStatus} is {@link PlatformStatus#CHECKING}.
+     * Checks if the node's {@link ConsensusLayerStatus} is {@link ConsensusLayerStatus#CHECKING}.
      *
      * @return {@code true} if the node is checking, {@code false} otherwise
      */
     default boolean isChecking() {
-        return isInStatus(PlatformStatus.CHECKING);
+        return isInStatus(ConsensusLayerStatus.CHECKING);
     }
 
     /**
-     * Checks if the node's {@link PlatformStatus} is {@link PlatformStatus#BEHIND}.
+     * Checks if the node's {@link ConsensusLayerStatus} is {@link ConsensusLayerStatus#BEHIND}.
      *
      * @return {@code true} if the node is behind, {@code false} otherwise
      */
     default boolean isBehind() {
-        return isInStatus(PlatformStatus.BEHIND);
+        return isInStatus(ConsensusLayerStatus.BEHIND);
     }
 
     /**
-     * Checks if the node's {@link PlatformStatus} is {@code status}.
+     * Checks if the node's {@link ConsensusLayerStatus} is {@code status}.
      *
      * @param status the status to check against
      * @return {@code true} if the node is in the supplied status, {@code false} otherwise
      */
-    default boolean isInStatus(@NonNull final PlatformStatus status) {
+    default boolean isInStatus(@NonNull final ConsensusLayerStatus status) {
         return platformStatus() == status;
     }
 

@@ -2,14 +2,14 @@
 package com.swirlds.platform.listeners;
 
 import org.hiero.consensus.model.notification.AbstractNotification;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * This notification is sent when the platform status changes.
  */
 public class PlatformStatusChangeNotification extends AbstractNotification {
 
-    private final PlatformStatus newStatus;
+    private final ConsensusLayerStatus newStatus;
 
     /**
      * Create a new platform status change notification.
@@ -17,7 +17,7 @@ public class PlatformStatusChangeNotification extends AbstractNotification {
      * @param newStatus
      * 		the new status of the platform
      */
-    public PlatformStatusChangeNotification(final PlatformStatus newStatus) {
+    public PlatformStatusChangeNotification(final ConsensusLayerStatus newStatus) {
         this.newStatus = newStatus;
     }
 
@@ -26,7 +26,7 @@ public class PlatformStatusChangeNotification extends AbstractNotification {
      *
      * @return the new platform status
      */
-    public PlatformStatus getNewStatus() {
+    public ConsensusLayerStatus getNewStatus() {
         return newStatus;
     }
 }

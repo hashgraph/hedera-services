@@ -27,7 +27,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.orphan.DefaultOrphanBuffer;
 import org.hiero.consensus.orphan.OrphanBuffer;
 import org.hiero.consensus.roster.test.fixtures.RosterFactory;
@@ -121,7 +121,7 @@ public class EventCreatorNetworkBenchmark {
                     new DefaultEventCreationManager(configuration, metrics, time, eventCreator, roster, nodeId);
 
             // Set platform status to ACTIVE so events can be created
-            eventCreationManager.updatePlatformStatus(PlatformStatus.ACTIVE);
+            eventCreationManager.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
             eventCreationManager.setEventWindow(eventWindow);
 
             eventCreators.add(eventCreationManager);

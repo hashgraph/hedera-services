@@ -21,7 +21,7 @@ import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.Transaction;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Tracks all the information needed to determine if the system is quiescent or not. This class is thread-safe, it is
@@ -235,13 +235,14 @@ public class QuiescenceController {
     /**
      * Notifies the controller that the platform status has changed.
      *
-     * @param platformStatus the new platform status
+     * @param consensusLayerStatus the new platform status
      */
-    public void platformStatusUpdate(@NonNull final PlatformStatus platformStatus) {
+    public void platformStatusUpdate(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
         if (isDisabled()) {
             return;
         }
-        if (platformStatus == PlatformStatus.RECONNECT_COMPLETE) {
+        // The consensus layer is recreated after reconnect, so listen for STARTING_UP to clear the state
+        if (consensusLayerStatus == ConsensusLayerStatus.STARTING_UP) {
             pipelineTransactionCount.set(0);
             blockTrackers.clear();
         }

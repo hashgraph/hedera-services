@@ -3,7 +3,7 @@ package org.hiero.consensus.state.nexus;
 
 import com.swirlds.component.framework.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 
 /**
@@ -27,10 +27,10 @@ public interface LatestCompleteStateNexus extends SignedStateNexus {
     void setStateIfNewer(@NonNull ReservedSignedState reservedSignedState);
 
     /**
-     * Update the current platform status. Causes the latest complete state to be released if the platform is in {@link PlatformStatus#FREEZING}
+     * Update the current platform status. Causes the latest complete state to be released if the platform is in {@link ConsensusLayerStatus#FREEZING}
      *
-     * @param platformStatus the new platform status
+     * @param consensusLayerStatus the new platform status
      */
     @InputWireLabel("platform status")
-    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+    void updatePlatformStatus(@NonNull ConsensusLayerStatus consensusLayerStatus);
 }

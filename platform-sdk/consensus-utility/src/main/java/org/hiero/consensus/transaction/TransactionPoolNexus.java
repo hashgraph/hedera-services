@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.hiero.consensus.main.model.TimestampedTransaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 
 /**
@@ -74,7 +74,7 @@ public class TransactionPoolNexus implements EventTransactionSupplier {
     /**
      * The current status of the platform.
      */
-    private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
+    private ConsensusLayerStatus consensusLayerStatus = ConsensusLayerStatus.STARTING_UP;
 
     /**
      * Whether the platform is currently in a healthy state.
@@ -127,7 +127,7 @@ public class TransactionPoolNexus implements EventTransactionSupplier {
      * @return true if the transaction passed all validity checks and was accepted by the consumer
      */
     public synchronized boolean submitApplicationTransaction(@NonNull final Bytes appTransaction) {
-        if (!healthy || platformStatus != PlatformStatus.ACTIVE) {
+        if (!healthy || consensusLayerStatus != ConsensusLayerStatus.ACTIVE) {
             return false;
         }
 
@@ -195,11 +195,11 @@ public class TransactionPoolNexus implements EventTransactionSupplier {
     /**
      * Update the platform status.
      *
-     * @param platformStatus the new platform status
+     * @param consensusLayerStatus the new platform status
      */
-    public synchronized void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        this.platformStatus = platformStatus;
-        if (platformStatus == PlatformStatus.BEHIND) {
+    public synchronized void updatePlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        this.consensusLayerStatus = consensusLayerStatus;
+        if (consensusLayerStatus == ConsensusLayerStatus.BEHIND) {
             clear();
         }
     }

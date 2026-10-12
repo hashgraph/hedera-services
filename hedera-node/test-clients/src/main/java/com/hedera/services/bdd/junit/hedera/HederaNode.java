@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 public interface HederaNode {
     /**
@@ -89,7 +89,7 @@ public interface HederaNode {
      * @return a future that resolves when the node has the given status
      */
     CompletableFuture<Void> statusFuture(
-            @Nullable Consumer<NodeStatus> nodeStatusObserver, @NonNull PlatformStatus... statuses);
+            @Nullable Consumer<NodeStatus> nodeStatusObserver, @NonNull ConsensusLayerStatus... statuses);
 
     /**
      * Returns a future that resolves when the node has written the specified log pattern.

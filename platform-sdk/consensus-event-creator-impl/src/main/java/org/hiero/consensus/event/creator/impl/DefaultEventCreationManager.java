@@ -35,7 +35,7 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Default implementation of the {@link EventCreationManager}.
@@ -199,8 +199,8 @@ public class DefaultEventCreationManager implements EventCreationManager {
      * {@inheritDoc}
      */
     @Override
-    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        this.platformStatusRule.setPlatformStatus(Objects.requireNonNull(platformStatus));
+    public void updatePlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        this.platformStatusRule.setPlatformStatus(Objects.requireNonNull(consensusLayerStatus));
     }
 
     /**

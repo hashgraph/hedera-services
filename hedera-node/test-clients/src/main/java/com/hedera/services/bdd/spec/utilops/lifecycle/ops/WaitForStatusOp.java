@@ -11,7 +11,7 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Arrays;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to
@@ -19,12 +19,12 @@ import org.hiero.consensus.model.status.PlatformStatus;
  */
 public class WaitForStatusOp extends AbstractLifecycleOp {
     private final Duration timeout;
-    private final PlatformStatus[] statuses;
+    private final ConsensusLayerStatus[] statuses;
 
     public WaitForStatusOp(
             @NonNull NodeSelector selector,
             @NonNull final Duration timeout,
-            @NonNull final PlatformStatus... statuses) {
+            @NonNull final ConsensusLayerStatus... statuses) {
         super(selector);
         this.timeout = requireNonNull(timeout);
         this.statuses = requireNonNull(statuses);

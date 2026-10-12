@@ -1,7 +1,7 @@
 # consensus-model
 
 The shared data model for the consensus layer: events, rounds, judges, roster metadata,
-`PlatformStatus`, notifications, and the types that travel across the consensus/execution
+`ConsensusLayerStatus`, notifications, and the types that travel across the consensus/execution
 boundary.
 
 ## Architecture

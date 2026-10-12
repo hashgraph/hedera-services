@@ -2,13 +2,13 @@
 package org.hiero.otter.fixtures.test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 import static org.hiero.otter.fixtures.OtterAssertions.assertThat;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.test.fixtures.WeightGenerators;
 import org.hiero.otter.fixtures.Network;
 import org.hiero.otter.fixtures.Node;
@@ -76,7 +76,7 @@ class NodeLifecycleTest {
                 assertThat(node.isActive()).isTrue();
                 assertThat(node.isChecking()).isFalse();
                 assertThat(node.isBehind()).isFalse();
-                assertThat(node.isInStatus(PlatformStatus.ACTIVE)).isTrue();
+                assertThat(node.isInStatus(ConsensusLayerStatus.ACTIVE)).isTrue();
             }
 
             for (int i = 0; i < 3; i++) {
@@ -94,7 +94,7 @@ class NodeLifecycleTest {
                 assertThat(nodeToKill.isActive()).isFalse();
                 assertThat(nodeToKill.isChecking()).isFalse();
                 assertThat(nodeToKill.isBehind()).isFalse();
-                assertThat(nodeToKill.isInStatus(PlatformStatus.ACTIVE)).isFalse();
+                assertThat(nodeToKill.isInStatus(ConsensusLayerStatus.ACTIVE)).isFalse();
 
                 // Verify remaining nodes are still active (network maintains consensus)
                 timeManager.waitFor(Duration.ofSeconds(5L));

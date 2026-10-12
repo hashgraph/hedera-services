@@ -79,16 +79,16 @@ Selects consensus module implementations via ServiceLoader. Each value is a JPMS
 | TUN-017 | `modules.gossip`       | String | `org.hiero.consensus.gossip.impl`        | JPMS module name of the `GossipModule` impl.       |       | —         |
 | TUN-018 | `modules.reconnect`    | String | `org.hiero.consensus.reconnect.impl`     | JPMS module name of the `ReconnectModule` impl.    |       | —         |
 
-## `platformStatus.*` — PlatformStatusConfig
+## `consensusLayerStatus.*` — PlatformStatusConfig
 
 Module: `consensus-utility`. Source: [PlatformStatusConfig.java](../../consensus-utility/src/main/java/org/hiero/consensus/config/PlatformStatusConfig.java).
 These delays drive the status state machine; see [architecture/topics/platform-status.md](architecture/topics/platform-status.md).
 
 |   ID    |                        Key                         |   Type   | Default |                                                Effect                                                 | Range | Fragility |
 |---------|----------------------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------|-------|-----------|
-| TUN-019 | `platformStatus.observingStatusDelay`              | Duration | `10s`   | Wall-clock time to wait before transitioning out of the `OBSERVING` status.                           |       | —         |
-| TUN-020 | `platformStatus.activeStatusDelay`                 | Duration | `10s`   | Wall-clock time required to transition out of `ACTIVE` (no self event reached, or quiescence change). |       | —         |
-| TUN-021 | `platformStatus.statusStateMachineHeartbeatPeriod` | Duration | `100ms` | Wall-clock interval between heartbeats sent to the status state machine.                              |       | —         |
+| TUN-019 | `consensusLayerStatus.observingStatusDelay`              | Duration | `10s`   | Wall-clock time to wait before transitioning out of the `OBSERVING` status.                           |       | —         |
+| TUN-020 | `consensusLayerStatus.activeStatusDelay`                 | Duration | `10s`   | Wall-clock time required to transition out of `ACTIVE` (no self event reached, or quiescence change). |       | —         |
+| TUN-021 | `consensusLayerStatus.statusStateMachineHeartbeatPeriod` | Duration | `100ms` | Wall-clock interval between heartbeats sent to the status state machine.                              |       | —         |
 
 ## `platform.metrics.*` — PlatformMetricsConfig
 

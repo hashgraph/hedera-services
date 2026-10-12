@@ -2,7 +2,7 @@
 package org.hiero.otter.fixtures.internal.result;
 
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.RECONNECT_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.RECONNECT_COMPLETE;
 import static org.hiero.otter.fixtures.internal.helpers.LogPayloadUtils.parsePayload;
 
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;

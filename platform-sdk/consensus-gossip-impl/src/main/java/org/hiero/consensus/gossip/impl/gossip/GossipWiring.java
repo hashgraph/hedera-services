@@ -15,7 +15,7 @@ import org.hiero.consensus.gossip.config.GossipWiringConfig;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Wiring for gossip.
@@ -76,7 +76,7 @@ public class GossipWiring {
     /**
      * This wire is used to tell gossip the status of the platform.
      */
-    private final BindableInputWire<PlatformStatus, Void> platformStatusInput;
+    private final BindableInputWire<ConsensusLayerStatus, Void> platformStatusInput;
     /**
      * This wire is used to pause gossip.
      */
@@ -233,7 +233,7 @@ public class GossipWiring {
      * @return the input wire to tell gossip the status of the platform
      */
     @NonNull
-    public InputWire<PlatformStatus> getPlatformStatusInput() {
+    public InputWire<ConsensusLayerStatus> getPlatformStatusInput() {
         return platformStatusInput;
     }
 

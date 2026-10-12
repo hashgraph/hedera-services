@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.consensus.status.logic;
 
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.BEHIND;
-import static org.hiero.consensus.model.status.PlatformStatus.CATASTROPHIC_FAILURE;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
-import static org.hiero.consensus.model.status.PlatformStatus.OBSERVING;
-import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
-import static org.hiero.consensus.model.status.PlatformStatus.STARTING_UP;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.BEHIND;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CATASTROPHIC_FAILURE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.OBSERVING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.REPLAYING_EVENTS;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.IllegalPlatformStatusException;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
@@ -47,7 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * {@code StateWrittenToDisk} of RECONNECT_COMPLETE) depend on timing/round inputs and are covered by the per-status
  * {@code *StatusLogicTests}; they are intentionally omitted here.
  */
-class PlatformStatusTransitionMatrixTest {
+class ConsensusLayerStatusTransitionMatrixTest {
 
     private static final PlatformStatusConfig CONFIG =
             new TestConfigBuilder().getOrCreateConfig().getConfigData(PlatformStatusConfig.class);
@@ -144,7 +144,7 @@ class PlatformStatusTransitionMatrixTest {
             final String name,
             @NonNull final Supplier<PlatformStatusLogic> logicSupplier,
             @NonNull final PlatformStatusAction action,
-            @Nullable final PlatformStatus expected) {
+            @Nullable final ConsensusLayerStatus expected) {
 
         final PlatformStatusLogic logic = logicSupplier.get();
         if (expected == null) {
@@ -156,7 +156,7 @@ class PlatformStatusTransitionMatrixTest {
 
     @NonNull
     private static StatusCases cases(
-            @NonNull final PlatformStatus status, @NonNull final Supplier<PlatformStatusLogic> supplier) {
+            @NonNull final ConsensusLayerStatus status, @NonNull final Supplier<PlatformStatusLogic> supplier) {
         return new StatusCases(status, supplier);
     }
 
@@ -164,19 +164,19 @@ class PlatformStatusTransitionMatrixTest {
      * Fluent builder collecting the expected outcomes for a single status, one row of the transition table.
      */
     private static final class StatusCases {
-        private final PlatformStatus status;
+        private final ConsensusLayerStatus status;
         private final Supplier<PlatformStatusLogic> supplier;
         private final List<Arguments> rows = new ArrayList<>();
 
         private StatusCases(
-                @NonNull final PlatformStatus status, @NonNull final Supplier<PlatformStatusLogic> supplier) {
+                @NonNull final ConsensusLayerStatus status, @NonNull final Supplier<PlatformStatusLogic> supplier) {
             this.status = status;
             this.supplier = supplier;
         }
 
         /** The action transitions to the given status. */
         @NonNull
-        StatusCases on(@NonNull final PlatformStatusAction action, @NonNull final PlatformStatus expected) {
+        StatusCases on(@NonNull final PlatformStatusAction action, @NonNull final ConsensusLayerStatus expected) {
             rows.add(arguments(label(action, expected.name()), supplier, action, expected));
             return this;
         }

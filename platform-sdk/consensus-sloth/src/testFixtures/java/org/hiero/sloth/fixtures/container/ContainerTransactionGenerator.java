@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.sloth.fixtures.Node;
 import org.hiero.sloth.fixtures.TransactionFactory;
 import org.hiero.sloth.fixtures.TransactionGenerator;
@@ -106,7 +106,7 @@ public class ContainerTransactionGenerator implements TransactionGenerator {
         }
 
         for (final Node node : nodes) {
-            if (node.platformStatus() == PlatformStatus.ACTIVE) {
+            if (node.platformStatus() == ConsensusLayerStatus.ACTIVE) {
                 final SlothTransaction transaction = TransactionFactory.createEmptyTransaction(random.nextLong());
                 try {
                     ((ContainerNode) node).submitTransaction(transaction);

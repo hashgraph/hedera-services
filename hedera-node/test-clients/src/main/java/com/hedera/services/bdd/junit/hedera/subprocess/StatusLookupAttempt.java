@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
-import static org.hiero.consensus.model.status.PlatformStatus.*;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.*;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * A record of an attempt to look up the status of a Hedera node.
@@ -15,7 +15,7 @@ import org.hiero.consensus.model.status.PlatformStatus;
  * @param failureReason if non-null, the reason the status lookup failed
  */
 public record StatusLookupAttempt(
-        @NonNull Source source, @Nullable PlatformStatus status, @Nullable String failureReason) {
+        @NonNull Source source, @Nullable ConsensusLayerStatus status, @Nullable String failureReason) {
 
     /**
      * The source of the status lookup attempt.

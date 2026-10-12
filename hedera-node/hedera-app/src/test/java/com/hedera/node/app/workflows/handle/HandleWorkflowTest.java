@@ -87,7 +87,7 @@ import org.hiero.consensus.main.model.ConsensusEvent;
 import org.hiero.consensus.main.model.EventDescriptorWrapper;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.platformstate.V0540PlatformStateSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -585,7 +585,7 @@ class HandleWorkflowTest {
                 hintsService,
                 historyService,
                 congestionMetrics,
-                () -> PlatformStatus.ACTIVE,
+                () -> ConsensusLayerStatus.ACTIVE,
                 blockHashSigner,
                 null,
                 nodeRewardManager,

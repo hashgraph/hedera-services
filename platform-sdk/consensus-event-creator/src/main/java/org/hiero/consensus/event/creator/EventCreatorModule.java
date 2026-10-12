@@ -19,7 +19,7 @@ import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 
 /**
@@ -94,7 +94,7 @@ public interface EventCreatorModule {
      */
     @InputWireLabel("PlatformStatus")
     @NonNull
-    InputWire<PlatformStatus> platformStatusInputWire();
+    InputWire<ConsensusLayerStatus> platformStatusInputWire();
 
     /**
      * {@link InputWire} for the health status of the consensus module received from the

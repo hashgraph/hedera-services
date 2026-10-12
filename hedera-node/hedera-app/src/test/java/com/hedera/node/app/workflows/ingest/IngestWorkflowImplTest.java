@@ -47,7 +47,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -165,13 +165,13 @@ class IngestWorkflowImplTest extends AppTestBase {
     @DisplayName("0. Node state pre-checks")
     class NodeTests {
         @ParameterizedTest
-        @EnumSource(PlatformStatus.class)
+        @EnumSource(ConsensusLayerStatus.class)
         @DisplayName("When the platform is not ACTIVE, the transaction should be rejected (except for ACTIVE)")
-        void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status)
+        void testParseAndCheckWithInactivePlatformFails(final ConsensusLayerStatus status)
                 throws ParseException, PreCheckException {
             // Since the enum source is going over all states, and the ACTIVE state is
             // actually good, I need to skip that one.
-            if (status != PlatformStatus.ACTIVE) {
+            if (status != ConsensusLayerStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
                 doThrow(new PreCheckException(PLATFORM_NOT_ACTIVE))
                         .when(ingestChecker)

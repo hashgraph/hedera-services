@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.NodeConfiguration;
 import org.hiero.otter.fixtures.internal.AbstractNode.LifeCycle;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,7 +101,7 @@ public class AbstractNodeConfigurationTest {
     @ParameterizedTest
     @ValueSource(strings = {"ACTIVE", "REPLAYING_EVENTS", "FREEZE_COMPLETE"})
     void testEnumProperty(final String value) {
-        final PlatformStatus status = PlatformStatus.valueOf(value);
+        final ConsensusLayerStatus status = ConsensusLayerStatus.valueOf(value);
         subject.withConfigValue("myEnumValue", status);
         final Configuration config = subject.current();
         final TestConfigData configData = config.getConfigData(TestConfigData.class);
@@ -245,7 +245,7 @@ public class AbstractNodeConfigurationTest {
             @ConfigProperty(defaultValue = "42") int myIntValue,
             @ConfigProperty(defaultValue = "3.14") double myDoubleValue,
             @ConfigProperty(defaultValue = "987654321") long myLongValue,
-            @ConfigProperty(defaultValue = "ACTIVE") PlatformStatus myEnumValue,
+            @ConfigProperty(defaultValue = "ACTIVE") ConsensusLayerStatus myEnumValue,
             @ConfigProperty(defaultValue = "PT15M") Duration myDurationValue,
             @ConfigProperty(defaultValue = "") List<String> myStringList,
             @ConfigProperty(defaultValue = "") List<NodeId> myNodeIdList,

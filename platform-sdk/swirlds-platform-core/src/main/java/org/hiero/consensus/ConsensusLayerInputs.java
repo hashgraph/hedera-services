@@ -2,6 +2,7 @@
 package org.hiero.consensus;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.swirlds.base.time.Time;
 import com.swirlds.component.framework.model.WiringModel;
@@ -23,14 +24,13 @@ import org.hiero.consensus.transaction.TransactionLimits;
 /**
  * This record contains all the required and optional inputs when creating the {@link ConsensusLayer}.
  * <p>
- * initialization notes: If a freeze time is provided during construction of the consensus layer, that is the freeze *
- * time and it must be honored. If there is no freeze time provided at construction time, there is no known future *
- * freeze until this method is called.
- *
- * <p>The consensus layer does not need to know about lastFrozenTime. If a
- * freeze time is provided * during construction of the consensus layer, that is the freeze time and it must be honored.
- * If there is no freeze * time provided at construction time, there is no known future freeze until this method is
- * called.
+ * <b>Freeze Time</b>
+ * If a freeze time is provided during construction of the consensus layer, that is the freeze time and it will be
+ * honored unless cleared by passing a {@code null} value for {@code freezeTime} in
+ * {@link ConsensusLayer#requestNextRound(Roster, Instant)}. If there is no freeze time provided at construction time,
+ * there is no known future freeze time. It is important to provide a {@code null} {@code freezeTime} when starting from
+ * a freeze round. In the current system, the freeze state contains a {@code lastFrozenTime} that is equal to the
+ * {@code freezeTime}.
  *
  * @param configuration            the configuration the consensus layer should use
  * @param metrics                  the metrics framework for recording metric values
@@ -47,11 +47,15 @@ import org.hiero.consensus.transaction.TransactionLimits;
  *                                 not provided, the consensus layer will start a new hashgraph from genesis.
  * @param runningEventHashOverride the starting hash of the consensus event stream. Must be provided if a
  *                                 {@code consensusSnapshot} is provided in order for the consensus event stream to
- *                                 match that of other nodes
- * @param consensusEventStreamName the name of the consensus event stream directory on disk
+ *                                 match that of other nodes. This field will be deleted when the consensus event stream
+ *                                 is retired.
+ * @param consensusEventStreamName the name of the consensus event stream directory on disk. This field will be deleted
+ *                                 when the consensus event stream is retired.
  * @param version                  the version of the consensus node software currently running
- * @param transactionOffsetNanos   the number of nanoseconds to add to the first transaction's consensus timestamp in each event
- * @param transactionLimits        the configured limits regarding transactions in events that the consensus layer should enforce when validating events
+ * @param transactionOffsetNanos   the number of nanoseconds to add to the first transaction's consensus timestamp in
+ *                                 each event
+ * @param transactionLimits        the configured limits regarding transactions in events that the consensus layer
+ *                                 should enforce when validating events
  * @param freezeTime               the current freeze time, or {@code null} if there is no current freeze time.
  * @param wiringModel
  * @param secureRandom

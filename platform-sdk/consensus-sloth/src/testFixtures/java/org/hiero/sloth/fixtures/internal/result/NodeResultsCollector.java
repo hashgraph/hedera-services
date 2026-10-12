@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.logging.log4j.Marker;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.sloth.fixtures.logging.StructuredLog;
 import org.hiero.sloth.fixtures.result.LogSubscriber;
 import org.hiero.sloth.fixtures.result.PlatformStatusSubscriber;
@@ -24,7 +24,7 @@ import org.hiero.sloth.fixtures.result.SubscriberAction;
 public class NodeResultsCollector {
 
     private final NodeId nodeId;
-    private final List<PlatformStatus> platformStatuses = new ArrayList<>();
+    private final List<ConsensusLayerStatus> consensusLayerStatuses = new ArrayList<>();
     private final List<PlatformStatusSubscriber> platformStatusSubscribers = new CopyOnWriteArrayList<>();
     private final List<StructuredLog> logEntries = new ArrayList<>();
     private final List<LogSubscriber> logSubscribers = new CopyOnWriteArrayList<>();
@@ -52,14 +52,14 @@ public class NodeResultsCollector {
     }
 
     /**
-     * Adds a {@link PlatformStatus} to the list of collected statuses.
+     * Adds a {@link ConsensusLayerStatus} to the list of collected statuses.
      *
-     * @param status the {@link PlatformStatus} to add
+     * @param status the {@link ConsensusLayerStatus} to add
      */
-    public void addPlatformStatus(@NonNull final PlatformStatus status) {
+    public void addPlatformStatus(@NonNull final ConsensusLayerStatus status) {
         requireNonNull(status);
         if (!destroyed) {
-            platformStatuses.add(status);
+            consensusLayerStatuses.add(status);
             platformStatusSubscribers.removeIf(
                     subscriber -> subscriber.onPlatformStatusChange(nodeId, status) == SubscriberAction.UNSUBSCRIBE);
         }
@@ -96,8 +96,8 @@ public class NodeResultsCollector {
      * @return the list of platform statuses
      */
     @NonNull
-    public List<PlatformStatus> currentStatusProgression(final int startIndex) {
-        final List<PlatformStatus> copy = List.copyOf(platformStatuses);
+    public List<ConsensusLayerStatus> currentStatusProgression(final int startIndex) {
+        final List<ConsensusLayerStatus> copy = List.copyOf(consensusLayerStatuses);
         return copy.subList(startIndex, copy.size());
     }
 
@@ -107,11 +107,11 @@ public class NodeResultsCollector {
      * @return the count of platform statuses
      */
     public int currentStatusProgressionCount() {
-        return platformStatuses.size();
+        return consensusLayerStatuses.size();
     }
 
     /**
-     * Subscribes to {@link PlatformStatus} events.
+     * Subscribes to {@link ConsensusLayerStatus} events.
      *
      * @param subscriber the subscriber that will receive the platform statuses
      */

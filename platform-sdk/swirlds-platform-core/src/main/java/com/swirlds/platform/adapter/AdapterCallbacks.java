@@ -17,7 +17,7 @@ import org.hiero.consensus.ExecutionLayerCallbacks;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.main.model.TimestampedTransaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.StateModule;
 import org.hiero.consensus.state.nexus.SignedStateNexus;
 import org.hiero.consensus.transaction.handling.TransactionHandlingModule;
@@ -49,7 +49,7 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
     private final TransactionHandlingModule transactionHandlingModule;
 
     @NonNull
-    private final AtomicReference<PlatformStatus> platformStatusReference;
+    private final AtomicReference<ConsensusLayerStatus> platformStatusReference;
 
     /**
      * Armed when the consensus layer reports that this node has fallen behind
@@ -65,7 +65,7 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
             @NonNull final ComponentWiring<AppNotifier, Void> notifierWiring,
             @NonNull final StateModule stateModule,
             @NonNull final TransactionHandlingModule transactionHandlingModule,
-            @NonNull final AtomicReference<PlatformStatus> platformStatusReference,
+            @NonNull final AtomicReference<ConsensusLayerStatus> platformStatusReference,
             @NonNull final ResettableLatch behindLatch) {
         this.consensusStateEventHandler = requireNonNull(consensusStateEventHandler);
         this.executionLayer = requireNonNull(executionLayer);
@@ -105,18 +105,15 @@ public class AdapterCallbacks implements ExecutionLayerCallbacks {
     }
 
     @Override
-    public void onPlatformStatusChange(@NonNull final PlatformStatus status) {
+    public void onConsensusLayerStatusChange(@NonNull final ConsensusLayerStatus status) {
         executionLayer.newPlatformStatus(status);
         notifierWiring
                 .getInputWire(AppNotifier::sendPlatformStatusChangeNotification)
                 .inject(status);
         stateModule.platformStatusInputWire().inject(status);
         platformStatusReference.set(status);
-        if (status == PlatformStatus.BEHIND) {
+        if (status == ConsensusLayerStatus.BEHIND) {
             onBehind();
         }
     }
-
-    @Override
-    public void onSealConsensusRound(Round consensusRound) {}
 }

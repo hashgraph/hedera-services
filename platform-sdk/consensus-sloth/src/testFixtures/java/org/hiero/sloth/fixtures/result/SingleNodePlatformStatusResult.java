@@ -4,7 +4,7 @@ package org.hiero.sloth.fixtures.result;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Interface that provides access to the status progression results of a node.
@@ -27,10 +27,10 @@ public interface SingleNodePlatformStatusResult extends SlothResult {
      * @return the list of platform status
      */
     @NonNull
-    List<PlatformStatus> statusProgression();
+    List<ConsensusLayerStatus> statusProgression();
 
     /**
-     * Subscribes to {@link PlatformStatus} changes a node goes through.
+     * Subscribes to {@link ConsensusLayerStatus} changes a node goes through.
      *
      * <p>The subscriber will be notified every time the status of the node changes.
      *

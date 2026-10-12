@@ -87,7 +87,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -159,7 +159,7 @@ class IngestCheckerTest extends AppTestBase {
     void setUp() throws PreCheckException {
         setupStandardStates();
         final var app = appBuilder().withSelfNode(selfNodeInfo).build();
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+        when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.ACTIVE);
 
         configuration = configWithFeatureFlags(false);
 
@@ -222,12 +222,12 @@ class IngestCheckerTest extends AppTestBase {
         }
 
         @ParameterizedTest
-        @EnumSource(PlatformStatus.class)
+        @EnumSource(ConsensusLayerStatus.class)
         @DisplayName("When the platform is not ACTIVE, the transaction should be rejected")
-        void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status) {
+        void testParseAndCheckWithInactivePlatformFails(final ConsensusLayerStatus status) {
             // Since the enum source is going over all states, and the ACTIVE state is
             // actually good, I need to skip that one.
-            if (status != PlatformStatus.ACTIVE) {
+            if (status != ConsensusLayerStatus.ACTIVE) {
                 // Given a platform that is not ACTIVE
                 when(currentPlatformStatus.get()).thenReturn(status);
                 given(blockHashSigner.isReady()).willReturn(true);
@@ -242,7 +242,7 @@ class IngestCheckerTest extends AppTestBase {
         @Test
         @DisplayName("Even if the platform is not ACTIVE, waits for ledger id to be available")
         void testParseAndCheckWithUnknownLedgerIdFails() {
-            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+            when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.ACTIVE);
             // When we try to parse and check a transaction, it should fail because the platform is not active
             assertThatThrownBy(() -> subject.verifyReadyForTransactions())
                     .isInstanceOf(PreCheckException.class)
@@ -252,13 +252,13 @@ class IngestCheckerTest extends AppTestBase {
 
         @Test
         void answersFreeQueriesIfInControlledState() {
-            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+            when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.ACTIVE);
             Assertions.assertDoesNotThrow(() -> subject.verifyFreeQueryable());
-            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.FREEZING);
+            when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.FREEZING);
             Assertions.assertDoesNotThrow(() -> subject.verifyFreeQueryable());
-            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.FREEZE_COMPLETE);
+            when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.FREEZE_COMPLETE);
             Assertions.assertDoesNotThrow(() -> subject.verifyFreeQueryable());
-            when(currentPlatformStatus.get()).thenReturn(PlatformStatus.CHECKING);
+            when(currentPlatformStatus.get()).thenReturn(ConsensusLayerStatus.CHECKING);
             Assertions.assertThrows(PreCheckException.class, () -> subject.verifyFreeQueryable());
         }
     }

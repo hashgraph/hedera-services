@@ -63,7 +63,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.pces.PcesReplayProgress;
@@ -222,7 +222,7 @@ public class ConsensusLayerAdapterFactory {
 
         ConsensusLayerStaticSetup.setup(configuration);
 
-        final AtomicReference<PlatformStatus> platformStatusReference = new AtomicReference<>();
+        final AtomicReference<ConsensusLayerStatus> platformStatusReference = new AtomicReference<>();
         final ExecutionLayerCallbacks executionLayerCallbacks = createExecutionLayerCallbacks(
                 latestImmutableStateNexus,
                 notifierWiring,
@@ -307,7 +307,7 @@ public class ConsensusLayerAdapterFactory {
             @NonNull final ComponentWiring<AppNotifier, Void> notifierWiring,
             @NonNull final StateModule stateModule,
             @NonNull final TransactionHandlingModule transactionHandlingModule,
-            @NonNull final AtomicReference<PlatformStatus> platformStatusReference) {
+            @NonNull final AtomicReference<ConsensusLayerStatus> platformStatusReference) {
         return new AdapterCallbacks(
                 consensusStateEventHandler,
                 executionLayer,

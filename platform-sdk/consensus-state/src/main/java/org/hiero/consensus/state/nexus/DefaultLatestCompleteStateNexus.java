@@ -9,7 +9,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hiero.consensus.metrics.RunningAverageMetric;
 import org.hiero.consensus.model.hashgraph.ConsensusConstants;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 
@@ -66,8 +66,8 @@ public class DefaultLatestCompleteStateNexus implements LatestCompleteStateNexus
      * {@inheritDoc}
      */
     @Override
-    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        if (PlatformStatus.FREEZING.equals(platformStatus)) {
+    public void updatePlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        if (ConsensusLayerStatus.FREEZING.equals(consensusLayerStatus)) {
             synchronized (this) {
                 if (currentState == null) {
                     return;

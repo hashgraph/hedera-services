@@ -2,7 +2,7 @@
 package com.hedera.node.app.info;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Provides the current platform status.
@@ -15,5 +15,5 @@ public interface CurrentPlatformStatus {
      * @return the current platform status
      */
     @NonNull
-    PlatformStatus get();
+    ConsensusLayerStatus get();
 }

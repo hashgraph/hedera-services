@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.test.fixtures.WeightGenerator;
 import org.hiero.consensus.test.fixtures.WeightGenerators;
 import org.hiero.sloth.fixtures.network.Topology;
@@ -116,7 +116,7 @@ public interface Network extends Configurable<Network> {
      * Start the network with the currently configured setup.
      *
      * <p>The method will wait until all nodes have become
-     * {@link org.hiero.consensus.model.status.PlatformStatus#ACTIVE}. It will wait for a environment-specific timeout
+     * {@link ConsensusLayerStatus#ACTIVE}. It will wait for a environment-specific timeout
      * before throwing an exception if the nodes do not reach the {@code ACTIVE} state. The default can be overridden by
      * calling {@link #withTimeout(Duration)}.
      */
@@ -214,21 +214,21 @@ public interface Network extends Configurable<Network> {
     MultipleNodePlatformStatusResults newPlatformStatusResults();
 
     /**
-     * Checks if all nodes in the network are in the specified {@link PlatformStatus}.
+     * Checks if all nodes in the network are in the specified {@link ConsensusLayerStatus}.
      *
      * @param status the status to check against
      * @return {@code true} if all nodes are in the specified status, {@code false} otherwise
      */
-    default boolean allNodesInStatus(@NonNull final PlatformStatus status) {
+    default boolean allNodesInStatus(@NonNull final ConsensusLayerStatus status) {
         return nodes().stream().allMatch(node -> node.platformStatus() == status);
     }
 
     /**
-     * Checks if all nodes in the network are {@link PlatformStatus#ACTIVE}.
+     * Checks if all nodes in the network are {@link ConsensusLayerStatus#ACTIVE}.
      *
      * @return {@code true} if all nodes are active, {@code false} otherwise
      */
     default boolean allNodesAreActive() {
-        return allNodesInStatus(PlatformStatus.ACTIVE);
+        return allNodesInStatus(ConsensusLayerStatus.ACTIVE);
     }
 }

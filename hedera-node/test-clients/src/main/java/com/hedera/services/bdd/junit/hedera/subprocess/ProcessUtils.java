@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.Assertions;
 
 public class ProcessUtils {
@@ -76,7 +76,7 @@ public class ProcessUtils {
     public static void awaitStatus(
             @NonNull final HederaNode node,
             @NonNull final Duration timeout,
-            @NonNull final PlatformStatus... statuses) {
+            @NonNull final ConsensusLayerStatus... statuses) {
         final AtomicReference<NodeStatus> lastStatus = new AtomicReference<>();
         log.info("Waiting for node '{}' to be {} within {}", node.getName(), Arrays.toString(statuses), timeout);
         try {

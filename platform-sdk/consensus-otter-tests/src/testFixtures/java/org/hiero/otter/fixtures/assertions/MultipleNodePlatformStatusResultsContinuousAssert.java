@@ -10,7 +10,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.result.MultipleNodePlatformStatusResults;
 import org.hiero.otter.fixtures.result.PlatformStatusSubscriber;
 
@@ -56,8 +56,8 @@ public class MultipleNodePlatformStatusResultsContinuousAssert
      */
     @NonNull
     public MultipleNodePlatformStatusResultsContinuousAssert doNotEnterAnyStatusesOf(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
-        final Set<PlatformStatus> statuses = toSet(first, rest);
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
+        final Set<ConsensusLayerStatus> statuses = toSet(first, rest);
         return checkContinuously((nodeId, status) -> {
             if (statuses.contains(status)) {
                 failWithMessage(
@@ -75,8 +75,8 @@ public class MultipleNodePlatformStatusResultsContinuousAssert
      */
     @NonNull
     public MultipleNodePlatformStatusResultsContinuousAssert doOnlyEnterStatusesOf(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
-        final Set<PlatformStatus> statuses = toSet(first, rest);
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
+        final Set<ConsensusLayerStatus> statuses = toSet(first, rest);
         return checkContinuously((nodeId, status) -> {
             if (!statuses.contains(status)) {
                 failWithMessage("Expected only to enter %s statuses, but node %s entered %s", statuses, nodeId, status);
@@ -85,7 +85,7 @@ public class MultipleNodePlatformStatusResultsContinuousAssert
     }
 
     private MultipleNodePlatformStatusResultsContinuousAssert checkContinuously(
-            @NonNull final BiConsumer<NodeId, PlatformStatus> check) {
+            @NonNull final BiConsumer<NodeId, ConsensusLayerStatus> check) {
         isNotNull();
 
         final PlatformStatusSubscriber subscriber = (nodeId, status) -> switch (state) {

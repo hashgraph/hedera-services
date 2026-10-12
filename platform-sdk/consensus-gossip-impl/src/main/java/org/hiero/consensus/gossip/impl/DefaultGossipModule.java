@@ -37,7 +37,7 @@ import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 import org.hiero.consensus.status.StatusMonitorModule;
@@ -155,7 +155,7 @@ public final class DefaultGossipModule implements GossipModule {
      */
     @Override
     @NonNull
-    public InputWire<PlatformStatus> platformStatusInputWire() {
+    public InputWire<ConsensusLayerStatus> platformStatusInputWire() {
         return requireNonNull(gossipWiring, "Not initialized").getPlatformStatusInput();
     }
 

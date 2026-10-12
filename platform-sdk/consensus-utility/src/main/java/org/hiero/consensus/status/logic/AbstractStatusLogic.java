@@ -4,7 +4,7 @@ package org.hiero.consensus.status.logic;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.IllegalPlatformStatusException;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
@@ -23,20 +23,20 @@ import org.hiero.consensus.status.actions.TimeElapsedAction;
  * most statuses, so that a concrete subclass only overrides the hooks for the actions that actually drive its logic.
  * The defaults are:
  * <ul>
- *     <li>a {@link CatastrophicFailureAction} transitions to {@link PlatformStatus#CATASTROPHIC_FAILURE};</li>
- *     <li>a {@link FreezeCompleteAction} transitions to {@link PlatformStatus#FREEZE_COMPLETE} when it is a freeze
+ *     <li>a {@link CatastrophicFailureAction} transitions to {@link ConsensusLayerStatus#CATASTROPHIC_FAILURE};</li>
+ *     <li>a {@link FreezeCompleteAction} transitions to {@link ConsensusLayerStatus#FREEZE_COMPLETE} when it is a freeze
  *     state, otherwise it has no effect;</li>
  *     <li>a {@link TimeElapsedAction} and a {@link SelfEventReachedConsensusAction} have no effect;</li>
  *     <li>every other action is illegal and throws an {@link IllegalPlatformStatusException}.</li>
  * </ul>
- * Terminal statuses ({@link PlatformStatus#CATASTROPHIC_FAILURE}, {@link PlatformStatus#FREEZE_COMPLETE}) ignore every
+ * Terminal statuses ({@link ConsensusLayerStatus#CATASTROPHIC_FAILURE}, {@link ConsensusLayerStatus#FREEZE_COMPLETE}) ignore every
  * action, so they implement {@link PlatformStatusLogic} directly rather than extending this class.
  */
 public abstract class AbstractStatusLogic implements PlatformStatusLogic {
 
-    private final PlatformStatus status;
+    private final ConsensusLayerStatus status;
 
-    protected AbstractStatusLogic(@NonNull final PlatformStatus status) {
+    protected AbstractStatusLogic(@NonNull final ConsensusLayerStatus status) {
         this.status = Objects.requireNonNull(status);
     }
 
@@ -57,7 +57,7 @@ public abstract class AbstractStatusLogic implements PlatformStatusLogic {
 
     @NonNull
     @Override
-    public final PlatformStatus getStatus() {
+    public final ConsensusLayerStatus getStatus() {
         return status;
     }
 

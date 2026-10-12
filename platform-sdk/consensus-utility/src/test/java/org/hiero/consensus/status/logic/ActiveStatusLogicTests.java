@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.hiero.consensus.config.PlatformStatusConfig;
 import org.hiero.consensus.config.PlatformStatusConfig_;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -47,7 +47,7 @@ class ActiveStatusLogicTests {
     @Test
     @DisplayName("Go to FREEZING")
     void toFreezing() {
-        assertTransition(logic, new FreezePeriodEnteredAction(0), PlatformStatus.FREEZING);
+        assertTransition(logic, new FreezePeriodEnteredAction(0), ConsensusLayerStatus.FREEZING);
     }
 
     @Test
@@ -68,25 +68,25 @@ class ActiveStatusLogicTests {
         assertNoTransition(logic, new TimeElapsedAction(time.now(), neutralQuiescingStatus), logic.getStatus());
 
         time.tick(Duration.ofSeconds(2));
-        assertTransition(logic, new TimeElapsedAction(time.now(), neutralQuiescingStatus), PlatformStatus.CHECKING);
+        assertTransition(logic, new TimeElapsedAction(time.now(), neutralQuiescingStatus), ConsensusLayerStatus.CHECKING);
     }
 
     @Test
     @DisplayName("Go to BEHIND")
     void toBehind() {
-        assertTransition(logic, new FallenBehindAction(), PlatformStatus.BEHIND);
+        assertTransition(logic, new FallenBehindAction(), ConsensusLayerStatus.BEHIND);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Go to FREEZE_COMPLETE")
     void toFreezeComplete() {
-        assertTransition(logic, new FreezeCompleteAction(), PlatformStatus.FREEZE_COMPLETE);
+        assertTransition(logic, new FreezeCompleteAction(), ConsensusLayerStatus.FREEZE_COMPLETE);
     }
 
     @Test
@@ -128,16 +128,16 @@ class ActiveStatusLogicTests {
         final QuiescingStatus oldQuiescenceStatus = new QuiescingStatus(false, time.now());
         time.tick(Duration.ofSeconds(6));
         // Should transition to CHECKING when enough time has passed since both quiescence command and consensus
-        assertTransition(logic, new TimeElapsedAction(time.now(), oldQuiescenceStatus), PlatformStatus.CHECKING);
+        assertTransition(logic, new TimeElapsedAction(time.now(), oldQuiescenceStatus), ConsensusLayerStatus.CHECKING);
     }
 
     @Test
     @DisplayName("Go to CHECKING when sufficient time since quiescence command and consensus")
     void toCheckingWhenSufficientTimeSinceBothQuiescenceCommandAndConsensus() {
         final QuiescingStatus oldQuiescenceStatus = new QuiescingStatus(false, time.now());
-        assertNoTransition(logic, new SelfEventReachedConsensusAction(time.now()), PlatformStatus.ACTIVE);
+        assertNoTransition(logic, new SelfEventReachedConsensusAction(time.now()), ConsensusLayerStatus.ACTIVE);
         time.tick(Duration.ofSeconds(6));
         // Should transition to CHECKING when enough time has passed since both quiescence command and consensus
-        assertTransition(logic, new TimeElapsedAction(time.now(), oldQuiescenceStatus), PlatformStatus.CHECKING);
+        assertTransition(logic, new TimeElapsedAction(time.now(), oldQuiescenceStatus), ConsensusLayerStatus.CHECKING);
     }
 }

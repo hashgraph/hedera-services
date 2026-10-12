@@ -42,7 +42,7 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.roster.RosterUtils;
 import org.hiero.consensus.status.StatusMonitorModule;
@@ -61,8 +61,8 @@ public class SyncGossipModular implements Gossip {
     private final FallenBehindMonitor fallenBehindMonitor;
     private final ShadowgraphSynchronizer synchronizer;
     private final ReconnectProxyProtocolFactory proxyProtocolFactory;
-    private final AtomicReference<PlatformStatus> platformStatusHolder =
-            new AtomicReference<>(PlatformStatus.STARTING_UP);
+    private final AtomicReference<ConsensusLayerStatus> platformStatusHolder =
+            new AtomicReference<>(ConsensusLayerStatus.STARTING_UP);
     private final AtomicReference<EventWindow> eventWindowHolder =
             new AtomicReference<>(EventWindow.getGenesisEventWindow());
 
@@ -211,7 +211,7 @@ public class SyncGossipModular implements Gossip {
             @NonNull final BindableInputWire<NoInput, Void> pauseGossip,
             @NonNull final BindableInputWire<NoInput, Void> resumeGossip,
             @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
-            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput,
+            @NonNull final BindableInputWire<ConsensusLayerStatus, Void> platformStatusInput,
             @NonNull final StandardOutputWire<SyncProgress> syncLagOutput) {
 
         startInput.bindConsumer(ignored -> {

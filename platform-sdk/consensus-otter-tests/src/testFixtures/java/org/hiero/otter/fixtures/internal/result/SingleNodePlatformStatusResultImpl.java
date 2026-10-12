@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.result.PlatformStatusSubscriber;
 import org.hiero.otter.fixtures.result.SingleNodePlatformStatusResult;
 
@@ -44,7 +44,7 @@ public class SingleNodePlatformStatusResultImpl implements SingleNodePlatformSta
      */
     @Override
     @NonNull
-    public List<PlatformStatus> statusProgression() {
+    public List<ConsensusLayerStatus> statusProgression() {
         return collector.currentStatusProgression(startIndex);
     }
 
@@ -52,7 +52,7 @@ public class SingleNodePlatformStatusResultImpl implements SingleNodePlatformSta
      * {@inheritDoc}
      */
     @Override
-    public @Nullable PlatformStatus currentStatus() {
+    public @Nullable ConsensusLayerStatus currentStatus() {
         return statusProgression().getLast();
     }
 

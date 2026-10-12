@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
@@ -180,6 +180,6 @@ public class NodeDeathReconnectBlockNodeSuite implements LifecycleTest {
                 waitForActive(allNodes(), RESTART_TO_ACTIVE_TIMEOUT),
                 doingContextual(spec -> time.set(Instant.now())),
                 burstOfTps(MIXED_OPS_BURST_TPS, Duration.ofSeconds(20)),
-                waitForAny(allNodes(), Duration.ofSeconds(120), PlatformStatus.CHECKING));
+                waitForAny(allNodes(), Duration.ofSeconds(120), ConsensusLayerStatus.CHECKING));
     }
 }

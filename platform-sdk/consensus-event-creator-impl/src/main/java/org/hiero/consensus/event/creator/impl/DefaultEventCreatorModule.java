@@ -31,7 +31,7 @@ import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 
 /**
@@ -143,7 +143,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
      */
     @Override
     @NonNull
-    public InputWire<PlatformStatus> platformStatusInputWire() {
+    public InputWire<ConsensusLayerStatus> platformStatusInputWire() {
         return requireNonNull(eventCreationManagerWiring, "Not initialized")
                 .getInputWire(EventCreationManager::updatePlatformStatus, "PlatformStatus");
     }

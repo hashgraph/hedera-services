@@ -2,12 +2,12 @@
 package org.hiero.consensus.status.logic;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.IllegalPlatformStatusException;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 
 /**
- * Interface representing the state machine logic for an individual {@link PlatformStatus}.
+ * Interface representing the state machine logic for an individual {@link ConsensusLayerStatus}.
  * <p>
  * {@link #process(PlatformStatusAction)} behaves in the following way:
  * <ul>
@@ -39,5 +39,5 @@ public interface PlatformStatusLogic {
      * @return the status that this logic is for
      */
     @NonNull
-    PlatformStatus getStatus();
+    ConsensusLayerStatus getStatus();
 }

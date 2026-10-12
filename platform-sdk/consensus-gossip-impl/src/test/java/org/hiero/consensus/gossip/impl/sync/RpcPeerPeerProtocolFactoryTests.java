@@ -33,7 +33,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.roster.test.fixtures.RosterFactory;
 import org.hiero.consensus.test.fixtures.Randotron;
 import org.junit.jupiter.api.Test;
@@ -82,7 +82,7 @@ public class RpcPeerPeerProtocolFactoryTests {
                     selfId,
                     executor,
                     () -> false,
-                    () -> PlatformStatus.ACTIVE,
+                    () -> ConsensusLayerStatus.ACTIVE,
                     permitProvider,
                     new NetworkMetrics(metrics, selfId, peers),
                     Time.getCurrent(),

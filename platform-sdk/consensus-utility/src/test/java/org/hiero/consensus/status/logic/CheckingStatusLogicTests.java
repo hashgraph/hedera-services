@@ -10,7 +10,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.Duration;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -40,31 +40,31 @@ class CheckingStatusLogicTests {
     @Test
     @DisplayName("Go to FREEZING")
     void toFreezing() {
-        assertTransition(logic, new FreezePeriodEnteredAction(0), PlatformStatus.FREEZING);
+        assertTransition(logic, new FreezePeriodEnteredAction(0), ConsensusLayerStatus.FREEZING);
     }
 
     @Test
     @DisplayName("Go to BEHIND")
     void toBehind() {
-        assertTransition(logic, new FallenBehindAction(), PlatformStatus.BEHIND);
+        assertTransition(logic, new FallenBehindAction(), ConsensusLayerStatus.BEHIND);
     }
 
     @Test
     @DisplayName("Go to ACTIVE")
     void toActive() {
-        assertTransition(logic, new SelfEventReachedConsensusAction(time.now()), PlatformStatus.ACTIVE);
+        assertTransition(logic, new SelfEventReachedConsensusAction(time.now()), ConsensusLayerStatus.ACTIVE);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
     @DisplayName("Go to FREEZE_COMPLETE")
     void toFreezeComplete() {
-        assertTransition(logic, new FreezeCompleteAction(), PlatformStatus.FREEZE_COMPLETE);
+        assertTransition(logic, new FreezeCompleteAction(), ConsensusLayerStatus.FREEZE_COMPLETE);
     }
 
     @Test
@@ -87,7 +87,7 @@ class CheckingStatusLogicTests {
         assertTransition(
                 logic,
                 new TimeElapsedAction(time.now(), new TimeElapsedAction.QuiescingStatus(true, time.now())),
-                PlatformStatus.ACTIVE);
+                ConsensusLayerStatus.ACTIVE);
     }
 
     @Test
@@ -96,12 +96,12 @@ class CheckingStatusLogicTests {
         assertTransition(
                 logic,
                 new TimeElapsedAction(time.now(), new TimeElapsedAction.QuiescingStatus(false, time.now())),
-                PlatformStatus.CHECKING);
+                ConsensusLayerStatus.CHECKING);
         time.tick(Duration.ofSeconds(6));
         // Should transition to ACTIVE when quiescing
         assertTransition(
                 logic,
                 new TimeElapsedAction(time.now(), new TimeElapsedAction.QuiescingStatus(false, time.now())),
-                PlatformStatus.CHECKING);
+                ConsensusLayerStatus.CHECKING);
     }
 }

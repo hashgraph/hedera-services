@@ -5,14 +5,14 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * An implementation of {@link CurrentPlatformStatus} that uses the {@link Platform} to get the current status.
  */
 @Singleton
 public class CurrentPlatformStatusImpl implements CurrentPlatformStatus {
-    private volatile PlatformStatus status = PlatformStatus.STARTING_UP;
+    private volatile ConsensusLayerStatus status = ConsensusLayerStatus.STARTING_UP;
 
     public CurrentPlatformStatusImpl(@NonNull final Platform platform) {
         platform.getNotificationEngine()
@@ -21,7 +21,7 @@ public class CurrentPlatformStatusImpl implements CurrentPlatformStatus {
 
     @NonNull
     @Override
-    public PlatformStatus get() {
+    public ConsensusLayerStatus get() {
         return status;
     }
 }

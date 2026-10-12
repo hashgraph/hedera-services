@@ -12,7 +12,7 @@ import org.hiero.consensus.hashgraph.HashgraphModule;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.pces.PcesModule;
 
 /**
@@ -157,13 +157,13 @@ public class ConsensusLayerWiring {
     private static void wirePlatformMonitorOutputs(
             @NonNull final ExecutionLayerCallbacks executionLayerCallbacks,
             @NonNull final ConsensusLayerBuildingBlocks buildingBlocks) {
-        final OutputWire<PlatformStatus> platformStatus =
+        final OutputWire<ConsensusLayerStatus> platformStatus =
                 buildingBlocks.statusMonitorModule().platformStatusOutputWire();
 
         platformStatus.solderTo(buildingBlocks.eventCreatorModule().platformStatusInputWire());
         platformStatus.solderTo(buildingBlocks.hashgraphModule().platformStatusInputWire(), INJECT);
         platformStatus.solderTo(buildingBlocks.gossipModule().platformStatusInputWire(), INJECT);
         platformStatus.solderTo(
-                "ExecutionStatusHandler", "status updates", executionLayerCallbacks::onPlatformStatusChange);
+                "ExecutionStatusHandler", "status updates", executionLayerCallbacks::onConsensusLayerStatusChange);
     }
 }

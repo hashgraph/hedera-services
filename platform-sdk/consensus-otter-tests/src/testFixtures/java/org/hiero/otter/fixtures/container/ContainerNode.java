@@ -46,7 +46,7 @@ import org.hiero.consensus.event.stream.config.EventConfig;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.Node;
 import org.hiero.otter.fixtures.ProfilerEvent;
 import org.hiero.otter.fixtures.TimeManager;
@@ -314,7 +314,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
                     .build();
             // Unary call – will throw if server returns an error.
             containerControlBlockingStub.withDeadlineAfter(timeout).killImmediately(request);
-            platformStatus = null;
+            consensusLayerStatus = null;
 
             log.info("Node {} has been killed", selfId);
         } catch (final Exception e) {
@@ -401,7 +401,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
                 containerControlBlockingStub.nodePing(Empty.newBuilder().build());
         if (!response.getAlive()) {
             lifeCycle = SHUTDOWN;
-            platformStatus = null;
+            consensusLayerStatus = null;
             if (eventStreamClient != null) {
                 eventStreamClient.close();
             }
@@ -579,7 +579,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
         }
 
         resultsCollector.destroy();
-        platformStatus = null;
+        consensusLayerStatus = null;
         lifeCycle = DESTROYED;
     }
 
@@ -722,8 +722,8 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
         final String statusName = change.getNewStatus();
         log.info("Received platform status change from node {}: {}", selfId, statusName);
         try {
-            final PlatformStatus newStatus = PlatformStatus.valueOf(statusName);
-            platformStatus = newStatus;
+            final ConsensusLayerStatus newStatus = ConsensusLayerStatus.valueOf(statusName);
+            consensusLayerStatus = newStatus;
             resultsCollector.addPlatformStatus(newStatus);
         } catch (final IllegalArgumentException e) {
             log.warn("Received unknown platform status: {}", statusName);
@@ -731,7 +731,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
     }
 
     /**
-     * Applies the status snapshot carried by a sync point to the cached {@link #platformStatus}. A sync
+     * Applies the status snapshot carried by a sync point to the cached {@link #consensusLayerStatus}. A sync
      * point is a snapshot delivered at the start of a (re-)subscription, not a transition, so it is
      * deliberately <em>not</em> added to the results collector's status progression; doing so would
      * inject a phantom transition on every reconnect.
@@ -744,7 +744,7 @@ public class ContainerNode extends AbstractNode implements Node, TimeTickReceive
         }
         log.info("Received sync point from node {} with current status: {}", selfId, statusName);
         try {
-            platformStatus = PlatformStatus.valueOf(statusName);
+            consensusLayerStatus = ConsensusLayerStatus.valueOf(statusName);
         } catch (final IllegalArgumentException e) {
             log.warn("Received unknown platform status in sync point: {}", statusName);
         }

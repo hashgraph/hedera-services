@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.IllegalPlatformStatusException;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 
@@ -28,9 +28,9 @@ public class StatusLogicTestUtils {
     public static void assertTransition(
             @NonNull final PlatformStatusLogic logic,
             @NonNull final PlatformStatusAction action,
-            @NonNull final PlatformStatus expectedStatus) {
+            @NonNull final ConsensusLayerStatus expectedStatus) {
 
-        final PlatformStatus newStatus = logic.process(action).getStatus();
+        final ConsensusLayerStatus newStatus = logic.process(action).getStatus();
         assertEquals(expectedStatus, newStatus);
     }
 
@@ -44,9 +44,9 @@ public class StatusLogicTestUtils {
     public static void assertNoTransition(
             @NonNull final PlatformStatusLogic logic,
             @NonNull final PlatformStatusAction action,
-            @NonNull final PlatformStatus originalStatus) {
+            @NonNull final ConsensusLayerStatus originalStatus) {
 
-        final PlatformStatus newStatus = logic.process(action).getStatus();
+        final ConsensusLayerStatus newStatus = logic.process(action).getStatus();
         assertEquals(originalStatus, newStatus);
     }
 
@@ -60,7 +60,7 @@ public class StatusLogicTestUtils {
     public static void assertException(
             @NonNull final PlatformStatusLogic logic,
             @NonNull final PlatformStatusAction action,
-            @NonNull final PlatformStatus originalStatus) {
+            @NonNull final ConsensusLayerStatus originalStatus) {
 
         assertThrows(
                 IllegalPlatformStatusException.class,

@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import org.hiero.consensus.main.model.TimestampedTransaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.transaction.TransactionPoolNexus;
 import org.hiero.sloth.fixtures.SlothTransactionType;
 import org.hiero.sloth.fixtures.TransactionFactory;
@@ -110,8 +110,8 @@ public class SlothExecutionLayer implements ExecutionLayer {
 
     /** {@inheritDoc} */
     @Override
-    public void newPlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        transactionPool.updatePlatformStatus(platformStatus);
+    public void newPlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        transactionPool.updatePlatformStatus(consensusLayerStatus);
     }
 
     /** {@inheritDoc} */

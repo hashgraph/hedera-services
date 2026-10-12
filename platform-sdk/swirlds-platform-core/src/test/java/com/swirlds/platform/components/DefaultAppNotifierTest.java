@@ -28,7 +28,7 @@ import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.notification.IssNotification;
 import org.hiero.consensus.model.notification.IssNotification.IssType;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,7 +79,7 @@ public class DefaultAppNotifierTest {
 
     @Test
     void testPlatformStatusChangeNotificationSent() {
-        final PlatformStatus status = PlatformStatus.ACTIVE;
+        final ConsensusLayerStatus status = ConsensusLayerStatus.ACTIVE;
         final ArgumentCaptor<PlatformStatusChangeNotification> captor =
                 ArgumentCaptor.forClass(PlatformStatusChangeNotification.class);
 

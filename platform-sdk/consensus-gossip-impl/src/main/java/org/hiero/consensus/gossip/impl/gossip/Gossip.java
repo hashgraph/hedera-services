@@ -10,7 +10,7 @@ import java.time.Duration;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Implements gossip with network peers.
@@ -46,6 +46,6 @@ public interface Gossip {
             @NonNull BindableInputWire<NoInput, Void> pauseInput,
             @NonNull BindableInputWire<NoInput, Void> resumeInput,
             @NonNull BindableInputWire<Duration, Void> systemHealthInput,
-            @NonNull BindableInputWire<PlatformStatus, Void> platformStatusInput,
+            @NonNull BindableInputWire<ConsensusLayerStatus, Void> platformStatusInput,
             @NonNull StandardOutputWire<SyncProgress> syncProgressOutput);
 }

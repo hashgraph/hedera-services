@@ -5,7 +5,7 @@ import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.hashgraph.impl.DefaultConsensusEngineBuffer.ConsensusEngineBufferOutput;
 import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 public interface ConsensusEngineBuffer {
 
@@ -17,5 +17,5 @@ public interface ConsensusEngineBuffer {
 
     void outOfBandSnapshotUpdate(@NonNull ConsensusSnapshot snapshot);
 
-    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+    void updatePlatformStatus(@NonNull ConsensusLayerStatus consensusLayerStatus);
 }

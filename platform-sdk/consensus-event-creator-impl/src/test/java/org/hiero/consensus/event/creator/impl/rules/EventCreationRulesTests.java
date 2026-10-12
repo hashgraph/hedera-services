@@ -2,9 +2,9 @@
 package org.hiero.consensus.event.creator.impl.rules;
 
 import static org.hiero.base.utility.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.consensus.event.creator.config.EventCreationConfig_;
 import org.hiero.consensus.event.creator.impl.EventCreator;
 import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -117,11 +117,11 @@ class EventCreationRulesTests {
 
         final PlatformStatusRule rule = new PlatformStatusRule();
 
-        for (final PlatformStatus platformStatus : PlatformStatus.values()) {
+        for (final ConsensusLayerStatus consensusLayerStatus : ConsensusLayerStatus.values()) {
 
-            rule.setPlatformStatus(platformStatus);
+            rule.setPlatformStatus(consensusLayerStatus);
 
-            if (platformStatus == ACTIVE || platformStatus == CHECKING || platformStatus == FREEZING) {
+            if (consensusLayerStatus == ACTIVE || consensusLayerStatus == CHECKING || consensusLayerStatus == FREEZING) {
                 assertTrue(rule.isEventCreationPermitted());
             } else {
                 assertFalse(rule.isEventCreationPermitted());

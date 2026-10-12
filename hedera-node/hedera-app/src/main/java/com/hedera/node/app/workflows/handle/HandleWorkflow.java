@@ -19,7 +19,7 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.time.Instant.EPOCH;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.isFreezeRound;
 
 import com.hedera.hapi.block.stream.BlockItem;

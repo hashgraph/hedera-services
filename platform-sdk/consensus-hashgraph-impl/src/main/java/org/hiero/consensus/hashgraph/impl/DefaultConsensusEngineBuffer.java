@@ -16,7 +16,7 @@ import org.hiero.consensus.event.FutureEventBufferingOption;
 import org.hiero.consensus.hashgraph.config.ConsensusConfig;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.round.EventWindowUtils;
 
 public class DefaultConsensusEngineBuffer implements ConsensusEngineBuffer {
@@ -128,7 +128,7 @@ public class DefaultConsensusEngineBuffer implements ConsensusEngineBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
-        consensusEngine.updatePlatformStatus(platformStatus);
+    public void updatePlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        consensusEngine.updatePlatformStatus(consensusLayerStatus);
     }
 }

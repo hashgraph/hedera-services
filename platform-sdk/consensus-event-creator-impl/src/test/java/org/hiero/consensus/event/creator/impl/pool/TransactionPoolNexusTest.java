@@ -14,7 +14,7 @@ import java.util.List;
 import org.hiero.base.utility.ByteUtils;
 import org.hiero.consensus.main.model.TimestampedTransaction;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.test.fixtures.Randotron;
 import org.hiero.consensus.transaction.TransactionLimits;
 import org.hiero.consensus.transaction.TransactionPoolNexus;
@@ -43,7 +43,7 @@ class TransactionPoolNexusTest {
                 TransactionPoolNexus.DEFAULT_MAXIMUM_PERMISSIBLE_UNHEALTHY_DURATION,
                 new NoOpMetrics(),
                 fakeTime);
-        nexus.updatePlatformStatus(PlatformStatus.ACTIVE);
+        nexus.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
     }
 
     @ParameterizedTest
@@ -112,7 +112,7 @@ class TransactionPoolNexusTest {
 
     @Test
     void testTransactionTimestamps() {
-        nexus.updatePlatformStatus(PlatformStatus.ACTIVE);
+        nexus.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
 
         // Record the initial time and advance it slightly to establish baseline
         final Instant initialTime = fakeTime.now();
@@ -202,7 +202,7 @@ class TransactionPoolNexusTest {
         final TransactionLimits txConfig = new TransactionLimits(TX_MAX_BYTES, MAX_TX_BYTES_PER_EVENT);
         final var tolerantNexus =
                 new TransactionPoolNexus(txConfig, TX_QUEUE_SIZE, Duration.ofSeconds(5), new NoOpMetrics(), fakeTime);
-        tolerantNexus.updatePlatformStatus(PlatformStatus.ACTIVE);
+        tolerantNexus.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
 
         final Bytes tx = Bytes.wrap(new byte[] {1, 2, 3});
 

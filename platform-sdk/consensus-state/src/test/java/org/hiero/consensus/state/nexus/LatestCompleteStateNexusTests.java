@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 import org.hiero.consensus.state.signed.SignedState;
 import org.hiero.consensus.state.test.fixtures.RandomSignedStateGenerator;
@@ -36,7 +36,7 @@ public class LatestCompleteStateNexusTests {
             nexus.setState(reservationForNexus);
             assertEquals(2, state.getReservationCount(), "There should be 2 reservations: test and nexus");
 
-            nexus.updatePlatformStatus(PlatformStatus.FREEZING);
+            nexus.updatePlatformStatus(ConsensusLayerStatus.FREEZING);
             assertEquals(
                     1,
                     state.getReservationCount(),
@@ -64,8 +64,8 @@ public class LatestCompleteStateNexusTests {
             nexus.setState(reservationForNexus);
             assertEquals(1, state.getReservationCount(), "There should be 1 reservation: nexus");
 
-            for (final PlatformStatus status : PlatformStatus.values()) {
-                if (!PlatformStatus.FREEZING.equals(status)) {
+            for (final ConsensusLayerStatus status : ConsensusLayerStatus.values()) {
+                if (!ConsensusLayerStatus.FREEZING.equals(status)) {
                     nexus.updatePlatformStatus(status);
                     assertEquals(
                             1,

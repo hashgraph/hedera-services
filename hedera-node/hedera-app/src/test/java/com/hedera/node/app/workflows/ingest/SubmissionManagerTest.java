@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import org.hiero.consensus.metrics.SpeedometerMetric;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.transaction.TransactionLimits;
 import org.hiero.consensus.transaction.TransactionPoolNexus;
 import org.junit.jupiter.api.BeforeEach;
@@ -356,7 +356,7 @@ final class SubmissionManagerTest extends AppTestBase {
                     TransactionPoolNexus.DEFAULT_MAXIMUM_PERMISSIBLE_UNHEALTHY_DURATION,
                     new NoOpMetrics(),
                     new FakeTime());
-            realPool.updatePlatformStatus(PlatformStatus.ACTIVE);
+            realPool.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
 
             final var submissionManager = new SubmissionManager(realPool, deduplicationCache, config, mockedMetrics);
 
@@ -376,7 +376,7 @@ final class SubmissionManagerTest extends AppTestBase {
             // Given a real TransactionPoolNexus with a 5-second threshold (CI override)
             final var tolerantPool = new TransactionPoolNexus(
                     TX_LIMITS, TX_QUEUE_SIZE, Duration.ofSeconds(5), new NoOpMetrics(), new FakeTime());
-            tolerantPool.updatePlatformStatus(PlatformStatus.ACTIVE);
+            tolerantPool.updatePlatformStatus(ConsensusLayerStatus.ACTIVE);
 
             final var submissionManager =
                     new SubmissionManager(tolerantPool, deduplicationCache, config, mockedMetrics);

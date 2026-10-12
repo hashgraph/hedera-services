@@ -5,7 +5,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import org.hiero.consensus.main.model.NodeId;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Interface that provides access to the status progression results of a node.
@@ -28,7 +28,7 @@ public interface SingleNodePlatformStatusResult extends OtterResult {
      * @return the list of platform status
      */
     @NonNull
-    List<PlatformStatus> statusProgression();
+    List<ConsensusLayerStatus> statusProgression();
 
     /**
      * Returns the current platform status of the node.
@@ -38,10 +38,10 @@ public interface SingleNodePlatformStatusResult extends OtterResult {
      * @return the current platform status, or {@code null} if no status has been recorded
      */
     @Nullable
-    PlatformStatus currentStatus();
+    ConsensusLayerStatus currentStatus();
 
     /**
-     * Subscribes to {@link PlatformStatus} changes a node goes through.
+     * Subscribes to {@link ConsensusLayerStatus} changes a node goes through.
      *
      * <p>The subscriber will be notified every time the status of the node changes.
      *

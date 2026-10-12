@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.sloth.fixtures.Node;
 import org.hiero.sloth.fixtures.ProfilerEvent;
 import org.hiero.sloth.fixtures.SlothTransactionType;
@@ -306,7 +306,7 @@ public class RemoteNode extends AbstractNode implements Node, TimeTickReceiver {
                     .setTimeoutSeconds((int) timeout.getSeconds())
                     .build();
             containerControlBlockingStub.withDeadlineAfter(timeout).killImmediately(request);
-            platformStatus = null;
+            consensusLayerStatus = null;
             log.info("Node {} has been killed", selfId);
         } catch (final Exception e) {
             fail("Failed to kill node %d immediately".formatted(selfId.id()), e);
@@ -375,7 +375,7 @@ public class RemoteNode extends AbstractNode implements Node, TimeTickReceiver {
                 containerControlBlockingStub.nodePing(Empty.newBuilder().build());
         if (!response.getAlive()) {
             lifeCycle = SHUTDOWN;
-            platformStatus = null;
+            consensusLayerStatus = null;
         }
         return response.getAlive();
     }
@@ -440,7 +440,7 @@ public class RemoteNode extends AbstractNode implements Node, TimeTickReceiver {
         }
 
         resultsCollector.destroy();
-        platformStatus = null;
+        consensusLayerStatus = null;
         lifeCycle = DESTROYED;
     }
 
@@ -515,8 +515,8 @@ public class RemoteNode extends AbstractNode implements Node, TimeTickReceiver {
         final String statusName = change.getNewStatus();
         log.info("Received platform status change from node {}: {}", selfId, statusName);
         try {
-            final PlatformStatus newStatus = PlatformStatus.valueOf(statusName);
-            platformStatus = newStatus;
+            final ConsensusLayerStatus newStatus = ConsensusLayerStatus.valueOf(statusName);
+            consensusLayerStatus = newStatus;
             resultsCollector.addPlatformStatus(newStatus);
         } catch (final IllegalArgumentException e) {
             log.warn("Received unknown platform status: {}", statusName);

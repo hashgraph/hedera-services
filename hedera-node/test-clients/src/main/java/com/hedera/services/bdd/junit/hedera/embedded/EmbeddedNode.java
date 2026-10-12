@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * A node running in the same OS process as the JUnit test runner, with a direct reference
@@ -95,7 +95,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
 
     @Override
     public CompletableFuture<Void> statusFuture(
-            @Nullable final Consumer<NodeStatus> nodeStatusObserver, @NonNull final PlatformStatus... statuses) {
+            @Nullable final Consumer<NodeStatus> nodeStatusObserver, @NonNull final ConsensusLayerStatus... statuses) {
         throw new UnsupportedOperationException("Prefer awaiting status of the embedded network");
     }
 

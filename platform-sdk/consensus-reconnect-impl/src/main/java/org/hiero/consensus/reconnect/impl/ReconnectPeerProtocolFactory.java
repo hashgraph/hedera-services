@@ -15,7 +15,7 @@ import org.hiero.consensus.concurrent.manager.ThreadManager;
 import org.hiero.consensus.gossip.ReservedSignedStateResult;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.signed.ReservedSignedState;
 
 /**
@@ -26,7 +26,7 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
     private final Configuration configuration;
     private final Metrics metrics;
     private final Time time;
-    private final Supplier<PlatformStatus> platformStatusSupplier;
+    private final Supplier<ConsensusLayerStatus> platformStatusSupplier;
     private final ThreadManager threadManager;
     private final ReconnectStateTeacherThrottle reconnectStateTeacherThrottle;
     private final ReconnectMetrics reconnectMetrics;
@@ -46,7 +46,7 @@ public class ReconnectPeerProtocolFactory implements PeerProtocolFactory {
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final BlockingResourceProvider<ReservedSignedStateResult> reservedSignedStateResultPromise,
             @NonNull final StateLifecycleManager stateLifecycleManager,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
+            @NonNull final Supplier<ConsensusLayerStatus> platformStatusSupplier) {
 
         this.configuration = requireNonNull(configuration);
         this.metrics = requireNonNull(metrics);

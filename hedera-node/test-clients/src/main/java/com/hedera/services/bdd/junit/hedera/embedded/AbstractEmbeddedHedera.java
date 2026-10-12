@@ -8,8 +8,8 @@ import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.InitTrigger.RESTART;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
 import static org.hiero.consensus.roster.RosterUtils.rosterFrom;
 
 import com.hedera.hapi.node.base.SemanticVersion;

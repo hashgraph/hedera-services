@@ -18,7 +18,7 @@ import java.time.Instant;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.IllegalPlatformStatusException;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 import org.hiero.consensus.status.logic.PlatformStatusLogic;
@@ -90,7 +90,7 @@ public class StatusStateMachine {
      * @return the new status after processing the action, or null if the status did not change
      */
     @Nullable
-    public PlatformStatus submitStatusAction(@NonNull final PlatformStatusAction action) {
+    public ConsensusLayerStatus submitStatusAction(@NonNull final PlatformStatusAction action) {
         requireNonNull(action);
 
         final PlatformStatusLogic newLogic = getNewLogic(action);
@@ -115,7 +115,7 @@ public class StatusStateMachine {
 
         currentStatusLogic = newLogic;
 
-        final PlatformStatus newStatus = currentStatusLogic.getStatus();
+        final ConsensusLayerStatus newStatus = currentStatusLogic.getStatus();
         currentStatusStartTime = time.now();
 
         metrics.setCurrentStatus(newStatus);

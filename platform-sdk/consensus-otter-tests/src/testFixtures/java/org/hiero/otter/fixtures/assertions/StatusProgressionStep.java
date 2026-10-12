@@ -9,7 +9,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Helper class that defines a step in the status progression of a node.
@@ -20,14 +20,14 @@ import org.hiero.consensus.model.status.PlatformStatus;
  */
 public class StatusProgressionStep {
 
-    private final EnumSet<PlatformStatus> targets;
-    private final EnumSet<PlatformStatus> requiredInterim;
-    private final EnumSet<PlatformStatus> optionalInterim;
+    private final EnumSet<ConsensusLayerStatus> targets;
+    private final EnumSet<ConsensusLayerStatus> requiredInterim;
+    private final EnumSet<ConsensusLayerStatus> optionalInterim;
 
     private StatusProgressionStep(
-            @NonNull final EnumSet<PlatformStatus> targets,
-            @NonNull final EnumSet<PlatformStatus> requiredInterim,
-            @NonNull final EnumSet<PlatformStatus> optionalInterim) {
+            @NonNull final EnumSet<ConsensusLayerStatus> targets,
+            @NonNull final EnumSet<ConsensusLayerStatus> requiredInterim,
+            @NonNull final EnumSet<ConsensusLayerStatus> optionalInterim) {
         this.targets = requireNonNull(targets);
         this.requiredInterim = requireNonNull(requiredInterim);
         this.optionalInterim = requireNonNull(optionalInterim);
@@ -39,7 +39,7 @@ public class StatusProgressionStep {
      * @return the target status
      */
     @NonNull
-    public Set<PlatformStatus> targets() {
+    public Set<ConsensusLayerStatus> targets() {
         return targets;
     }
 
@@ -49,7 +49,7 @@ public class StatusProgressionStep {
      * @return the required interim statuses as an immutable {@link Set}
      */
     @NonNull
-    public Set<PlatformStatus> requiredInterim() {
+    public Set<ConsensusLayerStatus> requiredInterim() {
         return unmodifiableSet(requiredInterim);
     }
 
@@ -59,7 +59,7 @@ public class StatusProgressionStep {
      * @return the optional interim statuses as an immutable {@link Set}
      */
     @NonNull
-    public Set<PlatformStatus> optionalInterim() {
+    public Set<ConsensusLayerStatus> optionalInterim() {
         return unmodifiableSet(optionalInterim);
     }
 
@@ -69,9 +69,9 @@ public class StatusProgressionStep {
      * @param target the target status
      * @return a new instance of {@link StatusProgressionStep}
      */
-    public static StatusProgressionStep target(@NonNull final PlatformStatus target) {
+    public static StatusProgressionStep target(@NonNull final ConsensusLayerStatus target) {
         return new StatusProgressionStep(
-                EnumSet.of(target), EnumSet.noneOf(PlatformStatus.class), EnumSet.noneOf(PlatformStatus.class));
+                EnumSet.of(target), EnumSet.noneOf(ConsensusLayerStatus.class), EnumSet.noneOf(ConsensusLayerStatus.class));
     }
 
     /**
@@ -83,9 +83,10 @@ public class StatusProgressionStep {
      * @return a new instance of {@link StatusProgressionStep}
      */
     public static StatusProgressionStep targets(
-            @NonNull final PlatformStatus first, @NonNull final PlatformStatus... rest) {
+            @NonNull final ConsensusLayerStatus first, @NonNull final ConsensusLayerStatus... rest) {
         return new StatusProgressionStep(
-                EnumSet.of(first, rest), EnumSet.noneOf(PlatformStatus.class), EnumSet.noneOf(PlatformStatus.class));
+                EnumSet.of(first, rest), EnumSet.noneOf(ConsensusLayerStatus.class), EnumSet.noneOf(
+                ConsensusLayerStatus.class));
     }
 
     /**
@@ -97,10 +98,10 @@ public class StatusProgressionStep {
      * @return a new instance of {@link StatusProgressionStep} with the specified required interim status
      */
     public StatusProgressionStep requiringInterim(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
         requireNonNull(first);
 
-        final EnumSet<PlatformStatus> newRequiredInterim = EnumSet.copyOf(requiredInterim);
+        final EnumSet<ConsensusLayerStatus> newRequiredInterim = EnumSet.copyOf(requiredInterim);
         newRequiredInterim.add(first);
         if (rest != null) {
             newRequiredInterim.addAll(Arrays.asList(rest));
@@ -118,10 +119,10 @@ public class StatusProgressionStep {
      * @return a new instance of {@link StatusProgressionStep} with the specified optional interim status
      */
     public StatusProgressionStep optionalInterim(
-            @NonNull final PlatformStatus first, @Nullable final PlatformStatus... rest) {
+            @NonNull final ConsensusLayerStatus first, @Nullable final ConsensusLayerStatus... rest) {
         requireNonNull(first);
 
-        final EnumSet<PlatformStatus> newOptionalInterim = EnumSet.copyOf(optionalInterim);
+        final EnumSet<ConsensusLayerStatus> newOptionalInterim = EnumSet.copyOf(optionalInterim);
         newOptionalInterim.add(first);
         if (rest != null) {
             newOptionalInterim.addAll(Arrays.asList(rest));

@@ -68,7 +68,7 @@ import org.hiero.consensus.status.StatusMonitorModule;
 import org.hiero.consensus.transaction.TransactionLimits;
 
 /**
- * A factory used to construct the consensus layer as specified in the final architecture document.
+ * A factory used to construct the {@link ConsensusLayer}.
  */
 public class ConsensusLayerFactory {
 
@@ -162,9 +162,9 @@ public class ConsensusLayerFactory {
     }
 
     /**
-     * Constructs most of the components and modules required to create the platform.
+     * Constructs the consensus layer including all components. Modules are initialized but not started.
      *
-     * @return the result of the factory, containing the platform coordinator and the building blocks
+     * @return the newly constructed consensus layer
      */
     @NonNull
     public ConsensusLayer create() {

@@ -6,7 +6,7 @@ import com.swirlds.component.framework.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.hashgraph.impl.consensus.Consensus;
 import org.hiero.consensus.model.event.PlatformEvent;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Responsible for adding events to {@link Consensus}.
@@ -16,10 +16,10 @@ public interface ConsensusEngine {
     /**
      * Update the platform status.
      *
-     * @param platformStatus the new platform status
+     * @param consensusLayerStatus the new platform status
      */
     @InputWireLabel("PlatformStatus")
-    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+    void updatePlatformStatus(@NonNull ConsensusLayerStatus consensusLayerStatus);
 
     /**
      * Add an event to the consensus engine. One of the following will be done with the event:

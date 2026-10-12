@@ -86,8 +86,8 @@ import static com.swirlds.base.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.base.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.base.units.UnitConstants.WEEKS_TO_DAYS;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -264,7 +264,7 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.hiero.base.utility.CommonUtils;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
@@ -833,7 +833,7 @@ public class UtilVerbs {
     public static WaitForStatusOp waitForAny(
             @NonNull final NodeSelector selector,
             @NonNull final Duration timeout,
-            @NonNull final PlatformStatus... statuses) {
+            @NonNull final ConsensusLayerStatus... statuses) {
         return new WaitForStatusOp(selector, timeout, statuses);
     }
 
@@ -899,7 +899,7 @@ public class UtilVerbs {
 
     /**
      * Returns an operation that initiates background traffic running until the target network's
-     * first node has reached {@link PlatformStatus#FREEZE_COMPLETE}.
+     * first node has reached {@link ConsensusLayerStatus#FREEZE_COMPLETE}.
      * @return the operation
      */
     public static SpecOperation runBackgroundTrafficUntilFreezeComplete() {

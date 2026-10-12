@@ -13,7 +13,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 public class RemoteNode extends AbstractNode implements HederaNode {
     public RemoteNode(@NonNull final NodeMetadata metadata) {
@@ -44,7 +44,7 @@ public class RemoteNode extends AbstractNode implements HederaNode {
 
     @Override
     public CompletableFuture<Void> statusFuture(
-            @Nullable final Consumer<NodeStatus> nodeStatusObserver, @NonNull final PlatformStatus... statuses) {
+            @Nullable final Consumer<NodeStatus> nodeStatusObserver, @NonNull final ConsensusLayerStatus... statuses) {
         // (FUTURE) Implement this via Prometheus and gRPC if it turns out to be useful
         throw new UnsupportedOperationException("Cannot check the status of a remote node");
     }

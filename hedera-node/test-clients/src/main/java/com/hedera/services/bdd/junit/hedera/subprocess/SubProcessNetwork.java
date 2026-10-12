@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WAITING_FOR_LE
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.hiero.base.concurrent.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;

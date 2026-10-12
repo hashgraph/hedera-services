@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.monitoring.FallenBehindStatus;
 import org.hiero.consensus.test.fixtures.WeightGenerator;
 import org.hiero.consensus.test.fixtures.WeightGenerators;
@@ -173,7 +173,7 @@ public interface Network extends Configurable<Network> {
      * Start the network with the currently configured setup.
      *
      * <p>The method will wait until all nodes have become
-     * {@link org.hiero.consensus.model.status.PlatformStatus#ACTIVE}. It will wait for a environment-specific timeout
+     * {@link ConsensusLayerStatus#ACTIVE}. It will wait for a environment-specific timeout
      * before throwing an exception if the nodes do not reach the {@code ACTIVE} state. The default can be overridden by
      * calling {@link #withTimeout(Duration)}.
      */
@@ -352,7 +352,7 @@ public interface Network extends Configurable<Network> {
      *
      * <p>This method sends a freeze transaction to one of the active nodes with a freeze time shortly after the
      * current time. The method returns once all nodes entered the
-     * {@link org.hiero.consensus.model.status.PlatformStatus#FREEZE_COMPLETE} state.
+     * {@link ConsensusLayerStatus#FREEZE_COMPLETE} state.
      *
      * <p>It will wait for a environment-specific timeout before throwing an exception if the nodes do not reach the
      * {@code FREEZE_COMPLETE} state. The default can be overridden by calling {@link #withTimeout(Duration)}.
@@ -503,22 +503,22 @@ public interface Network extends Configurable<Network> {
     boolean nodesAreBehindByNodeCount(@NonNull Node maybeBehindNode, @Nullable Node... otherNodes);
 
     /**
-     * Checks if all nodes in the network are in the specified {@link PlatformStatus}.
+     * Checks if all nodes in the network are in the specified {@link ConsensusLayerStatus}.
      *
      * @param status the status to check against
      * @return {@code true} if all nodes are in the specified status, {@code false} otherwise
      */
-    default boolean allNodesInStatus(@NonNull final PlatformStatus status) {
+    default boolean allNodesInStatus(@NonNull final ConsensusLayerStatus status) {
         return nodes().stream().allMatch(node -> node.platformStatus() == status);
     }
 
     /**
-     * Checks if all nodes in the network are {@link PlatformStatus#ACTIVE}.
+     * Checks if all nodes in the network are {@link ConsensusLayerStatus#ACTIVE}.
      *
      * @return {@code true} if all nodes are active, {@code false} otherwise
      */
     default boolean allNodesAreActive() {
-        return allNodesInStatus(PlatformStatus.ACTIVE);
+        return allNodesInStatus(ConsensusLayerStatus.ACTIVE);
     }
 
     /**

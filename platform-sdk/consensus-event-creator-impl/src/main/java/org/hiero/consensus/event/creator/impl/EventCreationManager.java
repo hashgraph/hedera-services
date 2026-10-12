@@ -8,7 +8,7 @@ import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Creates and signs events. Will sometimes decide not to create new events based on external rules.
@@ -40,9 +40,9 @@ public interface EventCreationManager {
     /**
      * Update the platform status.
      *
-     * @param platformStatus the new platform status
+     * @param consensusLayerStatus the new platform status
      */
-    void updatePlatformStatus(@NonNull PlatformStatus platformStatus);
+    void updatePlatformStatus(@NonNull ConsensusLayerStatus consensusLayerStatus);
 
     /**
      * Report the amount of time that the system has been in an unhealthy state. Will receive a report of

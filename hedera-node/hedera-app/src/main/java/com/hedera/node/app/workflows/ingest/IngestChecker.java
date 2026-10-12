@@ -33,9 +33,9 @@ import static com.hedera.node.app.workflows.InnerTransaction.NO;
 import static com.hedera.node.app.workflows.InnerTransaction.YES;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZING;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignaturePair;

@@ -49,8 +49,8 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.CATASTROPHIC_FAILURE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CATASTROPHIC_FAILURE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;

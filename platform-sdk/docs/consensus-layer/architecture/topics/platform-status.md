@@ -8,7 +8,7 @@ last_reviewed: 2026-07-27
 
 Platform status is the node's single, network-facing lifecycle state — one
 value of the
-[`PlatformStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)
+[`ConsensusLayerStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)
 enum (`STARTING_UP`, `REPLAYING_EVENTS`, `OBSERVING`, `CHECKING`, `ACTIVE`,
 `BEHIND`, `RECONNECT_COMPLETE`, `FREEZING`, `FREEZE_COMPLETE`,
 `CATASTROPHIC_FAILURE`). It answers one question the rest of the system keeps
@@ -52,7 +52,7 @@ feeds it, and who reads its output.
 ## The statuses
 
 Each status is a standing answer to "what may the node do." The
-[`PlatformStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)
+[`ConsensusLayerStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)
 javadoc is canonical for the per-value semantics; the table below is an
 orientation summary, not a second source of truth. The authoritative list of
 which statuses permit gossip is the sync allow-list owned by
@@ -134,12 +134,12 @@ heartbeat) into the corresponding action.
 | `TimeElapsedAction`               | `consensus-utility/.../status/internal/DefaultPlatformMonitor.java` (heartbeat)                             | Wall-clock tick; carries the current instant and quiescing flag. |
 
 The heartbeat is periodic — its interval is
-[`platformStatus.statusStateMachineHeartbeatPeriod`](../../tunables.md)
+[`consensusLayerStatus.statusStateMachineHeartbeatPeriod`](../../tunables.md)
 (TUN-021) — and drives the two purely time-based transitions: leaving
 `OBSERVING` after
-[`platformStatus.observingStatusDelay`](../../tunables.md) (TUN-019) and the
+[`consensusLayerStatus.observingStatusDelay`](../../tunables.md) (TUN-019) and the
 `ACTIVE` → `CHECKING` drop governed by
-[`platformStatus.activeStatusDelay`](../../tunables.md) (TUN-020).
+[`consensusLayerStatus.activeStatusDelay`](../../tunables.md) (TUN-020).
 
 ### Transitions
 
@@ -162,7 +162,7 @@ A full transition diagram is maintained (outside this KB) at
 
 ## Consumers
 
-The state machine's output — a new `PlatformStatus` on each change, emitted on
+The state machine's output — a new `ConsensusLayerStatus` on each change, emitted on
 the module's `platformStatusOutputWire()` — is soldered by
 [`ConsensusLayerWiring`](../../../../swirlds-platform-core/src/main/java/org/hiero/consensus/ConsensusLayerWiring.java)`#wirePlatformMonitorOutputs`
 to every component that gates on it:

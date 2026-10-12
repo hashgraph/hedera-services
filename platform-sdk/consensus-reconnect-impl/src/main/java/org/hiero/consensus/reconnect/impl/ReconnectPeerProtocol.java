@@ -29,7 +29,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.reconnect.config.ReconnectConfig;
 import org.hiero.consensus.state.config.StateConfig;
 import org.hiero.consensus.state.signed.ReservedSignedState;
@@ -74,7 +74,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
     /**
      * Provides the platform status.
      */
-    private final Supplier<PlatformStatus> platformStatusSupplier;
+    private final Supplier<ConsensusLayerStatus> platformStatusSupplier;
 
     /**
      * Creates a new reconnect protocol instance.
@@ -103,7 +103,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final BlockingResourceProvider<ReservedSignedStateResult> reservedSignedStateResultProvider,
             @NonNull final StateLifecycleManager stateLifecycleManager,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier) {
+            @NonNull final Supplier<ConsensusLayerStatus> platformStatusSupplier) {
 
         this.configuration = requireNonNull(configuration);
         this.metrics = requireNonNull(metrics);
@@ -144,7 +144,7 @@ public class ReconnectPeerProtocol implements PeerProtocol {
     @Override
     public boolean shouldAccept() {
         // only teach if the platform is active
-        if (platformStatusSupplier.get() != PlatformStatus.ACTIVE) {
+        if (platformStatusSupplier.get() != ConsensusLayerStatus.ACTIVE) {
             notActiveLogger.info(
                     RECONNECT.getMarker(),
                     "Rejecting reconnect request from node {} because this node isn't ACTIVE",

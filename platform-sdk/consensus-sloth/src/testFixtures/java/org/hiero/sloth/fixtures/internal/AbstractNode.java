@@ -16,7 +16,7 @@ import java.util.Random;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.sloth.fixtures.AsyncNodeActions;
 import org.hiero.sloth.fixtures.Node;
 import org.hiero.sloth.fixtures.TimeManager;
@@ -70,7 +70,7 @@ public abstract class AbstractNode implements Node {
      * test thread.
      */
     @Nullable
-    protected volatile PlatformStatus platformStatus = null;
+    protected volatile ConsensusLayerStatus consensusLayerStatus = null;
 
     /**
      * Constructor for the AbstractNode class.
@@ -148,8 +148,8 @@ public abstract class AbstractNode implements Node {
      */
     @Override
     @Nullable
-    public PlatformStatus platformStatus() {
-        return platformStatus;
+    public ConsensusLayerStatus platformStatus() {
+        return consensusLayerStatus;
     }
 
     /**

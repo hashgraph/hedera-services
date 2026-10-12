@@ -18,7 +18,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * The Hashgraph Module is responsible for ordering events deterministically into consensus order and assigning each
@@ -100,7 +100,7 @@ public interface HashgraphModule {
      */
     @InputWireLabel("platform status")
     @NonNull
-    InputWire<PlatformStatus> platformStatusInputWire();
+    InputWire<ConsensusLayerStatus> platformStatusInputWire();
 
     /**
      * Informs the module about a new consensus snapshot. This will happen at restart and reconnect boundaries.

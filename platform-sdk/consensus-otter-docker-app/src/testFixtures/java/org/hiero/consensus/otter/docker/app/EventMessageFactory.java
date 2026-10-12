@@ -4,7 +4,7 @@ package org.hiero.consensus.otter.docker.app;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.container.proto.EventMessage;
 import org.hiero.otter.fixtures.container.proto.LogEntry;
 import org.hiero.otter.fixtures.container.proto.PlatformStatusChange;
@@ -28,7 +28,7 @@ public final class EventMessageFactory {
      */
     @NonNull
     public static EventMessage fromPlatformStatusChange(@NonNull final PlatformStatusChangeNotification notification) {
-        final PlatformStatus newStatus = notification.getNewStatus();
+        final ConsensusLayerStatus newStatus = notification.getNewStatus();
 
         final PlatformStatusChange protoStatusChange =
                 PlatformStatusChange.newBuilder().setNewStatus(newStatus.name()).build();

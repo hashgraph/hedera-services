@@ -13,7 +13,7 @@ import org.hiero.consensus.freeze.FreezePeriodChecker;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.FreezePeriodEnteredAction;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 import org.hiero.consensus.status.actions.SelfEventReachedConsensusAction;
@@ -66,7 +66,7 @@ public class DefaultPlatformMonitor implements PlatformMonitor {
      */
     @Nullable
     @Override
-    public PlatformStatus submitStatusAction(@NonNull final PlatformStatusAction action) {
+    public ConsensusLayerStatus submitStatusAction(@NonNull final PlatformStatusAction action) {
         return statusStateMachine.submitStatusAction(action);
     }
 
@@ -74,7 +74,7 @@ public class DefaultPlatformMonitor implements PlatformMonitor {
      * {@inheritDoc}
      */
     @Override
-    public PlatformStatus heartbeat(@NonNull final Instant time) {
+    public ConsensusLayerStatus heartbeat(@NonNull final Instant time) {
         return statusStateMachine.submitStatusAction(new TimeElapsedAction(
                 time,
                 new TimeElapsedAction.QuiescingStatus(
@@ -85,7 +85,7 @@ public class DefaultPlatformMonitor implements PlatformMonitor {
      * {@inheritDoc}
      */
     @Override
-    public PlatformStatus consensusRound(@NonNull final ConsensusRound round) {
+    public ConsensusLayerStatus consensusRound(@NonNull final ConsensusRound round) {
         if (freezePeriodChecker.isInFreezePeriod(round.getConsensusTimestamp())) {
             return statusStateMachine.submitStatusAction(new FreezePeriodEnteredAction(round.getRoundNum()));
         }

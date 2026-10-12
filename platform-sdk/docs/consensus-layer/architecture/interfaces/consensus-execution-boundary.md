@@ -302,7 +302,7 @@ push through `Gossip`.
 These data types appear in the signatures above and travel across the seam:
 
 - `InitTrigger` (`…/system/InitTrigger.java`) — `GENESIS` / `RESTART` / `RECONNECT` / `EVENT_STREAM_RECOVERY`.
-- `TransactionLimits`, `PlatformStatus`, `QuiescenceCommand`.
+- `TransactionLimits`, `ConsensusLayerStatus`, `QuiescenceCommand`.
 - Payloads: `Event`, `Round`, `StateSignatureTransaction`,
   `ScopedSystemTransaction`, `TimestampedTransaction`, `State`, `Roster`, `Signature`.
 
@@ -333,12 +333,12 @@ These data types appear in the signatures above and travel across the seam:
 - Orientation: [overview](../overview.md).
 - Topics that exercise this boundary:
   - [Event creator](../topics/event-creator.md) — pulls transactions via `getTransactionsForEvent`; reports
-    health via `reportUnhealthyDuration` and reads `PlatformStatus`.
+    health via `reportUnhealthyDuration` and reads `ConsensusLayerStatus`.
   - [Hashgraph](../topics/hashgraph.md) — produces the consensus rounds and stale events that drive
     `onHandleConsensusRound` and `StaleEventConsumer::handleStaleEvent`.
   - [Quiescence](../topics/quiescence.md) — driven by `Platform.quiescenceCommand`; relies on the
     [Boundary-wide contracts](#boundary-wide-contracts) pre-handle guarantee.
-  - [Freeze and upgrade](../topics/freeze-and-upgrade.md) — freeze-period checks and `PlatformStatus`
+  - [Freeze and upgrade](../topics/freeze-and-upgrade.md) — freeze-period checks and `ConsensusLayerStatus`
     transitions across the seam.
   - [Platform status](../topics/platform-status.md) — the status state machine behind
     `ExecutionLayer.newPlatformStatus` and `PlatformStatusChangeNotification`.

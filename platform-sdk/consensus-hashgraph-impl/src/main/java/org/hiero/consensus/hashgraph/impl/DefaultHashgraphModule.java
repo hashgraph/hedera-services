@@ -23,7 +23,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Default implementation of the {@link HashgraphModule}.
@@ -157,7 +157,7 @@ public class DefaultHashgraphModule implements HashgraphModule {
      */
     @NonNull
     @Override
-    public InputWire<PlatformStatus> platformStatusInputWire() {
+    public InputWire<ConsensusLayerStatus> platformStatusInputWire() {
         return requireNonNull(consensusEngineBufferWiring, "Not initialized")
                 .getInputWire(ConsensusEngineBuffer::updatePlatformStatus);
     }

@@ -110,7 +110,7 @@ classDiagram
     class Node {
         <<interface>>
         +selfId(): NodeId*
-        +platformStatus(): PlatformStatus*
+        +consensusLayerStatus(): PlatformStatus*
         +version(): SemanticVersion*
         +configuration(): NodeConfiguration~?~*
         +isActive(): boolean
@@ -131,8 +131,8 @@ classDiagram
         #selfId: NodeId
         #lifeCycle: LifeCycle
         #version: SemanticVersion
-        #platformStatus: PlatformStatus
-        +platformStatus(): PlatformStatus
+        #consensusLayerStatus: PlatformStatus
+        +consensusLayerStatus(): PlatformStatus
         +selfId(): NodeId
         +version(): SemanticVersion
         +setVersion(SemanticVersion): void

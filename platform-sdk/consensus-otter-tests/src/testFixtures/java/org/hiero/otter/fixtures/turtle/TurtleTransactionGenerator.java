@@ -8,7 +8,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.test.fixtures.Randotron;
 import org.hiero.otter.fixtures.Node;
 import org.hiero.otter.fixtures.TransactionFactory;
@@ -81,7 +81,7 @@ public class TurtleTransactionGenerator implements TransactionGenerator {
                     Duration.between(startTime, lastTimestamp).dividedBy(CYCLE_DURATION);
             final long currentCount = Duration.between(startTime, now).dividedBy(CYCLE_DURATION);
             final List<Node> activeNodes = nodes.stream()
-                    .filter(node -> node.platformStatus() == PlatformStatus.ACTIVE)
+                    .filter(node -> node.platformStatus() == ConsensusLayerStatus.ACTIVE)
                     .toList();
             for (long i = previousCount; i < currentCount; i++) {
                 for (final Node node : activeNodes) {

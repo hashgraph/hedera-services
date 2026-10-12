@@ -5,7 +5,7 @@ import static org.hiero.consensus.event.creator.impl.EventCreationStatus.PLATFOR
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.event.creator.impl.EventCreationStatus;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Limits the creation of new events depending on the current platform status.
@@ -15,22 +15,22 @@ public class PlatformStatusRule implements EventCreationRule {
     /**
      * The current platform status.
      */
-    private PlatformStatus platformStatus;
+    private ConsensusLayerStatus consensusLayerStatus;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean isEventCreationPermitted() {
-        final PlatformStatus currentStatus = this.platformStatus;
+        final ConsensusLayerStatus currentStatus = this.consensusLayerStatus;
 
-        return currentStatus == PlatformStatus.ACTIVE
-                || currentStatus == PlatformStatus.CHECKING
-                || currentStatus == PlatformStatus.FREEZING;
+        return currentStatus == ConsensusLayerStatus.ACTIVE
+                || currentStatus == ConsensusLayerStatus.CHECKING
+                || currentStatus == ConsensusLayerStatus.FREEZING;
     }
 
-    public void setPlatformStatus(final PlatformStatus platformStatus) {
-        this.platformStatus = platformStatus;
+    public void setPlatformStatus(final ConsensusLayerStatus consensusLayerStatus) {
+        this.consensusLayerStatus = consensusLayerStatus;
     }
 
     /**

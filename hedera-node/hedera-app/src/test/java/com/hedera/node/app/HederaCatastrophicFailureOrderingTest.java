@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app;
 
-import static org.hiero.consensus.model.status.PlatformStatus.CATASTROPHIC_FAILURE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CATASTROPHIC_FAILURE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;

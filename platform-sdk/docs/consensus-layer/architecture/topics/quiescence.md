@@ -102,7 +102,7 @@ Execution side and are not visible to the consensus layer. The
 `tctDuration` and the feature's enable flag are Execution configuration
 (`QuiescenceConfig` in `hedera-config`, disabled by default), not
 consensus-layer tunables. The one consensus-layer tunable in play is
-[`platformStatus.activeStatusDelay`](../../tunables.md) (TUN-020), which
+[`consensusLayerStatus.activeStatusDelay`](../../tunables.md) (TUN-020), which
 governs the status timing on exit, not entry.
 
 > **See spec — HIP-1238 §Quiescing.** The HIP lists the three quiescence

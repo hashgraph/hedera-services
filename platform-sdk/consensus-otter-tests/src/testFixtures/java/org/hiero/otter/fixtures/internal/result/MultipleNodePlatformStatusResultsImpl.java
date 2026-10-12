@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import org.hiero.consensus.main.model.NodeId;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.otter.fixtures.Node;
 import org.hiero.otter.fixtures.result.MultipleNodePlatformStatusResults;
 import org.hiero.otter.fixtures.result.OtterResult;
@@ -99,7 +100,7 @@ public class MultipleNodePlatformStatusResultsImpl implements MultipleNodePlatfo
      *
      * <p>The change is done on a best effort basis. A slower node may collect rounds after a clear that were
      * discarded on faster nodes. Ideally, this method is only called while all nodes have progressed the same,
-     * e.g. while in the state {@link org.hiero.consensus.model.status.PlatformStatus#FREEZE_COMPLETE}.
+     * e.g. while in the state {@link ConsensusLayerStatus#FREEZE_COMPLETE}.
      */
     @Override
     public void clear() {

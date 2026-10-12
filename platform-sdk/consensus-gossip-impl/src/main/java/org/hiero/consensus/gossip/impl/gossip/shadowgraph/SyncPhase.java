@@ -2,7 +2,7 @@
 package org.hiero.consensus.gossip.impl.gossip.shadowgraph;
 
 import org.hiero.consensus.gossip.impl.gossip.sync.protocol.SyncStatusChecker;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Describes what phases rpc sync can be in
@@ -46,7 +46,7 @@ public enum SyncPhase {
     GOSSIP_HALTED,
     /**
      * We are in the system state which does not allow synchronization - see
-     * {@link SyncStatusChecker#doesStatusPermitSync(PlatformStatus)}
+     * {@link SyncStatusChecker#doesStatusPermitSync(ConsensusLayerStatus)}
      */
     PLATFORM_STATUS_PREVENTING_SYNC,
     /**

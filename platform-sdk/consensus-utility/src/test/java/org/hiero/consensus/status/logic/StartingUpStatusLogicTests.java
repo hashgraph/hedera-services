@@ -9,7 +9,7 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -39,13 +39,13 @@ class StartingUpStatusLogicTests {
     @Test
     @DisplayName("Go to REPLAYING_EVENTS")
     void toReplayingEvents() {
-        assertTransition(logic, new StartedReplayingEventsAction(), PlatformStatus.REPLAYING_EVENTS);
+        assertTransition(logic, new StartedReplayingEventsAction(), ConsensusLayerStatus.REPLAYING_EVENTS);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test

@@ -26,7 +26,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -79,7 +79,7 @@ public class BlockNodeBackPressureSuite {
                         Duration.ofMinutes(1),
                         "Block buffer is saturated; backpressure is being enabled",
                         "!!! Block buffer is saturated; blocking thread until buffer is no longer saturated")),
-                waitForAny(byNodeId(0), Duration.ofSeconds(30), PlatformStatus.CHECKING));
+                waitForAny(byNodeId(0), Duration.ofSeconds(30), ConsensusLayerStatus.CHECKING));
     }
 
     @HapiTest
@@ -123,7 +123,7 @@ public class BlockNodeBackPressureSuite {
                         Duration.ofMinutes(6),
                         "Block buffer is saturated; backpressure is being enabled",
                         "!!! Block buffer is saturated; blocking thread until buffer is no longer saturated")),
-                waitForAny(byNodeId(0), Duration.ofSeconds(30), PlatformStatus.CHECKING),
+                waitForAny(byNodeId(0), Duration.ofSeconds(30), ConsensusLayerStatus.CHECKING),
                 blockNode(0).startImmediately(),
                 sourcingContextual(
                         spec -> assertBlockNodeCommsLogContainsTimeframe(
@@ -246,7 +246,7 @@ public class BlockNodeBackPressureSuite {
                         Duration.ofMinutes(2),
                         "Block buffer is saturated; backpressure is being enabled",
                         "!!! Block buffer is saturated; blocking thread until buffer is no longer saturated")),
-                waitForAny(byNodeId(0), Duration.ofSeconds(60), PlatformStatus.CHECKING),
+                waitForAny(byNodeId(0), Duration.ofSeconds(60), ConsensusLayerStatus.CHECKING),
                 doingContextual(
                         spec -> LockSupport.parkNanos(Duration.ofSeconds(30).toNanos())),
                 blockNode(0).startImmediately(),
@@ -258,17 +258,17 @@ public class BlockNodeBackPressureSuite {
                                 Duration.ofMinutes(2),
                                 Duration.ofMinutes(2),
                                 "Buffer saturation is below or equal to the recovery threshold; back pressure will be disabled.")),
-                waitForAny(byNodeId(0), Duration.ofSeconds(60), PlatformStatus.ACTIVE),
+                waitForAny(byNodeId(0), Duration.ofSeconds(60), ConsensusLayerStatus.ACTIVE),
                 doingContextual(
                         spec -> LockSupport.parkNanos(Duration.ofSeconds(30).toNanos())),
                 blockNode(0).shutDownImmediately(),
                 blockNode(1).shutDownImmediately(),
-                waitForAny(allNodes(), Duration.ofSeconds(120), PlatformStatus.CHECKING),
+                waitForAny(allNodes(), Duration.ofSeconds(120), ConsensusLayerStatus.CHECKING),
                 doingContextual(
                         spec -> LockSupport.parkNanos(Duration.ofSeconds(30).toNanos())),
                 blockNode(0).startImmediately(),
                 blockNode(1).startImmediately(),
-                waitForAny(allNodes(), RESTART_TO_ACTIVE_TIMEOUT, PlatformStatus.ACTIVE));
+                waitForAny(allNodes(), RESTART_TO_ACTIVE_TIMEOUT, ConsensusLayerStatus.ACTIVE));
     }
 
     /**

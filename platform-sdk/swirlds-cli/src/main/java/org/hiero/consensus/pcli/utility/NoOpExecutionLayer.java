@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
 import org.hiero.consensus.main.model.TimestampedTransaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * A no-op implementation of the {@link ExecutionLayer} interface.
@@ -18,7 +18,7 @@ public class NoOpExecutionLayer implements ExecutionLayer {
     public void submitStateSignature(@NonNull final StateSignatureTransaction transaction) {}
 
     @Override
-    public void newPlatformStatus(@NonNull final PlatformStatus platformStatus) {}
+    public void newPlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {}
 
     @NonNull
     @Override

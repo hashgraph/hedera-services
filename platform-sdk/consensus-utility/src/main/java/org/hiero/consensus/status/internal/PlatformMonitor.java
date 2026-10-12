@@ -7,7 +7,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 
 /**
@@ -22,7 +22,7 @@ public interface PlatformMonitor {
      */
     @Nullable
     @InputWireLabel("evaluate status")
-    PlatformStatus heartbeat(@NonNull Instant time);
+    ConsensusLayerStatus heartbeat(@NonNull Instant time);
 
     /**
      * Submit a status action
@@ -32,7 +32,7 @@ public interface PlatformMonitor {
      */
     @Nullable
     @InputWireLabel("PlatformStatusAction")
-    PlatformStatus submitStatusAction(@NonNull final PlatformStatusAction action);
+    ConsensusLayerStatus submitStatusAction(@NonNull final PlatformStatusAction action);
 
     /**
      * Inform the monitor that a round has reached consensus
@@ -41,7 +41,7 @@ public interface PlatformMonitor {
      */
     @Nullable
     @InputWireLabel("monitor consensus round")
-    PlatformStatus consensusRound(@NonNull final ConsensusRound round);
+    ConsensusLayerStatus consensusRound(@NonNull final ConsensusRound round);
 
     /**
      * Inform the monitor the last requested quiescence command

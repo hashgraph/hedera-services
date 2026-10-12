@@ -17,7 +17,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.StatusLookupAttemp
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.Hedera;
@@ -43,7 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
@@ -99,10 +99,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public CompletableFuture<Void> statusFuture(
-            @Nullable Consumer<NodeStatus> nodeStatusObserver, @NonNull final PlatformStatus... statuses) {
+            @Nullable Consumer<NodeStatus> nodeStatusObserver, @NonNull final ConsensusLayerStatus... statuses) {
         requireNonNull(statuses);
         final var retryCount = new AtomicInteger();
-        final var acceptanceSet = EnumSet.noneOf(PlatformStatus.class);
+        final var acceptanceSet = EnumSet.noneOf(ConsensusLayerStatus.class);
         Collections.addAll(acceptanceSet, statuses);
         return conditionFuture(
                 () -> {

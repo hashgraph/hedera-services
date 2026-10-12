@@ -18,7 +18,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Simulates the {@link Gossip} subsystem for a group of nodes running on a {@link SimulatedNetwork}.
@@ -78,7 +78,7 @@ public class SimulatedGossip implements Gossip {
             @NonNull final BindableInputWire<NoInput, Void> pauseInput,
             @NonNull final BindableInputWire<NoInput, Void> resumeInput,
             @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
-            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput,
+            @NonNull final BindableInputWire<ConsensusLayerStatus, Void> platformStatusInput,
             @NonNull final StandardOutputWire<SyncProgress> syncLagOutput) {
 
         this.eventOutput = requireNonNull(eventOutput);

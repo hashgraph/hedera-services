@@ -93,7 +93,7 @@ See `build.gradle.kts` for the full table.
 
 ## Platform overrides (`prCheckPlatformOverrides`)
 
-Currently only `hapiTestRestart` uses this: `platformStatus.observingStatusDelay=10s` is appended
+Currently only `hapiTestRestart` uses this: `consensusLayerStatus.observingStatusDelay=10s` is appended
 to the platform `settings.txt` for the subprocess nodes.
 
 ## Helper / utility tasks

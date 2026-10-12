@@ -15,7 +15,7 @@ import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.model.notification.IssNotification;
 import org.hiero.consensus.model.notification.IssNotification.IssType;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * The default implementation of the AppNotifier interface.
@@ -46,7 +46,7 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
      * {@inheritDoc}
      */
     @Override
-    public void sendPlatformStatusChangeNotification(@NonNull final PlatformStatus newStatus) {
+    public void sendPlatformStatusChangeNotification(@NonNull final ConsensusLayerStatus newStatus) {
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
     }

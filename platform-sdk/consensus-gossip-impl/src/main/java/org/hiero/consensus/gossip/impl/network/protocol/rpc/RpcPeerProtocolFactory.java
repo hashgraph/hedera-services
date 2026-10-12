@@ -36,7 +36,7 @@ import org.hiero.consensus.main.model.reconnect.PeerProtocol;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
 import org.hiero.consensus.status.StatusMonitorModule;
 
@@ -82,7 +82,7 @@ public class RpcPeerProtocolFactory implements PeerProtocolFactory, GossipContro
     private final List<RpcPeerHandler> allRpcPeers = new CopyOnWriteArrayList<>();
 
     /** Supplier of the current platform status. Used to determine if we should be gossiping or not. */
-    private final Supplier<PlatformStatus> platformStatusSupplier;
+    private final Supplier<ConsensusLayerStatus> platformStatusSupplier;
 
     /** Supplier of the current event window. */
     private final Supplier<EventWindow> eventWindowSupplier;
@@ -119,7 +119,7 @@ public class RpcPeerProtocolFactory implements PeerProtocolFactory, GossipContro
             @NonNull final FallenBehindMonitor fallenBehindMonitor,
             @NonNull final Consumer<PlatformEvent> receivedEventHandler,
             @NonNull final StatusMonitorModule statusMonitorModule,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
+            @NonNull final Supplier<ConsensusLayerStatus> platformStatusSupplier,
             @NonNull final Supplier<EventWindow> eventWindowSupplier) {
 
         this.synchronizer = synchronizer;

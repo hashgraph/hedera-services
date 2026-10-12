@@ -22,7 +22,7 @@ curated_by: Kelly Greco (@poulok)
 ## Context
 
 The platform status state machine includes an `OBSERVING` status, entered after event replay, in which the node
-**gossips but does not create events**. It holds there for a configured window (`platformStatus.observingStatusDelay`,
+**gossips but does not create events**. It holds there for a configured window (`consensusLayerStatus.observingStatusDelay`,
 TUN-019) before advancing to `CHECKING`. The transition path and the event-creation gate that withholds creation until
 `ACTIVE` or `CHECKING` are documented in
 [`../architecture/topics/platform-status.md`](../architecture/topics/platform-status.md); the specific code anchors are
@@ -65,7 +65,7 @@ No code changes follow from this decision; it records *why* the existing mechani
 justification no longer applies:
 
 - The state machine continues to enter `OBSERVING` after event replay, gossip but not create events while there, and
-  exit after `platformStatus.observingStatusDelay` (default `10s`)
+  exit after `consensusLayerStatus.observingStatusDelay` (default `10s`)
   (`ObservingStatusLogic.java:176-187`).
 - The event-creation gate continues to withhold creation in `OBSERVING`
   (`PlatformStatusRule.java:37-45`).

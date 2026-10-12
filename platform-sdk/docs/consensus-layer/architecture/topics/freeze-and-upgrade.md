@@ -81,7 +81,7 @@ Self-event creation is gated by platform status. In
 status `FREEZING` permits creation only when the signature-transaction
 buffer is non-empty; otherwise creation is blocked. Creation is
 otherwise permitted only in `ACTIVE` and `CHECKING`
-([`PlatformStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)).
+([`ConsensusLayerStatus`](../../../../consensus-model/src/main/java/org/hiero/consensus/model/status/PlatformStatus.java)).
 Detail in [`event-creator.md`](event-creator.md).
 
 The buffer-drain guard lets the node emit as many events as it needs to

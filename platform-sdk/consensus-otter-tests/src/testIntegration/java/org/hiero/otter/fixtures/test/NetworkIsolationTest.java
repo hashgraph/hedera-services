@@ -3,7 +3,7 @@ package org.hiero.otter.fixtures.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;

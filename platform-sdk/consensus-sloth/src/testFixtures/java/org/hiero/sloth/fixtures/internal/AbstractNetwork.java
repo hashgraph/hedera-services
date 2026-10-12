@@ -2,7 +2,7 @@
 package org.hiero.sloth.fixtures.internal;
 
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
 import static org.hiero.sloth.fixtures.internal.AbstractNode.UNSET_WEIGHT;
 import static org.hiero.sloth.fixtures.network.MeshTopologyConfiguration.ZERO_LATENCY;
 

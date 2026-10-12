@@ -11,7 +11,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.base.concurrent.ResettableLatch;
 import org.hiero.consensus.iss.detection.IssDetectionModule;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.state.SavedStateController;
 import org.hiero.consensus.state.StateModule;
 import org.hiero.consensus.state.nexus.SignedStateNexus;
@@ -30,5 +30,5 @@ public record ConsensusLayerAdapterBuildingBlocks(
         @NonNull SavedStateController savedStateController,
         // armed by the consensus layer's onBehind callback, disarmed by the reconnect controller
         @NonNull ResettableLatch behindLatch,
-        @NonNull AtomicReference<PlatformStatus> platformStatusReference,
+        @NonNull AtomicReference<ConsensusLayerStatus> platformStatusReference,
         @NonNull SignedStateNexus lastCompleteSignedState) {}

@@ -23,7 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hiero.consensus.model.status.PlatformStatus.STARTING_UP;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.STARTING_UP;
 import static org.hiero.consensus.platformstate.PlatformStateAccessor.GENESIS_ROUND;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSemanticVersionOf;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.freezeTimeOf;
@@ -181,7 +181,7 @@ import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.Round;
 import org.hiero.consensus.main.model.TimestampedTransaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.ScopedSystemTransaction;
 import org.hiero.consensus.platformstate.PlatformStateService;
 import org.hiero.consensus.platformstate.ReadablePlatformStateStore;
@@ -367,7 +367,7 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
     /**
      * The current status of the platform.
      */
-    private PlatformStatus platformStatus = STARTING_UP;
+    private ConsensusLayerStatus consensusLayerStatus = STARTING_UP;
     /**
      * The configuration for this node; non-final because its sources depend on whether
      * we are initializing the first consensus state from genesis or a saved state.
@@ -691,18 +691,18 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
     }
 
     @Override
-    public void newPlatformStatus(@NonNull final PlatformStatus platformStatus) {
+    public void newPlatformStatus(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
         final var app = requireNonNull(daggerApp);
-        this.platformStatus = platformStatus;
-        transactionPool.updatePlatformStatus(platformStatus);
+        this.consensusLayerStatus = consensusLayerStatus;
+        transactionPool.updatePlatformStatus(consensusLayerStatus);
         // No-op if quiescence is disabled
-        app.quiescenceController().platformStatusUpdate(platformStatus);
-        logger.info("HederaNode#{} is {}", platform.getSelfId(), platformStatus.name());
+        app.quiescenceController().platformStatusUpdate(consensusLayerStatus);
+        logger.info("HederaNode#{} is {}", platform.getSelfId(), consensusLayerStatus.name());
         final var streamToBlockNodes = configProvider
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamToBlockNodes();
-        switch (platformStatus) {
+        switch (consensusLayerStatus) {
             case ACTIVE -> startGrpcServer();
             case FREEZE_COMPLETE -> {
                 logger.info("Platform status is now FREEZE_COMPLETE");
@@ -979,9 +979,9 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
         return isGossipAvailableForNodeTransactions(status);
     }
 
-    static boolean isGossipAvailableForNodeTransactions(@NonNull final PlatformStatus platformStatus) {
-        requireNonNull(platformStatus);
-        return switch (platformStatus) {
+    static boolean isGossipAvailableForNodeTransactions(@NonNull final ConsensusLayerStatus consensusLayerStatus) {
+        requireNonNull(consensusLayerStatus);
+        return switch (consensusLayerStatus) {
             case ACTIVE, CHECKING, FREEZING -> true;
             case BEHIND,
                     CATASTROPHIC_FAILURE,

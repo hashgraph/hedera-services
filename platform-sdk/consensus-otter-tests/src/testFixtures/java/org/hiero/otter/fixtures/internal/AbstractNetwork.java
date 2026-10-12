@@ -2,10 +2,10 @@
 package org.hiero.otter.fixtures.internal;
 
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.CATASTROPHIC_FAILURE;
-import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZE_COMPLETE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.ACTIVE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CATASTROPHIC_FAILURE;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.CHECKING;
+import static org.hiero.consensus.model.status.ConsensusLayerStatus.FREEZE_COMPLETE;
 import static org.hiero.otter.fixtures.internal.AbstractNode.UNSET_WEIGHT;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -45,7 +45,7 @@ import org.hiero.consensus.model.hashgraph.ConsensusConstants;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.KeysAndCerts;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.monitoring.FallenBehindStatus;
 import org.hiero.consensus.test.fixtures.WeightGenerator;
 import org.hiero.consensus.test.fixtures.WeightGenerators;
@@ -699,7 +699,7 @@ public abstract class AbstractNetwork implements Network {
 
     private boolean allNodesInCheckingOrCatastrophicFailure() {
         return nodes().stream().allMatch(node -> {
-            final PlatformStatus status = node.platformStatus();
+            final ConsensusLayerStatus status = node.platformStatus();
             return status == CATASTROPHIC_FAILURE || status == CHECKING;
         });
     }

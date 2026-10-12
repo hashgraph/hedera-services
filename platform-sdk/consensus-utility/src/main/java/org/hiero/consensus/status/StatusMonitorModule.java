@@ -18,7 +18,7 @@ import org.hiero.consensus.freeze.FreezePeriodChecker;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 import org.hiero.consensus.status.internal.DefaultPlatformMonitor;
 import org.hiero.consensus.status.internal.PlatformMonitor;
@@ -30,7 +30,7 @@ import org.hiero.consensus.status.internal.PlatformMonitor;
  */
 public class StatusMonitorModule {
 
-    final ComponentWiring<PlatformMonitor, PlatformStatus> platformMonitorWiring;
+    final ComponentWiring<PlatformMonitor, ConsensusLayerStatus> platformMonitorWiring;
 
     /**
      * Create a new StatusMonitorModule.
@@ -103,7 +103,7 @@ public class StatusMonitorModule {
      * @return the {@link OutputWire} for PlatformStatus notifications
      */
     @NonNull
-    public OutputWire<PlatformStatus> platformStatusOutputWire() {
+    public OutputWire<ConsensusLayerStatus> platformStatusOutputWire() {
         return platformMonitorWiring.getOutputWire();
     }
 

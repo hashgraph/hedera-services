@@ -66,7 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import org.hiero.consensus.metrics.noop.NoOpMetrics;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.transaction.TransactionPoolNexus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -155,7 +155,7 @@ class IngestComponentTest {
                 .platform(platform)
                 .transactionPool(transactionPool)
                 .self(selfNodeInfo)
-                .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
+                .currentPlatformStatus(() -> ConsensusLayerStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))

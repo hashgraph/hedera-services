@@ -50,7 +50,7 @@ import org.hiero.consensus.main.model.reconnect.Connection;
 import org.hiero.consensus.main.model.reconnect.NetworkProtocolException;
 import org.hiero.consensus.main.model.reconnect.PeerProtocol;
 import org.hiero.consensus.main.model.reconnect.SyncOutputStream;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * Message based implementation of gossip; currently supporting sync and simplistic broadcast. Responsible for
@@ -133,7 +133,7 @@ public class RpcPeerProtocol implements PeerProtocol, GossipRpcSender {
     /**
      * Current platform status
      */
-    private final Supplier<PlatformStatus> platformStatus;
+    private final Supplier<ConsensusLayerStatus> platformStatus;
 
     /**
      * Manage permits for concurrent syncs
@@ -197,7 +197,7 @@ public class RpcPeerProtocol implements PeerProtocol, GossipRpcSender {
             @NonNull final NodeId peerId,
             @NonNull final ParallelExecutor executor,
             @NonNull final Supplier<Boolean> gossipHalted,
-            @NonNull final Supplier<PlatformStatus> platformStatus,
+            @NonNull final Supplier<ConsensusLayerStatus> platformStatus,
             @NonNull final SyncPermitProvider permitProvider,
             @NonNull final NetworkMetrics networkMetrics,
             @NonNull final Time time,

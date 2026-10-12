@@ -7,7 +7,7 @@ import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hiero.consensus.model.notification.IssNotification;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
  * A component that wraps around a notification engine, for sending notifications to the app.
@@ -43,7 +43,7 @@ public interface AppNotifier {
      * @param newStatus the new status
      */
     @InputWireLabel("PlatformStatus")
-    void sendPlatformStatusChangeNotification(@NonNull final PlatformStatus newStatus);
+    void sendPlatformStatusChangeNotification(@NonNull final ConsensusLayerStatus newStatus);
 
     /**
      * Notify the app of an ISS

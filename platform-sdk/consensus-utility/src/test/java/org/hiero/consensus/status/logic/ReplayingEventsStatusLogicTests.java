@@ -10,7 +10,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.time.temporal.ChronoUnit;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.CatastrophicFailureAction;
 import org.hiero.consensus.status.actions.DoneReplayingEventsAction;
 import org.hiero.consensus.status.actions.FallenBehindAction;
@@ -40,13 +40,13 @@ class ReplayingEventsStatusLogicTests {
     @Test
     @DisplayName("Go to OBSERVING")
     void toObserving() {
-        assertTransition(logic, new DoneReplayingEventsAction(time.now()), PlatformStatus.OBSERVING);
+        assertTransition(logic, new DoneReplayingEventsAction(time.now()), ConsensusLayerStatus.OBSERVING);
     }
 
     @Test
     @DisplayName("Go to CATASTROPHIC_FAILURE")
     void toCatastrophicFailure() {
-        assertTransition(logic, new CatastrophicFailureAction(), PlatformStatus.CATASTROPHIC_FAILURE);
+        assertTransition(logic, new CatastrophicFailureAction(), ConsensusLayerStatus.CATASTROPHIC_FAILURE);
     }
 
     @Test
@@ -56,13 +56,13 @@ class ReplayingEventsStatusLogicTests {
         assertNoTransition(logic, new DoneReplayingEventsAction(time.now()), logic.getStatus());
         // if the state written to disk isn't the freeze state, we shouldn't transition
         assertNoTransition(logic, new FreezeCompleteAction(), logic.getStatus());
-        assertTransition(logic, new FreezeCompleteAction(), PlatformStatus.FREEZE_COMPLETE);
+        assertTransition(logic, new FreezeCompleteAction(), ConsensusLayerStatus.FREEZE_COMPLETE);
     }
 
     @Test
     @DisplayName("Go to FREEZE_COMPLETE")
     void toFreezeComplete() {
-        assertTransition(logic, new FreezeCompleteAction(), PlatformStatus.FREEZE_COMPLETE);
+        assertTransition(logic, new FreezeCompleteAction(), ConsensusLayerStatus.FREEZE_COMPLETE);
     }
 
     @Test

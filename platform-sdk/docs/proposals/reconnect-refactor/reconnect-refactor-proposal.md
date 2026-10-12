@@ -10,7 +10,7 @@ This proposal covers a major refactoring of the platform's state synchronization
 - Protocols couple directly to gossip-internal "fallen behind" management, blurring boundaries with platform status.
 
 The goal is to make reconnect logic easier to maintain by moving it outside of gossip scope, and making it central in the platform.
-We'll do this by consolidating orchestration in a single controller directed by a centralized monitor, make protocol decisions to rely on `PlatformStatus`
+We'll do this by consolidating orchestration in a single controller directed by a centralized monitor, make protocol decisions to rely on `ConsensusLayerStatus`
 and remove the need of connections handoff.
 
 ## Current Approach (Before)

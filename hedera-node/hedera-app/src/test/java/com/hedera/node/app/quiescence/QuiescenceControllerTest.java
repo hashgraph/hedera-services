@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.hiero.consensus.main.model.ConsensusTransaction;
 import org.hiero.consensus.main.model.Event;
 import org.hiero.consensus.main.model.Transaction;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.transaction.TransactionWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,12 +162,12 @@ class QuiescenceControllerTest {
                 DONT_QUIESCE,
                 controller.getQuiescenceStatus(),
                 "Since a transaction was received through pre-handle, the status should be not quiescent");
-        controller.platformStatusUpdate(PlatformStatus.CHECKING);
+        controller.platformStatusUpdate(ConsensusLayerStatus.CHECKING);
         assertEquals(
                 DONT_QUIESCE,
                 controller.getQuiescenceStatus(),
                 "The checking status should not affect the quiescence status");
-        controller.platformStatusUpdate(PlatformStatus.RECONNECT_COMPLETE);
+        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
         assertEquals(
                 QUIESCE, controller.getQuiescenceStatus(), "The reconnect complete status should reset the controller");
     }
@@ -225,7 +225,7 @@ class QuiescenceControllerTest {
     void finishHandlingInProgressBlockWhenDisabled() {
         // Given - quiescence is disabled
         controller.onPreHandle(createTransactions(TXN_TRANSFER));
-        controller.platformStatusUpdate(PlatformStatus.RECONNECT_COMPLETE);
+        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
         controller = new QuiescenceController(
                 new QuiescenceConfig(false, Duration.ofSeconds(3)), time::now, pendingTransactions::get);
 

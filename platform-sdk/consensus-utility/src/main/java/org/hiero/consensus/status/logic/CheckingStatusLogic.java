@@ -4,14 +4,14 @@ package org.hiero.consensus.status.logic;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.hiero.consensus.config.PlatformStatusConfig;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.FallenBehindAction;
 import org.hiero.consensus.status.actions.FreezePeriodEnteredAction;
 import org.hiero.consensus.status.actions.SelfEventReachedConsensusAction;
 import org.hiero.consensus.status.actions.TimeElapsedAction;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#CHECKING} status.
+ * Class containing the state machine logic for the {@link ConsensusLayerStatus#CHECKING} status.
  */
 public class CheckingStatusLogic extends AbstractStatusLogic {
     /**
@@ -25,12 +25,12 @@ public class CheckingStatusLogic extends AbstractStatusLogic {
      * @param config the platform status config
      */
     public CheckingStatusLogic(@NonNull final PlatformStatusConfig config) {
-        super(PlatformStatus.CHECKING);
+        super(ConsensusLayerStatus.CHECKING);
         this.config = Objects.requireNonNull(config);
     }
 
     /**
-     * {@link PlatformStatus#CHECKING} status unconditionally transitions to {@link PlatformStatus#BEHIND} when a
+     * {@link ConsensusLayerStatus#CHECKING} status unconditionally transitions to {@link ConsensusLayerStatus#BEHIND} when a
      * {@link FallenBehindAction} is processed.
      */
     @NonNull
@@ -40,7 +40,7 @@ public class CheckingStatusLogic extends AbstractStatusLogic {
     }
 
     /**
-     * {@link PlatformStatus#CHECKING} status unconditionally transitions to {@link PlatformStatus#FREEZING} when a
+     * {@link ConsensusLayerStatus#CHECKING} status unconditionally transitions to {@link ConsensusLayerStatus#FREEZING} when a
      * {@link FreezePeriodEnteredAction} is processed.
      */
     @NonNull
@@ -50,7 +50,7 @@ public class CheckingStatusLogic extends AbstractStatusLogic {
     }
 
     /**
-     * {@link PlatformStatus#CHECKING} status unconditionally transitions to {@link PlatformStatus#ACTIVE} when a
+     * {@link ConsensusLayerStatus#CHECKING} status unconditionally transitions to {@link ConsensusLayerStatus#ACTIVE} when a
      * {@link SelfEventReachedConsensusAction} is processed.
      */
     @NonNull
@@ -60,9 +60,9 @@ public class CheckingStatusLogic extends AbstractStatusLogic {
     }
 
     /**
-     * When a {@link TimeElapsedAction} is received while in {@link PlatformStatus#CHECKING}, the status transitions to
-     * {@link PlatformStatus#ACTIVE} if the platform is currently quiescing, otherwise it remains in
-     * {@link PlatformStatus#CHECKING}.
+     * When a {@link TimeElapsedAction} is received while in {@link ConsensusLayerStatus#CHECKING}, the status transitions to
+     * {@link ConsensusLayerStatus#ACTIVE} if the platform is currently quiescing, otherwise it remains in
+     * {@link ConsensusLayerStatus#CHECKING}.
      */
     @NonNull
     @Override

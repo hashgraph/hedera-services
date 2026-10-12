@@ -1,6 +1,6 @@
 # Platform Status
 
-The platform status is represented as an enum value from `PlatformStatus`. Status transitions are handled by
+The platform status is represented as an enum value from `ConsensusLayerStatus`. Status transitions are handled by
 the `PlatformStatusManager`.
 
 A diagram of the status state machine is available [here](./platform-status-transitions.svg).

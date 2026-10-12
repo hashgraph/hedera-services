@@ -2,11 +2,11 @@
 package org.hiero.consensus.status.logic;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hiero.consensus.model.status.PlatformStatus;
+import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.status.actions.PlatformStatusAction;
 
 /**
- * Class containing the state machine logic for the {@link PlatformStatus#FREEZE_COMPLETE} status.
+ * Class containing the state machine logic for the {@link ConsensusLayerStatus#FREEZE_COMPLETE} status.
  * <p>
  * This status is terminal: no action can cause the status to transition from it.
  */
@@ -19,7 +19,7 @@ public class FreezeCompleteStatusLogic implements PlatformStatusLogic {
 
     @NonNull
     @Override
-    public PlatformStatus getStatus() {
-        return PlatformStatus.FREEZE_COMPLETE;
+    public ConsensusLayerStatus getStatus() {
+        return ConsensusLayerStatus.FREEZE_COMPLETE;
     }
 }
