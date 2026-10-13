@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CLPR_ENDPOINT_MANIFEST;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.history.schemas.V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID;
@@ -136,6 +137,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.test.fixtures.CryptoRandomUtils;
@@ -418,6 +420,79 @@ class HandleWorkflowTest {
         }
 
         assertEquals(0, clprEndpointManifestReconcilerProviderCalls.get());
+    }
+
+    @Test
+    void streamingAllChangesCapturesSingletonsInsteadOfDroppingPendingOnes() throws Exception {
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        final var writableStates =
+                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
+        final var action = mock(Runnable.class);
+        final var manifestChange = StateChange.newBuilder()
+                .stateId(STATE_ID_CLPR_ENDPOINT_MANIFEST.protoOrdinal())
+                .build();
+        given(boundaryStateChangeListener.endCapture()).willReturn(List.of(manifestChange));
+
+        doStreamingChangesInternal(writableStates, action, true);
+
+        final var inOrder = Mockito.inOrder(boundaryStateChangeListener, action, writableStates, blockStreamManager);
+        inOrder.verify(boundaryStateChangeListener).startCapture();
+        inOrder.verify(action).run();
+        inOrder.verify((CommittableWritableStates) writableStates).commit();
+        inOrder.verify(boundaryStateChangeListener).endCapture();
+        final ArgumentCaptor<Function<Timestamp, BlockItem>> itemSpec = ArgumentCaptor.captor();
+        inOrder.verify(blockStreamManager).writeItem(itemSpec.capture());
+        assertEquals(
+                List.of(manifestChange),
+                itemSpec.getValue()
+                        .apply(Timestamp.DEFAULT)
+                        .stateChangesOrThrow()
+                        .stateChanges());
+        verify(boundaryStateChangeListener, never()).reset();
+        verify(boundaryStateChangeListener, never()).allStateChanges();
+    }
+
+    @Test
+    void streamingOnlyKvChangesLeavesPendingSingletonsAlone() throws Exception {
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        final var writableStates =
+                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
+
+        doStreamingChangesInternal(writableStates, () -> {}, false);
+
+        verify((CommittableWritableStates) writableStates).commit();
+        verify(boundaryStateChangeListener, never()).startCapture();
+        verify(boundaryStateChangeListener, never()).endCapture();
+        verify(boundaryStateChangeListener, never()).reset();
+    }
+
+    @Test
+    void recordsModeStreamsNoStateChanges() throws Exception {
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList());
+        final var writableStates =
+                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
+
+        doStreamingChangesInternal(writableStates, () -> {}, true);
+
+        verify((CommittableWritableStates) writableStates).commit();
+        verify(boundaryStateChangeListener, never()).startCapture();
+        verify(boundaryStateChangeListener, never()).endCapture();
+        verify(blockStreamManager, never()).writeItem(any(Function.class));
+    }
+
+    private void doStreamingChangesInternal(
+            @NonNull final WritableStates writableStates,
+            @NonNull final Runnable action,
+            final boolean includeSingletons)
+            throws Exception {
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "doStreamingChangesInternal",
+                WritableStates.class,
+                WritableStates.class,
+                Runnable.class,
+                boolean.class);
+        method.setAccessible(true);
+        method.invoke(subject, writableStates, null, action, includeSingletons);
     }
 
     @Test

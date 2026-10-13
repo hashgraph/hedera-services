@@ -2,6 +2,8 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_CLPR_ENDPOINT_MANIFEST;
+import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_PLATFORM_STATE;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_THROTTLE_USAGE_SNAPSHOTS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -10,16 +12,22 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.clpr.ClprEndpointManifest;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.platform.state.ConsensusSnapshot;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.Test;
 
@@ -245,7 +253,7 @@ class StateChangeDeltaEmissionTest {
         final var moreFiles = COUNTS.copyBuilder().numFiles(1_000_001).build();
         final var moreAccounts = moreFiles.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreFiles);
-        // HandleWorkflow.doStreamingChangesInternal resets before its action, discarding this update
+        // A reset before any emission discards this update; the baseline must survive it
         listener.reset();
         listener.singletonUpdateChange(ENTITY_COUNTS, moreFiles, moreAccounts);
         assertThat(replaySingletons(COUNTS, listener.allStateChanges())).isEqualTo(moreAccounts);
@@ -278,6 +286,148 @@ class StateChangeDeltaEmissionTest {
                         .singletonUpdateOrThrow()
                         .partial())
                 .isFalse();
+    }
+
+    private static final int PLATFORM_STATE = STATE_ID_PLATFORM_STATE.protoOrdinal();
+    private static final int MANIFEST = STATE_ID_CLPR_ENDPOINT_MANIFEST.protoOrdinal();
+    private static final ClprEndpointManifest NEXT_MANIFEST =
+            ClprEndpointManifest.newBuilder().version(2).build();
+
+    @Test
+    void captureReturnsOnlyItsOwnUpdatesAndKeepsEveryUpdatePending() {
+        final var listener = boundaryListener();
+        listener.beginBlock(false);
+        listener.singletonUpdateChange(
+                ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numAccounts(1_001).build());
+        listener.startCapture();
+        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        final var captured = listener.endCapture();
+        assertThat(captured).extracting(StateChange::stateId).containsExactly(MANIFEST);
+        assertThat(captured.getFirst().singletonUpdateOrThrow().clprEndpointManifestValueOrThrow())
+                .isEqualTo(NEXT_MANIFEST);
+        assertThat(listener.allStateChanges())
+                .extracting(StateChange::stateId)
+                .containsExactly(ENTITY_COUNTS, MANIFEST);
+    }
+
+    @Test
+    void midBlockCaptureLosesNoSingletonUpdate() {
+        final var listener = boundaryListener();
+        final Map<Integer, Object> reader = new HashMap<>(Map.of(
+                PLATFORM_STATE, platformStateAt(1), ENTITY_COUNTS, COUNTS, MANIFEST, ClprEndpointManifest.DEFAULT));
+        // The platform commits PlatformState before each round, so it is pending when the block begins
+        listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(1), platformStateAt(2));
+        listener.beginBlock(true, 0);
+        final var moreAccounts = COUNTS.copyBuilder().numAccounts(1_001).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreAccounts);
+        // The CLPR reconcile externalizes just its own updates mid-block, as HandleWorkflow does
+        listener.startCapture();
+        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        final var midBlock = listener.endCapture();
+        assertThat(midBlock).extracting(StateChange::stateId).containsExactly(MANIFEST);
+        replay(reader, midBlock);
+        // A later round of the same block
+        listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(2), platformStateAt(3));
+        final var evenMoreAccounts =
+                moreAccounts.copyBuilder().numAccounts(1_002).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, moreAccounts, evenMoreAccounts);
+        final var atClose = listener.allStateChanges();
+        listener.reset();
+        replay(reader, atClose);
+
+        assertThat(reader)
+                .containsExactlyInAnyOrderEntriesOf(Map.of(
+                        PLATFORM_STATE, platformStateAt(3), ENTITY_COUNTS, evenMoreAccounts, MANIFEST, NEXT_MANIFEST));
+        // Pending when the block began, so still full for nodes that restarted at the block boundary
+        assertThat(atClose.stream()
+                        .filter(change -> change.stateId() == PLATFORM_STATE)
+                        .map(change -> change.singletonUpdateOrThrow().partial()))
+                .containsExactly(false);
+    }
+
+    @Test
+    void pendingSingletonUpdatedDuringCaptureIsEmittedWithItsLatestValue() {
+        final var listener = boundaryListener();
+        listener.beginBlock(true, 0);
+        final var first = COUNTS.copyBuilder().numAccounts(1_001).build();
+        final var second = first.copyBuilder().numFiles(1_000_001).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
+        listener.startCapture();
+        listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
+        final var reader = replaySingletons(COUNTS, listener.endCapture());
+        assertThat(reader).isEqualTo(second);
+        assertThat(replaySingletons(reader, listener.allStateChanges())).isEqualTo(second);
+    }
+
+    @Test
+    void nodeRestartedAtTheBlockBoundaryEmitsTheSameBytes() {
+        final var running = boundaryListener();
+        // This node streamed the previous block, so it holds baselines and has deltas enabled
+        running.beginBlock(true, 0);
+        running.singletonUpdateChange(
+                ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numFiles(1_000_001).build());
+        running.singletonUpdateChange(PLATFORM_STATE, platformStateAt(1), platformStateAt(2));
+        running.allStateChanges();
+        running.reset();
+        final var fromRunning = clprBlockFrom(running);
+        final var fromRestarted = clprBlockFrom(boundaryListener());
+        assertThat(fromRunning)
+                .anyMatch(change -> change.singletonUpdateOrThrow().partial());
+        assertThat(BlockItem.PROTOBUF.toBytes(item(fromRestarted)))
+                .isEqualTo(BlockItem.PROTOBUF.toBytes(item(fromRunning)));
+    }
+
+    @Test
+    void aCaptureLeftOpenByAFailedActionIsReplacedByTheNextOne() {
+        final var listener = boundaryListener();
+        listener.beginBlock(false);
+        listener.startCapture();
+        listener.singletonUpdateChange(
+                ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numAccounts(1_001).build());
+        // The action threw before endCapture(), so the next streaming action starts a fresh capture
+        listener.startCapture();
+        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        assertThat(listener.endCapture()).extracting(StateChange::stateId).containsExactly(MANIFEST);
+        assertThat(listener.endCapture()).isEmpty();
+        assertThat(listener.allStateChanges())
+                .extracting(StateChange::stateId)
+                .containsExactly(ENTITY_COUNTS, MANIFEST);
+    }
+
+    // One CLPR-enabled block as HandleWorkflow drives it, from the same committed state
+    private static List<StateChange> clprBlockFrom(final BoundaryStateChangeListener listener) {
+        final var counts = COUNTS.copyBuilder().numFiles(1_000_001).build();
+        listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(2), platformStateAt(3));
+        listener.beginBlock(true, 0);
+        listener.singletonUpdateChange(
+                ENTITY_COUNTS, counts, counts.copyBuilder().numAccounts(1_001).build());
+        listener.startCapture();
+        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        final var emitted = new ArrayList<>(listener.endCapture());
+        listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(3), platformStateAt(4));
+        emitted.addAll(listener.allStateChanges());
+        listener.reset();
+        return emitted;
+    }
+
+    private static PlatformState platformStateAt(final long round) {
+        return PlatformState.newBuilder()
+                .roundsNonAncient(26)
+                .consensusSnapshot(ConsensusSnapshot.newBuilder()
+                        .round(round)
+                        .nextConsensusNumber(round * 1_000)
+                        .build())
+                .legacyRunningEventHash(Bytes.wrap("running-hash-" + round))
+                .build();
+    }
+
+    private static void replay(final Map<Integer, Object> reader, final List<StateChange> changes) {
+        for (final var change : changes) {
+            final var stateId = change.stateId();
+            reader.put(
+                    stateId,
+                    StateChangeDeltas.applySingleton(stateId, reader.get(stateId), change.singletonUpdateOrThrow()));
+        }
     }
 
     private static Object replaySingletons(final Object prior, final List<StateChange> changes) {

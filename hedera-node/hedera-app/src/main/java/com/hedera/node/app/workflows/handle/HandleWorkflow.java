@@ -1053,7 +1053,8 @@ public class HandleWorkflow {
         if (streamMode != RECORDS) {
             immediateStateChangeListener.resetKvStateChanges(null);
             if (includeSingletons) {
-                boundaryStateChangeListener.reset();
+                // A reset here would drop singleton updates still pending for this block's final flush
+                boundaryStateChangeListener.startCapture();
             }
         }
         action.run();
@@ -1071,7 +1072,7 @@ public class HandleWorkflow {
                         .build());
             }
             if (includeSingletons) {
-                final var singletonChanges = boundaryStateChangeListener.allStateChanges();
+                final var singletonChanges = boundaryStateChangeListener.endCapture();
                 if (!singletonChanges.isEmpty()) {
                     blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                             .stateChanges(new StateChanges(now, new ArrayList<>(singletonChanges)))
