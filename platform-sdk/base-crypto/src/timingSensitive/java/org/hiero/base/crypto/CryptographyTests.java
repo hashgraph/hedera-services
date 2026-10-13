@@ -66,7 +66,7 @@ class CryptographyTests {
 
         for (int i = 0; i < messages.length; i++) {
             messages[i] = digestPool.next();
-            final Hash hash = CRYPTOGRAPHY.digestSync(messages[i].getPayloadDirect());
+            final Hash hash = CRYPTOGRAPHY.digestSync(messages[i].getPayloadDirect(), Cryptography.DEFAULT_DIGEST_TYPE);
             assertTrue(digestPool.isValid(messages[i], hash.copyToByteArray()));
         }
     }
@@ -75,7 +75,7 @@ class CryptographyTests {
     void hashableSerializableTest() {
         final SerializableHashable hashable = new SerializableHashableDummy(123, "some string");
         assertNull(hashable.getHash());
-        CRYPTOGRAPHY.digestSync(hashable);
+        CRYPTOGRAPHY.digestSync(hashable, Cryptography.DEFAULT_DIGEST_TYPE);
         assertNotNull(hashable.getHash());
 
         final Hash hash = hashable.getHash();

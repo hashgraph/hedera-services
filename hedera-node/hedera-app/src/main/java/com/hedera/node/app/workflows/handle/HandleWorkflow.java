@@ -359,8 +359,10 @@ public class HandleWorkflow {
         // Drive the CLPR endpoint-manifest reconciler each round. The reconciler opens a
         // construction on cold start or after a freeze restart (per design §4), gathers per-node
         // publications routed by ClprEndpointPublicationHandler, and finalizes the manifest on
-        // close. Guarded by clpr.enabled. Both singleton mutations (manifest and construction)
-        // are externalized under a synthetic transaction, even in rounds without transactions.
+        // close. Guarded by clpr.enabled. Wrapped in doStreamingOnlyKvChanges (like the per-round TSS
+        // reconcilers): the manifest and construction singleton mutations are captured by the boundary
+        // listener on commit and externalized when the block closes. doStreamingAllChanges would reset
+        // that listener here, discarding singleton changes from earlier rounds of the still-open block.
         try {
             reconcileClprEndpointManifest(state, round.getConsensusTimestamp(), firstEvent.getConsensusTimestamp());
         } catch (Exception e) {
@@ -1235,8 +1237,8 @@ public class HandleWorkflow {
     }
 
     /**
-     * Drive the CLPR endpoint-manifest reconciler for one round. No-op when CLPR is disabled,
-     * when the endpoint-manifest feature flag is off, or when the active roster is unavailable.
+     * Drive the CLPR endpoint-manifest reconciler for one round. No-op when CLPR is disabled or
+     * when the active roster is unavailable.
      */
     private void reconcileClprEndpointManifest(
             @NonNull final State state, @NonNull final Instant now, @NonNull final Instant firstEventTime) {
@@ -1276,7 +1278,7 @@ public class HandleWorkflow {
         }
 
         // Per-round construction close driving (state write ⇒ streamed).
-        doStreamingClprChanges(
+        doStreamingOnlyKvChanges(
                 ctx.clprWritableStates(),
                 firstEventTime,
                 () -> reconciler.reconcile(now, ctx.manifestStore(), ctx.constructionStore(), ctx.clprConfig()));
@@ -1284,15 +1286,15 @@ public class HandleWorkflow {
 
     /**
      * Common setup shared by {@link #reconcileClprEndpointManifest} and
-     * {@link #pruneClprEndpointManifestOnUpgrade}: the {@code clpr.enabled} /
-     * {@code clpr.endpointManifestEnabled} feature-flag gate, the active roster, the node store, and
-     * the writable CLPR stores. Returns {@link Optional#empty()} when the feature is disabled or the
-     * active roster is unavailable, in which case callers should no-op.
+     * {@link #pruneClprEndpointManifestOnUpgrade}: the {@code clpr.enabled} feature-flag gate, the
+     * active roster, the node store, and the writable CLPR stores. Returns {@link Optional#empty()}
+     * when the feature is disabled or the active roster is unavailable, in which case callers should
+     * no-op.
      */
     @NonNull
     private Optional<ClprManifestContext> clprManifestContextIfEnabled(@NonNull final State state) {
         final var clprConfig = configProvider.getConfiguration().getConfigData(ClprConfig.class);
-        if (!clprConfig.enabled() || !clprConfig.endpointManifestEnabled()) {
+        if (!clprConfig.enabled()) {
             return Optional.empty();
         }
         final var rosterStore = new ReadableRosterStoreImpl(state.getReadableStates(RosterService.NAME));
@@ -1341,8 +1343,8 @@ public class HandleWorkflow {
     /**
      * At the upgrade boundary (where node add/delete is adopted), open a CLPR endpoint-manifest
      * construction if the active roster's composition no longer matches the manifest — so a removed
-     * node's stale entry is pruned and any added node is picked up. No-op when CLPR/manifest is
-     * disabled, the roster is unavailable, or the composition is unchanged.
+     * node's stale entry is pruned and any added node is picked up. No-op when CLPR is disabled, the
+     * roster is unavailable, or the composition is unchanged.
      */
     private void pruneClprEndpointManifestOnUpgrade(@NonNull final State state, @NonNull final Instant now) {
         final var maybeCtx = clprManifestContextIfEnabled(state);
@@ -1351,7 +1353,7 @@ public class HandleWorkflow {
         }
         final var ctx = maybeCtx.get();
         final var reconciler = clprEndpointManifestReconciler.get();
-        doStreamingClprChanges(
+        doStreamingOnlyKvChanges(
                 ctx.clprWritableStates(),
                 now,
                 () -> reconciler.openConstructionOnRosterChange(
