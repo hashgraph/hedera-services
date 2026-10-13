@@ -2,11 +2,8 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_ID;
 import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.FILES_STATE_ID;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_STATE_ID;
@@ -15,7 +12,6 @@ import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.T
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.NODE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,10 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -35,9 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
-import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -45,13 +36,10 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.NodeMigrationRootHashVote;
-import com.hedera.hapi.node.state.clpr.ClprEndpointManifest;
-import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody;
@@ -101,7 +89,6 @@ import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -201,7 +188,6 @@ class SystemTransactionsTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
         given(appContext.idFactory()).willReturn(entityIdFactory);
-        lenient().when(blockStreamManager.lastUsedConsensusTime()).thenReturn(Instant.EPOCH);
         given(initTrigger.name()).willReturn("EVENT_STREAM_RECOVERY");
 
         // Set up creator node info for address book
@@ -289,113 +275,6 @@ class SystemTransactionsTest {
         assertEquals(entityNum, metadata.getValue().getMetadataIfPresent(SYSTEM_TXN_CREATION_ENTITY_NUM, Long.class));
         verify(dispatchProcessor).processDispatch(dispatch);
         verify(stack).commitFullStack();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void externalizesClprInitializationWithOriginalValuesAndAssociatedChanges() throws Exception {
-        final var adminId = AccountID.newBuilder().accountNum(50).build();
-        given(entityIdFactory.newAccountId(50)).willReturn(adminId);
-        final var initialConfig = ClprLedgerConfiguration.newBuilder()
-                .chainId("test-chain")
-                .protocolVersion(1)
-                .timestamp(asTimestamp(Instant.ofEpochSecond(1)))
-                .build();
-        final var configChange = StateChange.newBuilder()
-                .stateId(LEDGER_CONFIGURATION_STATE_ID)
-                .singletonUpdate(SingletonUpdateChange.newBuilder().clprLedgerConfigurationValue(initialConfig))
-                .build();
-        final var changes = List.of(configChange, manifestChange());
-
-        subject.externalizeClprStateChanges(NOW, changes);
-
-        final ArgumentCaptor<List<BlockItem>> items = ArgumentCaptor.forClass(List.class);
-        final var consensusTime = subject.firstReservedSystemTimeFor(NOW);
-        verify(blockStreamManager).writeSavepointItems(items.capture(), eq(consensusTime));
-        final var group = items.getValue();
-        assertEquals(3, group.size());
-        final var signed = SignedTransaction.PROTOBUF.parse(group.get(0).signedTransactionOrThrow());
-        final var body = TransactionBody.PROTOBUF.parse(signed.bodyBytes());
-        assertEquals(initialConfig, body.clprUpdateLedgerConfigurationOrThrow().configurationOrThrow());
-        assertEquals(adminId, body.transactionIDOrThrow().accountIDOrThrow());
-        assertEquals(1, body.transactionIDOrThrow().nonce());
-        assertEquals(asTimestamp(consensusTime), body.transactionIDOrThrow().transactionValidStartOrThrow());
-        assertEquals(SUCCESS, group.get(1).transactionResultOrThrow().status());
-        assertEquals(0, group.get(1).transactionResultOrThrow().transactionFeeCharged());
-        assertEquals(
-                asTimestamp(consensusTime),
-                group.get(1).transactionResultOrThrow().consensusTimestamp());
-        assertEquals(changes, group.get(2).stateChangesOrThrow().stateChanges());
-        assertEquals(
-                asTimestamp(consensusTime), group.get(2).stateChangesOrThrow().consensusTimestamp());
-        verifyNoInteractions(dispatchProcessor, parentTxnFactory, blockRecordManager);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void clprReconciliationAndFollowingSystemWorkUseDistinctReservedTimes() throws Exception {
-        given(entityIdFactory.newAccountId(50))
-                .willReturn(AccountID.newBuilder().accountNum(50).build());
-        final var lastUsed = new AtomicReference<>(subject.firstReservedSystemTimeFor(NOW));
-        given(blockStreamManager.lastUsedConsensusTime()).willAnswer(ignore -> lastUsed.get());
-        doAnswer(invocation -> {
-                    lastUsed.set(invocation.getArgument(1));
-                    return null;
-                })
-                .when(blockStreamManager)
-                .writeSavepointItems(any(), any());
-
-        subject.externalizeClprStateChanges(NOW, List.of(manifestChange()));
-        subject.externalizeClprStateChanges(NOW, List.of(manifestChange()));
-
-        final ArgumentCaptor<List<BlockItem>> items = ArgumentCaptor.forClass(List.class);
-        final var times = ArgumentCaptor.forClass(Instant.class);
-        verify(blockStreamManager, times(2)).writeSavepointItems(items.capture(), times.capture());
-        assertEquals(
-                subject.firstReservedSystemTimeFor(NOW).plusNanos(1),
-                times.getAllValues().getFirst());
-        assertEquals(
-                times.getAllValues().getFirst().plusNanos(1),
-                times.getAllValues().getLast());
-        for (int i = 0; i < 2; i++) {
-            final var signed = SignedTransaction.PROTOBUF.parse(
-                    items.getAllValues().get(i).getFirst().signedTransactionOrThrow());
-            final var body = TransactionBody.PROTOBUF.parse(signed.bodyBytes());
-            assertTrue(body.hasClprEndpointPublication());
-            assertFalse(body.clprEndpointPublicationOrThrow().hasEndpoint());
-            assertEquals(i + 1, body.transactionIDOrThrow().nonce());
-        }
-        final var context = subject.newSystemContext(
-                NOW,
-                state,
-                ignore -> {},
-                SystemTransactions.UseReservedConsensusTimes.YES,
-                SystemTransactions.TriggerStakePeriodSideEffects.YES);
-        assertEquals(lastUsed.get().plusNanos(SystemTransactions.MAX_NANOS_PER_SYSTEM_DISPATCH), context.now());
-        assertTrue(context.now().isBefore(NOW.minusNanos(3)));
-    }
-
-    @Test
-    void doesNotExternalizeClprNoOp() {
-        subject.externalizeClprStateChanges(NOW, List.of());
-        verifyNoInteractions(blockStreamManager, dispatchProcessor, parentTxnFactory);
-    }
-
-    @Test
-    void clprMaintenanceCannotConsumePlatformTransactionTime() {
-        given(blockStreamManager.lastUsedConsensusTime()).willReturn(NOW.minusNanos(4));
-        assertThrows(
-                IllegalStateException.class, () -> subject.externalizeClprStateChanges(NOW, List.of(manifestChange())));
-        verify(blockStreamManager, never()).writeSavepointItems(any(), any());
-    }
-
-    private static StateChange manifestChange() {
-        return StateChange.newBuilder()
-                .stateId(ENDPOINT_MANIFEST_STATE_ID)
-                .singletonUpdate(SingletonUpdateChange.newBuilder()
-                        .clprEndpointManifestValue(
-                                ClprEndpointManifest.newBuilder().version(2).build()))
-                .build();
     }
 
     @Test

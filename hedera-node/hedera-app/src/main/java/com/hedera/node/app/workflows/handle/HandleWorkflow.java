@@ -33,7 +33,6 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.ParentEventReference;
 import com.hedera.hapi.block.stream.input.RoundHeader;
-import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -630,7 +629,7 @@ public class HandleWorkflow {
             logger.info("Doing post-upgrade setup @ {}", consensusNow);
             systemTransactions.doPostUpgradeSetup(consensusNow, state);
             try {
-                initializeMissingClprSingletons(state, consensusNow);
+                initializeMissingClprSingletons(state);
             } catch (Exception e) {
                 logger.error("Failed to initialize CLPR singletons on upgrade", e);
             }
@@ -1324,18 +1323,18 @@ public class HandleWorkflow {
             @NonNull ClprConfig clprConfig) {}
 
     /**
-     * Initializes any CLPR singletons missing from the given state, streaming the resulting changes. Genesis
-     * setup initializes them for new networks; this covers networks upgrading from a version without them. It
-     * runs at handle time so that network properties such as {@code clpr.chainId} are already in effect.
+     * Initializes any CLPR singletons missing from the given state. Their changes accumulate in the boundary
+     * listener and are streamed when the block closes. Genesis setup initializes them for new networks; this
+     * covers networks upgrading from a version without them. It runs at handle time so that network properties
+     * such as {@code clpr.chainId} are already in effect.
      *
      * @param state the state to initialize the singletons in
-     * @param now the platform transaction time at the upgrade boundary
      */
-    private void initializeMissingClprSingletons(@NonNull final State state, @NonNull final Instant now) {
+    private void initializeMissingClprSingletons(@NonNull final State state) {
         final var clprWritableStates = state.getWritableStates(ClprService.NAME);
-        doStreamingClprChanges(
+        doStreamingOnlyKvChanges(
                 clprWritableStates,
-                now,
+                null,
                 () -> V0780ClprSchema.initializeSingletons(clprWritableStates, configProvider.getConfiguration()));
     }
 
@@ -1362,28 +1361,6 @@ public class HandleWorkflow {
                         ctx.constructionStore(),
                         ctx.nodeStore(),
                         ctx.clprConfig()));
-    }
-
-    /** Commits CLPR maintenance and groups its changes under an informational synthetic transaction. */
-    private void doStreamingClprChanges(
-            @NonNull final WritableStates writableStates,
-            @NonNull final Instant nextEventTime,
-            @NonNull final Runnable action) {
-        if (streamMode == RECORDS) {
-            doStreamingAllChanges(writableStates, null, action);
-            return;
-        }
-        immediateStateChangeListener.resetKvStateChanges(null);
-        boundaryStateChangeListener.reset();
-        action.run();
-        if (writableStates instanceof CommittableWritableStates committableWritableStates) {
-            committableWritableStates.commit();
-        }
-        final var changes = new ArrayList<StateChange>(immediateStateChangeListener.getKvStateChanges());
-        changes.addAll(boundaryStateChangeListener.allStateChanges());
-        if (!changes.isEmpty()) {
-            systemTransactions.externalizeClprStateChanges(nextEventTime, changes);
-        }
     }
 
     /**

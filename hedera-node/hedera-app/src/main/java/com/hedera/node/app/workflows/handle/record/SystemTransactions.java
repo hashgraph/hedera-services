@@ -29,10 +29,6 @@ import static org.hiero.consensus.node.NodeUtilities.formatNodeName;
 import static org.hiero.consensus.platformstate.V0540PlatformStateSchema.PLATFORM_STATE_STATE_ID;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.addressbook.NodeCreateTransactionBody;
 import com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody;
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
@@ -44,7 +40,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.NodeMigrationRootHashVote;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -56,7 +51,6 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.NodeStake;
-import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.tss.LedgerIdNodeContribution;
@@ -64,7 +58,6 @@ import com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody;
 import com.hedera.hapi.platform.state.NodeId;
 import com.hedera.hapi.platform.state.PlatformState;
 import com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody;
-import com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.info.TssStartupNetworks;
@@ -598,85 +591,6 @@ public class SystemTransactions {
     }
 
     /**
-     * Gives CLPR maintenance performed outside a transaction an informational transaction boundary in the
-     * block stream. The committed state changes are authoritative; these bodies are never dispatched to
-     * the handlers (which would publish a node endpoint or overwrite the initialization timestamp).
-     *
-     * @param nextEventTime the first event time in the round, or the transaction time at an upgrade boundary
-     * @param changes the committed CLPR singleton changes
-     */
-    public void externalizeClprStateChanges(
-            @NonNull final Instant nextEventTime, @NonNull final List<StateChange> changes) {
-        requireNonNull(nextEventTime);
-        requireNonNull(changes);
-        if (streamMode == RECORDS || changes.isEmpty()) {
-            return;
-        }
-        final var config = configProvider.getConfiguration();
-        final var now = nextReservedSystemTimeFor(nextEventTime, 1);
-        final var lastReservedTime = nextEventTime
-                .minusNanos(1)
-                .minusNanos(config.getConfigData(ConsensusConfig.class).handleMaxPrecedingRecords());
-        if (now.isAfter(lastReservedTime)) {
-            throw new IllegalStateException("No reserved consensus time remaining for CLPR maintenance");
-        }
-        final var timestamp = asTimestamp(now);
-        final var body = TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder()
-                        .accountID(idFactory.newAccountId(
-                                config.getConfigData(AccountsConfig.class).systemAdmin()))
-                        .transactionValidStart(timestamp)
-                        .nonce(nextDispatchNonce++)
-                        .build())
-                .transactionValidDuration(
-                        new Duration(config.getConfigData(HederaConfig.class).transactionMaxValidDuration()));
-        final var initializedConfiguration = changes.stream()
-                .filter(StateChange::hasSingletonUpdate)
-                .map(StateChange::singletonUpdateOrThrow)
-                .filter(update -> update.hasClprLedgerConfigurationValue())
-                .findFirst();
-        if (initializedConfiguration.isPresent()) {
-            body.memo("Synthetic CLPR ledger configuration initialization")
-                    .clprUpdateLedgerConfiguration(ClprUpdateLedgerConfigurationTransactionBody.newBuilder()
-                            .configuration(initializedConfiguration.get().clprLedgerConfigurationValueOrThrow())
-                            .build());
-        } else {
-            // No endpoint: this is a network-wide reconciliation marker, not a node's self-publication.
-            body.memo("Synthetic CLPR endpoint manifest reconciliation")
-                    .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT);
-        }
-        final var signedTransaction = SignedTransaction.newBuilder()
-                .bodyBytes(TransactionBody.PROTOBUF.toBytes(body.build()))
-                .build();
-        blockStreamManager.writeSavepointItems(
-                List.of(
-                        BlockItem.newBuilder()
-                                .signedTransaction(SignedTransaction.PROTOBUF.toBytes(signedTransaction))
-                                .build(),
-                        BlockItem.newBuilder()
-                                .transactionResult(TransactionResult.newBuilder()
-                                        .status(SUCCESS)
-                                        .consensusTimestamp(timestamp)
-                                        .build())
-                                .build(),
-                        BlockItem.newBuilder()
-                                .stateChanges(new StateChanges(timestamp, List.copyOf(changes)))
-                                .build()),
-                now);
-    }
-
-    /** Uses the next free reserved slot, including slots consumed by earlier maintenance in this round. */
-    private Instant nextReservedSystemTimeFor(@NonNull final Instant nextEventTime, final int nanosPerDispatch) {
-        final var firstReservedTime = firstReservedSystemTimeFor(nextEventTime);
-        if (streamMode == RECORDS) {
-            return firstReservedTime;
-        }
-        final var lastUsedTime = blockStreamManager.lastUsedConsensusTime();
-        final var nextFreeTime = lastUsedTime.plusNanos(nanosPerDispatch);
-        return nextFreeTime.isAfter(firstReservedTime) ? nextFreeTime : firstReservedTime;
-    }
-
-    /**
      * Externalizes the ledger id and associated verification key for recursive chain-of-trust proofs.
      *
      * @param state the current state
@@ -977,10 +891,8 @@ public class SystemTransactions {
             @NonNull final TriggerStakePeriodSideEffects triggerStakePeriodSideEffects) {
         final var config = configProvider.getConfiguration();
         final boolean useReserved = useReservedConsensusTimes == UseReservedConsensusTimes.YES;
+        final var firstConsTime = useReserved ? firstReservedSystemTimeFor(now) : now;
         final boolean applyStakePeriodSideEffects = triggerStakePeriodSideEffects == TriggerStakePeriodSideEffects.YES;
-        final var firstConsTime = useReserved
-                ? nextReservedSystemTimeFor(now, applyStakePeriodSideEffects ? MAX_NANOS_PER_SYSTEM_DISPATCH : 1)
-                : now;
         // The number of dispatches we can do in this context is determined by the number of available consensus times,
         // where each dispatch also has an earlier nanosecond free for a preceding NODE_STAKE_UPDATE if this context is
         // applying stake period side effects

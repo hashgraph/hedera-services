@@ -43,6 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -946,9 +947,9 @@ class HandleWorkflowTest {
                 .willReturn(manifest);
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
+                "initializeMissingClprSingletons", com.swirlds.state.State.class);
         method.setAccessible(true);
-        method.invoke(subject, state, NOW);
+        method.invoke(subject, state);
 
         verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
         verify(manifest).put(any(ClprEndpointManifest.class));
@@ -958,7 +959,7 @@ class HandleWorkflowTest {
     @EnumSource(
             value = StreamMode.class,
             names = {"BLOCKS", "BOTH"})
-    void upgradeSingletonInitializationIsStreamedExactlyOnce(final StreamMode mode) throws Exception {
+    void upgradeSingletonInitializationAccumulatesBoundaryChangesOnlyOnce(final StreamMode mode) throws Exception {
         boundaryStateChangeListener = new BoundaryStateChangeListener(
                 mock(StoreMetricsService.class), () -> configProvider.getConfiguration());
         final var ledgerConfig =
@@ -970,24 +971,29 @@ class HandleWorkflowTest {
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         givenSubjectWith(mode, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.chainId", "upgrade-chain"));
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
+                "initializeMissingClprSingletons", com.swirlds.state.State.class);
         method.setAccessible(true);
+        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
+        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
 
-        method.invoke(subject, state, NOW);
-        method.invoke(subject, state, NOW.plusSeconds(1));
+        method.invoke(subject, state);
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<StateChange>> changes = ArgumentCaptor.forClass(List.class);
-        verify(systemTransactions).externalizeClprStateChanges(eq(NOW), changes.capture());
-        assertEquals(2, changes.getValue().size());
-        assertTrue(changes.getValue().stream()
+        final var changes = boundaryStateChangeListener.allStateChanges();
+        assertEquals(3, changes.size());
+        assertTrue(changes.contains(pendingChange));
+        assertTrue(changes.stream()
                 .anyMatch(change -> change.singletonUpdateOrThrow().hasClprLedgerConfigurationValue()));
-        assertTrue(changes.getValue().stream()
+        assertTrue(changes.stream()
                 .anyMatch(change -> change.singletonUpdateOrThrow().hasClprEndpointManifestValue()));
         assertEquals("upgrade-chain", ledgerConfig.get().chainId());
         assertEquals(new Timestamp(1, 0), ledgerConfig.get().timestamp());
         assertEquals(1, manifest.get().version());
-        verify(systemTransactions, never()).externalizeClprStateChanges(eq(NOW.plusSeconds(1)), any());
+
+        // Once the block boundary has consumed these changes, initialization must not emit them again.
+        boundaryStateChangeListener.reset();
+        method.invoke(subject, state);
+        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
+        verifyNoInteractions(systemTransactions, blockStreamManager);
     }
 
     @ParameterizedTest
@@ -1098,7 +1104,7 @@ class HandleWorkflowTest {
         subject.handleRound(state, round, ignore -> {});
 
         final var changes = boundaryStateChangeListener.allStateChanges();
-        verify(systemTransactions, never()).externalizeClprStateChanges(any(), any());
+        verify(blockStreamManager, never()).writeSavepointItems(any(), any());
         assertTrue(changes.contains(pendingChange));
         assertEquals(extendsGrace ? 2 : 3, changes.size());
         assertEquals(!extendsGrace, changes.stream().anyMatch(change -> change.singletonUpdateOrThrow()
