@@ -13,24 +13,32 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 
-/**
- * This is a mechanism to flush data (dirty hashes, dirty leaves, deleted leaves) to disk
- * outside of the virtual map cache and pipeline.
- *
- * <p>This flusher is thread safe, its methods like {@link #updateHashChunk(VirtualHashChunk)},
- * {@link #updateLeaf(VirtualLeafBytes)}, and {@link #deleteLeaf(VirtualLeafBytes)} can
- * be called from multiple threads. At most one flush runs at a time. However, some of the calling threads may
- * be blocked till the currently accumulated data is flushed to disk.
- *
- * <p>{@link #init(long, long)} must be called in the beginning of flush, and {@link
- * #finish()} must be called in the end.
- *
- */
+/// This is a mechanism to flush data (dirty hashes, dirty leaves, deleted leaves) to disk
+/// outside of the virtual map cache and pipeline.
+///
+/// This flusher is thread safe, its methods like [#updateHashChunk(VirtualHashChunk)],
+/// [#updateLeaf(VirtualLeafBytes)], and [#deleteLeaf(VirtualLeafBytes)] can
+/// be called from multiple threads. At most one flush runs at a time. However, some of the calling threads may
+/// be blocked till the currently accumulated data is flushed to disk.
+///
+/// [#init(long, long)] must be called in the beginning of flush, and [#finish()] must be called in the end.
+///
+/// Memory is bounded by backpressure: while a flush is running, producers fill one next batch until
+/// it's due for a flush, then block until the running flush completes, so at most about two batches are
+/// kept in memory. Blocking uses `synchronized` and `wait()` rather than a `Condition`,
+/// so that ForkJoinPool workers don't spawn compensation threads. Flushing must never depend on progress
+/// of producers, otherwise blocked producers may deadlock.
+///
+/// Flushes run synchronously in one of the calling threads, so any of [#updateHashChunk(VirtualHashChunk)],
+/// [#updateLeaf(VirtualLeafBytes)], [#deleteLeaf(VirtualLeafBytes)], and [#finish()] may throw
+/// an exception, if a flush fails. The original exception is thrown to the thread that ran the flush, and data
+/// in the failed batch is lost. The failure is recorded: producers blocked on the failed flush are released,
+/// and all subsequent calls to these methods, including [#finish()], throw an [IllegalStateException]
+/// with the original exception as the cause. If [#finish()] returns normally, all data has been flushed.
 public class HashLeafFlusher {
 
     private static final Logger logger = LogManager.getLogger(HashLeafFlusher.class);
@@ -41,16 +49,23 @@ public class HashLeafFlusher {
 
     private final VirtualDataSource dataSource;
 
-    private List<VirtualLeafBytes> updatedLeaves;
-    private List<VirtualLeafBytes> deletedLeaves;
-    private List<VirtualHashChunk> updatedHashChunks;
+    // The batch that is currently being filled. Null before init() and after finish(). Guarded by this
+    private Batch batch;
 
     // Flushes are initiated from updateHashChunk(), updateLeaf(), and deleteLeaf(). While a flush is in progress, other
-    // nodes
-    // are still hashed in parallel, so it may happen that enough nodes are hashed to
-    // start a new flush, while the previous flush is not complete yet. This flag is
-    // protection from that
-    private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
+    // producers keep adding data in parallel, so it may happen that enough data is added to start a new flush, while
+    // the previous flush is not complete yet. This flag is protection from that. Guarded by this
+    private boolean flushInProgress = false;
+
+    // The first flush failure, if any. Once set, all subsequent calls fail. Guarded by this
+    private Throwable failure;
+
+    // Data accumulated for a single flush
+    private static final class Batch {
+        final List<VirtualHashChunk> hashChunks = new ArrayList<>();
+        final List<VirtualLeafBytes> leaves = new ArrayList<>();
+        final List<VirtualLeafBytes> deletedLeaves = new ArrayList<>();
+    }
 
     private final int hashChunkHeight;
 
@@ -60,31 +75,56 @@ public class HashLeafFlusher {
 
     private final Marker logMarker;
 
-    /**
-     * Creates a flusher that logs with the {@code VIRTUAL_MERKLE_STATS} marker.
-     */
+    // Passed to the data source with every flush, see VirtualDataSource.saveRecords()
+    private final boolean reconnectContext;
+
+    /// Creates a flusher that logs with the `VIRTUAL_MERKLE_STATS` marker and doesn't flush in the
+    /// reconnect context.
+    ///
+    /// @param dataSource the data source to flush data to
+    /// @param flushInterval the flush threshold, see
+    ///     [#HashLeafFlusher(VirtualDataSource, int, VirtualMapStatistics, Marker, boolean)]
+    /// @param statistics virtual map statistics to record flush durations
     public HashLeafFlusher(
             @NonNull final VirtualDataSource dataSource,
             final int flushInterval,
             @NonNull final VirtualMapStatistics statistics) {
-        this(dataSource, flushInterval, statistics, VIRTUAL_MERKLE_STATS.getMarker());
+        this(dataSource, flushInterval, statistics, VIRTUAL_MERKLE_STATS.getMarker(), false);
     }
 
-    /**
-     * Creates a flusher that logs with the given marker.
-     */
+    /// Creates a flusher that logs with the given marker.
+    ///
+    /// @param dataSource the data source to flush data to
+    /// @param flushInterval the flush threshold. A flush is started once any of the following reaches this
+    ///     value: the number of hash slots in collected hash chunks (number of chunks times the chunk size),
+    ///     the number of updated leaves, or the number of deleted leaves. While a flush is running, the same
+    ///     threshold is used for backpressure. If zero or negative, all data is flushed in [#finish()] only,
+    ///     and producers never block
+    /// @param statistics virtual map statistics to record flush durations
+    /// @param logMarker the marker to use for flush logs
+    /// @param reconnectContext whether data is flushed in the reconnect context. Passed to the data source
+    ///     with every flush, see [VirtualDataSource#saveRecords]. Affects how leaves are deleted, see
+    ///     [#deleteLeaf(VirtualLeafBytes)]
     public HashLeafFlusher(
             @NonNull final VirtualDataSource dataSource,
             final int flushInterval,
             @NonNull final VirtualMapStatistics statistics,
-            @NonNull final Marker logMarker) {
+            @NonNull final Marker logMarker,
+            final boolean reconnectContext) {
         this.dataSource = Objects.requireNonNull(dataSource, "dataSource must not be null");
         this.hashChunkHeight = this.dataSource.getHashChunkHeight();
         this.flushInterval = flushInterval;
         this.statistics = Objects.requireNonNull(statistics, "statistics must not be null");
         this.logMarker = Objects.requireNonNull(logMarker, "logMarker must not be null");
+        this.reconnectContext = reconnectContext;
     }
 
+    /// Initializes this flusher with the leaf path range of the target tree. Must be called once, before any
+    /// other methods. The range is passed to the data source with every flush.
+    ///
+    /// @param firstLeafPath the first leaf path, or [MerklePathUtils#INVALID_PATH] if the tree is empty
+    /// @param lastLeafPath the last leaf path, or [MerklePathUtils#INVALID_PATH] if the tree is empty
+    /// @throws IllegalArgumentException if the path range is invalid, or if this flusher is already initialized
     public synchronized void init(final long firstLeafPath, final long lastLeafPath) {
         if (firstLeafPath != MerklePathUtils.INVALID_PATH && !(firstLeafPath > 0 && firstLeafPath <= lastLeafPath)) {
             throw new IllegalArgumentException("The first leaf path is invalid. firstLeafPath=" + firstLeafPath
@@ -102,9 +142,7 @@ public class HashLeafFlusher {
         this.firstLeafPath = firstLeafPath;
         this.lastLeafPath = lastLeafPath;
 
-        updatedHashChunks = new ArrayList<>();
-        updatedLeaves = new ArrayList<>();
-        deletedLeaves = new ArrayList<>();
+        batch = new Batch();
 
         logger.info(
                 logMarker,
@@ -113,113 +151,183 @@ public class HashLeafFlusher {
                 lastLeafPath);
     }
 
+    /// Adds an updated hash chunk to the current batch. May be called from multiple threads.
+    ///
+    /// If the batch is due for a flush, and no other flush is running, the batch is flushed in the
+    /// current thread before this method returns. If another flush is running and the batch is already due
+    /// for a flush, this method blocks till the running flush is complete.
+    ///
+    /// @param chunk the hash chunk to save
+    /// @throws RuntimeException if a flush run in the current thread fails, see class docs
+    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
+    ///     waiting for or running a flush. The interrupted flag is left set
     public void updateHashChunk(@NonNull final VirtualHashChunk chunk) {
-        assert (updatedHashChunks != null) && (updatedLeaves != null) && (deletedLeaves != null)
-                : "updateHash called without init";
-        actionAndCheckFlush(() -> updatedHashChunks.add(chunk));
+        actionAndCheckFlush(() -> batch.hashChunks.add(chunk));
     }
 
+    /// Adds an updated leaf to the current batch. May be called from multiple threads. Flushes and blocks
+    /// the same way as [#updateHashChunk(VirtualHashChunk)].
+    ///
+    /// @param leaf the leaf to save
+    /// @throws RuntimeException if a flush run in the current thread fails, see class docs
+    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
+    ///     waiting for or running a flush. The interrupted flag is left set
     public void updateLeaf(final VirtualLeafBytes<?> leaf) {
-        assert (updatedHashChunks != null) && (updatedLeaves != null) && (deletedLeaves != null)
-                : "updateLeaf called without init";
-        actionAndCheckFlush(() -> updatedLeaves.add(leaf));
+        actionAndCheckFlush(() -> batch.leaves.add(leaf));
     }
 
+    /// Adds a leaf to delete to the current batch. May be called from multiple threads. Flushes and blocks
+    /// the same way as [#updateHashChunk(VirtualHashChunk)].
+    ///
+    /// In the reconnect context, the leaf is a candidate for removal only. During the flush, its key is
+    /// removed from the data source only if the key is still mapped to the leaf path, so a key that has
+    /// been moved to a different path isn't lost. Otherwise, the key is removed unconditionally.
+    ///
+    /// @param leaf the leaf to delete
+    /// @throws RuntimeException if a flush run in the current thread fails, see class docs
+    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
+    ///     waiting for or running a flush. The interrupted flag is left set
     public void deleteLeaf(final VirtualLeafBytes<?> leaf) {
-        assert (updatedHashChunks != null) && (updatedLeaves != null) && (deletedLeaves != null)
-                : "deleteLeaf called without init";
-        actionAndCheckFlush(() -> deletedLeaves.add(leaf));
+        actionAndCheckFlush(() -> batch.deletedLeaves.add(leaf));
     }
 
     private void actionAndCheckFlush(final Runnable action) {
-        final List<VirtualHashChunk> dirtyHashChunksToFlush;
-        final List<VirtualLeafBytes> dirtyLeavesToFlush;
-        final List<VirtualLeafBytes> deletedLeavesToFlush;
+        assert batch != null : "Flusher is not initialized or already finished";
+        final Batch toFlush;
         synchronized (this) {
+            // Backpressure: the next batch is already due for a flush, wait till the running flush is complete
+            while (flushInProgress && isFlushNeeded()) {
+                waitForFlush();
+            }
+            throwIfFailed();
             action.run();
-            if (!isFlushNeeded() || !flushInProgress.compareAndSet(false, true)) {
+            if (flushInProgress || !isFlushNeeded()) {
                 return;
             }
-            dirtyHashChunksToFlush = updatedHashChunks;
-            updatedHashChunks = new ArrayList<>();
-            dirtyLeavesToFlush = updatedLeaves;
-            updatedLeaves = new ArrayList<>();
-            deletedLeavesToFlush = deletedLeaves;
-            deletedLeaves = new ArrayList<>();
+            flushInProgress = true;
+            toFlush = takeBatch();
         }
-        // Call flush() outside of the synchronized block to make sure updateHash(), updateLeaf(), and
-        // deleteLeaf() aren't blocked on other threads
-        flush(dirtyHashChunksToFlush, dirtyLeavesToFlush, deletedLeavesToFlush);
+        // Call flush() outside of the synchronized block to make sure updateHashChunk(), updateLeaf(), and
+        // deleteLeaf() aren't blocked for the duration of the flush, unless the next batch is also due
+        flushAndRelease(toFlush);
     }
 
+    // Runs a flush, then releases threads waiting for it. If the flush fails, the failure is recorded,
+    // so all subsequent calls fail, too. May be called with or without the lock held
+    private void flushAndRelease(@NonNull final Batch toFlush) {
+        Throwable error = null;
+        try {
+            flush(toFlush);
+        } catch (final RuntimeException | Error e) {
+            error = e;
+            throw e;
+        } finally {
+            synchronized (this) {
+                if (failure == null) {
+                    failure = error;
+                }
+                flushInProgress = false;
+                notifyAll();
+            }
+        }
+    }
+
+    // Must be called with the lock held
+    private void throwIfFailed() {
+        if (failure != null) {
+            throw new IllegalStateException("A previous flush failed", failure);
+        }
+    }
+
+    // Must be called with the lock held
+    private void waitForFlush() {
+        try {
+            wait();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for a flush", e);
+        }
+    }
+
+    // Must be called with the lock held
+    private Batch takeBatch() {
+        final Batch full = batch;
+        batch = new Batch();
+        return full;
+    }
+
+    // Must be called with the lock held
     private boolean isFlushNeeded() {
         if (flushInterval <= 0) {
             // All data is flushed in finish() only
             return false;
         }
-        return (updatedHashChunks.size() * VirtualHashChunk.getChunkSize(hashChunkHeight) >= flushInterval)
-                || (updatedLeaves.size() >= flushInterval)
-                || (deletedLeaves.size() >= flushInterval);
+        return (batch.hashChunks.size() * VirtualHashChunk.getChunkSize(hashChunkHeight) >= flushInterval)
+                || (batch.leaves.size() >= flushInterval)
+                || (batch.deletedLeaves.size() >= flushInterval);
     }
 
+    /// Waits for the running flush, if any, to complete, then flushes all remaining data in the current
+    /// thread. The final flush is run even if there is no data, so the data source is always updated with
+    /// the leaf path range from [#init(long, long)]. Must be called once, after all calls to
+    /// [#updateHashChunk(VirtualHashChunk)], [#updateLeaf(VirtualLeafBytes)], and
+    /// [#deleteLeaf(VirtualLeafBytes)] are complete.
+    ///
+    /// @throws RuntimeException if the final flush fails
+    /// @throws IllegalStateException if an earlier flush failed, if this flusher is not initialized or already
+    ///     finished, or if the current thread is interrupted while waiting for or running a flush. The
+    ///     interrupted flag is left set
     public synchronized void finish() {
-        assert (updatedHashChunks != null) && (updatedLeaves != null) && (deletedLeaves != null)
-                : "finish called without init";
-        final List<VirtualHashChunk> dirtyHashChunksToFlush = updatedHashChunks;
-        final List<VirtualLeafBytes> dirtyLeavesToFlush = updatedLeaves;
-        final List<VirtualLeafBytes> deletedLeavesToFlush = deletedLeaves;
-        updatedHashChunks = null;
-        updatedLeaves = null;
-        deletedLeaves = null;
-        assert !flushInProgress.get() : "Flush must not be in progress when reconnect is finished";
-        flushInProgress.set(true);
+        if (batch == null) {
+            throw new IllegalStateException("Flusher is not initialized or already finished");
+        }
+        while (flushInProgress) {
+            waitForFlush();
+        }
+        throwIfFailed();
+        final Batch last = batch;
+        batch = null;
+        flushInProgress = true;
         // Nodes / leaves lists may be empty, but a flush is still needed to make sure
         // all stale leaves are removed from the data source
-        flush(dirtyHashChunksToFlush, dirtyLeavesToFlush, deletedLeavesToFlush);
+        flushAndRelease(last);
     }
 
-    // Since flushes may take quite some time, this method is called outside synchronized blocks.
-    private void flush(
-            @NonNull final List<VirtualHashChunk> hashChunksToFlush,
-            @NonNull final List<VirtualLeafBytes> leavesToFlush,
-            @NonNull final List<VirtualLeafBytes> leavesToDelete) {
-        assert flushInProgress.get() : "Flush in progress flag must be set";
+    // Since flushes may take quite some time, this method is called outside synchronized blocks,
+    // except in finish()
+    private void flush(@NonNull final Batch toFlush) {
+        throwIfInterrupted();
+        logger.info(
+                logMarker,
+                "Flush: {} updated hash chunks, {} updated leaves, {} deleted leaves",
+                toFlush.hashChunks.size(),
+                toFlush.leaves.size(),
+                toFlush.deletedLeaves.size());
+        // flush it down
+        final long start = System.currentTimeMillis();
         try {
+            dataSource.saveRecords(
+                    firstLeafPath,
+                    lastLeafPath,
+                    toFlush.hashChunks.stream(),
+                    toFlush.leaves.stream(),
+                    toFlush.deletedLeaves.stream(),
+                    reconnectContext);
+            // If interrupted, saveRecords() restores the interrupted flag and returns normally,
+            // possibly before all data is written. This must not be treated as a success
             throwIfInterrupted();
-            logger.info(
-                    logMarker,
-                    "Flush: {} updated hash chunks, {} updated leaves, {} deleted leaves",
-                    hashChunksToFlush.size(),
-                    leavesToFlush.size(),
-                    leavesToDelete.size());
-            // flush it down
-            final long start = System.currentTimeMillis();
-            try {
-                dataSource.saveRecords(
-                        firstLeafPath,
-                        lastLeafPath,
-                        hashChunksToFlush.stream(),
-                        leavesToFlush.stream(),
-                        leavesToDelete.stream(),
-                        true);
-                // If interrupted, saveRecords() restores the interrupted flag and returns normally,
-                // possibly before all data is written. This must not be treated as a success
-                throwIfInterrupted();
-                final long end = System.currentTimeMillis();
-                statistics.recordFlush(end - start);
-                logger.debug(logMarker, "Flushed in {} ms", end - start);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } finally {
-            flushInProgress.set(false);
+            final long end = System.currentTimeMillis();
+            statistics.recordFlush(end - start);
+            logger.debug(logMarker, "Flushed in {} ms", end - start);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     // Fails the flush if the current thread is interrupted. The interrupted flag is left set
     private static void throwIfInterrupted() {
         if (Thread.currentThread().isInterrupted()) {
-            throw new IllegalStateException("Interrupted while flushing hashes and leaves");
+            throw new IllegalStateException("Interrupted while flushing");
         }
     }
 }

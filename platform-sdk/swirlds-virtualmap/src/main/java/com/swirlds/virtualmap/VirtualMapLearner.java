@@ -140,7 +140,7 @@ public final class VirtualMapLearner {
         this.dataSource = originalMap.detachAsDataSourceCopy();
         this.dataSource.copyStatisticsFrom(originalMap.getDataSource());
 
-        reconnectFlusher = new HashLeafFlusher(dataSource, flushInterval, statistics, RECONNECT.getMarker());
+        reconnectFlusher = new HashLeafFlusher(dataSource, flushInterval, statistics, RECONNECT.getMarker(), true);
     }
 
     /**

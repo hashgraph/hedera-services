@@ -130,10 +130,9 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
 
     /// Flush interval for full rehash, in hash slots (~96MB of heap). The listener flushes collected
     /// chunks once `number of chunks * 2 ^ chunkHeight` reaches this value. Every flush has a fixed
-    /// cost (a new data file, metadata update, etc.) and creates a data file to compact later. Note
-    /// that the listener doesn't apply backpressure: while a flush is in progress, hashing threads
-    /// keep collecting chunks, and the next batch may exceed the interval, if flushes are slower
-    /// than hashing.
+    /// cost (a new data file, metadata update, etc.) and creates a data file to compact later. While
+    /// a flush is in progress, hashing threads fill one next batch up to the same size, then block
+    /// until the flush completes, so memory is bounded by about twice the interval.
     private static final int FULL_REHASH_FLUSH_INTERVAL = 2_000_000;
 
     /**
