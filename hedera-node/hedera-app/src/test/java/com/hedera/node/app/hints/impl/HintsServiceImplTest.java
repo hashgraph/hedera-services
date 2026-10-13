@@ -41,7 +41,9 @@ import com.hedera.node.app.service.roster.impl.RosterTransitionWeights;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.config.data.TssConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.node.internal.network.Network;
+import com.hedera.node.internal.network.NodeTssMetadata;
 import com.hedera.node.internal.network.TssMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -64,6 +66,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -405,8 +408,13 @@ class HintsServiceImplTest {
         verify(crsState).put(CRSState.DEFAULT);
     }
 
-    @Test
-    void doesGenesisSetupFromStartupNetworkTssMetadata() {
+    @ParameterizedTest
+    @ValueSource(strings = {"DEV", "TEST", "PROD"})
+    void respectsProfileWhenInitializingGenesisFromStartupNetworkTssMetadata(final String profile) {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("hedera.profiles.active", profile)
+                .withValue("tss.hintsEnabled", true)
+                .getOrCreateConfig();
         final var activeConstruction = HintsConstruction.newBuilder()
                 .constructionId(123L)
                 .crsId(1)
@@ -419,29 +427,59 @@ class HintsServiceImplTest {
                 .numParties(8)
                 .crs(Bytes.wrap(new byte[304 + 8 * 288]))
                 .build();
+        final var hintsKey = Bytes.wrap("startup-hints-key");
         final var network = Network.newBuilder()
                 .tssMetadata(TssMetadata.newBuilder()
                         .activeHintsConstruction(activeConstruction)
                         .crsState(startupCrsState))
+                .nodeTssMetadata(NodeTssMetadata.newBuilder().hintsKey(hintsKey).build())
                 .build();
         subject = new HintsServiceImpl(component, library, () -> network);
-        given(crsState.get()).willReturn(startupCrsState);
         given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID))
                 .willReturn(activeConstructionState);
         given(writableStates.<HintsConstruction>getSingleton(V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID))
                 .willReturn(nextConstructionState);
         given(writableStates.<CRSState>getSingleton(V060HintsSchema.CRS_STATE_STATE_ID))
                 .willReturn(crsState);
-        given(writableStates.<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID))
-                .willReturn(hintsKeys);
-        given(component.signingContext()).willReturn(context);
+        final var newCrs = Bytes.wrap("new-crs");
+        if (profile.equals("PROD")) {
+            given(library.newCrs((short) partySizeForRosterNodeCount(7))).willReturn(newCrs);
+        } else {
+            given(writableStates.<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID))
+                    .willReturn(hintsKeys);
+            given(component.signingContext()).willReturn(context);
+            given(crsState.get()).willReturn(startupCrsState);
+        }
 
-        assertTrue(subject.doGenesisSetup(writableStates, configuration, 7));
+        assertTrue(subject.doGenesisSetup(writableStates, config, 7));
 
-        verify(activeConstructionState).put(activeConstruction);
         verify(nextConstructionState).put(HintsConstruction.DEFAULT);
-        verify(crsState).put(startupCrsState);
-        verify(context).setConstruction(activeConstruction, startupCrsState);
+        verify(nextCrsState).put(CRSState.DEFAULT);
+        if (profile.equals("PROD")) {
+            verify(activeConstructionState).put(HintsConstruction.DEFAULT);
+            verify(crsState)
+                    .put(CRSState.newBuilder()
+                            .stage(com.hedera.hapi.node.state.hints.CRSStage.GATHERING_CONTRIBUTIONS)
+                            .nextContributingNodeId(0L)
+                            .crs(newCrs)
+                            .initialCrs(newCrs)
+                            .numParties(partySizeForRosterNodeCount(7))
+                            .build());
+            verify(writableStates, never()).get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID);
+            verifyNoInteractions(hintsKeys, component, context);
+        } else {
+            verify(activeConstructionState).put(activeConstruction);
+            verify(crsState).put(startupCrsState);
+            verify(context).setConstruction(activeConstruction, startupCrsState);
+            verify(hintsKeys)
+                    .put(
+                            new HintsPartyId(0, 8, 1),
+                            HintsKeySet.newBuilder()
+                                    .nodeId(0L)
+                                    .adoptionTime(asTimestamp(Instant.EPOCH))
+                                    .key(hintsKey)
+                                    .build());
+        }
     }
 
     @Test

@@ -61,6 +61,52 @@ class TssStartupNetworksTest {
     private Path tempDir;
 
     @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void doesNotInitializeHintsStateUnderProdProfile(final boolean globalMetadata) {
+        final var states = mock(WritableStates.class);
+        final var network = globalMetadata
+                ? Network.newBuilder()
+                        .tssMetadata(TssMetadata.newBuilder().activeHintsConstruction(hintsConstruction()))
+                        .build()
+                : networkWithSelfPrivateKeys();
+
+        assertThat(TssStartupNetworks.initializeHintsState(states, network, config("PROD")))
+                .isEqualTo(HintsConstruction.DEFAULT);
+
+        verifyNoInteractions(states);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void doesNotInitializeHistoryStateUnderProdProfile(final boolean globalMetadata) {
+        final var states = mock(WritableStates.class);
+        final var network = globalMetadata
+                ? Network.newBuilder()
+                        .tssMetadata(TssMetadata.newBuilder().activeProofConstruction(proofConstruction()))
+                        .build()
+                : networkWithSelfPrivateKeys();
+
+        assertThat(TssStartupNetworks.initializeHistoryState(states, network, config("PROD")))
+                .isEqualTo(HistoryProofConstruction.DEFAULT);
+
+        verifyNoInteractions(states);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"DEV", "TEST", "PROD"})
+    void doesNotInitializeStateWithoutTssMetadata(final String profile) {
+        final var states = mock(WritableStates.class);
+        final var config = config(profile);
+
+        assertThat(TssStartupNetworks.initializeHintsState(states, Network.DEFAULT, config))
+                .isEqualTo(HintsConstruction.DEFAULT);
+        assertThat(TssStartupNetworks.initializeHistoryState(states, Network.DEFAULT, config))
+                .isEqualTo(HistoryProofConstruction.DEFAULT);
+
+        verifyNoInteractions(states);
+    }
+
+    @ParameterizedTest
     @ValueSource(ints = {16, 64})
     @SuppressWarnings("unchecked")
     void restoresBoundCapacityAndEpochFromStartupJson(final int capacity) throws Exception {
@@ -101,7 +147,8 @@ class TssStartupNetworksTest {
         when(states.<CRSState>getSingleton(CRS_STATE_STATE_ID)).thenReturn(activeCrs);
         when(states.<CRSState>getSingleton(NEXT_CRS_STATE_ID)).thenReturn(nextCrs);
         when(states.<HintsPartyId, HintsKeySet>get(HINTS_KEY_SETS_STATE_ID)).thenReturn(keys);
-        assertThat(TssStartupNetworks.initializeHintsState(states, decoded)).isEqualTo(construction);
+        assertThat(TssStartupNetworks.initializeHintsState(states, decoded, config("DEV")))
+                .isEqualTo(construction);
         verify(active).put(construction);
         verify(activeCrs).put(crs);
         verify(nextCrs).put(CRSState.DEFAULT);
@@ -115,7 +162,9 @@ class TssStartupNetworksTest {
         final var states = mock(WritableStates.class);
         final var network = startupNetwork(capacity, 1, 1);
 
-        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TssStartupNetworks.initializeHintsState(states, network, config("DEV")));
 
         verifyNoInteractions(states);
     }
@@ -125,7 +174,9 @@ class TssStartupNetworksTest {
         final var states = mock(WritableStates.class);
         final var network = startupNetwork(64, 63, 1);
 
-        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TssStartupNetworks.initializeHintsState(states, network, config("DEV")));
 
         verifyNoInteractions(states);
     }
@@ -135,7 +186,9 @@ class TssStartupNetworksTest {
         final var states = mock(WritableStates.class);
         final var network = startupNetwork(64, 1, 63);
 
-        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TssStartupNetworks.initializeHintsState(states, network, config("DEV")));
 
         verifyNoInteractions(states);
     }
@@ -153,7 +206,9 @@ class TssStartupNetworksTest {
                         .toList())
                 .build();
 
-        assertThrows(IllegalArgumentException.class, () -> TssStartupNetworks.initializeHintsState(states, network));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TssStartupNetworks.initializeHintsState(states, network, config("DEV")));
 
         verifyNoInteractions(states);
     }
@@ -204,7 +259,7 @@ class TssStartupNetworksTest {
                 .build();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> TssStartupNetworks.initializeHintsState(mock(WritableStates.class), unfinished));
+                () -> TssStartupNetworks.initializeHintsState(mock(WritableStates.class), unfinished, config("DEV")));
         final var mismatched = unfinished
                 .copyBuilder()
                 .tssMetadata(TssMetadata.newBuilder()
@@ -213,7 +268,7 @@ class TssStartupNetworksTest {
                 .build();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> TssStartupNetworks.initializeHintsState(mock(WritableStates.class), mismatched));
+                () -> TssStartupNetworks.initializeHintsState(mock(WritableStates.class), mismatched, config("DEV")));
     }
 
     @Test
@@ -275,9 +330,10 @@ class TssStartupNetworksTest {
         assertThat(metadata).isEmpty();
     }
 
-    @Test
-    void writesStartupNetworkPrivateKeysUnderNonProdProfile() {
-        final var config = config("DEV");
+    @ParameterizedTest
+    @ValueSource(strings = {"DEV", "TEST"})
+    void writesStartupNetworkPrivateKeysUnderNonProdProfile(final String profile) {
+        final var config = config(profile);
 
         TssStartupNetworks.writePrivateKeys(networkWithSelfPrivateKeys(), config, SELF_NODE_ID);
 
@@ -288,11 +344,16 @@ class TssStartupNetworksTest {
     @Test
     void doesNotWriteStartupNetworkPrivateKeysUnderProdProfile() {
         final var config = config("PROD");
+        final var existingBlsKey = Bytes.wrap("existing-bls-key");
+        final var existingSchnorrKeys =
+                new TssKeyFiles.SchnorrKeyPair(Bytes.wrap("existing-private"), Bytes.wrap("existing-public"));
+        TssKeyFiles.writeBlsPrivateKey(config, CONSTRUCTION_ID, existingBlsKey);
+        TssKeyFiles.writeSchnorrKeyPair(config, CONSTRUCTION_ID, existingSchnorrKeys);
 
         TssStartupNetworks.writePrivateKeys(networkWithSelfPrivateKeys(), config, SELF_NODE_ID);
 
-        assertThat(TssKeyFiles.readBlsPrivateKey(config, CONSTRUCTION_ID)).isEmpty();
-        assertThat(TssKeyFiles.readSchnorrKeyPair(config, CONSTRUCTION_ID)).isEmpty();
+        assertThat(TssKeyFiles.readBlsPrivateKey(config, CONSTRUCTION_ID)).contains(existingBlsKey);
+        assertThat(TssKeyFiles.readSchnorrKeyPair(config, CONSTRUCTION_ID)).contains(existingSchnorrKeys);
     }
 
     private Network networkWithSelfPrivateKeys() {
