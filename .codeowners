@@ -194,7 +194,7 @@ gradlew.bat                                         %github-maintainers
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                         %github-maintainers
 
-# Self-protection for this file - changes to ownership itself must be approved
+# Self-protection for actual CODEOWNERS files - changes to ownership itself must be approved
 /.codeowners                                        %github-maintainers
 /.github/CODEOWNERS                                 %github-maintainers
 

@@ -194,6 +194,10 @@ gradlew.bat                                         @hiero-ledger/github-maintai
 # Self-protection for root CODEOWNERS files (this file should not exist and should definitely require approval)
 /CODEOWNERS                                         @hiero-ledger/github-maintainers
 
+# Self-protection for actual CODEOWNERS files - changes to ownership itself must be approved
+/.github/CODEOWNERS                                 @hiero-ledger/github-maintainers
+.codeowners                                         @hiero-ledger/github-maintainers
+
 # Protect the repository root files
 /README.md                                          @hiero-ledger/github-maintainers @hiero-ledger/hiero-consensus-node-foundation-codeowners @hiero-ledger/hiero-consensus-node-execution-codeowners @hiero-ledger/hiero-consensus-node-consensus-codeowners
 **/LICENSE                                          @hiero-ledger/github-maintainers
