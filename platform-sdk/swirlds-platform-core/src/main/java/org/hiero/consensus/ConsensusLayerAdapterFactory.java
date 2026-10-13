@@ -63,6 +63,7 @@ import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.node.KeysAndCerts;
+import org.hiero.consensus.model.roster.ConsensusLayerRosterInputs;
 import org.hiero.consensus.model.status.ConsensusLayerStatus;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
 import org.hiero.consensus.monitoring.FallenBehindMonitor;
@@ -264,7 +265,7 @@ public class ConsensusLayerAdapterFactory {
                 configuration,
                 metrics,
                 time,
-                rosterHistory,
+                new ConsensusLayerRosterInputs(rosterHistory.history(), rosterHistory.rosters()),
                 keysAndCerts,
                 selfId,
                 recycleBin,

@@ -730,7 +730,7 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
                 }
             }
             case BEHIND -> BlockHashSigning.cancelAndRemoveAll(rsaSignings);
-            case REPLAYING_EVENTS, STARTING_UP, OBSERVING, RECONNECT_COMPLETE, CHECKING, FREEZING -> {
+            case REPLAYING_EVENTS, STARTING_UP, OBSERVING, CHECKING, FREEZING -> {
                 // Nothing to do here, just enumerate for completeness
             }
         }
@@ -987,7 +987,6 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
                     CATASTROPHIC_FAILURE,
                     FREEZE_COMPLETE,
                     OBSERVING,
-                    RECONNECT_COMPLETE,
                     REPLAYING_EVENTS,
                     STARTING_UP -> false;
         };

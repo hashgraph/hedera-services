@@ -142,7 +142,7 @@ public class ConsensusLayerFactory {
         configuration = inputs.configuration();
         metrics = inputs.metrics();
         time = inputs.time();
-        rosterHistory = inputs.rosterHistory();
+        rosterHistory = new RosterHistory(inputs.rosterInputs().history(), inputs.rosterInputs().rosters());
         keysAndCerts = inputs.keysAndCerts();
         selfId = inputs.selfId();
         recycleBin = inputs.recycleBin();

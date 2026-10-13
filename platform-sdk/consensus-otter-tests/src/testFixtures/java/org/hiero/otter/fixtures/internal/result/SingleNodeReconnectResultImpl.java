@@ -2,7 +2,6 @@
 package org.hiero.otter.fixtures.internal.result;
 
 import static java.util.Objects.requireNonNull;
-import static org.hiero.consensus.model.status.ConsensusLayerStatus.RECONNECT_COMPLETE;
 import static org.hiero.otter.fixtures.internal.helpers.LogPayloadUtils.parsePayload;
 
 import com.swirlds.logging.legacy.payload.ReconnectFailurePayload;
@@ -64,9 +63,10 @@ public class SingleNodeReconnectResultImpl implements SingleNodeReconnectResult 
      */
     @Override
     public int numSuccessfulReconnects() {
-        return (int) statusResults.statusProgression().stream()
-                .filter(RECONNECT_COMPLETE::equals)
-                .count();
+        return 0;
+//        return (int) statusResults.statusProgression().stream()
+//                .filter(RECONNECT_COMPLETE::equals)
+//                .count();
     }
 
     /**

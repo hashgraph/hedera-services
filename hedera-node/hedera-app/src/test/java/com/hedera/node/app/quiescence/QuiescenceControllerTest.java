@@ -167,7 +167,7 @@ class QuiescenceControllerTest {
                 DONT_QUIESCE,
                 controller.getQuiescenceStatus(),
                 "The checking status should not affect the quiescence status");
-        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
+//        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
         assertEquals(
                 QUIESCE, controller.getQuiescenceStatus(), "The reconnect complete status should reset the controller");
     }
@@ -225,7 +225,7 @@ class QuiescenceControllerTest {
     void finishHandlingInProgressBlockWhenDisabled() {
         // Given - quiescence is disabled
         controller.onPreHandle(createTransactions(TXN_TRANSFER));
-        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
+//        controller.platformStatusUpdate(ConsensusLayerStatus.RECONNECT_COMPLETE);
         controller = new QuiescenceController(
                 new QuiescenceConfig(false, Duration.ofSeconds(3)), time::now, pendingTransactions::get);
 

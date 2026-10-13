@@ -17,8 +17,8 @@ import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;
 import org.hiero.consensus.model.node.KeysAndCerts;
+import org.hiero.consensus.model.roster.ConsensusLayerRosterInputs;
 import org.hiero.consensus.model.stream.RunningEventHashOverride;
-import org.hiero.consensus.roster.RosterHistory;
 import org.hiero.consensus.transaction.TransactionLimits;
 
 /**
@@ -35,8 +35,8 @@ import org.hiero.consensus.transaction.TransactionLimits;
  * @param configuration            the configuration the consensus layer should use
  * @param metrics                  the metrics framework for recording metric values
  * @param time                     the source of time
- * @param rosterHistory            the history of rosters for all non-ancient rounds based on the provided
- *                                 {@code consensusSnapshot}. Will be replaced with {@code ConsensusLayerRosterInputs}.
+ * @param rosterInputs             the history of rosters for all non-ancient rounds based on the provided
+ *                                 {@code consensusSnapshot}.
  * @param keysAndCerts             the keys and certificates the local node
  * @param selfId                   the unique id of this local node
  * @param recycleBin               the instance of the recycle bin for the consensus layer to use
@@ -65,7 +65,7 @@ public record ConsensusLayerInputs(
         @NonNull Configuration configuration,
         @NonNull Metrics metrics,
         @NonNull Time time,
-        @NonNull RosterHistory rosterHistory,
+        @NonNull ConsensusLayerRosterInputs rosterInputs,
         @NonNull KeysAndCerts keysAndCerts,
         @NonNull NodeId selfId,
         @NonNull RecycleBin recycleBin,
@@ -90,7 +90,7 @@ public record ConsensusLayerInputs(
                 configuration(),
                 metrics(),
                 time(),
-                rosterHistory(),
+                rosterInputs(),
                 keysAndCerts(),
                 selfId(),
                 recycleBin(),
