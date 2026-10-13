@@ -11,10 +11,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogDoesNotContainText;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ADEQUATE_FUNDS;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATES;
@@ -41,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 /**
@@ -60,7 +59,13 @@ import org.junit.jupiter.api.Tag;
  * saved state whose consensus time is at or after the system-admin update. The restart then loads that post-update
  * snapshot instead of replaying the update from an older one. The staking period is set to a day so that no
  * staking-period boundary, which re-derives the midnight rates on every node, masks the behavior under test.
+ *
+ * <p>Ordered first among the ISS-tagged classes, which share one subprocess network run in class order: a sibling that
+ * freezes the network as its terminal step would otherwise leave it halted before this spec could initialize. For the
+ * same reason this spec does not freeze the network, so the specs after it still find it live; it proves the
+ * reconnected node stays healthy by driving fee-bearing traffic the whole network must handle identically.
  */
+@Order(1)
 @Tag(ISS)
 class MidnightRatesRestartIssReproTest implements LifecycleTest {
     private static final Duration SAVED_STATE_WAIT_TIMEOUT = Duration.ofSeconds(120);
@@ -109,9 +114,14 @@ class MidnightRatesRestartIssReproTest implements LifecycleTest {
                 // The reconnected node must not ISS on the straddling update
                 assertHgcaaLogDoesNotContainText(
                         NodeSelector.byNodeId(ISS_NODE_ID), "ISS detected", Duration.ofSeconds(30)),
-                // The whole network, including the reconnected node, still handles transactions and can freeze
-                freezeOnly().startingIn(2).seconds(),
-                waitForFrozenNetwork(FREEZE_TIMEOUT));
+                // Drive more fee-bearing traffic the whole network -- including the reconnected node -- must handle
+                // identically; a divergent handle result on any of these would surface as an ISS on the reconnected
+                // node. The network is deliberately left running (not frozen) for the ISS-tagged specs that follow.
+                cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1L))
+                        .fee(ONE_HUNDRED_HBARS),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1L)).fee(ONE_HUNDRED_HBARS),
+                assertHgcaaLogDoesNotContainText(
+                        NodeSelector.byNodeId(ISS_NODE_ID), "ISS detected", Duration.ofSeconds(30)));
     }
 
     /**
