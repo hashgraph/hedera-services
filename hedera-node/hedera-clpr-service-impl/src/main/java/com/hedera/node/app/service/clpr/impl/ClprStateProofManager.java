@@ -107,8 +107,9 @@ public class ClprStateProofManager {
      * Returns this ledger's id as carried on the latest signed snapshot. Empty bytes when no
      * snapshot is available yet. The value comes from
      * {@code ReadableHistoryStore.getLedgerId()} captured at snapshot construction time —
-     * callers should use this rather than reading {@code LedgerConfig.id()} so the verifier
-     * always sees the genesis-rooted ledger id.
+     * proof and query consumers use this so the verifier sees the genesis-rooted ledger id.
+     * Availability is node-local: consensus handlers must instead read
+     * {@link com.hedera.node.app.spi.workflows.HandleContext#historyLedgerId()}.
      */
     @NonNull
     public Bytes latestLedgerId() {

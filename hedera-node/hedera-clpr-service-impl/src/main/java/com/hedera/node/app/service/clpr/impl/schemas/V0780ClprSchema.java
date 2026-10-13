@@ -174,9 +174,8 @@ public class V0780ClprSchema extends Schema<SemanticVersion> {
             // the actual consensus time.
             final var initializationTimestamp =
                     Timestamp.newBuilder().seconds(1L).build();
-            // The trust anchor fields remain unset during initialization because the Hiero TSS
-            // ledger ID is only available after a signed block snapshot has been produced. The
-            // first configuration update after that point populates them.
+            // The trust anchor fields remain unset until the history ledger ID is established.
+            // The first configuration update after that point populates them from consensus state.
             final var initialConfig = ClprLedgerConfiguration.newBuilder()
                     .chainId(clprConfig.chainId())
                     .protocolVersion(clprConfig.protocolVersion())

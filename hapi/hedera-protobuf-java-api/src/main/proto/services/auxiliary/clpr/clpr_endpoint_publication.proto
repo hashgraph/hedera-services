@@ -30,6 +30,12 @@ option java_multiple_files = true;
  * A transaction body by which a consensus node self-publishes its CLPR endpoint into state
  * during a manifest construction.
  *
+ * The block stream also uses this body, with no endpoint, for informational synthetic
+ * transactions that externalize endpoint-manifest reconciliation. Their associated state
+ * changes contain the resulting manifest and/or construction (including grace extensions
+ * and construction clearing). Such bodies are generated internally, are not dispatched to
+ * the publication handler, and MUST NOT be accepted as submitted transactions.
+ *
  * <p>The publishing node's identity is taken from the platform-attributed
  * {@code creatorInfo().nodeId()} at handle time, NOT from any field on this body — a node
  * cannot publish on another node's behalf. The body carries the node's current CLPR endpoint;

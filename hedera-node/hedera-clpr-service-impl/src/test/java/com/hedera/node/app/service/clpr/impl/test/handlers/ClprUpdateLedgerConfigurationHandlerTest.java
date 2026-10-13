@@ -19,7 +19,6 @@ import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.clpr.ClprServiceEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.clpr.impl.ClprStateProofManager;
 import com.hedera.node.app.service.clpr.impl.WritableLedgerConfigurationStore;
 import com.hedera.node.app.service.clpr.impl.handlers.ClprUpdateLedgerConfigurationHandler;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -56,9 +55,6 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     @Mock(strictness = LENIENT)
     private WritableLedgerConfigurationStore configStore;
 
-    @Mock(strictness = LENIENT)
-    private ClprStateProofManager stateProofManager;
-
     private ClprUpdateLedgerConfigurationHandler subject;
 
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
@@ -70,8 +66,8 @@ class ClprUpdateLedgerConfigurationHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ClprUpdateLedgerConfigurationHandler(stateProofManager);
-        given(stateProofManager.latestLedgerId()).willReturn(Bytes.EMPTY);
+        subject = new ClprUpdateLedgerConfigurationHandler();
+        given(handleContext.historyLedgerId()).willReturn(Bytes.EMPTY);
     }
 
     @Test
@@ -327,12 +323,12 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     }
 
     @Test
-    @DisplayName("should populate initial_trust_anchor from the latest signed snapshot's ledger_id")
-    void populatesTrustAnchorFromLatestLedgerId() {
+    @DisplayName("should populate initial_trust_anchor from consensus history")
+    void populatesTrustAnchorFromConsensusHistory() {
         final var configuration =
                 HederaTestConfigBuilder.create().withValue("clpr.enabled", true).getOrCreateConfig();
         setupHandleContext(configuration);
-        given(stateProofManager.latestLedgerId()).willReturn(LEDGER_ID);
+        given(handleContext.historyLedgerId()).willReturn(LEDGER_ID);
 
         final var newConfig = validConfigBuilder().build();
         given(handleContext.body()).willReturn(txnBodyWith(newConfig));
@@ -364,7 +360,7 @@ class ClprUpdateLedgerConfigurationHandlerTest {
                 .willReturn(configStore);
         given(configStore.getConfiguration()).willReturn(existing);
         given(handleContext.consensusNow()).willReturn(CONSENSUS_NOW);
-        given(stateProofManager.latestLedgerId()).willReturn(Bytes.EMPTY);
+        given(handleContext.historyLedgerId()).willReturn(Bytes.EMPTY);
 
         final var newConfig = validConfigBuilder().build();
         given(handleContext.body()).willReturn(txnBodyWith(newConfig));
@@ -376,6 +372,29 @@ class ClprUpdateLedgerConfigurationHandlerTest {
         final var saved = captor.getValue();
         assertThat(saved.initialTrustAnchor()).isEqualTo(priorAnchor);
         assertThat(saved.initialTrustAnchorId()).isEqualTo(priorAnchor);
+    }
+
+    @Test
+    void doesNotUseConfiguredOrSuppliedAnchorBeforeHistoryLedgerIdExists() {
+        final var configuration = HederaTestConfigBuilder.create()
+                .withValue("clpr.enabled", true)
+                .withValue("ledger.id", "0x03")
+                .getOrCreateConfig();
+        setupHandleContext(configuration);
+        given(handleContext.ledgerId()).willReturn(Bytes.fromHex("03"));
+        given(handleContext.body())
+                .willReturn(txnBodyWith(validConfigBuilder()
+                        .initialTrustAnchor(LEDGER_ID)
+                        .initialTrustAnchorId(LEDGER_ID)
+                        .build()));
+
+        subject.handle(handleContext);
+
+        final var captor = ArgumentCaptor.forClass(ClprLedgerConfiguration.class);
+        verify(configStore).put(captor.capture());
+        assertThat(captor.getValue().initialTrustAnchor()).isEqualTo(Bytes.EMPTY);
+        assertThat(captor.getValue().initialTrustAnchorId()).isEqualTo(Bytes.EMPTY);
+        org.mockito.Mockito.verify(handleContext, org.mockito.Mockito.never()).ledgerId();
     }
 
     // --- Helpers ---

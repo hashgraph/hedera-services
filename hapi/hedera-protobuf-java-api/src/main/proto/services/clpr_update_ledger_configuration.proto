@@ -16,6 +16,12 @@ import "services/state/clpr/clpr_ledger_configuration.proto";
  * The handler auto-sets timestamp. The chain_id and protocol_version
  * fields are immutable (set at genesis from configuration properties)
  * and cannot be changed via this transaction.
+ *
+ * The block stream also uses this body for an informational synthetic transaction when
+ * an upgrade initializes missing CLPR singletons. In that case, configuration is the
+ * initialized value, including its immutable fields and initialization timestamp. The
+ * body is not dispatched to the update handler; the associated state changes are
+ * authoritative and can also include initialization of the endpoint manifest.
  */
 message ClprUpdateLedgerConfigurationTransactionBody {
     /**
