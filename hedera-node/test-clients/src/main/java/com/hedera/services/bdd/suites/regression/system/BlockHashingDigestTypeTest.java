@@ -101,7 +101,7 @@ public class BlockHashingDigestTypeTest {
 
     private static DigestType configuredDigestType(@NonNull final HapiSpec spec) {
         final var name = spec.startupProperties().get(DIGEST_TYPE_PROPERTY);
-        return name == null ? DigestType.SHA_384 : DigestType.valueOf(name);
+        return name == null ? DigestType.SHA_256 : DigestType.valueOf(name);
     }
 
     private static StreamMode targetStreamMode() {
