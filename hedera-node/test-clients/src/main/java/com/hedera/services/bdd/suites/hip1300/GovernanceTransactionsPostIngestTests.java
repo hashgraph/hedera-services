@@ -6,6 +6,7 @@ import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.hedera.embedded.EmbeddedMode.CONCURRENT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.reducedFromSnapshot;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.unchangedFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -233,6 +234,42 @@ public class GovernanceTransactionsPostIngestTests {
                         .payingWith(PAYER)
                         .hasKnownStatus(INNER_TRANSACTION_FAILED),
                 getAccountBalance(SUBMITTING_NODE_ACCOUNT_ID).hasTinyBars(reducedFromSnapshot("nodePre")));
+    }
+
+    @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
+    @DisplayName("A batch inner node due-diligence failure charges the whole batch to the node, sparing every payer")
+    public Stream<DynamicTest> batchInnerNodeDueDiligenceFailureChargesWholeBatchToNode() {
+        final var innerPayer = "innerPayer";
+        final var batchPayer = "batchPayer";
+        return hapiTest(
+                newKeyNamed(SUBMIT_KEY),
+                cryptoCreate(innerPayer).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(batchPayer).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(RECEIVER),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, SUBMITTING_NODE_ACCOUNT_ID, ONE_HBAR)),
+                balanceSnapshot("nodePre", SUBMITTING_NODE_ACCOUNT_ID),
+                balanceSnapshot("innerPayerPre", innerPayer),
+                balanceSnapshot("batchPayerPre", batchPayer),
+                atomicBatch(
+                                // Inner #1 is a valid, fee-bearing op paid by innerPayer; it would normally charge
+                                // innerPayer, but the batch rolls back and the whole batch becomes the node's fault.
+                                createTopic(TOPIC)
+                                        .submitKeyName(SUBMIT_KEY)
+                                        .payingWith(innerPayer)
+                                        .batchKey(batchPayer),
+                                // Inner #2 is an ingest-decidable node due-diligence failure (INVALID_ACCOUNT_AMOUNTS).
+                                cryptoTransfer(tinyBarsFromToWithInvalidAmounts(innerPayer, RECEIVER, 1L))
+                                        .payingWith(innerPayer)
+                                        .batchKey(batchPayer)
+                                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS))
+                        .setNode(SUBMITTING_NODE_ACCOUNT_ID)
+                        .payingWith(batchPayer)
+                        .hasKnownStatus(INNER_TRANSACTION_FAILED),
+                // The submitting node pays for the whole batch: the earlier inner's fee and the batch fee are charged
+                // to the node, not to their payers. See #26615.
+                getAccountBalance(SUBMITTING_NODE_ACCOUNT_ID).hasTinyBars(reducedFromSnapshot("nodePre")),
+                getAccountBalance(innerPayer).hasTinyBars(unchangedFromSnapshot("innerPayerPre")),
+                getAccountBalance(batchPayer).hasTinyBars(unchangedFromSnapshot("batchPayerPre")));
     }
 
     @EmbeddedHapiTest(MUST_SKIP_INGEST)

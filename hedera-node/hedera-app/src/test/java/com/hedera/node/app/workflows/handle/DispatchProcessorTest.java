@@ -12,6 +12,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
@@ -260,7 +262,44 @@ class DispatchProcessorTest {
         verify(chargeContext).charge(CREATOR_ACCOUNT_ID, new Fees(0, FEES.networkFee(), 0), null);
         verify(feeAccumulator, never()).chargeFee(any(), anyLong(), any());
         verify(recordBuilder).status(dueDiligenceFailure);
+        // The inner's builder is flagged so the batch handler recognizes the whole batch as the node's fault.
+        verify(recordBuilder).nodeDueDiligenceFailure(true);
         assertFinished(IsRootStack.NO);
+    }
+
+    @Test
+    void batchNodeDueDiligenceFailureChargesNodeTheWholeBatchFee() {
+        final var feeCharging = mock(FeeCharging.class);
+        final var chargeContext = mock(FeeCharging.Context.class);
+        given(dispatch.fees()).willReturn(FEES);
+        given(dispatch.feeAccumulator()).willReturn(feeAccumulator);
+        given(dispatch.feeChargingOrElse(appFeeCharging)).willReturn(feeCharging);
+        given(feeCharging.customized(dispatch)).willReturn(chargeContext);
+        given(dispatchValidator.validateFeeChargingScenario(dispatch))
+                .willReturn(newSuccess(CREATOR_ACCOUNT_ID, PAYER));
+        given(dispatch.payerId()).willReturn(PAYER_ACCOUNT_ID);
+        given(dispatch.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        given(dispatch.handleContext()).willReturn(context);
+        final var creatorInfo = mock(NodeInfo.class);
+        given(dispatch.creatorInfo()).willReturn(creatorInfo);
+        given(creatorInfo.accountId()).willReturn(CREATOR_ACCOUNT_ID);
+        givenAuthorization();
+        // The batch handler reports an inner node-due-diligence failure by throwing with the nodeDueDiligence flag set.
+        doThrow(new HandleException(INNER_TRANSACTION_FAILED, null, true))
+                .when(dispatcher)
+                .dispatchHandle(context);
+        given(dispatch.txnCategory()).willReturn(USER);
+
+        subject.processDispatch(dispatch);
+
+        // The whole batch is the submitting node's fault, so after rolling back the failed handler the node -- not the
+        // batch payer -- is charged the batch's full fees, routed through the fee-charging context so it survives.
+        verify(chargeContext).charge(CREATOR_ACCOUNT_ID, FEES, null);
+        // The batch payer is charged only once, by the upfront chargePayer that the rollback reverts; it is not
+        // re-charged after the rollback (that charge is redirected to the node above).
+        verify(feeCharging, times(1)).charge(eq(dispatch), any(), any());
+        verify(recordBuilder).status(INNER_TRANSACTION_FAILED);
+        assertFinished();
     }
 
     @Test
