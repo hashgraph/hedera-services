@@ -17,7 +17,14 @@ test suites include:
 | SDLT        | Single Day Longevity Tests    | Production throttled mixed TPS load to test network stability                                       | X         |
 | MDLT        | Multi Day Longevity Tests     | Production throttled mixed TPS load over many days to test long term network stability              | X         |
 | Shortgevity | Short Longevity Tests         | Production throttled mixed TPS load with reconnects on a mainnet-like environment over several days |           |
-| MQPT        | Merge Queue Performance Tests | Combined performance, verification and longevity tests for use in Merge Queues                      | X         |
+
+## Resource Allocation
+
+SDPT, SDLT, and MDLT acquire their Kubernetes environments from [Chewie](https://github.com/swirldslabs/chewie), the
+compute allocation service. Instead of running against a pre-provisioned cluster asset, these suites request the shape
+of environment they need and Chewie provisions a namespace for the duration of the run, then reclaims it.
+
+See [Chewie Resource Allocation](chewie.md) for the configuration files, secrets, and workflow chain involved.
 
 ## MATS
 
@@ -80,8 +87,10 @@ catching regressions without being unnecessarily long-running.
 
 ### Workflows
 
-- XTS is triggered by the [900: [CRON] CITR Ext Test Suite](/.github/workflows/900-cron-extended-test-suite.yaml)
-  workflow.
+- XTS runs in [226: [DISP] CITR XTS Controller](/.github/workflows/226-disp-citr-xts-controller.yaml), which reports
+  the result to Chewie. Every three hours
+  [900: [CRON] CITR Ext Test Suite](/.github/workflows/900-cron-extended-test-suite.yaml) dispatches it for the
+  `xts-candidate` commit; `900` is to be deprecated when Chewie owns workflow dispatching.
 - XTS Dry Run is triggered manually via
   the [001: [USER] CITR XTS Dry Run](/.github/workflows/001-user-dry-run-extended-test-suite.yaml) workflow.
 
@@ -102,7 +111,10 @@ catching regressions without being unnecessarily long-running.
 | Block Node Regression Panel               | [821: [CALL] Block Node Regression](/.github/workflows/821-call-block-node-regression.yaml)      | `ref: <commit-sha>`<br/>`solo-version: vars.CITR_SOLO_VERSION`                                                                                                                                                                                                                                                              | `access-token`<br/>`slack-detailed-report-webhook`                                                                                                                                                                                                       | Fetch XTS Candidate<br/>Compile Code |
 | Solo 0.78 to 0.79 Cutover Panel           | [826: [CALL] Solo 078-079 Cutover](/.github/workflows/826-call-solo-078-to-079-cutover.yaml)     | `ref: <commit-sha>`<br/>`solo-version: vars.CITR_SOLO_VERSION`                                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                          | Fetch XTS Candidate<br/>Compile Code |
 
-## SDCT
+## SDCT 
+
+> **Note: Stop-gap Design.** The SDCT workflow, Jenkins job contract and test driver described below are a stop-gap
+> design that lets the GA workflow run unattended on perf1. The final design will come in the next CITR phase.
 
 ### Purpose
 
@@ -115,7 +127,8 @@ if the E2E SLA is met. It runs on a large, mainnet-like environment.
 
 - SDCT runs on the **performance** (**perf1**) network that has a Mirror node setup, hosted on GCP and various external
   server providers (**Latitude**, **OVH**, **AWS**, etc.).
-- SDCT is expected to complete around 20 hours after the test suite starts.
+- SDCT is expected to complete around 24 hours after the workflow starts: up to 22 hours of test driver time plus the
+  network reset.
 - SDCT supports artifacts built from any PR, tag, or branch.
 
 ### Workflows
@@ -123,23 +136,158 @@ if the E2E SLA is met. It runs on a large, mainnet-like environment.
 - SDCT is triggered by
   the [223: [DISP] CITR SDCT Controller](/.github/workflows/223-disp-sdct-controller.yaml)
   workflow
-  - The workflow is currently being updated with a fast-fail enhancement
+  - The workflow checks that the build artifact is in GCS (a missing artifact fails the run at once), starts the
+    external `SDCT` Jenkins job with [sdct.sh](/.github/workflows/support/scripts/sdct.sh) and follows it until
+    completion with [sdct-wait.sh](/.github/workflows/support/scripts/sdct-wait.sh)
+  - A full run lasts about a day, longer than the 6 h runner job limit. `canonical-test` ends as soon as the Jenkins
+    build has started; the build is then followed by a chain of jobs of at most 330 minutes each (`follow-1` …
+    `follow-6` through [864: [CALL] CITR SDCT Follow](/.github/workflows/864-call-sdct-follow.yaml)), and the
+    `SDCT Verdict` job decides the result
+  - The workflow selects one of the SDCT tests: `sdct` (the full test, default), `mini` (the same flow in about two
+    hours, for debugging and verification) or `custom` (an ad hoc test); each test is a profile of the test driver
+    maintained with the Jenkins job
+  - Result tags are disabled for every test, the full `sdct` test included: the `Tag SDCT Result` job only logs the
+    `sdct-pass-<build>` / `sdct-fail-<build>` tag and the `git tag` / `git push` commands it would run. Failures of the
+    full `sdct` test raise a Rootly
+    alert (`CITR SDCT` for test failures, `CI/CD Workflows` for infrastructure and setup failures); the optional
+    `skip-rootly` input (default `false`) suppresses the alert for any run. `mini` and `custom`
+    results are reported in the workflow summary and artifact only
+  - Slack reporting to the performance-test-reports channel is handled by the Jenkins job
+  - The full `sdct` test reports its status to Chewie: `running` once the Jenkins build has started, then the final
+    disposition (see [Chewie Reporting](#chewie-reporting))
 
-### Included Tests
+### Jenkins SDCT Job Contract
 
-These tests run sequentially with a Mirror node setup to measure E2E latency performance.
+The workflow relies on the following from the `SDCT` Jenkins job and its test driver.
 
-|                       Test                        | TPS |
-|---------------------------------------------------|-----|
-| Idle load                                         | 10  |
-| Crypto Transfer                                   | 200 |
-| Mixed Tx Types                                    | 2K  |
-| Mixed Tx Types with Smartcontract                 | 10K |
-| Crypto Transfer                                   | 10K |
-| HCS                                               | 10K |
-| HTS                                               | 10K |
-| Mixed Tx Types(1/2 HCS and Crypto/HTS rest)       | 10K |
-| Mixed Tx Types(equal weight among HCS/Crypto/HTS) | 10K |
+| #  | Requirement                                                                                                                         |
+|----|-------------------------------------------------------------------------------------------------------------------------------------|
+| J1 | Accept the build parameters `BUILD_TAG`, `BUILD_COMMIT`, `VERSION_SERVICE`, `VERSION_BLOCKNODE`, `VERSION_MIRRORNODE` (optional: not posted when empty, so the job default applies), `GH_RUN_ID`, `GH_RUN_URL` |
+|    | `BUILD_COMMIT` is the build artifact name used to reset the network; the `VERSION_*` parameters are used for reporting only |
+|    | `BUILD_TAG` is the `build-tag` input on `main` and the `ref` input otherwise (e.g. `ref=v0.77.4`, `build-tag=build-v0.77.4` → `BUILD_TAG=v0.77.4`, `BUILD_COMMIT=build-v0.77.4`) |
+|    | Accept `SDCT_TEST` (`sdct`, `mini`, `custom`) to select the test, defaulting to `sdct`                                        |
+| J2 | Print the console markers below, with a heartbeat at least every 15 minutes                                                         |
+|    | Every stage, including the network reset before the driver starts, prints at least one line every 60 minutes (the reset wait prints every 5 minutes) |
+| J3 | On a fail-fast decision, stop the load, set `currentBuild.result = 'FAILURE'` and finish the build                                  |
+| J4 | Always archive `sdct-result.json` (schema below) in a `post { always { ... } }` block                                               |
+| J5 | Provide a service account token with Job/Read, Job/Build and Job/Cancel on `nightly/sdct`                                           |
+
+Console markers (one per line):
+
+```text
+SDCT-STATUS: RUNNING phase=<setup|test|teardown> test=<i>/<n> name=<name> tps=<tps>
+SDCT-HEARTBEAT: <iso-timestamp>
+SDCT-STATUS: FAIL reason=<text>
+SDCT-STATUS: PASS
+```
+
+`SDCT-STATUS: FAIL` is printed as soon as the driver decides to abort; `SDCT-STATUS: PASS` or `FAIL` is printed once at
+the end of the run.
+
+`sdct-result.json`:
+
+```json
+{
+  "result": "PASS|FAIL|ERROR",
+  "reason": "text, empty on PASS",
+  "note": "optional text",
+  "scaled": { "factor": 0.9, "original": { "max_time_test_s": 72000, "max_time_setup_s": 21600, "end_grace_s": 900 },
+              "scaled": { "max_time_test_s": 64800, "max_time_setup_s": 19440, "end_grace_s": 810 } },
+  "tests": [
+    { "name": "Crypto Transfer", "tps": 10000, "p50_ms": 0, "p99_ms": 0, "sla_met": true, "result": "PASS|FAIL" }
+  ],
+  "started": "<iso-timestamp>",
+  "finished": "<iso-timestamp>"
+}
+```
+
+- `FAIL` is a test failure; `ERROR` is an infrastructure or setup failure (e.g. unclean environment, failed deployment).
+- `p50_ms`, `p99_ms` and `sla_met` are `null` until latency collection is available.
+- `note` (optional) is set when `MAX_TIME_HARD` stopped a healthy NLG in the second half of the load phase; the result
+  is still `PASS`.
+- `scaled` (optional) is set when the NLG pod became Ready after `POD_READY_TIMEOUT` and the driver shortened
+  `MAX_TIME_TEST`, `MAX_TIME_SETUP` and `END_GRACE` by `factor` to fit `MAX_TIME_HARD`.
+
+Workflow behavior:
+
+- **Queue**: the queue item returned by `buildWithParameters` is polled every minute; the run fails as an
+  infrastructure error if the build has not started after 10 minutes or the queue item is cancelled. Only one SDCT
+  build runs at a time, so the queue is empty in practice.
+- **Build**: every 5 minutes the workflow reads the build status and the new console output (`progressiveText`), and
+  echoes the `SDCT-*` markers. The first poll verifies that the build's `GH_RUN_ID` matches the workflow run.
+- **Fail-fast**: after a `SDCT-STATUS: FAIL` marker the workflow waits at most 30 minutes for the build to finish,
+  then reports a failure.
+- **Hang, errors**: no new console output for 60 minutes or 6 consecutive failed polls end the run as an
+  infrastructure error; hung builds are stopped. The workflow has no overall deadline: the test driver bounds the
+  SDCT run time.
+- **Handoff**: `canonical-test` hands the build to `follow-1` as soon as it has started. Each follow job follows the
+  build for at most 330 minutes, then hands it to the next job with the console offset and the fail-fast and hang
+  timers, so markers are not replayed and the timers run on. Six follow jobs cover about 33 hours; a build still
+  running after `follow-6` is stopped as an infrastructure error. The `SDCT Verdict` job
+  takes the result of the last job; if a job did not report (cancelled between jobs, runner lost), it stops the
+  build and reports an infrastructure error.
+- **Cancel**: cancelling the workflow run stops the Jenkins build, or cancels the queue item if the build has not
+  started yet, in whichever job is running at the time.
+- **Serialization**: SDCT runs on the single perf1 network, so runs of the workflow are serialized and the Jenkins job
+  does not run concurrent builds.
+- **Verdict**: Jenkins `SUCCESS` with `sdct-result.json` `PASS` (or no file) passes; `FAILURE`, `UNSTABLE`, a `FAIL`
+  marker or a `FAIL` result fails; an `ERROR` result or anything else (e.g. `ABORTED`) is an infrastructure error and
+  is not tagged. Once `SDCT-STATUS: PASS` is printed (and no `FAIL` marker), the run passes: a later Jenkins
+  failure, hang or unreachable build (e.g. in post-test processing) is reported as a warning in the reason only.
+  `sdct-result.json` and the last 5000 console lines are uploaded as the `sdct-results` artifact by the job that
+  decides the verdict.
+- **Shortened runs**: `POD_READY_TIMEOUT` is a soft limit. The driver keeps waiting for Ready, then scales the test
+  timers by `f = min(1, remaining / (MAX_TIME_TEST + END_GRACE))`. A shortened run that reaches `MAX_TIME_HARD` with a
+  healthy NLG and at least `MIN_LOAD_TEST_TIME` of load is a pass; the step summary shows the `note` and the scaled
+  timers. The console markers are unchanged.
+
+### Mock Runs
+
+Dispatching 223 with `mock=true` runs the same workflow against the `nightly/sdct-mock` Jenkins job instead of
+`nightly/sdct`. The mock job prints a synthetic network reset, ACTIVE check and test driver output (the same
+`SDCT-*` markers and `sdct-result.json`) and never touches perf1.
+
+- `mock-scenario` selects the outcome: `pass` (default), `fail`, `post-pass-failure`, `hang`, `exhaust`, `reset-fail`,
+  `not-active`, `driver-error`
+- The job budget is 6 minutes, with 2 minute polls, a 3 minute fail-fast grace and a 6 minute hang check; follow job
+  `k` hands off at `build start + 6k` minutes, so a scenario runs through all six follow jobs in about 35 minutes
+- Tags, Rootly alerts and Chewie reports are not executed: the jobs log the commands and payloads instead
+- The run name starts with `[MOCK]`
+
+### Chewie Reporting
+
+Only the full `sdct` test reports to Chewie, with
+[report-suite-result.sh](/.github/workflows/support/chewie/report-suite-result.sh), from two jobs on the
+`hl-cn-chewie-lin-sm` runner (the SDCT runner may not reach Chewie):
+
+- `Chewie Report Running`: after `canonical-test`, when the Jenkins build has started
+- `Chewie Report Final`: after `SDCT Verdict` and `Chewie Report Running` (`if: always()`), so the final status is
+  always posted last
+
+Each report gets its own token from `api/v1/auth/token` (a final report can be a day after the start), masks it, and
+posts to `api/v1/suites/results` without retries (Chewie appends results, a retry could record one twice). Only
+`201` is a success; any other answer is a warning with the HTTP status and Chewie's error `code` and `detail`. A Chewie
+failure never fails the run, the verdict, the tag or the Rootly alert. Each run records two results (`running`, then
+the final disposition); `GET api/v1/suites/results?build_number=<n>&suite_type=sdct` shows them.
+
+| Field | Value |
+|---|---|
+| `build_number` | `main` with a `build-NNNNN` tag only: integer, without leading zeros (`build-00401` → `401`) |
+| `branch`, `commit` | any other ref (branch `block-stream-tss`, release tag `v0.78.00-rc.13`, release branch `release/0.79`), or `main` without a `build-NNNNN` tag: `branch` is the `ref` input as typed, `commit` its 40-character head commit (a tag's commit for a tag); no `build_number`. An empty or invalid `branch` or `commit` is logged and left out, the report goes on with the other; with neither it is skipped with a warning |
+| `suite_type` | `"sdct"` |
+| `disposition` | see below |
+| `start_time` | Jenkins build start, RFC3339 UTC, the same in both reports; the decision time if the build never started |
+| `end_time` | `null` while `running`; the decision time in the final report, never before `start_time` (set to `start_time` on clock skew) |
+| `workflow_run_id`, `run_attempt` | the 223 run id and attempt |
+
+| Outcome | Disposition |
+|---|---|
+| Jenkins build started | `running` |
+| `pass` | `passed` |
+| `fail` | `failed` |
+| Infrastructure error, including a Jenkins build that never started | `not_run` (TODO: refine, e.g. `isolated_issue`, once the Chewie semantics are confirmed) |
+| Workflow run cancelled | `cancelled` |
+
 
 ## SDPT
 
@@ -166,11 +314,18 @@ potential performance regressions.
 
 ### Hardware
 
-Latitude kubernetes cluster
+The environment is allocated by Chewie. The requested shape is defined in
+[sdpt-config.json](/.github/workflows/support/chewie/sdpt-config.json) and is read by
+[861: [CALL] Get Test Config](/.github/workflows/861-call-get-test-config.yaml).
 
-- 7 nodes for Consensus Nodes
-- 1 node for CryptoBench
-- 1 node for aux services and NLG client
+| Instance Group |            Role             | Quantity | CPU | Memory (MB) |
+|----------------|-----------------------------|----------|-----|-------------|
+| `cn-nodes`     | Consensus Nodes, CryptoBench| 9        | 39  | 256000      |
+| `aux-nodes`    | Aux services and NLG client | 1        | 39  | 256000      |
+
+The allocation duration and the time SDPT will wait for capacity come from
+[`.github/chewie.yaml`](/.github/chewie.yaml). Chewie deletes the namespace when the allocation expires; the workflow
+does not tear it down. See [Chewie Resource Allocation](chewie.md).
 
 ### Included Tests
 
@@ -214,10 +369,18 @@ environment to quickly identify regressions in overall network stability and rob
 
 ### Hardware
 
-Latitude kubernetes cluster
+The environment is allocated by Chewie. The requested shape is defined in
+[sdlt-config.json](/.github/workflows/support/chewie/sdlt-config.json) and is read by
+[861: [CALL] Get Test Config](/.github/workflows/861-call-get-test-config.yaml).
 
-- 7 nodes for Consensus Nodes
-- 1 node for aux services and NLG client
+| Instance Group |            Role             | Quantity | CPU | Memory (MB) |
+|----------------|-----------------------------|----------|-----|-------------|
+| `cn-nodes`     | Consensus Nodes             | 8        | 39  | 256000      |
+| `aux-nodes`    | Aux services and NLG client | 1        | 39  | 256000      |
+
+The allocation duration and the time SDLT will wait for capacity come from
+[`.github/chewie.yaml`](/.github/chewie.yaml). Chewie deletes the namespace when the allocation expires; the workflow
+does not tear it down. See [Chewie Resource Allocation](chewie.md).
 
 ### Included Tests
 
@@ -246,37 +409,79 @@ Latitude kubernetes cluster
 ### Purpose
 
 MDLT (Multi Day Longevity Test) is designed to run a production throttled mixed TPS load for an extended period of
-time (7 days) to identify regressions in overall network stability and robustness under load. It serves as a longer
-running version of SDLT to catch potential issues that may not surface within the shorter SDLT.
+time (5 days / 7200 minutes) to identify regressions in overall network stability and robustness under load. It serves
+as a longer running version of SDLT to catch potential issues that may not surface within the shorter SDLT.
 
 ### Environment
 
-- MDLT runs inside self-hosted github runners on demand, against any PR, tag, or branch, assuming release candidate
-- MDLT is expected to complete within 7 days of the test suite starting.
-- MDLT has a dry-run equivalent to SDLT
+- MDLT runs against a promoted build tag (`build-XXXXX`) that has already passed SDPT and SDLT.
+- Like SDPT and SDLT, MDLT deploys three block nodes into the allocated namespace, pinned to the
+  version in `block-node-version` in [.citr-env](/.github/workflows/support/citr/.citr-env) and passed
+  through as the `bnref` input. The consensus nodes stream to those block nodes; there is no longer a
+  stand-in block node hosted on the load generator pod.
+- The kickoff workflow runs only a short (~3 minute) smoke on a Chewie-allocated cluster, launches the 5-day
+  (7200 minute) production run in the background, and then exits so the GitHub runner is released (runners are
+  capped at 6 hours).
+- Chewie owns the namespace and its teardown; status is checked out-of-band via the monitor workflow.
 
 ### Workflows
 
-- MDLT is triggered by
-  the [222: [DISP] CITR SDLT Controller](/.github/workflows/222-disp-sdlt-controller.yaml)
-  workflow.
-- MDLT Dry Run is triggered manually via
-  the [202: [USER] CITR SDLT Ctrl Adhoc](/.github/workflows/202-user-sdlt-controller-adhoc.yaml)
-  workflow.
+Kickoff (Chewie allocates the cluster and namespace; the kickoff prints them to the job summary):
+
+- Automated: [224: [DISP] CITR MDLT Controller](/.github/workflows/224-disp-mdlt-controller.yaml) — dispatched by Chewie
+  with a `build-tag` once SDPT and SDLT have both passed for that build. Until Chewie dispatches it, the workflow also
+  checks for the `sdpt-pass-`/`sdlt-pass-` tags and refuses a build without both.
+- Manual: [203: [USER] CITR MDLT Ctrl Adhoc](/.github/workflows/203-user-mdlt-controller-adhoc.yaml).
+- Both call the reusable
+  [835: [CALL] CITR Exec MDLT](/.github/workflows/835-call-multi-day-longevity-test.yaml) executor.
+
+Monitoring and finalization (dispatched with the Allocation ID printed by the kickoff; each resolves the
+cluster + namespace from the Chewie allocation):
+
+- [204: [DISP] CITR MDLT Monitor](/.github/workflows/204-disp-mdlt-monitor.yaml) — reports run status
+  (running / passed / failed / cancelled) and block node liveness to the summary and Slack. It also
+  prunes each block node's live block data (`*.blk*` older than 59 minutes) unless
+  `prune-block-node-data` is unchecked — the kickoff runner exits after launching the run, so the
+  runner-side cleaner loop SDPT uses cannot cover a multi-day run.
+- [205: [DISP] CITR MDLT Publish Results](/.github/workflows/205-disp-mdlt-publish-results.yaml) — collects logs and
+  publishes them to GCS.
+- [206: [DISP] CITR MDLT Tag Result](/.github/workflows/206-disp-mdlt-tag-result.yaml) — applies the
+  `mdlt-pass-XXXXX` / `mdlt-fail-XXXXX` tag based on the reported result.
+- [225: [DISP] Release Chewie Allocation](/.github/workflows/225-disp-release-chewie-allocation.yaml) — releases the
+  Chewie allocation early using the Allocation ID printed by the kickoff, freeing the cluster + namespace before expiry.
+
+Namespace teardown: Chewie reclaims the namespace automatically when the allocation expires (~6 days), or a user can
+release it early via `225` with the Allocation ID from the kickoff summary.
 
 ### Hardware
 
-Latitude kubernetes cluster
+MDLT requests its Chewie-allocated environment from
+[mdlt-config.json](/.github/workflows/support/chewie/mdlt-config.json) via
+[861: [CALL] Get CITR Test Config](/.github/workflows/861-call-get-test-config.yaml).
 
-- 7 nodes for Consensus Nodes
-- 1 node for aux services and NLG client
+| Instance Group |            Role             | Quantity | CPU | Memory (MB) |
+|----------------|-----------------------------|----------|-----|-------------|
+| `cn-nodes`     | Consensus Nodes             | 8        | 39  | 256000      |
+| `aux-nodes`    | Aux services and NLG client | 1        | 39  | 256000      |
+
+Because MDLT holds the environment for multiple days, the allocation duration must be long enough to outlive the whole
+run. Two separate knobs control this, both on
+[203: [USER] CITR MDLT Ctrl Adhoc](/.github/workflows/203-user-mdlt-controller-adhoc.yaml):
+
+- `duration-minutes` — how long Chewie keeps the namespace (defaults to 6 days, giving a day of log-review headroom).
+- `mdlt-length` — how long the production run itself lasts (defaults to `default_mdlt_length`, 5 days).
+
+Workflow inputs are in minutes; the `.github/chewie.yaml` values they fall back to are in seconds, and the controller
+converts. Note `default_duration` in that file is sized for a single-day run, which is why the MDLT controllers pass an
+explicit `duration-minutes`. Before deploying, `835` verifies the allocated network actually has schedulable nodes and
+fails fast if it does not. See [Chewie Resource Allocation](chewie.md).
 
 ### Included Tests
 
 |     Test Name     |                                         Workflow                                         |  Required Parameters  | Run time  |                  Precursor Steps                   |
 |-------------------|------------------------------------------------------------------------------------------|-----------------------|-----------|----------------------------------------------------|
-| LongevityLoadTest | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) | nlg-accounts,nlg-time | 7 days    | Code Compiles, Solo deployed CNs/NLG onto Latitude |
-| State Validator   | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) |                       | 1.5 hours | LongevityLoadTest                                  |
+| LongevityLoadTest | [835: [CALL] CITR Exec MDLT](/.github/workflows/835-call-multi-day-longevity-test.yaml)  | nlg-accounts,nlg-time | 5 days    | Code Compiles, Solo deployed BNs/CNs/NLG onto Latitude |
+| Results & Logs    | [205: [DISP] CITR MDLT Publish Results](/.github/workflows/205-disp-mdlt-publish-results.yaml) | build-tag,allocation-id | after run | LongevityLoadTest                                  |
 
 ### LongevityLoadTest consists of the following tests, running in parallel with pre-defined throttling:
 
@@ -291,7 +496,12 @@ Latitude kubernetes cluster
 - 30 mins with arguments: nlg-time=3 (mins), nlg-accounts=100000
 - 1 hour : nlg-time=21 (mins), nlg-accounts=20000000
 - 3 hour: nlg-time=180, nlg-accounts=20000000
-- 7 days: nlg-time=10080, nlg-accounts=100000000
+- 5 days (MDLT production run): nlg-time=3, mdlt-length=7200, nlg-accounts=100000000
+
+`nlg-time` sets only the initial smoke run; `mdlt-length` (minutes) sets the production run that follows it. The
+kickoff (`835`) starts the smoke with `nlg-time=3`, then relaunches the same command with `-tt <mdlt-length>m` in the
+background for the full run and exits. Leave `mdlt-length` blank to use `default_mdlt_length` from
+[`.github/chewie.yaml`](/.github/chewie.yaml) (`432000` seconds / 5 days).
 
 ## Shortgevity
 
@@ -327,61 +537,3 @@ All tests are run in parallel with adjustable total TPS. Currently runs at PROD 
 | K/V pairs                               | 200M                                           |
 | Best effort coverage of Hedera Tx Types | < 100 TPS                                      |
 | Re-connects                             | At most 2 nodes in re-connect at the same time |
-
-## MQPT Merge Queue Performance Tests
-
-### Environment
-
-- MQPT runs inside self-hosted github runners regularly against Trunk.io Merge Queues
-- MQPT is expected to complete within 3 hours 40 mins of the test suite starting.
-- MQPT has a dry-run equivalent that can be run against any PR, tag, or branch.
-
-### Workflows
-
-- MQPT is triggered by
-  the [220: [DISP] CITR MQPT Controller](/.github/workflows/220-disp-mqpt-controller.yaml)
-  workflow.
-- MQPT AdHoc Run is triggered manually via
-  the [200: [USER] CITR MQPT Ctrl Adhoc](/.github/workflows/200-user-mqpt-controller-adhoc.yaml)
-  workflow.
-
-### Hardware
-
-Latitude kubernetes cluster
-
-- 7 nodes for Consensus Nodes
-- 1 node for aux services and NLG client
-
-### Included Tests
-
-|        Test Name         |                                         Workflow                                         |  Required Parameters  | Run time |                  Precursor Steps                   |
-|--------------------------|------------------------------------------------------------------------------------------|-----------------------|----------|----------------------------------------------------|
-| ScriptedLoadTest, part 1 | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) | nlg-accounts,nlg-time | 2 hours  | Code Compiles, Solo deployed CNs/NLG onto Latitude |
-| ReconnectTest            | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) | nlg-accounts,nlg-time |          | ScriptedLoadTest                                   |
-| ScriptedLoadTest, part 2 | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) | nlg-accounts,nlg-time | 1 hour   | ScriptedLoadTest                                   |
-| State Validator          | [833: [CALL] CITR Exec SDLT](/.github/workflows/833-call-single-day-longevity-test.yaml) |                       | 30 mins  | ReconnectTest                                      |
-
-### ScriptedLoadTest, part 1 consists of the following tests, running sequentially to measure performance benchmarks:
-
-- NftTransferLoadTest
-- HCSLoadTest
-- CryptoTransferLoadTest
-- SmartContractLoadTest
-
-### ScriptedLoadTest, part 2 consists of the following tests, running in parallel with pre-defined throttling:
-
-- NftTransferLoadTest, TPS=3000
-- HCSLoadTest, TPS=2000
-- CryptoTransferLoadTest, TPS=5000
-- SmartContractLoadTest, TPS=50
-
-During this step, Reconnect test restarts Consensus Node java and verifies that Consensus Node reaches ACTIVE state.
-
-### State Validator
-
-This step verifies the correctness of Consensus node State by running Validator tool.
-
-### Runtime durations, practical settings
-
-- 30 mins with arguments: nlg-time=3 (mins), nlg-accounts=100000, -Dbenchmark.stepDuration=1m -Dbenchmark.coolDown=1m
-- 3 hours 40 mins: nlg-time=60, nlg-accounts=20000000, -Dbenchmark.stepDuration=20m -Dbenchmark.coolDown=3m
