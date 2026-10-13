@@ -1,3 +1,7 @@
+# UPDATE BOTH THE `.codeowners` FILE AND THE `.github/CODEOWNERS` FILE WHEN MAKING CHANGES TO OWNERSHIP RULES
+# The `.codeowners` file controls the ownership of files within the repository (ensures the right people are requested for review when a PR is opened)
+# The `.github/CODEOWNERS` file controls PR file filtering (functional for only the PR File Filter feature when performing a code review)
+
 ###################################
 ##### Global Protection Rule ######
 ###################################
