@@ -468,8 +468,7 @@
         {
           "name": "TokenDissociateFromAccount",
           "baseFee": 499000000,
-          "extras": [
-          ]
+          "extras": [ {"name": "TOKEN_ASSOCIATE", "includedCount": 1 }]
         },
         {
           "name": "TokenGrantKycToAccount",
