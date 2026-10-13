@@ -5,7 +5,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_INVALID_SEED_ENDPO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_TOO_MANY_SEED_ENDPOINTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CLPR_CONFIGURATION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WAITING_FOR_LEDGER_ID;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.CLPR_SERVICE_ADDRESS;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -13,8 +15,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.clpr.ClprEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
-import com.hedera.node.app.service.clpr.impl.ClprStateProofManager;
 import com.hedera.node.app.service.clpr.impl.WritableLedgerConfigurationStore;
+import com.hedera.node.app.spi.store.ReadableLedgerIdStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -49,11 +51,9 @@ public class ClprUpdateLedgerConfigurationHandler extends AbstractClprHandler {
      */
     private static final long MIN_PROOF_OVERHEAD_BYTES = 65_536L;
 
-    private final ClprStateProofManager stateProofManager;
-
     @Inject
-    public ClprUpdateLedgerConfigurationHandler(@NonNull final ClprStateProofManager stateProofManager) {
-        this.stateProofManager = requireNonNull(stateProofManager);
+    public ClprUpdateLedgerConfigurationHandler() {
+        // Dagger2
     }
 
     @Override
@@ -123,21 +123,16 @@ public class ClprUpdateLedgerConfigurationHandler extends AbstractClprHandler {
         final var existing = configStore.getConfiguration();
 
         // Build the updated configuration, preserving immutable fields from genesis.
-        // initial_trust_anchor is sourced from the latest signed snapshot's ledger_id (the
-        // genesis-rooted Hiero TSS identity for this ledger) so peers registering against
-        // this config see a self-describing trust anchor; if the snapshot is not yet
-        // available, we preserve whatever was previously stored (empty at genesis).
+        // initial_trust_anchor is the ledger id in consensus state (the genesis-rooted Hiero TSS
+        // identity for this ledger), so peers registering against this config see a self-describing
+        // trust anchor. A configuration without it is unverifiable by peers, so the update is rejected
+        // until TSS has set the ledger id. It must come from state, not from this node's latest
+        // block-proven snapshot: whether a node has a snapshot is node-local (a node replaying events
+        // after a restart has none), so reading it here would make nodes store different
+        // configurations for the same transaction and ISS.
         final var consensusNow = context.consensusNow();
-        final var ledgerId = stateProofManager.latestLedgerId();
-        final Bytes initialTrustAnchor;
-        final Bytes initialTrustAnchorId;
-        if (ledgerId.length() > 0) {
-            initialTrustAnchor = ledgerId;
-            initialTrustAnchorId = ledgerId;
-        } else {
-            initialTrustAnchor = existing.initialTrustAnchor();
-            initialTrustAnchorId = existing.initialTrustAnchorId();
-        }
+        final var ledgerId = ledgerIdInState(context);
+        validateTrue(ledgerId.length() > 0, WAITING_FOR_LEDGER_ID);
         // An omitted service_address defaults to the CLPR system contract address (pureChecks
         // rejects any other value; see there for why).
         final var serviceAddress =
@@ -149,8 +144,8 @@ public class ClprUpdateLedgerConfigurationHandler extends AbstractClprHandler {
                 .timestamp(toTimestamp(consensusNow))
                 .throttles(supplied.throttles())
                 .endpoints(supplied.endpoints())
-                .initialTrustAnchor(initialTrustAnchor)
-                .initialTrustAnchorId(initialTrustAnchorId)
+                .initialTrustAnchor(ledgerId)
+                .initialTrustAnchorId(ledgerId)
                 .build();
 
         configStore.put(updatedConfig);
@@ -159,5 +154,12 @@ public class ClprUpdateLedgerConfigurationHandler extends AbstractClprHandler {
     private static void validateEndpoint(@NonNull final ClprEndpoint endpoint) throws PreCheckException {
         validateTruePreCheck(endpoint.hasServiceEndpoint(), CLPR_INVALID_SEED_ENDPOINT);
         validateTruePreCheck(!endpoint.tlsCertificate().equals(Bytes.EMPTY), CLPR_INVALID_SEED_ENDPOINT);
+    }
+
+    private static Bytes ledgerIdInState(@NonNull final HandleContext context) {
+        final var ledgerId = context.storeFactory()
+                .readableStore(ReadableLedgerIdStore.class)
+                .getLedgerId();
+        return ledgerId == null ? Bytes.EMPTY : ledgerId;
     }
 }

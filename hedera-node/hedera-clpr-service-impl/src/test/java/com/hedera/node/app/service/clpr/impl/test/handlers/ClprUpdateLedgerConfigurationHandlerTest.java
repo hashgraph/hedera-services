@@ -6,12 +6,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_NOT_ENABLED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_TOO_MANY_SEED_ENDPOINTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CLPR_CONFIGURATION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WAITING_FOR_LEDGER_ID;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.CLPR_SERVICE_ADDRESS;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
@@ -20,9 +23,9 @@ import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.clpr.ClprServiceEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.clpr.impl.ClprStateProofManager;
 import com.hedera.node.app.service.clpr.impl.WritableLedgerConfigurationStore;
 import com.hedera.node.app.service.clpr.impl.handlers.ClprUpdateLedgerConfigurationHandler;
+import com.hedera.node.app.spi.store.ReadableLedgerIdStore;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -61,7 +64,7 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     private WritableLedgerConfigurationStore configStore;
 
     @Mock(strictness = LENIENT)
-    private ClprStateProofManager stateProofManager;
+    private ReadableLedgerIdStore ledgerIdStore;
 
     private ClprUpdateLedgerConfigurationHandler subject;
 
@@ -73,8 +76,9 @@ class ClprUpdateLedgerConfigurationHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ClprUpdateLedgerConfigurationHandler(stateProofManager);
-        given(stateProofManager.latestLedgerId()).willReturn(Bytes.EMPTY);
+        subject = new ClprUpdateLedgerConfigurationHandler();
+        given(storeFactory.readableStore(ReadableLedgerIdStore.class)).willReturn(ledgerIdStore);
+        given(ledgerIdStore.getLedgerId()).willReturn(LEDGER_ID);
     }
 
     @Test
@@ -376,12 +380,12 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     }
 
     @Test
-    @DisplayName("should populate initial_trust_anchor from the latest signed snapshot's ledger_id")
-    void populatesTrustAnchorFromLatestLedgerId() {
+    @DisplayName("should populate initial_trust_anchor from the ledger id in consensus state")
+    void populatesTrustAnchorFromLedgerIdInState() {
         final var configuration =
                 HederaTestConfigBuilder.create().withValue("clpr.enabled", true).getOrCreateConfig();
         setupHandleContext(configuration);
-        given(stateProofManager.latestLedgerId()).willReturn(LEDGER_ID);
+        given(ledgerIdStore.getLedgerId()).willReturn(LEDGER_ID);
 
         final var newConfig = validConfigBuilder().build();
         given(handleContext.body()).willReturn(txnBodyWith(newConfig));
@@ -395,39 +399,73 @@ class ClprUpdateLedgerConfigurationHandlerTest {
         assertThat(saved.initialTrustAnchorId()).isEqualTo(LEDGER_ID);
     }
 
-    @Test
-    @DisplayName("should preserve existing initial_trust_anchor when ledger_id is not yet available")
-    void preservesExistingTrustAnchorWhenLedgerIdEmpty() {
+    @ParameterizedTest
+    @MethodSource("ledgerIdsNotYetInState")
+    @DisplayName("should reject the update with WAITING_FOR_LEDGER_ID while the ledger id is not yet in state")
+    void rejectsUpdateWhileLedgerIdNotInState(final Bytes ledgerIdInState) {
         final var configuration =
                 HederaTestConfigBuilder.create().withValue("clpr.enabled", true).getOrCreateConfig();
-        final var priorAnchor = Bytes.wrap(new byte[] {0x55, 0x66});
-        final var existing = ClprLedgerConfiguration.newBuilder()
-                .chainId(CHAIN_ID)
-                .protocolVersion(PROTOCOL_VERSION)
-                .initialTrustAnchor(priorAnchor)
-                .initialTrustAnchorId(priorAnchor)
-                .build();
+        setupHandleContext(configuration);
+        given(ledgerIdStore.getLedgerId()).willReturn(ledgerIdInState);
+        given(handleContext.body()).willReturn(txnBodyWith(validConfigBuilder().build()));
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .extracting(e -> ((HandleException) e).getStatus())
+                .isEqualTo(WAITING_FOR_LEDGER_ID);
+        verify(configStore, never()).put(any());
+    }
+
+    private static Stream<Bytes> ledgerIdsNotYetInState() {
+        return Stream.of(null, Bytes.EMPTY);
+    }
+
+    /**
+     * Regression test for an ISS: every node must store the same configuration for the same transaction and state.
+     * The trust anchor used to come from this node's latest block-proven snapshot, which is node-local (a node replaying
+     * events after a restart, a node that just reconnected, or any node in the first seconds after genesis has none), so
+     * nodes stored different configurations for the network's first update. It must come from consensus state only.
+     */
+    @Test
+    @DisplayName("stored configuration depends only on consensus state, not on node-local snapshots")
+    void storedConfigurationDependsOnlyOnConsensusState() {
+        final var configuration =
+                HederaTestConfigBuilder.create().withValue("clpr.enabled", true).getOrCreateConfig();
+        final var txnBody = txnBodyWith(validConfigBuilder().build());
+
+        final var first = handleFromGenesis(configuration, txnBody, LEDGER_ID);
+        final var second = handleFromGenesis(configuration, txnBody, LEDGER_ID);
+
+        assertThat(second).isEqualTo(first);
+        assertThat(first.initialTrustAnchor()).isEqualTo(LEDGER_ID);
+        assertThat(first.initialTrustAnchorId()).isEqualTo(LEDGER_ID);
+        // The handler must not be able to reach a node-local snapshot at all
+        assertThat(ClprUpdateLedgerConfigurationHandler.class.getConstructors())
+                .allSatisfy(constructor ->
+                        assertThat(constructor.getParameterTypes()).isEmpty());
+    }
+
+    // --- Helpers ---
+
+    /** Handles {@code txnBody} against the genesis configuration, with {@code ledgerId} in consensus state. */
+    private ClprLedgerConfiguration handleFromGenesis(
+            final Configuration configuration, final TransactionBody txnBody, final Bytes ledgerId) {
+        final var store = org.mockito.Mockito.mock(WritableLedgerConfigurationStore.class);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableLedgerConfigurationStore.class))
-                .willReturn(configStore);
-        given(configStore.getConfiguration()).willReturn(existing);
+                .willReturn(store);
+        given(store.getConfiguration()).willReturn(genesisConfig());
         given(handleContext.consensusNow()).willReturn(CONSENSUS_NOW);
-        given(stateProofManager.latestLedgerId()).willReturn(Bytes.EMPTY);
-
-        final var newConfig = validConfigBuilder().build();
-        given(handleContext.body()).willReturn(txnBodyWith(newConfig));
+        given(handleContext.body()).willReturn(txnBody);
+        given(ledgerIdStore.getLedgerId()).willReturn(ledgerId);
 
         subject.handle(handleContext);
 
         final var captor = ArgumentCaptor.forClass(ClprLedgerConfiguration.class);
-        verify(configStore).put(captor.capture());
-        final var saved = captor.getValue();
-        assertThat(saved.initialTrustAnchor()).isEqualTo(priorAnchor);
-        assertThat(saved.initialTrustAnchorId()).isEqualTo(priorAnchor);
+        verify(store).put(captor.capture());
+        return captor.getValue();
     }
-
-    // --- Helpers ---
 
     private void setupHandleContext(final Configuration configuration) {
         final var existing = genesisConfig();

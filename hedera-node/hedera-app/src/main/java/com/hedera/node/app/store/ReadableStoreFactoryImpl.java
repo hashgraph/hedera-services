@@ -71,6 +71,7 @@ import com.hedera.node.app.service.token.impl.ReadableNodeRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.spi.store.ReadableLedgerIdStore;
 import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableStates;
@@ -172,6 +173,10 @@ public class ReadableStoreFactoryImpl implements ReadableStoreFactory {
         // History service
         newMap.put(
                 ReadableHistoryStore.class,
+                new StoreEntry(HistoryService.NAME, (states, entityCounters) -> new ReadableHistoryStoreImpl(states)));
+        // The CLPR service reads the ledger id from state through this narrow SPI view of the History store
+        newMap.put(
+                ReadableLedgerIdStore.class,
                 new StoreEntry(HistoryService.NAME, (states, entityCounters) -> new ReadableHistoryStoreImpl(states)));
         // CLPR service
         newMap.put(

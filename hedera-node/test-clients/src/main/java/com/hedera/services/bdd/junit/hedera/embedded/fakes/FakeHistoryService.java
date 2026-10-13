@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
+import static com.hedera.node.app.history.schemas.V071HistorySchema.LEDGER_ID_STATE_ID;
+
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.history.ChainOfTrustProof;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.handlers.HistoryHandlers;
@@ -13,6 +16,7 @@ import com.hedera.node.app.history.impl.HistoryServiceImpl;
 import com.hedera.node.app.history.impl.OnProofFinished;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.internal.network.Network;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -74,10 +78,23 @@ public class FakeHistoryService implements HistoryService {
         return delegate.getCurrentChainOfTrustProof(metadata);
     }
 
+    /**
+     * Sets up genesis like the real service, then sets the ledger id to the configured {@code ledger.id} if genesis left
+     * it empty. Embedded networks use mock signatures, so the History service never finishes a genesis proof to set a
+     * real ledger id, yet features such as CLPR require one in state. The configured id is what queries already report
+     * as the ledger id when none is in state, so their responses do not change.
+     */
     @Override
     public boolean doGenesisSetup(
             @NonNull final WritableStates writableStates, @NonNull final Configuration configuration) {
-        return delegate.doGenesisSetup(writableStates, configuration);
+        final var result = delegate.doGenesisSetup(writableStates, configuration);
+        final var ledgerId = writableStates.<ProtoBytes>getSingleton(LEDGER_ID_STATE_ID);
+        final var current = ledgerId.get();
+        if (current == null || current.value().length() == 0) {
+            ledgerId.put(new ProtoBytes(
+                    configuration.getConfigData(LedgerConfig.class).id()));
+        }
+        return result;
     }
 
     @Override

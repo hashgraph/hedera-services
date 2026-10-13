@@ -12,6 +12,7 @@ import com.hedera.hapi.node.state.history.WrapsMessageDetails;
 import com.hedera.hapi.node.state.history.WrapsMessageHistory;
 import com.hedera.hapi.node.state.history.WrapsPhase;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
+import com.hedera.node.app.spi.store.ReadableLedgerIdStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -24,7 +25,7 @@ import java.util.Set;
 /**
  * Provides read access to the {@link HistoryService} state.
  */
-public interface ReadableHistoryStore {
+public interface ReadableHistoryStore extends ReadableLedgerIdStore {
     /**
      * The full record of a proof key publication, including the key, the time it was adopted, and the
      * submitting node id.
@@ -88,6 +89,7 @@ public interface ReadableHistoryStore {
     /**
      * Returns the ledger id initiating the chain of trusted history, if known.
      */
+    @Override
     @Nullable
     Bytes getLedgerId();
 
