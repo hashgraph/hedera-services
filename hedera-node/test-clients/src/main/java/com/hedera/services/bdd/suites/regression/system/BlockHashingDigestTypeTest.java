@@ -78,8 +78,8 @@ public class BlockHashingDigestTypeTest {
     }
 
     @HapiTest
-    final Stream<DynamicTest> utilPrngBytesStay384Bits() {
-        // HIP-351 specifies 384 pseudorandom bits; hasOnlyPseudoRandomBytes() asserts that length
+    final Stream<DynamicTest> utilPrngBytesFollowTheRunningHash() {
+        // The bytes are the n-3 running hash, so they are 48 bytes unless BLOCKS mode uses another block digest
         return hapiTest(
                 hapiPrng().via("blockHashingPrng"),
                 getTxnRecord("blockHashingPrng").hasOnlyPseudoRandomBytes());
