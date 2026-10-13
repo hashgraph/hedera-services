@@ -228,6 +228,14 @@ val prCheckPlatformOverrides =
             "platformStatus.observingStatusDelay=10s,reconnect.minimumTimeBetweenReconnects=10s"
     )
 val prCheckPrepareUpgradeOffsets = mapOf("hapiTestAdhoc" to "PT300S")
+// We don't want to run stream or log validation for these tasks
+val prCheckWithoutStreamAndLogValidation =
+    setOf(
+        "hapiTestIss",
+        "hapiTestBlockNodeCommunication",
+        "hapiTestClpr",
+        "hapiTestClprMultinetwork",
+    )
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
@@ -325,7 +333,7 @@ fun registerTestSubprocess(name: String, ciTagExpression: String) {
         name,
         ciTagExpression,
         "none()|!(EMBEDDED|REPEATABLE)",
-        ciDefaultTags = "|CONCURRENT_SUBPROCESS_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
         ciDefaultTagsWithoutStreamAndLogValidation = ")&!(EMBEDDED|REPEATABLE",
         excludeTags = "CONCURRENT_SUBPROCESS_VALIDATION",
         junitParallelMode = "same_thread",
@@ -500,15 +508,10 @@ fun TaskContainer.registerHapiTest(
             } else {
                 includeTags(
                     if (ciTagExpression.isBlank()) defaultTags
-                    else if (name == "testEmbedded" && ciTagExpression.contains("CLPR"))
-                        "(${ciTagExpression})"
-                    // We don't want to run stream or log validation for ISS or BLOCK_NODE cases
+                    else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
-                            (ciTagExpression.contains("ISS") ||
-                                ciTagExpression.contains("BLOCK_NODE") ||
-                                ciTagExpression.contains("CLPR") ||
-                                ciTagExpression.contains("MULTINETWORK"))
+                            name in prCheckWithoutStreamAndLogValidation
                     )
                         "(${ciTagExpression}${ciDefaultTagsWithoutStreamAndLogValidation})"
                     else "(${ciTagExpression}${ciDefaultTags})"
@@ -530,7 +533,7 @@ fun TaskContainer.registerHapiTest(
                 "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
             )
         }
-        if (ciTagExpression.contains("CLPR") || ciTagExpression.contains("MULTINETWORK")) {
+        if (name.contains("Clpr")) {
             // Preserve the failed subprocess network's logs for CLPR diagnostics.
             failFast = true
         }
