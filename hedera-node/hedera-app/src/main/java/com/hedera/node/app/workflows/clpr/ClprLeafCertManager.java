@@ -3,7 +3,6 @@ package com.hedera.node.app.workflows.clpr;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.workflows.clpr.mtls.ClprMtlsContexts;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.KeyPair;
@@ -45,7 +44,6 @@ public class ClprLeafCertManager {
         }
 
         try {
-            ClprMtlsContexts.ensureProvidersRegistered();
             final var leafKeyPair = generateEd25519KeyPair();
             final var caCert = caManager.caCert();
             final var leafCert = CertificateUtils.generateCertificate(
@@ -75,7 +73,7 @@ public class ClprLeafCertManager {
     }
 
     private static KeyPair generateEd25519KeyPair() throws Exception {
-        final var gen = KeyPairGenerator.getInstance("EdDSA", "SunEC");
+        final var gen = KeyPairGenerator.getInstance("EdDSA");
         gen.initialize(new NamedParameterSpec("Ed25519"));
         return gen.generateKeyPair();
     }

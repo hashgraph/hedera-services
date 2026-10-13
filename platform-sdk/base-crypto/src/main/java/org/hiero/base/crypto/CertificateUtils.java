@@ -27,6 +27,10 @@ public final class CertificateUtils {
     private static final int SERIAL_NUMBER_BITS = 64;
     private static final OID OID_CN = new OID("2.5.4.3");
 
+    /// That's all we support for now.
+    private static final Pattern DN_PATTERN =
+            Pattern.compile("^CN=([\\w\\h\\.\\\\!\"#$%&'\\(\\)\\*\\+\\,\\-\\/:;<>?@\\[\\]\\^_`\\{\\|\\}\\~]*)$");
+
     private CertificateUtils() {}
 
     /**
@@ -89,10 +93,6 @@ public final class CertificateUtils {
             throw new KeyGeneratingException("Could not generate certificate!", e);
         }
     }
-
-    /// That's all we support for now.
-    private static final Pattern DN_PATTERN =
-            Pattern.compile("^CN=([\\w\\h\\.\\\\!\"#$%&'\\(\\)\\*\\+\\,\\-\\/:;<>?@\\[\\]\\^_`\\{\\|\\}\\~]*)$");
 
     /// All attribute values must be escaped already. Use CertificateUtils.escapeValue() for that.
     static DN buildDN(final String distinguishedName) {

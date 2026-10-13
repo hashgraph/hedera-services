@@ -25,8 +25,10 @@ import io.netty.handler.ssl.SslContext;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.EdECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,8 +47,8 @@ import org.junit.jupiter.api.Timeout;
 
 /**
  * Verifies the CLPR mTLS sync listener end-to-end against the <b>production</b> TLS wiring
- * ({@link ClprMtlsContexts}): both sides present the real ephemeral <b>Ed25519</b> leaf over the
- * BouncyCastle JSSE provider, the server requires client auth ({@link ClientAuth#REQUIRE}), and a
+ * ({@link ClprMtlsContexts}): both sides present the real ephemeral <b>Ed25519</b> leaf,
+ * the server requires client auth ({@link ClientAuth#REQUIRE}), and a
  * connecting client's leaf is pinned against the known-peer-CA set.
  *
  * <p>A successful round-trip proves the Ed25519-leaf handshake actually completes through the same
@@ -103,7 +105,6 @@ class ClprInboundSyncMtlsTest {
 
     @BeforeAll
     static void generateCerts() throws Exception {
-        ClprMtlsContexts.ensureProvidersRegistered();
         peerCa = new ClprTestCa("peer-clpr-ca");
         serverCa = new ClprTestCa("server-clpr-ca");
         serverLeaf = ed25519Leaf(serverCa, "clpr-leaf-server");
@@ -122,8 +123,13 @@ class ClprInboundSyncMtlsTest {
     @Test
     @DisplayName("the ephemeral leaf presented is an Ed25519 certificate")
     void leafIsEd25519() {
-        assertThat(serverLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("EdDSA");
-        assertThat(clientLeaf.certificate().getPublicKey().getAlgorithm()).isEqualTo("EdDSA");
+        final PublicKey serverPublicKey = serverLeaf.certificate().getPublicKey();
+        assertThat(serverPublicKey.getAlgorithm()).isEqualTo("EdDSA");
+        assertThat(((EdECKey) serverPublicKey).getParams().getName()).isEqualTo("Ed25519");
+
+        final PublicKey clientPublicKey = clientLeaf.certificate().getPublicKey();
+        assertThat(clientPublicKey.getAlgorithm()).isEqualTo("EdDSA");
+        assertThat(((EdECKey) clientPublicKey).getParams().getName()).isEqualTo("Ed25519");
     }
 
     @Test
@@ -227,7 +233,7 @@ class ClprInboundSyncMtlsTest {
 
     /**
      * Builds an ephemeral Ed25519 leaf signed by {@code ca}, mirroring {@code ClprLeafCertManager}:
-     * BC-provider Ed25519 key, signed by the CA with {@code SHA384withECDSA}.
+     * Ed25519 key, signed by the CA with {@code SHA384withECDSA}.
      */
     private static ClprLeafCredentials ed25519Leaf(final ClprTestCa ca, final String cn) throws Exception {
         final var leafKeyPair = ClprTestCa.newEd25519KeyPair();
@@ -255,7 +261,6 @@ class ClprInboundSyncMtlsTest {
      * identity, so the server must reject it at the handshake.
      */
     private ManagedChannel noCertClientChannel(final int port) throws Exception {
-        ClprMtlsContexts.ensureProvidersRegistered();
         final var ctx = SSLContext.getInstance("TLS");
         ctx.init(
                 null,

@@ -7,12 +7,10 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.NamedParameterSpec;
 import java.util.Base64;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.hiero.base.crypto.CertificateUtils;
 
 /**
@@ -21,9 +19,6 @@ import org.hiero.base.crypto.CertificateUtils;
  * {@code ClprEndpoint.tls_certificate}. It exposes the CA in the shapes the various CLPR tests need:
  * the in-memory cert/keypair, its DER bytes, the cert + unencrypted PKCS#8 key PEM files
  * {@link ClprCaCertManager} loads, and leaf certs signed by the CA.
- *
- * <p>BouncyCastle is registered on first use because {@link CertificateUtils#generateCertificate} adds
- * no extensions, so the CA cert (which needs {@code basicConstraints}) is built directly with BC.
  */
 public final class ClprTestCa {
     private static final String SIGNATURE_ALGORITHM = "SHA384withECDSA";
@@ -41,9 +36,6 @@ public final class ClprTestCa {
 
     /** Generates a self-signed P-384 CA with subject/issuer {@code CN=<cn>}. */
     public ClprTestCa(final String cn) throws Exception {
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
         this.issuerDn = "CN=" + cn;
         this.caKeyPair = newP384KeyPair();
 
@@ -96,7 +88,7 @@ public final class ClprTestCa {
     }
 
     public static KeyPair newEd25519KeyPair() throws Exception {
-        final var gen = KeyPairGenerator.getInstance("EdDSA", "SunEC");
+        final var gen = KeyPairGenerator.getInstance("EdDSA");
         gen.initialize(new NamedParameterSpec("Ed25519"));
         return gen.generateKeyPair();
     }
