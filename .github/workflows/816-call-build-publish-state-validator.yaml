@@ -124,7 +124,7 @@ jobs:
 
       - name: Upload to GCS
         id: upload
-        if: ${{ github.event.repository.visibility == 'public' && inputs.dry-run-enabled != 'true' }}
+        if: ${{ inputs.dry-run-enabled != 'true' }}
         env:
           SRC: ${{ steps.version-and-artifact.outputs.jar_path }}
           DEST_NAME: ${{ steps.version-and-artifact.outputs.dest_name }}
