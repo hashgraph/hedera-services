@@ -26,8 +26,8 @@ import org.hiero.consensus.metrics.extensions.internal.SlidingLatencyWindow;
  * {@code foo_max}. The values are upper bounds of buckets, at most {@code 2^-p} above the exact value, where {@code p}
  * is the number of precision bits. See {@link Config} for the parameters and their defaults.
  *
- * <p>All gauges of an instance report on one sliding window, which advances on the first read of a metrics snapshot
- * round.
+ * <p>All gauges of an instance report on one sliding window, which advances on the first read of the metrics snapshot
+ * round that ends a step; see {@link Config#withSnapshots(int)}.
  */
 public final class LatencyGauges {
 
@@ -50,7 +50,8 @@ public final class LatencyGauges {
         }
         this.recorder =
                 new ConcurrentLatencyRecorder(new HistogramLayout(config.getPrecisionBits(), config.getRangeBits()));
-        this.slidingWindow = new SlidingLatencyWindow(recorder, time, interval, config.getWindow());
+        this.slidingWindow =
+                new SlidingLatencyWindow(recorder, time, interval, config.getWindow(), config.getSnapshots());
         this.nanosPerUnit = config.getUnit().getDuration().toNanos();
     }
 
@@ -146,6 +147,7 @@ public final class LatencyGauges {
         private static final int DEFAULT_PRECISION_BITS = 7;
         private static final int DEFAULT_RANGE_BITS = 36;
         private static final Duration DEFAULT_WINDOW = Duration.ofSeconds(60);
+        private static final int DEFAULT_SNAPSHOTS = 20;
         private static final List<Double> DEFAULT_PERCENTILES = List.of(50.0, 90.0, 99.0, 99.9);
         private static final ChronoUnit DEFAULT_UNIT = ChronoUnit.MICROS;
 
@@ -155,6 +157,7 @@ public final class LatencyGauges {
         private final int precisionBits;
         private final int rangeBits;
         private final Duration window;
+        private final int snapshots;
         private final List<Double> percentiles;
         private final ChronoUnit unit;
 
@@ -172,6 +175,7 @@ public final class LatencyGauges {
                     DEFAULT_PRECISION_BITS,
                     DEFAULT_RANGE_BITS,
                     DEFAULT_WINDOW,
+                    DEFAULT_SNAPSHOTS,
                     DEFAULT_PERCENTILES,
                     DEFAULT_UNIT);
         }
@@ -183,6 +187,7 @@ public final class LatencyGauges {
                 final int precisionBits,
                 final int rangeBits,
                 @NonNull final Duration window,
+                final int snapshots,
                 @NonNull final List<Double> percentiles,
                 @NonNull final ChronoUnit unit) {
             this.category = requireNonNull(category);
@@ -191,6 +196,7 @@ public final class LatencyGauges {
             this.precisionBits = precisionBits;
             this.rangeBits = rangeBits;
             this.window = requireNonNull(window);
+            this.snapshots = snapshots;
             this.percentiles = List.copyOf(percentiles);
             this.unit = requireNonNull(unit);
         }
@@ -204,7 +210,8 @@ public final class LatencyGauges {
          */
         @NonNull
         public Config withDescription(@NonNull final String description) {
-            return new Config(category, name, description, precisionBits, rangeBits, window, percentiles, unit);
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
         }
 
         /**
@@ -216,7 +223,8 @@ public final class LatencyGauges {
          */
         @NonNull
         public Config withPrecisionBits(final int precisionBits) {
-            return new Config(category, name, description, precisionBits, rangeBits, window, percentiles, unit);
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
         }
 
         /**
@@ -228,19 +236,36 @@ public final class LatencyGauges {
          */
         @NonNull
         public Config withRangeBits(final int rangeBits) {
-            return new Config(category, name, description, precisionBits, rangeBits, window, percentiles, unit);
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
         }
 
         /**
-         * Sets the time the gauges report on, which is rounded up to whole metrics snapshot intervals. Defaults to
-         * 60 s.
+         * Sets the time the gauges report on, which is rounded up to whole steps; see {@link #withSnapshots(int)}.
+         * Defaults to 60 s.
          *
          * @param window the time the gauges report on, at least the metrics snapshot interval
          * @return a new instance with the updated window
          */
         @NonNull
         public Config withWindow(@NonNull final Duration window) {
-            return new Config(category, name, description, precisionBits, rangeBits, window, percentiles, unit);
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
+        }
+
+        /**
+         * Sets the most snapshots the window takes per window length. The window advances in steps of whole metrics
+         * snapshot intervals, the shortest that need no more snapshots; the gauges change only when a step ends. Each
+         * snapshot is a copy of the counts, so fewer snapshots save memory but make the gauges follow changes later.
+         * Defaults to 20: one per interval for a 60 s window and the default interval of 3 s.
+         *
+         * @param snapshots the most snapshots per window length, at least 1
+         * @return a new instance with the updated number of snapshots
+         */
+        @NonNull
+        public Config withSnapshots(final int snapshots) {
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
         }
 
         /**
@@ -258,6 +283,7 @@ public final class LatencyGauges {
                     precisionBits,
                     rangeBits,
                     window,
+                    snapshots,
                     Arrays.stream(percentiles).boxed().toList(),
                     unit);
         }
@@ -270,7 +296,8 @@ public final class LatencyGauges {
          */
         @NonNull
         public Config withUnit(@NonNull final ChronoUnit unit) {
-            return new Config(category, name, description, precisionBits, rangeBits, window, percentiles, unit);
+            return new Config(
+                    category, name, description, precisionBits, rangeBits, window, snapshots, percentiles, unit);
         }
 
         /**
@@ -317,6 +344,13 @@ public final class LatencyGauges {
         @NonNull
         public Duration getWindow() {
             return window;
+        }
+
+        /**
+         * @return the most snapshots per window length
+         */
+        public int getSnapshots() {
+            return snapshots;
         }
 
         /**

@@ -87,6 +87,7 @@ class LatencyGaugesTest {
                         .withRangeBits(20)
                         .withPercentiles(25, 75)
                         .withWindow(Duration.ofSeconds(6))
+                        .withSnapshots(1)
                         .withUnit(ChronoUnit.NANOS));
 
         assertThat(metrics.getAll())
@@ -97,6 +98,10 @@ class LatencyGaugesTest {
 
         gauges.record(1_000);
         gauges.record(2_000_000);
+        time.tick(INTERVAL);
+        assertThat(valueOf("foo_max"))
+                .as("with one snapshot per 6 s window, the first step has not ended")
+                .isZero();
         time.tick(INTERVAL);
         assertThat(valueOf("foo_p25"))
                 .as("with 3 precision bits, 1,000 ns is in the bucket from 960 to 1,023 ns")
@@ -116,6 +121,7 @@ class LatencyGaugesTest {
         assertThat(config.getPrecisionBits()).isEqualTo(7);
         assertThat(config.getRangeBits()).isEqualTo(36);
         assertThat(config.getWindow()).isEqualTo(Duration.ofSeconds(60));
+        assertThat(config.getSnapshots()).isEqualTo(20);
         assertThat(config.getPercentiles()).containsExactly(50.0, 90.0, 99.0, 99.9);
         assertThat(config.getUnit()).isEqualTo(ChronoUnit.MICROS);
     }
@@ -155,6 +161,8 @@ class LatencyGaugesTest {
         assertThatThrownBy(() -> LatencyGauges.register(metrics, configuration, time, config.withPrecisionBits(17)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> LatencyGauges.register(metrics, configuration, time, config.withRangeBits(63)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> LatencyGauges.register(metrics, configuration, time, config.withSnapshots(0)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(metrics.getAll()).as("no gauge of an invalid configuration").isEmpty();
     }

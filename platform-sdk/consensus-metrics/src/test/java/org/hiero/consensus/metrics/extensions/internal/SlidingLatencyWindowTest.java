@@ -16,12 +16,15 @@ class SlidingLatencyWindowTest {
     private static final Duration INTERVAL = Duration.ofSeconds(3);
     /** Three intervals, so a value leaves the window at the fourth advance after it was recorded. */
     private static final Duration LENGTH = Duration.ofSeconds(9);
+    /** One snapshot per interval of the window. */
+    private static final int SNAPSHOTS = 3;
 
     /** Values below 2^(p+1) = 256 have a bucket of their own, so they are reported exactly. */
     private final ConcurrentLatencyRecorder recorder = new ConcurrentLatencyRecorder(new HistogramLayout(7, 36));
 
     private final FakeTime time = new FakeTime();
-    private final SlidingLatencyWindow slidingWindow = new SlidingLatencyWindow(recorder, time, INTERVAL, LENGTH);
+    private final SlidingLatencyWindow slidingWindow =
+            new SlidingLatencyWindow(recorder, time, INTERVAL, LENGTH, SNAPSHOTS);
 
     @Test
     void isEmptyBeforeTheFirstValue() {
@@ -59,7 +62,7 @@ class SlidingLatencyWindowTest {
     @Test
     void lengthIsRoundedUpToWholeIntervals() {
         final SlidingLatencyWindow sevenSeconds =
-                new SlidingLatencyWindow(recorder, time, INTERVAL, Duration.ofSeconds(7));
+                new SlidingLatencyWindow(recorder, time, INTERVAL, Duration.ofSeconds(7), SNAPSHOTS);
         record(10, 200);
         time.tick(INTERVAL);
         assertThat(sevenSeconds.current().max()).isEqualTo(200);
@@ -72,6 +75,56 @@ class SlidingLatencyWindowTest {
         time.tick(INTERVAL);
         assertThat(sevenSeconds.current().max())
                 .as("7 s round up to three intervals")
+                .isEqualTo(10);
+    }
+
+    @Test
+    void fewerSnapshotsThanIntervalsAdvanceInLongerSteps() {
+        // 18 s in at most 3 snapshots: a step of 6 s
+        final SlidingLatencyWindow stepped =
+                new SlidingLatencyWindow(recorder, time, INTERVAL, Duration.ofSeconds(18), 3);
+        record(10, 200);
+        time.tick(INTERVAL);
+        assertThat(stepped.current().max())
+                .as("3 s, the first step has not ended")
+                .isZero();
+        time.tick(INTERVAL);
+        assertThat(stepped.current().max()).as("6 s").isEqualTo(200);
+
+        record(20, 10);
+        time.tick(INTERVAL);
+        assertThat(stepped.current().valueAtPercentile(50))
+                .as("9 s, within the step")
+                .isEqualTo(200);
+        time.tick(INTERVAL);
+        assertThat(stepped.current().valueAtPercentile(50))
+                .as("12 s, the next step")
+                .isEqualTo(10);
+
+        for (int seconds = 15; seconds <= 21; seconds += 3) {
+            time.tick(INTERVAL);
+            assertThat(stepped.current().max()).as(seconds + " s").isEqualTo(200);
+        }
+        time.tick(INTERVAL);
+        assertThat(stepped.current().max())
+                .as("24 s, the fourth snapshot drops the 200s")
+                .isEqualTo(10);
+    }
+
+    @Test
+    void stepsAreWholeIntervalsAndTheLengthWholeSteps() {
+        // 9 s in at most 2 snapshots: a step of 6 s, so the window covers 12 s
+        final SlidingLatencyWindow stepped = new SlidingLatencyWindow(recorder, time, INTERVAL, LENGTH, 2);
+        record(10, 200);
+        time.tick(Duration.ofSeconds(6));
+        assertThat(stepped.current().max()).as("6 s").isEqualTo(200);
+
+        record(10, 10);
+        time.tick(Duration.ofSeconds(6));
+        assertThat(stepped.current().max()).as("12 s").isEqualTo(200);
+        time.tick(Duration.ofSeconds(6));
+        assertThat(stepped.current().max())
+                .as("18 s, the third snapshot drops the 200s")
                 .isEqualTo(10);
     }
 
@@ -127,9 +180,11 @@ class SlidingLatencyWindowTest {
 
     @Test
     void invalidArgumentsThrow() {
-        assertThatThrownBy(() -> new SlidingLatencyWindow(recorder, time, INTERVAL, Duration.ofSeconds(2)))
+        assertThatThrownBy(() -> new SlidingLatencyWindow(recorder, time, INTERVAL, Duration.ofSeconds(2), SNAPSHOTS))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SlidingLatencyWindow(recorder, time, Duration.ZERO, LENGTH))
+        assertThatThrownBy(() -> new SlidingLatencyWindow(recorder, time, Duration.ZERO, LENGTH, SNAPSHOTS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SlidingLatencyWindow(recorder, time, INTERVAL, LENGTH, 0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
