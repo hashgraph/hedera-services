@@ -5,6 +5,7 @@ import static com.hedera.services.bdd.junit.TestTags.ISS;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SAVED_STATES_DIR;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -70,16 +71,20 @@ import org.junit.jupiter.api.Tag;
 class MidnightRatesRestartIssReproTest implements LifecycleTest {
     private static final Duration SAVED_STATE_WAIT_TIMEOUT = Duration.ofSeconds(120);
 
-    // Leaky (runs isolated) because it overrides a network property without declaring the override for automatic
-    // restoration: the test restarts a node and freezes the network, so a teardown restore would run against a frozen
-    // network. The network is torn down after the test, so the override does not leak to other tests.
-    @LeakyHapiTest
+    // Leaky (runs isolated) because it overrides staking.periodMins; the override is declared so it is restored after
+    // the test. The ISS-tagged specs share one subprocess network that is never recreated between specs, so this test
+    // also restores the exchange-rate file it mutates (see the end of the scenario) rather than leaking a rate far
+    // outside the intraday limit to the specs that follow.
+    @LeakyHapiTest(overrides = {"staking.periodMins"})
     final Stream<DynamicTest> systemAdminRateMovePersistsBaselineSoReconnectDoesNotIss() {
         final AtomicReference<SemanticVersion> startVersion = new AtomicReference<>();
         final AtomicReference<Instant> moveConsensusTime = new AtomicReference<>();
+        final AtomicReference<byte[]> originalRates = new AtomicReference<>();
         return hapiTest(
                 overriding("staking.periodMins", "1440"),
                 getVersionInfo().exposingServicesVersionTo(startVersion::set),
+                // Capture the baseline exchange-rate file so it can be restored for the specs that follow
+                getFileContents(EXCHANGE_RATES).consumedBy(originalRates::set),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, ADEQUATE_FUNDS))
                         .fee(ONE_HUNDRED_HBARS),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, ADEQUATE_FUNDS))
@@ -121,7 +126,14 @@ class MidnightRatesRestartIssReproTest implements LifecycleTest {
                         .fee(ONE_HUNDRED_HBARS),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_ADMIN, 1L)).fee(ONE_HUNDRED_HBARS),
                 assertHgcaaLogDoesNotContainText(
-                        NodeSelector.byNodeId(ISS_NODE_ID), "ISS detected", Duration.ofSeconds(30)));
+                        NodeSelector.byNodeId(ISS_NODE_ID), "ISS detected", Duration.ofSeconds(30)),
+                // Restore the baseline exchange rate so the specs that follow on this shared network do not inherit the
+                // moved 1:130 rate (which would exceed the intraday limit for their own updates). The system admin
+                // bypasses the intraday limit, so the restore is accepted in one step.
+                sourcing(() -> fileUpdate(EXCHANGE_RATES)
+                        .payingWith(SYSTEM_ADMIN)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .contents(originalRates.get())));
     }
 
     /**
