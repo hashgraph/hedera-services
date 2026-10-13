@@ -1114,7 +1114,9 @@ class HandleWorkflowTest {
                 "CRS_PUBLICATION",
                 "HISTORY_PROOF_KEY_PUBLICATION",
                 "HISTORY_ASSEMBLY_SIGNATURE",
-                "HISTORY_PROOF_VOTE"
+                "HISTORY_PROOF_VOTE",
+                "CLPR_ENDPOINT_PUBLICATION",
+                "CLPR_SUBMIT_BUNDLE"
             })
     void fullBlockStillDispatchesProtocolTransactionsWithNonExemptPayer(final HederaFunctionality functionality)
             throws Exception {

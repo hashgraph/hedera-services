@@ -916,7 +916,9 @@ public class HandleWorkflow {
                     CRS_PUBLICATION,
                     HISTORY_PROOF_KEY_PUBLICATION,
                     HISTORY_ASSEMBLY_SIGNATURE,
-                    HISTORY_PROOF_VOTE -> true;
+                    HISTORY_PROOF_VOTE,
+                    CLPR_ENDPOINT_PUBLICATION,
+                    CLPR_SUBMIT_BUNDLE -> true;
             default -> false;
         };
     }

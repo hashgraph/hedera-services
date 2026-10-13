@@ -178,17 +178,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // The circuit-breaker size configuration snapshot for the current block.
     private boolean blockSizeCircuitBreakerEnabled;
     private long maxBlockSizeBytes;
+    private long maxBlockExecutionSizeBytes;
     // The canonical serialized size of all items accepted into the current block, excluding its asynchronous proof.
     private long currentBlockSizeBytes;
     // Once open, no more output from savepoint stacks is accepted until the next block starts. Only ever engages
     // in StreamMode.BOTH (preview block stream); see blockSizeCircuitBreakerApplicable.
     private boolean savepointOutputSuppressed;
     // Independent of the circuit breaker above: in StreamMode.BLOCKS (canonical), tracks the same running size
-    // against the same maxBlockSizeBytes limit, but never suppresses output — HandleWorkflow consults
+    // against the maxBlockExecutionSizeBytes limit, but never suppresses output — HandleWorkflow consults
     // hasReachedMaxBlockSize() to reject further submitted transactions with normal consensus throttle fees instead.
-    // Deliberately
-    // separate state from
-    // the circuit breaker so other consumers of isSavepointOutputSuppressed() (e.g. trace-data serialization)
+    // Separate state from the circuit breaker so other consumers of isSavepointOutputSuppressed()
+    // (e.g. trace-data serialization)
     // are unaffected by this StreamMode.BLOCKS-only mechanism.
     private boolean maxBlockSizeThrottleEnabled;
     private long currentThrottleBlockSizeBytes;
@@ -331,7 +331,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         this.blockPeriod = blockStreamConfig.blockPeriod();
         final var streamMode = blockStreamConfig.streamMode();
         this.blockSizeCircuitBreakerApplicable = streamMode == BOTH;
-        this.maxBlockSizeThrottleApplicable = streamMode == BLOCKS && blockStreamConfig.maxBlockSizeLimitEnabled();
+        this.maxBlockSizeThrottleApplicable = streamMode == BLOCKS;
         final var networkAdminConfig = config.getConfigData(NetworkAdminConfig.class);
         this.diskNetworkExport = networkAdminConfig.diskNetworkExport();
         this.diskNetworkExportFile = networkAdminConfig.diskNetworkExportFile();
@@ -542,7 +542,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             blockSizeCircuitBreakerEnabled = blockSizeCircuitBreakerApplicable && maxBlockSizeBytes > 0;
             currentBlockSizeBytes = 0;
             savepointOutputSuppressed = false;
-            maxBlockSizeThrottleEnabled = maxBlockSizeThrottleApplicable && maxBlockSizeBytes > 0;
+            maxBlockExecutionSizeBytes = blockStreamConfig.maxBlockExecutionSizeBytes();
+            maxBlockSizeThrottleEnabled = maxBlockSizeThrottleApplicable
+                    && blockStreamConfig.maxBlockSizeLimitEnabled()
+                    && maxBlockExecutionSizeBytes > 0;
             currentThrottleBlockSizeBytes = 0;
             maxBlockSizeReached = false;
             submittedTransactionCount = 0;
@@ -1122,8 +1125,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     /**
-     * Independent of the circuit breaker above: in {@code StreamMode.BLOCKS}, tracks the same running size against
-     * the same {@code maxBlockSizeBytes} limit, but never suppresses output. Once tripped, {@link
+     * Independent of the circuit breaker above: in {@code StreamMode.BLOCKS}, tracks the running size against
+     * the {@code maxBlockExecutionSizeBytes} limit, but never suppresses output. Once tripped, {@link
      * #hasReachedMaxBlockSize()} reports {@code true} for the rest of the block, and {@code HandleWorkflow}
      * is expected to reject further non-exempt submitted transactions with {@code THROTTLED_AT_CONSENSUS} using normal consensus throttle fee charging rather than let them run.
      * Scheduled executions are deferred by {@code HandleWorkflow}; block signatures remain eligible to run.
@@ -1136,7 +1139,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         currentThrottleBlockSizeBytes = saturatedAdd(currentThrottleBlockSizeBytes, addedSize);
         signedTransactionCount +=
                 items.stream().filter(BlockItem::hasSignedTransaction).count();
-        if (!maxBlockSizeReached && currentThrottleBlockSizeBytes > maxBlockSizeBytes) {
+        if (!maxBlockSizeReached && currentThrottleBlockSizeBytes > maxBlockExecutionSizeBytes) {
             submittedAtCutoff = submittedTransactionCount;
             bytesAtCutoff = currentThrottleBlockSizeBytes;
             maxBlockSizeReached = true;
@@ -1148,7 +1151,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     blockNumber,
                     currentThrottleBlockSizeBytes,
                     addedSize,
-                    maxBlockSizeBytes,
+                    maxBlockExecutionSizeBytes,
                     submittedTransactionCount,
                     nodeSubmittedTransactionCount);
         }
