@@ -199,7 +199,7 @@ public final class LinkedObjectStreamValidateUtils {
             }
             objectsCount++;
             Hash objectHash = CRYPTOGRAPHY.digestSync(selfSerializable, DigestType.SHA_384);
-            runningHash = CRYPTOGRAPHY.calcRunningHash(runningHash, objectHash);
+            runningHash = CRYPTOGRAPHY.calcRunningHash(runningHash, objectHash, DigestType.SHA_384);
             logger.info(
                     OBJECT_STREAM.getMarker(),
                     "validateIterator :: after consuming object {}," + "hash: {}, updated runningHash: {}",

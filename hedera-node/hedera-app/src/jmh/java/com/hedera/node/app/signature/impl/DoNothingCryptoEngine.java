@@ -15,29 +15,29 @@ public class DoNothingCryptoEngine implements Cryptography {
 
     @NonNull
     @Override
-    public Hash digestSync(@NonNull byte[] bytes) {
+    public Hash digestSync(@NonNull byte[] bytes, @NonNull DigestType digestType) {
         return null;
     }
 
     @Override
-    public byte[] digestBytesSync(final @NonNull SelfSerializable serializable) {
+    public byte[] digestBytesSync(final @NonNull SelfSerializable serializable, @NonNull DigestType digestType) {
+        return null;
+    }
+
+    @Override
+    public Hash digestSync(@NonNull SelfSerializable selfSerializable, @NonNull DigestType digestType) {
         return null;
     }
 
     @Override
     public Hash digestSync(
-            @NonNull SerializableHashable serializableHashable, @NonNull DigestType digestType, boolean setHash) {
-        return null;
-    }
-
-    @Override
-    public Hash digestSync(@NonNull SelfSerializable selfSerializable) {
+            @NonNull SerializableHashable serializableHashable, boolean b, @NonNull DigestType digestType) {
         return null;
     }
 
     @NonNull
     @Override
-    public byte[] digestBytesSync(@NonNull final byte[] message) {
+    public byte[] digestBytesSync(@NonNull final byte[] message, @NonNull DigestType digestType) {
         return null;
     }
 
@@ -62,7 +62,7 @@ public class DoNothingCryptoEngine implements Cryptography {
 
     @NonNull
     @Override
-    public Hash calcRunningHash(@NonNull Hash hash, @NonNull Hash hash1) {
+    public Hash calcRunningHash(@NonNull Hash hash, @NonNull Hash hash1, @NonNull DigestType digestType) {
         return null;
     }
 }

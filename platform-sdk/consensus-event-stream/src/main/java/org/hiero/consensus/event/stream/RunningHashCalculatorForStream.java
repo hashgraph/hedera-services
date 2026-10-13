@@ -46,7 +46,7 @@ public class RunningHashCalculatorForStream<T extends RunningHashable & Serializ
 
         final Hash newHashToAdd = t.getHash();
         // calculates and updates runningHash
-        runningHash = cryptography.calcRunningHash(runningHash, newHashToAdd);
+        runningHash = cryptography.calcRunningHash(runningHash, newHashToAdd, DigestType.SHA_384);
         t.getRunningHash().setHash(runningHash);
         super.addObject(t);
     }
