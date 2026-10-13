@@ -210,3 +210,24 @@ jobs:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       chewie-id-key: ${{ secrets.CHEWIE_REPO_IDENTITY_KEY }}
       chewie-host: ${{ secrets.CHEWIE_HOST }}
+
+  # 835 only kicks MDLT off; a successful kickoff means the run is now in progress, so it reports
+  # `running`. 204 reports progress and the terminal result from each status check.
+  report-mdlt-kickoff:
+    name: Report MDLT Kickoff to Chewie
+    needs:
+      - verify-tag
+      - run-multi-day-longevity-test
+    if: ${{ always() && needs.verify-tag.outputs.build-number != '' }}
+    uses: ./.github/workflows/864-call-report-suite-result.yaml
+    with:
+      suite-type: mdlt
+      build-number: ${{ needs.verify-tag.outputs.build-number }}
+      disposition:
+        ${{ needs.run-multi-day-longevity-test.result == 'cancelled' && 'cancelled'
+        || needs.run-multi-day-longevity-test.outputs.result == 'success' && 'running'
+        || needs.run-multi-day-longevity-test.result == 'skipped' && 'not_run'
+        || 'failed' }}
+    secrets:
+      chewie-key: ${{ secrets.CHEWIE_REPO_IDENTITY_KEY }}
+      chewie-host: ${{ secrets.CHEWIE_HOST }}
