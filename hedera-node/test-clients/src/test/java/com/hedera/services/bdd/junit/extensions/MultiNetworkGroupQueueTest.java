@@ -85,15 +85,34 @@ class MultiNetworkGroupQueueTest {
     }
 
     @Test
-    @DisplayName("A heavier group waits while a lighter group is still waiting, even if its nodes fit")
-    void lighterGroupGoesFirst() {
+    @DisplayName("A registered group with no test waiting never holds back a heavier one")
+    void registeredButIdleLighterGroupDoesNotBlock() {
         queue.register("manifest-1", MANIFEST);
         queue.register("small-1", SMALL);
 
-        final var manifestTurn = assertBlocked("manifest-1");
+        // As in a single-threaded run: small-1 only runs after manifest-1 on the same thread, so manifest-1
+        // must not wait for it
+        assertEquals(MANIFEST, queue.awaitTurn("manifest-1"));
+    }
 
-        queue.awaitTurn("small-1");
-        // Now nothing lighter is waiting, but 2 + 3 nodes don't fit the budget of 4
+    @Test
+    @DisplayName("Among groups waiting for the budget, the lighter one is admitted first")
+    void lighterWaitingGroupGoesFirst() throws Exception {
+        final var big = NetworkGroup.of(Map.of("c_big", 2, "d_big", 1));
+        queue.register("big-1", big);
+        queue.register("manifest-1", MANIFEST);
+        queue.register("small-1", SMALL);
+        assertEquals(big, queue.awaitTurn("big-1"));
+
+        // 3 of 4 nodes in use: both must wait, the heavier one started waiting first
+        final var manifestTurn = assertBlocked("manifest-1");
+        final var smallTurn = assertBlocked("small-1");
+
+        assertEquals(List.of(big), queue.testsFinished("big-1"));
+        queue.release(big);
+
+        assertEquals(SMALL, admitted(smallTurn));
+        // 2 + 3 nodes don't fit the budget of 4
         assertThrows(TimeoutException.class, () -> manifestTurn.get(SHORT.toMillis(), TimeUnit.MILLISECONDS));
     }
 
@@ -113,18 +132,6 @@ class MultiNetworkGroupQueueTest {
                 "nodes are held until the group is released");
 
         queue.release(SMALL);
-        assertEquals(MANIFEST, admitted(manifestTurn));
-    }
-
-    @Test
-    @DisplayName("A group whose tests all finish without running stops holding back heavier groups")
-    void unstartedGroupFinishingUnblocksHeavierGroups() throws Exception {
-        queue.register("small-1", SMALL);
-        queue.register("manifest-1", MANIFEST);
-
-        final var manifestTurn = assertBlocked("manifest-1");
-
-        assertTrue(queue.testsFinished("small-1").isEmpty(), "the group never ran, so nothing to tear down");
         assertEquals(MANIFEST, admitted(manifestTurn));
     }
 

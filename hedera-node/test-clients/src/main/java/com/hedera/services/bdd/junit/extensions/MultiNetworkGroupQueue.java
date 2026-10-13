@@ -24,8 +24,11 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>Every enabled test is {@link #register registered} with its group during the test-plan walk, before
  * anything runs. A group then waits until it is <b>admitted</b>, which happens only when (1) its nodes fit the
- * free budget and (2) no lighter group is still waiting. So the smaller groups go first, while groups that
- * fit together still run together. An admitted group keeps its nodes until its last registered test
+ * free budget and (2) no lighter group has a test waiting for its turn. So among groups competing for the budget
+ * the smaller ones go first, while groups that fit together still run together. Only groups with a test actually
+ * waiting count: a group that is merely registered never holds others back, so a run that executes tests one at a
+ * time (e.g. a single-threaded task or IDE run) cannot deadlock waiting for a group whose tests come later on the
+ * same thread. An admitted group keeps its nodes until its last registered test
  * {@link #testsFinished finishes}, and its owner tears its networks down and calls {@link #release}.
  *
  * <p>All state is guarded by a single lock, so every admission decision is atomic.
@@ -58,6 +61,9 @@ public final class MultiNetworkGroupQueue {
     private static final class GroupState {
         private final NetworkGroup group;
         private int testsToRun;
+        /** Tests of this group currently blocked in {@link #awaitTurn}. */
+        private int waitingTests;
+
         private boolean running;
         private boolean failed;
 
@@ -158,8 +164,15 @@ public final class MultiNetworkGroupQueue {
                 if (state == null) {
                     throw new IllegalStateException("Test " + testId + " was not registered with a network group");
                 }
-                while (!tryAdmit(state)) {
-                    changed.await();
+                state.waitingTests++;
+                try {
+                    while (!tryAdmit(state)) {
+                        changed.await();
+                    }
+                } finally {
+                    state.waitingTests--;
+                    // A waiter leaving (admitted or failed) can unblock heavier groups that were yielding to it
+                    changed.signalAll();
                 }
                 admitted = state.group;
                 return true;
@@ -186,9 +199,10 @@ public final class MultiNetworkGroupQueue {
         if (state.running) {
             return true;
         }
-        final var lightest = waiting.peek();
-        final boolean noLighterWaiting = lightest == null || lightest.group.weight() >= state.group.weight();
-        if (!noLighterWaiting || nodesInUse + state.group.weight() > capacity) {
+        final boolean lighterGroupWaiting = waiting.stream()
+                .anyMatch(other ->
+                        other != state && other.waitingTests > 0 && other.group.weight() < state.group.weight());
+        if (lighterGroupWaiting || nodesInUse + state.group.weight() > capacity) {
             return false;
         }
         waiting.remove(state);

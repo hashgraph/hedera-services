@@ -396,8 +396,8 @@ fun registerTestEmbedded(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR|MULTINETWORK)",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR|MULTINETWORK",
         // Tell our launcher to target a concurrent embedded network
         embeddedMode = "concurrent",
         junitParallelMode = "same_thread",
@@ -414,8 +414,9 @@ fun registerTestRepeatable(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS|MULTINETWORK)",
+        ciDefaultTags =
+            "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED|MULTINETWORK",
         embeddedMode = "repeatable",
     )
 }
