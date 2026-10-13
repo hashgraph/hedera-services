@@ -160,7 +160,7 @@ jobs:
       gradle-cache-password: ${{ secrets.gradle-cache-password }}
 
   hapi-tests-clpr:
-    uses: ./.github/workflows/864-call-execute-hapi-clpr.yaml
+    uses: ./.github/workflows/870-call-execute-hapi-clpr.yaml
     with:
       ref: ${{ inputs.ref }}
       java-distribution: ${{ inputs.java-distribution }}
