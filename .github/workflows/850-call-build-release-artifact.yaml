@@ -541,6 +541,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     with:
       version: ${{ needs.validate.outputs.version }}
       version-policy: ${{ inputs.version-policy }}
@@ -561,6 +562,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     with:
       version: ${{ needs.validate.outputs.version }}
       version-policy: ${{ inputs.version-policy }}
