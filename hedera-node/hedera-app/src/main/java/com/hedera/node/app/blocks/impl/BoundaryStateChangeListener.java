@@ -66,6 +66,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
      */
     private final Map<Integer, StateChange> singletonUpdates = new LinkedHashMap<>();
 
+    // What readers hold for each singleton: the last value emitted in this block, else the committed value
+    // before its first update here. Kept across reset() until the block ends; null forces a full value.
     private final Map<Integer, Object> singletonBaselines = new LinkedHashMap<>();
     private int deltaMinSaving = StateChangeDeltas.DEFAULT_MIN_SAVING;
     private boolean deltasEnabled;
@@ -94,7 +96,8 @@ public class BoundaryStateChangeListener implements StateChangeListener {
 
     @Override
     public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
-        if (deltasEnabled && !singletonUpdates.containsKey(stateId)) {
+        // An update already pending when the block began has no baseline here, so it is emitted in full
+        if (deltasEnabled && !singletonBaselines.containsKey(stateId) && !singletonUpdates.containsKey(stateId)) {
             singletonBaselines.put(stateId, previousValue);
         }
         singletonUpdateChange(stateId, value);
@@ -151,11 +154,10 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     /**
-     * Resets the state of the listener.
+     * Discards the pending singleton updates. Baselines stay until the next block begins.
      */
     public void reset() {
         singletonUpdates.clear();
-        singletonBaselines.clear();
     }
 
     /**
@@ -180,6 +182,10 @@ public class BoundaryStateChangeListener implements StateChangeListener {
                 allStateChanges.add(full.copyBuilder().singletonUpdate(delta).build());
             } else {
                 allStateChanges.add(full);
+            }
+            if (deltasEnabled) {
+                // Readers hold this value once it is emitted, partial or full
+                singletonBaselines.put(entry.getKey(), update.newValue().value());
             }
         }
         return allStateChanges;

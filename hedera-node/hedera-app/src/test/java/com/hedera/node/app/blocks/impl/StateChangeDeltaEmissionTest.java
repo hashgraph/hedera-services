@@ -10,11 +10,13 @@ import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
+import com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
@@ -207,6 +209,83 @@ class StateChangeDeltaEmissionTest {
                         .singletonUpdateOrThrow()
                         .partial())
                 .isFalse();
+    }
+
+    private static final int ENTITY_COUNTS = V0590EntityIdSchema.ENTITY_COUNTS_STATE_ID;
+    private static final EntityCounts COUNTS = EntityCounts.newBuilder()
+            .numAccounts(1_000)
+            .numSchedules(10)
+            .numFiles(1_000_000)
+            .numTokens(1_000_000)
+            .numTopics(1_000_000)
+            .build();
+
+    @Test
+    void singletonBaselineFollowsMidBlockEmissions() {
+        final var listener = boundaryListener();
+        listener.beginBlock(true, 0);
+        final var scheduled = COUNTS.copyBuilder().numSchedules(11).build();
+        final var purged =
+                scheduled.copyBuilder().numSchedules(10).numAccounts(1_001).build();
+        // Emitted mid-block without a reset, as HandleWorkflow.doStreamingChangesInternal does
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, scheduled);
+        final var reader = replaySingletons(COUNTS, listener.allStateChanges());
+        assertThat(reader).isEqualTo(scheduled);
+        listener.singletonUpdateChange(ENTITY_COUNTS, scheduled, purged);
+        final var atClose = listener.allStateChanges();
+        assertThat(atClose.getFirst().singletonUpdateOrThrow().partial()).isTrue();
+        // num_schedules is back at its block-start value, but readers hold 11
+        assertThat(replaySingletons(reader, atClose)).isEqualTo(purged);
+    }
+
+    @Test
+    void discardedPendingSingletonUpdateIsCarriedByTheNextEmission() {
+        final var listener = boundaryListener();
+        listener.beginBlock(true, 0);
+        final var moreFiles = COUNTS.copyBuilder().numFiles(1_000_001).build();
+        final var moreAccounts = moreFiles.copyBuilder().numAccounts(1_001).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreFiles);
+        // HandleWorkflow.doStreamingChangesInternal resets before its action, discarding this update
+        listener.reset();
+        listener.singletonUpdateChange(ENTITY_COUNTS, moreFiles, moreAccounts);
+        assertThat(replaySingletons(COUNTS, listener.allStateChanges())).isEqualTo(moreAccounts);
+    }
+
+    @Test
+    void singletonPendingWhenBlockBeginsOrRecreatedStaysFull() {
+        final var listener = boundaryListener();
+        listener.beginBlock(true, 0);
+        final var first = COUNTS.copyBuilder().numAccounts(1_001).build();
+        final var second = first.copyBuilder().numAccounts(1_002).build();
+        final var third = second.copyBuilder().numAccounts(1_003).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
+        listener.allStateChanges();
+        listener.reset();
+        // Committed between blocks, as PlatformState is before each round; a restarted node has no baseline
+        listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
+        listener.beginBlock(true, 0);
+        listener.singletonUpdateChange(ENTITY_COUNTS, second, third);
+        final var pending = listener.allStateChanges().getFirst().singletonUpdateOrThrow();
+        assertThat(pending.partial()).isFalse();
+        assertThat(StateChangeDeltas.applySingleton(ENTITY_COUNTS, null, pending))
+                .isEqualTo(third);
+        listener.reset();
+
+        listener.singletonDeleteChange(ENTITY_COUNTS);
+        listener.singletonUpdateChange(ENTITY_COUNTS, null, first);
+        assertThat(listener.allStateChanges()
+                        .getFirst()
+                        .singletonUpdateOrThrow()
+                        .partial())
+                .isFalse();
+    }
+
+    private static Object replaySingletons(final Object prior, final List<StateChange> changes) {
+        Object value = prior;
+        for (final var change : changes) {
+            value = StateChangeDeltas.applySingleton(change.stateId(), value, change.singletonUpdateOrThrow());
+        }
+        return value;
     }
 
     private static BoundaryStateChangeListener boundaryListener() {
