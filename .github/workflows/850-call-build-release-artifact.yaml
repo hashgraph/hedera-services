@@ -381,7 +381,7 @@ jobs:
 
       - name: Upload Artifacts (CDN Bucket)
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3.0.0
-        if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
           path: ${{ steps.artifact-release.outputs.folder }}
           destination: ${{ secrets.cdn-bucket-name }}/node/software/v${{ needs.validate.outputs.version-prefix }}/
@@ -394,6 +394,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     steps:
       - name: Prepare Runner
         id: prepare-runner
@@ -537,6 +538,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     with:
       version: ${{ needs.validate.outputs.version }}
       version-policy: ${{ inputs.version-policy }}
@@ -557,6 +559,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     with:
       version: ${{ needs.validate.outputs.version }}
       version-policy: ${{ inputs.version-policy }}
@@ -857,13 +860,13 @@ jobs:
           echo "::endgroup::"
 
       - name: Gradle Publish to Google Artifact Registry (${{ inputs.release-profile }})
-        if: ${{ inputs.version-policy != 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.version-policy != 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           RELEASE_PROFILE: ${{ inputs.release-profile }}
         run: ./gradlew "release${RELEASE_PROFILE}" -PpublishingPackageGroup=com.hedera.hashgraph -PpublishSigningEnabled=true --no-configuration-cache -Dorg.gradle.unsafe.isolated-projects=false
 
       - name: Gradle Publish to Maven Central
-        if: ${{ inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           NEXUS_USERNAME: ${{ secrets.central-publishing-username }}
           NEXUS_PASSWORD: ${{ secrets.central-publishing-password }}
@@ -885,7 +888,7 @@ jobs:
 
       - name: Set GH Create Release Flag
         id: set-gh-release-flag
-        if: ${{ inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           REF_NAME: ${{ inputs.ref-name }}
         run: |
@@ -920,7 +923,7 @@ jobs:
       - local-node-images
       - validate-production-image
       - publish
-    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+    if: ${{ github.event.repository.visibility == 'public' && inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Prepare Runner
         uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
