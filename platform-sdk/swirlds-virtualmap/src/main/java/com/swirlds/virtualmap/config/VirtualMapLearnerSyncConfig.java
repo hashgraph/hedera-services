@@ -24,8 +24,17 @@ import java.time.Duration;
  *                                               asyncOutputStream buffer a periodic flush is performed.
  * @param flushInterval                          During reconnect, hashes and leaves are periodically flushed to disk
  *                                               after they are processed. This interval indicates the number of items
- *                                               to collect before they are flushed. If zero, all data is flushed in the
- *                                               end of reconnect hashing only.
+ *                                               to collect before they are flushed. While a flush is in progress,
+ *                                               threads that receive leaves, hash, or delete old leaves block once
+ *                                               the next batch reaches two intervals. If zero, all data is flushed in
+ *                                               the end of reconnect hashing only, and these threads never block.
+ * @param maxInFlightLeaves                     The maximum number of leaf requests sent to the teacher whose
+ *                                               responses haven't been fed to the hasher yet. Senders stop
+ *                                               requesting leaves while this limit is reached, which bounds the
+ *                                               memory used to buffer leaf responses when hashing is slower than
+ *                                               the network.
+ * @param statusLogInterval                      How often the learner logs the state of its leaf pipeline
+ *                                               (in-flight leaves, hashing buffer, flusher) during reconnect.
  */
 // spotless:off
 @ConfigData("reconnect.learner")
@@ -36,5 +45,7 @@ public record VirtualMapLearnerSyncConfig(
         @ConfigProperty(defaultValue = "600s") Duration asyncStreamIdleTimeout,
         @ConfigProperty(defaultValue = "10000") @Positive int asyncStreamBufferSize,
         @ConfigProperty(defaultValue = "8ms") Duration asyncOutputStreamFlush,
-        @Min(0) @ConfigProperty(defaultValue = "500000") int flushInterval) {}
+        @Min(0) @ConfigProperty(defaultValue = "500000") int flushInterval,
+        @ConfigProperty(defaultValue = "1000000") @Positive int maxInFlightLeaves,
+        @ConfigProperty(defaultValue = "10s") Duration statusLogInterval) {}
 // spotless:on
