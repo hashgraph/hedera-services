@@ -35,8 +35,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.hiero.hapi.support.fees.Extra;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+// Private embedded networks must finish before any shared embedded network starts.
+@Order(Integer.MIN_VALUE)
 @Tag(INTEGRATION)
 public class RepeatableBlockExecutionBudgetTests {
     private static final String PAYER = "budgetPayer";
