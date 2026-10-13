@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.ConsensusLayerAdapterInputs;
+import org.hiero.consensus.ConsensusLayerFactory;
 import org.hiero.consensus.event.stream.ConsensusEventStream;
 import org.hiero.consensus.event.stream.config.EventStreamWiringConfig;
 import org.hiero.consensus.iss.detection.IssDetectionModule;
@@ -148,8 +149,8 @@ public final class DiagramCommand extends AbstractCommand {
                 // appears in the diagram; in production Execution supplies this consumer.
                 _ -> {},
                 model,
-                null,
-                Map.of());
+                Map.of(),
+                ConsensusLayerFactory::new);
 
         final StatusMonitorModule statusMonitorModule = createNoOpStatusMonitorModule(model, configuration);
         final IssDetectionModule issDetectionModule =

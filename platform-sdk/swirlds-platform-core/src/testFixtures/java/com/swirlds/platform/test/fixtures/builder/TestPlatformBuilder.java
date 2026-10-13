@@ -172,7 +172,9 @@ public class TestPlatformBuilder extends PlatformBuilder<TestPlatformBuilder> {
                 transactionOffsetNanos,
                 staleEventConsumer,
                 wiringModel,
-                secureRandom,
-                additionalProperties);
+                additionalProperties,
+                // The wiring model is not passed on: the adapter and the consensus layer each start their wiring
+                // model, so sharing one would start it twice.
+                inputs -> new TestConsensusLayerFactory(inputs, null, secureRandom, additionalProperties));
     }
 }

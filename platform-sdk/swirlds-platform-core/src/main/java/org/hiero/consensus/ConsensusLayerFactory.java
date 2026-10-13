@@ -139,10 +139,28 @@ public class ConsensusLayerFactory {
      * @param inputs inputs for the consensus layer
      */
     public ConsensusLayerFactory(@NonNull final ConsensusLayerInputs inputs) {
+        this(inputs, null, null, Map.of());
+    }
+
+    /**
+     * Creates a new factory with the inputs provided by the execution layer and the given overrides. This constructor
+     * is intended for testing only.
+     *
+     * @param inputs               inputs for the consensus layer
+     * @param wiringModel          the wiring model to use, or {@code null} to create a new one
+     * @param secureRandom         the source of randomness to use, or {@code null} to use a strong {@link SecureRandom}
+     * @param additionalProperties additional properties passed to the modules
+     */
+    protected ConsensusLayerFactory(
+            @NonNull final ConsensusLayerInputs inputs,
+            @Nullable final WiringModel wiringModel,
+            @Nullable final SecureRandom secureRandom,
+            @NonNull final Map<String, Object> additionalProperties) {
         configuration = inputs.configuration();
         metrics = inputs.metrics();
         time = inputs.time();
-        rosterHistory = new RosterHistory(inputs.rosterInputs().history(), inputs.rosterInputs().rosters());
+        rosterHistory = new RosterHistory(
+                inputs.rosterInputs().history(), inputs.rosterInputs().rosters());
         keysAndCerts = inputs.keysAndCerts();
         selfId = inputs.selfId();
         recycleBin = inputs.recycleBin();
@@ -155,9 +173,9 @@ public class ConsensusLayerFactory {
         runningEventHashOverride = requireNonNullElse(
                 inputs.runningEventHashOverride(), new RunningEventHashOverride(Cryptography.NULL_HASH, false));
         executorFactory = ExecutorFactory.create("platform", null, DEFAULT_UNCAUGHT_EXCEPTION_HANDLER);
-        wiringModel = initializeWiringModel(inputs.wiringModel());
-        secureRandom = initializeSecureRandom(inputs.secureRandom());
-        additionalProperties = inputs.additionalProperties();
+        this.wiringModel = initializeWiringModel(wiringModel);
+        this.secureRandom = initializeSecureRandom(secureRandom);
+        this.additionalProperties = additionalProperties;
         consensusEventStreamName = inputs.consensusEventStreamName();
     }
 

@@ -29,6 +29,7 @@ import org.hiero.consensus.ConsensusLayerAdapterBuildingBlocks;
 import org.hiero.consensus.ConsensusLayerAdapterFactory;
 import org.hiero.consensus.ConsensusLayerAdapterInputs;
 import org.hiero.consensus.ConsensusLayerAdapterWiring;
+import org.hiero.consensus.ConsensusLayerFactory;
 import org.hiero.consensus.crypto.PlatformSigner;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;
@@ -276,8 +277,8 @@ public class PlatformBuilder<T extends PlatformBuilder<T>> {
                 transactionOffsetNanos,
                 staleEventConsumer,
                 null,
-                null,
-                Map.of());
+                Map.of(),
+                ConsensusLayerFactory::new);
     }
 
     /**

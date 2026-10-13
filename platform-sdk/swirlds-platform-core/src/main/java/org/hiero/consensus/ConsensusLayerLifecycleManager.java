@@ -12,6 +12,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.crypto.Cryptography;
@@ -31,6 +32,9 @@ public class ConsensusLayerLifecycleManager {
     /** Listeners that are notified when the consensus layer is changed. */
     private final List<Consumer<ConsensusLayer>> listeners = new CopyOnWriteArrayList<>();
 
+    /** Creates the factory that builds the consensus layer from the current inputs. */
+    private final Function<ConsensusLayerInputs, ConsensusLayerFactory> consensusLayerFactoryCreator;
+
     /** The inputs used to create the current consensus layer. */
     private ConsensusLayerInputs consensusLayerInputs;
 
@@ -38,14 +42,28 @@ public class ConsensusLayerLifecycleManager {
     private volatile ConsensusLayer consensusLayer;
 
     public ConsensusLayerLifecycleManager(@NonNull final ConsensusLayerInputs consensusLayerInputs) {
+        this(consensusLayerInputs, ConsensusLayerFactory::new);
+    }
+
+    /**
+     * Creates a new lifecycle manager that uses the given function to create the {@link ConsensusLayerFactory}.
+     *
+     * @param consensusLayerInputs         the inputs used to create the consensus layer
+     * @param consensusLayerFactoryCreator creates the factory that builds the consensus layer from the inputs
+     */
+    ConsensusLayerLifecycleManager(
+            @NonNull final ConsensusLayerInputs consensusLayerInputs,
+            @NonNull final Function<ConsensusLayerInputs, ConsensusLayerFactory> consensusLayerFactoryCreator) {
         this.consensusLayerInputs = requireNonNull(consensusLayerInputs, "inputs must not be null");
+        this.consensusLayerFactoryCreator =
+                requireNonNull(consensusLayerFactoryCreator, "consensusLayerFactoryCreator must not be null");
     }
 
     /**
      * Creates a new instance of the consensus layer using the current inputs.
      */
     public void createConsensusLayer() {
-        final ConsensusLayerFactory consensusLayerFactory = new ConsensusLayerFactory(consensusLayerInputs);
+        final ConsensusLayerFactory consensusLayerFactory = consensusLayerFactoryCreator.apply(consensusLayerInputs);
         consensusLayer = consensusLayerFactory.create();
         logger.info(
                 STARTUP.getMarker(),

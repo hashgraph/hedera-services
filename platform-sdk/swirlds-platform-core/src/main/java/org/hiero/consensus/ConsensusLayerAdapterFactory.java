@@ -36,12 +36,11 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -152,13 +151,13 @@ public class ConsensusLayerAdapterFactory {
     private final WiringModel wiringModel;
 
     @NonNull
-    private final SecureRandom secureRandom;
-
-    @NonNull
     private final ExecutorFactory executorFactory;
 
     @NonNull
     private final Map<String, Object> additionalProperties;
+
+    @NonNull
+    private final Function<ConsensusLayerInputs, ConsensusLayerFactory> consensusLayerFactoryCreator;
 
     private ConsensusLayerInputs consensusLayerInputs;
 
@@ -190,8 +189,8 @@ public class ConsensusLayerAdapterFactory {
         staleEventConsumer = inputs.staleEventConsumer();
         executorFactory = ExecutorFactory.create("platform", null, DEFAULT_UNCAUGHT_EXCEPTION_HANDLER);
         wiringModel = initializeWiringModel(inputs.wiringModel());
-        secureRandom = initializeSecureRandom(inputs.secureRandom());
         additionalProperties = inputs.additionalProperties();
+        consensusLayerFactoryCreator = inputs.consensusLayerFactoryCreator();
     }
 
     /**
@@ -277,11 +276,9 @@ public class ConsensusLayerAdapterFactory {
                 version,
                 transactionOffsetNanos,
                 executionLayer.getTransactionLimits(),
-                freezeTime,
-                null,
-                secureRandom,
-                additionalProperties);
-        final ConsensusLayerLifecycleManager manager = new ConsensusLayerLifecycleManager(consensusLayerInputs);
+                freezeTime);
+        final ConsensusLayerLifecycleManager manager =
+                new ConsensusLayerLifecycleManager(consensusLayerInputs, consensusLayerFactoryCreator);
         manager.createConsensusLayer();
         return manager;
     }
@@ -468,19 +465,6 @@ public class ConsensusLayerAdapterFactory {
                 return new PcesReplayProgress(signedState.getRound(), signedState.getConsensusTimestamp());
             }
         };
-    }
-
-    @NonNull
-    private SecureRandom initializeSecureRandom(@Nullable final SecureRandom secureRandomOverride) {
-        if (secureRandomOverride != null) {
-            return secureRandomOverride;
-        }
-
-        try {
-            return SecureRandom.getInstanceStrong();
-        } catch (final NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @NonNull

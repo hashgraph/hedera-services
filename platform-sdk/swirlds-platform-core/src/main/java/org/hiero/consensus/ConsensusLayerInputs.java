@@ -5,14 +5,11 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import com.swirlds.base.time.Time;
-import com.swirlds.component.framework.model.WiringModel;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Map;
 import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;
@@ -57,9 +54,6 @@ import org.hiero.consensus.transaction.TransactionLimits;
  * @param transactionLimits        the configured limits regarding transactions in events that the consensus layer
  *                                 should enforce when validating events
  * @param freezeTime               the current freeze time, or {@code null} if there is no current freeze time.
- * @param wiringModel
- * @param secureRandom
- * @param additionalProperties
  */
 public record ConsensusLayerInputs(
         @NonNull Configuration configuration,
@@ -77,11 +71,7 @@ public record ConsensusLayerInputs(
         @NonNull SemanticVersion version,
         long transactionOffsetNanos,
         @NonNull TransactionLimits transactionLimits,
-        @Nullable Instant freezeTime,
-        // The fields below are for testing only.
-        @Nullable WiringModel wiringModel,
-        @Nullable SecureRandom secureRandom,
-        @NonNull Map<String, Object> additionalProperties) {
+        @Nullable Instant freezeTime) {
 
     public ConsensusLayerInputs copyWithNewValues(
             @NonNull final ConsensusSnapshot newSnapshot,
@@ -102,9 +92,6 @@ public record ConsensusLayerInputs(
                 version(),
                 transactionOffsetNanos(),
                 transactionLimits(),
-                freezeTime(),
-                wiringModel(),
-                secureRandom(),
-                additionalProperties());
+                freezeTime());
     }
 }

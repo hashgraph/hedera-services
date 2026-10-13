@@ -14,8 +14,8 @@ import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.security.SecureRandom;
 import java.util.Map;
+import java.util.function.Function;
 import org.hiero.base.file.FileSystemManager;
 import org.hiero.consensus.io.RecycleBin;
 import org.hiero.consensus.main.model.NodeId;
@@ -44,5 +44,5 @@ public record ConsensusLayerAdapterInputs(
         @Nullable StaleEventConsumer staleEventConsumer,
         // The fields below are for testing only.
         @Nullable WiringModel wiringModel,
-        @Nullable SecureRandom secureRandom,
-        @NonNull Map<String, Object> additionalProperties) {}
+        @NonNull Map<String, Object> additionalProperties,
+        @NonNull Function<ConsensusLayerInputs, ConsensusLayerFactory> consensusLayerFactoryCreator) {}
