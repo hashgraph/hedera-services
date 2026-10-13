@@ -12,13 +12,11 @@ import com.hedera.hapi.node.state.clpr.ClprBundleContent;
 import com.hedera.hapi.node.state.clpr.ClprChannelStatus;
 import com.hedera.hapi.node.state.clpr.ClprQueueMetadata;
 import com.hedera.node.app.service.clpr.impl.verifier.BesuQbftVerifier;
+import com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi;
 import com.hedera.node.app.service.clpr.impl.verifier.Rlp;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.math.BigInteger;
-import java.util.ArrayDeque;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -58,27 +56,22 @@ class BesuQBFTProofBindingAuditTest extends CallTestBase {
     }
 
     private Tuple executeWithAbsentQueueProof(final ClprBundleContent relayed) {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("clpr.endpointManifestEnabled", false)
-                .getOrCreateConfig();
-        given(frame.getMessageFrameStack()).willReturn(new ArrayDeque<>());
-        given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         final var proven = new BesuQbftVerifier.VerifiedBundle(
                 new byte[32],
                 ClprBundleContent.PROTOBUF.toBytes(relayed).toByteArray(),
-                new BesuQbftVerifier.QueueMetadata(0, new byte[32], 0, new byte[32], 0, new byte[32]),
+                new BesuQbftVerifier.QueueMetadata(0, new byte[32], 0, new byte[32], 0, new byte[32], 0L),
                 new byte[0],
                 new byte[0],
                 new byte[0]);
-        try (final var ignored = mockConstruction(
-                BesuQbftVerifier.class,
-                (mock, context) -> given(mock.verifyBundle(any(), any())).willReturn(proven))) {
+        try (final var ignored =
+                mockConstruction(BesuQbftVerifier.class, (mock, context) -> given(mock.verifyBundle(any(), any()))
+                        .willReturn(proven))) {
             final var subject = new BesuQBFTVerifyBundleCall(
                     mockEnhancement(), gasCalculator, new byte[] {1}, fullAnchor((byte) 0x11));
             final var result = subject.execute(frame);
             assertThat(result.responseCode()).isEqualTo(SUCCESS);
-            return BesuQBFTVerifyBundleTranslator.VERIFY_BUNDLE.getOutputs()
-                    .decode(result.fullResult().output().toArray());
+            return ClprVerifierAbi.VERIFY_BUNDLE_RETURN.decode(
+                    result.fullResult().output().toArray());
         }
     }
 

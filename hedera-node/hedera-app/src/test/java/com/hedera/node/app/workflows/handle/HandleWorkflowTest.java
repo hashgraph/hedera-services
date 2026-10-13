@@ -428,17 +428,10 @@ class HandleWorkflowTest {
         givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "false"));
 
         for (final var methodName : List.of("reconcileClprEndpointManifest", "pruneClprEndpointManifestOnUpgrade")) {
-            final var reconcile = methodName.equals("reconcileClprEndpointManifest");
-            final var method = reconcile
-                    ? HandleWorkflow.class.getDeclaredMethod(
-                            methodName, com.swirlds.state.State.class, Instant.class, Instant.class)
-                    : HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
+            final var method =
+                    HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
             method.setAccessible(true);
-            if (reconcile) {
-                method.invoke(subject, state, NOW, NOW);
-            } else {
-                method.invoke(subject, state, NOW);
-            }
+            method.invoke(subject, state, NOW);
         }
 
         assertEquals(0, clprEndpointManifestReconcilerProviderCalls.get());
@@ -1096,22 +1089,21 @@ class HandleWorkflowTest {
         given(event.getConsensusTimestamp()).willReturn(firstEventTime);
         given(networkInfo.nodeInfo(0)).willReturn(creatorInfo);
         given(blockStreamManager.lastIntervalProcessTime()).willReturn(NOW);
-        givenSubjectWith(
-                BLOCKS,
-                BlockStreamWriterMode.FILE,
-                emptyList(),
-                Map.of("clpr.enabled", "true", "clpr.endpointManifestEnabled", "true"));
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "true"));
+        // Preserve singleton updates from earlier rounds of this still-open block.
+        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
+        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
 
         subject.handleRound(state, round, ignore -> {});
         subject.handleRound(state, round, ignore -> {});
 
-        @SuppressWarnings("unchecked")
-        final ArgumentCaptor<List<StateChange>> changes = ArgumentCaptor.forClass(List.class);
-        verify(systemTransactions).externalizeClprStateChanges(eq(firstEventTime), changes.capture());
-        assertEquals(extendsGrace ? 1 : 2, changes.getValue().size());
-        assertEquals(!extendsGrace, changes.getValue().stream().anyMatch(change -> change.singletonUpdateOrThrow()
+        final var changes = boundaryStateChangeListener.allStateChanges();
+        verify(systemTransactions, never()).externalizeClprStateChanges(any(), any());
+        assertTrue(changes.contains(pendingChange));
+        assertEquals(extendsGrace ? 2 : 3, changes.size());
+        assertEquals(!extendsGrace, changes.stream().anyMatch(change -> change.singletonUpdateOrThrow()
                 .hasClprEndpointManifestValue()));
-        assertTrue(changes.getValue().stream()
+        assertTrue(changes.stream()
                 .anyMatch(change -> change.singletonUpdateOrThrow().hasClprEndpointManifestConstructionValue()));
         if (extendsGrace) {
             assertEquals(1, construction.get().graceExtensionsUsed());

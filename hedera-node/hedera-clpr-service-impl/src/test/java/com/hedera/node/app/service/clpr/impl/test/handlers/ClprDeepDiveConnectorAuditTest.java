@@ -522,11 +522,19 @@ class ClprDeepDiveConnectorAuditTest {
     void auditCopiedSignatureCannotChangeConnectorOwnership() {
         commitmentStore.put(ecdsaCommitment);
         final var attackerContract = ContractID.newBuilder().contractNum(4004).build();
-        final var attackerAdmin = Key.newBuilder().ed25519(Bytes.wrap(new byte[32])).build();
-        lenient().when(accountStore.getContractById(attackerContract)).thenReturn(Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(4004).build()).smartContract(true).build());
+        final var attackerAdmin =
+                Key.newBuilder().ed25519(Bytes.wrap(new byte[32])).build();
+        lenient()
+                .when(accountStore.getContractById(attackerContract))
+                .thenReturn(Account.newBuilder()
+                        .accountId(AccountID.newBuilder().accountNum(4004).build())
+                        .smartContract(true)
+                        .build());
         final var original = validOpBuilder().build();
-        final var tampered = original.copyBuilder().connectorContract(attackerContract).adminKey(attackerAdmin).build();
+        final var tampered = original.copyBuilder()
+                .connectorContract(attackerContract)
+                .adminKey(attackerAdmin)
+                .build();
         assertThat(tampered.signature()).isEqualTo(original.signature());
         setupHandleContext(txnWith(tampered), true);
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(HandleException.class);

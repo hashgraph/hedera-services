@@ -767,8 +767,7 @@ class BesuQbftVerifierTest {
             for (final byte[] relayContent : List.of(new byte[] {1}, new byte[] {2, 3, 4})) {
                 final var fields = new ArrayList<>(proofFields);
                 fields.add(Rlp.encodeBytes(relayContent));
-                final var verified = BUNDLE_SUBJECT.verifyBundle(
-                        Rlp.encodeList(fields), validatorSet(VALIDATOR_ADDR));
+                final var verified = BUNDLE_SUBJECT.verifyBundle(Rlp.encodeList(fields), validatorSet(VALIDATOR_ADDR));
                 assertThat(verified.bundleContentBytes()).isEqualTo(relayContent);
                 assertThat(verified.queueMetadata().nextMessageId()).isZero();
                 assertThat(verified.newTrustAnchor()).isEmpty();

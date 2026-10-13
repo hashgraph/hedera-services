@@ -3530,9 +3530,19 @@ class ClprDeepDiveBundleAuditTest {
         putOutboundDataMessage(1);
         putConnectorWithStake(100_000_000L, 0);
         final var key = new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS);
-        connectorStore.put(connectorStore.getConnector(key).copyBuilder().inFlightMessageCount(1).build());
-        setupHandleContext(buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH,
-                List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.CONNECTOR_NOT_FOUND))), true);
+        connectorStore.put(connectorStore
+                .getConnector(key)
+                .copyBuilder()
+                .inFlightMessageCount(1)
+                .build());
+        setupHandleContext(
+                buildBundle(
+                        ClprChannelStatus.ACTIVE,
+                        0,
+                        1,
+                        ZERO_HASH,
+                        List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.CONNECTOR_NOT_FOUND))),
+                true);
         subject.handle(handleContext);
         assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
         assertThat(channelStore.getChannel(CHANNEL_ID).ackedMessageId()).isEqualTo(1);
@@ -3545,16 +3555,33 @@ class ClprDeepDiveBundleAuditTest {
         putOutboundDataMessage(1);
         putConnectorWithStake(100_000_000L, 0);
         final var key = new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS);
-        connectorStore.put(connectorStore.getConnector(key).copyBuilder().inFlightMessageCount(1).build());
-        setupHandleContext(TransactionBody.newBuilder().clprRedactMessage(
-                com.hedera.hapi.node.clpr.ClprRedactMessageTransactionBody.newBuilder()
-                        .channelId(CHANNEL_ID).messageId(1).build()).build(), true);
-        lenient().when(storeFactory.readableStore(com.hedera.node.app.service.clpr.ReadableChannelStore.class))
+        connectorStore.put(connectorStore
+                .getConnector(key)
+                .copyBuilder()
+                .inFlightMessageCount(1)
+                .build());
+        setupHandleContext(
+                TransactionBody.newBuilder()
+                        .clprRedactMessage(com.hedera.hapi.node.clpr.ClprRedactMessageTransactionBody.newBuilder()
+                                .channelId(CHANNEL_ID)
+                                .messageId(1)
+                                .build())
+                        .build(),
+                true);
+        lenient()
+                .when(storeFactory.readableStore(com.hedera.node.app.service.clpr.ReadableChannelStore.class))
                 .thenReturn(channelStore);
         new com.hedera.node.app.service.clpr.impl.handlers.ClprRedactMessageHandler().handle(handleContext);
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1).payloadOrThrow().hasRedactedMessage()).isTrue();
-        setupHandleContext(buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH,
-                List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED))), true);
+        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1).payloadOrThrow().hasRedactedMessage())
+                .isTrue();
+        setupHandleContext(
+                buildBundle(
+                        ClprChannelStatus.ACTIVE,
+                        0,
+                        1,
+                        ZERO_HASH,
+                        List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED))),
+                true);
         subject.handle(handleContext);
         assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
         assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isZero();
@@ -3566,7 +3593,11 @@ class ClprDeepDiveBundleAuditTest {
         lenient().when(localConfig.getConfiguration()).thenAnswer(ignored -> configStore.getConfiguration());
         return new com.hedera.node.app.service.clpr.impl.ClprServiceApiImpl(
                 new com.hedera.node.app.service.clpr.impl.ReadableChannelStoreImpl(writableStates),
-                channelStore, connectorStore, localConfig, messageQueueStore, handleContext.configuration());
+                channelStore,
+                connectorStore,
+                localConfig,
+                messageQueueStore,
+                handleContext.configuration());
     }
 
     @Test
@@ -3586,7 +3617,9 @@ class ClprDeepDiveBundleAuditTest {
             return dispatchResult;
         });
         subject.handle(handleContext);
-        assertThat(sent.get()).as("callback enqueued a new Data message after peer requested closing").isFalse();
+        assertThat(sent.get())
+                .as("callback enqueued a new Data message after peer requested closing")
+                .isFalse();
     }
 
     @Test

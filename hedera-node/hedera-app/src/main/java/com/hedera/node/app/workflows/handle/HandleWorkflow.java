@@ -364,7 +364,7 @@ public class HandleWorkflow {
         // listener on commit and externalized when the block closes. doStreamingAllChanges would reset
         // that listener here, discarding singleton changes from earlier rounds of the still-open block.
         try {
-            reconcileClprEndpointManifest(state, round.getConsensusTimestamp(), firstEvent.getConsensusTimestamp());
+            reconcileClprEndpointManifest(state, round.getConsensusTimestamp());
         } catch (Exception e) {
             logger.error("Failed to reconcile CLPR endpoint manifest", e);
         }
@@ -1240,8 +1240,7 @@ public class HandleWorkflow {
      * Drive the CLPR endpoint-manifest reconciler for one round. No-op when CLPR is disabled or
      * when the active roster is unavailable.
      */
-    private void reconcileClprEndpointManifest(
-            @NonNull final State state, @NonNull final Instant now, @NonNull final Instant firstEventTime) {
+    private void reconcileClprEndpointManifest(@NonNull final State state, @NonNull final Instant now) {
         final var maybeCtx = clprManifestContextIfEnabled(state);
         if (maybeCtx.isEmpty()) {
             return;
@@ -1280,7 +1279,7 @@ public class HandleWorkflow {
         // Per-round construction close driving (state write ⇒ streamed).
         doStreamingOnlyKvChanges(
                 ctx.clprWritableStates(),
-                firstEventTime,
+                null,
                 () -> reconciler.reconcile(now, ctx.manifestStore(), ctx.constructionStore(), ctx.clprConfig()));
     }
 
@@ -1355,7 +1354,7 @@ public class HandleWorkflow {
         final var reconciler = clprEndpointManifestReconciler.get();
         doStreamingOnlyKvChanges(
                 ctx.clprWritableStates(),
-                now,
+                null,
                 () -> reconciler.openConstructionOnRosterChange(
                         now,
                         ctx.activeRoster(),

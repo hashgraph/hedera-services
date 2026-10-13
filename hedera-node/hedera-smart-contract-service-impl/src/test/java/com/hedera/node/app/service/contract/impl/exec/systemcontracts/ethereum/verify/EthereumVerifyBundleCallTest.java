@@ -262,9 +262,8 @@ class EthereumVerifyBundleCallTest extends CallTestBase {
     }
 
     @Test
-    void auditRelayManifestIsReturnedWithoutManifestProof() {
-        // Security characterization: proof verification returns no authenticated manifest.
-        stubManifestFlag(true);
+    void auditUnprovenRelayManifestIsIgnored() {
+        // A relay-supplied manifest must not escape when the proof authenticates no manifest.
         final var injectedManifest = ClprEndpointManifest.newBuilder()
                 .version(999L)
                 .serviceAddress(Bytes.wrap(SERVICE_ADDR))
@@ -279,19 +278,11 @@ class EthereumVerifyBundleCallTest extends CallTestBase {
         try (final var ignored = mockVerifier(proofResult)) {
             final var result = subject().execute(frame);
             assertThat(result.responseCode()).isEqualTo(SUCCESS);
-            final Tuple output = ClprVerifierAbi.VERIFY_BUNDLE_WITH_MANIFEST_RETURN.decode(
+            final Tuple output = ClprVerifierAbi.VERIFY_BUNDLE_RETURN.decode(
                     result.fullResult().output().toArray());
             final Tuple returnedManifest = output.get(4);
-            assertThat(((BigInteger) returnedManifest.get(0)).longValueExact()).isEqualTo(999L);
+            assertThat(returnedManifest).isEqualTo(ClprVerifierAbi.manifestStructTuple(ClprEndpointManifest.DEFAULT));
         }
-    }
-
-    private void stubManifestFlag(final boolean enabled) {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("clpr.endpointManifestEnabled", enabled)
-                .getOrCreateConfig();
-        given(frame.getMessageFrameStack()).willReturn(new ArrayDeque<>());
-        given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE)).willReturn(config);
     }
 
     private static VerifiedBundle verifiedWithManifest(
