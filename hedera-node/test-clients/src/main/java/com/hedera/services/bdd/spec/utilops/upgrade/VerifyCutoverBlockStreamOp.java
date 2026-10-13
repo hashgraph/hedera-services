@@ -152,7 +152,7 @@ public class VerifyCutoverBlockStreamOp extends UtilOp {
 
         // === Verify hash chain by computing block root hashes from items ===
         final var digestTypeName = spec.startupProperties().get("blockStream.digestType");
-        final var digestType = digestTypeName != null ? DigestType.valueOf(digestTypeName) : DigestType.SHA_384;
+        final var digestType = digestTypeName != null ? DigestType.valueOf(digestTypeName) : DigestType.SHA_256;
         final var prevBlockHashesTree = new IncrementalStreamingHasher(
                 CommonUtils.digestOrThrow(digestType),
                 capturedBlockInfo.get().wrappedIntermediatePreviousBlockRootHashes().stream()

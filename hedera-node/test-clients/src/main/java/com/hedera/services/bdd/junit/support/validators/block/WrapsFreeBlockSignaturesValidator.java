@@ -218,7 +218,7 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
             System.out.printf(
                     "Loaded epoch %d with %d block(s) from %s%n", i + 1, blocks.size(), blockStreamDirs.get(i));
         }
-        final var digestType = DigestType.valueOf(System.getProperty("blockStream.digestType", "SHA_384"));
+        final var digestType = DigestType.valueOf(System.getProperty("blockStream.digestType", "SHA_256"));
         final var validator = new WrapsFreeBlockSignaturesValidator(hintsThresholdDenominator, digestType);
         validator.validateBlockEpochs(blockEpochs);
 
