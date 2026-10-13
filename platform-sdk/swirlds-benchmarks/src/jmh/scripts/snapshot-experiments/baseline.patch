@@ -1,0 +1,212 @@
+diff --git a/platform-sdk/swirlds-benchmarks/src/jmh/java/com/swirlds/benchmark/MerkleDbSnapshotBenchmark.java b/platform-sdk/swirlds-benchmarks/src/jmh/java/com/swirlds/benchmark/MerkleDbSnapshotBenchmark.java
+index b94b068017..1aa900d244 100644
+--- a/platform-sdk/swirlds-benchmarks/src/jmh/java/com/swirlds/benchmark/MerkleDbSnapshotBenchmark.java
++++ b/platform-sdk/swirlds-benchmarks/src/jmh/java/com/swirlds/benchmark/MerkleDbSnapshotBenchmark.java
+@@ -88,6 +88,10 @@ public class MerkleDbSnapshotBenchmark extends VirtualMapBaseBench {
+     @Override
+     protected void onTrialSetup() {
+         super.onTrialSetup();
++        logger.info(
++                "Snapshot experiment flags (baseline F1 only): presizeIndexFiles={}, cursorsPerList={}",
++                Boolean.getBoolean("merkledb.experiment.presizeIndexFiles"),
++                0);
+ 
+         final MerkleDbConfig merkleDbConfig = getConfig(MerkleDbConfig.class);
+         dataSourceBuilder = new MerkleDbDataSourceBuilder(
+@@ -96,6 +100,11 @@ public class MerkleDbSnapshotBenchmark extends VirtualMapBaseBench {
+ 
+         try {
+             preparedFixtureDirectory = fixtureDirectory(merkleDbConfig);
++            // Protect benchmark campaigns from accidentally regenerating a missing or incompatible saved fixture.
++            if (Boolean.getBoolean("benchmark.requireExistingFixture")
++                    && !Files.isDirectory(preparedFixtureDirectory)) {
++                throw new IOException("Missing or incompatible saved fixture: " + preparedFixtureDirectory);
++            }
+             createFixtureIfNeeded(preparedFixtureDirectory);
+             if (prepareFixtureOnly) {
+                 logger.info("Fixture preparation complete: {} (no measured snapshot)", preparedFixtureDirectory);
+diff --git a/platform-sdk/swirlds-merkledb/src/main/java/com/swirlds/merkledb/collections/AbstractLongList.java b/platform-sdk/swirlds-merkledb/src/main/java/com/swirlds/merkledb/collections/AbstractLongList.java
+index e519c2c441..004acf1c30 100644
+--- a/platform-sdk/swirlds-merkledb/src/main/java/com/swirlds/merkledb/collections/AbstractLongList.java
++++ b/platform-sdk/swirlds-merkledb/src/main/java/com/swirlds/merkledb/collections/AbstractLongList.java
+@@ -13,6 +13,7 @@ import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
+ import edu.umd.cs.findbugs.annotations.NonNull;
+ import edu.umd.cs.findbugs.annotations.Nullable;
+ import java.io.IOException;
++import java.io.RandomAccessFile;
+ import java.io.UncheckedIOException;
+ import java.nio.ByteBuffer;
+ import java.nio.channels.FileChannel;
+@@ -487,8 +488,22 @@ public abstract class AbstractLongList<C> implements LongList {
+     /// {@inheritDoc}
+     @Override
+     public void writeToFile(final Path file, final Executor executor, final int threadCount) throws IOException {
++        final boolean presize = Boolean.getBoolean("merkledb.experiment.presizeIndexFiles");
+         try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+             writeHeader(fc);
++            if (presize) {
++                final long firstIndex = minValidIndex.get();
++                final long endIndex = size();
++                if (endIndex <= 0 || firstIndex >= endIndex) {
++                    return;
++                }
++                final long bodyBytes = Math.multiplyExact(Math.subtractExact(endIndex, firstIndex), Long.BYTES);
++                final long fileLength = Math.addExact(FILE_HEADER_SIZE_V3, bodyBytes);
++                // The snapshot owns this path; retain the CREATE_NEW channel and resize through a separate handle.
++                try (final RandomAccessFile sizingFile = new RandomAccessFile(file.toFile(), "rw")) {
++                    sizingFile.setLength(fileLength);
++                }
++            }
+             if (size() > 0) {
+                 if (threadCount == 1) {
+                     writeLongsData(fc, minValidIndex.get(), size(), FILE_HEADER_SIZE_V3);
+diff --git a/platform-sdk/swirlds-merkledb/src/test/java/com/swirlds/merkledb/collections/LongListPresizingExperimentTest.java b/platform-sdk/swirlds-merkledb/src/test/java/com/swirlds/merkledb/collections/LongListPresizingExperimentTest.java
+new file mode 100644
+index 0000000000..0e5ad06666
+--- /dev/null
++++ b/platform-sdk/swirlds-merkledb/src/test/java/com/swirlds/merkledb/collections/LongListPresizingExperimentTest.java
+@@ -0,0 +1,144 @@
++// SPDX-License-Identifier: Apache-2.0
++package com.swirlds.merkledb.collections;
++
++import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V3;
++import static org.junit.jupiter.api.Assertions.assertArrayEquals;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertThrows;
++import static org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES;
++
++import com.swirlds.config.api.ConfigurationBuilder;
++import com.swirlds.merkledb.config.MerkleDbConfig;
++import com.swirlds.merkledb.config.MerkleDbConfig_;
++import java.io.IOException;
++import java.io.UncheckedIOException;
++import java.nio.ByteBuffer;
++import java.nio.file.FileAlreadyExistsException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.concurrent.Executor;
++import java.util.concurrent.Executors;
++import org.hiero.base.utility.test.fixtures.file.AbstractFileManagerAwareTest;
++import org.junit.jupiter.api.AfterEach;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.io.TempDir;
++import org.junit.jupiter.api.parallel.ResourceLock;
++import org.junit.jupiter.params.ParameterizedTest;
++import org.junit.jupiter.params.provider.EnumSource;
++
++@ResourceLock(SYSTEM_PROPERTIES)
++class LongListPresizingExperimentTest extends AbstractFileManagerAwareTest {
++
++    private static final String PRESIZE_PROPERTY = "merkledb.experiment.presizeIndexFiles";
++    private static final long CAPACITY = 64;
++    private String previousPresizeProperty;
++
++    @BeforeEach
++    void saveExperimentProperty() {
++        previousPresizeProperty = System.getProperty(PRESIZE_PROPERTY);
++        System.clearProperty(PRESIZE_PROPERTY);
++    }
++
++    @AfterEach
++    void restoreExperimentProperty() {
++        if (previousPresizeProperty == null) {
++            System.clearProperty(PRESIZE_PROPERTY);
++        } else {
++            System.setProperty(PRESIZE_PROPERTY, previousPresizeProperty);
++        }
++    }
++
++    @ParameterizedTest
++    @EnumSource(LongListImplementation.class)
++    void presizingPreservesAllImplementationsAndPrecedesDispatch(
++            final LongListImplementation implementation, @TempDir final Path directory) throws IOException {
++        final MerkleDbConfig configuration = ConfigurationBuilder.create()
++                .autoDiscoverExtensions()
++                .withValue(MerkleDbConfig_.LONG_LIST_CHUNK_SIZE, "4")
++                .withValue(MerkleDbConfig_.LONG_LIST_RESERVED_BUFFER_SIZE, "1")
++                .build()
++                .getConfigData(MerkleDbConfig.class);
++        final Path original = directory.resolve("original.ll");
++        final Path presized = directory.resolve("presized.ll");
++        try (final LongList list = implementation.create(CAPACITY, configuration, fileSystemManager);
++                final var executor = Executors.newFixedThreadPool(3)) {
++            list.updateValidRange(3, CAPACITY - 1);
++            list.put(3, 103);
++            list.put(15, 115);
++            list.put(33, 133);
++            list.writeToFile(original, executor, 3);
++
++            System.setProperty(PRESIZE_PROPERTY, "true");
++            final long expectedLength = FILE_HEADER_SIZE_V3 + (list.size() - list.getMinValidIndex()) * Long.BYTES;
++            final Executor checkedExecutor = command -> {
++                try {
++                    assertEquals(expectedLength, Files.size(presized), "File must be sized before any writer dispatch");
++                } catch (final IOException e) {
++                    throw new UncheckedIOException(e);
++                }
++                executor.execute(command);
++            };
++            list.writeToFile(presized, checkedExecutor, 3);
++            assertEquals(expectedLength, Files.size(presized));
++            assertArrayEquals(Files.readAllBytes(original), Files.readAllBytes(presized));
++            assertHeader(presized, 3);
++            try (final LongList restored = implementation.load(presized, CAPACITY, configuration, fileSystemManager)) {
++                assertEquals(list.size(), restored.size());
++                assertEquals(list.getMinValidIndex(), restored.getMinValidIndex());
++                for (long index = 0; index < list.size(); index++) {
++                    assertEquals(list.get(index), restored.get(index), "Mismatch at index " + index);
++                }
++            }
++        }
++    }
++
++    @Test
++    void presizingKeepsEmptyAndAdvancedRangesHeaderOnly(@TempDir final Path directory) throws IOException {
++        System.setProperty(PRESIZE_PROPERTY, "true");
++        try (final LongList list = new LongListHeap(4, CAPACITY, 0)) {
++            assertHeaderOnly(list, directory.resolve("empty.ll"), -1);
++            list.updateValidRange(0, CAPACITY - 1);
++            assertHeaderOnly(list, directory.resolve("empty-valid-range.ll"), 0);
++            list.put(1, 101);
++            list.updateValidRange(2, CAPACITY - 1);
++            assertHeaderOnly(list, directory.resolve("range-at-end.ll"), 2);
++            list.updateValidRange(8, CAPACITY - 1);
++            assertHeaderOnly(list, directory.resolve("range-beyond-data.ll"), 8);
++        }
++    }
++
++    @Test
++    void presizingDoesNotTruncateAnExistingDestination(@TempDir final Path directory) throws IOException {
++        System.setProperty(PRESIZE_PROPERTY, "true");
++        final Path destination = directory.resolve("existing.ll");
++        final byte[] original = {1, 2, 3, 4, 5};
++        Files.write(destination, original);
++        try (final LongList list = new LongListHeap(4, CAPACITY, 0)) {
++            list.updateValidRange(0, CAPACITY - 1);
++            list.put(1, 101);
++            assertThrows(FileAlreadyExistsException.class, () -> list.writeToFile(destination, Runnable::run, 1));
++            assertArrayEquals(original, Files.readAllBytes(destination));
++        }
++    }
++
++    private static void assertHeaderOnly(final LongList list, final Path file, final long minimum) throws IOException {
++        list.writeToFile(
++                file,
++                _ -> {
++                    throw new AssertionError("A header-only snapshot must not dispatch writers");
++                },
++                3);
++        assertEquals(FILE_HEADER_SIZE_V3, Files.size(file));
++        assertHeader(file, minimum);
++        try (final LongList restored = new LongListHeap(file, 4, CAPACITY, 0)) {
++            assertEquals(0, restored.size());
++        }
++    }
++
++    private static void assertHeader(final Path file, final long minimum) throws IOException {
++        final ByteBuffer header = ByteBuffer.wrap(Files.readAllBytes(file));
++        assertEquals(3, header.getInt());
++        assertEquals(minimum, header.getLong());
++    }
++}

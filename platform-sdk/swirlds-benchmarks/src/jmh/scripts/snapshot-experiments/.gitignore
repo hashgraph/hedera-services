@@ -1,0 +1,4 @@
+# These experiment inputs are required, despite the repository-wide *.patch rule.
+!baseline.patch
+!tasks.patch
+!fixed-pool.patch
