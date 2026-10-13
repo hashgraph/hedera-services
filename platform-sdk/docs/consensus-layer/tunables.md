@@ -99,9 +99,10 @@ These delays drive the status state machine; see [architecture/topics/platform-s
 
 Module: `swirlds-platform-core`. Source: [PlatformMetricsConfig.java](../../swirlds-platform-core/src/main/java/com/swirlds/platform/metrics/PlatformMetricsConfig.java).
 
-|   ID    |                      Key                       |  Type   | Default |                                    Effect                                    | Range | Fragility |
-|---------|------------------------------------------------|---------|---------|------------------------------------------------------------------------------|-------|-----------|
-| TUN-022 | `platform.metrics.eventPipelineMetricsEnabled` | boolean | `true`  | If true, the platform collects and reports metrics about the event pipeline. |       | —         |
+|   ID    |                          Key                          |  Type   | Default |                                                    Effect                                                     | Range | Fragility |
+|---------|-------------------------------------------------------|---------|---------|---------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-022 | `platform.metrics.eventPipelineMetricsEnabled`        | boolean | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline.    |       | —         |
+| TUN-225 | `platform.metrics.eventPipelineLatencyMetricsEnabled` | boolean | `true`  | If true, the platform reports percentiles and the maximum of the event pipeline delays over a sliding window. |       | —         |
 
 ## `status.monitor.*` — StatusMonitorWiringConfig
 

@@ -456,10 +456,12 @@ public class ConsensusLayerFactory {
 
     @Nullable
     private EventPipelineTracker createEventPipelineTracker(@NonNull final EventCreatorModule eventCreatorModule) {
-        final boolean eventPipelineMetricsEnabled =
-                configuration.getConfigData(PlatformMetricsConfig.class).eventPipelineMetricsEnabled();
-        final EventPipelineTracker eventPipelineTracker =
-                eventPipelineMetricsEnabled ? new EventPipelineTracker(metrics) : null;
+        final PlatformMetricsConfig platformMetricsConfig = configuration.getConfigData(PlatformMetricsConfig.class);
+        final boolean averageAndMaxEnabled = platformMetricsConfig.eventPipelineMetricsEnabled();
+        final boolean latencyEnabled = platformMetricsConfig.eventPipelineLatencyMetricsEnabled();
+        final EventPipelineTracker eventPipelineTracker = averageAndMaxEnabled || latencyEnabled
+                ? new EventPipelineTracker(metrics, configuration, time, averageAndMaxEnabled, latencyEnabled)
+                : null;
 
         // Register the event creation stage (self-only, step 1) and wire monitoring
         // before intake initialization so step numbers are sequentially.

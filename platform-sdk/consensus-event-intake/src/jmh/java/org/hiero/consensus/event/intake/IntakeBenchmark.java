@@ -141,7 +141,7 @@ public class IntakeBenchmark {
                 rosterHistory,
                 new NoOpIntakeEventCounter(),
                 new TransactionLimits(1000, 1000),
-                new EventPipelineTracker(metrics));
+                new EventPipelineTracker(metrics, configuration, time, true, false));
         counter = new EventCounter(NUMBER_OF_EVENTS);
         intake.validatedEventsOutputWire().solderForMonitoring(counter);
         intake.unhashedEventsInputWire();
