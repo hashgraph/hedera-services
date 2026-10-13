@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -149,10 +150,10 @@ public class RecordCacheImpl implements HederaRecordCache {
      * @param nodeIds The set of node ids that have submitted a properly screened transaction
      * @param recordSources The sources of records for the relevant base {@link TransactionID}
      */
-    private record HistorySource(@NonNull Set<Long> nodeIds, @NonNull List<RecordSource> recordSources)
-            implements ReceiptSource {
+    private record HistorySource(
+            @NonNull Set<Long> nodeIds, @NonNull List<RecordSource> recordSources) implements ReceiptSource {
         public HistorySource() {
-            this(new HashSet<>(), new ArrayList<>());
+            this(new HashSet<>(), new CopyOnWriteArrayList<>());
         }
 
         @Override
