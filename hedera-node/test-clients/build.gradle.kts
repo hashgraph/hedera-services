@@ -130,6 +130,8 @@ val prCheckTags =
         "hapiTestClprMultinetwork" to "MULTINETWORK",
     )
 
+val clprTasks = setOf("hapiTestClpr", "hapiTestClprEmbedded", "hapiTestClprMultinetwork")
+
 val prRemoteCheckTags =
     prCheckTags
         .filterNot {
@@ -140,7 +142,7 @@ val prRemoteCheckTags =
                     "hapiTestWrapsDownload",
                     "hapiTestToken",
                     "hapiTestTokenSerial",
-                )
+                ) || it.key in clprTasks
         }
         .mapKeys { (key, _) -> key.replace("hapiTest", "remoteTest") }
 val prCheckStartPorts =
@@ -400,8 +402,8 @@ fun registerTestEmbedded(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR|MULTINETWORK)",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR|MULTINETWORK",
         // Tell our launcher to target a concurrent embedded network
         embeddedMode = "concurrent",
         junitParallelMode = "same_thread",
@@ -418,8 +420,9 @@ fun registerTestRepeatable(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS|MULTINETWORK)",
+        ciDefaultTags =
+            "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED|MULTINETWORK",
         embeddedMode = "repeatable",
     )
 }
@@ -524,15 +527,15 @@ fun TaskContainer.registerHapiTest(
                 includeTags(
                     if (ciTagExpression.isBlank()) defaultTags
                     // The embedded CLPR task runs only its own suites; we deliberately do not
-                    // append (or run) STREAM_VALIDATION / LOG_VALIDATION for CLPR.
-                    else if (ciTagExpression.contains("EMBEDDED&CLPR")) "(${ciTagExpression})"
-                    // We don't want to run stream or log validation for ISS or BLOCK_NODE cases
+                    // append (or run) STREAM_VALIDATION / LOG_VALIDATION for CLPR. Matched by task
+                    // name, not by reading the tag expression as a string.
+                    else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
+                    // We don't want to run stream or log validation for ISS, BLOCK_NODE or CLPR
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
                             (ciTagExpression.contains("ISS") ||
                                 ciTagExpression.contains("BLOCK_NODE") ||
-                                ciTagExpression.contains("CLPR") ||
-                                ciTagExpression.contains("MULTINETWORK"))
+                                name in clprTasks)
                     )
                         "(${ciTagExpression}${ciDefaultTagsWithoutStreamAndLogValidation})"
                     else "(${ciTagExpression}${ciDefaultTags})"
@@ -553,10 +556,6 @@ fun TaskContainer.registerHapiTest(
                 "junit.jupiter.testclass.order.default",
                 "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
             )
-        }
-        if (ciTagExpression.contains("CLPR") || ciTagExpression.contains("MULTINETWORK")) {
-            // Preserve the failed subprocess network's logs for CLPR diagnostics.
-            failFast = true
         }
         if (junitFixedParallelism) {
             val parallelismValue = if (networkSize.toInt() <= 3) 3 else 2
