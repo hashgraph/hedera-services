@@ -279,26 +279,30 @@ class ResyncRecoveryReproTest {
         exchangeRateManager.init(state, bytes100, rates100);
 
         // Control: against the true baseline of 100, a move to 144 (44% > 25% limit) is rejected
-        assertThatThrownBy(() -> exchangeRateManager.update(bytes144, RATES_ADMIN))
+        assertThatThrownBy(() -> exchangeRateManager.update(bytes144, RATES_ADMIN, state))
                 .isInstanceOf(HandleException.class)
                 .extracting(e -> ((HandleException) e).getStatus())
                 .isEqualTo(ResponseCodeEnum.EXCHANGE_RATE_CHANGE_LIMIT_EXCEEDED);
 
-        // Normal intraday move to 120 by the exchange-rate admin (20% < 25% limit), committed to the file
+        // Normal intraday move to 120 by the exchange-rate admin (20% < 25% limit), committed to the file; the
+        // exchange-rate admin is not the system admin, so it does not move the midnight baseline
         files.put(fileId, File.newBuilder().contents(bytes120).build());
-        exchangeRateManager.update(bytes120, RATES_ADMIN);
+        exchangeRateManager.update(bytes120, RATES_ADMIN, state);
 
-        // A 0.0.50 update whose bytes are identical to the committed file: no file change, but
-        // ExchangeRateManager.update() silently moves the in-memory midnight baseline to 120
-        exchangeRateManager.update(bytes120, SYSTEM_ADMIN);
+        // A 0.0.50 update whose bytes are identical to the committed file: no file change, but it moves the in-memory
+        // midnight baseline to 120 and writes that move to the MIDNIGHT_RATES singleton in the dispatch's savepoint.
+        // The savepoint is not committed here, modeling the dispatch being rolled back: the singleton write never
+        // reaches committed state (it stays 100), while the in-memory baseline stays at the leaked 120.
+        exchangeRateManager.update(bytes120, SYSTEM_ADMIN, state);
 
-        // The dispatch is then rolled back; the committed bytes equal the applied bytes so recovery is skipped
+        // The file bytes are unchanged, so recovery relies on the baseline-drift check (in-memory 120 vs committed
+        // singleton 100) to detect the rolled-back move.
         subject.resyncIfChanged(state, new ResyncTarget(Facility.EXCHANGE_RATES, fileId, bytes120));
 
-        // The committed midnight baseline is still 100 ...
-        assertThat(midnightRates.get()).isEqualTo(rates100);
+        // Recovery restored the in-memory baseline to the committed 100 ...
+        assertThat(exchangeRateManager.midnightRates()).isEqualTo(rates100);
         // ... so a move to 144 (44% above 100) must be rejected as exceeding the 25% intraday limit
-        assertThatThrownBy(() -> exchangeRateManager.update(bytes144, RATES_ADMIN))
+        assertThatThrownBy(() -> exchangeRateManager.update(bytes144, RATES_ADMIN, state))
                 .as("update to centEquiv 144 against committed midnight baseline 100")
                 .isInstanceOf(HandleException.class)
                 .extracting(e -> ((HandleException) e).getStatus())

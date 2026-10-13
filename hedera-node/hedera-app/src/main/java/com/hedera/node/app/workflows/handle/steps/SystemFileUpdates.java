@@ -116,7 +116,7 @@ public class SystemFileUpdates {
         if (fileNum == filesConfig.simpleFeesSchedules()) {
             return feeManager.updateSimpleFees(FileUtilities.getFileContent(state, fileID));
         } else if (fileNum == filesConfig.exchangeRates()) {
-            exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer);
+            exchangeRateManager.update(FileUtilities.getFileContent(state, fileID), payer, state);
         } else if (fileNum == filesConfig.networkProperties()) {
             final var status = configListParseStatus(FileUtilities.getFileContent(state, fileID));
             BlockStreamWriterMode currentWriterMode =
@@ -303,20 +303,31 @@ public class SystemFileUpdates {
         requireNonNull(target);
         final var fileChanged =
                 !FileUtilities.getFileContent(state, target.fileId()).equals(target.appliedContents());
-        // An exchange-rate update paid by the system admin moves the in-memory midnight baseline without changing the
-        // file, so a rolled-back such update leaves that baseline out of step with the committed singleton even when
-        // the file bytes are unchanged; re-derive then too, or the leaked baseline would skew the next intraday check.
-        final var midnightBaselineDrifted = target.facility() == ResyncTarget.Facility.EXCHANGE_RATES
-                && !Objects.equals(exchangeRateManager.midnightRates(), committedMidnightRates(state));
+        // A system-admin (0.0.50) exchange-rate update moves the in-memory midnight baseline without changing the file,
+        // so a rolled-back such update can leave the baseline out of step with committed state even when the file bytes
+        // are unchanged. The move is persisted to the MIDNIGHT_RATES singleton in the same savepoint, so a committed
+        // move keeps the singleton while a rolled-back one reverts it; if the in-memory baseline no longer matches the
+        // committed singleton, the move was rolled back and the baseline must be re-derived even though the file did
+        // not change.
+        final var midnightBaselineDrifted =
+                target.facility() == ResyncTarget.Facility.EXCHANGE_RATES && midnightBaselineDrifted(state);
         if (fileChanged || midnightBaselineDrifted) {
             resyncFromState(state, target);
         }
     }
 
-    private ExchangeRateSet committedMidnightRates(@NonNull final State state) {
-        return state.getReadableStates(FeeService.NAME)
+    /**
+     * Returns whether the in-memory exchange-rate midnight baseline differs from the committed {@code MIDNIGHT_RATES}
+     * singleton, which signals that an admin update that moved the baseline was rolled back.
+     *
+     * @param state the committed state to read the singleton from
+     * @return true if the in-memory baseline no longer matches the committed singleton
+     */
+    private boolean midnightBaselineDrifted(@NonNull final State state) {
+        final var committedMidnightRates = state.getReadableStates(FeeService.NAME)
                 .<ExchangeRateSet>getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_ID)
                 .get();
+        return !Objects.equals(committedMidnightRates, exchangeRateManager.midnightRates());
     }
 
     /**

@@ -672,7 +672,8 @@ class SystemFileUpdatesTest implements TransactionFactory {
         verify(exchangeRateManager, times(1))
                 .update(
                         FileUtilities.getFileContent(state, fileID),
-                        AccountID.newBuilder().accountNum(50L).build());
+                        AccountID.newBuilder().accountNum(50L).build(),
+                        state);
     }
 
     @Test
