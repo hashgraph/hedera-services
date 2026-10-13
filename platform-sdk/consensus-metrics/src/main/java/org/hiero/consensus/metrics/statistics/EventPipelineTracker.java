@@ -15,6 +15,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.hiero.consensus.metrics.config.EventPipelineMetricsConfig;
 import org.hiero.consensus.metrics.extensions.LatencyGauges;
 import org.hiero.consensus.metrics.extensions.LatencyGauges.Config;
 import org.hiero.consensus.model.event.EventOrigin;
@@ -23,15 +24,16 @@ import org.hiero.consensus.model.event.PlatformEvent;
 /**
  * Tracks the delay experienced by events at each stage of the event processing pipeline.
  * <p>
- * Two families of metrics can be enabled independently: the average and maximum delay ({@code eventDelay_*}), and
- * percentiles and the maximum over a sliding window ({@code eventLatency_*}, see {@link LatencyGauges}). Both report
- * the same delays. The average and maximum delay will eventually be removed.
+ * Two families of metrics can be enabled independently in {@link EventPipelineMetricsConfig}: the average and maximum
+ * delay ({@code eventDelay_*}), and percentiles and the maximum over a sliding window ({@code eventLatency_*}, see
+ * {@link LatencyGauges}). Both report the same delays. The average and maximum delay will eventually be removed.
  * <p>
  * Metrics are split by {@link EventOrigin}, with a dedicated suffix for each origin:
  * <ul>
  *   <li>{@code _runtime} — events created by this runtime ({@link EventOrigin#RUNTIME})</li>
  *   <li>{@code _gossip} — events received through gossip ({@link EventOrigin#GOSSIP})</li>
- *   <li>{@code _storage} — events read from storage ({@link EventOrigin#STORAGE})</li>
+ *   <li>{@code _storage} — events read from storage ({@link EventOrigin#STORAGE}), only the average and maximum
+ *   delay: they arrive only during the replay at startup, so a sliding window would stay empty afterwards</li>
  * </ul>
  */
 public class EventPipelineTracker {
@@ -58,29 +60,40 @@ public class EventPipelineTracker {
     private final Time time;
     private final boolean averageAndMaxEnabled;
     private final boolean latencyEnabled;
+    private final Duration runtimeWindow;
+    private final Duration gossipWindow;
     private final Map<MetricKey, StageMetrics> metricMap = new HashMap<>();
     private final Map<EventOrigin, Integer> stepCounters = new EnumMap<>(EventOrigin.class);
 
     /**
-     * Constructor.
+     * Creates a tracker, unless the {@link EventPipelineMetricsConfig} disables both families of metrics.
      *
-     * @param metrics              the metrics system
-     * @param configuration        the configuration, holding the metrics snapshot interval that the latency gauges need
-     * @param time                 the clock that measures the delays and advances the window of the latency gauges
-     * @param averageAndMaxEnabled whether to report the average and maximum delay
-     * @param latencyEnabled       whether to report percentiles and the maximum over a sliding window
+     * @param metrics       the metrics system
+     * @param configuration the configuration
+     * @param time          the clock that measures the delays and advances the window of the latency gauges
+     * @return the tracker, or {@code null} if both families of metrics are disabled
      */
-    public EventPipelineTracker(
+    @Nullable
+    public static EventPipelineTracker create(
+            @NonNull final Metrics metrics, @NonNull final Configuration configuration, @NonNull final Time time) {
+        final EventPipelineMetricsConfig config = configuration.getConfigData(EventPipelineMetricsConfig.class);
+        return config.averageAndMaxEnabled() || config.latencyEnabled()
+                ? new EventPipelineTracker(metrics, configuration, time, config)
+                : null;
+    }
+
+    private EventPipelineTracker(
             @NonNull final Metrics metrics,
             @NonNull final Configuration configuration,
             @NonNull final Time time,
-            final boolean averageAndMaxEnabled,
-            final boolean latencyEnabled) {
+            @NonNull final EventPipelineMetricsConfig config) {
         this.metrics = requireNonNull(metrics);
         this.configuration = requireNonNull(configuration);
         this.time = requireNonNull(time);
-        this.averageAndMaxEnabled = averageAndMaxEnabled;
-        this.latencyEnabled = latencyEnabled;
+        this.averageAndMaxEnabled = config.averageAndMaxEnabled();
+        this.latencyEnabled = config.latencyEnabled();
+        this.runtimeWindow = config.latencyRuntimeWindow();
+        this.gossipWindow = config.latencyGossipWindow();
     }
 
     /**
@@ -114,15 +127,34 @@ public class EventPipelineTracker {
                             desc)
                     : null;
             final LatencyGauges latency;
-            if (latencyEnabled) {
-                final String metricName = "eventLatency_%d_%s_%s".formatted(step, name, originName);
-                final Config config = new Config(PLATFORM_CATEGORY, metricName).withDescription(desc);
-                latency = LatencyGauges.register(metrics, configuration, time, config);
+            if (latencyEnabled && origin != EventOrigin.STORAGE) {
+                final Config config = latencyConfig(origin, "eventLatency_%d_%s_%s".formatted(step, name, originName));
+                latency = LatencyGauges.register(metrics, configuration, time, config.withDescription(desc));
             } else {
                 latency = null;
             }
             metricMap.put(new MetricKey(name, origin), new StageMetrics(averageAndMax, latency));
         }
+    }
+
+    /**
+     * Returns the parameters of the latency gauges of an origin. A node receives many more events through gossip than
+     * it creates, so the window over gossiped events holds enough of them for p99.9.
+     *
+     * @param origin the event origin
+     * @param name   the base name of the gauges
+     * @return the parameters of the latency gauges
+     * @throws IllegalArgumentException if the origin has no latency gauges
+     */
+    @NonNull
+    private Config latencyConfig(@NonNull final EventOrigin origin, @NonNull final String name) {
+        return switch (origin) {
+            case RUNTIME ->
+                new Config(PLATFORM_CATEGORY, name).withWindow(runtimeWindow).withPercentiles(50, 90, 99);
+            case GOSSIP ->
+                new Config(PLATFORM_CATEGORY, name).withWindow(gossipWindow).withPercentiles(50, 90, 99, 99.9);
+            case STORAGE -> throw new IllegalArgumentException("no latency gauges for events read from storage");
+        };
     }
 
     /**

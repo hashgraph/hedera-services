@@ -2,7 +2,12 @@
 package org.hiero.consensus.metrics.statistics;
 
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hiero.consensus.metrics.config.EventPipelineMetricsConfig_.AVERAGE_AND_MAX_ENABLED;
+import static org.hiero.consensus.metrics.config.EventPipelineMetricsConfig_.LATENCY_ENABLED;
+import static org.hiero.consensus.metrics.config.EventPipelineMetricsConfig_.LATENCY_GOSSIP_WINDOW;
+import static org.hiero.consensus.metrics.config.EventPipelineMetricsConfig_.LATENCY_RUNTIME_WINDOW;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,12 +37,34 @@ import org.junit.jupiter.api.Test;
 class EventPipelineTrackerTest {
 
     private static final String STAGE = "hashing";
-    /** The default metrics snapshot interval. */
-    private static final Duration INTERVAL = Duration.ofSeconds(3);
+    /** Differs from the default, so the tests show the window comes from the configuration. */
+    private static final String RUNTIME_WINDOW = "20m";
+    /** Differs from the default, so the tests show the window comes from the configuration. */
+    private static final String GOSSIP_WINDOW = "2m";
+    /** The step of the gossip gauges: their window in 20 snapshots, at the default interval of 3 s. */
+    private static final Duration GOSSIP_STEP = Duration.ofSeconds(6);
 
     private final FakeTime time = new FakeTime();
     private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private final Metrics metrics = newMetrics(configuration);
+
+    @Test
+    void noTrackerIfBothFamiliesAreDisabled() {
+        assertThat(EventPipelineTracker.create(metrics, trackerConfiguration(false, false), time))
+                .isNull();
+    }
+
+    @Test
+    void defaultWindowsAreTenAndFiveMinutes() {
+        requireNonNull(EventPipelineTracker.create(metrics, configuration, time))
+                .registerMetric(STAGE, EventOrigin.RUNTIME, EventOrigin.GOSSIP);
+        assertThat(metrics.getMetric(PLATFORM_CATEGORY, "eventLatency_1_hashing_runtime_max")
+                        .getDescription())
+                .endsWith("over the last 600 s");
+        assertThat(metrics.getMetric(PLATFORM_CATEGORY, "eventLatency_1_hashing_gossip_max")
+                        .getDescription())
+                .endsWith("over the last 300 s");
+    }
 
     @Test
     void bothFamiliesAreRegistered() {
@@ -52,6 +79,32 @@ class EventPipelineTrackerTest {
                         "eventLatency_1_hashing_gossip_p99",
                         "eventLatency_1_hashing_gossip_p99_9",
                         "eventLatency_1_hashing_gossip_max");
+        assertThat(metrics.getMetric(PLATFORM_CATEGORY, "eventLatency_1_hashing_gossip_max")
+                        .getDescription())
+                .endsWith("over the last 120 s");
+    }
+
+    @Test
+    void runtimeReportsUpToP99() {
+        newTracker(false, true).registerMetric(STAGE, EventOrigin.RUNTIME);
+        assertThat(metrics.getAll())
+                .extracting(Metric::getName)
+                .containsExactlyInAnyOrder(
+                        "eventLatency_1_hashing_runtime_p50",
+                        "eventLatency_1_hashing_runtime_p90",
+                        "eventLatency_1_hashing_runtime_p99",
+                        "eventLatency_1_hashing_runtime_max");
+        assertThat(metrics.getMetric(PLATFORM_CATEGORY, "eventLatency_1_hashing_runtime_max")
+                        .getDescription())
+                .endsWith("over the last 1200 s");
+    }
+
+    @Test
+    void storageGetsNoLatencyGauges() {
+        newTracker(true, true).registerMetric(STAGE, EventOrigin.STORAGE);
+        assertThat(metrics.getAll())
+                .extracting(Metric::getName)
+                .containsExactlyInAnyOrder("eventDelay_1_hashing_storage", "eventDelay_1_hashing_storageMAX");
     }
 
     @Test
@@ -81,8 +134,7 @@ class EventPipelineTrackerTest {
                 .contains(
                         "eventLatency_1_eventCreation_runtime_max",
                         "eventLatency_2_hashing_runtime_max",
-                        "eventLatency_1_hashing_gossip_max",
-                        "eventLatency_1_hashing_storage_max");
+                        "eventLatency_1_hashing_gossip_max");
     }
 
     @Test
@@ -90,7 +142,7 @@ class EventPipelineTrackerTest {
         final EventPipelineTracker tracker = newTracker(true, true);
         tracker.registerMetric(STAGE, EventOrigin.GOSSIP);
         tracker.recordEvent(STAGE, eventReceivedAgo(Duration.of(200, ChronoUnit.MICROS)));
-        time.tick(INTERVAL);
+        time.tick(GOSSIP_STEP);
 
         assertThat(valueOf("eventDelay_1_hashing_gossip")).isEqualTo(200.0);
         assertThat(valueOf("eventDelay_1_hashing_gossipMAX")).isEqualTo(200.0);
@@ -107,7 +159,7 @@ class EventPipelineTrackerTest {
         tracker.registerMetric(STAGE, EventOrigin.GOSSIP);
         tracker.recordEvent(STAGE, eventReceivedAgo(Duration.ofMillis(-1)));
         tracker.recordEvent(STAGE, eventReceivedAgo(Duration.ofMillis(1)));
-        time.tick(INTERVAL);
+        time.tick(GOSSIP_STEP);
 
         assertThat(valueOf("eventLatency_1_hashing_gossip_p50"))
                 .as("the negative delay is the lower of the two values")
@@ -119,7 +171,18 @@ class EventPipelineTrackerTest {
     }
 
     private EventPipelineTracker newTracker(final boolean averageAndMaxEnabled, final boolean latencyEnabled) {
-        return new EventPipelineTracker(metrics, configuration, time, averageAndMaxEnabled, latencyEnabled);
+        return requireNonNull(
+                EventPipelineTracker.create(metrics, trackerConfiguration(averageAndMaxEnabled, latencyEnabled), time));
+    }
+
+    private static Configuration trackerConfiguration(
+            final boolean averageAndMaxEnabled, final boolean latencyEnabled) {
+        return new TestConfigBuilder()
+                .withValue(AVERAGE_AND_MAX_ENABLED, averageAndMaxEnabled)
+                .withValue(LATENCY_ENABLED, latencyEnabled)
+                .withValue(LATENCY_RUNTIME_WINDOW, RUNTIME_WINDOW)
+                .withValue(LATENCY_GOSSIP_WINDOW, GOSSIP_WINDOW)
+                .getOrCreateConfig();
     }
 
     private PlatformEvent eventReceivedAgo(final Duration delay) {

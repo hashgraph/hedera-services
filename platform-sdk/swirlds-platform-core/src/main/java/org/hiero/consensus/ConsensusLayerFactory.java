@@ -18,7 +18,6 @@ import com.swirlds.platform.builder.ExecutionLayer;
 import com.swirlds.platform.builder.ModulesConfig;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.DefaultAppNotifier;
-import com.swirlds.platform.metrics.PlatformMetricsConfig;
 import com.swirlds.platform.reconnect.ReconnectModule;
 import com.swirlds.platform.state.ConsensusStateEventHandler;
 import com.swirlds.platform.system.Platform;
@@ -456,12 +455,7 @@ public class ConsensusLayerFactory {
 
     @Nullable
     private EventPipelineTracker createEventPipelineTracker(@NonNull final EventCreatorModule eventCreatorModule) {
-        final PlatformMetricsConfig platformMetricsConfig = configuration.getConfigData(PlatformMetricsConfig.class);
-        final boolean averageAndMaxEnabled = platformMetricsConfig.eventPipelineMetricsEnabled();
-        final boolean latencyEnabled = platformMetricsConfig.eventPipelineLatencyMetricsEnabled();
-        final EventPipelineTracker eventPipelineTracker = averageAndMaxEnabled || latencyEnabled
-                ? new EventPipelineTracker(metrics, configuration, time, averageAndMaxEnabled, latencyEnabled)
-                : null;
+        final EventPipelineTracker eventPipelineTracker = EventPipelineTracker.create(metrics, configuration, time);
 
         // Register the event creation stage (self-only, step 1) and wire monitoring
         // before intake initialization so step numbers are sequentially.

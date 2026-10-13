@@ -95,15 +95,6 @@ These delays drive the status state machine; see [architecture/topics/platform-s
 | TUN-020 | `platformStatus.activeStatusDelay`                 | Duration | `10s`   | Wall-clock time required to transition out of `ACTIVE` (no self event reached, or quiescence change). |       | —         |
 | TUN-021 | `platformStatus.statusStateMachineHeartbeatPeriod` | Duration | `100ms` | Wall-clock interval between heartbeats sent to the status state machine.                              |       | —         |
 
-## `platform.metrics.*` — PlatformMetricsConfig
-
-Module: `swirlds-platform-core`. Source: [PlatformMetricsConfig.java](../../swirlds-platform-core/src/main/java/com/swirlds/platform/metrics/PlatformMetricsConfig.java).
-
-|   ID    |                          Key                          |  Type   | Default |                                                    Effect                                                     | Range | Fragility |
-|---------|-------------------------------------------------------|---------|---------|---------------------------------------------------------------------------------------------------------------|-------|-----------|
-| TUN-022 | `platform.metrics.eventPipelineMetricsEnabled`        | boolean | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline.    |       | —         |
-| TUN-225 | `platform.metrics.eventPipelineLatencyMetricsEnabled` | boolean | `true`  | If true, the platform reports percentiles and the maximum of the event pipeline delays over a sliding window. |       | —         |
-
 ## `status.monitor.*` — StatusMonitorWiringConfig
 
 Module: `consensus-status-monitor`. Source: [StatusMonitorWiringConfig.java](../../consensus-status-monitor/src/main/java/org/hiero/consensus/status/monitor/config/StatusMonitorWiringConfig.java).
@@ -334,6 +325,17 @@ Module: `consensus-hashgraph`. Source: [HashgraphWiringConfig.java](../../consen
 |   ID    |                Key                 |            Type            |                                              Default                                               |                           Effect                            | Range | Fragility |
 |---------|------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------|-----------|
 | TUN-103 | `hashgraph.wiring.consensusEngine` | TaskSchedulerConfiguration | `SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC` | Scheduler configuration for the hashgraph consensus engine. |       | —         |
+
+## `event.pipeline.metrics.*` — EventPipelineMetricsConfig
+
+Module: `consensus-metrics`. Source: [EventPipelineMetricsConfig.java](../../consensus-metrics/src/main/java/org/hiero/consensus/metrics/config/EventPipelineMetricsConfig.java).
+
+|   ID    |                      Key                      |   Type   | Default |                                                   Effect                                                   | Range | Fragility |
+|---------|-----------------------------------------------|----------|---------|------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-022 | `event.pipeline.metrics.averageAndMaxEnabled` | boolean  | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline. |       | —         |
+| TUN-225 | `event.pipeline.metrics.latencyEnabled`       | boolean  | `true`  | If true, the platform reports sliding-window percentiles and the maximum of own and gossiped event delays. |       | —         |
+| TUN-226 | `event.pipeline.metrics.latencyRuntimeWindow` | Duration | `10m`   | Length of the sliding window over the delays of own events, for percentiles up to p99.                     |       | —         |
+| TUN-227 | `event.pipeline.metrics.latencyGossipWindow`  | Duration | `5m`    | Length of the sliding window over the delays of gossiped events, for percentiles up to p99.9.              |       | —         |
 
 ## `metrics.*` — MetricsConfig
 
