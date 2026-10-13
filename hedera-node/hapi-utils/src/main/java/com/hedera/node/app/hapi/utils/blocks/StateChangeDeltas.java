@@ -7,6 +7,8 @@ import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.MapUpdateChange;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.schema.MapUpdateChangeSchema;
+import com.hedera.hapi.block.stream.output.schema.SingletonUpdateChangeSchema;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
@@ -196,14 +198,24 @@ public final class StateChangeDeltas {
                 : type.differ.apply(prior, next);
     }
 
-    /** Counts only omitted fields and exits once the saving covers metadata plus the configured minimum. */
-    public static boolean worthPartial(ValueType type, Object next, Delta<?> delta, int minSaving, int clearTag) {
+    /**
+     * Counts only omitted fields and exits once the saving covers metadata plus the configured minimum.
+     * The metadata overhead is the encoded {@code partial = true} flag plus any packed clear list, sized
+     * from the enclosing message's own field definitions.
+     */
+    public static boolean worthPartial(
+            ValueType type,
+            Object next,
+            Delta<?> delta,
+            int minSaving,
+            FieldDefinition partialField,
+            FieldDefinition clearedField) {
         if (minSaving < 0) throw new IllegalArgumentException("Minimum saving must be nonnegative");
-        long overhead = PartialStateChangeApplier.varintSize(((clearTag - 1L) << 3)) + 1;
+        long overhead = PartialStateChangeApplier.varintSize((long) partialField.number() << 3) + 1;
         if (!delta.clearedFields().isEmpty()) {
             long length = 0;
             for (int field : delta.clearedFields()) length += PartialStateChangeApplier.varintSize(field);
-            overhead += PartialStateChangeApplier.varintSize(((long) clearTag << 3) | 2)
+            overhead += PartialStateChangeApplier.varintSize(((long) clearedField.number() << 3) | 2)
                     + PartialStateChangeApplier.varintSize(length)
                     + length;
         }
@@ -220,7 +232,14 @@ public final class StateChangeDeltas {
         final var type = requireType(mapType(stateId, choice.kind().protoOrdinal()));
         final var next = type.stateValue(choice.value());
         final var delta = diff(prior == null ? null : type.stateValue(prior), next);
-        if (delta == null || !worthPartial(type, next, delta, minSaving, 5)) return full;
+        if (delta == null
+                || !worthPartial(
+                        type,
+                        next,
+                        delta,
+                        minSaving,
+                        MapUpdateChangeSchema.PARTIAL,
+                        MapUpdateChangeSchema.CLEARED_FIELDS)) return full;
         return full.copyBuilder()
                 .value(new MapChangeValue(new OneOf<>(choice.kind(), type.wireValue(delta.value()))))
                 .partial(true)
@@ -240,7 +259,14 @@ public final class StateChangeDeltas {
         final var type = requireType(singletonType(stateId, choice.kind().protoOrdinal()));
         final var next = type.stateValue(choice.value());
         final var delta = diff(prior == null ? null : type.stateValue(prior), next);
-        if (delta == null || !worthPartial(type, next, delta, minSaving, 25)) return full;
+        if (delta == null
+                || !worthPartial(
+                        type,
+                        next,
+                        delta,
+                        minSaving,
+                        SingletonUpdateChangeSchema.PARTIAL,
+                        SingletonUpdateChangeSchema.CLEARED_FIELDS)) return full;
         return new SingletonUpdateChange(
                 true,
                 delta.clearedFields(),

@@ -8,8 +8,10 @@ import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.*;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -74,6 +76,65 @@ class ExpandedStateChangeDeltasTest {
                 .build());
         assertThatThrownBy(() -> reconstructor.fullValuesForTranslation(original))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void singletonTranslationCarriesReconstructedBaselinesAcrossBlocks() {
+        final int blocks = StateIdentifier.STATE_ID_BLOCKS.protoOrdinal();
+        final var initial = BlockInfo.newBuilder()
+                .lastBlockNumber(10)
+                .blockHashes(Bytes.wrap("hashes"))
+                .build();
+        final var full =
+                SingletonUpdateChange.newBuilder().blockInfoValue(initial).build();
+        final var partial = SingletonUpdateChange.newBuilder()
+                .blockInfoValue(BlockInfo.newBuilder().lastBlockNumber(11))
+                .partial(true)
+                .build();
+        final var reconstructor = new StateChangeReconstructor();
+        reconstructor.fullValuesForTranslation(singletonBlock(blocks, full));
+        final var original = singletonBlock(blocks, partial);
+        final var originalBytes = Block.PROTOBUF.toBytes(original);
+
+        final var expanded = reconstructor
+                .fullValuesForTranslation(original)
+                .items()
+                .getFirst()
+                .stateChangesOrThrow()
+                .stateChanges()
+                .getFirst()
+                .singletonUpdateOrThrow();
+        assertThat(expanded.partial()).isFalse();
+        assertThat(expanded.blockInfoValue())
+                .isEqualTo(initial.copyBuilder().lastBlockNumber(11).build());
+        final var clear = SingletonUpdateChange.newBuilder()
+                .blockInfoValue(BlockInfo.DEFAULT)
+                .partial(true)
+                .clearedFields(List.of(3))
+                .build();
+        final var cleared = reconstructor
+                .fullValuesForTranslation(singletonBlock(blocks, clear))
+                .items()
+                .getFirst()
+                .stateChangesOrThrow()
+                .stateChanges()
+                .getFirst()
+                .singletonUpdateOrThrow();
+        assertThat(cleared.blockInfoValue())
+                .isEqualTo(BlockInfo.newBuilder().lastBlockNumber(11).build());
+        assertThat(Block.PROTOBUF.toBytes(original)).isEqualTo(originalBytes);
+    }
+
+    private static Block singletonBlock(final int stateId, final SingletonUpdateChange update) {
+        return Block.newBuilder()
+                .items(BlockItem.newBuilder()
+                        .stateChanges(StateChanges.newBuilder()
+                                .stateChanges(StateChange.newBuilder()
+                                        .stateId(stateId)
+                                        .singletonUpdate(update)
+                                        .build()))
+                        .build())
+                .build();
     }
 
     @Test

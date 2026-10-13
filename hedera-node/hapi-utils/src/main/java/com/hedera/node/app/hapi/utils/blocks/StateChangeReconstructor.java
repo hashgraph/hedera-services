@@ -9,6 +9,7 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.pbj.runtime.OneOf;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,23 +83,10 @@ public final class StateChangeReconstructor {
                                         change.stateId(),
                                         update.newValue().kind().protoOrdinal())
                                 != null) {
-                    final var value = StateChangeDeltas.applySingleton(
-                            change.stateId(), singletons.get(change.stateId()), update);
-                    singletons.put(change.stateId(), value);
-                    full = change.copyBuilder()
-                            .singletonUpdate(new SingletonUpdateChange(
-                                    false,
-                                    List.of(),
-                                    new OneOf<>(
-                                            update.newValue().kind(),
-                                            StateChangeDeltas.singletonType(
-                                                            change.stateId(),
-                                                            update.newValue()
-                                                                    .kind()
-                                                                    .protoOrdinal())
-                                                    .wireValue(value)),
-                                    update.getUnknownFields()))
-                            .build();
+                    final var reconstructed =
+                            reconstructSingletonUpdate(change.stateId(), singletons.get(change.stateId()), update);
+                    singletons.put(change.stateId(), BlockStreamUtils.singletonPutFor(reconstructed));
+                    full = change.copyBuilder().singletonUpdate(reconstructed).build();
                 } else {
                     singletons.remove(change.stateId());
                 }
@@ -109,5 +97,21 @@ public final class StateChangeReconstructor {
             output.add(full);
         }
         return changes.copyBuilder().stateChanges(output).build();
+    }
+
+    /** Applies PBJ replay and preserves the block-stream value kind for extraction or translation. */
+    static SingletonUpdateChange reconstructSingletonUpdate(
+            final int stateId, @Nullable final Object prior, final SingletonUpdateChange update) {
+        final var value = StateChangeDeltas.applySingleton(stateId, prior, update);
+        if (!update.partial()) {
+            return update;
+        }
+        final var type = StateChangeDeltas.singletonType(
+                stateId, update.newValue().kind().protoOrdinal());
+        return new SingletonUpdateChange(
+                false,
+                List.of(),
+                new OneOf<>(update.newValue().kind(), type.wireValue(value)),
+                update.getUnknownFields());
     }
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
+import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.output.MapChangeKey;
@@ -11,6 +13,7 @@ import com.hedera.hapi.block.stream.output.MapDeleteChange;
 import com.hedera.hapi.block.stream.output.MapUpdateChange;
 import com.hedera.hapi.block.stream.output.QueuePopChange;
 import com.hedera.hapi.block.stream.output.QueuePushChange;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.AccountTokenAssociation;
@@ -84,13 +87,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that tracks an entire sequence of changes, even if this sequence
  * repeats changes to the same key multiple times in a block boundary.
  */
 public class ImmediateStateChangeListener implements StateChangeListener {
-    private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP, QUEUE);
+    private static final Logger log = LogManager.getLogger(ImmediateStateChangeListener.class);
+
+    private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP, QUEUE, SINGLETON);
 
     private final List<StateChange> kvStateChanges = new ArrayList<>();
 
@@ -117,14 +124,14 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     @Override
     public boolean requiresPreviousValue(final int stateId) {
-        return deltasEnabled;
+        return deltasEnabled || stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
     }
 
     @Nullable
     private Predicate<Object> logicallyIdenticalMapping;
 
     /**
-     * Resets keyValue state changes.
+     * Resets map changes and any first CLPR construction insertion captured alongside them.
      */
     public void resetKvStateChanges(@Nullable final Predicate<Object> logicallyIdenticalMapping) {
         this.logicallyIdenticalMapping = logicallyIdenticalMapping;
@@ -152,6 +159,21 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         return TARGET_DATA_TYPES;
     }
 
+    /** The lazy construction's first insertion must retain its position among committed map changes. */
+    @Override
+    public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
+        if (stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID && previousValue == null) {
+            final var change = new SingletonUpdateChange(
+                    false,
+                    List.of(),
+                    BoundaryStateChangeListener.singletonUpdateChangeValueFor(CopyBuilderTracking.untracked(value)));
+            kvStateChanges.add(StateChange.newBuilder()
+                    .stateId(stateId)
+                    .singletonUpdate(change)
+                    .build());
+        }
+    }
+
     @Override
     public <K, V> void mapUpdateChange(final int stateId, @NonNull final K key, @NonNull final V value) {
         mapUpdateChange(stateId, key, null, value);
@@ -172,7 +194,14 @@ public class ImmediateStateChangeListener implements StateChangeListener {
                 .build();
         final var choice = change.valueOrThrow().valueChoice();
         if (deltasEnabled && StateChangeDeltas.mapType(stateId, choice.kind().protoOrdinal()) != null) {
-            change = StateChangeDeltas.encodeMap(stateId, previousValue, change, deltaMinSaving);
+            try {
+                change = StateChangeDeltas.encodeMap(stateId, previousValue, change, deltaMinSaving);
+            } catch (final RuntimeException e) {
+                // This runs mid-commit, after the value is already stored; throwing would abandon the rest of
+                // the commit. A full replacement is always valid, and the same inputs fail the same way on
+                // every node, so falling back keeps the stream deterministic.
+                log.error("Failed to encode a partial update for state {}; emitting the full value", stateId, e);
+            }
         }
         // Wire values need no copy-builder provenance after the diff has been selected.
         final var encodedChoice = change.valueOrThrow().valueChoice();
@@ -218,7 +247,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
     }
 
     /**
-     * Returns the list of keyValue state changes.
+     * Returns map changes and any first CLPR construction insertion in their terminal commit order.
      * @return the list of keyValue state changes
      */
     public List<StateChange> getKvStateChanges() {

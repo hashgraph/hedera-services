@@ -11,6 +11,8 @@ import com.google.protobuf.DynamicMessage;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
 import com.hedera.hapi.block.stream.output.MapChangeValue;
 import com.hedera.hapi.block.stream.output.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.schema.MapUpdateChangeSchema;
+import com.hedera.hapi.block.stream.output.schema.SingletonUpdateChangeSchema;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TokenType;
@@ -117,16 +119,22 @@ class StateChangeDeltasTest {
         assertThat(applied).isEqualTo(value);
         assertThat(type.bytes(applied)).isEqualTo(type.bytes(value));
         final long omitted = type.bytes(value).length() - sparse.length();
-        for (int tag : List.of(5, 25)) {
-            long overhead = tag == 5 ? 2 : 3;
+        // Map metadata tags (4, 5) take one byte each; singleton tags (24, 25) take two.
+        for (final var fields : List.of(
+                List.of(MapUpdateChangeSchema.PARTIAL, MapUpdateChangeSchema.CLEARED_FIELDS),
+                List.of(SingletonUpdateChangeSchema.PARTIAL, SingletonUpdateChangeSchema.CLEARED_FIELDS))) {
+            final var partialField = fields.get(0);
+            final var clearedField = fields.get(1);
+            long overhead = (partialField.number() < 16 ? 1 : 2) + 1;
             if (!delta.clearedFields().isEmpty()) {
                 long length = delta.clearedFields().stream()
                         .mapToLong(PartialStateChangeApplier::varintSize)
                         .sum();
-                overhead += (tag == 5 ? 1 : 2) + PartialStateChangeApplier.varintSize(length) + length;
+                overhead +=
+                        (clearedField.number() < 16 ? 1 : 2) + PartialStateChangeApplier.varintSize(length) + length;
             }
             for (int min : List.of(0, 1, 32, 64, 128, 4096)) {
-                assertThat(StateChangeDeltas.worthPartial(type, value, delta, min, tag))
+                assertThat(StateChangeDeltas.worthPartial(type, value, delta, min, partialField, clearedField))
                         .as("%s threshold %s", type.name(), min)
                         .isEqualTo(omitted >= min + overhead);
             }

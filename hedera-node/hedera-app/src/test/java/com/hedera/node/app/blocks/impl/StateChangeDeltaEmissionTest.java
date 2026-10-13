@@ -327,6 +327,32 @@ class StateChangeDeltaEmissionTest {
     }
 
     @Test
+    void mapEncodingFailureFallsBackToFullValueInsteadOfAbortingCommit() {
+        final var listener = new ImmediateStateChangeListener();
+        listener.beginBlock(true, 0);
+        // A prior of the wrong type makes the encoder throw; the listener must still record the update
+        listener.mapUpdateChange(ACCOUNTS, KEY, COUNTS, C);
+        final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(update.partial()).isFalse();
+        assertThat(update.clearedFields()).isEmpty();
+        assertThat(update.valueOrThrow().accountValueOrThrow()).isEqualTo(C);
+    }
+
+    @Test
+    void singletonEncodingFailureFallsBackToFullValue() {
+        final var listener = boundaryListener();
+        listener.beginBlock(true, 0);
+        // A baseline of the wrong type makes the encoder throw at publication time
+        listener.singletonUpdateChange(MANIFEST, COUNTS, NEXT_MANIFEST);
+        final var changes = listener.allStateChanges(true);
+        assertThat(changes).hasSize(1);
+        final var update = changes.getFirst().singletonUpdateOrThrow();
+        assertThat(update.partial()).isFalse();
+        assertThat(update.clearedFields()).isEmpty();
+        assertThat(update.clprEndpointManifestValueOrThrow()).isEqualTo(NEXT_MANIFEST);
+    }
+
+    @Test
     void midBlockPublicationLosesNoSingletonUpdate() {
         final var listener = boundaryListener();
         final Map<Integer, Object> reader = new HashMap<>(Map.of(

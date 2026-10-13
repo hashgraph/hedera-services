@@ -35,6 +35,7 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateIdentifier;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody;
@@ -51,6 +52,7 @@ import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.history.HistoryLibrary;
 import com.hedera.node.app.history.impl.HistoryLibraryImpl;
 import com.hedera.node.app.info.DiskStartupNetworks;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.entityid.EntityIdService;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.Codec;
@@ -467,10 +469,18 @@ public class StateChangesValidator implements BlockStreamValidator {
             // At the cutover boundary, reinitialize hash state from the first post-cutover
             // block's BlockInfo
             final var firstPostCutoverBlock = blocks.getFirst();
+            final var priorBlockInfo = state.getReadableStates(BlockRecordService.NAME)
+                    .<BlockInfo>getSingleton(StateIdentifier.STATE_ID_BLOCKS.protoOrdinal())
+                    .get();
             final var blockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
                     List.of(firstPostCutoverBlock),
                     SingletonUpdateChange::blockInfoValue,
-                    StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+                    StateIdentifier.STATE_ID_BLOCKS.protoOrdinal(),
+                    priorBlockInfo == null
+                            ? null
+                            : SingletonUpdateChange.newBuilder()
+                                    .blockInfoValue(priorBlockInfo)
+                                    .build());
             if (blockInfo != null
                     && blockInfo.previousWrappedRecordBlockRootHash() != null
                     && !blockInfo.previousWrappedRecordBlockRootHash().equals(Bytes.EMPTY)) {

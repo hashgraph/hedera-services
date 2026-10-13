@@ -6,6 +6,8 @@ import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK
 import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction;
@@ -15,8 +17,12 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Set;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class SingletonStateChangeEmissionTest {
     private static final int BLOCKS = STATE_ID_BLOCKS.protoOrdinal();
@@ -28,6 +34,46 @@ class SingletonStateChangeEmissionTest {
             INITIAL.copyBuilder().lastBlockNumber(11).build();
     private final BoundaryStateChangeListener listener = new BoundaryStateChangeListener(
             new StoreMetricsServiceImpl(new NoOpMetrics()), HederaTestConfigBuilder::createConfig);
+
+    static Stream<Arguments> outputModes() {
+        return Stream.of(
+                Arguments.of(true, true, 64, true),
+                Arguments.of(true, false, 64, false),
+                Arguments.of(true, true, 4096, false),
+                Arguments.of(false, true, 64, false));
+    }
+
+    @ParameterizedTest
+    @MethodSource("outputModes")
+    void emittedSingletonsRetainOnlyTheSelectedPayloadWithoutChangingWireBytes(
+            final boolean enabled, final boolean allowPartial, final int minSaving, final boolean partial) {
+        listener.beginBlock(enabled, minSaving);
+        assertThat(UPDATED.$copyBuilderOrigin()).isSameAs(INITIAL);
+        listener.singletonUpdateChange(BLOCKS, INITIAL, UPDATED);
+        final var full =
+                SingletonUpdateChange.newBuilder().blockInfoValue(UPDATED).build();
+        final var expectedUpdate =
+                enabled && allowPartial ? StateChangeDeltas.encodeSingleton(BLOCKS, INITIAL, full, minSaving) : full;
+        final var expected = StateChange.newBuilder()
+                .stateId(BLOCKS)
+                .singletonUpdate(expectedUpdate)
+                .build();
+
+        final var changes = listener.allStateChanges(allowPartial);
+        final var emitted = changes.getFirst();
+        final var update = emitted.singletonUpdateOrThrow();
+        assertThat(update.partial()).isEqualTo(partial);
+        assertThat(emitted.$copyBuilderOrigin()).isNull();
+        assertThat(update.$copyBuilderOrigin()).isNull();
+        assertThat(update.blockInfoValueOrThrow().$copyBuilderOrigin()).isNull();
+        assertThat(StateChange.PROTOBUF.toBytes(emitted)).isEqualTo(StateChange.PROTOBUF.toBytes(expected));
+        assertThat(StateChangeDeltas.applySingleton(BLOCKS, INITIAL, update)).isEqualTo(UPDATED);
+        assertThat(listener.allStateChanges(allowPartial)).isEqualTo(changes);
+        // Diff selection must not strip or modify the handler's tracked input.
+        assertThat(UPDATED.$copyBuilderOrigin()).isSameAs(INITIAL);
+        listener.stateChangesEmitted(changes);
+        assertThat(listener.allStateChanges()).isEmpty();
+    }
 
     @Test
     void emissionFollowedByRevertedFieldUsesFreshCallbackBaseline() {

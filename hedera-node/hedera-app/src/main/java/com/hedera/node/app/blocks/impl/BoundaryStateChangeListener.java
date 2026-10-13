@@ -42,6 +42,7 @@ import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.spi.CopyBuilderTracking;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
@@ -51,6 +52,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary; either
@@ -58,6 +61,7 @@ import java.util.function.Supplier;
  * them in bulk. In the current system, these are the singleton and queue updates.
  */
 public class BoundaryStateChangeListener implements StateChangeListener {
+    private static final Logger log = LogManager.getLogger(BoundaryStateChangeListener.class);
 
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON);
 
@@ -176,12 +180,14 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         return stateChangesFor(requireNonNull(stateIds), true);
     }
 
-    /** Clears only published updates and their baselines after the publisher accepts them. */
+    /** Clears published singleton updates and their baselines; immediate map and queue changes are ignored. */
     public void stateChangesEmitted(@NonNull final List<StateChange> changes) {
         requireNonNull(changes);
         for (final var change : changes) {
-            singletonUpdates.remove(change.stateId());
-            singletonBaselines.remove(change.stateId());
+            if (change.hasSingletonUpdate()) {
+                singletonUpdates.remove(change.stateId());
+                singletonBaselines.remove(change.stateId());
+            }
         }
     }
 
@@ -195,13 +201,28 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             final var update = full.singletonUpdateOrThrow();
             final var type = StateChangeDeltas.singletonType(
                     entry.getKey(), update.newValue().kind().protoOrdinal());
+            var encoded = update;
             if (allowPartial && deltasEnabled && type != null) {
                 final var prior = singletonBaselines.get(entry.getKey());
-                final var delta = StateChangeDeltas.encodeSingleton(entry.getKey(), prior, update, deltaMinSaving);
-                allStateChanges.add(full.copyBuilder().singletonUpdate(delta).build());
-            } else {
-                allStateChanges.add(full);
+                try {
+                    encoded = StateChangeDeltas.encodeSingleton(entry.getKey(), prior, update, deltaMinSaving);
+                } catch (final RuntimeException e) {
+                    // A full replacement is always valid, and the same inputs fail the same way on every node.
+                    log.error(
+                            "Failed to encode a partial update for singleton {}; emitting the full value",
+                            entry.getKey(),
+                            e);
+                }
             }
+            // Keep provenance until diff selection, then retain only the selected wire payload.
+            final var choice = encoded.newValue();
+            final var wireUpdate = new SingletonUpdateChange(
+                    encoded.partial(),
+                    encoded.clearedFields(),
+                    new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
+                    encoded.getUnknownFields());
+            allStateChanges.add(CopyBuilderTracking.untracked(
+                    full.copyBuilder().singletonUpdate(wireUpdate).build()));
         }
         return allStateChanges;
     }

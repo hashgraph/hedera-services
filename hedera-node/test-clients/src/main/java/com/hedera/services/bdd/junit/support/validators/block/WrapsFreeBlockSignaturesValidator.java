@@ -30,6 +30,7 @@ import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateIdentifier;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsKeySet;
@@ -496,11 +497,23 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         }
     }
 
-    private static StreamHashContext cutoverHashContextFrom(@NonNull final Block firstPostCutoverBlock) {
+    private StreamHashContext cutoverHashContextFrom(@NonNull final Block firstPostCutoverBlock) {
+        final var priorBytes = state.getSingleton(StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+        final SingletonUpdateChange baseline;
+        try {
+            baseline = priorBytes == null
+                    ? null
+                    : SingletonUpdateChange.newBuilder()
+                            .blockInfoValue(BlockInfo.PROTOBUF.parse(priorBytes))
+                            .build();
+        } catch (ParseException e) {
+            throw new IllegalStateException("Invalid prior BlockInfo at cutover", e);
+        }
         final var blockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
                 List.of(firstPostCutoverBlock),
                 SingletonUpdateChange::blockInfoValue,
-                StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+                StateIdentifier.STATE_ID_BLOCKS.protoOrdinal(),
+                baseline);
         if (blockInfo == null
                 || blockInfo.previousWrappedRecordBlockRootHash() == null
                 || blockInfo.previousWrappedRecordBlockRootHash().equals(Bytes.EMPTY)) {

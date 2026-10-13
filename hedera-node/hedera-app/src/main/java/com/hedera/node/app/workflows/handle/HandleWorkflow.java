@@ -1077,6 +1077,7 @@ public class HandleWorkflow {
                 blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                         .stateChanges(new StateChanges(now, new ArrayList<>(kvStateChanges)))
                         .build());
+                boundaryStateChangeListener.stateChangesEmitted(kvStateChanges);
             }
             if (singletonStateIds == null || !singletonStateIds.isEmpty()) {
                 final var singletonChanges = singletonStateIds == null

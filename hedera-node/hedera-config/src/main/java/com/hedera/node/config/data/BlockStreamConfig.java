@@ -91,12 +91,8 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "true") @NetworkProperty
         boolean enableStateChangeDeltas,
 
-        @ConfigProperty(defaultValue = "64") @NetworkProperty
+        @ConfigProperty(defaultValue = "64") @Min(0) @NetworkProperty
         int stateChangeDeltaMinSaving) {
-
-    public BlockStreamConfig {
-        if (stateChangeDeltaMinSaving < 0) throw new IllegalArgumentException("Negative state-change minimum saving");
-    }
 
     /** Whether this stream can emit canonical partial state updates. */
     public boolean stateChangeDeltasEnabled() {
