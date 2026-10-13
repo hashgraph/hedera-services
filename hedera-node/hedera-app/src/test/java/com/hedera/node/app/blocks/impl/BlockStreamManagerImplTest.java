@@ -362,7 +362,7 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
-    void enabledDeltasReachWriterAsEncodedBytes() {
+    void commitEncodedDeltasReachWriterWithMatchingBytes() {
         stateChangeDeltasEnabled = true;
         givenSubjectWith(
                 1,
@@ -384,11 +384,17 @@ class BlockStreamManagerImplTest {
         final var next = prior.copyBuilder().tinybarBalance(8).build();
         final int stateId = com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS.protoOrdinal();
         deltaListener.mapUpdateChange(stateId, key, prior, next);
-        final var fullItem = BlockItem.newBuilder()
+        final var itemAtCommit = BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
                         .consensusTimestamp(CONSENSUS_THEN)
                         .stateChanges(List.copyOf(deltaListener.getKvStateChanges())))
                 .build();
+        assertTrue(itemAtCommit
+                .stateChangesOrThrow()
+                .stateChanges()
+                .getFirst()
+                .mapUpdateOrThrow()
+                .partial());
         deltaListener.reset(null);
         final int fileStateId = com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_FILES.protoOrdinal();
         final var fileId =
@@ -402,12 +408,12 @@ class BlockStreamManagerImplTest {
                 .contents(Bytes.wrap("a".repeat(1024) + "suffix"))
                 .build();
         deltaListener.mapUpdateChange(fileStateId, fileId, oldFile, newFile);
-        final var fullFileItem = BlockItem.newBuilder()
+        final var fileItemAtCommit = BlockItem.newBuilder()
                 .stateChanges(StateChanges.newBuilder()
                         .consensusTimestamp(CONSENSUS_THEN)
                         .stateChanges(List.copyOf(deltaListener.getKvStateChanges())))
                 .build();
-        subject.writeSavepointItems(List.of(fullItem, fullFileItem), CONSENSUS_NOW);
+        subject.writeSavepointItems(List.of(itemAtCommit, fileItemAtCommit), CONSENSUS_NOW);
         subject.prngSeed(); // synchronizes the serialization/hashing worker
         final var itemCaptor = org.mockito.ArgumentCaptor.forClass(BlockItem.class);
         final var bytesCaptor = org.mockito.ArgumentCaptor.forClass(Bytes.class);
@@ -438,6 +444,69 @@ class BlockStreamManagerImplTest {
                 BlockItem.PROTOBUF.toBytes(fileItem), bytesCaptor.getAllValues().get(items.indexOf(fileItem)));
         assertEquals(
                 BlockItem.PROTOBUF.toBytes(emitted), bytesCaptor.getAllValues().get(items.indexOf(emitted)));
+    }
+
+    @Test
+    void blockCloseConsumesDeferredSingletonsAndPublishesAFullCheckpoint() {
+        stateChangeDeltasEnabled = true;
+        boundaryStateChangeListener = new BoundaryStateChangeListener(
+                new StoreMetricsServiceImpl(new NoOpMetrics()), HederaTestConfigBuilder::createConfig);
+        givenSubjectWith(
+                1,
+                0,
+                StreamMode.BLOCKS,
+                0,
+                blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION),
+                platformStateWithFreezeTime(null),
+                aWriter);
+        givenEndOfRoundSetup();
+        blockStreamInfoState.registerListener(new com.swirlds.state.spi.SingletonChangeListener<>() {
+            @Override
+            public boolean requiresPreviousValue() {
+                return boundaryStateChangeListener.requiresPreviousValue(BLOCK_STREAM_INFO_STATE_ID);
+            }
+
+            @Override
+            public void singletonUpdateChange(final BlockStreamInfo value) {
+                boundaryStateChangeListener.singletonUpdateChange(BLOCK_STREAM_INFO_STATE_ID, value);
+            }
+
+            @Override
+            public void singletonUpdateChange(final BlockStreamInfo prior, final BlockStreamInfo value) {
+                boundaryStateChangeListener.singletonUpdateChange(BLOCK_STREAM_INFO_STATE_ID, prior, value);
+            }
+        });
+        given(blockHashSigner.isReady()).willReturn(true);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        given(mockSigningFuture.thenAcceptAsync(any())).willReturn(completedFuture(null));
+        subject.init(state, FAKE_RESTART_BLOCK_HASH);
+        subject.startRound(round, state);
+        final var prior = com.hedera.hapi.node.state.entity.EntityCounts.newBuilder()
+                .numAccounts(10)
+                .build();
+        final var next = prior.copyBuilder().numAccounts(11).build();
+        final int countsId = com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ENTITY_COUNTS.protoOrdinal();
+        boundaryStateChangeListener.singletonUpdateChange(countsId, prior, next);
+        subject.endRound(state, ROUND_NO);
+
+        final var items = org.mockito.ArgumentCaptor.forClass(BlockItem.class);
+        verify(aWriter, org.mockito.Mockito.atLeastOnce()).writePbjItemAndBytes(items.capture(), any());
+        final var changes = items.getAllValues().stream()
+                .filter(BlockItem::hasStateChanges)
+                .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                .toList();
+        assertEquals(2, changes.size());
+        assertEquals(countsId, changes.getFirst().stateId());
+        assertEquals(
+                next,
+                StateChangeDeltas.applySingleton(
+                        countsId, prior, changes.getFirst().singletonUpdateOrThrow()));
+        assertEquals(BLOCK_STREAM_INFO_STATE_ID, changes.getLast().stateId());
+        final var checkpoint = changes.getLast().singletonUpdateOrThrow();
+        assertFalse(checkpoint.partial());
+        assertEquals(infoRef.get(), checkpoint.blockStreamInfoValueOrThrow());
+        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
     }
 
     @Test

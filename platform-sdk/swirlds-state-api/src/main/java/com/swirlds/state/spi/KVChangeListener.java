@@ -22,11 +22,6 @@ public interface KVChangeListener<K, V> {
         mapUpdateChange(key, value);
     }
 
-    /** Receives the original next value and its equal, untracked instance committed to storage. */
-    default void mapUpdateChange(@NonNull K key, @Nullable V previousValue, @NonNull V value, @NonNull V storedValue) {
-        mapUpdateChange(key, previousValue, value);
-    }
-
     /**
      * Called when an entry is added in to a map.
      *

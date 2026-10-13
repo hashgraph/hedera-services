@@ -93,15 +93,10 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
                 listeners.forEach(listener -> listener.mapDeleteChange(key));
             } else {
                 final var previousValue = capturePrevious ? getOriginalValue(key) : null;
-                final var storedValue = CopyBuilderTracking.untracked(value);
-                putIntoDataSource(key, storedValue);
+                putIntoDataSource(key, CopyBuilderTracking.untracked(value));
                 listeners.forEach(listener -> {
                     if (listener.requiresPreviousValue()) {
-                        if (storedValue == value) {
-                            listener.mapUpdateChange(key, previousValue, value);
-                        } else {
-                            listener.mapUpdateChange(key, previousValue, value, storedValue);
-                        }
+                        listener.mapUpdateChange(key, previousValue, value);
                     } else {
                         listener.mapUpdateChange(key, value);
                     }

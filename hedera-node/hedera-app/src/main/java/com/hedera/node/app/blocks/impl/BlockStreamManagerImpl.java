@@ -778,7 +778,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             quiescenceController.finishHandlingInProgressBlock();
             state.commitSingletons();
             // Flush all boundary state changes besides the BlockStreamInfo
-            writeItem(flushChangesFromListener(boundaryStateChangeListener));
+            flushChangesFromListener(boundaryStateChangeListener, true);
             worker.sync();
 
             // This block's starting state hash is the end state hash of the last non-empty round
@@ -833,7 +833,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             ((CommittableWritableStates) writableState).commit();
 
             // Keep this final checkpoint full: reconstructLastBlockHash recreates its exact bytes from saved state.
-            writeItem(flushChangesFromListener(boundaryStateChangeListener, false));
+            flushChangesFromListener(boundaryStateChangeListener, false);
             worker.sync();
 
             final var stateChangesHash = Bytes.wrap(stateChangesHasher.computeRootHash());
@@ -1002,10 +1002,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             return;
         }
         requireNonNull(item);
-        final var encoded = immediateStateChangeListener.encodeForStream(item);
-        accountForWrittenItems(List.of(encoded));
-        updateLastUsedTimeFrom(encoded);
-        worker.addItem(encoded);
+        accountForWrittenItems(List.of(item));
+        updateLastUsedTimeFrom(item);
+        worker.addItem(item);
     }
 
     @Override
@@ -1781,16 +1780,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         return Optional.ofNullable(eventIndexInBlock.get(eventHash));
     }
 
-    private BlockItem flushChangesFromListener(@NonNull final BoundaryStateChangeListener boundaryStateChangeListener) {
-        return flushChangesFromListener(boundaryStateChangeListener, true);
-    }
-
-    private BlockItem flushChangesFromListener(
+    private void flushChangesFromListener(
             @NonNull final BoundaryStateChangeListener boundaryStateChangeListener, final boolean allowPartial) {
-        final var stateChanges =
-                new StateChanges(lastUsedTime, boundaryStateChangeListener.allStateChanges(allowPartial));
-        boundaryStateChangeListener.reset();
-        return BlockItem.newBuilder().stateChanges(stateChanges).build();
+        final var changes = boundaryStateChangeListener.allStateChanges(allowPartial);
+        writeItem(BlockItem.newBuilder()
+                .stateChanges(new StateChanges(lastUsedTime, changes))
+                .build());
+        boundaryStateChangeListener.stateChangesEmitted(changes);
     }
 
     /**

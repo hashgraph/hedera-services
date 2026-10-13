@@ -28,40 +28,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.Test;
 
 class StateChangeDeltaEmissionTest {
 
     @Test
-    void emittedJournalUsesTheActualStoredInstanceWhenStorageProvidesAnEqualCopy() throws Exception {
+    void encodesUsingThePreCommitValueAfterStorageProvidesAnEqualCopy() throws Exception {
         final var root =
                 Account.newBuilder().memo("m".repeat(100)).tinybarBalance(1).build();
         final var first = root.copyBuilder().tinybarBalance(2).build();
         final var storedFirst = Account.PROTOBUF.parse(Account.PROTOBUF.toBytes(first));
         final var second = storedFirst.copyBuilder().tinybarBalance(3).build();
-        final var storedSecond = Account.PROTOBUF.parse(Account.PROTOBUF.toBytes(second));
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true);
-        listener.mapUpdateChange(ACCOUNTS, KEY, root, first, storedFirst);
-        listener.encodeForStream(item(listener.getKvStateChanges()));
+        listener.mapUpdateChange(ACCOUNTS, KEY, root, first);
+        final var firstUpdate = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(firstUpdate.partial()).isTrue();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, root, firstUpdate)).isEqualTo(first);
         listener.resetKvStateChanges(null);
-        listener.mapUpdateChange(ACCOUNTS, KEY, storedFirst, second, storedSecond);
-        try (var deltas =
-                org.mockito.Mockito.mockStatic(StateChangeDeltas.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-            final var encoded = listener.encodeForStream(item(listener.getKvStateChanges()));
-            assertThat(encoded.stateChangesOrThrow()
-                            .stateChanges()
-                            .getFirst()
-                            .mapUpdateOrThrow()
-                            .partial())
-                    .isTrue();
-            deltas.verify(() -> StateChangeDeltas.encodeMap(
-                    org.mockito.ArgumentMatchers.eq(ACCOUNTS),
-                    org.mockito.ArgumentMatchers.same(storedFirst),
-                    org.mockito.ArgumentMatchers.any(),
-                    org.mockito.ArgumentMatchers.eq(64)));
-        }
+        listener.mapUpdateChange(ACCOUNTS, KEY, storedFirst, second);
+        final var secondUpdate = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(secondUpdate.partial()).isTrue();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, storedFirst, secondUpdate))
+                .isEqualTo(second);
         assertThat(storedFirst).isEqualTo(first).isNotSameAs(first);
     }
 
@@ -88,39 +79,39 @@ class StateChangeDeltaEmissionTest {
                 AccountID.PROTOBUF.parse(AccountID.PROTOBUF.toBytes(KEY)),
                 Account.PROTOBUF.parse(Account.PROTOBUF.toBytes(A)),
                 Account.PROTOBUF.parse(Account.PROTOBUF.toBytes(C)));
-        assertThat(BlockItem.PROTOBUF.toBytes(cached.encodeForStream(item(cached.getKvStateChanges()))))
-                .isEqualTo(BlockItem.PROTOBUF.toBytes(parsed.encodeForStream(item(parsed.getKvStateChanges()))));
+        assertThat(BlockItem.PROTOBUF.toBytes(item(cached.getKvStateChanges())))
+                .isEqualTo(BlockItem.PROTOBUF.toBytes(item(parsed.getKvStateChanges())));
     }
 
     @Test
-    void encodesAgainstEmittedOrderIncludingStaleLineageAndNoOp() {
+    void orderedCommitsReplayWithStaleLineageClearsAndNoOp() {
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true);
         listener.reset(key -> true);
         listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
         listener.mapUpdateChange(ACCOUNTS, KEY, B, C);
-        final var commits = List.copyOf(listener.getKvStateChanges());
-        // Simulate builder reordering. The consumer sees C, then B; the second delta must clear/revert memo.
-        final var encoded = listener.encodeForStream(item(List.of(commits.get(1), commits.get(0))));
-        final var updates = encoded.stateChangesOrThrow().stateChanges();
+        final var cleared = C.copyBuilder().memo("").build();
+        listener.mapUpdateChange(ACCOUNTS, KEY, C, cleared);
         Object replay = A;
-        for (final var update : updates) {
-            assertThat(update.mapUpdateOrThrow().partial()).isTrue();
-            assertThat(update.mapUpdateOrThrow().identical()).isTrue();
-            replay = StateChangeDeltas.applyMap(ACCOUNTS, replay, update.mapUpdateOrThrow());
+        for (final var change : listener.getKvStateChanges()) {
+            final var update = change.mapUpdateOrThrow();
+            assertThat(update.partial()).isTrue();
+            assertThat(update.identical()).isTrue();
+            assertThat(update.$copyBuilderOrigin()).isNull();
+            assertThat(update.valueOrThrow().accountValueOrThrow().$copyBuilderOrigin())
+                    .isNull();
+            replay = StateChangeDeltas.applyMap(ACCOUNTS, replay, update);
         }
-        assertThat(replay).isEqualTo(B);
+        assertThat(replay).isEqualTo(cleared);
+        assertThat(listener.getKvStateChanges().getLast().mapUpdateOrThrow().clearedFields())
+                .containsExactly(6);
         listener.reset(null);
-        listener.mapUpdateChange(ACCOUNTS, KEY, B, B);
-        final var noop = listener.encodeForStream(item(listener.getKvStateChanges()))
-                .stateChangesOrThrow()
-                .stateChanges()
-                .getFirst()
-                .mapUpdateOrThrow();
+        listener.mapUpdateChange(ACCOUNTS, KEY, cleared, cleared);
+        final var noop = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
         assertThat(noop.partial()).isTrue();
         assertThat(noop.identical()).isFalse();
         assertThat(noop.valueOrThrow().accountValueOrThrow()).isEqualTo(Account.DEFAULT);
-        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, B, noop)).isEqualTo(B);
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, cleared, noop)).isEqualTo(cleared);
     }
 
     @Test
@@ -128,39 +119,66 @@ class StateChangeDeltaEmissionTest {
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(false);
         listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
-        final var full = item(listener.getKvStateChanges());
+        final var legacy = new ImmediateStateChangeListener();
+        legacy.mapUpdateChange(ACCOUNTS, KEY, B);
         assertThat(listener.requiresPreviousValue()).isFalse();
-        assertThat(listener.encodeForStream(full)).isSameAs(full);
+        assertThat(listener.requiresPreviousValue(ACCOUNTS)).isFalse();
+        assertThat(listener.getKvStateChanges().getFirst().mapUpdateOrThrow().partial())
+                .isFalse();
+        assertThat(BlockItem.PROTOBUF.toBytes(item(listener.getKvStateChanges())))
+                .isEqualTo(BlockItem.PROTOBUF.toBytes(item(legacy.getKvStateChanges())));
     }
 
     @Test
-    void deleteRecreateAndBlockResetUseCorrectBaseline() {
+    void fullWireValuesDoNotRetainPreviousValuesThroughBuilderProvenance() {
+        final var root = Account.newBuilder().tinybarBalance(1).build();
+        final var next = root.copyBuilder().tinybarBalance(2).build();
+        assertThat(next.$copyBuilderOrigin()).isSameAs(root);
+        final var listener = new ImmediateStateChangeListener();
+        listener.beginBlock(true);
+        listener.mapUpdateChange(ACCOUNTS, KEY, root, next);
+        final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(update.partial()).isFalse();
+        assertThat(update.$copyBuilderOrigin()).isNull();
+        assertThat(update.valueOrThrow().accountValueOrThrow()).isEqualTo(next);
+        assertThat(update.valueOrThrow().accountValueOrThrow().$copyBuilderOrigin())
+                .isNull();
+    }
+
+    @Test
+    void deleteRecreateAndNextBlockUseTheCallbackBaseline() {
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true);
         listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
-        listener.encodeForStream(item(listener.getKvStateChanges()));
+        final var initial = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, A, initial)).isEqualTo(B);
         listener.reset(null);
         listener.mapDeleteChange(ACCOUNTS, KEY);
         listener.mapUpdateChange(ACCOUNTS, KEY, null, C);
-        final var recreated = listener.encodeForStream(item(listener.getKvStateChanges()))
-                .stateChangesOrThrow()
-                .stateChanges()
-                .get(1)
-                .mapUpdateOrThrow();
+        assertThat(listener.getKvStateChanges().getFirst().hasMapDelete()).isTrue();
+        final var recreated = listener.getKvStateChanges().get(1).mapUpdateOrThrow();
         assertThat(recreated.partial()).isFalse();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, null, recreated)).isEqualTo(C);
         listener.beginBlock(true);
         listener.reset(null);
         listener.mapUpdateChange(ACCOUNTS, KEY, C, A);
-        final var nextBlock = listener.encodeForStream(item(listener.getKvStateChanges()))
-                .stateChangesOrThrow()
-                .stateChanges()
-                .getFirst()
-                .mapUpdateOrThrow();
+        final var nextBlock = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(nextBlock.partial()).isTrue();
         assertThat(StateChangeDeltas.applyMap(ACCOUNTS, C, nextBlock)).isEqualTo(A);
     }
 
     @Test
-    void coalescesSingletonsAgainstFirstPriorAndResetsAtFlush() {
+    void updateWithoutAPreviousValueCallbackStaysFull() {
+        final var listener = new ImmediateStateChangeListener();
+        listener.beginBlock(true);
+        listener.mapUpdateChange(ACCOUNTS, KEY, C);
+        final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(update.partial()).isFalse();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, null, update)).isEqualTo(C);
+    }
+
+    @Test
+    void coalescesSingletonsAgainstFirstPriorAndDrainsAtFlush() {
         final var listener = boundaryListener();
         listener.beginBlock(true);
         final int stateId = STATE_ID_THROTTLE_USAGE_SNAPSHOTS.protoOrdinal();
@@ -176,10 +194,11 @@ class StateChangeDeltaEmissionTest {
                 .build();
         listener.singletonUpdateChange(stateId, a, b);
         listener.singletonUpdateChange(stateId, b, c);
-        final var update = listener.allStateChanges().getFirst().singletonUpdateOrThrow();
+        final var changes = listener.allStateChanges();
+        final var update = changes.getFirst().singletonUpdateOrThrow();
         assertThat(update.partial()).isTrue();
         assertThat(StateChangeDeltas.applySingleton(stateId, a, update)).isEqualTo(c);
-        listener.reset();
+        listener.stateChangesEmitted(changes);
         listener.singletonUpdateChange(stateId, c, a);
         listener.singletonUpdateChange(stateId, a, c);
         final var noop = listener.allStateChanges().getFirst().singletonUpdateOrThrow();
@@ -237,7 +256,7 @@ class StateChangeDeltaEmissionTest {
                 scheduled.copyBuilder().numSchedules(10).numAccounts(1_001).build();
         // Emitted mid-block without a reset, as HandleWorkflow.doStreamingChangesInternal does
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, scheduled);
-        final var reader = replaySingletons(COUNTS, listener.allStateChanges());
+        final var reader = replaySingletons(COUNTS, emitAll(listener));
         assertThat(reader).isEqualTo(scheduled);
         listener.singletonUpdateChange(ENTITY_COUNTS, scheduled, purged);
         final var atClose = listener.allStateChanges();
@@ -247,14 +266,14 @@ class StateChangeDeltaEmissionTest {
     }
 
     @Test
-    void discardedPendingSingletonUpdateIsCarriedByTheNextEmission() {
+    void unrelatedMidBlockPublicationPreservesTheFirstPendingBaseline() {
         final var listener = boundaryListener();
         listener.beginBlock(true, 0);
         final var moreFiles = COUNTS.copyBuilder().numFiles(1_000_001).build();
         final var moreAccounts = moreFiles.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreFiles);
-        // A reset before any emission discards this update; the baseline must survive it
-        listener.reset();
+        // A mid-block CLPR publication must preserve the pending update and its original baseline
+        assertThat(listener.stateChangesFor(Set.of(MANIFEST))).isEmpty();
         listener.singletonUpdateChange(ENTITY_COUNTS, moreFiles, moreAccounts);
         assertThat(replaySingletons(COUNTS, listener.allStateChanges())).isEqualTo(moreAccounts);
     }
@@ -267,8 +286,7 @@ class StateChangeDeltaEmissionTest {
         final var second = first.copyBuilder().numAccounts(1_002).build();
         final var third = second.copyBuilder().numAccounts(1_003).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
-        listener.allStateChanges();
-        listener.reset();
+        emitAll(listener);
         // Committed between blocks, as PlatformState is before each round; a restarted node has no baseline
         listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
         listener.beginBlock(true, 0);
@@ -294,24 +312,22 @@ class StateChangeDeltaEmissionTest {
             ClprEndpointManifest.newBuilder().version(2).build();
 
     @Test
-    void captureReturnsOnlyItsOwnUpdatesAndKeepsEveryUpdatePending() {
+    void selectedPublicationDrainsOnlyItsOwnUpdates() {
         final var listener = boundaryListener();
         listener.beginBlock(false);
         listener.singletonUpdateChange(
                 ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numAccounts(1_001).build());
-        listener.startCapture();
         listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var captured = listener.endCapture();
+        final var captured = listener.stateChangesFor(Set.of(MANIFEST));
         assertThat(captured).extracting(StateChange::stateId).containsExactly(MANIFEST);
         assertThat(captured.getFirst().singletonUpdateOrThrow().clprEndpointManifestValueOrThrow())
                 .isEqualTo(NEXT_MANIFEST);
-        assertThat(listener.allStateChanges())
-                .extracting(StateChange::stateId)
-                .containsExactly(ENTITY_COUNTS, MANIFEST);
+        listener.stateChangesEmitted(captured);
+        assertThat(listener.allStateChanges()).extracting(StateChange::stateId).containsExactly(ENTITY_COUNTS);
     }
 
     @Test
-    void midBlockCaptureLosesNoSingletonUpdate() {
+    void midBlockPublicationLosesNoSingletonUpdate() {
         final var listener = boundaryListener();
         final Map<Integer, Object> reader = new HashMap<>(Map.of(
                 PLATFORM_STATE, platformStateAt(1), ENTITY_COUNTS, COUNTS, MANIFEST, ClprEndpointManifest.DEFAULT));
@@ -321,18 +337,17 @@ class StateChangeDeltaEmissionTest {
         final var moreAccounts = COUNTS.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreAccounts);
         // The CLPR reconcile externalizes just its own updates mid-block, as HandleWorkflow does
-        listener.startCapture();
         listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var midBlock = listener.endCapture();
+        final var midBlock = listener.stateChangesFor(Set.of(MANIFEST));
         assertThat(midBlock).extracting(StateChange::stateId).containsExactly(MANIFEST);
         replay(reader, midBlock);
+        listener.stateChangesEmitted(midBlock);
         // A later round of the same block
         listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(2), platformStateAt(3));
         final var evenMoreAccounts =
                 moreAccounts.copyBuilder().numAccounts(1_002).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, moreAccounts, evenMoreAccounts);
-        final var atClose = listener.allStateChanges();
-        listener.reset();
+        final var atClose = emitAll(listener);
         replay(reader, atClose);
 
         assertThat(reader)
@@ -346,29 +361,28 @@ class StateChangeDeltaEmissionTest {
     }
 
     @Test
-    void pendingSingletonUpdatedDuringCaptureIsEmittedWithItsLatestValue() {
+    void pendingSingletonUpdatedBeforeSelectedPublicationIsEmittedWithItsLatestValue() {
         final var listener = boundaryListener();
         listener.beginBlock(true, 0);
         final var first = COUNTS.copyBuilder().numAccounts(1_001).build();
         final var second = first.copyBuilder().numFiles(1_000_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
-        listener.startCapture();
         listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
-        final var reader = replaySingletons(COUNTS, listener.endCapture());
-        assertThat(reader).isEqualTo(second);
-        assertThat(replaySingletons(reader, listener.allStateChanges())).isEqualTo(second);
+        final var selected = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        assertThat(replaySingletons(COUNTS, selected)).isEqualTo(second);
+        listener.stateChangesEmitted(selected);
+        assertThat(listener.allStateChanges()).isEmpty();
     }
 
     @Test
     void nodeRestartedAtTheBlockBoundaryEmitsTheSameBytes() {
         final var running = boundaryListener();
-        // This node streamed the previous block, so it holds baselines and has deltas enabled
+        // This node streamed the previous block with deltas enabled
         running.beginBlock(true, 0);
         running.singletonUpdateChange(
                 ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numFiles(1_000_001).build());
         running.singletonUpdateChange(PLATFORM_STATE, platformStateAt(1), platformStateAt(2));
-        running.allStateChanges();
-        running.reset();
+        emitAll(running);
         final var fromRunning = clprBlockFrom(running);
         final var fromRestarted = clprBlockFrom(boundaryListener());
         assertThat(fromRunning)
@@ -378,20 +392,18 @@ class StateChangeDeltaEmissionTest {
     }
 
     @Test
-    void aCaptureLeftOpenByAFailedActionIsReplacedByTheNextOne() {
+    void inspectingAnUnpublishedSelectionDoesNotAdvanceItsBaseline() {
         final var listener = boundaryListener();
-        listener.beginBlock(false);
-        listener.startCapture();
-        listener.singletonUpdateChange(
-                ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numAccounts(1_001).build());
-        // The action threw before endCapture(), so the next streaming action starts a fresh capture
-        listener.startCapture();
-        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        assertThat(listener.endCapture()).extracting(StateChange::stateId).containsExactly(MANIFEST);
-        assertThat(listener.endCapture()).isEmpty();
-        assertThat(listener.allStateChanges())
-                .extracting(StateChange::stateId)
-                .containsExactly(ENTITY_COUNTS, MANIFEST);
+        listener.beginBlock(true, 0);
+        final var first = COUNTS.copyBuilder().numAccounts(1_001).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
+        // Inspection or a failed publication does not acknowledge this update.
+        final var unpublished = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        final var second = first.copyBuilder().numFiles(1_000_001).build();
+        listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
+        final var selected = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        assertThat(replaySingletons(COUNTS, unpublished)).isEqualTo(first);
+        assertThat(replaySingletons(COUNTS, selected)).isEqualTo(second);
     }
 
     // One CLPR-enabled block as HandleWorkflow drives it, from the same committed state
@@ -401,13 +413,19 @@ class StateChangeDeltaEmissionTest {
         listener.beginBlock(true, 0);
         listener.singletonUpdateChange(
                 ENTITY_COUNTS, counts, counts.copyBuilder().numAccounts(1_001).build());
-        listener.startCapture();
         listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var emitted = new ArrayList<>(listener.endCapture());
+        final var selected = listener.stateChangesFor(Set.of(MANIFEST));
+        final var emitted = new ArrayList<>(selected);
+        listener.stateChangesEmitted(selected);
         listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(3), platformStateAt(4));
-        emitted.addAll(listener.allStateChanges());
-        listener.reset();
+        emitted.addAll(emitAll(listener));
         return emitted;
+    }
+
+    private static List<StateChange> emitAll(final BoundaryStateChangeListener listener) {
+        final var changes = listener.allStateChanges();
+        listener.stateChangesEmitted(changes);
+        return changes;
     }
 
     private static PlatformState platformStateAt(final long round) {

@@ -3,8 +3,6 @@ package com.hedera.node.app.blocks.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.addressbook.Node;
@@ -31,13 +29,7 @@ class ExpandedStateChangeDeltaEmissionTest {
         final var maps = new ImmediateStateChangeListener();
         maps.beginBlock(true);
         maps.mapUpdateChange(1, new com.hedera.hapi.node.state.common.EntityNumber(1), prior, next);
-        final var update = maps.encodeForStream(BlockItem.newBuilder()
-                        .stateChanges(StateChanges.newBuilder().stateChanges(maps.getKvStateChanges()))
-                        .build())
-                .stateChangesOrThrow()
-                .stateChanges()
-                .getFirst()
-                .mapUpdateOrThrow();
+        final var update = maps.getKvStateChanges().getFirst().mapUpdateOrThrow();
         assertThat(update.partial()).isTrue();
         assertThat(StateChangeDeltas.applyMap(1, prior, update)).isEqualTo(next);
         final var singletons = new BoundaryStateChangeListener(
@@ -67,13 +59,7 @@ class ExpandedStateChangeDeltaEmissionTest {
             final var listener = new ImmediateStateChangeListener();
             listener.beginBlock(true, threshold);
             listener.mapUpdateChange(6, id, prior, next);
-            final var update = listener.encodeForStream(BlockItem.newBuilder()
-                            .stateChanges(StateChanges.newBuilder().stateChanges(listener.getKvStateChanges()))
-                            .build())
-                    .stateChangesOrThrow()
-                    .stateChanges()
-                    .getFirst()
-                    .mapUpdateOrThrow();
+            final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
             assertThat(update.partial()).isEqualTo(threshold == 64);
             assertThat(update.valueOrThrow().fileValueOrThrow().contents()).isEqualTo(next.contents());
             assertThat(StateChangeDeltas.applyMap(6, prior, update)).isEqualTo(next);
@@ -86,13 +72,7 @@ class ExpandedStateChangeDeltaEmissionTest {
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true);
         listener.mapUpdateChange(9999, AccountID.DEFAULT, value, value);
-        final var update = listener.encodeForStream(BlockItem.newBuilder()
-                        .stateChanges(StateChanges.newBuilder().stateChanges(listener.getKvStateChanges()))
-                        .build())
-                .stateChangesOrThrow()
-                .stateChanges()
-                .getFirst()
-                .mapUpdateOrThrow();
+        final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
         assertThat(update.partial()).isTrue();
         assertThat(StateChangeDeltas.applyMap(9999, value, update)).isEqualTo(value);
     }

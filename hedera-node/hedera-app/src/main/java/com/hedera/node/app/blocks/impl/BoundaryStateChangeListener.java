@@ -46,7 +46,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -67,15 +66,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
      */
     private final Map<Integer, StateChange> singletonUpdates = new LinkedHashMap<>();
 
-    // What readers hold for each singleton: the last value emitted in this block, else the committed value
-    // before its first update here. Kept across reset() until the block ends; null forces a full value.
     private final Map<Integer, Object> singletonBaselines = new LinkedHashMap<>();
     private int deltaMinSaving = StateChangeDeltas.DEFAULT_MIN_SAVING;
     private boolean deltasEnabled;
-
-    // Singletons updated since startCapture(), in update order; null when no capture is open
-    @Nullable
-    private Set<Integer> capturedSingletons;
 
     /** Fixes encoding mode for this block. Migration listeners remain disabled. */
     public void beginBlock(final boolean enableDeltas) {
@@ -101,8 +94,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
 
     @Override
     public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
-        // An update already pending when the block began has no baseline here, so it is emitted in full
-        if (deltasEnabled && !singletonBaselines.containsKey(stateId) && !singletonUpdates.containsKey(stateId)) {
+        if (deltasEnabled && !singletonUpdates.containsKey(stateId)) {
             singletonBaselines.put(stateId, previousValue);
         }
         singletonUpdateChange(stateId, value);
@@ -159,10 +151,11 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     }
 
     /**
-     * Discards the pending singleton updates. Baselines stay until the next block begins.
+     * Resets the listener during initialization. Live publication uses {@link #stateChangesEmitted(List)}.
      */
     public void reset() {
         singletonUpdates.clear();
+        singletonBaselines.clear();
     }
 
     /**
@@ -175,55 +168,42 @@ public class BoundaryStateChangeListener implements StateChangeListener {
 
     /** The final block-hash checkpoint must be recoverable from saved state alone. */
     public List<StateChange> allStateChanges(final boolean allowPartial) {
+        return stateChangesFor(singletonUpdates.keySet(), allowPartial);
+    }
+
+    /** Returns pending changes for selected singletons without modifying their values or baselines. */
+    public List<StateChange> stateChangesFor(@NonNull final Set<Integer> stateIds) {
+        return stateChangesFor(requireNonNull(stateIds), true);
+    }
+
+    /** Clears only published updates and their baselines after the publisher accepts them. */
+    public void stateChangesEmitted(@NonNull final List<StateChange> changes) {
+        requireNonNull(changes);
+        for (final var change : changes) {
+            singletonUpdates.remove(change.stateId());
+            singletonBaselines.remove(change.stateId());
+        }
+    }
+
+    private List<StateChange> stateChangesFor(final Set<Integer> stateIds, final boolean allowPartial) {
         final var allStateChanges = new LinkedList<StateChange>();
         for (final var entry : singletonUpdates.entrySet()) {
-            allStateChanges.add(encode(entry.getKey(), entry.getValue(), allowPartial));
-        }
-        return allStateChanges;
-    }
-
-    /**
-     * Starts recording which singletons are updated, for {@link #endCapture()}. Unlike {@link #reset()}, this keeps
-     * every pending update for the block-end flush.
-     */
-    public void startCapture() {
-        capturedSingletons = new LinkedHashSet<>();
-    }
-
-    /**
-     * Ends the capture and returns the singletons updated since {@link #startCapture()}, encoded as
-     * {@link #allStateChanges()} would; they also stay pending for the block-end flush.
-     */
-    public List<StateChange> endCapture() {
-        final var captured = capturedSingletons;
-        capturedSingletons = null;
-        final var changes = new LinkedList<StateChange>();
-        if (captured != null) {
-            for (final var stateId : captured) {
-                final var full = singletonUpdates.get(stateId);
-                if (full != null) {
-                    changes.add(encode(stateId, full, true));
-                }
+            if (!stateIds.contains(entry.getKey())) {
+                continue;
+            }
+            final var full = entry.getValue();
+            final var update = full.singletonUpdateOrThrow();
+            final var type = StateChangeDeltas.singletonType(
+                    entry.getKey(), update.newValue().kind().protoOrdinal());
+            if (allowPartial && deltasEnabled && type != null) {
+                final var prior = singletonBaselines.get(entry.getKey());
+                final var delta = StateChangeDeltas.encodeSingleton(entry.getKey(), prior, update, deltaMinSaving);
+                allStateChanges.add(full.copyBuilder().singletonUpdate(delta).build());
+            } else {
+                allStateChanges.add(full);
             }
         }
-        return changes;
-    }
-
-    private StateChange encode(final int stateId, @NonNull final StateChange full, final boolean allowPartial) {
-        final var update = full.singletonUpdateOrThrow();
-        final var type = StateChangeDeltas.singletonType(
-                stateId, update.newValue().kind().protoOrdinal());
-        var emitted = full;
-        if (allowPartial && deltasEnabled && type != null) {
-            final var prior = singletonBaselines.get(stateId);
-            final var delta = StateChangeDeltas.encodeSingleton(stateId, prior, update, deltaMinSaving);
-            emitted = full.copyBuilder().singletonUpdate(delta).build();
-        }
-        if (deltasEnabled) {
-            // Readers hold this value once it is emitted, partial or full
-            singletonBaselines.put(stateId, update.newValue().value());
-        }
-        return emitted;
+        return allStateChanges;
     }
 
     @Override
@@ -239,9 +219,6 @@ public class BoundaryStateChangeListener implements StateChangeListener {
                 .singletonUpdate(new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value)))
                 .build();
         singletonUpdates.put(stateId, stateChange);
-        if (capturedSingletons != null) {
-            capturedSingletons.add(stateId);
-        }
         if (stateId == ENTITY_COUNTS_STATE_ID) {
             updateEntityCountsMetrics((EntityCounts) value);
         }

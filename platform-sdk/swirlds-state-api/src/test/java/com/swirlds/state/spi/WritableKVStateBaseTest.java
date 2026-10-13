@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
     @Test
-    void preservesOriginalAndStoredIdentityWhenTrackingProvidesAnEqualCopy() {
+    void preservesOriginalValueForListenersWhileStorageShedsTracking() {
         final var backing = new HashMap<ProtoBytes, ProtoBytes>();
         final var root = new ProtoBytes(com.hedera.pbj.runtime.io.buffer.Bytes.wrap("old"));
         backing.put(A_KEY, root);
@@ -56,15 +56,15 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
             @Override
             public void mapUpdateChange(ProtoBytes key, ProtoBytes value) {
-                fail("Expected provenance callback");
+                fail("Expected previous-value callback");
             }
 
             @Override
-            public void mapUpdateChange(ProtoBytes key, ProtoBytes prior, ProtoBytes value, ProtoBytes stored) {
+            public void mapUpdateChange(ProtoBytes key, ProtoBytes prior, ProtoBytes value) {
                 assertThat(prior).isSameAs(root);
                 assertThat(value).isSameAs(next);
-                assertThat(stored).isSameAs(backing.get(key)).isEqualTo(next).isNotSameAs(next);
-                delivered.add(stored);
+                assertThat(backing.get(key)).isEqualTo(next).isNotSameAs(next);
+                delivered.add(value);
             }
 
             @Override
@@ -76,7 +76,8 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         writable.put(A_KEY, next);
         writable.commit();
         assertThat(delivered).hasSize(1);
-        assertThat(writable.get(A_KEY)).isSameAs(delivered.getFirst());
+        assertThat(delivered.getFirst()).isSameAs(next);
+        assertThat(writable.get(A_KEY)).isEqualTo(next).isNotSameAs(next);
         assertThat(writable.get(A_KEY).$copyBuilderOrigin()).isNull();
     }
 

@@ -12,6 +12,8 @@ import static com.hedera.node.app.history.impl.ProofControllers.groundsGenesisPr
 import static com.hedera.node.app.history.impl.ProofControllers.isWrapsExtensible;
 import static com.hedera.node.app.history.impl.ProofControllers.reAnchoredLedgerId;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
@@ -124,6 +126,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -155,6 +158,9 @@ public class HandleWorkflow {
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
     public static final String SYSTEM_ENTITIES_CREATED_MSG = "System entities created";
+
+    private static final Set<Integer> CLPR_MANIFEST_STATE_IDS =
+            Set.of(ENDPOINT_MANIFEST_STATE_ID, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
 
     private final int txnOffsetNanos;
     private final StreamMode streamMode;
@@ -305,7 +311,7 @@ public class HandleWorkflow {
             @NonNull final Round round,
             @NonNull final Consumer<ScopedSystemTransaction<StateSignatureTransaction>> stateSignatureTxnCallback) {
         logStartRound(round);
-        blockBufferService.ensureNewBlocksPermitted();
+        // blockBufferService.ensureNewBlocksPermitted();
         cacheWarmer.warm(state, round);
         final var firstEvent = round.iterator().next();
         if (streamMode != RECORDS) {
@@ -357,7 +363,7 @@ public class HandleWorkflow {
         // Drive the CLPR endpoint-manifest reconciler each round. The reconciler opens a
         // construction on cold start or after a freeze restart (per design §4), gathers per-node
         // publications routed by ClprEndpointPublicationHandler, and finalizes the manifest on
-        // close. Guarded by clpr.enabled. Wrapped in doStreamingAllChanges so both singleton
+        // close. Guarded by clpr.enabled. Wrapped in doStreamingClprChanges so both singleton
         // mutations (manifest and construction) are externalized to the block stream.
         try {
             reconcileClprEndpointManifest(state, round.getConsensusTimestamp());
@@ -1019,7 +1025,12 @@ public class HandleWorkflow {
             @NonNull final WritableStates writableStates,
             @Nullable final WritableStates entityIdWritableStates,
             @NonNull final Runnable action) {
-        doStreamingChangesInternal(writableStates, entityIdWritableStates, action, true);
+        doStreamingChangesInternal(writableStates, entityIdWritableStates, action, null);
+    }
+
+    /** Publishes CLPR manifest state without disturbing other pending singletons. */
+    private void doStreamingClprChanges(@NonNull final WritableStates writableStates, @NonNull final Runnable action) {
+        doStreamingChangesInternal(writableStates, null, action, CLPR_MANIFEST_STATE_IDS);
     }
 
     /**
@@ -1033,7 +1044,7 @@ public class HandleWorkflow {
             @NonNull final WritableStates writableStates,
             @Nullable final WritableStates entityIdWritableStates,
             @NonNull final Runnable action) {
-        doStreamingChangesInternal(writableStates, entityIdWritableStates, action, false);
+        doStreamingChangesInternal(writableStates, entityIdWritableStates, action, Set.of());
     }
 
     /**
@@ -1043,19 +1054,15 @@ public class HandleWorkflow {
      * @param writableStates the writable states to commit the action to
      * @param entityIdWritableStates if not null, the writable states for the entity ID service
      * @param action the action to commit
-     * @param includeSingletons whether to include singleton changes
+     * @param singletonStateIds singletons to publish; null publishes all bootstrap values in full
      */
     private void doStreamingChangesInternal(
             @NonNull final WritableStates writableStates,
             @Nullable final WritableStates entityIdWritableStates,
             @NonNull final Runnable action,
-            final boolean includeSingletons) {
+            @Nullable final Set<Integer> singletonStateIds) {
         if (streamMode != RECORDS) {
             immediateStateChangeListener.resetKvStateChanges(null);
-            if (includeSingletons) {
-                // A reset here would drop singleton updates still pending for this block's final flush
-                boundaryStateChangeListener.startCapture();
-            }
         }
         action.run();
         if (writableStates instanceof CommittableWritableStates committableWritableStates) {
@@ -1071,12 +1078,15 @@ public class HandleWorkflow {
                         .stateChanges(new StateChanges(now, new ArrayList<>(kvStateChanges)))
                         .build());
             }
-            if (includeSingletons) {
-                final var singletonChanges = boundaryStateChangeListener.endCapture();
+            if (singletonStateIds == null || !singletonStateIds.isEmpty()) {
+                final var singletonChanges = singletonStateIds == null
+                        ? boundaryStateChangeListener.allStateChanges(false)
+                        : boundaryStateChangeListener.stateChangesFor(singletonStateIds);
                 if (!singletonChanges.isEmpty()) {
                     blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                             .stateChanges(new StateChanges(now, new ArrayList<>(singletonChanges)))
                             .build());
+                    boundaryStateChangeListener.stateChangesEmitted(singletonChanges);
                 }
             }
         }
@@ -1263,9 +1273,8 @@ public class HandleWorkflow {
                 selfNodeId, ctx.constructionStore().get(), ctx.nodeStore(), ctx.clprConfig(), now);
 
         // Per-round construction close driving (state write ⇒ streamed).
-        doStreamingAllChanges(
+        doStreamingClprChanges(
                 ctx.clprWritableStates(),
-                null,
                 () -> reconciler.reconcile(now, ctx.manifestStore(), ctx.constructionStore(), ctx.clprConfig()));
     }
 
@@ -1322,9 +1331,8 @@ public class HandleWorkflow {
         }
         final var ctx = maybeCtx.get();
         final var reconciler = clprEndpointManifestReconciler.get();
-        doStreamingAllChanges(
+        doStreamingClprChanges(
                 ctx.clprWritableStates(),
-                null,
                 () -> reconciler.openConstructionOnRosterChange(
                         now,
                         ctx.activeRoster(),

@@ -682,7 +682,7 @@ public class VirtualMapStateImplTest extends MerkleTestBase {
         }
 
         @Test
-        void virtualMapBridgePreservesOriginalAndStoredIdentityWhenTrackingProvidesAnEqualCopy() {
+        void virtualMapBridgePreservesOriginalValueWhileStorageShedsTracking() {
             addKvState(virtualMapState.getRoot(), fruitMetadata, C_KEY, CHERRY);
             virtualMapState.initializeState(fruitMetadata);
             given(kvListener.requiresPreviousValue(FRUIT_STATE_ID)).willReturn(true);
@@ -704,8 +704,7 @@ public class VirtualMapStateImplTest extends MerkleTestBase {
                             org.mockito.ArgumentMatchers.eq(FRUIT_STATE_ID),
                             org.mockito.ArgumentMatchers.eq(C_KEY),
                             org.mockito.ArgumentMatchers.same(prior),
-                            org.mockito.ArgumentMatchers.same(next),
-                            org.mockito.ArgumentMatchers.same(stored));
+                            org.mockito.ArgumentMatchers.same(next));
         }
 
         @Test

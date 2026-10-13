@@ -48,12 +48,6 @@ public interface StateChangeListener {
         mapUpdateChange(stateId, key, value);
     }
 
-    /** Preserves producer provenance while identifying the equal, untracked value committed to storage. */
-    default <K, V> void mapUpdateChange(
-            int stateId, @NonNull K key, @Nullable V previousValue, @NonNull V value, @NonNull V storedValue) {
-        mapUpdateChange(stateId, key, previousValue, value);
-    }
-
     /** Receives a singleton update and its pre-commit value; null denotes an absent singleton. */
     default <V> void singletonUpdateChange(int stateId, @Nullable V previousValue, @NonNull V value) {
         singletonUpdateChange(stateId, value);

@@ -678,15 +678,6 @@ public class VirtualMapStateImpl implements VirtualMapState {
                 }
 
                 @Override
-                public void mapUpdateChange(
-                        @NonNull final K key,
-                        @Nullable final V previousValue,
-                        @NonNull final V value,
-                        @NonNull final V storedValue) {
-                    listener.mapUpdateChange(stateId, key, previousValue, value, storedValue);
-                }
-
-                @Override
                 public void mapUpdateChange(@NonNull final K key, @NonNull final V value) {
                     listener.mapUpdateChange(stateId, key, value);
                 }
