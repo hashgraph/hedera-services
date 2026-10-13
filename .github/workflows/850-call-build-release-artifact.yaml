@@ -397,6 +397,7 @@ jobs:
     needs:
       - validate
       - build-artifact
+    if: ${{ github.event.repository.visibility == 'public' }}
     steps:
       - name: Prepare Runner
         id: prepare-runner
@@ -890,7 +891,7 @@ jobs:
 
       - name: Set GH Create Release Flag
         id: set-gh-release-flag
-        if: ${{ inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.version-policy == 'specified' && inputs.dry-run-enabled != true && inputs.release-profile != 'none' && !cancelled() && !failure() }}
         env:
           REF_NAME: ${{ inputs.ref-name }}
         run: |
@@ -925,7 +926,7 @@ jobs:
       - local-node-images
       - validate-production-image
       - publish
-    if: ${{ inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
+    if: ${{ github.event.repository.visibility == 'public' && inputs.dry-run-enabled != true && inputs.version-policy == 'specified' && !cancelled() && !failure() }}
     steps:
       - name: Prepare Runner
         uses: pandaswhocode/initialize-github-job@5dbfbc4329ceab48a57d983325dadbd3ec8123e9 # v1.2.2
