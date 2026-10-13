@@ -55,6 +55,8 @@ flowchart LR
     CL -- "calls" --> CB
 ```
 
+There will be two new modules: one of the new API classes `ConsensusLayer` and `ConsensusLayerFactory` and another for the model classes required to interact with the API named `consensus-main-model` .
+
 ## 4. Creating the Layer and Requesting Rounds
 
 **Creating the layer.** The execution layer fills in a `ConsensusLayerInputs`, passes it to a `ConsensusLayerFactory`, calls `create()`, and then calls `start()` on the result. If the inputs contain no `ConsensusSnapshot`, the consensus layer starts a new hashgraph from genesis. Otherwise, it continues from the snapshot.
