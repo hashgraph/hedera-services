@@ -33,7 +33,6 @@ env:
 jobs:
   publish-wraps-proving-key-image:
     name: "Publish WRAPS Proving Key Image"
-    if: ${{ github.event.repository.visibility == 'public' }}
     runs-on: hl-cn-default-lin-lg
     timeout-minutes: 60
     steps:
