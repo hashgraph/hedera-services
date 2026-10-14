@@ -106,7 +106,8 @@ import org.junit.jupiter.api.Assertions;
 
 /**
  * A validator that asserts the state changes in the block stream, when applied directly to a {@link VirtualMapState}
- * initialized with the genesis {@link Service} schemas, result in the given root hash.
+ * initialized with the genesis {@link Service} schemas, match every block's starting state hash
+ * and result in the given final root hash.
  */
 @SuppressWarnings("removal")
 public class StateChangesValidator implements BlockStreamValidator {
@@ -385,6 +386,11 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.info("Read {} preview blocks", previewBlocks.size());
 
             for (final var block : previewBlocks) {
+                final var previewState = state;
+                this.state = stateLifecycleManager.copyMutableState();
+                startOfStateHash = requireNonNull(previewState.getHash()).getBytes();
+                validateStartOfBlockStateHash(block, startOfStateHash);
+
                 // Apply state changes from preview blocks to build up state
                 long eventNodeId = -1;
                 for (final var item : block.items()) {
@@ -450,7 +456,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                 blockTimestamp,
                                 previousBlockHash,
                                 incrementalBlockHashes,
-                                footer.startOfBlockStateRootHash(),
+                                startOfStateHash,
                                 previewInputHasher,
                                 previewOutputHasher,
                                 previewConsensusHasher,
@@ -516,25 +522,24 @@ public class StateChangesValidator implements BlockStreamValidator {
         }
 
         final int n = blocks.size();
-        final int lastVerifiableIndex =
-                blocks.reversed().stream().filter(b -> b.items().getLast().hasBlockProof()).findFirst().stream()
-                        .mapToInt(b ->
-                                (int) b.items().getFirst().blockHeaderOrThrow().number())
-                        .findFirst()
-                        .orElseThrow();
+        int lastVerifiableIndex = n - 1;
+        while (lastVerifiableIndex >= 0
+                && !blocks.get(lastVerifiableIndex).items().getLast().hasBlockProof()) {
+            lastVerifiableIndex--;
+        }
         boolean hashChainBroken = false;
         for (int i = 0; i < n; i++) {
             final var block = blocks.get(i);
-            var shouldVerifyProof = i == 0
-                    || i == lastVerifiableIndex
-                    || indirectProofSeq != null
-                    || RANDOM.nextDouble() < PROOF_VERIFICATION_PROB;
-            if (i != 0 && shouldVerifyProof) {
+            var shouldVerifyProof = shouldVerifyProof(i, lastVerifiableIndex);
+            if (i != 0) {
                 final var stateToBeCopied = state;
                 this.state = stateLifecycleManager.copyMutableState();
                 startOfStateHash =
                         requireNonNull(stateToBeCopied.getRoot().getHash()).getBytes();
             }
+            // Check every block boundary, even when its proof is absent, not sampled, or skipped
+            // while recovering the block hash chain after a restart.
+            final var footer = validateStartOfBlockStateHash(block, startOfStateHash);
             final IncrementalStreamingHasher inputTreeHasher =
                     new IncrementalStreamingHasher(sha384DigestOrThrow(), List.of(), 0);
             final IncrementalStreamingHasher outputTreeHasher =
@@ -588,15 +593,14 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             assertNotNull(firstConsensusTimestamp, "No parseable timestamp found for block #" + i);
 
-            // An incomplete block (missing footer/proof) can appear in the middle of the list
+            // An incomplete block (missing proof) can appear in the middle of the list
             // when nodes are restarted and all nodes wrote the block before the async proof arrived
             final long blockNumber =
                     block.items().getFirst().blockHeaderOrThrow().number();
             final boolean blockHasProof = block.items().getLast().hasBlockProof();
             if (i <= lastVerifiableIndex && blockHasProof) {
-                final var footer = block.items().get(block.items().size() - 2);
                 assertTrue(
-                        footer.hasBlockFooter(),
+                        block.items().get(block.items().size() - 2).hasBlockFooter(),
                         "Field blockFooter is null for block #" + blockNumber + " at index " + i);
                 final var lastBlockItem = block.items().getLast();
                 assertTrue(lastBlockItem.hasBlockProof());
@@ -607,14 +611,14 @@ public class StateChangesValidator implements BlockStreamValidator {
                     // (carried in this block's footer as previousBlockRootHash) to the incremental
                     // hasher so the chain stays in sync for future proof verifications, and skip
                     // proof verification for this block since we don't have its expected predecessor.
-                    final var skippedBlockHash = footer.blockFooterOrThrow().previousBlockRootHash();
+                    final var skippedBlockHash = footer.previousBlockRootHash();
                     incrementalBlockHashes.addNodeByHash(skippedBlockHash.toByteArray());
                     shouldVerifyProof = false;
                     hashChainBroken = false;
                 } else {
                     assertEquals(
                             previousBlockHash,
-                            footer.blockFooterOrThrow().previousBlockRootHash(),
+                            footer.previousBlockRootHash(),
                             "Previous block hash mismatch for block " + blockProof.block());
                 }
 
@@ -648,10 +652,8 @@ public class StateChangesValidator implements BlockStreamValidator {
                     validateBlockProof(
                             thisBlockNum,
                             firstBlockRound,
-                            footer.blockFooterOrThrow(),
                             blockProof,
                             expectedBlockHash,
-                            startOfStateHash,
                             previousBlockHash,
                             firstConsensusTimestamp,
                             expectedRootAndSiblings.siblingHashes());
@@ -890,21 +892,38 @@ public class StateChangesValidator implements BlockStreamValidator {
         return indirectProofSeq != null && indirectProofSeq.containsIndirectProofs();
     }
 
-    private void validateBlockProof(
-            final long blockNumber,
-            final long firstRound,
-            @NonNull final BlockFooter footer,
-            @NonNull final BlockProof proof,
-            @NonNull final Bytes expectedBlockHash,
-            @NonNull final Bytes startOfStateHash,
-            @NonNull final Bytes previousBlockHash,
-            @NonNull final Timestamp blockTimestamp,
-            @NonNull final MerkleSiblingHash[] expectedSiblingHashes) {
-        assertEquals(blockNumber, proof.block());
+    boolean shouldVerifyProof(final int index, final int lastVerifiableIndex) {
+        return index == 0
+                || index == lastVerifiableIndex
+                || indirectProofSeq != null
+                || RANDOM.nextDouble() < PROOF_VERIFICATION_PROB;
+    }
+
+    static BlockFooter validateStartOfBlockStateHash(
+            @NonNull final Block block, @NonNull final Bytes startOfStateHash) {
+        final var blockNumber = block.items().getFirst().blockHeaderOrThrow().number();
+        final var footer = block.items().stream()
+                .filter(BlockItem::hasBlockFooter)
+                .findFirst()
+                .map(BlockItem::blockFooterOrThrow)
+                .orElse(null);
+        assertNotNull(footer, "Missing block footer for block #" + blockNumber);
         assertEquals(
                 footer.startOfBlockStateRootHash(),
                 startOfStateHash,
                 "Wrong start of block state hash for block #" + blockNumber);
+        return footer;
+    }
+
+    private void validateBlockProof(
+            final long blockNumber,
+            final long firstRound,
+            @NonNull final BlockProof proof,
+            @NonNull final Bytes expectedBlockHash,
+            @NonNull final Bytes previousBlockHash,
+            @NonNull final Timestamp blockTimestamp,
+            @NonNull final MerkleSiblingHash[] expectedSiblingHashes) {
+        assertEquals(blockNumber, proof.block());
 
         logger.info("Validating block proof for block #{}", blockNumber);
         // Our proof method will be different depending on whether this is a direct or indirect proof.

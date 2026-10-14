@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.swirlds.state;
 
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.CommittableWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -32,6 +33,12 @@ public interface StateChangeListener {
      * @return the target state types
      */
     Set<StateType> stateTypes();
+
+    /**
+     * Receives existing definitions when attached and newly initialized definitions during schema migration.
+     * Listeners can discover optional codec capabilities from the authoritative state registration.
+     */
+    default void stateRegistered(@NonNull StateDefinition<?, ?> definition) {}
 
     /** Whether this listener needs values captured before a commit mutates the backing store. */
     default boolean requiresPreviousValue() {

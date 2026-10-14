@@ -75,8 +75,10 @@ import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody;
 import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
+import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.state.StateChangeListener;
+import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.CopyBuilderTracking;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -103,6 +105,13 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     private final List<StateChange> queueStateChanges = new ArrayList<>();
 
+    private final java.util.Map<Integer, Codec<?>> registeredCodecs = new java.util.HashMap<>();
+
+    @Override
+    public void stateRegistered(final StateDefinition<?, ?> definition) {
+        registeredCodecs.put(definition.stateId(), definition.valueCodec());
+    }
+
     private int deltaMinSaving = StateChangeDeltas.DEFAULT_MIN_SAVING;
     private boolean deltasEnabled;
 
@@ -124,7 +133,10 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     @Override
     public boolean requiresPreviousValue(final int stateId) {
-        return deltasEnabled || stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+        return stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID
+                || (deltasEnabled
+                        && (!registeredCodecs.containsKey(stateId)
+                                || registeredCodecs.get(stateId) instanceof com.hedera.pbj.runtime.DiffCodec<?>));
     }
 
     @Nullable
@@ -195,7 +207,15 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         final var choice = change.valueOrThrow().valueChoice();
         if (deltasEnabled && StateChangeDeltas.mapType(stateId, choice.kind().protoOrdinal()) != null) {
             try {
-                change = StateChangeDeltas.encodeMap(stateId, previousValue, change, deltaMinSaving);
+                change = StateChangeDeltas.encodeMap(
+                        stateId,
+                        previousValue,
+                        change,
+                        deltaMinSaving,
+                        registeredCodecs.getOrDefault(
+                                stateId,
+                                StateChangeDeltas.mapType(stateId, choice.kind().protoOrdinal())
+                                        .codec()));
             } catch (final RuntimeException e) {
                 // This runs mid-commit, after the value is already stored; throwing would abandon the rest of
                 // the commit. A full replacement is always valid, and the same inputs fail the same way on
@@ -347,7 +367,8 @@ public class ImmediateStateChangeListener implements StateChangeListener {
             case File file -> new MapChangeValue(new OneOf<>(MapChangeValue.ValueChoiceOneOfType.FILE_VALUE, file));
             case Nft nft -> new MapChangeValue(new OneOf<>(MapChangeValue.ValueChoiceOneOfType.NFT_VALUE, nft));
             case ProtoString protoString ->
-                new MapChangeValue(new OneOf<>(MapChangeValue.ValueChoiceOneOfType.PROTO_STRING_VALUE, protoString));
+                new MapChangeValue(
+                        new OneOf<>(MapChangeValue.ValueChoiceOneOfType.PROTO_STRING_VALUE, protoString.value()));
             case Roster roster ->
                 new MapChangeValue(new OneOf<>(MapChangeValue.ValueChoiceOneOfType.ROSTER_VALUE, roster));
             case Schedule schedule ->

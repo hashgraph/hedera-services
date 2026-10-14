@@ -35,6 +35,22 @@ class SingletonStateChangeEmissionTest {
     private final BoundaryStateChangeListener listener = new BoundaryStateChangeListener(
             new StoreMetricsServiceImpl(new NoOpMetrics()), HederaTestConfigBuilder::createConfig);
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void schemaRegisteredCodecWithoutDiffSupportKeepsSingletonFull() {
+        final com.hedera.pbj.runtime.Codec<BlockInfo> plain = org.mockito.Mockito.mock(
+                com.hedera.pbj.runtime.Codec.class, org.mockito.AdditionalAnswers.delegatesTo(BlockInfo.PROTOBUF));
+        listener.stateRegistered(com.swirlds.state.lifecycle.StateDefinition.singleton(BLOCKS, "BLOCKS", plain));
+        listener.beginBlock(true, 0);
+        assertThat(listener.requiresPreviousValue(BLOCKS)).isFalse();
+        listener.singletonUpdateChange(BLOCKS, INITIAL, UPDATED);
+        assertThat(listener.allStateChanges()
+                        .getFirst()
+                        .singletonUpdateOrThrow()
+                        .partial())
+                .isFalse();
+    }
+
     static Stream<Arguments> outputModes() {
         return Stream.of(
                 Arguments.of(true, true, 64, true),
@@ -63,8 +79,8 @@ class SingletonStateChangeEmissionTest {
         final var emitted = changes.getFirst();
         final var update = emitted.singletonUpdateOrThrow();
         assertThat(update.partial()).isEqualTo(partial);
-        assertThat(emitted.$copyBuilderOrigin()).isNull();
-        assertThat(update.$copyBuilderOrigin()).isNull();
+        assertThat(com.hedera.pbj.runtime.CopyBuilderTracked.untracked(emitted)).isSameAs(emitted);
+        assertThat(com.hedera.pbj.runtime.CopyBuilderTracked.untracked(update)).isSameAs(update);
         assertThat(update.blockInfoValueOrThrow().$copyBuilderOrigin()).isNull();
         assertThat(StateChange.PROTOBUF.toBytes(emitted)).isEqualTo(StateChange.PROTOBUF.toBytes(expected));
         assertThat(StateChangeDeltas.applySingleton(BLOCKS, INITIAL, update)).isEqualTo(UPDATED);

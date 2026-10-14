@@ -35,6 +35,44 @@ import org.junit.jupiter.api.Test;
 class StateChangeDeltaEmissionTest {
 
     @Test
+    void stringStateWithoutDiffApisEmitsASerializableFullValue() throws Exception {
+        final var listener = new ImmediateStateChangeListener();
+        listener.beginBlock(true, 0);
+        final var prior = new com.hedera.hapi.node.state.primitives.ProtoString("old");
+        final var next = new com.hedera.hapi.node.state.primitives.ProtoString("new");
+        listener.stateRegistered(com.swirlds.state.lifecycle.StateDefinition.keyValue(
+                0, "STRING_TEST", AccountID.PROTOBUF, com.hedera.hapi.node.state.primitives.ProtoString.PROTOBUF));
+        assertThat(listener.requiresPreviousValue(0)).isFalse();
+        listener.mapUpdateChange(0, KEY, prior, next);
+        final var change = listener.getKvStateChanges().getFirst();
+        assertThat(change.mapUpdateOrThrow().partial()).isFalse();
+        assertThat(change.mapUpdateOrThrow().valueOrThrow().protoStringValue()).isEqualTo(next.value());
+        assertThat(StateChange.PROTOBUF.parse(StateChange.PROTOBUF.toBytes(change)))
+                .isEqualTo(change);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void schemaRegisteredCodecControlsWhetherMapUpdatesCanBePartial() {
+        final var listener = new ImmediateStateChangeListener();
+        listener.beginBlock(true, 0);
+        final com.hedera.pbj.runtime.Codec<Account> plain = org.mockito.Mockito.mock(
+                com.hedera.pbj.runtime.Codec.class, org.mockito.AdditionalAnswers.delegatesTo(Account.PROTOBUF));
+        listener.stateRegistered(
+                com.swirlds.state.lifecycle.StateDefinition.keyValue(ACCOUNTS, "ACCOUNTS", AccountID.PROTOBUF, plain));
+        assertThat(listener.requiresPreviousValue(ACCOUNTS)).isFalse();
+        listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
+        assertThat(listener.getKvStateChanges().getFirst().mapUpdateOrThrow().partial())
+                .isFalse();
+        listener.stateRegistered(com.swirlds.state.lifecycle.StateDefinition.keyValue(
+                ACCOUNTS, "ACCOUNTS", AccountID.PROTOBUF, Account.PROTOBUF));
+        assertThat(listener.requiresPreviousValue(ACCOUNTS)).isTrue();
+        listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
+        assertThat(listener.getKvStateChanges().getLast().mapUpdateOrThrow().partial())
+                .isTrue();
+    }
+
+    @Test
     void encodesUsingThePreCommitValueAfterStorageProvidesAnEqualCopy() throws Exception {
         final var root =
                 Account.newBuilder().memo("m".repeat(100)).tinybarBalance(1).build();
@@ -97,7 +135,8 @@ class StateChangeDeltaEmissionTest {
             final var update = change.mapUpdateOrThrow();
             assertThat(update.partial()).isTrue();
             assertThat(update.identical()).isTrue();
-            assertThat(update.$copyBuilderOrigin()).isNull();
+            assertThat(com.hedera.pbj.runtime.CopyBuilderTracked.untracked(update))
+                    .isSameAs(update);
             assertThat(update.valueOrThrow().accountValueOrThrow().$copyBuilderOrigin())
                     .isNull();
             replay = StateChangeDeltas.applyMap(ACCOUNTS, replay, update);
@@ -139,7 +178,7 @@ class StateChangeDeltaEmissionTest {
         listener.mapUpdateChange(ACCOUNTS, KEY, root, next);
         final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
         assertThat(update.partial()).isFalse();
-        assertThat(update.$copyBuilderOrigin()).isNull();
+        assertThat(com.hedera.pbj.runtime.CopyBuilderTracked.untracked(update)).isSameAs(update);
         assertThat(update.valueOrThrow().accountValueOrThrow()).isEqualTo(next);
         assertThat(update.valueOrThrow().accountValueOrThrow().$copyBuilderOrigin())
                 .isNull();

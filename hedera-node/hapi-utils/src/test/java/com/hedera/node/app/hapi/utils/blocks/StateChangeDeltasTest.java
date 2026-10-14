@@ -3,6 +3,8 @@ package com.hedera.node.app.hapi.utils.blocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
@@ -20,6 +22,9 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas.ValueType;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.CopyBuilderTracked;
+import com.hedera.pbj.runtime.DiffCodec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.CopyBuilderTracking;
 import java.util.List;
@@ -30,8 +35,74 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StateChangeDeltasTest {
+    @Test
+    void catalogBackedBlockStateValuesHaveDiffCapabilityAndUnrelatedModelsHaveNone() {
+        for (var type : types().toList()) {
+            assertThat(type.codec()).as(type.name()).isInstanceOf(DiffCodec.class);
+            assertThat(type.defaultValue()).as(type.name()).isInstanceOf(CopyBuilderTracked.class);
+        }
+        assertThat(com.hedera.hapi.node.transaction.TransactionBody.PROTOBUF).isNotInstanceOf(DiffCodec.class);
+        assertThat(com.hedera.hapi.block.stream.output.StateChange.PROTOBUF).isNotInstanceOf(DiffCodec.class);
+        assertThat(com.hedera.hapi.node.base.Key.PROTOBUF).isNotInstanceOf(DiffCodec.class);
+        assertThat(StateChangeTypes.PROTO_STRING.codec()).isNotInstanceOf(DiffCodec.class);
+        assertThat(CopyBuilderTracked.class.isAssignableFrom(com.hedera.hapi.node.state.primitives.ProtoString.class))
+                .isFalse();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void registeredCodecWithoutDiffCapabilityEmitsAFullValue() {
+        final Codec<Account> plain = mock(Codec.class, delegatesTo(Account.PROTOBUF));
+        final var prior =
+                Account.newBuilder().memo("x".repeat(200)).tinybarBalance(1).build();
+        final var next = prior.copyBuilder().tinybarBalance(2).build();
+        final var full = full(next);
+        assertThat(StateChangeDeltas.encodeMap(2, prior, full, 0, plain)).isSameAs(full);
+        assertThat(StateChangeDeltas.encodeMap(2, prior, full, 0, null)).isSameAs(full);
+        final var adapter = new ValueType(
+                "account",
+                Account.class,
+                plain,
+                com.hedera.hapi.node.state.token.schema.AccountSchema::getField,
+                field -> "");
+        assertThat(adapter.canDiff(next)).isFalse();
+        final var delta = StateChangeDeltas.diff(prior, next);
+        assertThat(adapter.applyPartial(prior, delta.value(), delta.clearedFields()))
+                .isEqualTo(next);
+    }
+
+    @Test
+    void protoStringWithoutDiffApisKeepsFullOutputAndCanReplayIncomingPartials() {
+        final var prior = new com.hedera.hapi.node.state.primitives.ProtoString("old".repeat(100));
+        final var next = new com.hedera.hapi.node.state.primitives.ProtoString("new");
+        assertThat(StateChangeDeltas.diff(prior, next)).isNull();
+        final var map = MapUpdateChange.newBuilder()
+                .key(MapChangeKey.newBuilder().protoStringKey("key"))
+                .value(MapChangeValue.newBuilder().protoStringValue(next.value()))
+                .build();
+        assertThat(StateChangeDeltas.encodeMap(0, prior, map, 0)).isSameAs(map);
+        assertThat(MapUpdateChange.PROTOBUF.toBytes(map)).isNotNull();
+        final var singleton = com.hedera.hapi.block.stream.output.SingletonUpdateChange.newBuilder()
+                .stringValue(next.value())
+                .build();
+        assertThat(StateChangeDeltas.encodeSingleton(0, prior, singleton, 0)).isSameAs(singleton);
+        assertThat(com.hedera.hapi.block.stream.output.SingletonUpdateChange.PROTOBUF.toBytes(singleton))
+                .isNotNull();
+        final var cleared = com.hedera.hapi.node.state.primitives.ProtoString.DEFAULT;
+        assertThat(StateChangeTypes.PROTO_STRING.applyPartial(prior, cleared, List.of(1)))
+                .isEqualTo(cleared);
+        assertThat(StateChangeDeltas.applyBytes(
+                        StateChangeTypes.PROTO_STRING,
+                        StateChangeTypes.PROTO_STRING.bytes(prior),
+                        Bytes.EMPTY,
+                        true,
+                        List.of(1)))
+                .isEqualTo(Bytes.EMPTY);
+    }
+
     static Stream<ValueType> types() {
-        return StateChangeDeltas.valueTypes().stream();
+        // ProtoString is a wire adapter only, outside the registered state-value catalog.
+        return StateChangeDeltas.valueTypes().stream().filter(type -> type != StateChangeTypes.PROTO_STRING);
     }
 
     static Descriptor descriptor(ValueType type) {

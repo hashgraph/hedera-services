@@ -13,6 +13,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.DiffCodec;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
@@ -21,7 +22,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 
 /** Universal top-level replacements and explicit clears. No recursive patches or appends. */
@@ -64,21 +64,6 @@ public final class StateChangeDeltas {
         }
     }
 
-    @FunctionalInterface
-    interface ClearFields<T, M> {
-        int[] apply(T prior, T next, M mask);
-    }
-
-    @FunctionalInterface
-    interface SavingsTest<T, M> {
-        boolean test(T next, M mask, int minimum, int overhead);
-    }
-
-    @FunctionalInterface
-    interface ObjectApplier<T> {
-        T apply(T prior, T partial, int[] cleared);
-    }
-
     /** Typed adapter to PBJ-generated operations for a block-stream payload. */
     public static final class ValueType {
         private final String name;
@@ -86,43 +71,44 @@ public final class StateChangeDeltas {
         private final Codec<Object> codec;
         final IntFunction<FieldDefinition> fields;
         final IntFunction<String> oneof;
-        private final BiFunction<Object, Object, Delta<?>> differ;
-        private final SavingsTest<Object, Object> savings;
-        private final ObjectApplier<Object> applier;
+        private final DiffCodec<Object> diffCodec;
 
         @SuppressWarnings("unchecked")
-        <T, M> ValueType(
+        <T> ValueType(
                 String name,
                 Class<T> javaType,
                 Codec<T> codec,
                 IntFunction<FieldDefinition> fields,
-                IntFunction<String> oneof,
-                BiFunction<T, T, M> differ,
-                BiFunction<T, M, T> partial,
-                ClearFields<T, M> clearFields,
-                SavingsTest<T, M> savings,
-                ObjectApplier<T> applier) {
+                IntFunction<String> oneof) {
             this.name = name;
             this.javaType = javaType;
             this.codec = (Codec<Object>) codec;
             this.fields = fields;
             this.oneof = oneof;
-            this.differ = (prior, next) -> {
-                try {
-                    final M mask = differ.apply(javaType.cast(prior), javaType.cast(next));
-                    return new Delta<>(
-                            partial.apply(javaType.cast(next), mask),
-                            clearFields.apply(javaType.cast(prior), javaType.cast(next), mask),
-                            mask);
-                } catch (UnsupportedOperationException unsupported) {
-                    // PBJ requires a full replacement when top-level unknown fields are present.
-                    return null;
-                }
-            };
-            this.savings =
-                    (next, mask, minimum, overhead) -> savings.test(javaType.cast(next), (M) mask, minimum, overhead);
-            this.applier = (prior, partialValue, cleared) ->
-                    applier.apply(javaType.cast(prior), javaType.cast(partialValue), cleared);
+            this.diffCodec = codec instanceof DiffCodec<?> capable ? (DiffCodec<Object>) capable : null;
+        }
+
+        /** Codec used by the state-value adapter. */
+        public Codec<?> codec() {
+            return codec;
+        }
+
+        @SuppressWarnings("unchecked")
+        private ValueType withCodec(Codec<?> registeredCodec) {
+            return registeredCodec == codec
+                    ? this
+                    : new ValueType(name, (Class<Object>) javaType, (Codec<Object>) registeredCodec, fields, oneof);
+        }
+
+        /** Missing capability or top-level unknown fields require a full replacement. */
+        public boolean canDiff(Object value) {
+            return diffCodec != null && value != null && diffCodec.canDiff(stateValue(value));
+        }
+
+        private Delta<?> diff(Object prior, Object next) {
+            if (!canDiff(prior) || !canDiff(next)) return null;
+            final Object mask = diffCodec.diff(prior, next);
+            return new Delta<>(diffCodec.partial(next, mask), diffCodec.clearedFields(prior, next, mask), mask);
         }
 
         public String name() {
@@ -193,9 +179,7 @@ public final class StateChangeDeltas {
     @Nullable
     public static Delta<?> diff(@Nullable Object prior, Object next) {
         final var type = valueType(next);
-        return prior == null || type == null || prior.getClass() != next.getClass()
-                ? null
-                : type.differ.apply(prior, next);
+        return prior == null || type == null || prior.getClass() != next.getClass() ? null : type.diff(prior, next);
     }
 
     /**
@@ -219,7 +203,7 @@ public final class StateChangeDeltas {
                     + PartialStateChangeApplier.varintSize(length)
                     + length;
         }
-        return type.savings.test(type.stateValue(next), delta.mask, minSaving, Math.toIntExact(overhead));
+        return type.diffCodec.worthPartial(type.stateValue(next), delta.mask, minSaving, Math.toIntExact(overhead));
     }
 
     public static MapUpdateChange encodeMap(int stateId, @Nullable Object prior, MapUpdateChange full) {
@@ -227,11 +211,26 @@ public final class StateChangeDeltas {
     }
 
     public static MapUpdateChange encodeMap(int stateId, @Nullable Object prior, MapUpdateChange full, int minSaving) {
+        final var type =
+                mapType(stateId, full.valueOrThrow().valueChoice().kind().protoOrdinal());
+        return encodeMap(stateId, prior, full, minSaving, type == null ? null : type.codec);
+    }
+
+    /** Emit a partial only when the codec from the actual state registration supports it. */
+    public static MapUpdateChange encodeMap(
+            int stateId,
+            @Nullable Object prior,
+            MapUpdateChange full,
+            int minSaving,
+            @Nullable Codec<?> registeredCodec) {
         requireProducerFull(full.partial(), full.clearedFields());
+        if (!(registeredCodec instanceof DiffCodec<?>)) return full;
         final var choice = full.valueOrThrow().valueChoice();
-        final var type = requireType(mapType(stateId, choice.kind().protoOrdinal()));
+        final var adapter = mapType(stateId, choice.kind().protoOrdinal());
+        if (adapter == null) return full;
+        final var type = adapter.withCodec(registeredCodec);
         final var next = type.stateValue(choice.value());
-        final var delta = diff(prior == null ? null : type.stateValue(prior), next);
+        final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
         if (delta == null
                 || !worthPartial(
                         type,
@@ -254,11 +253,25 @@ public final class StateChangeDeltas {
 
     public static SingletonUpdateChange encodeSingleton(
             int stateId, @Nullable Object prior, SingletonUpdateChange full, int minSaving) {
+        final var type = singletonType(stateId, full.newValue().kind().protoOrdinal());
+        return encodeSingleton(stateId, prior, full, minSaving, type == null ? null : type.codec);
+    }
+
+    /** Emit a partial only when the codec from the actual state registration supports it. */
+    public static SingletonUpdateChange encodeSingleton(
+            int stateId,
+            @Nullable Object prior,
+            SingletonUpdateChange full,
+            int minSaving,
+            @Nullable Codec<?> registeredCodec) {
         requireProducerFull(full.partial(), full.clearedFields());
+        if (!(registeredCodec instanceof DiffCodec<?>)) return full;
         final var choice = full.newValue();
-        final var type = requireType(singletonType(stateId, choice.kind().protoOrdinal()));
+        final var adapter = singletonType(stateId, choice.kind().protoOrdinal());
+        if (adapter == null) return full;
+        final var type = adapter.withCodec(registeredCodec);
         final var next = type.stateValue(choice.value());
-        final var delta = diff(prior == null ? null : type.stateValue(prior), next);
+        final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
         if (delta == null
                 || !worthPartial(
                         type,
@@ -294,8 +307,12 @@ public final class StateChangeDeltas {
 
     private static Object applyObject(ValueType type, Object prior, Object partial, List<Integer> cleared) {
         if (prior == null) throw new IllegalArgumentException("Partial update requires a prior value");
+        if (type.diffCodec == null) {
+            // Byte replay remains possible even when this build did not generate object diff APIs.
+            return type.parse(applyBytes(type, type.bytes(prior), type.bytes(partial), true, cleared));
+        }
         try {
-            return type.applier.apply(
+            return type.diffCodec.applyPartial(
                     type.stateValue(prior),
                     type.stateValue(partial),
                     cleared.stream().mapToInt(Integer::intValue).toArray());

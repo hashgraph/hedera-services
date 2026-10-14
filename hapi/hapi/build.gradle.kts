@@ -8,14 +8,15 @@ plugins {
 
 description = "Hedera API"
 
-pbj { generateCopyBuilderTracking = true }
+pbj {
+    // Derive roots from the state catalog, so adding a state does not require a second model list.
+    diffMessageContainers = setOf("com.hedera.hapi.platform.state.StateValue")
+    generateCopyBuilderTracking = true
+}
 
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach {
-    // All HAPI messages now include PBJ diff helpers; the default 512 MB compiler heap is
-    // insufficient.
-    options.forkOptions.memoryMaximumSize = "2g"
     options.compilerArgs.add("-Xlint:-exports,-deprecation,-removal")
 }
 

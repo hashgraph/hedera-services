@@ -17,12 +17,7 @@ final class StateChangeTypes {
                 case 3 -> "account";
                 case 4 -> "account";
                 default -> "";
-            },
-            com.hedera.hapi.node.base.AccountID::diff,
-            com.hedera.hapi.node.base.AccountID::partial,
-            com.hedera.hapi.node.base.AccountID::clearedFields,
-            com.hedera.hapi.node.base.AccountID::worthPartial,
-            com.hedera.hapi.node.base.AccountID::applyPartial);
+            });
 
     static final ValueType SCHEDULE_ID = new ValueType(
             "com.hedera.hapi.node.base.ScheduleID",
@@ -31,12 +26,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.base.schema.ScheduleIDSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.base.ScheduleID::diff,
-            com.hedera.hapi.node.base.ScheduleID::partial,
-            com.hedera.hapi.node.base.ScheduleID::clearedFields,
-            com.hedera.hapi.node.base.ScheduleID::worthPartial,
-            com.hedera.hapi.node.base.ScheduleID::applyPartial);
+            });
 
     static final ValueType TIMESTAMP = new ValueType(
             "com.hedera.hapi.node.base.Timestamp",
@@ -45,12 +35,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.base.schema.TimestampSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.base.Timestamp::diff,
-            com.hedera.hapi.node.base.Timestamp::partial,
-            com.hedera.hapi.node.base.Timestamp::clearedFields,
-            com.hedera.hapi.node.base.Timestamp::worthPartial,
-            com.hedera.hapi.node.base.Timestamp::applyPartial);
+            });
 
     static final ValueType NODE = new ValueType(
             "com.hedera.hapi.node.state.addressbook.Node",
@@ -59,12 +44,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.addressbook.schema.NodeSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.addressbook.Node::diff,
-            com.hedera.hapi.node.state.addressbook.Node::partial,
-            com.hedera.hapi.node.state.addressbook.Node::clearedFields,
-            com.hedera.hapi.node.state.addressbook.Node::worthPartial,
-            com.hedera.hapi.node.state.addressbook.Node::applyPartial);
+            });
 
     static final ValueType REGISTERED_NODE = new ValueType(
             "com.hedera.hapi.node.state.addressbook.RegisteredNode",
@@ -73,12 +53,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.addressbook.schema.RegisteredNodeSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.addressbook.RegisteredNode::diff,
-            com.hedera.hapi.node.state.addressbook.RegisteredNode::partial,
-            com.hedera.hapi.node.state.addressbook.RegisteredNode::clearedFields,
-            com.hedera.hapi.node.state.addressbook.RegisteredNode::worthPartial,
-            com.hedera.hapi.node.state.addressbook.RegisteredNode::applyPartial);
+            });
 
     static final ValueType BLOCK_INFO = new ValueType(
             "com.hedera.hapi.node.state.blockrecords.BlockInfo",
@@ -87,12 +62,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.blockrecords.schema.BlockInfoSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.blockrecords.BlockInfo::diff,
-            com.hedera.hapi.node.state.blockrecords.BlockInfo::partial,
-            com.hedera.hapi.node.state.blockrecords.BlockInfo::clearedFields,
-            com.hedera.hapi.node.state.blockrecords.BlockInfo::worthPartial,
-            com.hedera.hapi.node.state.blockrecords.BlockInfo::applyPartial);
+            });
 
     static final ValueType RUNNING_HASHES = new ValueType(
             "com.hedera.hapi.node.state.blockrecords.RunningHashes",
@@ -101,12 +71,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.blockrecords.schema.RunningHashesSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.blockrecords.RunningHashes::diff,
-            com.hedera.hapi.node.state.blockrecords.RunningHashes::partial,
-            com.hedera.hapi.node.state.blockrecords.RunningHashes::clearedFields,
-            com.hedera.hapi.node.state.blockrecords.RunningHashes::worthPartial,
-            com.hedera.hapi.node.state.blockrecords.RunningHashes::applyPartial);
+            });
 
     static final ValueType BLOCK_STREAM_INFO = new ValueType(
             "com.hedera.hapi.node.state.blockstream.BlockStreamInfo",
@@ -115,12 +80,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.blockstream.schema.BlockStreamInfoSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.blockstream.BlockStreamInfo::diff,
-            com.hedera.hapi.node.state.blockstream.BlockStreamInfo::partial,
-            com.hedera.hapi.node.state.blockstream.BlockStreamInfo::clearedFields,
-            com.hedera.hapi.node.state.blockstream.BlockStreamInfo::worthPartial,
-            com.hedera.hapi.node.state.blockstream.BlockStreamInfo::applyPartial);
+            });
 
     static final ValueType CLPR_CHANNEL = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprChannel",
@@ -129,12 +89,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprChannelSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprChannel::diff,
-            com.hedera.hapi.node.state.clpr.ClprChannel::partial,
-            com.hedera.hapi.node.state.clpr.ClprChannel::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprChannel::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprChannel::applyPartial);
+            });
 
     static final ValueType CLPR_CONNECTOR = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprConnector",
@@ -143,12 +98,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprConnectorSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprConnector::diff,
-            com.hedera.hapi.node.state.clpr.ClprConnector::partial,
-            com.hedera.hapi.node.state.clpr.ClprConnector::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprConnector::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprConnector::applyPartial);
+            });
 
     static final ValueType CLPR_ENDPOINT_MANIFEST = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprEndpointManifest",
@@ -157,12 +107,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprEndpointManifestSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifest::diff,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifest::partial,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifest::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifest::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifest::applyPartial);
+            });
 
     static final ValueType CLPR_ENDPOINT_MANIFEST_CONSTRUCTION = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction",
@@ -171,12 +116,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprEndpointManifestConstructionSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction::diff,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction::partial,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction::applyPartial);
+            });
 
     static final ValueType CLPR_LEDGER_CONFIGURATION = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration",
@@ -185,12 +125,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprLedgerConfigurationSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration::diff,
-            com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration::partial,
-            com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration::applyPartial);
+            });
 
     static final ValueType CLPR_MESSAGE_VALUE = new ValueType(
             "com.hedera.hapi.node.state.clpr.ClprMessageValue",
@@ -199,12 +134,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.clpr.schema.ClprMessageValueSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.clpr.ClprMessageValue::diff,
-            com.hedera.hapi.node.state.clpr.ClprMessageValue::partial,
-            com.hedera.hapi.node.state.clpr.ClprMessageValue::clearedFields,
-            com.hedera.hapi.node.state.clpr.ClprMessageValue::worthPartial,
-            com.hedera.hapi.node.state.clpr.ClprMessageValue::applyPartial);
+            });
 
     static final ValueType ENTITY_NUMBER = new ValueType(
             "com.hedera.hapi.node.state.common.EntityNumber",
@@ -213,12 +143,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.common.schema.EntityNumberSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.common.EntityNumber::diff,
-            com.hedera.hapi.node.state.common.EntityNumber::partial,
-            com.hedera.hapi.node.state.common.EntityNumber::clearedFields,
-            com.hedera.hapi.node.state.common.EntityNumber::worthPartial,
-            com.hedera.hapi.node.state.common.EntityNumber::applyPartial);
+            });
 
     static final ValueType CONGESTION_LEVEL_STARTS = new ValueType(
             "com.hedera.hapi.node.state.congestion.CongestionLevelStarts",
@@ -227,12 +152,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.congestion.schema.CongestionLevelStartsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.congestion.CongestionLevelStarts::diff,
-            com.hedera.hapi.node.state.congestion.CongestionLevelStarts::partial,
-            com.hedera.hapi.node.state.congestion.CongestionLevelStarts::clearedFields,
-            com.hedera.hapi.node.state.congestion.CongestionLevelStarts::worthPartial,
-            com.hedera.hapi.node.state.congestion.CongestionLevelStarts::applyPartial);
+            });
 
     static final ValueType TOPIC = new ValueType(
             "com.hedera.hapi.node.state.consensus.Topic",
@@ -241,12 +161,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.consensus.schema.TopicSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.consensus.Topic::diff,
-            com.hedera.hapi.node.state.consensus.Topic::partial,
-            com.hedera.hapi.node.state.consensus.Topic::clearedFields,
-            com.hedera.hapi.node.state.consensus.Topic::worthPartial,
-            com.hedera.hapi.node.state.consensus.Topic::applyPartial);
+            });
 
     static final ValueType BYTECODE = new ValueType(
             "com.hedera.hapi.node.state.contract.Bytecode",
@@ -255,12 +170,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.contract.schema.BytecodeSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.contract.Bytecode::diff,
-            com.hedera.hapi.node.state.contract.Bytecode::partial,
-            com.hedera.hapi.node.state.contract.Bytecode::clearedFields,
-            com.hedera.hapi.node.state.contract.Bytecode::worthPartial,
-            com.hedera.hapi.node.state.contract.Bytecode::applyPartial);
+            });
 
     static final ValueType SLOT_VALUE = new ValueType(
             "com.hedera.hapi.node.state.contract.SlotValue",
@@ -269,12 +179,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.contract.schema.SlotValueSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.contract.SlotValue::diff,
-            com.hedera.hapi.node.state.contract.SlotValue::partial,
-            com.hedera.hapi.node.state.contract.SlotValue::clearedFields,
-            com.hedera.hapi.node.state.contract.SlotValue::worthPartial,
-            com.hedera.hapi.node.state.contract.SlotValue::applyPartial);
+            });
 
     static final ValueType ENTITY_COUNTS = new ValueType(
             "com.hedera.hapi.node.state.entity.EntityCounts",
@@ -283,12 +188,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.entity.schema.EntityCountsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.entity.EntityCounts::diff,
-            com.hedera.hapi.node.state.entity.EntityCounts::partial,
-            com.hedera.hapi.node.state.entity.EntityCounts::clearedFields,
-            com.hedera.hapi.node.state.entity.EntityCounts::worthPartial,
-            com.hedera.hapi.node.state.entity.EntityCounts::applyPartial);
+            });
 
     static final ValueType FILE = new ValueType(
             "com.hedera.hapi.node.state.file.File",
@@ -297,12 +197,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.file.schema.FileSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.file.File::diff,
-            com.hedera.hapi.node.state.file.File::partial,
-            com.hedera.hapi.node.state.file.File::clearedFields,
-            com.hedera.hapi.node.state.file.File::worthPartial,
-            com.hedera.hapi.node.state.file.File::applyPartial);
+            });
 
     static final ValueType CRS_STATE = new ValueType(
             "com.hedera.hapi.node.state.hints.CRSState",
@@ -311,12 +206,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.hints.schema.CRSStateSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.hints.CRSState::diff,
-            com.hedera.hapi.node.state.hints.CRSState::partial,
-            com.hedera.hapi.node.state.hints.CRSState::clearedFields,
-            com.hedera.hapi.node.state.hints.CRSState::worthPartial,
-            com.hedera.hapi.node.state.hints.CRSState::applyPartial);
+            });
 
     static final ValueType HINTS_CONSTRUCTION = new ValueType(
             "com.hedera.hapi.node.state.hints.HintsConstruction",
@@ -328,12 +218,7 @@ final class StateChangeTypes {
                 case 5 -> "preprocessingState";
                 case 6 -> "preprocessingState";
                 default -> "";
-            },
-            com.hedera.hapi.node.state.hints.HintsConstruction::diff,
-            com.hedera.hapi.node.state.hints.HintsConstruction::partial,
-            com.hedera.hapi.node.state.hints.HintsConstruction::clearedFields,
-            com.hedera.hapi.node.state.hints.HintsConstruction::worthPartial,
-            com.hedera.hapi.node.state.hints.HintsConstruction::applyPartial);
+            });
 
     static final ValueType HINTS_KEY_SET = new ValueType(
             "com.hedera.hapi.node.state.hints.HintsKeySet",
@@ -342,12 +227,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.hints.schema.HintsKeySetSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.hints.HintsKeySet::diff,
-            com.hedera.hapi.node.state.hints.HintsKeySet::partial,
-            com.hedera.hapi.node.state.hints.HintsKeySet::clearedFields,
-            com.hedera.hapi.node.state.hints.HintsKeySet::worthPartial,
-            com.hedera.hapi.node.state.hints.HintsKeySet::applyPartial);
+            });
 
     static final ValueType PREPROCESSING_VOTE = new ValueType(
             "com.hedera.hapi.node.state.hints.PreprocessingVote",
@@ -358,12 +238,7 @@ final class StateChangeTypes {
                 case 1 -> "vote";
                 case 2 -> "vote";
                 default -> "";
-            },
-            com.hedera.hapi.node.state.hints.PreprocessingVote::diff,
-            com.hedera.hapi.node.state.hints.PreprocessingVote::partial,
-            com.hedera.hapi.node.state.hints.PreprocessingVote::clearedFields,
-            com.hedera.hapi.node.state.hints.PreprocessingVote::worthPartial,
-            com.hedera.hapi.node.state.hints.PreprocessingVote::applyPartial);
+            });
 
     static final ValueType HISTORY_PROOF_CONSTRUCTION = new ValueType(
             "com.hedera.hapi.node.state.history.HistoryProofConstruction",
@@ -377,12 +252,7 @@ final class StateChangeTypes {
                 case 8 -> "proofState";
                 case 9 -> "proofState";
                 default -> "";
-            },
-            com.hedera.hapi.node.state.history.HistoryProofConstruction::diff,
-            com.hedera.hapi.node.state.history.HistoryProofConstruction::partial,
-            com.hedera.hapi.node.state.history.HistoryProofConstruction::clearedFields,
-            com.hedera.hapi.node.state.history.HistoryProofConstruction::worthPartial,
-            com.hedera.hapi.node.state.history.HistoryProofConstruction::applyPartial);
+            });
 
     static final ValueType HISTORY_PROOF_VOTE = new ValueType(
             "com.hedera.hapi.node.state.history.HistoryProofVote",
@@ -393,12 +263,7 @@ final class StateChangeTypes {
                 case 1 -> "vote";
                 case 2 -> "vote";
                 default -> "";
-            },
-            com.hedera.hapi.node.state.history.HistoryProofVote::diff,
-            com.hedera.hapi.node.state.history.HistoryProofVote::partial,
-            com.hedera.hapi.node.state.history.HistoryProofVote::clearedFields,
-            com.hedera.hapi.node.state.history.HistoryProofVote::worthPartial,
-            com.hedera.hapi.node.state.history.HistoryProofVote::applyPartial);
+            });
 
     static final ValueType PROOF_KEY_SET = new ValueType(
             "com.hedera.hapi.node.state.history.ProofKeySet",
@@ -407,12 +272,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.history.schema.ProofKeySetSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.history.ProofKeySet::diff,
-            com.hedera.hapi.node.state.history.ProofKeySet::partial,
-            com.hedera.hapi.node.state.history.ProofKeySet::clearedFields,
-            com.hedera.hapi.node.state.history.ProofKeySet::worthPartial,
-            com.hedera.hapi.node.state.history.ProofKeySet::applyPartial);
+            });
 
     static final ValueType RECORDED_HISTORY_SIGNATURE = new ValueType(
             "com.hedera.hapi.node.state.history.RecordedHistorySignature",
@@ -421,12 +281,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.history.schema.RecordedHistorySignatureSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.history.RecordedHistorySignature::diff,
-            com.hedera.hapi.node.state.history.RecordedHistorySignature::partial,
-            com.hedera.hapi.node.state.history.RecordedHistorySignature::clearedFields,
-            com.hedera.hapi.node.state.history.RecordedHistorySignature::worthPartial,
-            com.hedera.hapi.node.state.history.RecordedHistorySignature::applyPartial);
+            });
 
     static final ValueType WRAPS_MESSAGE_HISTORY = new ValueType(
             "com.hedera.hapi.node.state.history.WrapsMessageHistory",
@@ -435,12 +290,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.history.schema.WrapsMessageHistorySchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.history.WrapsMessageHistory::diff,
-            com.hedera.hapi.node.state.history.WrapsMessageHistory::partial,
-            com.hedera.hapi.node.state.history.WrapsMessageHistory::clearedFields,
-            com.hedera.hapi.node.state.history.WrapsMessageHistory::worthPartial,
-            com.hedera.hapi.node.state.history.WrapsMessageHistory::applyPartial);
+            });
 
     static final ValueType EVM_HOOK_STATE = new ValueType(
             "com.hedera.hapi.node.state.hooks.EvmHookState",
@@ -449,12 +299,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.hooks.schema.EvmHookStateSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.hooks.EvmHookState::diff,
-            com.hedera.hapi.node.state.hooks.EvmHookState::partial,
-            com.hedera.hapi.node.state.hooks.EvmHookState::clearedFields,
-            com.hedera.hapi.node.state.hooks.EvmHookState::worthPartial,
-            com.hedera.hapi.node.state.hooks.EvmHookState::applyPartial);
+            });
 
     static final ValueType PROTO_BYTES = new ValueType(
             "com.hedera.hapi.node.state.primitives.ProtoBytes",
@@ -463,12 +308,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.primitives.schema.ProtoBytesSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.primitives.ProtoBytes::diff,
-            com.hedera.hapi.node.state.primitives.ProtoBytes::partial,
-            com.hedera.hapi.node.state.primitives.ProtoBytes::clearedFields,
-            com.hedera.hapi.node.state.primitives.ProtoBytes::worthPartial,
-            com.hedera.hapi.node.state.primitives.ProtoBytes::applyPartial);
+            });
 
     static final ValueType PROTO_STRING = new ValueType(
             "com.hedera.hapi.node.state.primitives.ProtoString",
@@ -477,12 +317,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.primitives.schema.ProtoStringSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.primitives.ProtoString::diff,
-            com.hedera.hapi.node.state.primitives.ProtoString::partial,
-            com.hedera.hapi.node.state.primitives.ProtoString::clearedFields,
-            com.hedera.hapi.node.state.primitives.ProtoString::worthPartial,
-            com.hedera.hapi.node.state.primitives.ProtoString::applyPartial);
+            });
 
     static final ValueType ROSTER = new ValueType(
             "com.hedera.hapi.node.state.roster.Roster",
@@ -491,12 +326,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.roster.schema.RosterSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.roster.Roster::diff,
-            com.hedera.hapi.node.state.roster.Roster::partial,
-            com.hedera.hapi.node.state.roster.Roster::clearedFields,
-            com.hedera.hapi.node.state.roster.Roster::worthPartial,
-            com.hedera.hapi.node.state.roster.Roster::applyPartial);
+            });
 
     static final ValueType ROSTER_STATE = new ValueType(
             "com.hedera.hapi.node.state.roster.RosterState",
@@ -505,12 +335,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.roster.schema.RosterStateSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.roster.RosterState::diff,
-            com.hedera.hapi.node.state.roster.RosterState::partial,
-            com.hedera.hapi.node.state.roster.RosterState::clearedFields,
-            com.hedera.hapi.node.state.roster.RosterState::worthPartial,
-            com.hedera.hapi.node.state.roster.RosterState::applyPartial);
+            });
 
     static final ValueType SCHEDULE = new ValueType(
             "com.hedera.hapi.node.state.schedule.Schedule",
@@ -519,12 +344,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.schedule.schema.ScheduleSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.schedule.Schedule::diff,
-            com.hedera.hapi.node.state.schedule.Schedule::partial,
-            com.hedera.hapi.node.state.schedule.Schedule::clearedFields,
-            com.hedera.hapi.node.state.schedule.Schedule::worthPartial,
-            com.hedera.hapi.node.state.schedule.Schedule::applyPartial);
+            });
 
     static final ValueType SCHEDULE_LIST = new ValueType(
             "com.hedera.hapi.node.state.schedule.ScheduleList",
@@ -533,12 +353,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.schedule.schema.ScheduleListSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.schedule.ScheduleList::diff,
-            com.hedera.hapi.node.state.schedule.ScheduleList::partial,
-            com.hedera.hapi.node.state.schedule.ScheduleList::clearedFields,
-            com.hedera.hapi.node.state.schedule.ScheduleList::worthPartial,
-            com.hedera.hapi.node.state.schedule.ScheduleList::applyPartial);
+            });
 
     static final ValueType SCHEDULED_COUNTS = new ValueType(
             "com.hedera.hapi.node.state.schedule.ScheduledCounts",
@@ -547,12 +362,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.schedule.schema.ScheduledCountsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.schedule.ScheduledCounts::diff,
-            com.hedera.hapi.node.state.schedule.ScheduledCounts::partial,
-            com.hedera.hapi.node.state.schedule.ScheduledCounts::clearedFields,
-            com.hedera.hapi.node.state.schedule.ScheduledCounts::worthPartial,
-            com.hedera.hapi.node.state.schedule.ScheduledCounts::applyPartial);
+            });
 
     static final ValueType THROTTLE_USAGE_SNAPSHOTS = new ValueType(
             "com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots",
@@ -561,12 +371,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.throttles.schema.ThrottleUsageSnapshotsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots::diff,
-            com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots::partial,
-            com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots::clearedFields,
-            com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots::worthPartial,
-            com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots::applyPartial);
+            });
 
     static final ValueType ACCOUNT = new ValueType(
             "com.hedera.hapi.node.state.token.Account",
@@ -577,12 +382,7 @@ final class StateChangeTypes {
                 case 10 -> "stakedId";
                 case 11 -> "stakedId";
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.Account::diff,
-            com.hedera.hapi.node.state.token.Account::partial,
-            com.hedera.hapi.node.state.token.Account::clearedFields,
-            com.hedera.hapi.node.state.token.Account::worthPartial,
-            com.hedera.hapi.node.state.token.Account::applyPartial);
+            });
 
     static final ValueType ACCOUNT_PENDING_AIRDROP = new ValueType(
             "com.hedera.hapi.node.state.token.AccountPendingAirdrop",
@@ -591,12 +391,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.AccountPendingAirdropSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.AccountPendingAirdrop::diff,
-            com.hedera.hapi.node.state.token.AccountPendingAirdrop::partial,
-            com.hedera.hapi.node.state.token.AccountPendingAirdrop::clearedFields,
-            com.hedera.hapi.node.state.token.AccountPendingAirdrop::worthPartial,
-            com.hedera.hapi.node.state.token.AccountPendingAirdrop::applyPartial);
+            });
 
     static final ValueType NETWORK_STAKING_REWARDS = new ValueType(
             "com.hedera.hapi.node.state.token.NetworkStakingRewards",
@@ -605,12 +400,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.NetworkStakingRewardsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.NetworkStakingRewards::diff,
-            com.hedera.hapi.node.state.token.NetworkStakingRewards::partial,
-            com.hedera.hapi.node.state.token.NetworkStakingRewards::clearedFields,
-            com.hedera.hapi.node.state.token.NetworkStakingRewards::worthPartial,
-            com.hedera.hapi.node.state.token.NetworkStakingRewards::applyPartial);
+            });
 
     static final ValueType NFT = new ValueType(
             "com.hedera.hapi.node.state.token.Nft",
@@ -619,12 +409,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.NftSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.Nft::diff,
-            com.hedera.hapi.node.state.token.Nft::partial,
-            com.hedera.hapi.node.state.token.Nft::clearedFields,
-            com.hedera.hapi.node.state.token.Nft::worthPartial,
-            com.hedera.hapi.node.state.token.Nft::applyPartial);
+            });
 
     static final ValueType NODE_PAYMENTS = new ValueType(
             "com.hedera.hapi.node.state.token.NodePayments",
@@ -633,12 +418,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.NodePaymentsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.NodePayments::diff,
-            com.hedera.hapi.node.state.token.NodePayments::partial,
-            com.hedera.hapi.node.state.token.NodePayments::clearedFields,
-            com.hedera.hapi.node.state.token.NodePayments::worthPartial,
-            com.hedera.hapi.node.state.token.NodePayments::applyPartial);
+            });
 
     static final ValueType NODE_REWARDS = new ValueType(
             "com.hedera.hapi.node.state.token.NodeRewards",
@@ -647,12 +427,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.NodeRewardsSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.NodeRewards::diff,
-            com.hedera.hapi.node.state.token.NodeRewards::partial,
-            com.hedera.hapi.node.state.token.NodeRewards::clearedFields,
-            com.hedera.hapi.node.state.token.NodeRewards::worthPartial,
-            com.hedera.hapi.node.state.token.NodeRewards::applyPartial);
+            });
 
     static final ValueType STAKING_NODE_INFO = new ValueType(
             "com.hedera.hapi.node.state.token.StakingNodeInfo",
@@ -661,12 +436,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.StakingNodeInfoSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.StakingNodeInfo::diff,
-            com.hedera.hapi.node.state.token.StakingNodeInfo::partial,
-            com.hedera.hapi.node.state.token.StakingNodeInfo::clearedFields,
-            com.hedera.hapi.node.state.token.StakingNodeInfo::worthPartial,
-            com.hedera.hapi.node.state.token.StakingNodeInfo::applyPartial);
+            });
 
     static final ValueType TOKEN = new ValueType(
             "com.hedera.hapi.node.state.token.Token",
@@ -675,12 +445,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.TokenSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.Token::diff,
-            com.hedera.hapi.node.state.token.Token::partial,
-            com.hedera.hapi.node.state.token.Token::clearedFields,
-            com.hedera.hapi.node.state.token.Token::worthPartial,
-            com.hedera.hapi.node.state.token.Token::applyPartial);
+            });
 
     static final ValueType TOKEN_RELATION = new ValueType(
             "com.hedera.hapi.node.state.token.TokenRelation",
@@ -689,12 +454,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.token.schema.TokenRelationSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.token.TokenRelation::diff,
-            com.hedera.hapi.node.state.token.TokenRelation::partial,
-            com.hedera.hapi.node.state.token.TokenRelation::clearedFields,
-            com.hedera.hapi.node.state.token.TokenRelation::worthPartial,
-            com.hedera.hapi.node.state.token.TokenRelation::applyPartial);
+            });
 
     static final ValueType TSS_ENCRYPTION_KEYS = new ValueType(
             "com.hedera.hapi.node.state.tss.TssEncryptionKeys",
@@ -703,12 +463,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.state.tss.schema.TssEncryptionKeysSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.state.tss.TssEncryptionKeys::diff,
-            com.hedera.hapi.node.state.tss.TssEncryptionKeys::partial,
-            com.hedera.hapi.node.state.tss.TssEncryptionKeys::clearedFields,
-            com.hedera.hapi.node.state.tss.TssEncryptionKeys::worthPartial,
-            com.hedera.hapi.node.state.tss.TssEncryptionKeys::applyPartial);
+            });
 
     static final ValueType EXCHANGE_RATE_SET = new ValueType(
             "com.hedera.hapi.node.transaction.ExchangeRateSet",
@@ -717,12 +472,7 @@ final class StateChangeTypes {
             com.hedera.hapi.node.transaction.schema.ExchangeRateSetSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.node.transaction.ExchangeRateSet::diff,
-            com.hedera.hapi.node.transaction.ExchangeRateSet::partial,
-            com.hedera.hapi.node.transaction.ExchangeRateSet::clearedFields,
-            com.hedera.hapi.node.transaction.ExchangeRateSet::worthPartial,
-            com.hedera.hapi.node.transaction.ExchangeRateSet::applyPartial);
+            });
 
     static final ValueType NODE_ID = new ValueType(
             "com.hedera.hapi.platform.state.NodeId",
@@ -731,12 +481,7 @@ final class StateChangeTypes {
             com.hedera.hapi.platform.state.schema.NodeIdSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.platform.state.NodeId::diff,
-            com.hedera.hapi.platform.state.NodeId::partial,
-            com.hedera.hapi.platform.state.NodeId::clearedFields,
-            com.hedera.hapi.platform.state.NodeId::worthPartial,
-            com.hedera.hapi.platform.state.NodeId::applyPartial);
+            });
 
     static final ValueType PLATFORM_STATE = new ValueType(
             "com.hedera.hapi.platform.state.PlatformState",
@@ -745,12 +490,7 @@ final class StateChangeTypes {
             com.hedera.hapi.platform.state.schema.PlatformStateSchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.platform.state.PlatformState::diff,
-            com.hedera.hapi.platform.state.PlatformState::partial,
-            com.hedera.hapi.platform.state.PlatformState::clearedFields,
-            com.hedera.hapi.platform.state.PlatformState::worthPartial,
-            com.hedera.hapi.platform.state.PlatformState::applyPartial);
+            });
 
     static final ValueType CRS_PUBLICATION_TRANSACTION_BODY = new ValueType(
             "com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody",
@@ -759,12 +499,7 @@ final class StateChangeTypes {
             com.hedera.hapi.services.auxiliary.hints.schema.CrsPublicationTransactionBodySchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody::diff,
-            com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody::partial,
-            com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody::clearedFields,
-            com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody::worthPartial,
-            com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody::applyPartial);
+            });
 
     static final ValueType TSS_MESSAGE_TRANSACTION_BODY = new ValueType(
             "com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody",
@@ -773,12 +508,7 @@ final class StateChangeTypes {
             com.hedera.hapi.services.auxiliary.tss.schema.TssMessageTransactionBodySchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody::diff,
-            com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody::partial,
-            com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody::clearedFields,
-            com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody::worthPartial,
-            com.hedera.hapi.services.auxiliary.tss.TssMessageTransactionBody::applyPartial);
+            });
 
     static final ValueType TSS_VOTE_TRANSACTION_BODY = new ValueType(
             "com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody",
@@ -787,12 +517,7 @@ final class StateChangeTypes {
             com.hedera.hapi.services.auxiliary.tss.schema.TssVoteTransactionBodySchema::getField,
             field -> switch (field) {
                 default -> "";
-            },
-            com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody::diff,
-            com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody::partial,
-            com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody::clearedFields,
-            com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody::worthPartial,
-            com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody::applyPartial);
+            });
 
     static ValueType forValue(final Object value) {
         return switch (value) {

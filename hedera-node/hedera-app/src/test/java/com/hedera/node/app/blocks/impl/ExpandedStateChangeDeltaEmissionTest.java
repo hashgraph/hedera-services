@@ -67,13 +67,14 @@ class ExpandedStateChangeDeltaEmissionTest {
     }
 
     @Test
-    void primitiveWrappersNormalizeStateAndWireRepresentationsDuringReplay() {
+    void stringWrapperWithoutDiffCapabilityKeepsFullOutputEvenWhenUnchanged() {
         final var value = new ProtoString("s".repeat(100));
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true);
         listener.mapUpdateChange(9999, AccountID.DEFAULT, value, value);
         final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
-        assertThat(update.partial()).isTrue();
+        assertThat(update.partial()).isFalse();
+        assertThat(update.valueOrThrow().protoStringValue()).isEqualTo(value.value());
         assertThat(StateChangeDeltas.applyMap(9999, value, update)).isEqualTo(value);
     }
 }

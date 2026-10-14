@@ -170,6 +170,9 @@ public class VirtualMapStateImpl implements VirtualMapState {
     public void registerCommitListener(@NonNull final StateChangeListener listener) {
         requireNonNull(listener);
         listeners.add(listener);
+        services.values()
+                .forEach(definitions ->
+                        definitions.values().forEach(metadata -> listener.stateRegistered(metadata.stateDefinition())));
     }
 
     @Override
@@ -213,6 +216,7 @@ public class VirtualMapStateImpl implements VirtualMapState {
         final var serviceName = md.serviceName();
         final var stateMetadata = services.computeIfAbsent(serviceName, k -> new HashMap<>());
         stateMetadata.put(def.stateId(), md);
+        listeners.forEach(listener -> listener.stateRegistered(def));
 
         // We also need to add/update the metadata of the service in the writableStatesMap so that
         // it isn't stale or incomplete (e.g. in a genesis case)
