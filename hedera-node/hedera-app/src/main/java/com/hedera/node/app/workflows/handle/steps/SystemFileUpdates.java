@@ -33,7 +33,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.BufferUnderflowException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -59,6 +60,10 @@ public class SystemFileUpdates {
     private final FeeManager feeManager;
     private final ThrottleServiceManager throttleServiceManager;
     private final BlockNodeConnectionManager blockNodeConnectionManager;
+    // Serializes block-node streaming reconciliation so that, when several writer-mode changes each queue a task, the
+    // tasks run in submission (hence commit) order and the last one -- reading the newest committed mode -- sets the
+    // final streaming state. A concurrent executor cannot guarantee that, so a stale task could finish last.
+    private final Executor streamingReconciler;
 
     /**
      * Creates a new instance of this class.
@@ -72,11 +77,36 @@ public class SystemFileUpdates {
             @NonNull final FeeManager feeManager,
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final BlockNodeConnectionManager blockNodeConnectionManager) {
+        this(
+                configProvider,
+                exchangeRateManager,
+                feeManager,
+                throttleServiceManager,
+                blockNodeConnectionManager,
+                Executors.newSingleThreadExecutor(runnable -> {
+                    final var thread = new Thread(runnable, "block-node-streaming-reconciler");
+                    thread.setDaemon(true);
+                    return thread;
+                }));
+    }
+
+    /**
+     * Visible for testing: injects the executor that serializes block-node streaming reconciliation, so a test can
+     * supply a deterministic one.
+     */
+    SystemFileUpdates(
+            @NonNull final ConfigProviderImpl configProvider,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final FeeManager feeManager,
+            @NonNull final ThrottleServiceManager throttleServiceManager,
+            @NonNull final BlockNodeConnectionManager blockNodeConnectionManager,
+            @NonNull final Executor streamingReconciler) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.blockNodeConnectionManager = requireNonNull(blockNodeConnectionManager);
+        this.streamingReconciler = requireNonNull(streamingReconciler);
     }
 
     /**
@@ -435,13 +465,15 @@ public class SystemFileUpdates {
     }
 
     /**
-     * Asynchronously reconciles block node streaming to the committed writer mode, reading that mode when the task
-     * runs rather than when it is queued. A rolled-back writer-mode update and its recovery each queue one of these
-     * tasks with no ordering between them; because each reads the committed mode at run time, streaming converges on
-     * that mode whatever order the tasks run in, instead of ending in the state of whichever happened to run last.
+     * Reconciles block node streaming to the committed writer mode on a single-threaded executor, reading that mode
+     * when the task runs rather than when it is queued. The handle thread queues these tasks in commit order, and the
+     * executor runs them in that same order, so the last task reads the newest committed mode and sets the final
+     * streaming state. Reading at run time alone is not enough: the committed mode can change between two concurrent
+     * tasks' reads, and without a run order a stale task could finish last and leave streaming out of step with
+     * committed state.
      */
     private void applyCommittedBlockNodeStreaming() {
-        CompletableFuture.runAsync(() -> {
+        streamingReconciler.execute(() -> {
             final var committedWriterMode = configProvider
                     .getConfiguration()
                     .getConfigData(BlockStreamConfig.class)

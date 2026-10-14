@@ -51,12 +51,12 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.types.BlockStreamWriterMode;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,8 +66,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -125,8 +123,14 @@ class SystemFileUpdatesTest implements TransactionFactory {
         SHARD = config.getConfigData(HederaConfig.class).shard();
         REALM = config.getConfigData(HederaConfig.class).realm();
         idFactory = new FakeEntityIdFactoryImpl(SHARD, REALM);
+        // Run block-node streaming reconciliation inline so its effects are observable synchronously in tests.
         subject = new SystemFileUpdates(
-                configProvider, exchangeRateManager, feeManager, throttleServiceManager, blockNodeConnectionManager);
+                configProvider,
+                exchangeRateManager,
+                feeManager,
+                throttleServiceManager,
+                blockNodeConnectionManager,
+                Runnable::run);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -735,20 +739,12 @@ class SystemFileUpdatesTest implements TransactionFactory {
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(networkPropsId))
                 .build();
 
-        try (final MockedStatic<CompletableFuture> mocked = Mockito.mockStatic(CompletableFuture.class)) {
-            mocked.when(() -> CompletableFuture.runAsync(any(Runnable.class))).thenAnswer(inv -> {
-                final Runnable r = inv.getArgument(0);
-                r.run();
-                return new CompletableFuture<>();
-            });
+        // when (reconciliation runs inline via the same-thread executor injected in setUp)
+        subject.handleTxBody(state, txBody);
 
-            // when
-            subject.handleTxBody(state, txBody);
-
-            // then
-            verify(blockNodeConnectionManager, times(1)).shutdown();
-            verify(throttleServiceManager, times(1)).refreshThrottleConfiguration();
-        }
+        // then
+        verify(blockNodeConnectionManager, times(1)).shutdown();
+        verify(throttleServiceManager, times(1)).refreshThrottleConfiguration();
     }
 
     @Test
@@ -790,19 +786,66 @@ class SystemFileUpdatesTest implements TransactionFactory {
                 .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(networkPropsId))
                 .build();
 
-        try (final MockedStatic<CompletableFuture> mocked = Mockito.mockStatic(CompletableFuture.class)) {
-            mocked.when(() -> CompletableFuture.runAsync(any(Runnable.class))).thenAnswer(inv -> {
-                final Runnable r = inv.getArgument(0);
-                r.run();
-                return new CompletableFuture<>();
-            });
+        // when (reconciliation runs inline via the same-thread executor injected in setUp)
+        subject.handleTxBody(state, txBody);
 
-            // when
-            subject.handleTxBody(state, txBody);
+        // then
+        verify(blockNodeConnectionManager, times(1)).start();
+        verify(throttleServiceManager, times(1)).refreshThrottleConfiguration();
+    }
 
-            // then
-            verify(blockNodeConnectionManager, times(1)).start();
-            verify(throttleServiceManager, times(1)).refreshThrottleConfiguration();
-        }
+    @Test
+    void streamingReconciliationIsSubmittedToTheInjectedSerializingExecutor() {
+        // A manual executor that captures the reconciliation task instead of running it, so the test can prove the
+        // task is routed through the injected executor (which serializes), not fired on the common pool concurrently.
+        final var queued = new java.util.ArrayList<Runnable>();
+        final var manualSubject = new SystemFileUpdates(
+                configProvider,
+                exchangeRateManager,
+                feeManager,
+                throttleServiceManager,
+                blockNodeConnectionManager,
+                queued::add);
+
+        final var initialConfig = streamingConfig(BlockStreamWriterMode.FILE_AND_GRPC);
+        final var updatedConfig = streamingConfig(BlockStreamWriterMode.FILE);
+        when(configProvider.getConfiguration())
+                .thenReturn(new VersionedConfigImpl(initialConfig, 1L))
+                .thenReturn(new VersionedConfigImpl(updatedConfig, 2L));
+
+        final var filesConfig = initialConfig.getConfigData(FilesConfig.class);
+        final var networkPropsId = idFactory.newFileId(filesConfig.networkProperties());
+        final var permissionsId = idFactory.newFileId(filesConfig.hapiPermissions());
+        files.put(networkPropsId, File.newBuilder().contents(FILE_BYTES).build());
+        files.put(permissionsId, File.newBuilder().contents(Bytes.wrap("perms")).build());
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(idFactory.newAccountId(50L))
+                        .build())
+                .fileUpdate(FileUpdateTransactionBody.newBuilder().fileID(networkPropsId))
+                .build();
+
+        manualSubject.handleTxBody(state, txBody);
+
+        // The reconciliation was handed to the injected executor, not run yet.
+        assertThat(queued).hasSize(1);
+        verifyNoInteractions(blockNodeConnectionManager);
+
+        // The task reads the committed mode (now FILE) when the executor runs it, and reconciles to it.
+        when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(updatedConfig, 2L));
+        queued.getFirst().run();
+        verify(blockNodeConnectionManager, times(1)).shutdown();
+    }
+
+    private Configuration streamingConfig(final BlockStreamWriterMode writerMode) {
+        return new TestConfigBuilder(false)
+                .withConverter(Bytes.class, new BytesConverter())
+                .withConverter(LongPair.class, new LongPairConverter())
+                .withConfigDataType(FilesConfig.class)
+                .withConfigDataType(HederaConfig.class)
+                .withConfigDataType(LedgerConfig.class)
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.writerMode", writerMode)
+                .getOrCreateConfig();
     }
 }
