@@ -233,7 +233,7 @@ val prCheckPropOverrides =
             "nodes.nodeRewardsEnabled=false,quiescence.enabled=true,quiescence.gracePeriod=30s,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
         "hapiTestAtomicBatchSerial" to "nodes.nodeRewardsEnabled=false,quiescence.enabled=true",
         "hapiTestQuiescence" to
-                "tss.hintsEnabled=true,tss.forceHandoffs=true,tss.forceMockSignatures=false,blockStream.blockPeriod=1s,quiescence.enabled=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5,platform.wiring.healthLogThreshold=5s,staking.periodMins=1440,nodes.nodeRewardsEnabled=false",
+            "tss.hintsEnabled=true,tss.forceHandoffs=true,tss.forceMockSignatures=false,blockStream.blockPeriod=1s,quiescence.enabled=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5,platform.wiring.healthLogThreshold=5s,staking.periodMins=1440,nodes.nodeRewardsEnabled=false",
         "hapiTestClpr" to
             "tss.forceMockSignatures=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
         "hapiTestClprEmbedded" to "tss.forceMockSignatures=true",
