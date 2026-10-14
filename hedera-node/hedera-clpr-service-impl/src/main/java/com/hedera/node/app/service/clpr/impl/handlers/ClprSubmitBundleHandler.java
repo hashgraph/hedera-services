@@ -1025,8 +1025,8 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // The originating slot may be either an unredacted Data Message OR a ClprRedactedMessage that
                     // preserved the sender when the admin redacted before delivery. Both paths
                     // need the sender to dispatch the response back to the originating application; only the
-                    // unredacted Data Message path can slash the source-side connector (redacting an
-                    // admin-approved outbound shouldn't be a slashing event).
+                    // unredacted Data Message path can slash the source-side connector (redacted slots don't carry
+                    // the connector id — and redacting an admin-approved outbound shouldn't be a slashing event).
                     final var originalPayload =
                             originalMsg == null ? null : originalMsg.hasPayload() ? originalMsg.payload() : null;
                     final var origDataMsg = originalPayload == null
@@ -1108,15 +1108,13 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // Source-side slashing on failure responses. That is, if we sent a message to the remote ledger
                     // and it replied indicating the connector on our side was at fault, then we will punish the
                     // connector on our side accordingly. Skipped when the originating slot was redacted: the
-                    // admin-approved redaction shouldn't retroactively punish the connector for an authorized send.
-                    // Both variants still release the in-flight count on their terminal reply.
-                    final var sourceConnectorId =
-                            origDataMsg != null ? origDataMsg.connectorId() : origRedacted.connectorId();
-                    if (sourceConnectorId.length() == 0) {
+                    // connector id isn't preserved in ClprRedactedMessage, and an admin-approved redaction
+                    // shouldn't retroactively punish the connector for what was originally an authorized send.
+                    if (origDataMsg == null) {
                         continue;
                     }
                     final var replyStatus = reply.status();
-                    final var sourceConnectorKey = new ClprConnectorKey(channelId, sourceConnectorId);
+                    final var sourceConnectorKey = new ClprConnectorKey(channelId, origDataMsg.connectorId());
                     var sourceConnector = connectorStore.getConnector(sourceConnectorKey);
                     if (sourceConnector != null) {
                         // Decrement in-flight counter — this reply is a terminal event for the DATA message.
@@ -1131,14 +1129,13 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                     "[ClprSubmitBundle] step10 MESSAGE_REPLY decremented source connector in-flight "
                                             + "conn={} connectorId={} {}->{}",
                                     channelId,
-                                    sourceConnectorId,
+                                    origDataMsg.connectorId(),
                                     current,
                                     current - 1);
                         }
 
-                        if (origDataMsg != null
-                                && (replyStatus == ClprMessageReplyStatus.CONNECTOR_NOT_FOUND
-                                        || replyStatus == ClprMessageReplyStatus.CONNECTOR_UNDERFUNDED)) {
+                        if (replyStatus == ClprMessageReplyStatus.CONNECTOR_NOT_FOUND
+                                || replyStatus == ClprMessageReplyStatus.CONNECTOR_UNDERFUNDED) {
                             final var slashResult =
                                     ClprSlashingUtils.applySlash(sourceConnector, clprConfig, connectorStore);
                             final var tokenServiceApi = storeFactory.serviceApi(TokenServiceApi.class);
@@ -1154,7 +1151,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                     "[ClprSubmitBundle] step10 MESSAGE_REPLY slashed source connector conn={} "
                                             + "connectorId={} replyStatus={} penalty={}",
                                     channelId,
-                                    sourceConnectorId,
+                                    origDataMsg.connectorId(),
                                     replyStatus,
                                     slashResult.penaltyAmount());
                         }
@@ -1163,7 +1160,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                 "[ClprSubmitBundle] step10 MESSAGE_REPLY source connector missing conn={} "
                                         + "connectorId={} replyTargetId={}",
                                 channelId,
-                                sourceConnectorId,
+                                origDataMsg.connectorId(),
                                 replyTargetId);
                     }
                 } else if (payload.hasRedactedMessage()) {

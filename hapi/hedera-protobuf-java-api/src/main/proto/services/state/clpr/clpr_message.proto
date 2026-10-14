@@ -150,13 +150,6 @@ message ClprRedactedMessage {
      * application after the reply round-trips.
      */
     bytes sender = 2;
-
-    /**
-     * The connector ID from the original ClprMessage. Retained so the source
-     * ledger can release its in-flight message count when the terminal reply
-     * arrives. Redaction does not release the count before that reply.
-     */
-    bytes connector_id = 3;
 }
 
 /**

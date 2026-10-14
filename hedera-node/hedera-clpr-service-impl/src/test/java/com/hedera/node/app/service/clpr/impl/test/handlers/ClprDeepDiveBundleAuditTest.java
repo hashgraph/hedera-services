@@ -3476,51 +3476,6 @@ class ClprDeepDiveBundleAuditTest {
         assertThat(connectorStore.getConnector(key).lockedStake()).isEqualTo(90_000_000L);
     }
 
-    @Test
-    void auditActuallyRedactedTerminalReplyReleasesInflightCount() {
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        putOutboundDataMessage(1);
-        putConnectorWithStake(100_000_000L, 0);
-        final var key = new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS);
-        connectorStore.put(connectorStore
-                .getConnector(key)
-                .copyBuilder()
-                .inFlightMessageCount(1)
-                .build());
-        setupHandleContext(
-                TransactionBody.newBuilder()
-                        .clprRedactMessage(com.hedera.hapi.node.clpr.ClprRedactMessageTransactionBody.newBuilder()
-                                .channelId(CHANNEL_ID)
-                                .messageId(1)
-                                .build())
-                        .build(),
-                true);
-        lenient()
-                .when(storeFactory.readableStore(com.hedera.node.app.service.clpr.ReadableChannelStore.class))
-                .thenReturn(channelStore);
-        new com.hedera.node.app.service.clpr.impl.handlers.ClprRedactMessageHandler().handle(handleContext);
-        assertThat(messageQueueStore
-                        .getMessage(CHANNEL_ID, 1)
-                        .payloadOrThrow()
-                        .redactedMessageOrThrow()
-                        .connectorId())
-                .isEqualTo(CONNECTOR_ADDRESS);
-        assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isEqualTo(1);
-        setupHandleContext(
-                buildBundle(
-                        ClprChannelStatus.ACTIVE,
-                        0,
-                        1,
-                        ZERO_HASH,
-                        List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED))),
-                true);
-        subject.handle(handleContext);
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
-        assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isZero();
-        assertThat(connectorStore.getConnector(key).slashCount()).isZero();
-        assertThat(connectorStore.getConnector(key).lockedStake()).isEqualTo(100_000_000L);
-    }
-
     private com.hedera.node.app.service.clpr.impl.ClprServiceApiImpl auditApi() {
         final var localConfig = org.mockito.Mockito.mock(
                 com.hedera.node.app.service.clpr.impl.ReadableLedgerConfigurationStoreImpl.class);
