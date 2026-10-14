@@ -108,6 +108,7 @@ instead of the production defaults:
   and `hapiTestIss` off the block node), and `preCutoverDefaultsOverrides` are skipped;
 - a real block node is started for the gRPC writer;
 - embedded and repeatable tasks keep the `FILE` writer and mock signatures;
+- `hapiTestClpr` and `hapiTestClprMultinetwork` keep the `FILE` writer (multi-network nets get no block node);
 - `hapiTestMiscRecords*`, `hapiTestGenesisSubProcess`, `hapiTestCutover` and
   `hapiTestBlockNodeCommunication` ignore it.
 

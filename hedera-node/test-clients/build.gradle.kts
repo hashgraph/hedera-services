@@ -272,7 +272,7 @@ val preCutoverDefaultsOverrides =
         "hapiTestNodeStaking" to "tss.forceMockSignatures=false",
     )
 // -PhapiTestConfigProfile=testnet (or env HAPI_TEST_CONFIG_PROFILE) runs the HAPI tasks with
-// testnet's block stream and TSS values instead of the production defaults; XTS reruns MATS so
+// testnet's block stream and TSS values instead of the production defaults (used by XTS 829)
 val hapiTestConfigProfile =
     providers
         .gradleProperty("hapiTestConfigProfile")
@@ -311,8 +311,7 @@ val profileOverrides: Map<String, String> =
         }
         else -> throw GradleException("Unknown hapiTestConfigProfile '$hapiTestConfigProfile'")
     }
-// These tasks deliberately run another world: records-only, pre-cutover, per-node or per-test
-// pins, or CLPR's own mock-signature setup
+// These tasks deliberately run another world: records-only, pre-cutover, per-node or per-test pins
 val profileExemptTasks =
     setOf(
         "hapiTestMiscRecords",
@@ -320,7 +319,10 @@ val profileExemptTasks =
         "hapiTestGenesisSubProcess",
         "hapiTestCutover",
         "hapiTestBlockNodeCommunication",
-    ) + clprTasks
+    )
+// Under the profile these keep a FILE writer: multi-network nets get no block node, and
+// hapiTestClpr's mock signatures stalled its network against a real block node
+val profileFileWriterTasks = setOf("hapiTestClpr", "hapiTestClprMultinetwork")
 
 fun profileAppliesTo(name: String, remote: Boolean) =
     profileOverrides.isNotEmpty() && !remote && name !in profileExemptTasks
@@ -341,8 +343,10 @@ fun hapiTestOverrides(name: String, embedded: Boolean, remote: Boolean): Map<Str
         preCutoverDefaultsOverrides[name]?.let { overrides.putAll(it.toOverrideMap()) }
     }
     prCheckPropOverrides[name]?.let { overrides.putAll(it.toOverrideMap()) }
-    if (embedded && withProfile) {
+    if (withProfile && (embedded || name in profileFileWriterTasks)) {
         overrides["blockStream.writerMode"] = "FILE"
+    }
+    if (withProfile && embedded) {
         overrides["tss.forceMockSignatures"] = "true"
     }
     return overrides

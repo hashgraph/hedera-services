@@ -65,7 +65,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -80,7 +80,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -95,7 +95,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -110,7 +110,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -125,7 +125,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -140,7 +140,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -155,7 +155,7 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -170,7 +170,22 @@ jobs:
       node-version: ${{ inputs.node-version }}
       enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
       hapi-test-config-profile: "testnet"
-      name-suffix: " (Testnet Configs)"
+      name-suffix: " (Cutover configs)"
+    secrets:
+      access-token: ${{ secrets.access-token }}
+      gradle-cache-username: ${{ secrets.gradle-cache-username }}
+      gradle-cache-password: ${{ secrets.gradle-cache-password }}
+
+  hapi-tests-clpr:
+    uses: ./.github/workflows/870-call-execute-hapi-clpr.yaml
+    with:
+      ref: ${{ inputs.ref }}
+      java-distribution: ${{ inputs.java-distribution }}
+      java-version: ${{ inputs.java-version }}
+      node-version: ${{ inputs.node-version }}
+      enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
+      hapi-test-config-profile: "testnet"
+      name-suffix: " (Cutover configs)"
     secrets:
       access-token: ${{ secrets.access-token }}
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
@@ -188,6 +203,7 @@ jobs:
       - hapi-tests-restart
       - hapi-tests-atomic-batch
       - hapi-tests-state-throttling
+      - hapi-tests-clpr
     if: ${{ always() }}
     outputs:
       failure-mode: ${{ steps.set-failure-mode.outputs.failure-mode }}
@@ -211,6 +227,7 @@ jobs:
             ${{ needs.hapi-tests-restart.result }}
             ${{ needs.hapi-tests-atomic-batch.result }}
             ${{ needs.hapi-tests-state-throttling.result }}
+            ${{ needs.hapi-tests-clpr.result }}
           INPUT_JOB_FAILURE_MODES: >-
             ${{ needs.hapi-tests-misc.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-misc-records-crypto-and-serial.outputs.failure-mode || 'none' }}
@@ -220,6 +237,7 @@ jobs:
             ${{ needs.hapi-tests-restart.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-atomic-batch.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-state-throttling.outputs.failure-mode || 'none' }}
+            ${{ needs.hapi-tests-clpr.outputs.failure-mode || 'none' }}
           INPUT_JOB_NAMES: >-
             hapi-tests-misc
             hapi-tests-misc-records-crypto-and-serial
@@ -229,4 +247,5 @@ jobs:
             hapi-tests-restart
             hapi-tests-atomic-batch
             hapi-tests-state-throttling
+            hapi-tests-clpr
         run: bash .github/workflows/support/scripts/set-failure-mode.sh
