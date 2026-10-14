@@ -29,6 +29,8 @@ on:
         value: ${{ jobs.extract-citr-vars.outputs.js-sdk-version }}
       bn-release-version:
         value: ${{ jobs.extract-citr-vars.outputs.block-node-version }}
+      xts-bn-release-version:
+        value: ${{ jobs.extract-citr-vars.outputs.xts-block-node-version }}
       bn-mirror-node-version:
         value: ${{ jobs.extract-citr-vars.outputs.bn-mirror-node-version }}
       json-rpc-relay-version:
@@ -57,6 +59,7 @@ jobs:
       tck-version: ${{ steps.get-citr-vars.outputs.tck-version }}
       js-sdk-version: ${{ steps.get-citr-vars.outputs.js-sdk-version }}
       block-node-version: ${{ steps.get-citr-vars.outputs.block-node-version }}
+      xts-block-node-version: ${{ steps.get-citr-vars.outputs.xts-block-node-version }}
       bn-mirror-node-version: ${{ steps.get-citr-vars.outputs.bn-mirror-node-version }}
       json-rpc-relay-version: ${{ steps.get-citr-vars.outputs.json-rpc-relay-version }}
       mirror-node-explorer-version: ${{ steps.get-citr-vars.outputs.mirror-node-explorer-version }}
@@ -104,6 +107,7 @@ jobs:
             "tck-version"
             "js-sdk-version"
             "block-node-version"
+            "xts-block-node-version"
             "bn-mirror-node-version"
             "json-rpc-relay-version"
             "mirror-node-explorer-version"
