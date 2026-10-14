@@ -184,8 +184,6 @@ class ClprEndpointClientImpl implements ClprEndpointClient {
         } catch (final Exception e) {
             throw new SSLException("Failed to parse peer TLS certificate", e);
         }
-        // Built on BouncyCastle JSSE: the CLPR leaf is Ed25519, unusable as a local TLS identity on
-        // SunJSSE and rejected by netty-tcnative/BoringSSL. See ClprMtlsContexts.
         return ClprMtlsContexts.clientContext(clientCredentials, peerCaCert);
     }
 
