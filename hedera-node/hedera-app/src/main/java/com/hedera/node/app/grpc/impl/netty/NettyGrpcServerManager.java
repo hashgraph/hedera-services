@@ -581,8 +581,6 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             @NonNull final ClprLeafCredentials leafCredentials,
             @NonNull final Supplier<Map<X500Principal, List<X509Certificate>>> peerCasByIssuer)
             throws SSLException {
-        // Built on the BouncyCastle JSSE provider because the CLPR leaf is Ed25519, which SunJSSE
-        // cannot use as a local TLS identity and netty-tcnative/BoringSSL rejects. See ClprMtlsContexts.
         builder.sslContext(ClprMtlsContexts.serverContext(leafCredentials, peerCasByIssuer));
     }
 

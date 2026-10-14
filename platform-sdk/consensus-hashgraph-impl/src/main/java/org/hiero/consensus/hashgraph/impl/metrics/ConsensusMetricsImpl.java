@@ -8,16 +8,28 @@ import static com.swirlds.metrics.api.FloatFormats.FORMAT_4_2;
 import static com.swirlds.metrics.api.FloatFormats.FORMAT_9_6;
 import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.metrics.api.Metrics.PLATFORM_CATEGORY;
+import static java.util.Objects.requireNonNull;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import org.hiero.consensus.hashgraph.impl.EventImpl;
 import org.hiero.consensus.metrics.RunningAverageMetric;
 import org.hiero.consensus.metrics.SpeedometerMetric;
+import org.hiero.consensus.metrics.config.ConsensusLayerMetricsConfig;
+import org.hiero.consensus.metrics.extensions.LatencyGauges;
+import org.hiero.consensus.metrics.extensions.LatencyGauges.Config;
 import org.hiero.consensus.metrics.statistics.AverageAndMax;
+import org.hiero.consensus.model.event.EventOrigin;
+import org.hiero.consensus.model.event.PlatformEvent;
+import org.hiero.consensus.model.hashgraph.ConsensusRound;
 import org.hiero.consensus.model.node.NodeId;
 
 /**
@@ -103,7 +115,15 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     private final AverageAndMax numEventsAddedUntilConsensus;
     private final AverageAndMax graphDepthUntilConsensus;
 
+    /**
+     * Percentiles and the maximum of the time from receiving a gossiped event until the consensus engine emits its
+     * round, or {@code null} if latency gauges are disabled.
+     */
+    @Nullable
+    private final LatencyGauges receivedToConsensus;
+
     private final NodeId selfId;
+    private final Time time;
 
     /**
      * Time when this platform received the first event created by someone else in the most recent round. This is used
@@ -121,17 +141,33 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     /**
      * Constructor of {@code ConsensusMetricsImpl}
      *
-     * @param selfId  the {@link NodeId} of this node
-     * @param metrics a reference to the metrics-system
-     * @throws NullPointerException if any of the following parameters are {@code null}.
-     *     <ul>
-     *       <li>{@code selfId}</li>
-     *       <li>{@code metrics}</li>
-     *     </ul>
+     * @param selfId        the {@link NodeId} of this node
+     * @param metrics       a reference to the metrics-system
+     * @param configuration the configuration, which enables the latency gauges and sets their window
+     * @param time          the clock that measures the latency and advances the window of its gauges
+     * @throws NullPointerException if any of the parameters is {@code null}.
      */
-    public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        Objects.requireNonNull(metrics, "metrics must not be null");
+    public ConsensusMetricsImpl(
+            @NonNull final NodeId selfId,
+            @NonNull final Metrics metrics,
+            @NonNull final Configuration configuration,
+            @NonNull final Time time) {
+        this.selfId = requireNonNull(selfId, "selfId must not be null");
+        requireNonNull(metrics, "metrics must not be null");
+        this.time = requireNonNull(time, "time must not be null");
+
+        final ConsensusLayerMetricsConfig metricsConfig = requireNonNull(
+                        configuration, "configuration must not be null")
+                .getConfigData(ConsensusLayerMetricsConfig.class);
+        if (metricsConfig.latencyEnabled()) {
+            final Config eventLatencyR2C = new Config(PLATFORM_CATEGORY, "eventLatency_R2C")
+                    .withWindow(metricsConfig.latencyWindow())
+                    .withPercentiles(50, 90, 99, 99.9)
+                    .withDescription("time from receiving a gossiped event until the consensus engine emits its round");
+            receivedToConsensus = LatencyGauges.register(metrics, configuration, time, eventLatencyR2C);
+        } else {
+            receivedToConsensus = null;
+        }
 
         avgJudgesWeight = metrics.getOrCreate(AVG_JUDGES_WEIGHT_CONFIG);
         avgFirstEventInRoundReceivedTime = metrics.getOrCreate(AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG);
@@ -262,6 +298,26 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
             avgOtherReceivedTimestamp.update(
                     event.getBaseEvent().getTimeReceived().until(event.getConsensusTimestamp(), ChronoUnit.NANOS)
                             * NANOSECONDS_TO_SECONDS);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Records the time from receiving each gossiped event of the round until now. Events created by this node and
+     * events read from storage are left out.
+     */
+    @Override
+    public void consensusRoundEmitted(@NonNull final ConsensusRound round) {
+        if (receivedToConsensus == null) {
+            return;
+        }
+        final Instant now = time.now();
+        for (final PlatformEvent event : round.getConsensusEvents()) {
+            if (event.getOrigin() == EventOrigin.GOSSIP) {
+                receivedToConsensus.record(
+                        Duration.between(event.getTimeReceived(), now).toNanos());
+            }
         }
     }
 
