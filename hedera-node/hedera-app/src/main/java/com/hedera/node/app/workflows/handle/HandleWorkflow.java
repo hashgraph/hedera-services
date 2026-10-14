@@ -1076,16 +1076,17 @@ public class HandleWorkflow {
                         .build());
             }
             if (includeSingletons) {
-                // Stream every singleton change recorded so far in the block, not just the action's own. A
-                // singleton first written earlier in the block may not be externalized yet, and replaying the
-                // stream must insert it before any key the action adds. The listener is not reset, so changes
-                // made earlier in the block are still externalized when the block closes.
+                // Flush every singleton change not yet externalized in this block, not just the action's own: a
+                // singleton first written earlier in the block must be inserted before any key the action adds
+                // when the stream is replayed. Reset only after streaming, so the block's closing flush neither
+                // drops nor repeats these changes.
                 final var singletonChanges = boundaryStateChangeListener.allStateChanges();
                 if (!singletonChanges.isEmpty()) {
                     blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                             .stateChanges(new StateChanges(now, new ArrayList<>(singletonChanges)))
                             .build());
                 }
+                boundaryStateChangeListener.reset();
             }
         }
     }

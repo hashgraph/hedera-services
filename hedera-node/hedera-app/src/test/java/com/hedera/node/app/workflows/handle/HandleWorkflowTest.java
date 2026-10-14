@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -951,13 +952,13 @@ class HandleWorkflowTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void streamsClprSingletonsOnUpgradeWithoutResettingBoundaryListener() throws Exception {
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+    void initializingClprSingletonsKeepsPendingSingletonChangesOfOpenBlock() throws Exception {
+        givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
         final var clprStates = mock(WritableStates.class);
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         given(clprStates.getSingleton(anyInt())).willReturn(mock(WritableSingletonState.class));
-        // A singleton change made earlier in the block, e.g. by post-upgrade setup
-        final var earlierChange = StateChange.newBuilder()
+        // A singleton change made earlier in the still-open block, e.g. by post-upgrade setup
+        final var pendingChange = StateChange.newBuilder()
                 .stateId(ENTITY_COUNTS_STATE_ID)
                 .singletonUpdate(SingletonUpdateChange.DEFAULT)
                 .build();
@@ -966,41 +967,22 @@ class HandleWorkflowTest {
                 .singletonUpdate(SingletonUpdateChange.DEFAULT)
                 .build();
         given(boundaryStateChangeListener.allStateChanges())
-                .willReturn(new LinkedList<>(List.of(earlierChange, clprChange)));
+                .willReturn(new LinkedList<>(List.of(pendingChange, clprChange)));
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
                 "initializeMissingClprSingletons", com.swirlds.state.State.class);
         method.setAccessible(true);
         method.invoke(subject, state);
 
-        // Earlier changes must stay in the listener so they are still externalized when the block closes
-        verify(boundaryStateChangeListener, never()).reset();
+        // The pending change is streamed together with the new CLPR singletons before the listener is reset,
+        // so it is neither dropped nor repeated when the block closes
         final ArgumentCaptor<Function<Timestamp, BlockItem>> itemCaptor = ArgumentCaptor.forClass(Function.class);
-        verify(blockStreamManager).writeItem(itemCaptor.capture());
+        final var inOrder = inOrder(blockStreamManager, boundaryStateChangeListener);
+        inOrder.verify(blockStreamManager).writeItem(itemCaptor.capture());
+        inOrder.verify(boundaryStateChangeListener).reset();
         final var item = itemCaptor.getValue().apply(BLOCK_TIME);
         assertEquals(
-                List.of(earlierChange, clprChange), item.stateChangesOrThrow().stateChanges());
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void initializingClprSingletonsKeepsPendingSingletonChangesOfOpenBlock() throws Exception {
-        givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
-        final var clprStates = mock(WritableStates.class);
-        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
-        given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
-                .willReturn(mock(WritableSingletonState.class));
-        given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
-                .willReturn(mock(WritableSingletonState.class));
-        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
-                .willReturn(mock(WritableSingletonState.class));
-
-        final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class);
-        method.setAccessible(true);
-        method.invoke(subject, state);
-
-        verify(boundaryStateChangeListener, never()).reset();
+                List.of(pendingChange, clprChange), item.stateChangesOrThrow().stateChanges());
     }
 
     @Test
