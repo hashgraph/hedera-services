@@ -11,6 +11,15 @@ import org.bouncycastle.math.ec.rfc8032.Ed25519;
  * registered channel can ignore the connector accessors.
  */
 final class ClprChannelCrypto {
+    /**
+     * CLPR Service precompile address (0x000000000000000000000000000000000000016e).
+     * Spec §6.3 (Hiero note): connector signature is over
+     * {@code keccak256(connector_id || service_address)}.
+     */
+    private static final byte[] CLPR_SERVICE_ADDRESS = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (byte) 0x6e
+    };
+
     private final byte[] channelId;
     private final byte[] publicKey;
     private final byte[] commitment;
@@ -18,7 +27,7 @@ final class ClprChannelCrypto {
     private final byte[] connectorSalt;
     private final byte[] connectorId;
     private final byte[] connectorCommitment;
-    private final byte[] privateKey;
+    private final byte[] connectorSignature;
 
     ClprChannelCrypto() {
         final var rng = new SecureRandom();
@@ -28,7 +37,7 @@ final class ClprChannelCrypto {
         rng.nextBytes(channelId);
 
         // Generate Ed25519 key pair
-        privateKey = new byte[32];
+        final var privateKey = new byte[32];
         rng.nextBytes(privateKey);
         publicKey = new byte[32];
         Ed25519.generatePublicKey(privateKey, 0, publicKey, 0);
@@ -48,6 +57,12 @@ final class ClprChannelCrypto {
 
         // connectorCommitment = keccak256(connectorId || pubKey)  — spec §6.3 Phase 1
         connectorCommitment = keccak256(concat(connectorId, publicKey));
+
+        // connectorSignature = Ed25519.sign(keccak256(connectorId || CLPR_SERVICE_ADDRESS))
+        //   — spec §6.3 Phase 2 step 3
+        connectorSignature = new byte[Ed25519.SIGNATURE_SIZE];
+        final var connectorSigMsg = keccak256(concat(connectorId, CLPR_SERVICE_ADDRESS));
+        Ed25519.sign(privateKey, 0, connectorSigMsg, 0, connectorSigMsg.length, connectorSignature, 0);
     }
 
     byte[] channelId() {
@@ -78,10 +93,8 @@ final class ClprChannelCrypto {
         return connectorCommitment;
     }
 
-    byte[] signConnector(final byte[] digest) {
-        final var signed = new byte[Ed25519.SIGNATURE_SIZE];
-        Ed25519.sign(privateKey, 0, digest, 0, digest.length, signed, 0);
-        return signed;
+    byte[] connectorSignature() {
+        return connectorSignature;
     }
 
     private static byte[] keccak256(final byte[] input) {

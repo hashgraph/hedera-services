@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.yahcli.commands.clpr;
 
-import static com.hedera.node.app.hapi.utils.ClprSigningUtils.connectorSignatureMessage;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.clpr.ClprCompleteConnectorTransactionBody;
 import com.hedera.hapi.node.clpr.ClprSignatureScheme;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import java.nio.file.Path;
+import java.util.HexFormat;
 import org.hiero.base.crypto.CryptographyProvider;
 import org.hiero.base.crypto.SignatureType;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,7 +18,7 @@ class ClprConnectorIdentityTest {
     @EnumSource(
             value = ClprSignatureScheme.class,
             names = {"ED25519", "ECDSA_SECP256K1"})
-    void generatedIdentitySignsResolvedReveal(final ClprSignatureScheme scheme, @TempDir final Path dir)
+    void generatedIdentitySignsConnectorIdAndServiceAddress(final ClprSignatureScheme scheme, @TempDir final Path dir)
             throws Exception {
         final var generator = new GenerateConnectorIdentityCommand();
         generator.channelIdHex = "42".repeat(32);
@@ -30,28 +27,19 @@ class ClprConnectorIdentityTest {
         generator.outFile = output.toString();
         assertThat(generator.call()).isZero();
         final var identity = ClprArgs.readFlatJsonStringFields(output);
-        assertThat(identity).doesNotContainKey("signature");
         final var publicKey = ClprArgs.parseHex(identity.get("publicKey"));
-        final var op = ClprCompleteConnectorTransactionBody.newBuilder()
-                .connectorId(Bytes.wrap(ClprArgs.parseHex(identity.get("connectorId"))))
-                .channelId(Bytes.wrap(ClprArgs.parseHex(identity.get("channelId"))))
-                .publicKey(Bytes.wrap(publicKey))
-                .salt(Bytes.wrap(ClprArgs.parseHex(identity.get("salt"))))
-                .signatureScheme(scheme)
-                .connectorContract(ContractID.newBuilder().contractNum(1234).build())
-                .adminKey(Key.newBuilder().ed25519(Bytes.wrap(new byte[32])).build())
-                .lockedStake(200_000_000L)
-                .build();
-        final var signer =
-                CompleteConnectorCommand.identitySigner(scheme.name(), ClprArgs.parseHex(identity.get("privateKey")));
-        final var digest = connectorSignatureMessage(op);
-        final var signature = signer.apply(digest);
+        final var signature = ClprArgs.parseHex(identity.get("signature"));
+        assertThat(signature).hasSize(64);
+        assertThat(identity.get("serviceAddress")).isEqualTo("0x000000000000000000000000000000000000016e");
+        final var preimage = HexFormat.of()
+                .parseHex(identity.get("connectorId").substring(2) + "000000000000000000000000000000000000016e");
+        final var digest = MiscCryptoUtils.keccak256DigestOf(preimage);
         final var type = scheme == ClprSignatureScheme.ED25519 ? SignatureType.ED25519 : SignatureType.ECDSA_SECP256K1;
         assertThat(CryptographyProvider.getInstance().verifySync(digest, signature, publicKey, type))
                 .isTrue();
-        final var tampered = op.copyBuilder().lockedStake(200_000_001L).build();
+        preimage[0] ^= 1;
         assertThat(CryptographyProvider.getInstance()
-                        .verifySync(connectorSignatureMessage(tampered), signature, publicKey, type))
+                        .verifySync(MiscCryptoUtils.keccak256DigestOf(preimage), signature, publicKey, type))
                 .isFalse();
     }
 }

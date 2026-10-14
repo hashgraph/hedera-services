@@ -17,7 +17,7 @@ public record ClprConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty
         boolean enabled,
 
-        @ConfigProperty(defaultValue = "eip155:456") @NetworkProperty
+        @ConfigProperty(defaultValue = "hiero:mainnet") @NetworkProperty
         String chainId,
 
         @ConfigProperty(defaultValue = "1") @NetworkProperty int protocolVersion,

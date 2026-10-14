@@ -2,6 +2,7 @@
 package com.hedera.services.yahcli.commands.clpr;
 
 import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.services.yahcli.commands.clpr.GenerateChannelIdentityCommand.ClprIdentityCrypto;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,12 +16,12 @@ import picocli.CommandLine.ParentCommand;
 
 /**
  * Generates a fresh CLPR connector identity bundle: a random salt, a fresh keypair,
- * the derived connector id, and the matching ownership commitment. The complete-connector
- * command signs the full reveal after its contract, admin key, and stake are known.
+ * the derived connector id, the matching ownership commitment, and a pre-computed
+ * reveal signature.
  *
  * <p>Output is a JSON object with the fields needed to invoke {@code register-connector}
  * (use {@code commitment}) and later {@code complete-connector}
- * (use {@code channelId}, {@code connectorId}, {@code publicKey}, {@code privateKey},
+ * (use {@code channelId}, {@code connectorId}, {@code publicKey}, {@code signature},
  * {@code signatureScheme}, {@code salt}).
  *
  * <p>{@code privateKey} is included so the operator can sign future connector messages.
@@ -30,12 +31,21 @@ import picocli.CommandLine.ParentCommand;
 @Command(
         name = "generate-connector-identity",
         subcommands = {HelpCommand.class},
-        description = "Generates a fresh salt, keypair, derived connectorId, and ownership commitment "
-                + "for use with register-connector / complete-connector. "
+        description = "Generates a fresh salt, keypair, derived connectorId, ownership commitment, "
+                + "and reveal signature for use with register-connector / complete-connector. "
                 + "Requires --channel-id (the channel this connector will serve).")
 public class GenerateConnectorIdentityCommand implements Callable<Integer> {
 
     private static final int SALT_LEN = 32;
+
+    /**
+     * Default 20-byte CLPR service address used by the connector completion handler:
+     * {@code 0x000000000000000000000000000000000000016e}. Matches
+     * {@code ClprServiceConstants.CLPR_EVM_ADDRESS_BYTES}.
+     */
+    private static final byte[] DEFAULT_SERVICE_ADDRESS = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (byte) 0x6e
+    };
 
     @ParentCommand
     ClprCommand clprCommand;
@@ -55,6 +65,14 @@ public class GenerateConnectorIdentityCommand implements Callable<Integer> {
     String signatureScheme;
 
     @Option(
+            names = {"--service-address"},
+            paramLabel = "<hex>",
+            description = "Optional hex-encoded CLPR service address used in the signature message. "
+                    + "Defaults to the handler's hard-coded 20-byte address (0x...16e). "
+                    + "Provide explicitly only if your network's handler reads serviceAddress from ledger config.")
+    String serviceAddressHex;
+
+    @Option(
             names = {"--out"},
             paramLabel = "<path>",
             description = "If set, writes the JSON bundle to this file instead of stdout.")
@@ -67,6 +85,10 @@ public class GenerateConnectorIdentityCommand implements Callable<Integer> {
         if (channelId.length != 32) {
             throw new IllegalArgumentException("--channel-id must be 32 bytes (got " + channelId.length + ")");
         }
+        final byte[] serviceAddress = (serviceAddressHex == null || serviceAddressHex.isBlank())
+                ? DEFAULT_SERVICE_ADDRESS
+                : ClprArgs.parseHex(serviceAddressHex);
+
         final var rng = new SecureRandom();
 
         // 1. Random 32-byte salt.
@@ -90,7 +112,14 @@ public class GenerateConnectorIdentityCommand implements Callable<Integer> {
         System.arraycopy(publicKey, 0, commitPreimage, connectorId.length, publicKey.length);
         final byte[] commitment = MiscCryptoUtils.keccak256DigestOf(commitPreimage);
 
-        // Signing is deferred until complete-connector resolves the full reveal payload.
+        // 5. reveal_signature = sign( keccak256(connector_id || service_address) ) with the private key.
+        final byte[] sigPreimage = new byte[connectorId.length + serviceAddress.length];
+        System.arraycopy(connectorId, 0, sigPreimage, 0, connectorId.length);
+        System.arraycopy(serviceAddress, 0, sigPreimage, connectorId.length, serviceAddress.length);
+        final byte[] sigMsgHash = MiscCryptoUtils.keccak256DigestOf(sigPreimage);
+        final byte[] signature = SignatureGenerator.signBytes(sigMsgHash, keys.privateKey());
+
+        // 6. Emit JSON.
         final var hex = HexFormat.of();
         final var json = """
                 {
@@ -100,7 +129,9 @@ public class GenerateConnectorIdentityCommand implements Callable<Integer> {
                   "privateKey":      "0x%s",
                   "salt":            "0x%s",
                   "signatureScheme": "%s",
-                  "commitment":      "0x%s"
+                  "serviceAddress":  "0x%s",
+                  "commitment":      "0x%s",
+                  "signature":       "0x%s"
                 }
                 """.formatted(
                         hex.formatHex(channelId),
@@ -109,7 +140,9 @@ public class GenerateConnectorIdentityCommand implements Callable<Integer> {
                         hex.formatHex(keys.privateKeyBytes()),
                         hex.formatHex(salt),
                         scheme,
-                        hex.formatHex(commitment));
+                        hex.formatHex(serviceAddress),
+                        hex.formatHex(commitment),
+                        hex.formatHex(signature));
 
         if (outFile != null && !outFile.isBlank()) {
             Files.writeString(Path.of(outFile), json);

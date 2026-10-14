@@ -21,19 +21,14 @@ set in `LEDGER_CONFIGURATION.service_address` at genesis.
 
 ### Connector ownership signatures
 
-Hiero connector reveals sign `keccak256(UTF8("Hiero CLPR complete connector v1") || body)`,
-where `body` is the canonical protobuf encoding of `ClprCompleteConnectorTransactionBody`
-with `signature` cleared. Fields are encoded in ascending field-number order; default
-scalar/bytes values and unknown fields (including nested unknown fields) are omitted.
-This binds the connector ID, public key, scheme, salt, channel ID, connector contract,
-admin key, and locked stake. Both supported signature schemes sign this 32-byte digest.
+Hiero connector reveals sign `keccak256(connector_id || service_address)`, as specified
+in canonical spec §6.3. The `service_address` is the 20-byte CLPR system-contract address
+`0x000000000000000000000000000000000000016e`. Both supported signature schemes sign this
+32-byte digest and produce a 64-byte signature.
 
-The former signature over `connector_id || service_address` is rejected because it
-allowed a copied reveal to change the contract, administrator, and stake. Clients must
-sign each complete registration, after resolving its local contract and admin key.
-Existing registered connectors are unaffected. `generate-connector-identity` generates
-the key material and commitment; `complete-connector --identity ...` signs the resolved
-registration using that identity. Explicit externally generated signatures remain supported.
+`generate-connector-identity` generates the key material, commitment, and reveal signature.
+`complete-connector --identity ...` submits that signature with the registration fields.
+Explicit externally generated signatures remain supported.
 
 ---
 

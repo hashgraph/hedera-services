@@ -1175,7 +1175,7 @@ public abstract class HieroToHieroBase implements LifecycleTest {
                         clprCompleteConnector()
                                 .connectorId(crypto.connectorId)
                                 .publicKey(crypto.publicKey)
-                                .signatureSigner(crypto::signConnector)
+                                .signature(crypto.connectorSignature)
                                 .signatureScheme(ClprSignatureScheme.ED25519)
                                 .salt(crypto.connectorSalt)
                                 .channelId(crypto.channelId)
@@ -1431,6 +1431,10 @@ public abstract class HieroToHieroBase implements LifecycleTest {
             0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
             0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
         };
+        // 0x000000000000000000000000000000000000016e (CLPR system contract)
+        private static final byte[] CLPR_SERVICE_ADDRESS = {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (byte) 0x6e
+        };
         // Channel state from a prior test in the same shared-network
         // run lingers in ledger state, so each ClprCrypto must derive a distinct channelId
         // (and connectorId) to avoid CLPR_CHANNEL_ALREADY_EXISTS on re-registration.
@@ -1443,6 +1447,7 @@ public abstract class HieroToHieroBase implements LifecycleTest {
         final byte[] connectorSalt = new byte[32]; // all zeros
         final byte[] connectorId;
         final byte[] connectorCommitment;
+        final byte[] connectorSignature = new byte[Ed25519.SIGNATURE_SIZE];
 
         ClprCrypto() {
             Ed25519.generatePublicKey(TEST_PRIVATE_KEY, 0, publicKey, 0);
@@ -1462,12 +1467,10 @@ public abstract class HieroToHieroBase implements LifecycleTest {
 
             // Connector commitment: keccak256(connectorId || pubKey)
             connectorCommitment = keccak256(concat(connectorId, publicKey));
-        }
 
-        byte[] signConnector(final byte[] digest) {
-            final var signed = new byte[Ed25519.SIGNATURE_SIZE];
-            Ed25519.sign(TEST_PRIVATE_KEY, 0, digest, 0, digest.length, signed, 0);
-            return signed;
+            // Connector signature: Ed25519 over keccak256(connectorId || CLPR_SERVICE_ADDRESS)
+            final var connectorSigMsg = keccak256(concat(connectorId, CLPR_SERVICE_ADDRESS));
+            Ed25519.sign(TEST_PRIVATE_KEY, 0, connectorSigMsg, 0, connectorSigMsg.length, connectorSignature, 0);
         }
 
         private static byte[] keccak256(final byte[] input) {

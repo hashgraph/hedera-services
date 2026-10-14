@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.spec.transactions.clpr;
 
-import static com.hedera.node.app.hapi.utils.ClprSigningUtils.connectorSignatureMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ClprCompleteConnector;
-import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ClprCompleteConnectorTransactionBody;
@@ -29,7 +26,6 @@ public class HapiClprCompleteConnector extends HapiTxnOp<HapiClprCompleteConnect
     private byte[] connectorId;
     private byte[] publicKey;
     private byte[] signature;
-    private Function<byte[], byte[]> signatureSigner;
     private ClprSignatureScheme signatureScheme = ClprSignatureScheme.ED25519;
     private byte[] salt;
     private byte[] channelId;
@@ -53,13 +49,6 @@ public class HapiClprCompleteConnector extends HapiTxnOp<HapiClprCompleteConnect
 
     public HapiClprCompleteConnector signature(final byte[] signature) {
         this.signature = signature;
-        this.signatureSigner = null;
-        return this;
-    }
-
-    /** Signs the canonical ownership digest after contract and admin names have been resolved. */
-    public HapiClprCompleteConnector signatureSigner(final Function<byte[], byte[]> signer) {
-        this.signatureSigner = requireNonNull(signer);
         return this;
     }
 
@@ -134,14 +123,6 @@ public class HapiClprCompleteConnector extends HapiTxnOp<HapiClprCompleteConnect
                             }
                             b.setLockedStake(lockedStake);
                         });
-        if (signatureSigner != null) {
-            final var pbjBody = com.hedera.hapi.node.clpr.ClprCompleteConnectorTransactionBody.PROTOBUF.parse(
-                    Bytes.wrap(opBody.toByteArray()));
-            final var signedBody = opBody.toBuilder()
-                    .setSignature(ByteString.copyFrom(signatureSigner.apply(connectorSignatureMessage(pbjBody))))
-                    .build();
-            return b -> b.setClprCompleteConnector(signedBody);
-        }
         return b -> b.setClprCompleteConnector(opBody);
     }
 
