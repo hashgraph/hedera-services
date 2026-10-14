@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCloseChanne
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprDeregisterConnector;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRedactMessage;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprSubmitBundle;
@@ -40,13 +39,13 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.VERIFY_CONFIG;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toBundleProofBytes;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toConfigProofBytes;
+import static com.hedera.services.bdd.suites.interledger.ClprTestHelpers.CLPR_SERVICE_ADDRESS_20;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CLPR_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -84,7 +83,6 @@ import com.hederahashgraph.service.proto.java.ClprServiceGrpc;
 import io.grpc.CallOptions;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.StreamObserver;
@@ -125,8 +123,9 @@ public class ClprDisabledSuite {
     private static final String CONNECTOR_CONTRACT = "PassThroughAuth";
     private static final long GAS_TO_OFFER = 500_000L;
     private static final String INGEST_BYPASS_NODE = "4";
+    // ClprMaintenance is never submitted, only externalized by nodes in the block stream
     private static final EnumSet<HederaFunctionality> NODE_INTERNAL_CLPR_FUNCTIONS =
-            EnumSet.of(HederaFunctionality.ClprEndpointPublication);
+            EnumSet.of(HederaFunctionality.ClprEndpointPublication, HederaFunctionality.ClprMaintenance);
     private static final List<String> CLPR_SYSTEM_CONTRACT_NUMS =
             List.of(String.valueOf(0x16eL), String.valueOf(0x16fL), String.valueOf(0x170L), String.valueOf(0x171L));
 
@@ -213,7 +212,7 @@ public class ClprDisabledSuite {
 
     @Tag(ONLY_SUBPROCESS)
     @HapiTest
-    @DisplayName("Every node rejects peer sync, discovery and streaming while CLPR is disabled")
+    @DisplayName("Every node rejects streaming sync while CLPR is disabled")
     final Stream<DynamicTest> peerRpcCallsAreRejected() {
         return hapiTest(withOpContext((spec, opLog) -> {
             for (final var node : spec.targetNetworkOrThrow().nodes()) {
@@ -221,14 +220,6 @@ public class ClprDisabledSuite {
                         .usePlaintext()
                         .build();
                 try {
-                    final var error = assertThrows(
-                            StatusRuntimeException.class,
-                            () -> ClientCalls.blockingUnaryCall(
-                                    channel,
-                                    peerMethod("discoverEndpoints", MethodDescriptor.MethodType.UNARY),
-                                    CallOptions.DEFAULT.withDeadlineAfter(5, TimeUnit.SECONDS),
-                                    new byte[0]));
-                    assertPeerServiceDisabled(error.getStatus());
                     final var status = new CompletableFuture<Status>();
                     final var stream = ClientCalls.asyncBidiStreamingCall(
                             channel.newCall(
@@ -491,9 +482,6 @@ public class ClprDisabledSuite {
                         .connectorId(crypto.connectorId())
                         .adminKey(GENESIS)
                         .stakeRecipient(GENESIS));
-        txns.put(
-                "redactMessage",
-                clprRedactMessage().channelId(crypto.channelId()).messageId(1L));
         // A verified message referencing an unknown remote connector produces CONNECTOR_NOT_FOUND
         // in the outbound reply. The bundle itself must still be accepted successfully.
         final var payload = ClprMessagePayload.newBuilder()
@@ -517,13 +505,8 @@ public class ClprDisabledSuite {
     private static ClprLedgerConfiguration ledgerConfig() {
         return ClprLedgerConfiguration.newBuilder()
                 .setChainId("hiero:testing")
-                .setServiceAddress(ByteString.copyFrom(new byte[] {0, 0, 1}))
+                .setServiceAddress(ByteString.copyFrom(CLPR_SERVICE_ADDRESS_20))
                 .setThrottles(HapiClprUpdateLedgerConfiguration.defaultThrottles())
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211))
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {1})))
                 .build();
     }
 
