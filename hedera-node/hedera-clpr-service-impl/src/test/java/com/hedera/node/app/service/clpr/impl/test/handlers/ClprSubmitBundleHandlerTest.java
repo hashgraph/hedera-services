@@ -51,7 +51,6 @@ import com.hedera.hapi.node.state.clpr.ClprMessageReply;
 import com.hedera.hapi.node.state.clpr.ClprMessageReplyStatus;
 import com.hedera.hapi.node.state.clpr.ClprMessageValue;
 import com.hedera.hapi.node.state.clpr.ClprQueueMetadata;
-import com.hedera.hapi.node.state.clpr.ClprRedactedMessage;
 import com.hedera.hapi.node.state.clpr.ClprServiceEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.hapi.node.state.token.Account;
@@ -87,7 +86,6 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -1195,79 +1193,6 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("REDACTED reply for a source-side-redacted DATA still dispatches onClprResponse via preserved sender")
-    void redactedOriginatingDispatchesOnClprResponseFromPreservedSender() {
-        // Outbound slot 1 was admin-redacted before delivery. Per the spec §4.4 followup the
-        // ClprRedactedMessage carries the sender so the source can still deliver the eventual
-        // REDACTED reply to the originating application.
-        messageQueueStore.put(
-                CHANNEL_ID,
-                1L,
-                ClprMessageValue.newBuilder()
-                        .payload(ClprMessagePayload.newBuilder()
-                                .redactedMessage(ClprRedactedMessage.newBuilder()
-                                        .messageHash(ZERO_HASH)
-                                        .sender(SENDER)
-                                        .build())
-                                .build())
-                        .runningHashAfterProcessing(ZERO_HASH)
-                        .build());
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        final var bundle = buildBundle(
-                ClprChannelStatus.ACTIVE,
-                0,
-                1,
-                ZERO_HASH,
-                List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED)));
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        // Verify onClprResponse dispatch fires despite the originating slot being redacted.
-        verify(handleContext).dispatch(any(DispatchOptions.class));
-        // Slot deleted after the reply is processed.
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
-    }
-
-    @Test
-    @DisplayName("REDACTED reply for a source-side-redacted DATA skips slashing (connector id not preserved)")
-    void redactedOriginatingSkipsSourceSideSlashing() {
-        // Same setup as the dispatch test, but with a CONNECTOR_NOT_FOUND reply — which would
-        // normally slash the source-side connector. With the originator redacted, connector id
-        // isn't available on the slot, so the slashing branch is skipped.
-        messageQueueStore.put(
-                CHANNEL_ID,
-                1L,
-                ClprMessageValue.newBuilder()
-                        .payload(ClprMessagePayload.newBuilder()
-                                .redactedMessage(ClprRedactedMessage.newBuilder()
-                                        .messageHash(ZERO_HASH)
-                                        .sender(SENDER)
-                                        .build())
-                                .build())
-                        .runningHashAfterProcessing(ZERO_HASH)
-                        .build());
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        putConnector(); // add a connector that could be slashed
-        final var bundle = buildBundle(
-                ClprChannelStatus.ACTIVE,
-                0,
-                1,
-                ZERO_HASH,
-                List.of(replyPayloadWithStatus(1, ClprMessageReplyStatus.CONNECTOR_NOT_FOUND)));
-        setupHandleContext(bundle, true);
-
-        // Should not throw — reply is processed, dispatch fires, slashing is skipped.
-        subject.handle(handleContext);
-
-        verify(handleContext).dispatch(any(DispatchOptions.class));
-        assertThat(connectorStore
-                        .getConnector(new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS))
-                        .slashCount())
-                .isZero();
-    }
-
-    @Test
     @DisplayName("response delivery failure does not stop bundle processing")
     void responseDeliveryFailureDoesNotStopProcessing() {
         putOutboundDataMessage(1);
@@ -1559,15 +1484,15 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("lazy config propagation enqueues ConfigUpdate when config is stale")
     void lazyConfigPropagationEnqueuesConfigUpdate() {
         // Channel has stale config (ZERO_TIMESTAMP < CONFIG_TIMESTAMP). Use a single
-        // redacted inbound slot so the bundle clears the EmptyBundle reject (spec §4.2 Step 1a);
+        // inbound data slot so the bundle clears the EmptyBundle reject (spec §4.2 Step 1a);
         // the lazy-config behaviour under test is independent of the inbound payload type.
         putChannelWithConfigTimestamp(ClprChannelStatus.ACTIVE, 1, 0, 0, ZERO_HASH, ZERO_TIMESTAMP);
-        setupHandleContext(buildRedactedBundle(), true);
+        setupHandleContext(validSingleDataBundle(), true);
 
         subject.handle(handleContext);
 
-        // ConfigUpdate control message is enqueued at slot 1 (before the REDACTED reply for
-        // the inbound slot, which lands at slot 2).
+        // ConfigUpdate control message is enqueued at slot 1 (before the CONNECTOR_NOT_FOUND
+        // reply for the inbound slot, which lands at slot 2).
         final var enqueuedMsg = messageQueueStore.getMessage(CHANNEL_ID, 1);
         assertThat(enqueuedMsg).isNotNull();
         assertThat(enqueuedMsg.payload().hasControl()).isTrue();
@@ -1576,7 +1501,7 @@ class ClprSubmitBundleHandlerTest {
         // Channel should have updated lastConfigTimestamp and nextMessageId
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.lastConfigTimestamp()).isEqualTo(CONFIG_TIMESTAMP);
-        // 1 (original) + 1 (config update) + 1 (REDACTED reply for the inbound slot)
+        // 1 (original) + 1 (config update) + 1 (CONNECTOR_NOT_FOUND reply for the inbound slot)
         assertThat(updated.nextMessageId()).isEqualTo(3);
     }
 
@@ -1584,19 +1509,20 @@ class ClprSubmitBundleHandlerTest {
     @DisplayName("no config propagation when timestamp is current")
     void noConfigPropagationWhenTimestampCurrent() {
         // Channel already has current config (CONFIG_TIMESTAMP == CONFIG_TIMESTAMP). A single
-        // redacted inbound slot makes the bundle non-empty per spec §4.2 Step 1a.
+        // inbound data slot makes the bundle non-empty per spec §4.2 Step 1a.
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        setupHandleContext(buildRedactedBundle(), true);
+        setupHandleContext(validSingleDataBundle(), true);
 
         subject.handle(handleContext);
 
-        // No ConfigUpdate is enqueued; only the REDACTED reply for the inbound slot at slot 1.
+        // No ConfigUpdate is enqueued; only the CONNECTOR_NOT_FOUND reply for the inbound slot at slot 1.
         final var slot1 = messageQueueStore.getMessage(CHANNEL_ID, 1);
         assertThat(slot1).isNotNull();
         assertThat(slot1.payload().hasMessageReply()).isTrue();
-        assertThat(slot1.payload().messageReplyOrThrow().status()).isEqualTo(ClprMessageReplyStatus.REDACTED);
+        assertThat(slot1.payload().messageReplyOrThrow().status())
+                .isEqualTo(ClprMessageReplyStatus.CONNECTOR_NOT_FOUND);
 
-        // nextMessageId advances only for the REDACTED reply (1 → 2)
+        // nextMessageId advances only for the CONNECTOR_NOT_FOUND reply (1 → 2)
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.nextMessageId()).isEqualTo(2);
     }
@@ -1607,9 +1533,9 @@ class ClprSubmitBundleHandlerTest {
         // Spec §4.2 Step 5c imposes no status restriction on lazy config propagation: as long as
         // the channel can still emit outbound messages, a stale config must be flushed so the
         // peer sees the latest ledger config before we drain. The handler enqueues the
-        // ConfigUpdate first, then the REDACTED reply for the inbound slot.
+        // ConfigUpdate first, then the CONNECTOR_NOT_FOUND reply for the inbound slot.
         putChannelWithConfigTimestamp(ClprChannelStatus.CLOSING, 1, 0, 0, ZERO_HASH, ZERO_TIMESTAMP);
-        setupHandleContext(buildRedactedBundle(), true);
+        setupHandleContext(validSingleDataBundle(), true);
 
         subject.handle(handleContext);
 
@@ -1619,11 +1545,12 @@ class ClprSubmitBundleHandlerTest {
         assertThat(slot1.payload().hasControl()).isTrue();
         assertThat(slot1.payload().controlOrThrow().hasConfigUpdate()).isTrue();
 
-        // Slot 2 = REDACTED reply for the inbound slot
+        // Slot 2 = CONNECTOR_NOT_FOUND reply for the inbound slot
         final var slot2 = messageQueueStore.getMessage(CHANNEL_ID, 2);
         assertThat(slot2).isNotNull();
         assertThat(slot2.payload().hasMessageReply()).isTrue();
-        assertThat(slot2.payload().messageReplyOrThrow().status()).isEqualTo(ClprMessageReplyStatus.REDACTED);
+        assertThat(slot2.payload().messageReplyOrThrow().status())
+                .isEqualTo(ClprMessageReplyStatus.CONNECTOR_NOT_FOUND);
     }
 
     @Test
@@ -1711,14 +1638,14 @@ class ClprSubmitBundleHandlerTest {
     // ---- #333: Step 1b — apply new_endpoint_manifest / #334: Criterion 5 ----
 
     @Test
-    @DisplayName("#333: manifest replaced when version advances (flag ON)")
+    @DisplayName("#333: manifest replaced when version advances")
     void manifestReplacedWhenVersionAdvances() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
         final var newManifest = buildManifest(3L, "10.0.0.5");
         // Bundle carries a message (Criterion 1) so progress isn't in question; we're
         // asserting only that the manifest write lands.
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1735,7 +1662,7 @@ class ClprSubmitBundleHandlerTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         final var staleManifest = buildManifest(3L, "10.0.0.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1749,7 +1676,7 @@ class ClprSubmitBundleHandlerTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         // Bundle carries no new_endpoint_manifest.
         final var bundleContent = buildBundleWithManifest(null, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1773,29 +1700,13 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.endpointManifestVersion()).isEqualTo(2L);
         assertThat(updated.endpointManifestOrThrow()).isEqualTo(newManifest);
-    }
-
-    @Test
-    @DisplayName("#333: flag OFF skips manifest write even when version advances")
-    void flagOffSkipsManifestWrite() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.9");
-        // Bundle carries a message (Criterion 1) so it still processes without Criterion 5.
-        final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
-
-        subject.handle(handleContext);
-
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        // Flag OFF → no manifest write, cache stays at 0.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
     }
 
     @Test
@@ -1813,7 +1724,7 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1835,7 +1746,7 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(staleManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -1843,24 +1754,74 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("#334: flag OFF makes Criterion 5 inert (manifest-only bundle rejected)")
-    void bundleWithFlagOffAndManifestOnlyIsNoProgress() {
+    @DisplayName("no-progress pure ack still records the peer's view of our manifest version")
+    void noProgressBundleStillRecordsPeerObservedManifestVersion() {
+        // On an idle channel the peer's pure acks are the only bundles carrying its view of our manifest; they are
+        // rejected as no-progress, so the version must be recorded before that check or the push loop never ends.
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(1L, "10.0.0.15");
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
                         .nextMessageId(1)
                         .sentRunningHash(ZERO_HASH)
                         .receivedMessageId(0)
                         .status(ClprChannelStatus.ACTIVE)
+                        .endpointManifestVersion(7L)
                         .build())
-                .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_NO_PROGRESS));
+        verify(channelLifecycle).recordPeerObservedManifestVersion(CHANNEL_ID, 7L);
+    }
+
+    @Test
+    @DisplayName("manifest advance in a bundle rejected by a later check does not reseed peer endpoint cache")
+    void rejectedBundleDoesNotReseedPeerEndpointCache() {
+        // The Step 1b channel write is rolled back with the failed transaction, so the node-local cache (the inbound
+        // mTLS trust set) must not pick up the unapplied manifest's endpoints either.
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var valid = buildBundleWithManifest(newManifest, List.of(dataPayload()));
+        final var badHash = valid.copyBuilder()
+                .metadata(valid.metadataOrThrow()
+                        .copyBuilder()
+                        .sentRunningHash(ZERO_HASH)
+                        .build())
+                .build();
+        setupHandleContextWithFlags(bundleTxn(badHash), true);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_RUNNING_HASH_MISMATCH));
+        verify(channelLifecycle, never()).seedPeerEndpoints(any(), any());
+    }
+
+    @Test
+    @DisplayName("manifest advancement reseeds peer endpoint cache")
+    void manifestAdvancementReseedsPeerEndpointCache() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
+
+        subject.handle(handleContext);
+
+        verify(channelLifecycle).seedPeerEndpoints(CHANNEL_ID, newManifest.endpoints());
+    }
+
+    @Test
+    @DisplayName("stale manifest does not reseed peer endpoint cache")
+    void staleManifestDoesNotReseedPeerEndpointCache() {
+        putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
+        final var staleManifest = buildManifest(3L, "10.0.0.3");
+        final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
+
+        subject.handle(handleContext);
+
+        verify(channelLifecycle, never()).seedPeerEndpoints(any(), any());
     }
 
     @Test
@@ -1880,6 +1841,28 @@ class ClprSubmitBundleHandlerTest {
 
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.peerConfigTimestamp()).isEqualTo(peerTimestamp);
+    }
+
+    @Test
+    @DisplayName("ConfigUpdate without a configuration is consumed and leaves peerConfigTimestamp unchanged")
+    void configUpdateWithoutConfigurationLeavesPeerTimestampUnchanged() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var before = channelStore.getChannel(CHANNEL_ID);
+
+        final var emptyConfigUpdatePayload = ClprMessagePayload.newBuilder()
+                .control(ClprControlMessage.newBuilder()
+                        .configUpdate(ClprConfigUpdate.newBuilder().build())
+                        .build())
+                .build();
+        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(emptyConfigUpdatePayload));
+        setupHandleContext(bundle, true);
+
+        subject.handle(handleContext);
+
+        final var updated = channelStore.getChannel(CHANNEL_ID);
+        assertThat(updated.receivedMessageId()).isEqualTo(1L);
+        assertThat(updated.peerConfigTimestamp()).isEqualTo(before.peerConfigTimestamp());
+        assertThat(updated.peerThrottles()).isEqualTo(before.peerThrottles());
     }
 
     @Test
@@ -1978,20 +1961,6 @@ class ClprSubmitBundleHandlerTest {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_BUNDLE_VERIFICATION_FAILED));
-    }
-
-    @Test
-    @DisplayName("received ConfigUpdate keeps all endpoint keys when max_peer_endpoints is zero")
-    void receivedConfigUpdateKeepsAllEndpointKeysWhenMaxPeerEndpointsIsZero() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var peerTimestamp = Timestamp.newBuilder().seconds(5000).nanos(42).build();
-        final var endpoints = endpointList(12);
-        final var bundle = buildBundle(
-                ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(configUpdatePayload(peerTimestamp, endpoints)));
-        setupHandleContext(bundle, true);
-        given(configStore.getConfiguration()).willReturn(createLedgerConfigWithMaxPeerEndpoints(0));
-
-        subject.handle(handleContext);
     }
 
     @Test
@@ -2149,50 +2118,6 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("source-side: REDACTED response does not slash")
-    void sourceNoSlashOnRedacted() {
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        putOutboundDataMessage(1);
-        putConnectorWithStake(100_000_000L, 0);
-
-        final var reply = replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED);
-        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH, List.of(reply));
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        final var conn = connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS));
-        assertThat(conn).isNotNull();
-        assertThat(conn.lockedStake()).isEqualTo(100_000_000L);
-        assertThat(conn.slashCount()).isEqualTo(0);
-
-        verify(tokenServiceApi, never()).transferFromTo(any(), any(), anyLong());
-    }
-
-    @Test
-    @DisplayName("source-side: legacy CHANNEL_CLOSED response (never generated by conforming impl) does not slash")
-    void sourceNoSlashOnLegacyChannelClosed() {
-        // CHANNEL_CLOSED is reserved and will never be generated by a conforming implementation,
-        // but may be received from older peers. It must not trigger slashing.
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        putOutboundDataMessage(1);
-        putConnectorWithStake(100_000_000L, 0);
-
-        final var reply = replyPayloadWithStatus(1, ClprMessageReplyStatus.CHANNEL_CLOSED);
-        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH, List.of(reply));
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        final var conn = connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS));
-        assertThat(conn).isNotNull();
-        assertThat(conn.lockedStake()).isEqualTo(100_000_000L);
-        assertThat(conn.slashCount()).isEqualTo(0);
-
-        verify(tokenServiceApi, never()).transferFromTo(any(), any(), anyLong());
-    }
-
-    @Test
     @DisplayName("source-side: ban after threshold slashes removes connector")
     void sourceSlashBanRemovesConnector() {
         putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
@@ -2230,100 +2155,10 @@ class ClprSubmitBundleHandlerTest {
         verify(tokenServiceApi, never()).transferFromTo(any(), any(), anyLong());
     }
 
-    // ========== C-1: Redacted slot generates REDACTED reply ==========
-
     @Test
-    @DisplayName("redacted slot enqueues REDACTED reply")
-    void redactedSlotGeneratesRedactedReply() {
-        final var messageHash = ClprHashUtils.sha256(
-                ClprMessagePayload.PROTOBUF.toBytes(dataPayload()).toByteArray());
-        final var redactedPayload = ClprMessagePayload.newBuilder()
-                .redactedMessage(ClprRedactedMessage.newBuilder()
-                        .messageHash(Bytes.wrap(messageHash))
-                        .build())
-                .build();
-        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(redactedPayload));
-        putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        // REDACTED reply should be enqueued at nextMessageId=0
-        final var response = messageQueueStore.getMessage(CHANNEL_ID, 0);
-        assertThat(response).isNotNull();
-        assertThat(response.payload().hasMessageReply()).isTrue();
-        assertThat(response.payload().messageReplyOrThrow().status()).isEqualTo(ClprMessageReplyStatus.REDACTED);
-        assertThat(response.payload().messageReplyOrThrow().messageId()).isEqualTo(1L);
-
-        // receivedMessageId advances past the redacted slot
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated.receivedMessageId()).isEqualTo(1L);
-    }
-
-    @Test
-    @DisplayName("redacted slot extends the running-hash chain via SHA-256(prev || message_hash)")
-    void redactedSlotChainsViaMessageHash() {
-        final var messageHash = Bytes.wrap(new byte[] {
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
-        });
-        final var redactedPayload = ClprMessagePayload.newBuilder()
-                .redactedMessage(ClprRedactedMessage.newBuilder()
-                        .messageHash(messageHash)
-                        .build())
-                .build();
-        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(redactedPayload));
-        putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        final var expected = ClprHashUtils.computeRunningHashFromPayloadHash(ZERO_HASH, messageHash);
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated.receivedRunningHash()).isEqualTo(expected);
-    }
-
-    // ========== 3.13.1: Redaction × bundle verification — source-side REDACTED reply ==========
-
-    @Test
-    @DisplayName("3.13.1: REDACTED reply for source-side DATA advances channel without slashing")
-    void redactedReplyAdvancesChannelNoSlash() {
-        // Source sent DATA message 1; connector has some stake at slash_count=0.
-        // Peer redacted that slot → source now receives a REDACTED reply.
-        // Expected: DATA message deleted from queue, channel advances, NO slash.
-        putChannel(ClprChannelStatus.ACTIVE, 2, 0, ZERO_HASH);
-        putOutboundDataMessage(1);
-        putConnectorWithStake(100_000_000L, 0);
-
-        final var reply = replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED);
-        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH, List.of(reply));
-        setupHandleContext(bundle, true);
-
-        subject.handle(handleContext);
-
-        // Channel advances normally
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated.ackedMessageId()).isEqualTo(1L);
-        assertThat(updated.status()).isEqualTo(ClprChannelStatus.ACTIVE);
-
-        // DATA message deleted from the outbound queue (reply was terminal)
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
-
-        // No slash — connector stake unchanged
-        final var connector = connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS));
-        assertThat(connector).isNotNull();
-        assertThat(connector.lockedStake()).isEqualTo(100_000_000L);
-        assertThat(connector.slashCount()).isEqualTo(0);
-
-        // No reimbursement transfer to payer (staking account → payer)
-        verify(tokenServiceApi, never()).transferFromTo(eq(STAKING_ACCOUNT), eq(PAYER_ID), anyLong());
-    }
-
-    @Test
-    @DisplayName("3.13.1: in-flight counter decremented on REDACTED reply (same as normal reply)")
-    void redactedReplyDecrementsInFlightCounter() {
-        // Connector has inFlightMessageCount=2 (two DATA messages in flight).
-        // Receiving a REDACTED reply for message 1 should decrement the counter to 1.
+    @DisplayName(
+            "given two DATA messages in flight, when a reply for one arrives, then the in-flight counter drops to 1")
+    void givenTwoDataMessagesInFlight_whenReplyArrives_thenInFlightCounterIsDecremented() {
         putChannel(ClprChannelStatus.ACTIVE, 3, 0, ZERO_HASH);
         putOutboundDataMessage(1);
         putOutboundDataMessage(2);
@@ -2343,8 +2178,8 @@ class ClprSubmitBundleHandlerTest {
                 .build();
         lenient().when(accountStore.getContractById(CONNECTOR_CONTRACT_ID)).thenReturn(connectorAccount);
 
-        // Bundle acks message 1 with a REDACTED reply
-        final var reply = replyPayloadWithStatus(1, ClprMessageReplyStatus.REDACTED);
+        // Bundle acks message 1 with a reply
+        final var reply = replyPayload(1);
         final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 1, ZERO_HASH, List.of(reply));
         setupHandleContext(bundle, true);
 
@@ -2354,34 +2189,6 @@ class ClprSubmitBundleHandlerTest {
         final var updatedConnector = connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, CONNECTOR_ADDRESS));
         assertThat(updatedConnector).isNotNull();
         assertThat(updatedConnector.inFlightMessageCount()).isEqualTo(1L);
-    }
-
-    @Test
-    @DisplayName("3.13.2: double redact at handler level rejects with CLPR_MESSAGE_ALREADY_REDACTED")
-    void doubleRedactRejectsAtHandlerLevel() {
-        // The redact handler itself handles duplicate redaction — it rejects with CLPR_MESSAGE_ALREADY_REDACTED.
-        // This test documents the current behavior captured by ClprRedactMessageHandlerTest, verified here via
-        // the WritableMessageQueueStore directly. We put an already-redacted slot (no payload) into the queue
-        // and verify that a subsequent redact call throws CLPR_MESSAGE_ALREADY_REDACTED.
-        // This captures spec test 3.13.2 — "redacting the same slot twice is a no-op or rejects."
-        // Current behavior: rejects (CLPR_MESSAGE_ALREADY_REDACTED).
-        final var alreadyRedacted = ClprMessageValue.newBuilder()
-                .runningHashAfterProcessing(ZERO_HASH)
-                .build();
-        messageQueueStore.put(CHANNEL_ID, 5L, alreadyRedacted);
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 5L)).isNotNull();
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 5L).hasPayload()).isFalse();
-
-        // Attempting a second redact: the ClprRedactMessageHandler checks hasNonEmptyPayload and throws.
-        // We verify this by directly calling the handler logic via ClprRedactMessageHandler's behavior:
-        // if the stored message has no payload, the handler MUST throw CLPR_MESSAGE_ALREADY_REDACTED.
-        // (See ClprRedactMessageHandlerTest.rejectsWhenMessageAlreadyRedacted — same invariant.)
-        final var alreadyRedactedMsg = messageQueueStore.getMessage(CHANNEL_ID, 5L);
-        assertThat(alreadyRedactedMsg).isNotNull();
-        // No hasMessage, no hasMessageReply, no hasControl — all unset.
-        assertThat(alreadyRedactedMsg.hasPayload()).isFalse();
-        // This is the state that causes CLPR_MESSAGE_ALREADY_REDACTED in ClprRedactMessageHandler.doHandle.
-        // The test here documents that the queue store faithfully stores the already-redacted state.
     }
 
     // ========== C-2: CEI ordering — connector debit before dispatch ==========
@@ -2765,48 +2572,11 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("flag off: a peer-reported endpoint_manifest_version is ignored and does not perturb bundle handling")
-    void peerEndpointManifestVersionIgnoredWhenFlagOff() {
-        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS
-        // ledger's manifest version. #330 populates + carries the field through the pipeline.
-        // With clpr.endpointManifestEnabled=false the handler does not read or record it (the
-        // inbound read is flag-guarded), so the field is inert and the bundle is handled exactly
-        // as before.
-        putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
-
-        final var msg = dataPayload();
-        final var runningHash = ClprHashUtils.computeRunningHash(ZERO_HASH, msg);
-        final var metadata = ClprQueueMetadata.newBuilder()
-                .nextMessageId(2L)
-                .sentRunningHash(runningHash)
-                .receivedMessageId(0L)
-                .status(ClprChannelStatus.ACTIVE)
-                .endpointManifestVersion(42L)
-                .build();
-        final var bundle = ClprBundleContent.newBuilder()
-                .metadata(metadata)
-                .messages(List.of(msg))
-                .build();
-        setupHandleContext(bundleTxn(bundle), true);
-        putConnector();
-
-        subject.handle(handleContext);
-
-        // Bundle processed normally; channel advanced.
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated).isNotNull();
-        assertThat(updated.receivedMessageId()).isEqualTo(1L);
-        // Our OWN endpoint_manifest_version is NOT touched by the peer-reported value - this
-        // ledger's cache of the PEER's manifest is unrelated to the peer's cache of ours.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
-    }
-
-    @Test
-    @DisplayName("flag on: a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
-    void peerEndpointManifestVersionAcceptedWhenFlagOn() {
-        // With clpr.endpointManifestEnabled=true the handler reads the peer-reported version (the
-        // guarded inbound read fires). On this branch that read is log-only — recording it lands in
-        // #335 — so the observable contract is unchanged: the bundle is handled normally and this
+    @DisplayName("a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
+    void peerEndpointManifestVersionAccepted() {
+        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS ledger's
+        // manifest version. The handler records it via the lifecycle SPI (node-local, in-memory) and
+        // the observable channel contract is unchanged: the bundle is handled normally and this
         // ledger's own cache of the PEER's manifest is untouched (the bundle carries no
         // new_endpoint_manifest to apply via Step 1b).
         putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
@@ -2824,17 +2594,18 @@ class ClprSubmitBundleHandlerTest {
                 .metadata(metadata)
                 .messages(List.of(msg))
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundle), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundle), true);
         putConnector();
 
         subject.handle(handleContext);
 
-        // Bundle processed normally with the flag on; channel advanced.
+        // Bundle processed normally; channel advanced.
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated).isNotNull();
         assertThat(updated.receivedMessageId()).isEqualTo(1L);
         // No new_endpoint_manifest in the bundle → Step 1b is a no-op; our cache stays at 0.
         assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
+        verify(channelLifecycle).recordPeerObservedManifestVersion(CHANNEL_ID, 42L);
     }
 
     // ========== Verifier outcomes ==========
@@ -2911,7 +2682,7 @@ class ClprSubmitBundleHandlerTest {
                     .newEndpointManifest(newManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 1L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             subject.handle(handleContext);
@@ -2936,7 +2707,7 @@ class ClprSubmitBundleHandlerTest {
                     .newEndpointManifest(staleManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             assertThatThrownBy(() -> subject.handle(handleContext))
@@ -3017,15 +2788,6 @@ class ClprSubmitBundleHandlerTest {
                 .build();
     }
 
-    /** Builds a redacted-slot payload carrying the supplied {@code SHA-256(serialized_payload)}. */
-    private static ClprMessagePayload redactedPayload(@NonNull final Bytes messageHash) {
-        return ClprMessagePayload.newBuilder()
-                .redactedMessage(ClprRedactedMessage.newBuilder()
-                        .messageHash(messageHash)
-                        .build())
-                .build();
-    }
-
     /**
      * ABI-encodes a single {@code bytes} value as it would appear in an EVM return buffer.
      * <p>
@@ -3052,10 +2814,6 @@ class ClprSubmitBundleHandlerTest {
         return Bytes.wrap(result);
     }
 
-    private TransactionBody buildRedactedBundle() {
-        return buildBundle(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(redactedPayload(ZERO_HASH)));
-    }
-
     /** Builds a valid bundle, computing the spec §4.1 running-hash chain over the messages. */
     private TransactionBody buildBundle(
             @NonNull final ClprChannelStatus peerState,
@@ -3063,15 +2821,7 @@ class ClprSubmitBundleHandlerTest {
             final long peerReceivedMessageId,
             @NonNull final Bytes startingHash,
             @NonNull final List<ClprMessagePayload> messages) {
-        var hash = startingHash;
-        for (final var p : messages) {
-            if (p.hasRedactedMessage()) {
-                hash = ClprHashUtils.computeRunningHashFromPayloadHash(
-                        hash, p.redactedMessageOrThrow().messageHash());
-            } else {
-                hash = ClprHashUtils.computeRunningHash(hash, p);
-            }
-        }
+        final var hash = runningHashOver(startingHash, messages);
         final var metadata = ClprQueueMetadata.newBuilder()
                 .nextMessageId(ackedMessageId + messages.size() + 1)
                 .sentRunningHash(hash)
@@ -3200,15 +2950,7 @@ class ClprSubmitBundleHandlerTest {
             @NonNull final List<ClprMessagePayload> messages) {
         // Start from ZERO_HASH (matches putChannel's receivedRunningHash) and chain each
         // message payload so the bundle's sentRunningHash matches what the receiver recomputes.
-        var hash = ZERO_HASH;
-        for (final var p : messages) {
-            if (p.hasRedactedMessage()) {
-                hash = ClprHashUtils.computeRunningHashFromPayloadHash(
-                        hash, p.redactedMessageOrThrow().messageHash());
-            } else {
-                hash = ClprHashUtils.computeRunningHash(hash, p);
-            }
-        }
+        final var hash = runningHashOver(ZERO_HASH, messages);
         final var metadata = ClprQueueMetadata.newBuilder()
                 .nextMessageId(messages.size() + 1L)
                 .sentRunningHash(hash)
@@ -3222,12 +2964,10 @@ class ClprSubmitBundleHandlerTest {
         return builder.build();
     }
 
-    private void setupHandleContextWithFlags(
-            @NonNull final TransactionBody txn, final boolean clprEnabled, final boolean endpointManifestEnabled) {
+    private void setupHandleContextWithFlags(@NonNull final TransactionBody txn, final boolean clprEnabled) {
         setupHandleContext(txn, clprEnabled);
         final var config = com.hedera.node.config.testfixtures.HederaTestConfigBuilder.create()
                 .withValue("clpr.enabled", clprEnabled)
-                .withValue("clpr.endpointManifestEnabled", endpointManifestEnabled)
                 .withValue("clpr.slashBasePenalty", "10000000")
                 .withValue("clpr.slashMultiplier", "2")
                 .withValue("clpr.slashBanThreshold", "5")
@@ -3433,28 +3173,6 @@ class ClprSubmitBundleHandlerTest {
                                 .maxGasPerMessage(maxGasPerMessage)
                                 .build())
                         .build());
-    }
-
-    private static ClprMessagePayload configUpdatePayload(
-            @NonNull final Timestamp peerTimestamp, @NonNull final List<ClprEndpoint> endpoints) {
-        return ClprMessagePayload.newBuilder()
-                .control(ClprControlMessage.newBuilder()
-                        .configUpdate(ClprConfigUpdate.newBuilder()
-                                .configuration(ClprLedgerConfiguration.newBuilder()
-                                        .timestamp(peerTimestamp)
-                                        .endpoints(endpoints)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-    }
-
-    private static List<ClprEndpoint> endpointList(final int count) {
-        final var endpoints = new ArrayList<ClprEndpoint>();
-        for (int i = 0; i < count; i++) {
-            endpoints.add(ClprEndpoint.newBuilder().build());
-        }
-        return endpoints;
     }
 
     @Test

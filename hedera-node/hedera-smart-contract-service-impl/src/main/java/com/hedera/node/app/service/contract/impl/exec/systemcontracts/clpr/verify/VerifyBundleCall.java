@@ -3,13 +3,13 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.clpr.veri
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_BUNDLE_VERIFICATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi.VERIFY_BUNDLE_WITH_MANIFEST_RETURN;
+import static com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi.VERIFY_BUNDLE_RETURN;
 import static com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi.absentMetadataTuple;
 import static com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi.manifestStructTuple;
+import static com.hedera.node.app.service.clpr.impl.verifier.ClprVerifierAbi.metadataTuple;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.ordinalRevertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -26,12 +26,10 @@ import com.hedera.node.app.hapi.utils.blocks.TssVerifier;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.config.data.ClprConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -60,6 +58,7 @@ public class VerifyBundleCall extends AbstractCall {
 
     private final byte[] bundlePayload;
     private final byte[] trustAnchor;
+    private final Bytes channelContext;
     private final TssVerifier tssVerifier;
 
     /**
@@ -75,10 +74,12 @@ public class VerifyBundleCall extends AbstractCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final byte[] bundlePayload,
             @NonNull final byte[] trustAnchor,
+            @NonNull final byte[] channelContext,
             @NonNull final TssVerifier tssVerifier) {
         super(gasCalculator, enhancement, true);
         this.bundlePayload = requireNonNull(bundlePayload);
         this.trustAnchor = requireNonNull(trustAnchor);
+        this.channelContext = Bytes.wrap(requireNonNull(channelContext));
         this.tssVerifier = requireNonNull(tssVerifier);
     }
 
@@ -89,6 +90,12 @@ public class VerifyBundleCall extends AbstractCall {
 
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+        // verifyConfig binds the channel by prefixing the peer service address with its 32-byte ID.
+        // An empty or truncated context must never permit an unbound proof verification.
+        if (channelContext.length() < 32) {
+            return fail();
+        }
+        final var expectedChannelId = channelContext.slice(0, 32);
         final var trustAnchorBytes = Bytes.wrap(trustAnchor);
         log.info(
                 "verifyBundle (receiver) ENTER trustAnchor={} ({} bytes), bundlePayload={} bytes, gasRequirement={}",
@@ -174,6 +181,10 @@ public class VerifyBundleCall extends AbstractCall {
                     final var inner = ClprProofExtraction.unwrapStateValueField(valueBytes);
                     if (inner != null) {
                         channel = ClprChannel.PROTOBUF.parseStrict(inner.toReadableSequentialData());
+                        if (!channel.channelId().equals(expectedChannelId)) {
+                            log.warn("verifyBundle: proven channel does not match the requested channel context");
+                            return fail();
+                        }
                     }
                 } else if (svTag == ClprProofExtraction.SV_MESSAGE_TAG) {
                     final var inner = ClprProofExtraction.unwrapStateValueField(valueBytes);
@@ -187,14 +198,14 @@ public class VerifyBundleCall extends AbstractCall {
                             return fail();
                         }
                         final var msgValue = ClprMessageValue.PROTOBUF.parseStrict(inner.toReadableSequentialData());
-                        // Preserve the slot for redacted messages (payload cleared by ClprRedactMessage):
-                        // the receiver expects to iterate messages by index so it can emit a REDACTED
-                        // reply for that slot and advance ackedMessageId. Dropping the slot would
-                        // misalign receivedMessageId and stall delivery.
+                        if (!msgValue.hasPayload()) {
+                            log.warn(
+                                    "verifyBundle: message leaf without a payload for trustAnchor {}",
+                                    trustAnchorBytes);
+                            return fail();
+                        }
                         provenMessages.add(new ProvenMessage(
-                                messageKey,
-                                msgValue.hasPayload() ? msgValue.payload() : ClprMessagePayload.DEFAULT,
-                                msgValue.runningHashAfterProcessing()));
+                                messageKey, msgValue.payloadOrThrow(), msgValue.runningHashAfterProcessing()));
                     }
                 } else if (svTag == ClprProofExtraction.SV_ENDPOINT_MANIFEST_TAG) {
                     // Optional endpoint manifest advancement (spec §4.9 / bundle Progress
@@ -215,18 +226,15 @@ public class VerifyBundleCall extends AbstractCall {
 
         if (channel == null) {
             // Manifest-only recovery bundle (spec §8.1.4 manual recovery): a state-proven endpoint
-            // manifest with no channel leaf. Accepted only on the manifest-enabled
-            // path, so the CLPR Service can apply the manifest update out-of-band — no gRPC to any
-            // (stale) endpoint. With the feature off this stays a hard rejection.
+            // manifest with no channel leaf. Accepted so the CLPR Service can apply the manifest
+            // update out-of-band — no gRPC to any (stale) endpoint.
             //
             // provenMessages.isEmpty() is required: unlike Ethereum/Besu (where the distinct 7-item / 4-item
             // wire shape structurally rules out content), a Hiero proof can carry message leaves alongside
             // a manifest leaf. Without this guard such a bundle would return SUCCESS while its messages are
             // silently dropped (no penalty, queue never advances). A message-bearing bundle with no
             // channel leaf is malformed — reject it.
-            final boolean manifestEnabled =
-                    configOf(frame).getConfigData(ClprConfig.class).endpointManifestEnabled();
-            if (manifestEnabled && provenMessages.isEmpty() && newEndpointManifest != null) {
+            if (provenMessages.isEmpty() && newEndpointManifest != null) {
                 return manifestOnlySuccess(newEndpointManifest);
             }
             return fail();
@@ -299,9 +307,7 @@ public class VerifyBundleCall extends AbstractCall {
         if (log.isDebugEnabled()) {
             log.debug("verifyBundle: trustAnchor={} OK ({} messages)", trustAnchorBytes, messages.size());
         }
-        final boolean manifestEnabled =
-                configOf(frame).getConfigData(ClprConfig.class).endpointManifestEnabled();
-        return bundleSuccess(bundleContent, manifestEnabled);
+        return bundleSuccess(bundleContent);
     }
 
     /**
@@ -347,36 +353,26 @@ public class VerifyBundleCall extends AbstractCall {
     }
 
     @NonNull
-    private PricedResult bundleSuccess(@NonNull final ClprBundleContent outContent, final boolean manifestEnabled) {
+    private PricedResult bundleSuccess(@NonNull final ClprBundleContent outContent) {
         final ClprQueueMetadata meta = outContent.metadataOrElse(ClprQueueMetadata.DEFAULT);
-        final Tuple metaTuple = Tuple.of(
-                BigInteger.valueOf(meta.nextMessageId()),
-                meta.sentRunningHash().toByteArray(),
-                BigInteger.valueOf(meta.receivedMessageId()),
-                meta.receivedRunningHash().toByteArray(),
-                meta.status().protoOrdinal());
+        // §4.5: the metaTuple carries the sender's cached version of the receiver's manifest, so the receiver
+        // learns whether it still needs to re-send its own manifest (breaks the idle-channel manifest-only storm).
+        final Tuple metaTuple = metadataTuple(meta);
+        if (metaTuple == null) {
+            log.warn("verifyBundle: queue metadata is not ABI-encodable");
+            return fail();
+        }
         final byte[][] messageBytes = outContent.messages().stream()
                 .map(msg -> ClprMessagePayload.PROTOBUF.toBytes(msg).toByteArray())
                 .toArray(byte[][]::new);
         final byte[] newTrustAnchor = outContent.newTrustAnchor().toByteArray();
         final byte[] newTrustAnchorId = outContent.newTrustAnchorId().toByteArray();
-        if (manifestEnabled) {
-            // §4.2 Step 1b: append the extracted manifest as the 5th member (DEFAULT → version 0 = absent).
-            final Tuple manifestTuple =
-                    manifestStructTuple(outContent.newEndpointManifestOrElse(ClprEndpointManifest.DEFAULT));
-            return gasOnly(
-                    successResult(
-                            VERIFY_BUNDLE_WITH_MANIFEST_RETURN.encode(
-                                    Tuple.of(metaTuple, messageBytes, newTrustAnchor, newTrustAnchorId, manifestTuple)),
-                            GAS_REQUIREMENT),
-                    SUCCESS,
-                    true);
-        }
+        final Tuple manifestTuple =
+                manifestStructTuple(outContent.newEndpointManifestOrElse(ClprEndpointManifest.DEFAULT));
         return gasOnly(
                 successResult(
-                        VerifyBundleTranslator.VERIFY_BUNDLE
-                                .getOutputs()
-                                .encode(Tuple.of(metaTuple, messageBytes, newTrustAnchor, newTrustAnchorId)),
+                        VERIFY_BUNDLE_RETURN.encode(
+                                Tuple.of(metaTuple, messageBytes, newTrustAnchor, newTrustAnchorId, manifestTuple)),
                         GAS_REQUIREMENT),
                 SUCCESS,
                 true);
@@ -395,7 +391,7 @@ public class VerifyBundleCall extends AbstractCall {
         final Tuple absentMetadata = absentMetadataTuple();
         return gasOnly(
                 successResult(
-                        VERIFY_BUNDLE_WITH_MANIFEST_RETURN.encode(Tuple.of(
+                        VERIFY_BUNDLE_RETURN.encode(Tuple.of(
                                 absentMetadata,
                                 new byte[0][],
                                 new byte[0],

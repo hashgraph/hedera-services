@@ -40,6 +40,11 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
     private final EventOrigin origin;
     /** The time this event was received via gossip */
     private Instant timeReceived;
+    /**
+     * The time this event left the last stage of the event pipeline that measured it, or the time it entered the
+     * pipeline. The latency of a stage is the time from this value until the event leaves the stage.
+     */
+    private Instant lastStageTime;
 
     /**
      * The id of the node which sent us this event
@@ -98,6 +103,8 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
                 // for a newly created event, the time received is the same as the time created
                 unsignedEvent.getTimeCreated(),
                 Objects.requireNonNull(origin, "The origin must not be null"));
+        // the first stage (event creation) starts when its transactions are taken from the pool
+        this.lastStageTime = unsignedEvent.getTimeTransactionsTaken();
     }
 
     /**
@@ -123,6 +130,7 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
         this.metadata = metadata;
         this.origin = origin;
         this.timeReceived = timeReceived;
+        this.lastStageTime = timeReceived;
         this.senderId = null;
         this.consensusData = NO_CONSENSUS;
         Objects.requireNonNull(gossipEvent.eventCore(), "The eventCore must not be null");
@@ -284,6 +292,26 @@ public class PlatformEvent implements ConsensusEvent, Hashable {
      */
     public void setTimeReceived(@NonNull final Instant timeReceived) {
         this.timeReceived = timeReceived;
+    }
+
+    /**
+     * Get the time this event left the last stage of the event pipeline that measured it. Until a stage measures it,
+     * this is the time the event entered the pipeline, initially the time it was received.
+     *
+     * @return the time this event left the last measured stage
+     */
+    public @NonNull Instant getLastStageTime() {
+        return lastStageTime;
+    }
+
+    /**
+     * Set the time this event left the last stage of the event pipeline that measured it, or the time it entered the
+     * pipeline.
+     *
+     * @param lastStageTime the time this event left the last measured stage
+     */
+    public void setLastStageTime(@NonNull final Instant lastStageTime) {
+        this.lastStageTime = lastStageTime;
     }
 
     /**
