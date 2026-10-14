@@ -520,11 +520,6 @@ public class ClprDisabledSuite {
                 .setChainId("hiero:testing")
                 .setServiceAddress(ByteString.copyFrom(CLPR_SERVICE_ADDRESS_20))
                 .setThrottles(HapiClprUpdateLedgerConfiguration.defaultThrottles())
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211))
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {1})))
                 .build();
     }
 
