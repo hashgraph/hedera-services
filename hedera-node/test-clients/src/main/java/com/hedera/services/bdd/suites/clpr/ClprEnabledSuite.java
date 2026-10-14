@@ -120,8 +120,9 @@ public class ClprEnabledSuite {
     private static final String CONNECTOR_CONTRACT = "PassThroughAuth";
     private static final long GAS_TO_OFFER = 500_000L;
     private static final String INGEST_BYPASS_NODE = "4";
+    // ClprMaintenance is never submitted, only externalized by nodes in the block stream
     private static final EnumSet<HederaFunctionality> NODE_INTERNAL_CLPR_FUNCTIONS =
-            EnumSet.of(HederaFunctionality.ClprEndpointPublication);
+            EnumSet.of(HederaFunctionality.ClprEndpointPublication, HederaFunctionality.ClprMaintenance);
     private static final List<String> CLPR_SYSTEM_CONTRACT_NUMS =
             List.of(String.valueOf(0x16eL), String.valueOf(0x16fL), String.valueOf(0x170L), String.valueOf(0x171L));
 

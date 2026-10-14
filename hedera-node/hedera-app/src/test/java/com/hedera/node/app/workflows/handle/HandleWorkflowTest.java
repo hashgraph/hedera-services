@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.ENDPOINT_MANIFEST_RECONCILIATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.GENESIS_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_ROSTER_RECONCILIATION;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.history.schemas.V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID;
@@ -57,6 +62,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -82,6 +88,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -780,6 +787,12 @@ class HandleWorkflowTest {
         lenient()
                 .when(systemTransactions.nextReservedSystemTimeFor(any()))
                 .thenAnswer(invocation -> ((Instant) invocation.getArgument(0)).minusNanos(100));
+        lenient()
+                .when(systemTransactions.nextSystemTransactionIdAt(any()))
+                .thenAnswer(invocation -> TransactionID.newBuilder()
+                        .transactionValidStart(asTimestamp(invocation.getArgument(0)))
+                        .nonce(1)
+                        .build());
         lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
         subject = new HandleWorkflow(
                 networkInfo,
@@ -966,9 +979,12 @@ class HandleWorkflowTest {
                 .willReturn(manifest);
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
         method.setAccessible(true);
-        method.invoke(subject, state, NOW);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
 
         verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
         verify(manifest).put(any(ClprEndpointManifest.class));
@@ -998,12 +1014,15 @@ class HandleWorkflowTest {
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         givenSubjectWith(mode, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.chainId", "upgrade-chain"));
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
         method.setAccessible(true);
         boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
         final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
 
-        method.invoke(subject, state, NOW);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
 
         final var changes = boundaryStateChangeListener.allStateChanges();
         assertEquals(List.of(pendingChange), changes);
@@ -1015,7 +1034,7 @@ class HandleWorkflowTest {
                                     .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
                                     .toList();
                             return updates.size() == 3
-                                    && items.getFirst().hasSignedTransaction()
+                                    && reasonOf(items) == UPGRADE_INITIALIZATION
                                     && items.get(1).hasTransactionResult();
                         }),
                         eq(NOW.minusNanos(100)));
@@ -1026,7 +1045,7 @@ class HandleWorkflowTest {
 
         // Once the block boundary has consumed these changes, initialization must not emit them again.
         boundaryStateChangeListener.reset();
-        method.invoke(subject, state, NOW);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
         assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
         verify(blockStreamManager, times(1)).writeSavepointItems(any(), any());
     }
@@ -1108,7 +1127,7 @@ class HandleWorkflowTest {
                                     .filter(BlockItem::hasStateChanges)
                                     .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
                                     .toList();
-                            return items.getFirst().hasSignedTransaction()
+                            return reasonOf(items) == ENDPOINT_MANIFEST_RECONCILIATION
                                     && updates.stream().anyMatch(change -> change.singletonUpdateOrThrow()
                                             .hasClprEndpointManifestConstructionValue());
                         }),
@@ -1205,7 +1224,7 @@ class HandleWorkflowTest {
         verify(blockStreamManager)
                 .writeSavepointItems(
                         argThat(items -> items.size() == 3
-                                && items.getFirst().hasSignedTransaction()
+                                && reasonOf(items) == GENESIS_INITIALIZATION
                                 && items.getLast()
                                                 .stateChangesOrThrow()
                                                 .stateChanges()
@@ -1218,7 +1237,7 @@ class HandleWorkflowTest {
     }
 
     @Test
-    void upgradeRosterChangeEmitsSyntheticEndpointTransaction() throws Exception {
+    void upgradeRosterChangeEmitsSyntheticMaintenanceTransaction() throws Exception {
         clprEndpointManifestReconciler = new ClprEndpointManifestReconciler(
                 () -> mock(ClprSubmissions.class), () -> mock(ClprCaCertManager.class));
         final var construction = clprSingleton(
@@ -1247,24 +1266,26 @@ class HandleWorkflowTest {
 
         verify(blockStreamManager)
                 .writeSavepointItems(
-                        argThat(items -> {
-                            try {
-                                final var body = TransactionBody.PROTOBUF.parse(SignedTransaction.PROTOBUF
-                                        .parse(items.getFirst().signedTransactionOrThrow())
-                                        .bodyBytes());
-                                return body.hasClprEndpointPublication()
-                                        && items.getLast()
-                                                        .stateChangesOrThrow()
-                                                        .stateChanges()
-                                                        .size()
-                                                == 1;
-                            } catch (Exception e) {
-                                throw new AssertionError(e);
-                            }
-                        }),
+                        argThat(items -> reasonOf(items) == UPGRADE_ROSTER_RECONCILIATION
+                                && items.getLast()
+                                                .stateChangesOrThrow()
+                                                .stateChanges()
+                                                .size()
+                                        == 1),
                         eq(NOW.minusNanos(100)));
         assertEquals(List.of(0L), construction.get().targetNodeIds());
         assertEquals(2, construction.get().constructionId());
+    }
+
+    private static ClprMaintenanceReason reasonOf(final List<BlockItem> items) {
+        try {
+            final var body = TransactionBody.PROTOBUF.parse(SignedTransaction.PROTOBUF
+                    .parse(items.getFirst().signedTransactionOrThrow())
+                    .bodyBytes());
+            return body.clprMaintenanceOrThrow().reason();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 
     private enum LocalClprFailure {
@@ -1292,11 +1313,16 @@ class HandleWorkflowTest {
                 .willReturn(mock(WritableSingletonState.class));
         given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
                 .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
         method.setAccessible(true);
-        method.invoke(subject, state);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
 
         verify(boundaryStateChangeListener, never()).reset();
     }
