@@ -251,6 +251,9 @@ val prCheckPlatformOverrides =
             "platformStatus.observingStatusDelay=10s,reconnect.minimumTimeBetweenReconnects=10s"
     )
 val prCheckPrepareUpgradeOffsets = mapOf("hapiTestAdhoc" to "PT300S")
+// We don't want to run stream or log validation for these tasks
+val prCheckWithoutStreamAndLogValidation =
+    setOf("hapiTestIss", "hapiTestBlockNodeCommunication") + clprTasks
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
@@ -349,7 +352,7 @@ fun registerTestSubprocess(name: String, ciTagExpression: String) {
         name,
         ciTagExpression,
         "none()|!(EMBEDDED|REPEATABLE)",
-        ciDefaultTags = "|CONCURRENT_SUBPROCESS_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
         ciDefaultTagsWithoutStreamAndLogValidation = ")&!(EMBEDDED|REPEATABLE",
         excludeTags = "CONCURRENT_SUBPROCESS_VALIDATION",
         junitParallelMode = "same_thread",
@@ -535,12 +538,9 @@ fun TaskContainer.registerHapiTest(
                     // append (or run) STREAM_VALIDATION / LOG_VALIDATION for CLPR. Matched by task
                     // name, not by reading the tag expression as a string.
                     else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
-                    // We don't want to run stream or log validation for ISS, BLOCK_NODE or CLPR
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
-                            (ciTagExpression.contains("ISS") ||
-                                ciTagExpression.contains("BLOCK_NODE") ||
-                                name in clprTasks)
+                            name in prCheckWithoutStreamAndLogValidation
                     )
                         "(${ciTagExpression}${ciDefaultTagsWithoutStreamAndLogValidation})"
                     else "(${ciTagExpression}${ciDefaultTags})"

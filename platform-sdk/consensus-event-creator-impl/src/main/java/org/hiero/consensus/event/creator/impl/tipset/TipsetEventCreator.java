@@ -480,6 +480,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private UnsignedEvent assembleEventObject(final PlatformEvent... otherParents) {
+        final Instant timeTransactionsTaken = time.now();
         final List<TimestampedTransaction> transactions = transactionSupplier.getTransactionsForEvent();
         final List<PlatformEvent> allParents = new ArrayList<>(1 + otherParents.length);
         if (lastSelfEvent != null) {
@@ -498,7 +499,8 @@ public class TipsetEventCreator implements EventCreator {
                 eventWindow.newEventBirthRound(),
                 calculateNewEventCreationTime(lastSelfEvent, allParents, transactions),
                 ListUtils.mapToCopy(transactions, TimestampedTransaction::transaction),
-                random.nextLong(0, roster.size() + 1));
+                random.nextLong(0, roster.size() + 1),
+                timeTransactionsTaken);
         eventHasher.hashUnsignedEvent(event);
 
         return event;
