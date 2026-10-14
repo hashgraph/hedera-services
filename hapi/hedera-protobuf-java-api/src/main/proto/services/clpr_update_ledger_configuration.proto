@@ -18,15 +18,20 @@ import "services/state/clpr/clpr_ledger_configuration.proto";
  * and cannot be changed via this transaction.
  *
  * The block stream also uses this body for an informational synthetic transaction when
- * an upgrade initializes missing CLPR singletons. In that case, configuration is the
- * initialized value, including its immutable fields and initialization timestamp. The
- * body is not dispatched to the update handler; the associated state changes are
- * authoritative and can also include initialization of the endpoint manifest.
+ * genesis or an upgrade initializes missing CLPR singletons. In that case, configuration
+ * contains the resulting value, including its immutable fields and timestamp. The
+ * transaction carries the changed singleton values in its associated state changes,
+ * which are authoritative and can include the endpoint manifest and its empty construction.
+ *
+ * Initialization emits a transaction only when singleton values change. Each emitted
+ * transaction uses a reserved consensus timestamp before the following event or user
+ * transaction. This internally generated body is not dispatched to the update handler
+ * and does not incur transaction fees.
  */
 message ClprUpdateLedgerConfigurationTransactionBody {
     /**
-     * The configuration to update. chain_id, protocol_version, and timestamp
-     * are ignored — chain_id and protocol_version are immutable, timestamp
+     * The configuration to update. For submitted updates, chain_id, protocol_version,
+     * and timestamp are ignored — chain_id and protocol_version are immutable, timestamp
      * is set by the handler. service_address, if set, MUST be the CLPR system
      * contract's EVM address (INVALID_CLPR_CONFIGURATION otherwise); if
      * omitted, it defaults to that address.

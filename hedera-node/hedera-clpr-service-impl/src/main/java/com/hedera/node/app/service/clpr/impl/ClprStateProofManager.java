@@ -286,14 +286,15 @@ public class ClprStateProofManager {
      * depends on {@code allowPureAck}: responder paths pass {@code true} so the channel-only
      * proof is still emitted (a pure-ACK bundle carrying just the channel leaf — the peer
      * learns the current {@code receivedMessageId} / {@code receivedRunningHash} ack frontier).
-     * Initiator paths pass {@code false} so they skip the sync entirely when they have nothing
-     * meaningful to push.
+     * Initiator paths also pass {@code true} for CLOSING and DRAINED channels so the peer learns
+     * the proven closing status even with an empty queue. Other initiator paths pass {@code false}
+     * to skip the bundle unless it carries messages or an endpoint manifest update.
      *
      * @param channelId   raw bytes of the channel identifier
      * @param firstMessageId first outbound message ID to include (= ackedMessageId + 1)
      * @param peerThrottles  peer-published throttles governing this bundle (max messages, max bytes)
      * @param allowPureAck   when true, emit a channel-only (pure-ACK) bundle if no message
-     *                       leaves are available; when false, return null in that case
+     *                       leaves are available; when false, require messages or an endpoint manifest update
      * @param includeEndpointManifest  when true, embed a Merkle path for this ledger's
      *                       {@code ClprEndpointManifest} singleton so the peer's verifyBundle can
      *                       return {@code new_endpoint_manifest} and Step 1b applies the update
@@ -301,7 +302,7 @@ public class ClprStateProofManager {
      *                       when the peer's cached {@code endpoint_manifest_version} is stale
      *                       (see #335).
      * @return serialised {@code StateProof} bytes, or {@code null} when no snapshot is available
-     *         or when there are no message leaves and {@code allowPureAck} is false
+     *         or when there are no message leaves, {@code allowPureAck} is false, and no manifest is included
      */
     @Nullable
     public Bytes buildSerializedBundleProof(
@@ -630,18 +631,18 @@ public class ClprStateProofManager {
                     firstMessageId);
         }
 
-        // A proof with no message leaves carries only the current ack frontier
-        // (channel.receivedMessageId / receivedRunningHash) plus, since #335, the endpoint
+        // A proof with no message leaves carries the channel's status and current ack frontier
+        // (channel.receivedMessageId / receivedRunningHash), plus any requested endpoint
         // manifest. Responder paths (`allowPureAck=true`) need this so they can acknowledge
         // an inbound message even when the local outbound queue is empty — without it, the
-        // peer never learns its message was received and replays forever.
+        // peer never learns its message was received and replays forever. Initiators also pass
+        // `allowPureAck=true` during shutdown to propagate their proven CLOSING or DRAINED status.
         //
         // An initiator (`allowPureAck=false`) with an empty queue still has meaningful work when
         // it must push a manifest advance the peer has not observed — a moved endpoint has to
         // propagate or peers stay stuck dialing the stale address. So permit a manifest-only
         // bundle when the manifest will actually be carried (includeEndpointManifest).
-        // Only when there is truly nothing — no messages, not a responder ack, and no manifest to
-        // send — do we skip. (Neeha review.)
+        // Skip only when there are no messages, no permitted channel-only proof, and no manifest to send.
         final boolean manifestOnlyPayload = includeEndpointManifest;
         if (messageLeafCount == 0) {
             if (!allowPureAck && !manifestOnlyPayload) {

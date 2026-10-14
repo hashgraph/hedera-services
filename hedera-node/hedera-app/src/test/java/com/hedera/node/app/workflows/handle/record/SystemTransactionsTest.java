@@ -178,6 +178,12 @@ class SystemTransactionsTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(blockStreamManager.lastUsedConsensusTime())
+                .thenReturn(Instant.EPOCH);
+        org.mockito.Mockito.lenient()
+                .when(blockRecordManager.lastUsedConsensusTime())
+                .thenReturn(Instant.EPOCH);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("blockStream.streamMode", "BLOCKS")
                 .withValue("consensus.handleMaxPrecedingRecords", 3)
@@ -222,6 +228,45 @@ class SystemTransactionsTest {
         // No exception means success - the nonce is private so we can't directly verify,
         // but we can verify the method doesn't throw
         assertDoesNotThrow(() -> subject.resetNextDispatchNonce());
+    }
+
+    @Test
+    void reservedTimeStartsAtFloorWhenNoEarlierWorkUsedIt() {
+        assertEquals(subject.firstReservedSystemTimeFor(NOW), subject.nextReservedSystemTimeFor(NOW));
+    }
+
+    @Test
+    void reservedTimeFollowsMaintenanceAndEarlierDispatches() {
+        final var used = subject.firstReservedSystemTimeFor(NOW).plusNanos(10);
+        given(blockStreamManager.lastUsedConsensusTime()).willReturn(used);
+        assertEquals(used.plusNanos(2), subject.nextReservedSystemTimeFor(NOW));
+        final var context = subject.newSystemContext(
+                NOW,
+                state,
+                ignored -> {},
+                SystemTransactions.UseReservedConsensusTimes.YES,
+                SystemTransactions.TriggerStakePeriodSideEffects.YES);
+        assertEquals(used.plusNanos(2), context.now());
+        assertTrue(context.hasDispatchesRemaining());
+    }
+
+    @Test
+    void reservedTimeCannotOverlapUserPrecedingRecords() {
+        given(blockStreamManager.lastUsedConsensusTime()).willReturn(NOW.minusNanos(5));
+        assertThrows(IllegalStateException.class, () -> subject.nextReservedSystemTimeFor(NOW));
+    }
+
+    @Test
+    void lastReservedSlotIsUsable() {
+        given(blockStreamManager.lastUsedConsensusTime()).willReturn(NOW.minusNanos(6));
+        final var context = subject.newSystemContext(
+                NOW,
+                state,
+                ignored -> {},
+                SystemTransactions.UseReservedConsensusTimes.YES,
+                SystemTransactions.TriggerStakePeriodSideEffects.YES);
+        assertEquals(NOW.minusNanos(4), context.now());
+        assertTrue(context.hasDispatchesRemaining());
     }
 
     @ParameterizedTest

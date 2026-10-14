@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
@@ -43,7 +44,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -72,9 +72,13 @@ import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.state.PlatformState;
@@ -429,10 +433,17 @@ class HandleWorkflowTest {
         givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "false"));
 
         for (final var methodName : List.of("reconcileClprEndpointManifest", "pruneClprEndpointManifestOnUpgrade")) {
-            final var method =
-                    HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
+            final var reconcile = methodName.equals("reconcileClprEndpointManifest");
+            final var method = reconcile
+                    ? HandleWorkflow.class.getDeclaredMethod(
+                            methodName, com.swirlds.state.State.class, Instant.class, Instant.class)
+                    : HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
             method.setAccessible(true);
-            method.invoke(subject, state, NOW);
+            if (reconcile) {
+                method.invoke(subject, state, NOW, NOW);
+            } else {
+                method.invoke(subject, state, NOW);
+            }
         }
 
         assertEquals(0, clprEndpointManifestReconcilerProviderCalls.get());
@@ -766,6 +777,10 @@ class HandleWorkflowTest {
         final var hederaConfig = config.getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(hederaConfig, 1L));
         lenient().when(round.getConsensusTimestamp()).thenReturn(NOW);
+        lenient()
+                .when(systemTransactions.nextReservedSystemTimeFor(any()))
+                .thenAnswer(invocation -> ((Instant) invocation.getArgument(0)).minusNanos(100));
+        lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
         subject = new HandleWorkflow(
                 networkInfo,
                 stakePeriodChanges,
@@ -797,7 +812,7 @@ class HandleWorkflowTest {
                 congestionMetrics,
                 () -> PlatformStatus.ACTIVE,
                 blockHashSigner,
-                null,
+                new java.util.concurrent.atomic.AtomicBoolean(),
                 nodeRewardManager,
                 blockBufferService,
                 Map.of(),
@@ -940,6 +955,10 @@ class HandleWorkflowTest {
         final var clprStates = mock(WritableStates.class);
         final WritableSingletonState<ClprLedgerConfiguration> ledgerConfiguration = mock(WritableSingletonState.class);
         final WritableSingletonState<ClprEndpointManifest> manifest = mock(WritableSingletonState.class);
+        final WritableSingletonState<ClprEndpointManifestConstruction> construction =
+                mock(WritableSingletonState.class);
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(construction);
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
                 .willReturn(ledgerConfiguration);
@@ -947,9 +966,9 @@ class HandleWorkflowTest {
                 .willReturn(manifest);
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
         method.setAccessible(true);
-        method.invoke(subject, state);
+        method.invoke(subject, state, NOW);
 
         verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
         verify(manifest).put(any(ClprEndpointManifest.class));
@@ -959,41 +978,57 @@ class HandleWorkflowTest {
     @EnumSource(
             value = StreamMode.class,
             names = {"BLOCKS", "BOTH"})
-    void upgradeSingletonInitializationAccumulatesBoundaryChangesOnlyOnce(final StreamMode mode) throws Exception {
+    void upgradeSingletonInitializationEmitsOneTransactionAndPreservesBoundaryChanges(final StreamMode mode)
+            throws Exception {
         boundaryStateChangeListener = new BoundaryStateChangeListener(
                 mock(StoreMetricsService.class), () -> configProvider.getConfiguration());
         final var ledgerConfig =
                 clprSingleton(LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", (ClprLedgerConfiguration) null);
         final var manifest =
                 clprSingleton(ENDPOINT_MANIFEST_STATE_ID, "ENDPOINT_MANIFEST", (ClprEndpointManifest) null);
-        final var clprStates =
-                MapWritableStates.builder().state(ledgerConfig).state(manifest).build();
+        final var construction = clprSingleton(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                "ENDPOINT_MANIFEST_CONSTRUCTION",
+                (ClprEndpointManifestConstruction) null);
+        final var clprStates = MapWritableStates.builder()
+                .state(ledgerConfig)
+                .state(manifest)
+                .state(construction)
+                .build();
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         givenSubjectWith(mode, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.chainId", "upgrade-chain"));
         final var method = HandleWorkflow.class.getDeclaredMethod(
-                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+                "initializeMissingClprSingletons", com.swirlds.state.State.class, Instant.class);
         method.setAccessible(true);
         boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
         final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
 
-        method.invoke(subject, state);
+        method.invoke(subject, state, NOW);
 
         final var changes = boundaryStateChangeListener.allStateChanges();
-        assertEquals(3, changes.size());
-        assertTrue(changes.contains(pendingChange));
-        assertTrue(changes.stream()
-                .anyMatch(change -> change.singletonUpdateOrThrow().hasClprLedgerConfigurationValue()));
-        assertTrue(changes.stream()
-                .anyMatch(change -> change.singletonUpdateOrThrow().hasClprEndpointManifestValue()));
+        assertEquals(List.of(pendingChange), changes);
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> {
+                            final var updates = items.stream()
+                                    .filter(BlockItem::hasStateChanges)
+                                    .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                                    .toList();
+                            return updates.size() == 3
+                                    && items.getFirst().hasSignedTransaction()
+                                    && items.get(1).hasTransactionResult();
+                        }),
+                        eq(NOW.minusNanos(100)));
+        assertEquals(ClprEndpointManifestConstruction.DEFAULT, construction.get());
         assertEquals("upgrade-chain", ledgerConfig.get().chainId());
         assertEquals(new Timestamp(1, 0), ledgerConfig.get().timestamp());
         assertEquals(1, manifest.get().version());
 
         // Once the block boundary has consumed these changes, initialization must not emit them again.
         boundaryStateChangeListener.reset();
-        method.invoke(subject, state);
+        method.invoke(subject, state, NOW);
         assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
-        verifyNoInteractions(systemTransactions, blockStreamManager);
+        verify(blockStreamManager, times(1)).writeSavepointItems(any(), any());
     }
 
     @ParameterizedTest
@@ -1050,7 +1085,44 @@ class HandleWorkflowTest {
                 .willReturn(MapWritableStates.builder()
                         .state(manifest)
                         .state(construction)
+                        .state(clprSingleton(
+                                LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", ClprLedgerConfiguration.DEFAULT))
                         .build());
+        givenClprRoster(Roster.DEFAULT);
+        given(networkInfo.selfNodeInfo()).willReturn(creatorInfo);
+        final var firstEventTime = givenEmptyRound();
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "true"));
+        // Preserve singleton updates from earlier rounds of this still-open block.
+        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
+        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
+
+        subject.handleRound(state, round, ignore -> {});
+        subject.handleRound(state, round, ignore -> {});
+
+        final var changes = boundaryStateChangeListener.allStateChanges();
+        verify(systemTransactions).nextReservedSystemTimeFor(firstEventTime);
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> {
+                            final var updates = items.stream()
+                                    .filter(BlockItem::hasStateChanges)
+                                    .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                                    .toList();
+                            return items.getFirst().hasSignedTransaction()
+                                    && updates.stream().anyMatch(change -> change.singletonUpdateOrThrow()
+                                            .hasClprEndpointManifestConstructionValue());
+                        }),
+                        eq(firstEventTime.minusNanos(100)));
+        assertEquals(List.of(pendingChange), changes);
+        if (extendsGrace) {
+            assertEquals(1, construction.get().graceExtensionsUsed());
+        } else {
+            assertEquals(ClprEndpointManifestConstruction.DEFAULT, construction.get());
+        }
+        assertEquals(1, manifest.get().version());
+    }
+
+    private void givenClprRoster(final Roster roster) {
         final var rosterHash = Bytes.wrap("active-roster");
         final var rosterState = new FunctionWritableSingletonState<>(
                 ROSTER_STATE_STATE_ID,
@@ -1063,7 +1135,7 @@ class HandleWorkflowTest {
                 .willReturn(MapWritableStates.builder()
                         .state(rosterState)
                         .state(MapWritableKVState.<ProtoBytes, Roster>builder(ROSTERS_STATE_ID, "ROSTERS")
-                                .value(new ProtoBytes(rosterHash), Roster.DEFAULT)
+                                .value(new ProtoBytes(rosterHash), roster)
                                 .build())
                         .build());
         given(state.getReadableStates(AddressBookService.NAME))
@@ -1084,7 +1156,9 @@ class HandleWorkflowTest {
                                 .build())
                         .build());
         given(state.getReadableStates(EntityIdService.NAME)).willReturn(mock(ReadableStates.class));
-        given(networkInfo.selfNodeInfo()).willReturn(creatorInfo);
+    }
+
+    private Instant givenEmptyRound() {
         given(event.getHash()).willReturn(CryptoRandomUtils.randomHash());
         given(event.getCreatorId()).willReturn(NodeId.of(0));
         given(event.getEventCore()).willReturn(EventCore.DEFAULT);
@@ -1095,28 +1169,102 @@ class HandleWorkflowTest {
         given(event.getConsensusTimestamp()).willReturn(firstEventTime);
         given(networkInfo.nodeInfo(0)).willReturn(creatorInfo);
         given(blockStreamManager.lastIntervalProcessTime()).willReturn(NOW);
+        return firstEventTime;
+    }
+
+    @Test
+    void genesisSeedsClprInsideSyntheticTransaction() {
+        final var clprStates = MapWritableStates.builder()
+                .state(clprSingleton(
+                        LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", (ClprLedgerConfiguration) null))
+                .state(clprSingleton(ENDPOINT_MANIFEST_STATE_ID, "ENDPOINT_MANIFEST", (ClprEndpointManifest) null))
+                .state(clprSingleton(
+                        ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                        "ENDPOINT_MANIFEST_CONSTRUCTION",
+                        (ClprEndpointManifestConstruction) null))
+                .build();
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(blockStreamManager.pendingWork())
+                .willReturn(com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK);
+        final var firstEventTime = givenEmptyRound();
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        willAnswer(invocation -> {
+                    final SystemTransactions.StateChangeStreaming streaming = invocation.getArgument(2);
+                    streaming.doStreamingChanges(
+                            clprStates,
+                            null,
+                            () -> com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.initializeSingletons(
+                                    clprStates, configProvider.getConfiguration()));
+                    return null;
+                })
+                .given(systemTransactions)
+                .doGenesisSetup(eq(firstEventTime), eq(state), any());
+
+        subject.handleRound(state, round, ignore -> {});
+
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> items.size() == 3
+                                && items.getFirst().hasSignedTransaction()
+                                && items.getLast()
+                                                .stateChangesOrThrow()
+                                                .stateChanges()
+                                                .size()
+                                        == 3),
+                        eq(firstEventTime.minusNanos(100)));
+        assertEquals(
+                ClprEndpointManifestConstruction.DEFAULT,
+                clprStates.getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID).get());
+    }
+
+    @Test
+    void upgradeRosterChangeEmitsSyntheticEndpointTransaction() throws Exception {
+        clprEndpointManifestReconciler = new ClprEndpointManifestReconciler(
+                () -> mock(ClprSubmissions.class), () -> mock(ClprCaCertManager.class));
+        final var construction = clprSingleton(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                "ENDPOINT_MANIFEST_CONSTRUCTION",
+                ClprEndpointManifestConstruction.DEFAULT);
+        final var clprStates = MapWritableStates.builder()
+                .state(clprSingleton(
+                        LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", ClprLedgerConfiguration.DEFAULT))
+                .state(clprSingleton(
+                        ENDPOINT_MANIFEST_STATE_ID,
+                        "ENDPOINT_MANIFEST",
+                        ClprEndpointManifest.newBuilder().version(1).build()))
+                .state(construction)
+                .build();
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        givenClprRoster(Roster.newBuilder()
+                .rosterEntries(RosterEntry.newBuilder().nodeId(0).weight(1).build())
+                .build());
         givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "true"));
-        // Preserve singleton updates from earlier rounds of this still-open block.
-        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
-        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "pruneClprEndpointManifestOnUpgrade", com.swirlds.state.State.class, Instant.class);
+        method.setAccessible(true);
 
-        subject.handleRound(state, round, ignore -> {});
-        subject.handleRound(state, round, ignore -> {});
+        method.invoke(subject, state, NOW);
 
-        final var changes = boundaryStateChangeListener.allStateChanges();
-        verify(blockStreamManager, never()).writeSavepointItems(any(), any());
-        assertTrue(changes.contains(pendingChange));
-        assertEquals(extendsGrace ? 2 : 3, changes.size());
-        assertEquals(!extendsGrace, changes.stream().anyMatch(change -> change.singletonUpdateOrThrow()
-                .hasClprEndpointManifestValue()));
-        assertTrue(changes.stream()
-                .anyMatch(change -> change.singletonUpdateOrThrow().hasClprEndpointManifestConstructionValue()));
-        if (extendsGrace) {
-            assertEquals(1, construction.get().graceExtensionsUsed());
-        } else {
-            assertEquals(ClprEndpointManifestConstruction.DEFAULT, construction.get());
-        }
-        assertEquals(1, manifest.get().version());
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> {
+                            try {
+                                final var body = TransactionBody.PROTOBUF.parse(SignedTransaction.PROTOBUF
+                                        .parse(items.getFirst().signedTransactionOrThrow())
+                                        .bodyBytes());
+                                return body.hasClprEndpointPublication()
+                                        && items.getLast()
+                                                        .stateChangesOrThrow()
+                                                        .stateChanges()
+                                                        .size()
+                                                == 1;
+                            } catch (Exception e) {
+                                throw new AssertionError(e);
+                            }
+                        }),
+                        eq(NOW.minusNanos(100)));
+        assertEquals(List.of(0L), construction.get().targetNodeIds());
+        assertEquals(2, construction.get().constructionId());
     }
 
     private enum LocalClprFailure {

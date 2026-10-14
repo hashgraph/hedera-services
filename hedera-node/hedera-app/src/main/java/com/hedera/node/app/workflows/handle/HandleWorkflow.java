@@ -36,12 +36,16 @@ import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
+import com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -98,6 +102,7 @@ import com.hedera.node.app.util.ThrottledLogging;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.clpr.ClprEndpointManifestReconciler;
+import com.hedera.node.app.workflows.clpr.ClprMaintenanceTransactions;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.SystemTransactions;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
@@ -172,6 +177,7 @@ public class HandleWorkflow {
     private final SystemTransactions systemTransactions;
     private final StakeInfoHelper stakeInfoHelper;
     private final Provider<ClprEndpointManifestReconciler> clprEndpointManifestReconciler;
+    private final ClprMaintenanceTransactions clprMaintenanceTransactions;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final StakePeriodManager stakePeriodManager;
@@ -270,6 +276,8 @@ public class HandleWorkflow {
         this.systemTransactions = requireNonNull(systemTransactions);
         this.stakeInfoHelper = requireNonNull(stakeInfoHelper);
         this.clprEndpointManifestReconciler = requireNonNull(clprEndpointManifestReconciler);
+        this.clprMaintenanceTransactions = new ClprMaintenanceTransactions(
+                configProvider, blockStreamManager, systemTransactions, exchangeRateManager);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.stakePeriodManager = requireNonNull(stakePeriodManager);
@@ -340,7 +348,14 @@ public class HandleWorkflow {
         if (isGenesis) {
             final var genesisEventTime = firstEvent.getConsensusTimestamp();
             logger.info("Doing genesis setup before {}", genesisEventTime);
-            systemTransactions.doGenesisSetup(genesisEventTime, state, this::doStreamingAllChanges);
+            systemTransactions.doGenesisSetup(genesisEventTime, state, (states, entityStates, action) -> {
+                if (states.contains(V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID)) {
+                    // Stage the CLPR service's initialization so its writes have a transaction owner.
+                    initializeMissingClprSingletons(state, genesisEventTime);
+                } else {
+                    doStreamingAllChanges(states, entityStates, action);
+                }
+            });
             transactionsDispatched = true;
             if (streamMode != RECORDS) {
                 blockStreamManager.confirmPendingWorkFinished();
@@ -355,15 +370,9 @@ public class HandleWorkflow {
             }
         }
 
-        // Drive the CLPR endpoint-manifest reconciler each round. The reconciler opens a
-        // construction on cold start or after a freeze restart (per design §4), gathers per-node
-        // publications routed by ClprEndpointPublicationHandler, and finalizes the manifest on
-        // close. Guarded by clpr.enabled. Wrapped in doStreamingOnlyKvChanges (like the per-round TSS
-        // reconcilers): the manifest and construction singleton mutations are captured by the boundary
-        // listener on commit and externalized when the block closes. doStreamingAllChanges would reset
-        // that listener here, discarding singleton changes from earlier rounds of the still-open block.
+        // Maintenance also runs in empty rounds, before the first event's transaction window.
         try {
-            reconcileClprEndpointManifest(state, round.getConsensusTimestamp());
+            reconcileClprEndpointManifest(state, round.getConsensusTimestamp(), firstEvent.getConsensusTimestamp());
         } catch (Exception e) {
             logger.error("Failed to reconcile CLPR endpoint manifest", e);
         }
@@ -629,7 +638,7 @@ public class HandleWorkflow {
             logger.info("Doing post-upgrade setup @ {}", consensusNow);
             systemTransactions.doPostUpgradeSetup(consensusNow, state);
             try {
-                initializeMissingClprSingletons(state);
+                initializeMissingClprSingletons(state, consensusNow);
             } catch (Exception e) {
                 logger.error("Failed to initialize CLPR singletons on upgrade", e);
             }
@@ -1060,6 +1069,7 @@ public class HandleWorkflow {
             final boolean includeSingletons) {
         if (streamMode != RECORDS) {
             immediateStateChangeListener.resetKvStateChanges(null);
+            immediateStateChangeListener.resetSingletonStateChanges();
             if (includeSingletons) {
                 boundaryStateChangeListener.reset();
             }
@@ -1072,7 +1082,8 @@ public class HandleWorkflow {
             ((CommittableWritableStates) entityIdWritableStates).commit();
         }
         if (streamMode != RECORDS) {
-            final var kvStateChanges = immediateStateChangeListener.getKvStateChanges();
+            final var kvStateChanges = new ArrayList<>(immediateStateChangeListener.getKvStateChanges());
+            kvStateChanges.addAll(immediateStateChangeListener.getSingletonStateChanges());
             if (!kvStateChanges.isEmpty()) {
                 blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                         .stateChanges(new StateChanges(now, new ArrayList<>(kvStateChanges)))
@@ -1239,7 +1250,8 @@ public class HandleWorkflow {
      * Drive the CLPR endpoint-manifest reconciler for one round. No-op when CLPR is disabled or
      * when the active roster is unavailable.
      */
-    private void reconcileClprEndpointManifest(@NonNull final State state, @NonNull final Instant now) {
+    private void reconcileClprEndpointManifest(
+            @NonNull final State state, @NonNull final Instant now, @NonNull final Instant before) {
         final var maybeCtx = clprManifestContextIfEnabled(state);
         if (maybeCtx.isEmpty()) {
             return;
@@ -1275,11 +1287,17 @@ public class HandleWorkflow {
             logger.warn("Failed to publish local CLPR endpoint; continuing manifest reconciliation", e);
         }
 
-        // Per-round construction close driving (state write ⇒ streamed).
-        doStreamingOnlyKvChanges(
+        clprMaintenanceTransactions.perform(
                 ctx.clprWritableStates(),
-                null,
-                () -> reconciler.reconcile(now, ctx.manifestStore(), ctx.constructionStore(), ctx.clprConfig()));
+                before,
+                states -> reconciler.reconcile(
+                        now,
+                        new WritableEndpointManifestStore(states),
+                        new WritableEndpointManifestConstructionStore(states),
+                        ctx.clprConfig()),
+                states -> TransactionBody.newBuilder()
+                        .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT),
+                "CLPR endpoint manifest reconciliation");
     }
 
     /**
@@ -1323,19 +1341,21 @@ public class HandleWorkflow {
             @NonNull ClprConfig clprConfig) {}
 
     /**
-     * Initializes any CLPR singletons missing from the given state. Their changes accumulate in the boundary
-     * listener and are streamed when the block closes. Genesis setup initializes them for new networks; this
-     * covers networks upgrading from a version without them. It runs at handle time so that network properties
-     * such as {@code clpr.chainId} are already in effect.
-     *
-     * @param state the state to initialize the singletons in
+     * Seeds CLPR state for genesis or upgrade, with an informational transaction for block replay and indexing.
+     * Initialization runs at handle time, after network configuration properties have taken effect.
      */
-    private void initializeMissingClprSingletons(@NonNull final State state) {
-        final var clprWritableStates = state.getWritableStates(ClprService.NAME);
-        doStreamingOnlyKvChanges(
-                clprWritableStates,
-                null,
-                () -> V0780ClprSchema.initializeSingletons(clprWritableStates, configProvider.getConfiguration()));
+    private void initializeMissingClprSingletons(@NonNull final State state, @NonNull final Instant before) {
+        clprMaintenanceTransactions.perform(
+                state.getWritableStates(ClprService.NAME),
+                before,
+                states -> V0780ClprSchema.initializeSingletons(states, configProvider.getConfiguration()),
+                states -> TransactionBody.newBuilder()
+                        .clprUpdateLedgerConfiguration(ClprUpdateLedgerConfigurationTransactionBody.newBuilder()
+                                .configuration(states.<ClprLedgerConfiguration>getSingleton(
+                                                V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID)
+                                        .get())
+                                .build()),
+                "CLPR singleton initialization");
     }
 
     /**
@@ -1351,16 +1371,19 @@ public class HandleWorkflow {
         }
         final var ctx = maybeCtx.get();
         final var reconciler = clprEndpointManifestReconciler.get();
-        doStreamingOnlyKvChanges(
+        clprMaintenanceTransactions.perform(
                 ctx.clprWritableStates(),
-                null,
-                () -> reconciler.openConstructionOnRosterChange(
+                now,
+                states -> reconciler.openConstructionOnRosterChange(
                         now,
                         ctx.activeRoster(),
-                        ctx.manifestStore(),
-                        ctx.constructionStore(),
+                        new WritableEndpointManifestStore(states),
+                        new WritableEndpointManifestConstructionStore(states),
                         ctx.nodeStore(),
-                        ctx.clprConfig()));
+                        ctx.clprConfig()),
+                states -> TransactionBody.newBuilder()
+                        .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT),
+                "CLPR endpoint roster reconciliation");
     }
 
     /**

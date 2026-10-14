@@ -863,6 +863,31 @@ public class SystemTransactions {
     }
 
     /**
+     * Returns the next unused reserved consensus time before the given event or user transaction.
+     * Leaves room for a preceding stake update and never enters the user's preceding-record window.
+     */
+    public Instant nextReservedSystemTimeFor(@NonNull final Instant before) {
+        final var firstReserved = firstReservedSystemTimeFor(before);
+        final var lastUsed = streamMode == RECORDS
+                ? blockRecordManager.lastUsedConsensusTime()
+                : blockStreamManager.lastUsedConsensusTime();
+        final var afterLastUsed = lastUsed.plusNanos(MAX_NANOS_PER_SYSTEM_DISPATCH);
+        final var next = firstReserved.isAfter(afterLastUsed) ? firstReserved : afterLastUsed;
+        if (next.isAfter(lastReservedSystemTimeFor(before))) {
+            throw new IllegalStateException("No reserved consensus time remains before " + before);
+        }
+        return next;
+    }
+
+    private Instant lastReservedSystemTimeFor(final Instant before) {
+        return before.minusNanos(1)
+                .minusNanos(configProvider
+                        .getConfiguration()
+                        .getConfigData(ConsensusConfig.class)
+                        .handleMaxPrecedingRecords());
+    }
+
+    /**
      * Whether a context for system transactions should use reserved prior consensus times, or pick up from
      * the time given to the transaction context factory.
      */
@@ -891,16 +916,17 @@ public class SystemTransactions {
             @NonNull final TriggerStakePeriodSideEffects triggerStakePeriodSideEffects) {
         final var config = configProvider.getConfiguration();
         final boolean useReserved = useReservedConsensusTimes == UseReservedConsensusTimes.YES;
-        final var firstConsTime = useReserved ? firstReservedSystemTimeFor(now) : now;
+        final var firstConsTime = useReserved ? nextReservedSystemTimeFor(now) : now;
         final boolean applyStakePeriodSideEffects = triggerStakePeriodSideEffects == TriggerStakePeriodSideEffects.YES;
         // The number of dispatches we can do in this context is determined by the number of available consensus times,
         // where each dispatch also has an earlier nanosecond free for a preceding NODE_STAKE_UPDATE if this context is
         // applying stake period side effects
-        final var remainingDispatches = new AtomicInteger(
-                useReserved
-                        ? (int) java.time.Duration.between(firstConsTime, now).toNanos()
-                                / (applyStakePeriodSideEffects ? MAX_NANOS_PER_SYSTEM_DISPATCH : 1)
-                        : 1);
+        final long availableNanos = useReserved
+                ? java.time.Duration.between(firstConsTime, lastReservedSystemTimeFor(now))
+                        .toNanos()
+                : 0;
+        final int nanosPerDispatch = applyStakePeriodSideEffects ? MAX_NANOS_PER_SYSTEM_DISPATCH : 1;
+        final var remainingDispatches = new AtomicInteger(1 + (int) (availableNanos / nanosPerDispatch));
         final AtomicReference<Instant> nextConsTime = new AtomicReference<>(firstConsTime);
         final var systemAdminId = idFactory.newAccountId(
                 config.getConfigData(AccountsConfig.class).systemAdmin());
