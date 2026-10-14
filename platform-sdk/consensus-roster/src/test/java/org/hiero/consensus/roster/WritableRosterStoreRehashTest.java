@@ -202,16 +202,16 @@ class WritableRosterStoreRehashTest {
         states.commit();
     }
 
-    /** Stores the rosters under their hashes with the given digest, the newest active roster first. */
-    private void givenStoredWith(final DigestType digestType, final Roster candidate, final Roster... activeRosters) {
+    /** Stores the rosters under their hashes with the given digest, the newest first. */
+    private void givenStoredWith(final DigestType digestType, final Roster candidate, final Roster... rosters) {
         final var candidateHash = candidate == null ? Bytes.EMPTY : hashOf(candidate, digestType);
         if (candidate != null) {
             storedRosters.put(keyOf(candidate, digestType), candidate);
         }
         final List<RoundRosterPair> pairs = new ArrayList<>();
-        for (int i = 0; i < activeRosters.length; i++) {
-            storedRosters.put(keyOf(activeRosters[i], digestType), activeRosters[i]);
-            pairs.add(new RoundRosterPair(20L - 10L * i, hashOf(activeRosters[i], digestType)));
+        for (int i = 0; i < rosters.length; i++) {
+            storedRosters.put(keyOf(rosters[i], digestType), rosters[i]);
+            pairs.add(new RoundRosterPair(20L - 10L * i, hashOf(rosters[i], digestType)));
         }
         storedRosterState.set(rosterState(candidateHash, pairs));
     }

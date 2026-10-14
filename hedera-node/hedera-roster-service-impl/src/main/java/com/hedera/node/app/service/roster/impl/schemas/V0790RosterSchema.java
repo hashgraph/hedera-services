@@ -11,6 +11,7 @@ import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.lifecycle.Schema;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,27 +31,38 @@ public class V0790RosterSchema extends Schema<SemanticVersion> {
      * The factory to use to create the writable roster store.
      */
     private final Function<WritableStates, WritableRosterStore> rosterStoreFactory;
+    /**
+     * The restart of the previous roster schema (override network and candidate roster adoption), which no longer
+     * runs on its own since only the latest schema of a service is restarted.
+     */
+    private final Consumer<MigrationContext<SemanticVersion>> previousRestart;
 
-    public V0790RosterSchema(@NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory) {
+    public V0790RosterSchema(
+            @NonNull final Function<WritableStates, WritableRosterStore> rosterStoreFactory,
+            @NonNull final Consumer<MigrationContext<SemanticVersion>> previousRestart) {
         super(VERSION, SEMANTIC_VERSION_COMPARATOR);
         this.rosterStoreFactory = requireNonNull(rosterStoreFactory);
+        this.previousRestart = requireNonNull(previousRestart);
     }
 
     @Override
     public void restart(@NonNull final MigrationContext<SemanticVersion> ctx) {
         requireNonNull(ctx);
-        if (ctx.isGenesis()) {
-            return;
-        }
-        if (ctx.isUpgrade(ctx.appConfig()
-                .getConfigData(VersionConfig.class)
-                .servicesVersion()
-                .copyBuilder()
-                .build("" + ctx.appConfig().getConfigData(HederaConfig.class).configVersion())
-                .build())) {
+        // Re-key first, so a candidate roster is adopted under the default digest
+        if (!ctx.isGenesis()
+                && ctx.isUpgrade(ctx.appConfig()
+                        .getConfigData(VersionConfig.class)
+                        .servicesVersion()
+                        .copyBuilder()
+                        .build(""
+                                + ctx.appConfig()
+                                        .getConfigData(HederaConfig.class)
+                                        .configVersion())
+                        .build())) {
             final var rosterStore = rosterStoreFactory.apply(ctx.newStates());
             log.info("Rehashing rosters with default digest {}", Cryptography.DEFAULT_DIGEST_TYPE);
             rosterStore.rehashRosters(Cryptography.DEFAULT_DIGEST_TYPE);
         }
+        previousRestart.accept(ctx);
     }
 }

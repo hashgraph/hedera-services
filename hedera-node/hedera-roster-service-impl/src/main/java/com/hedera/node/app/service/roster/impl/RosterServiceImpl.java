@@ -79,8 +79,9 @@ public class RosterServiceImpl implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
-        registry.register(new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new, onOverrideNetwork));
-        registry.register(new V0790RosterSchema(WritableRosterStore::new));
+        final var v0540Schema = new V0540RosterSchema(onAdopt, canAdopt, WritableRosterStore::new, onOverrideNetwork);
+        registry.register(v0540Schema);
+        registry.register(new V0790RosterSchema(WritableRosterStore::new, v0540Schema::restart));
     }
 
     @Override
