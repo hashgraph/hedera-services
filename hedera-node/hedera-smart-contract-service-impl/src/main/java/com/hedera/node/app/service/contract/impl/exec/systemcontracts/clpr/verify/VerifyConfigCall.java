@@ -141,7 +141,7 @@ public class VerifyConfigCall extends AbstractCall {
         final var trustAnchorBytes = parsed.initialTrustAnchor();
         log.debug(
                 "verifyConfig CONFIG extracted: leafBytes={} valueBytes={} configBytes={} configHash={} chainId={} "
-                        + "serviceAddress={} endpoints={} throttlesPresent={} initialTrustAnchorBytes={} "
+                        + "serviceAddress={} throttlesPresent={} initialTrustAnchorBytes={} "
                         + "initialTrustAnchorHash={} initialTrustAnchorId={}",
                 leafBytes.length(),
                 valueBytes.length(),
@@ -149,7 +149,6 @@ public class VerifyConfigCall extends AbstractCall {
                 shortHex(MiscCryptoUtils.keccak256DigestOf(configBytes)),
                 parsed.chainId(),
                 shortHex(parsed.serviceAddress()),
-                parsed.endpoints().size(),
                 parsed.throttles() != null,
                 trustAnchorBytes.length(),
                 shortHex(MiscCryptoUtils.keccak256DigestOf(trustAnchorBytes)),
@@ -159,8 +158,6 @@ public class VerifyConfigCall extends AbstractCall {
                     + parsed.chainId()
                     + " serviceAddress="
                     + shortHex(parsed.serviceAddress())
-                    + " endpoints="
-                    + parsed.endpoints().size()
                     + " throttlesPresent="
                     + (parsed.throttles() != null));
         }
