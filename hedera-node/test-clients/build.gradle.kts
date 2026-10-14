@@ -130,6 +130,8 @@ val prCheckTags =
         "hapiTestClprMultinetwork" to "MULTINETWORK",
     )
 
+val clprTasks = setOf("hapiTestClpr", "hapiTestClprEmbedded", "hapiTestClprMultinetwork")
+
 val prRemoteCheckTags =
     prCheckTags
         .filterNot {
@@ -140,7 +142,7 @@ val prRemoteCheckTags =
                     "hapiTestWrapsDownload",
                     "hapiTestToken",
                     "hapiTestTokenSerial",
-                )
+                ) || it.key in clprTasks
         }
         .mapKeys { (key, _) -> key.replace("hapiTest", "remoteTest") }
 val prCheckStartPorts =
@@ -219,7 +221,24 @@ val prCheckPropOverrides =
         "hapiTestAtomicBatch" to
             "nodes.nodeRewardsEnabled=false,quiescence.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
         "hapiTestAtomicBatchSerial" to "nodes.nodeRewardsEnabled=false,quiescence.enabled=true",
-        "hapiTestClpr" to "hedera.transaction.maximumPermissibleUnhealthySeconds=5",
+        "hapiTestClpr" to
+            "tss.forceMockSignatures=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
+        "hapiTestClprEmbedded" to "tss.forceMockSignatures=true",
+        "hapiTestClprMultinetwork" to
+            "tss.hintsEnabled=true,tss.historyEnabled=true,tss.wrapsEnabled=true,tss.forceMockSignatures=false",
+    )
+
+// Overridable per-task DEFAULTS. Unlike prCheckPropOverrides (delivered as node environment
+// variables at config ordinal 300, which no spec can override), these are written into each
+// node's application.properties (ordinal 100) — on by default, but a spec can still override
+// them with overriding(...) / @ConfigOverride (network-properties override, ordinal 101).
+// Used to enable CLPR by default for the CLPR tasks while letting the few negative suites
+// disable it per-spec.
+val prCheckDefaultOverrides =
+    mapOf(
+        "hapiTestClpr" to "clpr.enabled=true",
+        "hapiTestClprEmbedded" to "clpr.enabled=true",
+        "hapiTestClprMultinetwork" to "clpr.enabled=true",
     )
 // hapiTestRestart reconnects the same node repeatedly; the 10m production throttle would starve it.
 val prCheckPlatformOverrides =
@@ -230,12 +249,7 @@ val prCheckPlatformOverrides =
 val prCheckPrepareUpgradeOffsets = mapOf("hapiTestAdhoc" to "PT300S")
 // We don't want to run stream or log validation for these tasks
 val prCheckWithoutStreamAndLogValidation =
-    setOf(
-        "hapiTestIss",
-        "hapiTestBlockNodeCommunication",
-        "hapiTestClpr",
-        "hapiTestClprMultinetwork",
-    )
+    setOf("hapiTestIss", "hapiTestBlockNodeCommunication") + clprTasks
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
@@ -391,8 +405,8 @@ fun registerTestEmbedded(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR|MULTINETWORK)",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR|MULTINETWORK",
         // Tell our launcher to target a concurrent embedded network
         embeddedMode = "concurrent",
         junitParallelMode = "same_thread",
@@ -409,8 +423,9 @@ fun registerTestRepeatable(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS|MULTINETWORK)",
+        ciDefaultTags =
+            "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED|MULTINETWORK",
         embeddedMode = "repeatable",
     )
 }
@@ -465,6 +480,12 @@ fun TaskContainer.registerHapiTest(
         if (prCheckPlatformOverrides.containsKey(name)) {
             systemProperty("hapi.spec.platform.overrides", prCheckPlatformOverrides.getValue(name))
         }
+        if (prCheckDefaultOverrides.containsKey(name)) {
+            systemProperty(
+                "hapi.spec.test.defaultOverrides",
+                prCheckDefaultOverrides.getValue(name),
+            )
+        }
         if (prCheckPrepareUpgradeOffsets.containsKey(name)) {
             systemProperty(
                 "hapi.spec.prepareUpgradeOffsets",
@@ -508,6 +529,9 @@ fun TaskContainer.registerHapiTest(
             } else {
                 includeTags(
                     if (ciTagExpression.isBlank()) defaultTags
+                    // The embedded CLPR task runs only its own suites; we deliberately do not
+                    // append (or run) STREAM_VALIDATION / LOG_VALIDATION for CLPR. Matched by task
+                    // name, not by reading the tag expression as a string.
                     else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
@@ -532,10 +556,6 @@ fun TaskContainer.registerHapiTest(
                 "junit.jupiter.testclass.order.default",
                 "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
             )
-        }
-        if (name.contains("Clpr")) {
-            // Preserve the failed subprocess network's logs for CLPR diagnostics.
-            failFast = true
         }
         if (junitFixedParallelism) {
             val parallelismValue = if (networkSize.toInt() <= 3) 3 else 2
