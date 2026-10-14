@@ -983,6 +983,25 @@ class HandleWorkflowTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void initializingClprSingletonsKeepsPendingSingletonChangesOfOpenBlock() throws Exception {
+        givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
+        final var clprStates = mock(WritableStates.class);
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+        method.setAccessible(true);
+        method.invoke(subject, state);
+
+        verify(boundaryStateChangeListener, never()).reset();
+    }
+
+    @Test
     void suppressesDuplicateTssReconcileErrorsUntilReset() {
         givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
         final var logCaptor = new LogCaptor(LogManager.getLogger(HandleWorkflow.class));
