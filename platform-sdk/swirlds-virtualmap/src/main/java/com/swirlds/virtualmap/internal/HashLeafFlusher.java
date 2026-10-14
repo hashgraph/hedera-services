@@ -210,12 +210,17 @@ public class HashLeafFlusher {
             // Backpressure: the next batch is already due for a flush, wait till the running flush is complete
             if (failure == null && flushInProgress && isFlushNeeded()) {
                 final long waitStart = System.currentTimeMillis();
-                while (failure == null && flushInProgress && isFlushNeeded()) {
-                    waitForFlush();
-                }
-                final long waitMs = System.currentTimeMillis() - waitStart;
-                if (waitMs >= SLOW_WAIT_WARN_MS) {
-                    logger.warn(logMarker, "Producer was blocked for {} ms waiting for a flush to complete", waitMs);
+                try {
+                    while (failure == null && flushInProgress && isFlushNeeded()) {
+                        waitForFlush();
+                    }
+                } finally {
+                    // Log even if the wait is interrupted, so a prolonged wait is always diagnosed
+                    final long waitMs = System.currentTimeMillis() - waitStart;
+                    if (waitMs >= SLOW_WAIT_WARN_MS) {
+                        logger.warn(
+                                logMarker, "Producer was blocked for {} ms waiting for a flush to complete", waitMs);
+                    }
                 }
             }
             throwIfFailed();
