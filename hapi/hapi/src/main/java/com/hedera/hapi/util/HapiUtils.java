@@ -274,6 +274,7 @@ public class HapiUtils {
             case CLPR_COMPLETE_CONNECTOR -> HederaFunctionality.CLPR_COMPLETE_CONNECTOR;
             case CLPR_DEREGISTER_CONNECTOR -> HederaFunctionality.CLPR_DEREGISTER_CONNECTOR;
             case CLPR_ENDPOINT_PUBLICATION -> HederaFunctionality.CLPR_ENDPOINT_PUBLICATION;
+            case CLPR_MAINTENANCE -> HederaFunctionality.CLPR_MAINTENANCE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
