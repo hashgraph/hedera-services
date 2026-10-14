@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.hiero.base.crypto.Cryptography;
 import org.hiero.consensus.roster.WritableRosterStore;
 import org.hiero.consensus.roster.schemas.V0540RosterBaseSchema;
 
@@ -100,8 +99,6 @@ public class V0540RosterSchema extends Schema<SemanticVersion> implements Roster
                     .build(""
                             + ctx.appConfig().getConfigData(HederaConfig.class).configVersion())
                     .build())) {
-                // Roster hashes follow the platform's default digest; they only change at an upgrade, on every node
-                rosterStore.rehashRosters(Cryptography.DEFAULT_DIGEST_TYPE);
                 final var candidateRoster = rosterStore.getCandidateRoster();
                 if (candidateRoster == null) {
                     log.info("No candidate roster to adopt in round {}", activeRoundNumber);

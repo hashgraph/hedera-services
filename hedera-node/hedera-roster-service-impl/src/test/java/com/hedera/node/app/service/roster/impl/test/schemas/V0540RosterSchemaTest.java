@@ -33,7 +33,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.hiero.base.crypto.Cryptography;
 import org.hiero.consensus.roster.WritableRosterStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +125,6 @@ class V0540RosterSchemaTest {
 
         subject.restart(ctx);
 
-        verify(rosterStore).rehashRosters(Cryptography.DEFAULT_DIGEST_TYPE);
         verify(rosterStore).getCandidateRoster();
         verifyNoMoreInteractions(rosterStore);
     }
@@ -143,7 +141,6 @@ class V0540RosterSchemaTest {
 
         subject.restart(ctx);
 
-        verify(rosterStore).rehashRosters(Cryptography.DEFAULT_DIGEST_TYPE);
         verify(rosterStore).getCandidateRoster();
         verifyNoMoreInteractions(rosterStore);
     }
@@ -163,10 +160,10 @@ class V0540RosterSchemaTest {
         subject.restart(ctx);
 
         final var inOrder = inOrder(rosterStore);
-        inOrder.verify(rosterStore).rehashRosters(Cryptography.DEFAULT_DIGEST_TYPE);
         inOrder.verify(rosterStore).getCandidateRoster();
         inOrder.verify(rosterStore).adoptCandidateRoster(ROUND_NO + 1L);
         verify(rosterStore, times(1)).getActiveRoster();
+        verify(rosterStore, never()).rehashRosters(any());
     }
 
     @Test
