@@ -7,7 +7,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_COMPLETE_CHANNE
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_COMPLETE_CONNECTOR;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_DEREGISTER_CONNECTOR;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_ENDPOINT_PUBLICATION;
-import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_REDACT_MESSAGE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_REGISTER_CHANNEL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_REGISTER_CONNECTOR;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_SUBMIT_BUNDLE;
@@ -214,7 +213,6 @@ public class BlockTransactionalUnitTranslator {
                     put(CLPR_COMPLETE_CHANNEL, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_CLOSE_CHANNEL, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_SUBMIT_BUNDLE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(CLPR_REDACT_MESSAGE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_REGISTER_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_DEREGISTER_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_COMPLETE_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
@@ -228,7 +226,6 @@ public class BlockTransactionalUnitTranslator {
             CLPR_COMPLETE_CHANNEL,
             CLPR_CLOSE_CHANNEL,
             CLPR_SUBMIT_BUNDLE,
-            CLPR_REDACT_MESSAGE,
             CLPR_REGISTER_CONNECTOR,
             CLPR_DEREGISTER_CONNECTOR,
             CLPR_COMPLETE_CONNECTOR,
