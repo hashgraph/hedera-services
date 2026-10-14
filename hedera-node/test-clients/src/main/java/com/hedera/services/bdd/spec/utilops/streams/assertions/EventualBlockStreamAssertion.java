@@ -111,6 +111,11 @@ public class EventualBlockStreamAssertion extends AbstractEventualStreamAssertio
             }
 
             @Override
+            public boolean wantsFullStateValues() {
+                return assertion.wantsFullStateValues();
+            }
+
+            @Override
             public void onNewBlock(@NonNull final Block block) {
                 requireNonNull(block);
                 try {

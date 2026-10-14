@@ -42,6 +42,7 @@ import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.IncrementalStreamingHasher;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
+import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.pbj.runtime.ParseException;
@@ -749,11 +750,13 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
             if (stateChange.stateId() == STATE_ID_HINTS_KEY_SETS.protoOrdinal()) {
                 switch (stateChange.changeOperation().kind()) {
                     case MAP_UPDATE -> {
-                        final var key =
-                                stateChange.mapUpdateOrThrow().keyOrThrow().hintsPartyIdKeyOrThrow();
-                        final var value =
-                                stateChange.mapUpdateOrThrow().valueOrThrow().hintsKeySetValueOrThrow();
-                        hintsKeySets.put(new PartyKey(key.partyId(), key.numParties()), value);
+                        final var update = stateChange.mapUpdateOrThrow();
+                        final var key = update.keyOrThrow().hintsPartyIdKeyOrThrow();
+                        final var partyKey = new PartyKey(key.partyId(), key.numParties());
+                        // A partial update only carries the changed fields of the key set
+                        final var value = (HintsKeySet)
+                                StateChangeDeltas.applyMap(stateChange.stateId(), hintsKeySets.get(partyKey), update);
+                        hintsKeySets.put(partyKey, value);
                         maybePreprocessInputsChanged = true;
                     }
                     case MAP_DELETE -> {

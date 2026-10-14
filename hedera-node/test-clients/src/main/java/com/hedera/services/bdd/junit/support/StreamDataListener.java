@@ -18,6 +18,14 @@ public interface StreamDataListener {
     }
 
     /**
+     * Returns true if this listener reads state change values, and so needs any partial updates in a block
+     * expanded to full values. Proofs must not be checked against such a block's bytes.
+     */
+    default boolean wantsFullStateValues() {
+        return false;
+    }
+
+    /**
      * Called when a new block is received.
      * @param block the new block
      */

@@ -100,6 +100,7 @@ listOf("unitTest", "stateChangeDeltaTest").forEach { taskName ->
         if (taskName == "stateChangeDeltaTest") {
             filter {
                 includeTestsMatching("*BinaryStateChangeParserTest")
+                includeTestsMatching("*FullStateValuesTest")
                 includeTestsMatching("*StateChangesValidatorTest")
                 includeTestsMatching("*StreamValidationOpTest")
             }

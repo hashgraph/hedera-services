@@ -6,6 +6,7 @@ import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStrea
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.isSidecarMarkerFile;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
@@ -28,6 +29,8 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
     private static final long RETRY_BACKOFF_MS = 500L;
 
     private final List<StreamDataListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final FullStateValues fullStateValues = new FullStateValues();
 
     /**
      * Subscribes a listener to receive record stream items.
@@ -112,13 +115,21 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
 
         final var block =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(blockFilePath).getFirst();
-        listeners.forEach(l -> {
+        Block fullBlock = null;
+        for (final var l : listeners) {
             try {
-                l.onNewBlock(block);
+                if (!l.wantsFullStateValues()) {
+                    l.onNewBlock(block);
+                } else {
+                    if (fullBlock == null) {
+                        fullBlock = fullStateValues.expand(blockFilePath.getParent(), block);
+                    }
+                    l.onNewBlock(fullBlock);
+                }
             } catch (Exception e) {
                 log.error("{} failed to process block file {}", l.name(), file.getAbsolutePath(), e);
             }
-        });
+        }
     }
 
     private void exposeSidecars(final File file) {

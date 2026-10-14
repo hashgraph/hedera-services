@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
+import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
+import com.hedera.node.app.hapi.utils.blocks.StateChangeReconstructor;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionalUnitTranslator;
@@ -174,6 +176,11 @@ public class SidecarWatcher {
             // Replay so genesis sidecars (emitted before this subscription) are still picked up.
             @Override
             public boolean replayExistingFiles() {
+                return true;
+            }
+
+            @Override
+            public boolean wantsFullStateValues() {
                 return true;
             }
 
@@ -383,7 +390,7 @@ public class SidecarWatcher {
             final var split = new RoleFreeBlockUnitSplit();
             final boolean[] foundGenesis = {false};
             int added = 0;
-            for (final var block : blocks) {
+            for (final var block : withFullStateValues(blocks)) {
                 added += pumpBlockSidecars(block, translator, split, foundGenesis);
             }
             return added > 0;
@@ -393,6 +400,20 @@ public class SidecarWatcher {
         } catch (final RuntimeException e) {
             log.warn("Failed to re-scan block stream for sidecars; continuing", e);
             return false;
+        }
+    }
+
+    /** Expands partial state changes for translation, or returns the blocks as written if that fails. */
+    private static List<Block> withFullStateValues(@NonNull final List<Block> blocks) {
+        if (blocks.stream().noneMatch(StateChangeDeltas::hasPartialUpdates)) {
+            return blocks;
+        }
+        final var reconstructor = new StateChangeReconstructor();
+        try {
+            return blocks.stream().map(reconstructor::fullValuesForTranslation).toList();
+        } catch (final RuntimeException e) {
+            log.warn("Cannot expand partial state changes; translating blocks as written", e);
+            return blocks;
         }
     }
 
