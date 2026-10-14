@@ -63,14 +63,26 @@ BENCHMARK='com.swirlds.benchmark.MerkleDbSnapshotBenchmark.snapshot$'
 JVM_ARGS='-Xms4g -Xmx32g -XX:MaxDirectMemorySize=16g -Dbenchmark.requireExistingFixture=true'
 DRY_RUN=false
 RESUME_RUN=""
+CAMPAIGN_MODE=individual
+if [[ "${1:-}" == --combined ]]; then
+    CAMPAIGN_MODE=combined
+    BASES=(tasks)
+    REFS=(6bb5bcc0b207093c5dda0ddefb6ffb09d4b6eca9)
+    VARIANTS=(tasks-combined)
+    shift
+fi
 if (( $# == 1 )) && [[ "$1" == --dry-run ]]; then
     DRY_RUN=true
 elif (( $# == 2 )) && [[ "$1" == --resume && "$2" =~ ^snapshot-experiments-[A-Za-z0-9._-]+$ ]]; then
     RESUME_RUN="$2"
 elif (( $# != 0 )); then
-    echo "Usage: bash $0 [--dry-run | --resume RUN_ID]" >&2
+    echo "Usage: bash $0 [--combined] [--dry-run | --resume RUN_ID]" >&2
     exit 2
 fi
+EXPECTED_CONFIGURATIONS=$(( ${#IMPLEMENTATIONS[@]} * ${#VARIANTS[@]} ))
+EXPECTED_FORKS=$(( EXPECTED_CONFIGURATIONS * 3 ))
+# Exact task JAR from the October 13 campaign; the combined follow-up must not rebuild it.
+COMBINED_TASKS_JAR_HASH=e29ca9bd06c0163a51126fb201741dd49a95078be83417b3aad2ceff23550b00
 RUN_ID="${RESUME_RUN:-snapshot-experiments-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 RESULTS_DIR="${RESULTS_PARENT}/${RUN_ID}"
 FROZEN_DIR="${RESULTS_DIR}/frozen"
@@ -125,14 +137,15 @@ write_manifest() {
         echo "status=$1"
         echo "exit_code=$2"
         echo "run_id=${RUN_ID}"
+        echo "campaign_mode=${CAMPAIGN_MODE}"
         echo "updated_at=$(timestamp)"
         echo "phase=${PHASE}"
         echo "current_cell=${CURRENT_CELL}"
         echo "completed_forks=${COMPLETED_CELLS}"
-        echo "expected_configurations=40"
-        echo "expected_forks=120"
-        echo "expected_measured_samples=360"
-        echo "expected_warmup_snapshots=120"
+        echo "expected_configurations=${EXPECTED_CONFIGURATIONS}"
+        echo "expected_forks=${EXPECTED_FORKS}"
+        echo "expected_measured_samples=$((EXPECTED_FORKS * 3))"
+        echo "expected_warmup_snapshots=${EXPECTED_FORKS}"
         echo "fixture_mode=reuse"
         echo "snapshot_force=false"
         echo "hash_cache_overlap=true"
@@ -153,13 +166,17 @@ write_plan() {
         case "${block_index}" in 0) block=A ;; 1) block=B ;; 2) block=C ;; esac
         for impl_offset in 0 1 2 3 4; do
             impl_index=$(( (impl_offset + 2 * block_index) % 5 ))
-            for variant_offset in 0 1 2 3 4 5 6 7; do
-                variant_index=$(( (variant_offset + 3 * block_index + impl_offset) % 8 ))
+            for ((variant_offset = 0; variant_offset < ${#VARIANTS[@]}; variant_offset++)); do
+                variant_index=$(( (variant_offset + 3 * block_index + impl_offset) % ${#VARIANTS[@]} ))
                 variant="${VARIANTS[${variant_index}]}"
                 base="${variant%-*}"
                 presize=false
                 cursors=0
-                case "${variant}" in *-presize) presize=true ;; *-chains) cursors=8 ;; esac
+                case "${variant}" in
+                    *-presize) presize=true ;;
+                    *-chains) cursors=8 ;;
+                    *-combined) presize=true; cursors=8 ;;
+                esac
                 printf '%s\t%s\t%s\t%s\t%s\t%s\n' "${block}" "${variant}" \
                     "${IMPLEMENTATIONS[${impl_index}]}" "${base}" "${presize}" "${cursors}"
             done
@@ -331,8 +348,13 @@ build_artifact() {
         (cd -- "${cache}" && sha256sum --check SHA256SUMS) || fail "Artifact cache checksum failure."
         printf '%s\n' "${JAVA_VERSION_TEXT}" | cmp -s - "${cache}/java-version.txt" \
             || fail "The cached build uses a different JDK. Select its recorded JDK before reuse."
+        if [[ "${CAMPAIGN_MODE}" == combined ]]; then
+            verify_hash "${cache}/jmh.jar" "${COMBINED_TASKS_JAR_HASH}"
+        fi
         echo "Reusing frozen build: ${base} (${cache_key})"
     else
+        [[ "${CAMPAIGN_MODE}" != combined ]] \
+            || fail "The October 13 task JAR cache is missing: ${cache}. No rebuild was started."
         BUILD_DIR="$(mktemp -d "${SCRATCH_PARENT}/experiment-build.XXXXXX")"
         printf '%s\n' "${RUN_ID}" >"${BUILD_DIR}/.campaign-owner"
         worktree="${BUILD_DIR}/worktree"
@@ -475,7 +497,7 @@ run_cell() {
     printf '%s\n' "${CURRENT_CELL}" >"${RESULTS_DIR}/sampling/current-cell.txt"
     PHASE="cell-${CURRENT_CELL}"
     write_manifest running 0
-    echo "Running ${CURRENT_CELL} ($((COMPLETED_CELLS + 1))/120) — $(timestamp)"
+    echo "Running ${CURRENT_CELL} ($((COMPLETED_CELLS + 1))/${EXPECTED_FORKS}) — $(timestamp)"
     cd -- "${SCRATCH_DIR}"
     run_logged "${CURRENT_CELL_DIR}/console.log" "${command[@]}"
     cd -- "${REPO_ROOT}"
@@ -495,14 +517,21 @@ run_cell() {
 main() {
     if [[ "${DRY_RUN}" == true ]]; then
         echo "Plan only: no writes, worktrees, builds, fixture generation, or benchmarks."
-        echo "Build three exact historical refs, with experiment patches, in temporary detached worktrees."
-        echo "Run targeted experiment tests and jmhJar sequentially with Gradle --no-daemon."
-        echo "Cache frozen builds by full source ref and patch SHA-256; resume never rebuilds."
+        if [[ "${CAMPAIGN_MODE}" == combined ]]; then
+            echo "Reuse the exact October 13 task JAR from the verified artifact cache; fail if unavailable."
+            echo "Tasks F1+F2 only, all five implementations, B=24 and K=8; force off, overlap on."
+            echo "15 forks: 15 warmups + 45 measured snapshots. top/vmstat/diskstats every 5 seconds."
+            echo "Expect about 20 minutes for measurement; allow 25–30 minutes overall. No builds."
+        else
+            echo "Build three exact historical refs, with experiment patches, in temporary detached worktrees."
+            echo "Run targeted experiment tests and jmhJar sequentially with Gradle --no-daemon."
+            echo "Cache frozen builds by full source ref and patch SHA-256; resume never rebuilds."
+            echo "All five implementations; baseline P=8, pools B=24, F2 K=8; force off, overlap on."
+            echo "Eight variants, no F1+F2 combination, three rotated/interleaved blocks."
+            echo "120 forks: 120 warmups + 360 measured snapshots. top/vmstat/diskstats every 5 seconds."
+            echo "Expect about 2.5–3.5 hours for measurement, plus builds and archiving."
+        fi
         echo "Saved fixture: ${FIXTURE_DIR}"
-        echo "All five implementations; baseline P=8, pools B=24, F2 K=8; force off, overlap on."
-        echo "Eight variants, no F1+F2 combination, three rotated/interleaved blocks."
-        echo "120 forks: 120 warmups + 360 measured snapshots. top/vmstat/diskstats every 5 seconds."
-        echo "Expect about 2.5–3.5 hours for measurement, plus builds and archiving."
         echo "Plan columns: block, variant, implementation, source, F1 presize, F2 cursors per list."
         write_plan
         return 0
@@ -527,8 +556,13 @@ main() {
         cmp -s "${SCRIPT_PATH}" "${FROZEN_DIR}/runner.sh" || fail "Resume with the unchanged runner recorded by this run."
         printf '%s\n' "${JAVA_VERSION_TEXT}" | cmp -s - "${FROZEN_DIR}/java-version.txt" \
             || fail "The current JDK differs from this run's frozen JDK. Select its recorded JDK before resuming."
+        write_plan | cmp -s - "${FROZEN_DIR}/plan.tsv" \
+            || fail "The requested mode differs from this run. Include --combined when resuming a combined-only run."
+        if [[ "${CAMPAIGN_MODE}" == combined ]]; then
+            verify_hash "${FROZEN_DIR}/tasks/jmh.jar" "${COMBINED_TASKS_JAR_HASH}"
+        fi
     else
-        for i in 0 1 2; do
+        for i in "${!BASES[@]}"; do
             git -C "${REPO_ROOT}" cat-file -e "${REFS[${i}]}^{commit}" \
                 || fail "Required historical ref is unavailable: ${REFS[${i}]}"
             [[ -f "${SCRIPT_DIR}/${BASES[${i}]}.patch" ]] || fail "Missing experiment patch: ${BASES[${i}]}.patch"
@@ -547,7 +581,7 @@ main() {
         cp -- "${SCRIPT_PATH}" "${FROZEN_DIR}/runner.sh"
         printf '%s\n' "${JAVA_VERSION_TEXT}" >"${FROZEN_DIR}/java-version.txt"
         cp -- "${PREFLIGHT_SOURCE}" "${FROZEN_DIR}/preflight.sh"
-        for i in 0 1 2; do
+        for i in "${!BASES[@]}"; do
             cp -- "${SCRIPT_DIR}/${BASES[${i}]}.patch" "${FROZEN_DIR}/"
         done
         write_plan >"${FROZEN_DIR}/plan.tsv"
@@ -563,7 +597,7 @@ main() {
         # Check only before builds and before measurement, never during benchmark load.
         bash "${FROZEN_DIR}/preflight.sh" "${MODULE_DIR}" "" reuse \
             | tee "${RESULTS_DIR}/pre-build-system-check.txt"
-        for i in 0 1 2; do build_artifact "${BASES[${i}]}" "${REFS[${i}]}"; done
+        for i in "${!BASES[@]}"; do build_artifact "${BASES[${i}]}" "${REFS[${i}]}"; done
         hash_directory "${FROZEN_DIR}"
         find "${FROZEN_DIR}" -type f -exec chmod a-w {} +
     fi
@@ -582,7 +616,8 @@ main() {
     CURRENT_CELL=""
     PHASE=fixture-verification
     validate_fixture "${RESULTS_DIR}/fixture-inventory-after.txt"
-    (( COMPLETED_CELLS == 120 )) || fail "Expected 120 completed cell forks; found ${COMPLETED_CELLS}."
+    (( COMPLETED_CELLS == EXPECTED_FORKS )) \
+        || fail "Expected ${EXPECTED_FORKS} completed cell forks; found ${COMPLETED_CELLS}."
     CAMPAIGN_DONE=true
 }
 

@@ -1,0 +1,1277 @@
+{
+  "schemaVersion": 1,
+  "runId": "tasks-20261006T161400Z-2857123",
+  "status": "complete",
+  "startedAt": "2026-10-06T16:14:00Z",
+  "finishedAt": "2026-10-06T17:53:37Z",
+  "implementation": "One task per LongList chunk; shared ForkJoinPool and AbstractTask; four snapshot groups",
+  "provenance": {
+    "recordedCheckoutRevision": "6bb5bcc0b207093c5dda0ddefb6ffb09d4b6eca9",
+    "note": "Retry reuses the JAR built during the initial attempt at the same recorded checkout. All four frozen input hashes match; no tracked source diff was recorded.",
+    "archive": "tasks-20261006T161400Z-2857123.tar.gz",
+    "archiveSha256": "83a3a3da944d93cdf22a54772c971249caece8602b05511f79b1a202549590ec",
+    "jarSha256": "664965f062b331fe64ab955eee5a16a4204c928a26e503220c86c8da9e81b9fe",
+    "settingsSha256": "6e1d8e86eb196b08b3e2bbdf98493a1360593447235e404584ced9b28350a9c3",
+    "runnerSha256": "87271f7adb969c35a67373d95b3f3a6a7eda15427f5975a78ac87ffe4d6922c4",
+    "preflightSha256": "3ce00a0d4d2d2c24fb4f0dea0fafc143a726184f7a00f6599c0e81c2afb77140",
+    "checkedArchiveFiles": 29,
+    "checkedFrozenInputs": 4,
+    "initialAttempt": {
+      "runId": "tasks-20261005T164544Z-2300277",
+      "archiveSha256": "b45473fba321d07b6a9e9773bce08bfbab26b7249ac430834540e6ab3fbdc87d",
+      "status": "failed",
+      "phase": "measurement-system-check",
+      "completedBlocks": 0,
+      "checkedArchiveFiles": 24,
+      "reason": "Swap activity during readiness sampling after successful fixture preparation",
+      "fixturePreparationSeconds": 7393,
+      "buildSeconds": 17
+    }
+  },
+  "environment": {
+    "os": "Linux 5.15.0-174-generic",
+    "cpu": "AMD EPYC 9124",
+    "physicalCores": 16,
+    "logicalCpus": 32,
+    "ramGiB": 125.5,
+    "storage": "Micron 7450 NVMe",
+    "filesystem": "ext4",
+    "java": "Temurin 25.0.2+10",
+    "jmh": "1.37",
+    "jvmArgs": [
+      "-Xms4g",
+      "-Xmx32g",
+      "-XX:MaxDirectMemorySize=16g"
+    ],
+    "continuousHostUtilizationRecorded": false
+  },
+  "workload": {
+    "leafCount": 1000000000,
+    "numFiles": 10000,
+    "numRecords": 100000,
+    "keySize": 32,
+    "recordSize": 128,
+    "maxKey": 1000000000,
+    "fixtureNumThreads": 32,
+    "longListChunkSize": 1048576,
+    "hashChunkHeight": 6,
+    "hashChunkCacheThreshold": 262144,
+    "snapshotForce": false,
+    "hashCacheOverlap": true,
+    "prepareFixtureOnly": false,
+    "selectedImplementationAppliesTo": "All three snapshot indices",
+    "fixtureSizeGiBApprox": 258
+  },
+  "fixture": {
+    "originRunId": "tasks-20261005T164544Z-2300277",
+    "reused": true,
+    "inventoryUnchanged": true,
+    "dataFileCounts": {
+      "hash": 150,
+      "leaf": 174,
+      "bucket": 25
+    },
+    "baselineDataFileCounts": {
+      "hash": 159,
+      "leaf": 171,
+      "bucket": 27
+    },
+    "baselineFixtureSizeGiBApprox": 262
+  },
+  "measurement": {
+    "benchmark": "com.swirlds.benchmark.MerkleDbSnapshotBenchmark.snapshot",
+    "mode": "SingleShotTime",
+    "unit": "ms/op",
+    "jmhThreads": 1,
+    "forksPerCellPerBlock": 1,
+    "warmupIterationsPerCellPerBlock": 1,
+    "measurementIterationsPerCellPerBlock": 3,
+    "blocks": 3,
+    "cellsPerBlock": 25,
+    "rows": 75,
+    "measuredSamples": 225,
+    "timedOperation": "Snapshot call only; source preparation, forcing files after return, validation and cleanup are excluded",
+    "aggregation": "Arithmetic mean of all nine raw samples per cell; no samples discarded",
+    "sampleOrder": "Within each block, samples retain their original measurement order",
+    "parallelismParameter": "snapshotThreads",
+    "parallelismValues": [
+      3,
+      6,
+      24,
+      48,
+      96
+    ],
+    "productionDefault": 12,
+    "productionDefaultMeasured": false
+  },
+  "blockOrder": {
+    "A": {
+      "implementations": [
+        "SEGMENT",
+        "DISK",
+        "HEAP",
+        "OFF_HEAP",
+        "DISK_SEGMENT"
+      ],
+      "snapshotThreads": [
+        3,
+        6,
+        24,
+        48,
+        96
+      ]
+    },
+    "B": {
+      "implementations": [
+        "DISK_SEGMENT",
+        "OFF_HEAP",
+        "HEAP",
+        "DISK",
+        "SEGMENT"
+      ],
+      "snapshotThreads": [
+        96,
+        48,
+        24,
+        6,
+        3
+      ]
+    },
+    "C": {
+      "implementations": [
+        "HEAP",
+        "DISK_SEGMENT",
+        "SEGMENT",
+        "OFF_HEAP",
+        "DISK"
+      ],
+      "snapshotThreads": [
+        24,
+        48,
+        96,
+        3,
+        6
+      ]
+    }
+  },
+  "timingSeconds": {
+    "fixturePreparationInRetry": 0,
+    "blockA": 2002,
+    "blockB": 1973,
+    "blockC": 1984,
+    "measurementBlocks": 5959,
+    "totalCampaign": 5977
+  },
+  "validation": {
+    "measuredSnapshots": 225,
+    "warmupSnapshots": 75,
+    "restoredSources": 75,
+    "fixtureSnapshotInInitialAttempt": 1,
+    "allPassed": true,
+    "scope": "Index sizes and headers, boundary values, metadata and nonempty store directories; not an exhaustive restoration comparison"
+  },
+  "machineReadiness": {
+    "wholeMachineCpuBusyPercent": 0,
+    "ioWaitPercent": 0,
+    "availableRamGiB": 122.7,
+    "swapActivity": false,
+    "diskReadWriteMiBPerSec": 0.01,
+    "diskBusyPercent": 0.1,
+    "continuousHostUtilizationRecorded": false
+  },
+  "forcingAfterReturn": {
+    "excludedFromTimedScores": true,
+    "includesWarmups": true,
+    "samplesPerBlock": 100,
+    "blockMeanMs": {
+      "A": 8244.67,
+      "B": 7869.99,
+      "C": 7864.53
+    },
+    "overallMeanMs": 7993.063333333333
+  },
+  "baselineReference": {
+    "runId": "baseline-20261002T135748Z-532316",
+    "dataFile": "baseline-20261002.json",
+    "mapping": "B = 3 × P; approximate configured writer budget only. The task pool also performs hash flushing and other snapshot work.",
+    "changeFormula": "(taskMeanMs / baselineMeanMs - 1) * 100; positive means slower",
+    "caveat": "Same workload/settings/measurement method, independently generated fixture with different data-file layout. Configured pool size is not equivalent actual writer concurrency."
+  },
+  "cells": [
+    {
+      "implementation": "SEGMENT",
+      "snapshotThreads": 3,
+      "samplesMs": {
+        "A": [
+          10242.04406,
+          8009.012498,
+          7087.299372
+        ],
+        "B": [
+          7112.07885,
+          7782.057962,
+          7839.405186
+        ],
+        "C": [
+          7178.234835,
+          7711.942728,
+          7819.890263
+        ]
+      },
+      "summary": {
+        "meanMs": 7864.662861555556,
+        "medianMs": 7782.057962,
+        "sampleStdDevMs": 958.3467437221301,
+        "minMs": 7087.299372,
+        "maxMs": 10242.04406,
+        "blockMeanMs": {
+          "A": 8446.118643333333,
+          "B": 7577.847332666667,
+          "C": 7570.022608666667
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 1,
+        "meanMs": 7274.0399413333325,
+        "changePercent": 8.119599630820318,
+        "blockChangePercent": {
+          "A": 18.78622675813193,
+          "B": 2.3851263682769464,
+          "C": 3.550686204373177
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "snapshotThreads": 6,
+      "samplesMs": {
+        "A": [
+          8057.850894,
+          7084.187746,
+          6704.026876
+        ],
+        "B": [
+          7872.36553,
+          7654.322461,
+          7166.096476
+        ],
+        "C": [
+          7813.673099,
+          7045.00157,
+          7489.587941
+        ]
+      },
+      "summary": {
+        "meanMs": 7431.901399222222,
+        "medianMs": 7489.587941,
+        "sampleStdDevMs": 454.89281132272015,
+        "minMs": 6704.026876,
+        "maxMs": 8057.850894,
+        "blockMeanMs": {
+          "A": 7282.021838666667,
+          "B": 7564.2614889999995,
+          "C": 7449.420869999999
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 2,
+        "meanMs": 6991.233974444445,
+        "changePercent": 6.303142283444951,
+        "blockChangePercent": {
+          "A": -2.598433140853096,
+          "B": 12.806289917118496,
+          "C": 9.681245818556828
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "snapshotThreads": 24,
+      "samplesMs": {
+        "A": [
+          6944.176853,
+          6306.64338,
+          5958.16315
+        ],
+        "B": [
+          6162.862059,
+          7127.403745,
+          6625.64216
+        ],
+        "C": [
+          6439.245204,
+          6784.554244,
+          6422.574978
+        ]
+      },
+      "summary": {
+        "meanMs": 6530.140641444444,
+        "medianMs": 6439.245204,
+        "sampleStdDevMs": 376.4689905514978,
+        "minMs": 5958.16315,
+        "maxMs": 7127.403745,
+        "blockMeanMs": {
+          "A": 6402.994460999999,
+          "B": 6638.635987999999,
+          "C": 6548.7914753333325
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 8,
+        "meanMs": 5901.835848111111,
+        "changePercent": 10.645921193054232,
+        "blockChangePercent": {
+          "A": -0.8725089739747949,
+          "B": 22.538933034558404,
+          "C": 12.35651690061179
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "snapshotThreads": 48,
+      "samplesMs": {
+        "A": [
+          6688.08464,
+          6938.261583,
+          6359.381668
+        ],
+        "B": [
+          6934.663731,
+          6131.320261,
+          6369.605828
+        ],
+        "C": [
+          6086.59355,
+          6755.946682,
+          6775.141519
+        ]
+      },
+      "summary": {
+        "meanMs": 6559.888829111111,
+        "medianMs": 6688.08464,
+        "sampleStdDevMs": 329.56769354999597,
+        "minMs": 6086.59355,
+        "maxMs": 6938.261583,
+        "blockMeanMs": {
+          "A": 6661.909297000001,
+          "B": 6478.52994,
+          "C": 6539.227250333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 16,
+        "meanMs": 5703.8139228888895,
+        "changePercent": 15.008815466207093,
+        "blockChangePercent": {
+          "A": 16.21074674712355,
+          "B": 14.809408476955266,
+          "C": 14.003759028742868
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "snapshotThreads": 96,
+      "samplesMs": {
+        "A": [
+          6941.348439,
+          6600.335522,
+          6595.905404
+        ],
+        "B": [
+          6983.477471,
+          6347.27903,
+          6511.024277
+        ],
+        "C": [
+          6379.041481,
+          6620.613702,
+          6725.535269
+        ]
+      },
+      "summary": {
+        "meanMs": 6633.840066111111,
+        "medianMs": 6600.335522,
+        "sampleStdDevMs": 220.81539765913723,
+        "minMs": 6347.27903,
+        "maxMs": 6983.477471,
+        "blockMeanMs": {
+          "A": 6712.529788333333,
+          "B": 6613.926926,
+          "C": 6575.063483999999
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 32,
+        "meanMs": 5859.247830555555,
+        "changePercent": 13.219994408089608,
+        "blockChangePercent": {
+          "A": 12.611906173131281,
+          "B": 18.206428708099985,
+          "C": 9.18867149100857
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "snapshotThreads": 3,
+      "samplesMs": {
+        "A": [
+          7940.559995,
+          8177.473345,
+          7908.314301
+        ],
+        "B": [
+          7241.315232,
+          7340.007813,
+          7868.942187
+        ],
+        "C": [
+          7258.917719,
+          7779.304191,
+          7452.070346
+        ]
+      },
+      "summary": {
+        "meanMs": 7662.989458777777,
+        "medianMs": 7779.304191,
+        "sampleStdDevMs": 344.1940101938219,
+        "minMs": 7241.315232,
+        "maxMs": 8177.473345,
+        "blockMeanMs": {
+          "A": 8008.782547,
+          "B": 7483.421744,
+          "C": 7496.764085333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 1,
+        "meanMs": 9611.053249222221,
+        "changePercent": -20.268993833762096,
+        "blockChangePercent": {
+          "A": -22.021806956492895,
+          "B": -20.843910051726265,
+          "C": -17.695868430060646
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "snapshotThreads": 6,
+      "samplesMs": {
+        "A": [
+          7131.058167,
+          7002.662081,
+          7707.898073
+        ],
+        "B": [
+          7251.089478,
+          7053.645033,
+          7564.945412
+        ],
+        "C": [
+          8167.837596,
+          7329.038034,
+          7832.700502
+        ]
+      },
+      "summary": {
+        "meanMs": 7448.986041777777,
+        "medianMs": 7329.038034,
+        "sampleStdDevMs": 396.0105204910448,
+        "minMs": 7002.662081,
+        "maxMs": 8167.837596,
+        "blockMeanMs": {
+          "A": 7280.539440333334,
+          "B": 7289.893307666666,
+          "C": 7776.525377333334
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 2,
+        "meanMs": 6547.7981943333325,
+        "changePercent": 13.763219645717871,
+        "blockChangePercent": {
+          "A": 1.7039696699213902,
+          "B": 18.683985044323048,
+          "C": 22.6085687464465
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "snapshotThreads": 24,
+      "samplesMs": {
+        "A": [
+          6705.857571,
+          6839.774873,
+          6664.56948
+        ],
+        "B": [
+          6811.107759,
+          6120.473895,
+          7027.931485
+        ],
+        "C": [
+          6593.322558,
+          6272.103801,
+          6204.705612
+        ]
+      },
+      "summary": {
+        "meanMs": 6582.205226,
+        "medianMs": 6664.56948,
+        "sampleStdDevMs": 314.5378420889212,
+        "minMs": 6120.473895,
+        "maxMs": 7027.931485,
+        "blockMeanMs": {
+          "A": 6736.733974666667,
+          "B": 6653.171046333334,
+          "C": 6356.7106570000005
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 8,
+        "meanMs": 5817.943374555555,
+        "changePercent": 13.136288929639651,
+        "blockChangePercent": {
+          "A": 12.79629026448157,
+          "B": 18.8137664498776,
+          "C": 8.076291388471724
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "snapshotThreads": 48,
+      "samplesMs": {
+        "A": [
+          6426.39689,
+          6192.282865,
+          6208.851906
+        ],
+        "B": [
+          7169.953371,
+          6419.481118,
+          6985.52085
+        ],
+        "C": [
+          6616.535654,
+          6381.61629,
+          7326.904094
+        ]
+      },
+      "summary": {
+        "meanMs": 6636.393670888889,
+        "medianMs": 6426.39689,
+        "sampleStdDevMs": 421.28706247421775,
+        "minMs": 6192.282865,
+        "maxMs": 7326.904094,
+        "blockMeanMs": {
+          "A": 6275.843887,
+          "B": 6858.318446333334,
+          "C": 6775.018679333334
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 16,
+        "meanMs": 5752.739194666667,
+        "changePercent": 15.360586432311285,
+        "blockChangePercent": {
+          "A": 8.244444739735602,
+          "B": 18.59855641622923,
+          "C": 19.329490637292544
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "snapshotThreads": 96,
+      "samplesMs": {
+        "A": [
+          6456.574857,
+          6754.805089,
+          6971.204164
+        ],
+        "B": [
+          6482.087872,
+          7138.878644,
+          7099.303466
+        ],
+        "C": [
+          7034.978691,
+          6167.244076,
+          6444.251712
+        ]
+      },
+      "summary": {
+        "meanMs": 6727.703174555554,
+        "medianMs": 6754.805089,
+        "sampleStdDevMs": 351.76236760705837,
+        "minMs": 6167.244076,
+        "maxMs": 7138.878644,
+        "blockMeanMs": {
+          "A": 6727.528036666667,
+          "B": 6906.756660666667,
+          "C": 6548.8248263333335
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 32,
+        "meanMs": 5891.872951777778,
+        "changePercent": 14.186154888583902,
+        "blockChangePercent": {
+          "A": 19.10983570664655,
+          "B": 13.191242245045087,
+          "C": 10.517498556868365
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "snapshotThreads": 3,
+      "samplesMs": {
+        "A": [
+          6363.431343,
+          6529.61739,
+          6038.307544
+        ],
+        "B": [
+          5612.226713,
+          5791.512608,
+          6104.453084
+        ],
+        "C": [
+          5686.676045,
+          6175.528563,
+          6073.276606
+        ]
+      },
+      "summary": {
+        "meanMs": 6041.669988444444,
+        "medianMs": 6073.276606,
+        "sampleStdDevMs": 303.62684685384994,
+        "minMs": 5612.226713,
+        "maxMs": 6529.61739,
+        "blockMeanMs": {
+          "A": 6310.452092333333,
+          "B": 5836.0641350000005,
+          "C": 5978.493738
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 1,
+        "meanMs": 11647.849854000002,
+        "changePercent": -48.130598658346656,
+        "blockChangePercent": {
+          "A": -45.93894404085368,
+          "B": -51.789039617923805,
+          "C": -46.455468982767634
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "snapshotThreads": 6,
+      "samplesMs": {
+        "A": [
+          5539.195389,
+          4910.371815,
+          4876.282744
+        ],
+        "B": [
+          5661.752371,
+          5768.676447,
+          5612.701847
+        ],
+        "C": [
+          4819.527018,
+          5439.096452,
+          5872.125479
+        ]
+      },
+      "summary": {
+        "meanMs": 5388.858840222222,
+        "medianMs": 5539.195389,
+        "sampleStdDevMs": 409.7762097249693,
+        "minMs": 4819.527018,
+        "maxMs": 5872.125479,
+        "blockMeanMs": {
+          "A": 5108.616649333334,
+          "B": 5681.043555,
+          "C": 5376.916316333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 2,
+        "meanMs": 5980.7718488888895,
+        "changePercent": -9.89693343304231,
+        "blockChangePercent": {
+          "A": -13.582227780520583,
+          "B": -3.6638651645528375,
+          "C": -12.337772777546373
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "snapshotThreads": 24,
+      "samplesMs": {
+        "A": [
+          6005.89261,
+          5477.923186,
+          5177.236321
+        ],
+        "B": [
+          5438.609995,
+          5979.018504,
+          5418.061588
+        ],
+        "C": [
+          5648.488223,
+          5993.512862,
+          5932.705446
+        ]
+      },
+      "summary": {
+        "meanMs": 5674.605414999999,
+        "medianMs": 5648.488223,
+        "sampleStdDevMs": 312.0470149074664,
+        "minMs": 5177.236321,
+        "maxMs": 6005.89261,
+        "blockMeanMs": {
+          "A": 5553.684039,
+          "B": 5611.896695666666,
+          "C": 5858.235510333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 8,
+        "meanMs": 5244.187947888889,
+        "changePercent": 8.207514135422622,
+        "blockChangePercent": {
+          "A": 8.225616811627967,
+          "B": 7.536109320366724,
+          "C": 8.8412331132673
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "snapshotThreads": 48,
+      "samplesMs": {
+        "A": [
+          5907.656051,
+          5877.047589,
+          5630.342047
+        ],
+        "B": [
+          5915.533006,
+          6280.31078,
+          5645.001954
+        ],
+        "C": [
+          5757.223365,
+          6212.016972,
+          5365.600817
+        ]
+      },
+      "summary": {
+        "meanMs": 5843.414731222221,
+        "medianMs": 5877.047589,
+        "sampleStdDevMs": 286.7288829086546,
+        "minMs": 5365.600817,
+        "maxMs": 6280.31078,
+        "blockMeanMs": {
+          "A": 5805.015229,
+          "B": 5946.94858,
+          "C": 5778.280384666666
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 16,
+        "meanMs": 5219.979047666666,
+        "changePercent": 11.943260267188837,
+        "blockChangePercent": {
+          "A": 8.645245585996708,
+          "B": 17.58380148128349,
+          "C": 9.869539860598465
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "snapshotThreads": 96,
+      "samplesMs": {
+        "A": [
+          5298.291674,
+          6032.522516,
+          5891.772116
+        ],
+        "B": [
+          5716.135777,
+          5970.919485,
+          6067.420526
+        ],
+        "C": [
+          6304.160633,
+          5417.620542,
+          5654.881818
+        ]
+      },
+      "summary": {
+        "meanMs": 5817.0805652222225,
+        "medianMs": 5891.772116,
+        "sampleStdDevMs": 324.1886162439835,
+        "minMs": 5298.291674,
+        "maxMs": 6304.160633,
+        "blockMeanMs": {
+          "A": 5740.862102,
+          "B": 5918.158596000001,
+          "C": 5792.220997666666
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 32,
+        "meanMs": 5830.0866305555555,
+        "changePercent": -0.22308528427635865,
+        "blockChangePercent": {
+          "A": 4.309771666639195,
+          "B": -1.7907951280555112,
+          "C": -2.823562956344061
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "snapshotThreads": 3,
+      "samplesMs": {
+        "A": [
+          7057.022745,
+          7463.480233,
+          7240.975175
+        ],
+        "B": [
+          7453.354593,
+          7255.500738,
+          7219.422616
+        ],
+        "C": [
+          8248.852125,
+          7791.41898,
+          7725.068981
+        ]
+      },
+      "summary": {
+        "meanMs": 7495.0106873333325,
+        "medianMs": 7453.354593,
+        "sampleStdDevMs": 371.05799536292767,
+        "minMs": 7057.022745,
+        "maxMs": 8248.852125,
+        "blockMeanMs": {
+          "A": 7253.826051,
+          "B": 7309.425982333333,
+          "C": 7921.780028666667
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 1,
+        "meanMs": 7276.5113855555555,
+        "changePercent": 3.0028029944612733,
+        "blockChangePercent": {
+          "A": -1.4144081563850386,
+          "B": 0.9072824696373383,
+          "C": 9.599532780534293
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "snapshotThreads": 6,
+      "samplesMs": {
+        "A": [
+          7651.127175,
+          7181.184566,
+          7636.177705
+        ],
+        "B": [
+          6901.829159,
+          6929.941622,
+          7536.002608
+        ],
+        "C": [
+          8022.7997,
+          7715.193925,
+          7636.958041
+        ]
+      },
+      "summary": {
+        "meanMs": 7467.912722333334,
+        "medianMs": 7636.177705,
+        "sampleStdDevMs": 380.1672797321641,
+        "minMs": 6901.829159,
+        "maxMs": 8022.7997,
+        "blockMeanMs": {
+          "A": 7489.496482,
+          "B": 7122.591129666666,
+          "C": 7791.650555333334
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 2,
+        "meanMs": 6635.561520777778,
+        "changePercent": 12.543794507054674,
+        "blockChangePercent": {
+          "A": 12.931688001789121,
+          "B": 4.478405342932956,
+          "C": 20.66016443386578
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "snapshotThreads": 24,
+      "samplesMs": {
+        "A": [
+          6067.989239,
+          6860.686171,
+          6405.634359
+        ],
+        "B": [
+          6802.665783,
+          6788.836656,
+          6604.402305
+        ],
+        "C": [
+          6040.051394,
+          7214.231372,
+          6724.947273
+        ]
+      },
+      "summary": {
+        "meanMs": 6612.160505777778,
+        "medianMs": 6724.947273,
+        "sampleStdDevMs": 382.5288149510602,
+        "minMs": 6040.051394,
+        "maxMs": 7214.231372,
+        "blockMeanMs": {
+          "A": 6444.769923,
+          "B": 6731.968248,
+          "C": 6659.743346333334
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 8,
+        "meanMs": 5580.52046611111,
+        "changePercent": 18.486448458195248,
+        "blockChangePercent": {
+          "A": 11.369410818716364,
+          "B": 22.965304655803664,
+          "C": 21.52745527551694
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "snapshotThreads": 48,
+      "samplesMs": {
+        "A": [
+          6955.792484,
+          6103.040508,
+          6865.554073
+        ],
+        "B": [
+          6120.821086,
+          7153.526128,
+          6037.542238
+        ],
+        "C": [
+          6418.021576,
+          6971.030957,
+          6960.986269
+        ]
+      },
+      "summary": {
+        "meanMs": 6620.701702111111,
+        "medianMs": 6865.554073,
+        "sampleStdDevMs": 446.3284236564685,
+        "minMs": 6037.542238,
+        "maxMs": 7153.526128,
+        "blockMeanMs": {
+          "A": 6641.462355,
+          "B": 6437.296484000001,
+          "C": 6783.346267333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 16,
+        "meanMs": 5480.48179688889,
+        "changePercent": 20.805103410241976,
+        "blockChangePercent": {
+          "A": 17.884696235535614,
+          "B": 17.413546241190513,
+          "C": 27.3868280533603
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "snapshotThreads": 96,
+      "samplesMs": {
+        "A": [
+          6339.208312,
+          6353.260263,
+          6690.050685
+        ],
+        "B": [
+          6818.881504,
+          7059.92418,
+          6736.554124
+        ],
+        "C": [
+          6688.625348,
+          6062.940377,
+          6865.021801
+        ]
+      },
+      "summary": {
+        "meanMs": 6623.8296215555565,
+        "medianMs": 6690.050685,
+        "sampleStdDevMs": 311.54889450454795,
+        "minMs": 6062.940377,
+        "maxMs": 7059.92418,
+        "blockMeanMs": {
+          "A": 6460.839753333334,
+          "B": 6871.786602666667,
+          "C": 6538.862508666666
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 32,
+        "meanMs": 5617.914256666667,
+        "changePercent": 17.905495152319027,
+        "blockChangePercent": {
+          "A": 17.091129304073128,
+          "B": 24.219758257033106,
+          "C": 12.661392568445207
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "snapshotThreads": 3,
+      "samplesMs": {
+        "A": [
+          10269.418306,
+          9808.292144,
+          9860.437748
+        ],
+        "B": [
+          8618.394917,
+          9947.695336,
+          10207.612433
+        ],
+        "C": [
+          10423.347867,
+          10233.022269,
+          10620.949675
+        ]
+      },
+      "summary": {
+        "meanMs": 9998.796743888888,
+        "medianMs": 10207.612433,
+        "sampleStdDevMs": 581.2244958088108,
+        "minMs": 8618.394917,
+        "maxMs": 10620.949675,
+        "blockMeanMs": {
+          "A": 9979.382732666667,
+          "B": 9591.234228666668,
+          "C": 10425.773270333333
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 1,
+        "meanMs": 9831.924135333333,
+        "changePercent": 1.6972528088968764,
+        "blockChangePercent": {
+          "A": 5.169583114284593,
+          "B": -7.27128966157351,
+          "C": 7.88709710718809
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "snapshotThreads": 6,
+      "samplesMs": {
+        "A": [
+          10124.911003,
+          9753.390096,
+          8683.899102
+        ],
+        "B": [
+          9386.712448,
+          9418.037171,
+          10127.778629
+        ],
+        "C": [
+          9517.395369,
+          10046.669859,
+          9898.581638
+        ]
+      },
+      "summary": {
+        "meanMs": 9661.930590555556,
+        "medianMs": 9753.390096,
+        "sampleStdDevMs": 468.56471941933586,
+        "minMs": 8683.899102,
+        "maxMs": 10127.778629,
+        "blockMeanMs": {
+          "A": 9520.733400333333,
+          "B": 9644.176082666667,
+          "C": 9820.882288666666
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 2,
+        "meanMs": 8563.458967777777,
+        "changePercent": 12.827429043696736,
+        "blockChangePercent": {
+          "A": 9.191187152013057,
+          "B": 13.561791513237974,
+          "C": 15.831347313433252
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "snapshotThreads": 24,
+      "samplesMs": {
+        "A": [
+          7699.784778,
+          8041.833296,
+          8099.623798
+        ],
+        "B": [
+          8258.879917,
+          8597.275436,
+          8697.867999
+        ],
+        "C": [
+          8736.667696,
+          8317.190311,
+          8651.333941
+        ]
+      },
+      "summary": {
+        "meanMs": 8344.495241333332,
+        "medianMs": 8317.190311,
+        "sampleStdDevMs": 355.6706264078593,
+        "minMs": 7699.784778,
+        "maxMs": 8736.667696,
+        "blockMeanMs": {
+          "A": 7947.080623999999,
+          "B": 8518.007784000001,
+          "C": 8568.397316
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 8,
+        "meanMs": 7524.983633777778,
+        "changePercent": 10.890543387722085,
+        "blockChangePercent": {
+          "A": 4.564332635967316,
+          "B": 12.845535519240281,
+          "C": 15.37769537239091
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "snapshotThreads": 48,
+      "samplesMs": {
+        "A": [
+          7708.016428,
+          8581.202617,
+          8340.438624
+        ],
+        "B": [
+          7970.503461,
+          8389.11948,
+          7765.837257
+        ],
+        "C": [
+          7799.928211,
+          8726.974049,
+          7810.847753
+        ]
+      },
+      "summary": {
+        "meanMs": 8121.429764444443,
+        "medianMs": 7970.503461,
+        "sampleStdDevMs": 390.13738329517327,
+        "minMs": 7708.016428,
+        "maxMs": 8726.974049,
+        "blockMeanMs": {
+          "A": 8209.885889666666,
+          "B": 8041.820066,
+          "C": 8112.583337666668
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 16,
+        "meanMs": 7496.488061888889,
+        "changePercent": 8.33645965145562,
+        "blockChangePercent": {
+          "A": 11.93291677985091,
+          "B": 5.515628522513283,
+          "C": 7.688684552053338
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "snapshotThreads": 96,
+      "samplesMs": {
+        "A": [
+          7719.607647,
+          8324.096593,
+          8323.937688
+        ],
+        "B": [
+          7673.494401,
+          8341.722373,
+          8589.832461
+        ],
+        "C": [
+          8082.731651,
+          8497.063197,
+          7802.326084
+        ]
+      },
+      "summary": {
+        "meanMs": 8150.534677222222,
+        "medianMs": 8323.937688,
+        "sampleStdDevMs": 344.40558228934816,
+        "minMs": 7673.494401,
+        "maxMs": 8589.832461,
+        "blockMeanMs": {
+          "A": 8122.547309333332,
+          "B": 8201.683078333333,
+          "C": 8127.373643999999
+        }
+      },
+      "baselineComparison": {
+        "writersPerLongList": 32,
+        "meanMs": 7392.507268111113,
+        "changePercent": 10.253996129039923,
+        "blockChangePercent": {
+          "A": 11.417198587491617,
+          "B": 13.1692861210714,
+          "C": 6.3786406293510955
+        }
+      }
+    }
+  ]
+}

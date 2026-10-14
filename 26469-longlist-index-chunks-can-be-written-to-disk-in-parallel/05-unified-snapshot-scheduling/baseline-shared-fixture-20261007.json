@@ -1,0 +1,1767 @@
+{
+  "schemaVersion": 1,
+  "runId": "baseline-shared-fixture-20261007T173414Z-3465266",
+  "status": "complete",
+  "startedAt": "2026-10-07T17:34:14Z",
+  "finishedAt": "2026-10-07T19:17:21Z",
+  "implementation": "Range-based LongList writers; separate snapshot-scoped writer pool",
+  "provenance": {
+    "artifactSourceRunId": "baseline-20261002T135748Z-532316",
+    "launcherCheckoutRevision": "cce428fb84687da882c214d153cdee50428c5bc4",
+    "note": "The exact original baseline JAR was reused without rebuilding. The launcher checkout is not the baseline implementation revision; the original JAR build revision was not independently verified.",
+    "archive": "baseline-shared-fixture-20261007T173414Z-3465266.tar.gz",
+    "archiveSha256": "a1421670815dfc93b80cb483b9714824bfff4850e6b86d4172b358a17dab317f",
+    "jarSha256": "11080a9a688df3f177eb78a84d2ac26fbb85c8ea095757a08c417bf0730ccc17",
+    "settingsSha256": "6e1d8e86eb196b08b3e2bbdf98493a1360593447235e404584ced9b28350a9c3",
+    "runnerSha256": "3bf9da54dca9b4d49d9b4e6f574cc68bc3f75baa20fb9825aae9f42527c4dbcf",
+    "preflightSha256": "3ce00a0d4d2d2c24fb4f0dea0fafc143a726184f7a00f6599c0e81c2afb77140",
+    "checkedArchiveFiles": 31,
+    "checkedFrozenInputs": 4
+  },
+  "environment": {
+    "os": "Linux 5.15.0-174-generic",
+    "cpu": "AMD EPYC 9124",
+    "physicalCores": 16,
+    "logicalCpus": 32,
+    "ramGiB": 125.5,
+    "storage": "Micron 7450 NVMe",
+    "filesystem": "ext4",
+    "java": "Temurin 25.0.2+10",
+    "jmh": "1.37",
+    "jvmArgs": [
+      "-Xms4g",
+      "-Xmx32g",
+      "-XX:MaxDirectMemorySize=16g"
+    ],
+    "continuousHostUtilizationRecorded": true,
+    "resourceSamplingIntervalSeconds": 30
+  },
+  "workload": {
+    "leafCount": 1000000000,
+    "numFiles": 10000,
+    "numRecords": 100000,
+    "keySize": 32,
+    "recordSize": 128,
+    "maxKey": 1000000000,
+    "fixtureNumThreads": 32,
+    "longListChunkSize": 1048576,
+    "hashChunkHeight": 6,
+    "hashChunkCacheThreshold": 262144,
+    "snapshotForce": false,
+    "hashCacheOverlap": true,
+    "prepareFixtureOnly": false,
+    "selectedImplementationAppliesTo": "All three snapshot indices",
+    "fixtureSizeGiBApprox": 258
+  },
+  "fixture": {
+    "originRunId": "tasks-20261005T164544Z-2300277",
+    "reused": true,
+    "inventoryUnchanged": true,
+    "inventoryEntries": 357,
+    "inventoryMatchesCampaigns": [
+      "tasks-20261006T161400Z-2857123",
+      "fixed-pool-20261007T123445Z-3339304"
+    ],
+    "inventoryScope": "Relative file names, sizes and modification times; not file-content hashes",
+    "dataFileCounts": {
+      "hash": 150,
+      "leaf": 174,
+      "bucket": 25
+    }
+  },
+  "measurement": {
+    "benchmark": "com.swirlds.benchmark.MerkleDbSnapshotBenchmark.snapshot",
+    "mode": "SingleShotTime",
+    "unit": "ms/op",
+    "jmhThreads": 1,
+    "forksPerCellPerBlock": 1,
+    "warmupIterationsPerCellPerBlock": 1,
+    "measurementIterationsPerCellPerBlock": 3,
+    "blocks": 3,
+    "cellsPerBlock": 25,
+    "rows": 75,
+    "measuredSamples": 225,
+    "timedOperation": "Snapshot call only; source preparation, forcing files after return, validation and cleanup are excluded",
+    "aggregation": "Arithmetic mean of all nine raw samples per cell; no samples discarded",
+    "sampleOrder": "Within each block, samples retain their original measurement order",
+    "parallelismParameter": "threadsPerLongList",
+    "parallelismValues": [
+      1,
+      2,
+      8,
+      16,
+      32
+    ],
+    "productionDefault": 4,
+    "productionDefaultMeasured": false
+  },
+  "blockOrder": {
+    "A": {
+      "implementations": [
+        "SEGMENT",
+        "DISK",
+        "HEAP",
+        "OFF_HEAP",
+        "DISK_SEGMENT"
+      ],
+      "writersPerLongList": [
+        1,
+        2,
+        8,
+        16,
+        32
+      ]
+    },
+    "B": {
+      "implementations": [
+        "DISK_SEGMENT",
+        "OFF_HEAP",
+        "HEAP",
+        "DISK",
+        "SEGMENT"
+      ],
+      "writersPerLongList": [
+        32,
+        16,
+        8,
+        2,
+        1
+      ]
+    },
+    "C": {
+      "implementations": [
+        "HEAP",
+        "DISK_SEGMENT",
+        "SEGMENT",
+        "OFF_HEAP",
+        "DISK"
+      ],
+      "writersPerLongList": [
+        8,
+        16,
+        32,
+        1,
+        2
+      ]
+    }
+  },
+  "timingSeconds": {
+    "fixturePreparation": 0,
+    "blockA": 2051,
+    "blockB": 2070,
+    "blockC": 2046,
+    "measurementBlocks": 6167,
+    "totalCampaign": 6187
+  },
+  "validation": {
+    "measuredSnapshots": 225,
+    "warmupSnapshots": 75,
+    "restoredSources": 75,
+    "fixtureSnapshotsInThisRun": 0,
+    "allPassed": true,
+    "scope": "Index sizes and headers, boundary values, metadata and nonempty store directories; not an exhaustive restoration comparison"
+  },
+  "machineReadiness": {
+    "wholeMachineCpuBusyPercent": 0,
+    "ioWaitPercent": 0,
+    "availableRamGiB": 122.7,
+    "swapActivity": false,
+    "diskReadWriteMiBPerSec": 0,
+    "diskBusyPercent": 0,
+    "continuousHostUtilizationRecorded": true
+  },
+  "resourceMonitoring": {
+    "samplingIntervalSeconds": 30,
+    "initialSamplesExcluded": true,
+    "top": {
+      "totalSamples": 206,
+      "analyzedIntervalSamples": 205,
+      "firstSampleUtc": "2026-10-07T17:34:31Z",
+      "lastSampleUtc": "2026-10-07T19:17:18Z",
+      "observedIntervalSeconds": {
+        "min": 30,
+        "max": 31
+      },
+      "availableRamMiB": {
+        "min": 113891.5,
+        "max": 125435
+      },
+      "javaProcessCountPerInterval": 2
+    },
+    "vmstat": {
+      "totalSamples": 206,
+      "analyzedIntervalSamples": 205,
+      "firstSampleUtc": "2026-10-07T17:34:31Z",
+      "lastSampleUtc": "2026-10-07T19:17:06Z",
+      "cpuUserPlusSystemPercent": {
+        "min": 2,
+        "max": 32,
+        "mean": 7.985365853658537
+      },
+      "cpuIdlePercent": {
+        "min": 65,
+        "max": 95,
+        "mean": 88.7560975609756
+      },
+      "ioWaitPercent": {
+        "min": 2,
+        "max": 5,
+        "mean": 3.204878048780488
+      },
+      "stealPercent": 0,
+      "swapOccupiedKiB": 136192,
+      "swapInKiBPerSecond": 0,
+      "swapOutKiBPerSecond": 0,
+      "blockReadKiBPerSecond": {
+        "min": 0,
+        "max": 4,
+        "mean": 0.024390243902439025
+      },
+      "blockWriteKiBPerSecond": {
+        "min": 308844,
+        "max": 605174,
+        "mean": 495328.4243902439
+      }
+    },
+    "busiestNonbenchmarkUserspace": {
+      "command": "cf-agent",
+      "peakPercentOfOneCore": 9.7,
+      "positiveSamples": 4,
+      "meanPercentOfOneCore": 0.10926829268292683
+    },
+    "finding": "No substantial competing userspace workload or memory pressure observed during this baseline rerun",
+    "caveat": "Thirty-second samples are not exclusive reservation or per-process disk attribution. Short-lived processes can escape process snapshots. Earlier task and fixed-pool campaigns were not continuously monitored."
+  },
+  "forcingAfterReturn": {
+    "excludedFromTimedScores": true,
+    "includesWarmups": true,
+    "samplesPerBlock": 100,
+    "blockMeanMs": {
+      "A": 9199.26,
+      "B": 9325.98,
+      "C": 9229.46
+    },
+    "overallMeanMs": 9251.566666666668
+  },
+  "comparisonReferences": {
+    "originalBaseline": {
+      "runId": "baseline-20261002T135748Z-532316",
+      "dataFile": "baseline-20261002.json",
+      "changeFormula": "(sharedFixtureBaselineMeanMs / originalBaselineMeanMs - 1) * 100"
+    },
+    "tasks": {
+      "runId": "tasks-20261006T161400Z-2857123",
+      "dataFile": "tasks-20261006.json",
+      "changeFormula": "(taskMeanMs / sharedFixtureBaselineMeanMs - 1) * 100"
+    },
+    "fixedPool": {
+      "runId": "fixed-pool-20261007T123445Z-3339304",
+      "dataFile": "fixed-pool-20261007.json",
+      "changeFormula": "(fixedPoolMeanMs / sharedFixtureBaselineMeanMs - 1) * 100"
+    },
+    "mapping": "B = 3 × P; approximate configured writer budget, not equal actual concurrency",
+    "caveat": "The shared-fixture baseline, tasks and fixed pool reuse the same saved fixture. Only this baseline rerun has continuous resource sampling. Campaigns were not interleaved paired experiments, and matching block labels do not establish identical machine conditions."
+  },
+  "cells": [
+    {
+      "implementation": "SEGMENT",
+      "writersPerLongList": 1,
+      "samplesMs": {
+        "A": [
+          6852.208595,
+          7645.32755,
+          6975.528495
+        ],
+        "B": [
+          7583.995928,
+          7602.140185,
+          6947.010372
+        ],
+        "C": [
+          7508.275915,
+          7356.285834,
+          7474.966667
+        ]
+      },
+      "summary": {
+        "meanMs": 7327.304393444443,
+        "medianMs": 7474.966667,
+        "sampleStdDevMs": 314.65151160704096,
+        "minMs": 6852.208595,
+        "maxMs": 7645.32755,
+        "blockMeanMs": {
+          "A": 7157.688213333334,
+          "B": 7377.715495,
+          "C": 7446.509472000001
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 7274.0399413333325,
+        "changePercent": 0.7322540505784847,
+        "blockChangePercent": {
+          "A": 0.665739030806356,
+          "B": -0.318876838740223,
+          "C": 1.8611443472002387
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7864.662861555556,
+        "changePercent": 7.333644670090056,
+        "blockChangePercent": {
+          "A": 18.00065037200018,
+          "B": 2.712653229882611,
+          "C": 1.6586715847350275
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8881.310761555556,
+        "changePercent": 21.208431978087926,
+        "blockChangePercent": {
+          "A": 32.2300217599494,
+          "B": 12.063966670123438,
+          "C": 19.674311875142834
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "writersPerLongList": 2,
+      "samplesMs": {
+        "A": [
+          6747.546325,
+          5836.806066,
+          7124.207189
+        ],
+        "B": [
+          6531.450714,
+          6548.578785,
+          6177.321086
+        ],
+        "C": [
+          6906.722703,
+          6204.87725,
+          6728.517202
+        ]
+      },
+      "summary": {
+        "meanMs": 6534.003035555555,
+        "medianMs": 6548.578785,
+        "sampleStdDevMs": 401.9554962443379,
+        "minMs": 5836.806066,
+        "maxMs": 7124.207189,
+        "blockMeanMs": {
+          "A": 6569.51986,
+          "B": 6419.116861666666,
+          "C": 6613.372385
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 6991.233974444445,
+        "changePercent": -6.540060603896814,
+        "blockChangePercent": {
+          "A": -12.12858982671695,
+          "B": -4.2713212965933,
+          "C": -2.628280116378956
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7431.901399222222,
+        "changePercent": 13.741933678032382,
+        "blockChangePercent": {
+          "A": 10.84557157677375,
+          "B": 17.839597751707025,
+          "C": 12.641787522751136
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 7897.886411111112,
+        "changePercent": 20.873626292088066,
+        "blockChangePercent": {
+          "A": 21.684594105684486,
+          "B": 24.054305365391993,
+          "C": 16.980783377838883
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "writersPerLongList": 8,
+      "samplesMs": {
+        "A": [
+          6115.352052,
+          5210.413051,
+          5306.181099
+        ],
+        "B": [
+          5589.920743,
+          6006.72441,
+          5739.141097
+        ],
+        "C": [
+          5686.818481,
+          5930.082145,
+          5619.24328
+        ]
+      },
+      "summary": {
+        "meanMs": 5689.319595333333,
+        "medianMs": 5686.818481,
+        "sampleStdDevMs": 302.82873064324315,
+        "minMs": 5210.413051,
+        "maxMs": 6115.352052,
+        "blockMeanMs": {
+          "A": 5543.982067333334,
+          "B": 5778.595416666666,
+          "C": 5745.381302000001
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5901.835848111111,
+        "changePercent": -3.6008499430866703,
+        "blockChangePercent": {
+          "A": -14.171246597923638,
+          "B": 6.663916816148663,
+          "C": -1.4274566856986914
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6530.140641444444,
+        "changePercent": 14.778938536003384,
+        "blockChangePercent": {
+          "A": 15.494501663852823,
+          "B": 14.883211391695594,
+          "C": 13.983583179303704
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 7137.302903111111,
+        "changePercent": 25.450904691054554,
+        "blockChangePercent": {
+          "A": 31.03023898898489,
+          "B": 26.47694062333055,
+          "C": 19.03518153998407
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "writersPerLongList": 16,
+      "samplesMs": {
+        "A": [
+          5571.398139,
+          5621.720103,
+          5600.538182
+        ],
+        "B": [
+          4994.019332,
+          5685.806792,
+          5943.756888
+        ],
+        "C": [
+          5595.262402,
+          5656.731083,
+          4926.505103
+        ]
+      },
+      "summary": {
+        "meanMs": 5510.637558222223,
+        "medianMs": 5600.538182,
+        "sampleStdDevMs": 331.47392722716205,
+        "minMs": 4926.505103,
+        "maxMs": 5943.756888,
+        "blockMeanMs": {
+          "A": 5597.885474666667,
+          "B": 5541.194337333333,
+          "C": 5392.832862666666
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5703.8139228888895,
+        "changePercent": -3.386792894688717,
+        "blockChangePercent": {
+          "A": -2.3501488516454283,
+          "B": -1.8016046823897014,
+          "C": -5.982282826094321
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6559.888829111111,
+        "changePercent": 19.04046963356061,
+        "blockChangePercent": {
+          "A": 19.00760255186702,
+          "B": 16.9157684355419,
+          "C": 21.257739983059555
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6804.655865444444,
+        "changePercent": 23.48218864968652,
+        "blockChangePercent": {
+          "A": 26.319890888581178,
+          "B": 18.048925462303323,
+          "C": 26.119324905305596
+        }
+      }
+    },
+    {
+      "implementation": "SEGMENT",
+      "writersPerLongList": 32,
+      "samplesMs": {
+        "A": [
+          5223.036112,
+          5782.779708,
+          4927.437843
+        ],
+        "B": [
+          5189.174088,
+          5201.332467,
+          5216.863634
+        ],
+        "C": [
+          6076.290382,
+          5794.811493,
+          5707.152339
+        ]
+      },
+      "summary": {
+        "meanMs": 5457.653118444445,
+        "medianMs": 5223.036112,
+        "sampleStdDevMs": 386.69742914813304,
+        "minMs": 4927.437843,
+        "maxMs": 6076.290382,
+        "blockMeanMs": {
+          "A": 5311.0845543333335,
+          "B": 5202.456729666667,
+          "C": 5859.4180713333335
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5859.247830555555,
+        "changePercent": -6.854031843760266,
+        "blockChangePercent": {
+          "A": -10.899262369060803,
+          "B": -7.019863176166297,
+          "C": -2.695680965489755
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6633.840066111111,
+        "changePercent": 21.551148857219893,
+        "blockChangePercent": {
+          "A": 26.387176096764552,
+          "B": 27.130839710487486,
+          "C": 12.21359192934015
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6833.150774777778,
+        "changePercent": 25.203097860594358,
+        "blockChangePercent": {
+          "A": 34.45673351544634,
+          "B": 25.624347577906992,
+          "C": 16.44141296294488
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "writersPerLongList": 1,
+      "samplesMs": {
+        "A": [
+          10433.526755,
+          10157.805625,
+          9719.414843
+        ],
+        "B": [
+          9496.946813,
+          10313.869497,
+          10047.227061
+        ],
+        "C": [
+          10146.38944,
+          9379.426477,
+          8389.866701
+        ]
+      },
+      "summary": {
+        "meanMs": 9787.163690222224,
+        "medianMs": 10047.227061,
+        "sampleStdDevMs": 636.0778265670542,
+        "minMs": 8389.866701,
+        "maxMs": 10433.526755,
+        "blockMeanMs": {
+          "A": 10103.582407666667,
+          "B": 9952.681123666667,
+          "C": 9305.227539333333
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 9611.053249222221,
+        "changePercent": 1.8323740014056566,
+        "blockChangePercent": {
+          "A": -1.6256097862044183,
+          "B": 5.274745858482888,
+          "C": 2.158566411852192
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7662.989458777777,
+        "changePercent": -21.703675331052075,
+        "blockChangePercent": {
+          "A": -20.733238728048764,
+          "B": -24.80999189047631,
+          "C": -19.43491920380881
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8737.699991888889,
+        "changePercent": -10.722858343339981,
+        "blockChangePercent": {
+          "A": -18.633662190664367,
+          "B": -4.780091261392661,
+          "C": -8.489598303685664
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "writersPerLongList": 2,
+      "samplesMs": {
+        "A": [
+          6542.856109,
+          6822.39701,
+          6067.493431
+        ],
+        "B": [
+          6846.851318,
+          6753.813611,
+          5769.526314
+        ],
+        "C": [
+          5936.128756,
+          6442.054792,
+          5867.030919
+        ]
+      },
+      "summary": {
+        "meanMs": 6338.683584444445,
+        "medianMs": 6442.054792,
+        "sampleStdDevMs": 432.85517400776723,
+        "minMs": 5769.526314,
+        "maxMs": 6846.851318,
+        "blockMeanMs": {
+          "A": 6477.582183333333,
+          "B": 6456.730414333332,
+          "C": 6081.738155666667
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 6547.7981943333325,
+        "changePercent": -3.1936630250740117,
+        "blockChangePercent": {
+          "A": -9.512773427404985,
+          "B": 5.119576321377184,
+          "C": -4.112289927015745
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7448.986041777777,
+        "changePercent": 17.51629407812829,
+        "blockChangePercent": {
+          "A": 12.395940866114996,
+          "B": 12.903789377419116,
+          "C": 27.866823238477423
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8251.210598222222,
+        "changePercent": 30.17230609950694,
+        "blockChangePercent": {
+          "A": 25.23850998303687,
+          "B": 29.3170986685648,
+          "C": 36.33516821076894
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "writersPerLongList": 8,
+      "samplesMs": {
+        "A": [
+          5893.196458,
+          5891.939357,
+          5997.215989
+        ],
+        "B": [
+          5074.540957,
+          6207.231681,
+          5313.919121
+        ],
+        "C": [
+          4967.670599,
+          5876.231069,
+          5313.567542
+        ]
+      },
+      "summary": {
+        "meanMs": 5615.056974777778,
+        "medianMs": 5876.231069,
+        "sampleStdDevMs": 448.8597077758871,
+        "minMs": 4967.670599,
+        "maxMs": 6207.231681,
+        "blockMeanMs": {
+          "A": 5927.450601333334,
+          "B": 5531.897253,
+          "C": 5385.8230699999995
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5817.943374555555,
+        "changePercent": -3.4872529125169804,
+        "blockChangePercent": {
+          "A": -0.7539200641431654,
+          "B": -1.2101832847224325,
+          "C": -8.430662509534258
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6582.205226,
+        "changePercent": 17.22419301472,
+        "blockChangePercent": {
+          "A": 13.653144121543438,
+          "B": 20.26924474646119,
+          "C": 18.026726358836754
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 7108.793629666666,
+        "changePercent": 26.602341910306325,
+        "blockChangePercent": {
+          "A": 23.47286080607787,
+          "B": 25.53041047356317,
+          "C": 31.147544919257818
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "writersPerLongList": 16,
+      "samplesMs": {
+        "A": [
+          5608.554477,
+          5616.400121,
+          6109.812013
+        ],
+        "B": [
+          5499.16442,
+          5754.931143,
+          6064.983213
+        ],
+        "C": [
+          5571.460521,
+          5606.024612,
+          5596.247335
+        ]
+      },
+      "summary": {
+        "meanMs": 5714.1753172222225,
+        "medianMs": 5608.554477,
+        "sampleStdDevMs": 221.9718861766297,
+        "minMs": 5499.16442,
+        "maxMs": 6109.812013,
+        "blockMeanMs": {
+          "A": 5778.255537,
+          "B": 5773.026258666666,
+          "C": 5591.244156000001
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5752.739194666667,
+        "changePercent": -0.6703567837769597,
+        "blockChangePercent": {
+          "A": -0.3378552066160223,
+          "B": -0.16903038427762418,
+          "C": -1.5205199065411845
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6636.393670888889,
+        "changePercent": 16.139132988922288,
+        "blockChangePercent": {
+          "A": 8.611393989306704,
+          "B": 18.79936343676576,
+          "C": 21.171934015133598
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6827.403825888889,
+        "changePercent": 19.48187528148557,
+        "blockChangePercent": {
+          "A": 21.869482209205838,
+          "B": 14.959712976133211,
+          "C": 21.683596122322513
+        }
+      }
+    },
+    {
+      "implementation": "DISK",
+      "writersPerLongList": 32,
+      "samplesMs": {
+        "A": [
+          5818.188695,
+          5284.083424,
+          6069.398621
+        ],
+        "B": [
+          5277.945295,
+          5750.646389,
+          4993.628201
+        ],
+        "C": [
+          5052.924587,
+          6020.697388,
+          6028.139183
+        ]
+      },
+      "summary": {
+        "meanMs": 5588.405753666668,
+        "medianMs": 5750.646389,
+        "sampleStdDevMs": 435.92087900710953,
+        "minMs": 4993.628201,
+        "maxMs": 6069.398621,
+        "blockMeanMs": {
+          "A": 5723.890246666667,
+          "B": 5340.739961666667,
+          "C": 5700.587052666667
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5891.872951777778,
+        "changePercent": -5.1506066168576226,
+        "blockChangePercent": {
+          "A": 1.3405850064870606,
+          "B": -12.473390844719079,
+          "C": -3.797301336714176
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6727.703174555554,
+        "changePercent": 20.38680566709692,
+        "blockChangePercent": {
+          "A": 17.534189978301427,
+          "B": 29.322092261374543,
+          "C": 14.879831951164935
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6859.827893333333,
+        "changePercent": 22.75107062210826,
+        "blockChangePercent": {
+          "A": 22.50695618683869,
+          "B": 28.963835531583058,
+          "C": 17.175596149791584
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "writersPerLongList": 1,
+      "samplesMs": {
+        "A": [
+          12201.288471,
+          11705.958559,
+          11847.55176
+        ],
+        "B": [
+          10844.320283,
+          11438.437073,
+          11674.386075
+        ],
+        "C": [
+          11555.327011,
+          11644.229532,
+          11975.936627
+        ]
+      },
+      "summary": {
+        "meanMs": 11654.15948788889,
+        "medianMs": 11674.386075,
+        "sampleStdDevMs": 380.07000037717984,
+        "minMs": 10844.320283,
+        "maxMs": 12201.288471,
+        "blockMeanMs": {
+          "A": 11918.266263333333,
+          "B": 11319.047810333332,
+          "C": 11725.16439
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 11647.849854000002,
+        "changePercent": 0.0541699452514921,
+        "blockChangePercent": {
+          "A": 2.1026782187058,
+          "B": -6.494830604392165,
+          "C": 5.01281022877329
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6041.669988444444,
+        "changePercent": -48.15868107242738,
+        "blockChangePercent": {
+          "A": -47.05226454163469,
+          "B": -48.44032614057723,
+          "C": -49.011429271739196
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6697.219561555557,
+        "changePercent": -42.53365445603031,
+        "blockChangePercent": {
+          "A": -44.17737385343009,
+          "B": -40.35535416530306,
+          "C": -42.965716602630934
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "writersPerLongList": 2,
+      "samplesMs": {
+        "A": [
+          6088.225349,
+          6073.854501,
+          6180.376133
+        ],
+        "B": [
+          6162.476076,
+          5945.923788,
+          5260.825656
+        ],
+        "C": [
+          6006.897743,
+          5279.756705,
+          5892.998829
+        ]
+      },
+      "summary": {
+        "meanMs": 5876.814975555556,
+        "medianMs": 6006.897743,
+        "sampleStdDevMs": 356.2217450031193,
+        "minMs": 5260.825656,
+        "maxMs": 6180.376133,
+        "blockMeanMs": {
+          "A": 6114.151994333333,
+          "B": 5789.74184,
+          "C": 5726.551092333334
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5980.7718488888895,
+        "changePercent": -1.7381849025497664,
+        "blockChangePercent": {
+          "A": 3.4274894027378933,
+          "B": -1.8206170819139333,
+          "C": -6.637523531434864
+        }
+      },
+      "taskComparison": {
+        "meanMs": 5388.858840222222,
+        "changePercent": -8.303071261609796,
+        "blockChangePercent": {
+          "A": -16.446031206485234,
+          "B": -1.8774288734089706,
+          "C": -6.105503476046681
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 5719.298162222221,
+        "changePercent": -2.680309214915244,
+        "blockChangePercent": {
+          "A": -5.220008541317489,
+          "B": 1.8574519608171913,
+          "C": -4.556544642539462
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "writersPerLongList": 8,
+      "samplesMs": {
+        "A": [
+          5141.746378,
+          5057.557731,
+          4789.392931
+        ],
+        "B": [
+          5336.701745,
+          5329.739032,
+          4745.883422
+        ],
+        "C": [
+          5539.381144,
+          5320.325412,
+          5327.269768
+        ]
+      },
+      "summary": {
+        "meanMs": 5176.444173666667,
+        "medianMs": 5320.325412,
+        "sampleStdDevMs": 268.06817380234804,
+        "minMs": 4745.883422,
+        "maxMs": 5539.381144,
+        "blockMeanMs": {
+          "A": 4996.232346666667,
+          "B": 5137.441399666666,
+          "C": 5395.658774666667
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5244.187947888889,
+        "changePercent": -1.2917876875387924,
+        "blockChangePercent": {
+          "A": -2.6375422773295076,
+          "B": -1.5554829424915595,
+          "C": 0.24693501264263507
+        }
+      },
+      "taskComparison": {
+        "meanMs": 5674.605414999999,
+        "changePercent": 9.62361854238769,
+        "blockChangePercent": {
+          "A": 11.15744132086347,
+          "B": 9.235244922322305,
+          "C": 8.573128045800903
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6095.007080555555,
+        "changePercent": 17.7450557964433,
+        "blockChangePercent": {
+          "A": 23.745477852423136,
+          "B": 17.616194792840933,
+          "C": 12.311523369841648
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "writersPerLongList": 16,
+      "samplesMs": {
+        "A": [
+          4599.062138,
+          5245.038327,
+          5361.988845
+        ],
+        "B": [
+          5076.422435,
+          5581.566552,
+          5488.279653
+        ],
+        "C": [
+          5144.733055,
+          4597.520621,
+          5770.742733
+        ]
+      },
+      "summary": {
+        "meanMs": 5207.2615954444445,
+        "medianMs": 5245.038327,
+        "sampleStdDevMs": 406.92033694959895,
+        "minMs": 4597.520621,
+        "maxMs": 5770.742733,
+        "blockMeanMs": {
+          "A": 5068.696436666666,
+          "B": 5382.089546666667,
+          "C": 5170.9988029999995
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5219.979047666666,
+        "changePercent": -0.24363033081341579,
+        "blockChangePercent": {
+          "A": -5.135516886941771,
+          "B": 6.415338941730764,
+          "C": -1.677450507087208
+        }
+      },
+      "taskComparison": {
+        "meanMs": 5843.414731222221,
+        "changePercent": 12.216654072734002,
+        "blockChangePercent": {
+          "A": 14.526788130511115,
+          "B": 10.495162305190032,
+          "C": 11.74398998727957
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6333.172296444445,
+        "changePercent": 21.621934684153366,
+        "blockChangePercent": {
+          "A": 25.42087031185538,
+          "B": 14.661039177408352,
+          "C": 25.143210197206734
+        }
+      }
+    },
+    {
+      "implementation": "HEAP",
+      "writersPerLongList": 32,
+      "samplesMs": {
+        "A": [
+          5057.693282,
+          5822.896394,
+          5049.938079
+        ],
+        "B": [
+          6218.313873,
+          6249.245252,
+          5019.954292
+        ],
+        "C": [
+          5787.297989,
+          6061.554497,
+          6073.581965
+        ]
+      },
+      "summary": {
+        "meanMs": 5704.497291444443,
+        "medianMs": 5822.896394,
+        "sampleStdDevMs": 519.7051777959033,
+        "minMs": 5019.954292,
+        "maxMs": 6249.245252,
+        "blockMeanMs": {
+          "A": 5310.175918333333,
+          "B": 5829.171139000001,
+          "C": 5974.144817
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5830.0866305555555,
+        "changePercent": -2.1541590557659474,
+        "blockChangePercent": {
+          "A": -3.5156693002489248,
+          "B": -3.2675023257053293,
+          "C": 0.2285838079642888
+        }
+      },
+      "taskComparison": {
+        "meanMs": 5817.0805652222225,
+        "changePercent": 1.9735879960295577,
+        "blockChangePercent": {
+          "A": 8.110582215924843,
+          "B": 1.5265885128098233,
+          "C": -3.0451859622761757
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6093.041474111111,
+        "changePercent": 6.8111905890358315,
+        "blockChangePercent": {
+          "A": 13.880331411531444,
+          "B": 6.459237531746087,
+          "C": 0.8711292342948651
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "writersPerLongList": 1,
+      "samplesMs": {
+        "A": [
+          6947.255305,
+          7555.718046,
+          6874.394728
+        ],
+        "B": [
+          7427.950065,
+          7451.266182,
+          6805.933391
+        ],
+        "C": [
+          7372.976672,
+          6868.589532,
+          7493.676688
+        ]
+      },
+      "summary": {
+        "meanMs": 7199.751178777778,
+        "medianMs": 7372.976672,
+        "sampleStdDevMs": 314.8050365219785,
+        "minMs": 6805.933391,
+        "maxMs": 7555.718046,
+        "blockMeanMs": {
+          "A": 7125.789359666666,
+          "B": 7228.383212666667,
+          "C": 7245.080964
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 7276.5113855555555,
+        "changePercent": -1.0549039602982369,
+        "blockChangePercent": {
+          "A": -3.1545343882588894,
+          "B": -0.21152024765422883,
+          "C": 0.23725548274187158
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7495.0106873333325,
+        "changePercent": 4.100968231039315,
+        "blockChangePercent": {
+          "A": 1.796807130702538,
+          "B": 1.12117422779483,
+          "C": 9.340117357267763
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8501.185773333333,
+        "changePercent": 18.07610516307434,
+        "blockChangePercent": {
+          "A": 10.785689246119112,
+          "B": 26.056335502977525,
+          "C": 17.284644738811593
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "writersPerLongList": 2,
+      "samplesMs": {
+        "A": [
+          6486.303934,
+          6269.537038,
+          6600.634606
+        ],
+        "B": [
+          6962.69058,
+          6265.358861,
+          6215.282149
+        ],
+        "C": [
+          5942.933855,
+          6555.240752,
+          5897.23317
+        ]
+      },
+      "summary": {
+        "meanMs": 6355.0238827777775,
+        "medianMs": 6269.537038,
+        "sampleStdDevMs": 335.6282887108759,
+        "minMs": 5897.23317,
+        "maxMs": 6962.69058,
+        "blockMeanMs": {
+          "A": 6452.158525999999,
+          "B": 6481.110529999999,
+          "C": 6131.802592333333
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 6635.561520777778,
+        "changePercent": -4.227790475931236,
+        "blockChangePercent": {
+          "A": -2.7099945440209883,
+          "B": -4.93121383799261,
+          "C": -5.04395650026781
+        }
+      },
+      "taskComparison": {
+        "meanMs": 7467.912722333334,
+        "changePercent": 17.511953693384296,
+        "blockChangePercent": {
+          "A": 16.077378629490923,
+          "B": 9.897695722011823,
+          "C": 27.069494459513876
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 7916.797606777778,
+        "changePercent": 24.575418642130266,
+        "blockChangePercent": {
+          "A": 15.675796834877719,
+          "B": 24.053425079708802,
+          "C": 34.49173081628067
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "writersPerLongList": 8,
+      "samplesMs": {
+        "A": [
+          5649.176261,
+          4924.471061,
+          5198.531178
+        ],
+        "B": [
+          5300.365834,
+          4950.139673,
+          5212.246417
+        ],
+        "C": [
+          5884.987951,
+          5994.54576,
+          5186.186845
+        ]
+      },
+      "summary": {
+        "meanMs": 5366.738997777778,
+        "medianMs": 5212.246417,
+        "sampleStdDevMs": 387.4300495030754,
+        "minMs": 4924.471061,
+        "maxMs": 5994.54576,
+        "blockMeanMs": {
+          "A": 5257.392833333334,
+          "B": 5154.250641333333,
+          "C": 5688.573518666667
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5580.52046611111,
+        "changePercent": -3.830851792974599,
+        "blockChangePercent": {
+          "A": -9.149162920260967,
+          "B": -5.853091245310226,
+          "C": 3.80548137067076
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6612.160505777778,
+        "changePercent": 23.20629917936563,
+        "blockChangePercent": {
+          "A": 22.584903341031783,
+          "B": 30.61002881805013,
+          "C": 17.072291049414034
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 7129.799331777777,
+        "changePercent": 32.851613144034665,
+        "blockChangePercent": {
+          "A": 39.23711454952148,
+          "B": 40.42367800842952,
+          "C": 20.089290696809424
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "writersPerLongList": 16,
+      "samplesMs": {
+        "A": [
+          5523.434984,
+          5534.453121,
+          5190.538864
+        ],
+        "B": [
+          4936.061429,
+          5806.807519,
+          5491.425299
+        ],
+        "C": [
+          5561.597474,
+          5838.189896,
+          5863.192489
+        ]
+      },
+      "summary": {
+        "meanMs": 5527.300119444446,
+        "medianMs": 5534.453121,
+        "sampleStdDevMs": 306.81860922220517,
+        "minMs": 4936.061429,
+        "maxMs": 5863.192489,
+        "blockMeanMs": {
+          "A": 5416.142323,
+          "B": 5411.431415666667,
+          "C": 5754.326619666666
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5480.48179688889,
+        "changePercent": 0.854273844721698,
+        "blockChangePercent": {
+          "A": -3.8645017637409795,
+          "B": -1.297795692082171,
+          "C": 8.062508793395029
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6620.701702111111,
+        "changePercent": 19.781838493267202,
+        "blockChangePercent": {
+          "A": 22.62348289476439,
+          "B": 18.95736986268266,
+          "C": 17.882538056664487
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6706.973075999999,
+        "changePercent": 21.34266153570332,
+        "blockChangePercent": {
+          "A": 21.12828388587873,
+          "B": 23.706210121891736,
+          "C": 19.32173328847999
+        }
+      }
+    },
+    {
+      "implementation": "OFF_HEAP",
+      "writersPerLongList": 32,
+      "samplesMs": {
+        "A": [
+          4923.317433,
+          5660.689527,
+          4902.735096
+        ],
+        "B": [
+          5155.302899,
+          5826.85098,
+          5884.648267
+        ],
+        "C": [
+          5937.035562,
+          5201.351241,
+          5650.020381
+        ]
+      },
+      "summary": {
+        "meanMs": 5460.216820666667,
+        "medianMs": 5650.020381,
+        "sampleStdDevMs": 414.9042333463315,
+        "minMs": 4902.735096,
+        "maxMs": 5937.035562,
+        "blockMeanMs": {
+          "A": 5162.247352,
+          "B": 5622.267382000001,
+          "C": 5596.135728000001
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 5617.914256666667,
+        "changePercent": -2.807045974631295,
+        "blockChangePercent": {
+          "A": -6.443528199134462,
+          "B": 1.6324771752112444,
+          "C": -3.58132729004752
+        }
+      },
+      "taskComparison": {
+        "meanMs": 6623.8296215555565,
+        "changePercent": 21.31074349437312,
+        "blockChangePercent": {
+          "A": 25.155563319340413,
+          "B": 22.224471654746814,
+          "C": 16.846031377505312
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 6545.477938444445,
+        "changePercent": 19.87578796633338,
+        "blockChangePercent": {
+          "A": 21.3129494639011,
+          "B": 25.643935640910787,
+          "C": 12.754972175328195
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "writersPerLongList": 1,
+      "samplesMs": {
+        "A": [
+          8496.983163,
+          9809.348869,
+          9739.338069
+        ],
+        "B": [
+          8633.312032,
+          10282.375911,
+          11069.652046
+        ],
+        "C": [
+          10122.082767,
+          9765.967809,
+          8715.248757
+        ]
+      },
+      "summary": {
+        "meanMs": 9626.03438033333,
+        "medianMs": 9765.967809,
+        "sampleStdDevMs": 859.9918769535966,
+        "minMs": 8496.983163,
+        "maxMs": 11069.652046,
+        "blockMeanMs": {
+          "A": 9348.556700333333,
+          "B": 9995.113329666665,
+          "C": 9534.433111
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 9831.924135333333,
+        "changePercent": -2.094094219666409,
+        "blockChangePercent": {
+          "A": -1.4784944888485585,
+          "B": -3.366558813020437,
+          "C": -1.3365930529622316
+        }
+      },
+      "taskComparison": {
+        "meanMs": 9998.796743888888,
+        "changePercent": 3.8724395615824747,
+        "blockChangePercent": {
+          "A": 6.7478441063618,
+          "B": -4.040765598937601,
+          "C": 9.348643479442753
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 10677.143614111112,
+        "changePercent": 10.919441924342909,
+        "blockChangePercent": {
+          "A": 15.252573440373872,
+          "B": 8.42569589314921,
+          "C": 9.285023675349024
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "writersPerLongList": 2,
+      "samplesMs": {
+        "A": [
+          8195.520897,
+          7679.287797,
+          8786.113815
+        ],
+        "B": [
+          8444.468404,
+          8273.522771,
+          8406.621017
+        ],
+        "C": [
+          7763.89586,
+          8029.838723,
+          7966.973712
+        ]
+      },
+      "summary": {
+        "meanMs": 8171.804777333334,
+        "medianMs": 8195.520897,
+        "sampleStdDevMs": 351.5752950489509,
+        "minMs": 7679.287797,
+        "maxMs": 8786.113815,
+        "blockMeanMs": {
+          "A": 8220.307503,
+          "B": 8374.870730666667,
+          "C": 7920.236098333334
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 8563.458967777777,
+        "changePercent": -4.573551317500824,
+        "blockChangePercent": {
+          "A": -5.7231100520318545,
+          "B": -1.3844919758752128,
+          "C": -6.585621195242686
+        }
+      },
+      "taskComparison": {
+        "meanMs": 9661.930590555556,
+        "changePercent": 18.234965883613373,
+        "blockChangePercent": {
+          "A": 15.819674590746668,
+          "B": 15.15611873687941,
+          "C": 23.99734258847772
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 10479.330258,
+        "changePercent": 28.237648151693495,
+        "blockChangePercent": {
+          "A": 26.477124197673696,
+          "B": 24.496154185256213,
+          "C": 34.02113440238252
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "writersPerLongList": 8,
+      "samplesMs": {
+        "A": [
+          7743.627564,
+          7574.98179,
+          7511.371882
+        ],
+        "B": [
+          7832.048383,
+          7632.562073,
+          7655.83527
+        ],
+        "C": [
+          7022.860084,
+          7610.623209,
+          7065.460756
+        ]
+      },
+      "summary": {
+        "meanMs": 7516.5967789999995,
+        "medianMs": 7610.623209,
+        "sampleStdDevMs": 283.6072796198133,
+        "minMs": 7022.860084,
+        "maxMs": 7832.048383,
+        "blockMeanMs": {
+          "A": 7609.993745333333,
+          "B": 7706.815242,
+          "C": 7232.9813496666675
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 7524.983633777778,
+        "changePercent": -0.11145346203985662,
+        "blockChangePercent": {
+          "A": 0.1290857603190254,
+          "B": 2.098954965140609,
+          "C": -2.604339175811221
+        }
+      },
+      "taskComparison": {
+        "meanMs": 8344.495241333332,
+        "changePercent": 11.014272637935418,
+        "blockChangePercent": {
+          "A": 4.429528984480147,
+          "B": 10.525651861734374,
+          "C": 18.462870312735923
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8639.381765666667,
+        "changePercent": 14.937411433369995,
+        "blockChangePercent": {
+          "A": 7.838783389703541,
+          "B": 18.532876778328934,
+          "C": 18.575043914110424
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "writersPerLongList": 16,
+      "samplesMs": {
+        "A": [
+          7383.954009,
+          7555.798797,
+          7207.116082
+        ],
+        "B": [
+          7633.243719,
+          7526.399633,
+          7231.999042
+        ],
+        "C": [
+          6722.640978,
+          6919.223616,
+          6960.240725
+        ]
+      },
+      "summary": {
+        "meanMs": 7237.846289000002,
+        "medianMs": 7231.999042,
+        "sampleStdDevMs": 317.6168541826471,
+        "minMs": 6722.640978,
+        "maxMs": 7633.243719,
+        "blockMeanMs": {
+          "A": 7382.289629333333,
+          "B": 7463.880797999999,
+          "C": 6867.368439666668
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 7496.488061888889,
+        "changePercent": -3.4501725441782094,
+        "blockChangePercent": {
+          "A": 0.6495366476371833,
+          "B": -2.0674340939565106,
+          "C": -8.840643871315157
+        }
+      },
+      "taskComparison": {
+        "meanMs": 8121.429764444443,
+        "changePercent": 12.207823158489873,
+        "blockChangePercent": {
+          "A": 11.210563414430407,
+          "B": 7.743147079128909,
+          "C": 18.132344418969915
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8356.682941555557,
+        "changePercent": 15.45814331890345,
+        "blockChangePercent": {
+          "A": 11.13560905820088,
+          "B": 9.936190632430652,
+          "C": 26.106384652056835
+        }
+      }
+    },
+    {
+      "implementation": "DISK_SEGMENT",
+      "writersPerLongList": 32,
+      "samplesMs": {
+        "A": [
+          6699.704154,
+          7452.484599,
+          7474.606397
+        ],
+        "B": [
+          7599.690248,
+          6684.22341,
+          7267.505788
+        ],
+        "C": [
+          7032.712755,
+          7360.7976,
+          7328.385184
+        ]
+      },
+      "summary": {
+        "meanMs": 7211.123348333333,
+        "medianMs": 7328.385184,
+        "sampleStdDevMs": 333.35378769316935,
+        "minMs": 6684.22341,
+        "maxMs": 7599.690248,
+        "blockMeanMs": {
+          "A": 7208.931716666666,
+          "B": 7183.806482,
+          "C": 7240.631846333333
+        }
+      },
+      "originalBaselineComparison": {
+        "meanMs": 7392.507268111113,
+        "changePercent": -2.4536184165852903,
+        "blockChangePercent": {
+          "A": -1.114890921399836,
+          "B": -0.875680828541292,
+          "C": -5.227862425254504
+        }
+      },
+      "taskComparison": {
+        "meanMs": 8150.534677222222,
+        "changePercent": 13.027253640114346,
+        "blockChangePercent": {
+          "A": 12.673383915600645,
+          "B": 14.169042538712052,
+          "C": 12.246746091858185
+        }
+      },
+      "fixedPoolComparison": {
+        "meanMs": 8505.018529444445,
+        "changePercent": 17.943046022228472,
+        "blockChangePercent": {
+          "A": 15.210691617430893,
+          "B": 15.616271528809422,
+          "C": 22.971951619235732
+        }
+      }
+    }
+  ]
+}
