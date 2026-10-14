@@ -50,10 +50,8 @@ import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
 import com.hedera.services.bdd.junit.TestTags;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hederahashgraph.api.proto.java.ClprEndpoint;
 import com.hederahashgraph.api.proto.java.ClprEndpointManifest;
 import com.hederahashgraph.api.proto.java.ClprLedgerConfiguration;
-import com.hederahashgraph.api.proto.java.ClprServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ClprSignatureScheme;
 import com.hederahashgraph.api.proto.java.ClprThrottles;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -142,7 +140,14 @@ public class ClprMessagesSuite {
     /** Polling interval between responseCount queries. */
     private static final Duration POLL_INTERVAL = Duration.ofSeconds(5);
 
-    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
+    // Pin the gRPC port bases to the values the committed TSS fixtures were captured at
+    // (ledgerA gossip 35403/35404, ledgerB gossip 36403/36404). This keeps the runtime roster
+    // hash identical to the preloaded construction's, so rewriteFixturePortsToRuntime is a no-op
+    // and the warm WRAPS-extensible proof is reused instead of forcing a fresh construction #2.
+    @MultiNetworkHapiTest({
+        @Network(value = "ledgerA", firstGrpcPort = 35400),
+        @Network(value = "ledgerB", firstGrpcPort = 36400)
+    })
     @DisplayName("Multi-message CLPR: 3×7 messages with EchoApplication auto-sync round-trip")
     Stream<DynamicTest> multiMessageRoundTrip(final SubProcessNetwork netA, final SubProcessNetwork netB) {
         // ── Channel keypair ────────────────────────────────────────────────────────────────────
@@ -413,13 +418,6 @@ public class ClprMessagesSuite {
         return ClprLedgerConfiguration.newBuilder()
                 .setChainId(chainId)
                 .setServiceAddress(ByteString.copyFrom(CLPR_SERVICE_ADDRESS_20))
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(peerPort)
-                                .build())
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {0x01}))
-                        .build())
                 .setThrottles(ClprThrottles.newBuilder()
                         .setMaxMessagesPerBundle(3)
                         .setMaxMessagePayloadBytes(65536)
