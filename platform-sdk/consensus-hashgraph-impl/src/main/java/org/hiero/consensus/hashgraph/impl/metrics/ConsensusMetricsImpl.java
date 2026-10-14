@@ -122,6 +122,13 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
     @Nullable
     private final LatencyGauges receivedToConsensus;
 
+    /**
+     * Percentiles and the maximum of the time from a transaction without priority entering the transaction pool of
+     * this node until the consensus engine emits its round, or {@code null} if latency gauges are disabled.
+     */
+    @Nullable
+    private final LatencyGauges transactionToConsensus;
+
     private final NodeId selfId;
     private final Time time;
 
@@ -143,7 +150,7 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      *
      * @param selfId        the {@link NodeId} of this node
      * @param metrics       a reference to the metrics-system
-     * @param configuration the configuration, which enables the latency gauges and sets their window
+     * @param configuration the configuration, which enables the latency gauges and sets their windows and percentiles
      * @param time          the clock that measures the latency and advances the window of its gauges
      * @throws NullPointerException if any of the parameters is {@code null}.
      */
@@ -161,12 +168,19 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
                 .getConfigData(ConsensusLayerMetricsConfig.class);
         if (metricsConfig.latencyEnabled()) {
             final Config eventLatencyR2C = new Config(PLATFORM_CATEGORY, "eventLatency_R2C")
+                    .withDescription("time from receiving a gossiped event until the consensus engine emits its round")
                     .withWindow(metricsConfig.latencyWindow())
-                    .withPercentiles(50, 90, 99, 99.9)
-                    .withDescription("time from receiving a gossiped event until the consensus engine emits its round");
+                    .withPercentiles(metricsConfig.latencyPercentiles());
             receivedToConsensus = LatencyGauges.register(metrics, configuration, time, eventLatencyR2C);
+            final Config transactionLatencyTotal = new Config(PLATFORM_CATEGORY, "transactionLatency_total")
+                    .withDescription("time from a transaction entering the transaction pool until"
+                            + " the consensus engine emits its round")
+                    .withWindow(metricsConfig.transactionLatencyWindow())
+                    .withPercentiles(metricsConfig.transactionLatencyPercentiles());
+            transactionToConsensus = LatencyGauges.register(metrics, configuration, time, transactionLatencyTotal);
         } else {
             receivedToConsensus = null;
+            transactionToConsensus = null;
         }
 
         avgJudgesWeight = metrics.getOrCreate(AVG_JUDGES_WEIGHT_CONFIG);
@@ -306,10 +320,14 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      *
      * <p>Records the time from receiving each gossiped event of the round until now. Events created by this node and
      * events read from storage are left out.
+     *
+     * <p>Also records the time from each transaction without priority entering the transaction pool until now, for
+     * the transactions of the events this node created in this run; see
+     * {@link PlatformEvent#getTransactionReceivedTimes()}.
      */
     @Override
     public void consensusRoundEmitted(@NonNull final ConsensusRound round) {
-        if (receivedToConsensus == null) {
+        if (receivedToConsensus == null || transactionToConsensus == null) {
             return;
         }
         final Instant now = time.now();
@@ -317,6 +335,10 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
             if (event.getOrigin() == EventOrigin.GOSSIP) {
                 receivedToConsensus.record(
                         Duration.between(event.getTimeReceived(), now).toNanos());
+            }
+            for (final Instant transactionReceived : event.getTransactionReceivedTimes()) {
+                transactionToConsensus.record(
+                        Duration.between(transactionReceived, now).toNanos());
             }
         }
     }
