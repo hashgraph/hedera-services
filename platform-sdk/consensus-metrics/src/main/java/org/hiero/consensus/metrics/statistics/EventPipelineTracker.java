@@ -10,12 +10,14 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.hiero.consensus.metrics.config.EventPipelineMetricsConfig;
+import org.hiero.consensus.metrics.config.ConsensusLayerMetricsConfig;
 import org.hiero.consensus.metrics.extensions.LatencyGauges;
 import org.hiero.consensus.metrics.extensions.LatencyGauges.Config;
 import org.hiero.consensus.model.event.EventOrigin;
@@ -24,33 +26,45 @@ import org.hiero.consensus.model.event.PlatformEvent;
 /**
  * Tracks the delay experienced by events at each stage of the event processing pipeline.
  * <p>
- * Two families of metrics can be enabled independently in {@link EventPipelineMetricsConfig}: the average and maximum
- * delay ({@code eventDelay_*}), and percentiles and the maximum over a sliding window ({@code eventLatency_*}, see
- * {@link LatencyGauges}). Both report the same delays. The average and maximum delay will eventually be removed.
- * <p>
- * Metrics are split by {@link EventOrigin}, with a dedicated suffix for each origin:
+ * Two families of metrics can be enabled independently in {@link ConsensusLayerMetricsConfig}:
+ * <ul>
+ *   <li>The average and maximum delay since the event was received ({@code eventDelay_*}), split by
+ *   {@link EventOrigin}. They will eventually be removed.</li>
+ *   <li>Percentiles and the maximum of the delay since the previous stage, over a sliding window
+ *   ({@code eventLatency_*}, see {@link LatencyGauges}). Each stage has one set of gauges for all origins except
+ *   {@link EventOrigin#STORAGE}: events read from storage arrive only during the replay at startup, which feeds them as
+ *   fast as the pipeline takes them, so their delays say nothing about the latency of a running node.</li>
+ * </ul>
+ * The average and maximum delay use a dedicated suffix for each origin:
  * <ul>
  *   <li>{@code _runtime} — events created by this runtime ({@link EventOrigin#RUNTIME})</li>
  *   <li>{@code _gossip} — events received through gossip ({@link EventOrigin#GOSSIP})</li>
- *   <li>{@code _storage} — events read from storage ({@link EventOrigin#STORAGE}), only the average and maximum
- *   delay: they arrive only during the replay at startup, so a sliding window would stay empty afterwards</li>
+ *   <li>{@code _storage} — events read from storage ({@link EventOrigin#STORAGE})</li>
  * </ul>
+ * The delay since the previous stage starts at {@link PlatformEvent#getLastStageTime()}, which every stage with latency
+ * gauges sets when it records an event. A stage must therefore record an event before the next stage receives it: on
+ * an output wire, the monitor that records the stage has to be soldered before the next stage.
  */
 public class EventPipelineTracker {
 
     private record MetricKey(@NonNull String name, @NonNull EventOrigin origin) {}
 
-    /** The metrics of one stage and origin; a metric is {@code null} if its family is disabled. */
+    /**
+     * The metrics of one stage and origin; a metric is {@code null} if its family is disabled or does not cover the
+     * origin. The latency gauges are shared by all origins of the stage.
+     */
     private record StageMetrics(
             @Nullable AverageAndMaxTimeStat averageAndMax,
             @Nullable LatencyGauges latency) {
 
-        void record(final long nanos) {
+        void record(@NonNull final PlatformEvent event, @NonNull final Instant now) {
             if (averageAndMax != null) {
-                averageAndMax.updateNanos(nanos);
+                averageAndMax.updateNanos(
+                        Duration.between(event.getTimeReceived(), now).toNanos());
             }
             if (latency != null) {
-                latency.record(nanos);
+                latency.record(Duration.between(event.getLastStageTime(), now).toNanos());
+                event.setLastStageTime(now);
             }
         }
     }
@@ -60,13 +74,13 @@ public class EventPipelineTracker {
     private final Time time;
     private final boolean averageAndMaxEnabled;
     private final boolean latencyEnabled;
-    private final Duration runtimeWindow;
-    private final Duration gossipWindow;
+    private final Duration window;
+    private final Duration selfEventsWindow;
     private final Map<MetricKey, StageMetrics> metricMap = new HashMap<>();
     private final Map<EventOrigin, Integer> stepCounters = new EnumMap<>(EventOrigin.class);
 
     /**
-     * Creates a tracker, unless the {@link EventPipelineMetricsConfig} disables both families of metrics.
+     * Creates a tracker, unless the {@link ConsensusLayerMetricsConfig} disables both families of metrics.
      *
      * @param metrics       the metrics system
      * @param configuration the configuration
@@ -76,7 +90,7 @@ public class EventPipelineTracker {
     @Nullable
     public static EventPipelineTracker create(
             @NonNull final Metrics metrics, @NonNull final Configuration configuration, @NonNull final Time time) {
-        final EventPipelineMetricsConfig config = configuration.getConfigData(EventPipelineMetricsConfig.class);
+        final ConsensusLayerMetricsConfig config = configuration.getConfigData(ConsensusLayerMetricsConfig.class);
         return config.averageAndMaxEnabled() || config.latencyEnabled()
                 ? new EventPipelineTracker(metrics, configuration, time, config)
                 : null;
@@ -86,14 +100,14 @@ public class EventPipelineTracker {
             @NonNull final Metrics metrics,
             @NonNull final Configuration configuration,
             @NonNull final Time time,
-            @NonNull final EventPipelineMetricsConfig config) {
+            @NonNull final ConsensusLayerMetricsConfig config) {
         this.metrics = requireNonNull(metrics);
         this.configuration = requireNonNull(configuration);
         this.time = requireNonNull(time);
         this.averageAndMaxEnabled = config.averageAndMaxEnabled();
         this.latencyEnabled = config.latencyEnabled();
-        this.runtimeWindow = config.latencyRuntimeWindow();
-        this.gossipWindow = config.latencyGossipWindow();
+        this.window = config.latencyWindow();
+        this.selfEventsWindow = config.selfEventsLatencyWindow();
     }
 
     /**
@@ -112,6 +126,7 @@ public class EventPipelineTracker {
      * @param origins the event origins expected to pass through this stage
      */
     public void registerMetric(@NonNull final String name, @NonNull final EventOrigin... origins) {
+        final LatencyGauges latency = latencyEnabled ? registerLatency(name, origins) : null;
         final String baseDesc = "event pipeline delay until after " + name;
 
         for (final EventOrigin origin : origins) {
@@ -126,35 +141,40 @@ public class EventPipelineTracker {
                             "eventDelay_%d_%s_%s".formatted(step, name, originName),
                             desc)
                     : null;
-            final LatencyGauges latency;
-            if (latencyEnabled && origin != EventOrigin.STORAGE) {
-                final Config config = latencyConfig(origin, "eventLatency_%d_%s_%s".formatted(step, name, originName));
-                latency = LatencyGauges.register(metrics, configuration, time, config.withDescription(desc));
-            } else {
-                latency = null;
-            }
-            metricMap.put(new MetricKey(name, origin), new StageMetrics(averageAndMax, latency));
+            metricMap.put(
+                    new MetricKey(name, origin),
+                    new StageMetrics(averageAndMax, origin == EventOrigin.STORAGE ? null : latency));
         }
     }
 
     /**
-     * Returns the parameters of the latency gauges of an origin. A node receives many more events through gossip than
-     * it creates, so the window over gossiped events holds enough of them for p99.9.
+     * Registers the latency gauges of a stage, shared by all origins except {@link EventOrigin#STORAGE}. A stage that
+     * only self events pass sees far fewer events than the others, so its window is longer and its percentiles end at
+     * p99. Must be called before the step counters of the stage's origins are advanced.
      *
-     * @param origin the event origin
-     * @param name   the base name of the gauges
-     * @return the parameters of the latency gauges
-     * @throws IllegalArgumentException if the origin has no latency gauges
+     * @param name    the name of the stage
+     * @param origins the event origins expected to pass through this stage
+     * @return the latency gauges, or {@code null} if only events read from storage pass the stage
      */
-    @NonNull
-    private Config latencyConfig(@NonNull final EventOrigin origin, @NonNull final String name) {
-        return switch (origin) {
-            case RUNTIME ->
-                new Config(PLATFORM_CATEGORY, name).withWindow(runtimeWindow).withPercentiles(50, 90, 99);
-            case GOSSIP ->
-                new Config(PLATFORM_CATEGORY, name).withWindow(gossipWindow).withPercentiles(50, 90, 99, 99.9);
-            case STORAGE -> throw new IllegalArgumentException("no latency gauges for events read from storage");
-        };
+    @Nullable
+    private LatencyGauges registerLatency(@NonNull final String name, @NonNull final EventOrigin... origins) {
+        final List<EventOrigin> measured = Arrays.stream(origins)
+                .filter(origin -> origin != EventOrigin.STORAGE)
+                .toList();
+        if (measured.isEmpty()) {
+            return null;
+        }
+        // the next step of the stage's origins; they agree for every stage registered after the first
+        final int step = stepCounters.getOrDefault(measured.getFirst(), 0) + 1;
+        final Config baseConfig = new Config(PLATFORM_CATEGORY, "eventLatency_%d_%s".formatted(step, name))
+                .withDescription("event pipeline delay from the previous stage until after " + name);
+        final Config config;
+        if (measured.equals(List.of(EventOrigin.RUNTIME))) {
+            config = baseConfig.withWindow(selfEventsWindow).withPercentiles(50, 90, 99);
+        } else {
+            config = baseConfig.withWindow(window).withPercentiles(50, 90, 99, 99.9);
+        }
+        return LatencyGauges.register(metrics, configuration, time, config);
     }
 
     /**
@@ -167,8 +187,7 @@ public class EventPipelineTracker {
     public void recordEvent(@NonNull final String name, @NonNull final PlatformEvent event) {
         final StageMetrics stageMetrics = metricMap.get(new MetricKey(name, event.getOrigin()));
         if (stageMetrics != null) {
-            stageMetrics.record(
-                    Duration.between(event.getTimeReceived(), time.now()).toNanos());
+            stageMetrics.record(event, time.now());
         }
     }
 

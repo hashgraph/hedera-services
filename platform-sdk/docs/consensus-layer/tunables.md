@@ -326,16 +326,16 @@ Module: `consensus-hashgraph`. Source: [HashgraphWiringConfig.java](../../consen
 |---------|------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------|-----------|
 | TUN-103 | `hashgraph.wiring.consensusEngine` | TaskSchedulerConfiguration | `SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC` | Scheduler configuration for the hashgraph consensus engine. |       | —         |
 
-## `event.pipeline.metrics.*` — EventPipelineMetricsConfig
+## `event.pipeline.metrics.*` — ConsensusLayerMetricsConfig
 
-Module: `consensus-metrics`. Source: [EventPipelineMetricsConfig.java](../../consensus-metrics/src/main/java/org/hiero/consensus/metrics/config/EventPipelineMetricsConfig.java).
+Module: `consensus-metrics`. Source: [ConsensusLayerMetricsConfig.java](../../consensus-metrics/src/main/java/org/hiero/consensus/metrics/config/ConsensusLayerMetricsConfig.java).
 
-|   ID    |                      Key                      |   Type   | Default |                                                   Effect                                                   | Range | Fragility |
-|---------|-----------------------------------------------|----------|---------|------------------------------------------------------------------------------------------------------------|-------|-----------|
-| TUN-022 | `event.pipeline.metrics.averageAndMaxEnabled` | boolean  | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline. |       | —         |
-| TUN-225 | `event.pipeline.metrics.latencyEnabled`       | boolean  | `true`  | If true, the platform reports sliding-window percentiles and the maximum of own and gossiped event delays. |       | —         |
-| TUN-226 | `event.pipeline.metrics.latencyRuntimeWindow` | Duration | `10m`   | Length of the sliding window over the delays of own events, for percentiles up to p99.                     |       | —         |
-| TUN-227 | `event.pipeline.metrics.latencyGossipWindow`  | Duration | `5m`    | Length of the sliding window over the delays of gossiped events, for percentiles up to p99.9.              |       | —         |
+|   ID    |                       Key                        |   Type   | Default |                                                      Effect                                                      | Range | Fragility |
+|---------|--------------------------------------------------|----------|---------|------------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-022 | `event.pipeline.metrics.averageAndMaxEnabled`    | boolean  | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline.       |       | —         |
+| TUN-225 | `event.pipeline.metrics.latencyEnabled`          | boolean  | `true`  | If true, the platform reports sliding-window percentiles and the maximum of stage delays and `eventLatency_R2C`. |       | —         |
+| TUN-226 | `event.pipeline.metrics.selfEventsLatencyWindow` | Duration | `10m`   | Length of the sliding window of stages that only self events pass, for percentiles up to p99.                    |       | —         |
+| TUN-227 | `event.pipeline.metrics.latencyWindow`           | Duration | `5m`    | Length of the sliding window of stages that gossiped events pass and of `eventLatency_R2C`, up to p99.9.         |       | —         |
 
 ## `metrics.*` — MetricsConfig
 

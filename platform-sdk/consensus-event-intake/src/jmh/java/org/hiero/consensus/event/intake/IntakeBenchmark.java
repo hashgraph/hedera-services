@@ -22,7 +22,7 @@ import org.hiero.consensus.event.NoOpIntakeEventCounter;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator.GeneratorEventGraphSource;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.event.generator.GeneratorEventGraphSourceBuilder;
-import org.hiero.consensus.metrics.config.EventPipelineMetricsConfig_;
+import org.hiero.consensus.metrics.config.ConsensusLayerMetricsConfig_;
 import org.hiero.consensus.metrics.statistics.EventPipelineTracker;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.roster.RosterWrapperHistory;
@@ -113,7 +113,7 @@ public class IntakeBenchmark {
     @Setup(Level.Invocation)
     public void beforeInvocation() {
         final Configuration configuration = new TestConfigBuilder()
-                .withValue(EventPipelineMetricsConfig_.LATENCY_ENABLED, false)
+                .withValue(ConsensusLayerMetricsConfig_.LATENCY_ENABLED, false)
                 .getOrCreateConfig();
         final Metrics metrics = new NoOpMetrics();
         final Time time = Time.getCurrent();
