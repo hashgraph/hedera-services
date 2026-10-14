@@ -64,40 +64,32 @@ public class BlockNodeSuite {
                         blockNodeIds = {0, 1, 2, 3},
                         blockNodePriorities = {0, 0, 0, 0},
                         applicationPropertiesOverrides = {
-                            "blockNode.blockNodeStatusTimeout",
-                            "10s",
-                            "blockNode.basicNodeCoolDownSeconds",
-                            "1"
+                            "blockNode.blockNodeStatusTimeout", "10s",
+                            "blockNode.basicNodeCoolDownSeconds", "1"
                         }),
                 @SubProcessNodeConfig(
                         nodeId = 1,
                         blockNodeIds = {0, 1, 2, 3},
                         blockNodePriorities = {0, 0, 0, 0},
                         applicationPropertiesOverrides = {
-                            "blockNode.blockNodeStatusTimeout",
-                            "10s",
-                            "blockNode.basicNodeCoolDownSeconds",
-                            "1"
+                            "blockNode.blockNodeStatusTimeout", "10s",
+                            "blockNode.basicNodeCoolDownSeconds", "1"
                         }),
                 @SubProcessNodeConfig(
                         nodeId = 2,
                         blockNodeIds = {0, 1, 2, 3},
                         blockNodePriorities = {0, 0, 0, 0},
                         applicationPropertiesOverrides = {
-                            "blockNode.blockNodeStatusTimeout",
-                            "10s",
-                            "blockNode.basicNodeCoolDownSeconds",
-                            "1"
+                            "blockNode.blockNodeStatusTimeout", "10s",
+                            "blockNode.basicNodeCoolDownSeconds", "1"
                         }),
                 @SubProcessNodeConfig(
                         nodeId = 3,
                         blockNodeIds = {0, 1, 2, 3},
                         blockNodePriorities = {0, 0, 0, 0},
                         applicationPropertiesOverrides = {
-                            "blockNode.blockNodeStatusTimeout",
-                            "10s",
-                            "blockNode.basicNodeCoolDownSeconds",
-                            "1"
+                            "blockNode.blockNodeStatusTimeout", "10s",
+                            "blockNode.basicNodeCoolDownSeconds", "1"
                         })
             })
     @Order(2)

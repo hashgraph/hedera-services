@@ -35,36 +35,16 @@ public class LedgerIdPublicationTest {
             subProcessNodeConfigs = {
                 @SubProcessNodeConfig(
                         nodeId = 0,
-                        applicationPropertiesOverrides = {
-                            "tss.hintsEnabled", "true",
-                            "tss.historyEnabled", "true",
-                            "blockStream.streamMode", "BOTH",
-                            "blockStream.writerMode", "FILE"
-                        }),
+                        applicationPropertiesOverrides = {"blockStream.writerMode", "FILE"}),
                 @SubProcessNodeConfig(
                         nodeId = 1,
-                        applicationPropertiesOverrides = {
-                            "tss.hintsEnabled", "true",
-                            "tss.historyEnabled", "true",
-                            "blockStream.streamMode", "BOTH",
-                            "blockStream.writerMode", "FILE"
-                        }),
+                        applicationPropertiesOverrides = {"blockStream.writerMode", "FILE"}),
                 @SubProcessNodeConfig(
                         nodeId = 2,
-                        applicationPropertiesOverrides = {
-                            "tss.hintsEnabled", "true",
-                            "tss.historyEnabled", "true",
-                            "blockStream.streamMode", "BOTH",
-                            "blockStream.writerMode", "FILE"
-                        }),
+                        applicationPropertiesOverrides = {"blockStream.writerMode", "FILE"}),
                 @SubProcessNodeConfig(
                         nodeId = 3,
-                        applicationPropertiesOverrides = {
-                            "tss.hintsEnabled", "true",
-                            "tss.historyEnabled", "true",
-                            "blockStream.streamMode", "BOTH",
-                            "blockStream.writerMode", "FILE"
-                        })
+                        applicationPropertiesOverrides = {"blockStream.writerMode", "FILE"})
             })
     final Stream<DynamicTest> ledgerIdPublicationExternalizedInRecordStream() {
         return hapiTest(

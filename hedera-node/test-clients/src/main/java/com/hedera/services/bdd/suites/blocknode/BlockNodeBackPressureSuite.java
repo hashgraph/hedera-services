@@ -49,10 +49,17 @@ public class BlockNodeBackPressureSuite {
                         nodeId = 0,
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "15"})
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "15",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false"
+                        })
             })
     @Order(1)
-    final Stream<DynamicTest> backPressureAppliedWhenBlocksAndGrpc() {
+    final Stream<DynamicTest> backPressureAppliedWhenBlocksAndFileAndGrpc() {
         final AtomicReference<Instant> time = new AtomicReference<>();
         return hapiTest(
                 waitUntilNextBlocks(5),
@@ -79,7 +86,16 @@ public class BlockNodeBackPressureSuite {
                         nodeId = 0,
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "15"})
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "15",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
+                        })
             })
     @Order(2)
     final Stream<DynamicTest> testBlockBufferBackPressure() {
@@ -124,22 +140,66 @@ public class BlockNodeBackPressureSuite {
                         nodeId = 0,
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "5"}),
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "5",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.writerMode",
+                            "GRPC",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
+                        }),
                 @SubProcessNodeConfig(
                         nodeId = 1,
                         blockNodeIds = {1},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "5"}),
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "5",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.writerMode",
+                            "GRPC",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
+                        }),
                 @SubProcessNodeConfig(
                         nodeId = 2,
                         blockNodeIds = {2},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "5"}),
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "5",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.writerMode",
+                            "GRPC",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
+                        }),
                 @SubProcessNodeConfig(
                         nodeId = 3,
                         blockNodeIds = {3},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "5"})
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks",
+                            "5",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.writerMode",
+                            "GRPC",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
+                        })
             })
     @Order(3)
     final Stream<DynamicTest> backPressureAllNodesCheckingScenario() {
@@ -212,7 +272,13 @@ public class BlockNodeBackPressureSuite {
                             "blockStream.buffer.maxBlocks",
                             "50",
                             "blockStream.buffer.ackedBlocksToRetain",
-                            "3"
+                            "3",
+                            "blockStream.streamMode",
+                            "BLOCKS",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false",
+                            "tss.forceMockSignatures",
+                            "false"
                         })
             })
     @Order(4)

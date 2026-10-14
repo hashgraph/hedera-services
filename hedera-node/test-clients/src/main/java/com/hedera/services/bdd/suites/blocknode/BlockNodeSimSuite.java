@@ -58,10 +58,7 @@ public class BlockNodeSimSuite {
                         nodeId = 0,
                         blockNodeIds = {0, 1, 2, 3},
                         blockNodePriorities = {0, 1, 2, 3},
-                        applicationPropertiesOverrides = {
-                            "blockStream.streamMode", "BOTH",
-                            "blockStream.buffer.ackedBlocksToRetain", "25"
-                        })
+                        applicationPropertiesOverrides = {"blockStream.buffer.ackedBlocksToRetain", "25"})
             })
     @Order(1)
     final Stream<DynamicTest> node0StreamingBlockNodeConnectionDropsTrickle() {
@@ -159,8 +156,12 @@ public class BlockNodeSimSuite {
                             "30",
                             "blockStream.blockPeriod",
                             BLOCK_PERIOD_SECONDS + "s",
+                            "blockStream.streamMode",
+                            "BLOCKS",
                             "blockNode.forcedSwitchRescheduleDelay",
-                            "30s"
+                            "30s",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false"
                         })
             })
     @Order(2)
@@ -212,16 +213,20 @@ public class BlockNodeSimSuite {
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
                         applicationPropertiesOverrides = {
-                            "blockStream.writerMode",
-                            "FILE_AND_GRPC",
+                            "blockStream.streamMode",
+                            "BLOCKS",
                             "blockStream.buffer.maxBlocks",
                             "60",
+                            "blockStream.buffer.isBufferPersistenceEnabled",
+                            "true",
                             "blockStream.blockPeriod",
                             BLOCK_PERIOD_SECONDS + "s",
                             "blockNode.streamResetPeriod",
                             "20s",
                             "blockNode.streamResetPeriodJitter",
-                            "0s"
+                            "0s",
+                            "blockStream.streamWrappedRecordBlocks",
+                            "false"
                         })
             })
     @Order(3)
@@ -279,7 +284,9 @@ public class BlockNodeSimSuite {
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
                         applicationPropertiesOverrides = {
+                            "blockStream.streamMode", "BLOCKS",
                             "blockStream.blockPeriod", BLOCK_PERIOD_SECONDS + "s",
+                            "blockStream.streamWrappedRecordBlocks", "false",
                             "blockNode.maxEndOfStreamsAllowed", "50",
                             "blockNode.globalCoolDownSeconds", "0",
                             "blockNode.basicNodeCoolDownSeconds", "1",
@@ -400,7 +407,9 @@ public class BlockNodeSimSuite {
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
                         applicationPropertiesOverrides = {
+                            "blockStream.streamMode", "BLOCKS",
                             "blockStream.blockPeriod", BLOCK_PERIOD_SECONDS + "s",
+                            "blockStream.streamWrappedRecordBlocks", "false",
                             "blockStream.buffer.maxBlocks", "15",
                             "blockNode.globalCoolDownSeconds", "0",
                             "blockNode.basicNodeCoolDownSeconds", "1",
@@ -460,8 +469,9 @@ public class BlockNodeSimSuite {
                         blockNodeIds = {0, 1},
                         blockNodePriorities = {0, 1},
                         applicationPropertiesOverrides = {
-                            "blockStream.writerMode", "FILE_AND_GRPC",
+                            "blockStream.streamMode", "BLOCKS",
                             "blockStream.blockPeriod", BLOCK_PERIOD_SECONDS + "s",
+                            "blockStream.streamWrappedRecordBlocks", "false",
                             "blockNode.globalCoolDownSeconds", "0",
                             "blockNode.basicNodeCoolDownSeconds", "1",
                             "blockNode.extendedNodeCoolDownSeconds", "1"
@@ -520,8 +530,9 @@ public class BlockNodeSimSuite {
                         blockNodeIds = {0, 1},
                         blockNodePriorities = {0, 1},
                         applicationPropertiesOverrides = {
-                            "blockStream.writerMode", "FILE_AND_GRPC",
+                            "blockStream.streamMode", "BLOCKS",
                             "blockStream.blockPeriod", BLOCK_PERIOD_SECONDS + "s",
+                            "blockStream.streamWrappedRecordBlocks", "false",
                             "blockNode.highLatencyThreshold", "1s",
                             "blockNode.highLatencyEventsBeforeSwitching", "3",
                             "blockNode.globalCoolDownSeconds", "0",

@@ -57,7 +57,7 @@ public class NodeDeathReconnectBlockNodeSuite implements LifecycleTest {
                         blockNodePriorities = {0})
             })
     @Order(1)
-    final Stream<DynamicTest> nodeDeathReconnectBlocksAndGrpc() {
+    final Stream<DynamicTest> nodeDeathReconnectBothAndFileAndGrpc() {
         return hapiTest(
                 // Validate we can initially submit transactions to node2
                 cryptoCreate("nobody").setNode("5"),
@@ -81,6 +81,7 @@ public class NodeDeathReconnectBlockNodeSuite implements LifecycleTest {
                 assertHgcaaLogDoesNotContainText(byNodeId(0), "ERROR", Duration.ofSeconds(5)));
     }
 
+    // Pinned to the testnet (cutover) values: the only configuration this scenario has been validated with
     @HapiTest
     @HapiBlockNode(
             networkSize = 2,
@@ -92,12 +93,28 @@ public class NodeDeathReconnectBlockNodeSuite implements LifecycleTest {
                         nodeId = 0,
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "15"}),
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks", "15",
+                            "blockStream.streamMode", "BLOCKS",
+                            "blockStream.writerMode", "GRPC",
+                            "blockStream.enableCutover", "true",
+                            "blockStream.streamWrappedRecordBlocks", "false",
+                            "blockStream.buffer.isBufferPersistenceEnabled", "true",
+                            "tss.forceMockSignatures", "false"
+                        }),
                 @HapiBlockNode.SubProcessNodeConfig(
                         nodeId = 1,
                         blockNodeIds = {0},
                         blockNodePriorities = {0},
-                        applicationPropertiesOverrides = {"blockStream.buffer.maxBlocks", "15"}),
+                        applicationPropertiesOverrides = {
+                            "blockStream.buffer.maxBlocks", "15",
+                            "blockStream.streamMode", "BLOCKS",
+                            "blockStream.writerMode", "GRPC",
+                            "blockStream.enableCutover", "true",
+                            "blockStream.streamWrappedRecordBlocks", "false",
+                            "blockStream.buffer.isBufferPersistenceEnabled", "true",
+                            "tss.forceMockSignatures", "false"
+                        }),
             })
     @Order(2)
     final Stream<DynamicTest> nodeDeathReconnectAllNodes() {

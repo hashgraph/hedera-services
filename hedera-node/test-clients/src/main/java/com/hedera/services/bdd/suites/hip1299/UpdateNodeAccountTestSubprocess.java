@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.bdd.GenesisSubprocessTest;
-import com.hedera.services.bdd.GenesisSubprocessTest.SubProcessNodeConfig;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
@@ -60,40 +59,11 @@ public class UpdateNodeAccountTestSubprocess {
     class UpdateNodeAccountIdPositiveTests {
 
         // This test asserts the node writes per-account stream directories to its own disk, so it needs a
-        // file-writing node. It runs on a dedicated genesis subprocess network (no block node). We pin
-        // writerMode=FILE_AND_GRPC on every node; streamMode is BOTH (not the BLOCKS production default)
-        // because BLOCKS + gRPC streaming enables block-buffer backpressure, which would hang with no block
-        // node to drain the buffer. BOTH disables backpressure while still writing both record and block
-        // files to disk for the assertions below.
+        // file-writing node on a dedicated genesis network with no block node. The default BOTH stream mode
+        // writes record and block files without back-pressure (BLOCKS + gRPC would stall with no block node).
         @Tag(ONLY_SUBPROCESS)
         @HapiTest
-        @GenesisSubprocessTest(
-                subProcessNodeConfigs = {
-                    @SubProcessNodeConfig(
-                            nodeId = 0,
-                            applicationPropertiesOverrides = {
-                                "blockStream.streamMode", "BOTH",
-                                "blockStream.writerMode", "FILE_AND_GRPC"
-                            }),
-                    @SubProcessNodeConfig(
-                            nodeId = 1,
-                            applicationPropertiesOverrides = {
-                                "blockStream.streamMode", "BOTH",
-                                "blockStream.writerMode", "FILE_AND_GRPC"
-                            }),
-                    @SubProcessNodeConfig(
-                            nodeId = 2,
-                            applicationPropertiesOverrides = {
-                                "blockStream.streamMode", "BOTH",
-                                "blockStream.writerMode", "FILE_AND_GRPC"
-                            }),
-                    @SubProcessNodeConfig(
-                            nodeId = 3,
-                            applicationPropertiesOverrides = {
-                                "blockStream.streamMode", "BOTH",
-                                "blockStream.writerMode", "FILE_AND_GRPC"
-                            })
-                })
+        @GenesisSubprocessTest
         final Stream<DynamicTest> accountUpdateBuildsProperRecordPath() {
             final AtomicReference<AccountID> newAccountId = new AtomicReference<>();
             final AtomicReference<AccountID> oldNodeAccountId = new AtomicReference<>();

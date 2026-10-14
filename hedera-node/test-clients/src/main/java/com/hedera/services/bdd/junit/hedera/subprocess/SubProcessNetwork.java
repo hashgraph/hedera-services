@@ -947,7 +947,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      *
      * <p>This reads the <em>in-memory</em> per-node override map, not the node's on-disk
      * {@code application.properties}. That file also carries the {@code configuration/dev} base config
-     * (e.g. {@code blockStream.streamMode=BLOCKS}/{@code writerMode=GRPC}), which would otherwise mask the
+     * (e.g. {@code blockStream.streamMode}), which would otherwise mask the
      * per-task PR-check {@code streamMode}/{@code writerMode} overrides that reach the node only via the
      * process environment (and so are present in {@code startupProperties()} but not in the file).
      *

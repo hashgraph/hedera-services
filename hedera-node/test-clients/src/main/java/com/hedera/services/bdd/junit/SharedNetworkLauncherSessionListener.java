@@ -350,21 +350,17 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     }
 
     /**
-     * Starts a {@link BlockNodeNetwork} for the shared subprocess network when its nodes will stream blocks over
-     * gRPC. The decision is based on the <i>effective</i> {@code blockStream.writerMode}/{@code blockStream.streamMode}
-     * — a per-task PR override if present, otherwise the production default — so that once the default is
-     * {@code writerMode=GRPC} we still stand up a block node for the network to stream to. Without one the block
-     * buffer back-pressures and the handle thread stalls (back-pressure is active when {@code streamMode==BLOCKS}
-     * and the writer streams over gRPC). No block node is started for a {@code FILE} writer, a {@code RECORDS}-only
-     * stream, or when {@code -Dhapi.spec.blocknode.mode=NONE}.
+     * Starts a {@link BlockNodeNetwork} for the shared subprocess network when a per-task override asks for a gRPC
+     * writer, or when the effective writer could not run without one: a {@code GRPC}-only writer, or {@code BLOCKS}
+     * mode, where an unacknowledged buffer back-pressures and stalls the handle thread. Never for a {@code FILE}
+     * writer, a {@code RECORDS}-only stream, or {@code -Dhapi.spec.blocknode.mode=NONE}.
      */
     private static void maybeStartBlockNodeStreaming(HederaNetwork network) {
         if (!(network instanceof SubProcessNetwork subProcessNetwork)) {
             return;
         }
         final Map<String, String> prCheckOverrides = ProcessUtils.prCheckOverrides();
-        // Read the production defaults so we honor the default (not just explicit overrides) when deciding
-        // whether the network streams to a block node.
+        // Also read the production defaults, so a GRPC-only or BLOCKS default still gets a block node
         final BlockStreamConfig defaults = ConfigurationBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .build()
@@ -378,8 +374,11 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
         final BlockNodeMode blockNodeMode = Optional.ofNullable(System.getProperty("hapi.spec.blocknode.mode"))
                 .map(BlockNodeMode::valueOf)
                 .orElse(BlockNodeMode.REAL);
-        final boolean streamsToBlockNodes =
-                writerMode != BlockStreamWriterMode.FILE && streamMode != StreamMode.RECORDS;
+        final boolean streamsToBlockNodes = writerMode != BlockStreamWriterMode.FILE
+                && streamMode != StreamMode.RECORDS
+                && (prCheckOverrides.containsKey("blockStream.writerMode")
+                        || writerMode == BlockStreamWriterMode.GRPC
+                        || streamMode == StreamMode.BLOCKS);
         if (!streamsToBlockNodes || blockNodeMode == BlockNodeMode.NONE) {
             return;
         }

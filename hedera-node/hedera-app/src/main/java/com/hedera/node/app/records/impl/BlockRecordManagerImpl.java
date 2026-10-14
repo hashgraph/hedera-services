@@ -7,8 +7,8 @@ import static com.hedera.node.app.blocks.BlockHashSigner.Request.LIST_OF_PARTIAL
 import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.records.BlockRecordService.GENESIS_BLOCK_INFO;
 import static com.hedera.node.app.records.BlockRecordService.GENESIS_RUNNING_HASHES;
+import static com.hedera.node.app.records.BlockRecordService.genesisBlockInfo;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_ID;
@@ -315,7 +315,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
         final RunningHashes lastRunningHashes;
         if (initTrigger == InitTrigger.GENESIS) {
-            this.lastBlockInfo = GENESIS_BLOCK_INFO;
+            this.lastBlockInfo = genesisBlockInfo(config);
             lastRunningHashes = GENESIS_RUNNING_HASHES;
         } else {
             final var states = state.getReadableStates(BlockRecordService.NAME);

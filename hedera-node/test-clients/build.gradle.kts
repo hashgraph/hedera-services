@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import java.lang.management.ManagementFactory
+import java.util.Properties
 import org.gradlex.javamodule.packaging.tasks.FatModuleJar
 import org.hiero.gradle.environment.EnvAccess
 
@@ -204,8 +205,10 @@ val prCheckPropOverrides =
             "hapiTestMiscSerial" to
                 "nodes.nodeRewardsEnabled=false,quiescence.enabled=true,block.stateproof.verification.enabled=true",
             "hapiTestWraps" to "staking.periodMins=25,blockStream.maxBlockSizeBytes=0",
+            // The explicit gRPC writer attaches a block node. FUTURE: re-pin the pre-cutover block
+            // stream values and mock signatures here when the production defaults switch.
             "hapiTestCutover" to
-                "blockStream.streamMode=BOTH,blockStream.writerMode=FILE_AND_GRPC,blockStream.enableCutover=false,blockStream.streamWrappedRecordBlocks=true,blockStream.buffer.isBufferPersistenceEnabled=false,tss.forceMockSignatures=true,tss.hintsEnabled=false,tss.historyEnabled=false,tss.wrapsEnabled=false,tss.initialCrsParties=8,staking.periodMins=25,blockStream.maxBlockSizeBytes=0",
+                "blockStream.writerMode=FILE_AND_GRPC,tss.hintsEnabled=false,tss.historyEnabled=false,tss.wrapsEnabled=false,tss.initialCrsParties=8,staking.periodMins=25,blockStream.maxBlockSizeBytes=0",
             "hapiTestTimeConsuming" to
                 "nodes.nodeRewardsEnabled=false,quiescence.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
             "hapiTestTimeConsumingSerial" to
@@ -253,6 +256,98 @@ val prCheckDefaultOverrides =
         "hapiTestClprEmbedded" to "clpr.enabled=true",
         "hapiTestClprMultinetwork" to "clpr.enabled=true",
     )
+// Pins needed only while the production block stream and TSS defaults are pre-cutover; the
+// testnet profile replaces them. FUTURE: delete when those defaults switch to testnet's values.
+val preCutoverDefaultsOverrides =
+    mapOf(
+        "hapiTestAdhoc" to "tss.wrapsEnabled=true,tss.forceMockSignatures=false",
+        "hapiTestCrypto" to "tss.forceMockSignatures=false",
+        "hapiTestCryptoSerial" to "tss.forceMockSignatures=false",
+        // writerMode=FILE_AND_GRPC (here and on hapiTestMisc) is what attaches a block node
+        "hapiTestSmartContract" to "blockStream.writerMode=FILE_AND_GRPC,tss.historyEnabled=false",
+        "hapiTestSmartContractSerial" to "tss.historyEnabled=false",
+        "hapiTestRestart" to "tss.forceMockSignatures=false",
+        "hapiTestMisc" to "blockStream.writerMode=FILE_AND_GRPC",
+        "hapiTestWraps" to "tss.forceMockSignatures=false",
+        "hapiTestNodeStaking" to "tss.forceMockSignatures=false",
+    )
+// -PhapiTestConfigProfile=testnet (or env HAPI_TEST_CONFIG_PROFILE) runs the HAPI tasks with
+// testnet's block stream and TSS values instead of the production defaults; XTS reruns MATS so
+val hapiTestConfigProfile =
+    providers
+        .gradleProperty("hapiTestConfigProfile")
+        .orElse(providers.environmentVariable("HAPI_TEST_CONFIG_PROFILE"))
+        .getOrElse("")
+val profileOverrides: Map<String, String> =
+    when (hapiTestConfigProfile) {
+        "" -> emptyMap()
+        "testnet" -> {
+            val testnetProperties =
+                Properties().apply {
+                    load(
+                        providers
+                            .fileContents(
+                                layout.settingsDirectory.file(
+                                    "hedera-node/configuration/testnet/application.properties"
+                                )
+                            )
+                            .asText
+                            .get()
+                            .reader()
+                    )
+                }
+            listOf(
+                    "blockStream.streamMode",
+                    "blockStream.writerMode",
+                    "blockStream.enableCutover",
+                    "blockStream.streamWrappedRecordBlocks",
+                    "blockStream.buffer.isBufferPersistenceEnabled",
+                    "tss.forceMockSignatures",
+                )
+                .associateWith {
+                    testnetProperties.getProperty(it)
+                        ?: throw GradleException("testnet/application.properties is missing $it")
+                }
+        }
+        else -> throw GradleException("Unknown hapiTestConfigProfile '$hapiTestConfigProfile'")
+    }
+// These tasks deliberately run another world: records-only, pre-cutover, per-node or per-test
+// pins, or CLPR's own mock-signature setup
+val profileExemptTasks =
+    setOf(
+        "hapiTestMiscRecords",
+        "hapiTestMiscRecordsSerial",
+        "hapiTestGenesisSubProcess",
+        "hapiTestCutover",
+        "hapiTestBlockNodeCommunication",
+    ) + clprTasks
+
+fun profileAppliesTo(name: String, remote: Boolean) =
+    profileOverrides.isNotEmpty() && !remote && name !in profileExemptTasks
+
+fun String.toOverrideMap(): Map<String, String> =
+    split(",")
+        .filter { it.isNotBlank() }
+        .associate { it.substringBefore("=") to it.substringAfter("=") }
+
+// The testnet profile (if active) or else the pre-cutover pins, with prCheckPropOverrides on top;
+// embedded networks have no block node and only fake TSS, so they keep FILE and mock signatures
+fun hapiTestOverrides(name: String, embedded: Boolean, remote: Boolean): Map<String, String> {
+    val overrides = linkedMapOf<String, String>()
+    val withProfile = profileAppliesTo(name, remote)
+    if (withProfile) {
+        overrides.putAll(profileOverrides)
+    } else {
+        preCutoverDefaultsOverrides[name]?.let { overrides.putAll(it.toOverrideMap()) }
+    }
+    prCheckPropOverrides[name]?.let { overrides.putAll(it.toOverrideMap()) }
+    if (embedded && withProfile) {
+        overrides["blockStream.writerMode"] = "FILE"
+        overrides["tss.forceMockSignatures"] = "true"
+    }
+    return overrides
+}
+
 // hapiTestRestart reconnects the same node repeatedly; the 10m production throttle would starve it.
 val prCheckPlatformOverrides =
     mapOf(
@@ -363,7 +458,6 @@ fun registerTestSubprocess(name: String, ciTagExpression: String) {
         ciDefaultTagsWithoutStreamAndLogValidation = ")&!(EMBEDDED|REPEATABLE",
         excludeTags = "CONCURRENT_SUBPROCESS_VALIDATION",
         junitParallelMode = "same_thread",
-        pinFileWriterAndMockSignatures = true,
         // There's nothing special about shard/realm 11.12, except that they are non-zero values.
         // We want to run all tests that execute as part of `testSubprocess`–that is to say,
         // the majority of the hapi tests - with a nonzero shard/realm
@@ -490,8 +584,16 @@ fun TaskContainer.registerHapiTest(
         // Isolate each subtask's working directory so logs are not overwritten
         systemProperty("hapi.spec.subtask.name", name)
 
-        if (prCheckPropOverrides.containsKey(name)) {
-            systemProperty("hapi.spec.test.overrides", prCheckPropOverrides.getValue(name))
+        val testOverrides = hapiTestOverrides(name, embeddedMode != null, hapiSpecRemote)
+        if (testOverrides.isNotEmpty()) {
+            systemProperty(
+                "hapi.spec.test.overrides",
+                testOverrides.entries.joinToString(",") { (key, value) -> "$key=$value" },
+            )
+            // Embedded nodes run in this JVM, so the profile reaches them as system properties
+            if (embeddedMode != null && profileAppliesTo(name, hapiSpecRemote)) {
+                testOverrides.forEach { (key, value) -> systemProperty(key, value) }
+            }
         }
         if (prCheckPlatformOverrides.containsKey(name)) {
             systemProperty("hapi.spec.platform.overrides", prCheckPlatformOverrides.getValue(name))

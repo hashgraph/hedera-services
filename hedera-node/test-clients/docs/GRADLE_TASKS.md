@@ -94,6 +94,29 @@ Each task that needs to ship configuration changes adds them to a comma-separate
 
 See `build.gradle.kts` for the full table.
 
+`preCutoverDefaultsOverrides` holds the pins a task needs only while the production block stream and TSS
+defaults are pre-cutover (e.g. `tss.forceMockSignatures=false` for `hapiTestCrypto`); it goes away once
+those defaults switch to the testnet values.
+
+### Testnet configuration profile
+
+`-PhapiTestConfigProfile=testnet` (or `HAPI_TEST_CONFIG_PROFILE=testnet`) runs the HAPI tasks with
+testnet's block stream and TSS values, read from `hedera-node/configuration/testnet/application.properties`,
+instead of the production defaults:
+
+- each task's `prCheckPropOverrides` still win (e.g. the `writerMode=FILE` pins that keep `hapiTestRestart`
+  and `hapiTestIss` off the block node), and `preCutoverDefaultsOverrides` are skipped;
+- a real block node is started for the gRPC writer;
+- embedded and repeatable tasks keep the `FILE` writer and mock signatures;
+- `hapiTestMiscRecords*`, `hapiTestGenesisSubProcess`, `hapiTestCutover` and
+  `hapiTestBlockNodeCommunication` ignore it.
+
+XTS reruns the MATS HAPI panels this way (`829-call-execute-xts-hapi-testnet.yaml`).
+
+```bash
+./gradlew :test-clients:hapiTestCrypto -PhapiTestConfigProfile=testnet
+```
+
 ## Platform overrides (`prCheckPlatformOverrides`)
 
 Currently only `hapiTestRestart` uses this: `platformStatus.observingStatusDelay=10s` is appended

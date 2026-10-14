@@ -2020,7 +2020,7 @@ class BlockStreamManagerImplTest {
 
     @Test
     void cutoverSkippedWhenEnableCutoverIsFalse() {
-        // enableCutover now defaults to true, so disable it explicitly here; the genesis branch (HASH_OF_ZERO)
+        // Pin enableCutover off (the cutover configuration turns it on); the genesis branch (HASH_OF_ZERO)
         // is the simplest non-cutover path to exercise.
         final var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)

@@ -204,7 +204,7 @@ class ProofControllersTest {
 
     @Test
     void freshGenesisIsRequestedOnlyInThePostUpgradeRoundWhileConfiguredAndBeforeTheCutover() {
-        // Both flags are pinned: their defaults differ per branch, and the cutover branch flips each
+        // Both flags are pinned: the cutover (testnet) configuration flips each of them
         final var requested = configWith(
                 "tss.needsFreshGenesisWrapsProof", "true",
                 "blockStream.enableCutover", "false",
