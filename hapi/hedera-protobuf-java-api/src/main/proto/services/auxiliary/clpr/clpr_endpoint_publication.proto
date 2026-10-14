@@ -30,18 +30,6 @@ option java_multiple_files = true;
  * A transaction body by which a consensus node self-publishes its CLPR endpoint into state
  * during a manifest construction.
  *
- * The block stream also uses this body, with no endpoint, for informational synthetic
- * transactions that externalize endpoint-manifest reconciliation, including roster-change
- * maintenance. A transaction is emitted only when singleton values change, including in
- * rounds without user transactions. Its associated state changes are authoritative and
- * contain the resulting manifest and/or construction (including grace extensions and
- * construction clearing).
- *
- * Each emitted maintenance transaction uses a reserved consensus timestamp before the
- * following event or user transaction. Such bodies are generated internally, are not
- * dispatched to the publication handler, do not incur transaction fees, and MUST NOT be
- * accepted as submitted transactions.
- *
  * <p>The publishing node's identity is taken from the platform-attributed
  * {@code creatorInfo().nodeId()} at handle time, NOT from any field on this body — a node
  * cannot publish on another node's behalf. The body carries the node's current CLPR endpoint;
