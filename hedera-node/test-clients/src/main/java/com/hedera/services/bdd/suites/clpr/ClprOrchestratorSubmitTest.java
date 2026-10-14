@@ -99,7 +99,7 @@ public class ClprOrchestratorSubmitTest {
                 clprCompleteConnector()
                         .connectorId(crypto.connectorId)
                         .publicKey(crypto.publicKey)
-                        .signature(crypto.connectorSignature)
+                        .signatureSigner(crypto::signConnector)
                         .signatureScheme(ClprSignatureScheme.ED25519)
                         .salt(crypto.connectorSalt)
                         .channelId(crypto.channelId)
@@ -182,9 +182,6 @@ public class ClprOrchestratorSubmitTest {
             0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
             0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
         };
-        private static final byte[] CLPR_SERVICE_ADDRESS = {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (byte) 0x6e
-        };
 
         final byte[] publicKey = new byte[32];
         final byte[] channelId;
@@ -193,7 +190,6 @@ public class ClprOrchestratorSubmitTest {
         final byte[] connectorSalt = new byte[32];
         final byte[] connectorId;
         final byte[] connectorCommitment;
-        final byte[] connectorSignature = new byte[Ed25519.SIGNATURE_SIZE];
 
         Crypto() {
             Ed25519.generatePublicKey(TEST_PRIVATE_KEY, 0, publicKey, 0);
@@ -203,8 +199,12 @@ public class ClprOrchestratorSubmitTest {
             Ed25519.sign(TEST_PRIVATE_KEY, 0, connSig, 0, connSig.length, channelSignature, 0);
             connectorId = keccak256(concat(channelId, concat(publicKey, connectorSalt)));
             connectorCommitment = keccak256(concat(connectorId, publicKey));
-            final var connectorSig = keccak256(concat(connectorId, CLPR_SERVICE_ADDRESS));
-            Ed25519.sign(TEST_PRIVATE_KEY, 0, connectorSig, 0, connectorSig.length, connectorSignature, 0);
+        }
+
+        byte[] signConnector(final byte[] digest) {
+            final var signed = new byte[Ed25519.SIGNATURE_SIZE];
+            Ed25519.sign(TEST_PRIVATE_KEY, 0, digest, 0, digest.length, signed, 0);
+            return signed;
         }
 
         private static byte[] keccak256(final byte[] in) {

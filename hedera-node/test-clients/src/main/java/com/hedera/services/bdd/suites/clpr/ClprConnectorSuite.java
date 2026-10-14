@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Tag;
  *   <li><b>Phase 2 — {@code completeConnector}</b> (§6.3): re-derives
  *       {@code connector_id = keccak256(channel_id || public_key || salt)}, verifies the
  *       commitment, verifies the signature over
- *       {@code keccak256(connector_id || service_address)}, checks the connector contract is
+ *       the domain-separated canonical reveal digest, checks the connector contract is
  *       a deployed contract, verifies {@code locked_stake >= clpr.minLockedStake}, then
  *       creates the Connector in active state.</li>
  * </ul>

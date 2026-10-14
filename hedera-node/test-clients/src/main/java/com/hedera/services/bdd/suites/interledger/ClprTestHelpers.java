@@ -66,8 +66,7 @@ public final class ClprTestHelpers {
         (byte) 0xb8, (byte) 0xb9, (byte) 0xba, (byte) 0xbb, (byte) 0xbc, (byte) 0xbd, (byte) 0xbe, (byte) 0xbf
     });
 
-    /** Hardcoded 20-byte address of the CLPR system contract (0x16e). Mirrors the value embedded in
-     * {@code ClprCompleteConnectorHandler.CLPR_SERVICE_ADDRESS} for connector signature messages. */
+    /** Hardcoded 20-byte address of the CLPR system contract (0x16e). */
     public static final byte[] CLPR_SERVICE_ADDRESS_20 = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01, (byte) 0x6e
     };
@@ -293,20 +292,8 @@ public final class ClprTestHelpers {
         return MiscCryptoUtils.keccak256DigestOf(Bytes.wrap(payload));
     }
 
-    /**
-     * Signs the connector identity message {@code keccak256(connectorId || 0x16e_address_bytes)} with
-     * the given secp256k1 secret key. The CLPR service uses this signature in
-     * {@code ClprCompleteConnectorHandler} to verify ownership of the connector public key.
-     *
-     * @return 64-byte compact recoverable ECDSA signature
-     */
-    public static byte[] signConnectorMessage(final byte[] secKey, final Bytes connectorId) {
-        final var preimage = new byte[(int) connectorId.length() + CLPR_SERVICE_ADDRESS_20.length];
-        connectorId.getBytes(0, preimage, 0, (int) connectorId.length());
-        System.arraycopy(
-                CLPR_SERVICE_ADDRESS_20, 0, preimage, (int) connectorId.length(), CLPR_SERVICE_ADDRESS_20.length);
-        final var msgHash =
-                MiscCryptoUtils.keccak256DigestOf(Bytes.wrap(preimage)).toByteArray();
+    /** Signs a 32-byte digest with secp256k1, returning the 64-byte compact ECDSA signature. */
+    public static byte[] signDigest(final byte[] secKey, final byte[] msgHash) {
         final var recoverableSig = new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
         final var signResult = LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
                 LibSecp256k1.CONTEXT, recoverableSig, msgHash, secKey, null, null);

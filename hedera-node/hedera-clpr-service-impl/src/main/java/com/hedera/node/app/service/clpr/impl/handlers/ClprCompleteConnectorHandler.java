@@ -7,7 +7,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_INSUFFICIENT_STAKE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_INVALID_CONNECTOR_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.node.app.service.clpr.ClprServiceConstants.CLPR_EVM_ADDRESS_BYTES;
+import static com.hedera.node.app.hapi.utils.ClprSigningUtils.connectorSignatureMessage;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -108,8 +108,9 @@ public final class ClprCompleteConnectorHandler extends AbstractClprHandler {
         final var connectorKey = new ClprConnectorKey(op.channelId(), submittedConnectorId);
         validateTrue(connectorStore.getConnector(connectorKey) == null, CLPR_CONNECTOR_ALREADY_EXISTS);
 
-        // 5. Verify signature over keccak256(connectorId || clprServiceAddress)
-        final var sigMsgHash = computeSignatureMessage(derivedConnectorId.toByteArray());
+        // 5. Authenticate the entire reveal. A copied signature must not authorize a different
+        // local contract, admin key, or stake even when it derives the same connector ID.
+        final var sigMsgHash = connectorSignatureMessage(op);
         final var signatureType =
                 switch (op.signatureScheme()) {
                     case ECDSA_SECP256K1 -> SignatureType.ECDSA_SECP256K1;
@@ -160,13 +161,5 @@ public final class ClprCompleteConnectorHandler extends AbstractClprHandler {
         System.arraycopy(connectorId, 0, preimage, 0, connectorId.length);
         System.arraycopy(pubKey, 0, preimage, connectorId.length, pubKey.length);
         return MiscCryptoUtils.keccak256DigestOf(Bytes.wrap(preimage));
-    }
-
-    private static byte[] computeSignatureMessage(final byte[] connectorId) {
-        final var clprServiceAddress = CLPR_EVM_ADDRESS_BYTES.toByteArray();
-        final var preimage = new byte[connectorId.length + clprServiceAddress.length];
-        System.arraycopy(connectorId, 0, preimage, 0, connectorId.length);
-        System.arraycopy(clprServiceAddress, 0, preimage, connectorId.length, clprServiceAddress.length);
-        return MiscCryptoUtils.keccak256DigestOf(Bytes.wrap(preimage)).toByteArray();
     }
 }

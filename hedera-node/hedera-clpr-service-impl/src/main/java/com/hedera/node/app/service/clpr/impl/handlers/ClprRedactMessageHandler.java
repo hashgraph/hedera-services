@@ -97,6 +97,7 @@ public class ClprRedactMessageHandler extends AbstractClprHandler {
                         // dispatch can still deliver the eventual REDACTED reply to that application after
                         // the peer round-trips the slot.
                         .sender(existingPayload.messageOrThrow().sender())
+                        .connectorId(existingPayload.messageOrThrow().connectorId())
                         .build())
                 .build();
         messageQueueStore.put(

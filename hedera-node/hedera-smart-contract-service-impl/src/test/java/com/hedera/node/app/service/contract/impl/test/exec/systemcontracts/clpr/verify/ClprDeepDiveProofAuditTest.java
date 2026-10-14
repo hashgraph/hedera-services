@@ -66,7 +66,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class ClprDeepDiveProofAuditTest {
 
-    private static final Bytes CHANNEL_ID = Bytes.wrap(new byte[] {1, 1, 1});
+    private static final Bytes CHANNEL_ID = Bytes.wrap(new byte[32]);
 
     /**
      * Offline replay of the {@code VerifyBundle} verifier path against checked-in fixtures captured
@@ -226,7 +226,13 @@ class ClprDeepDiveProofAuditTest {
         // ---- helpers ----
 
         private VerifyBundleCall subject(@NonNull final byte[] bundlePayload) {
-            return new VerifyBundleCall(mockEnhancement(), gasCalculator, bundlePayload, TRUST_ANCHOR, acceptingTss());
+            return new VerifyBundleCall(
+                    mockEnhancement(),
+                    gasCalculator,
+                    bundlePayload,
+                    TRUST_ANCHOR,
+                    CHANNEL_ID.toByteArray(),
+                    acceptingTss());
         }
     }
 
@@ -316,7 +322,12 @@ class ClprDeepDiveProofAuditTest {
                     messageIds.isEmpty() ? channel.nextMessageId() : messageIds.getLast() + 1;
 
             final var result = new VerifyBundleCall(
-                            mockEnhancement(), gasCalculator, proofBytes, trustAnchor, new NativeTssVerifier())
+                            mockEnhancement(),
+                            gasCalculator,
+                            proofBytes,
+                            trustAnchor,
+                            channel.channelId().toByteArray(),
+                            new NativeTssVerifier())
                     .execute(frame);
 
             assertThat(result.responseCode()).isEqualTo(SUCCESS);
@@ -421,7 +432,12 @@ class ClprDeepDiveProofAuditTest {
                         .thenReturn(new byte[32]);
                 verifier.when(() -> StateProofVerifier.verifyPath(any(), any())).thenReturn(true);
                 return new VerifyBundleCall(
-                                mockEnhancement(), gasCalculator, multiLeafProof(leaves), TRUST_ANCHOR, acceptingTss())
+                                mockEnhancement(),
+                                gasCalculator,
+                                multiLeafProof(leaves),
+                                TRUST_ANCHOR,
+                                CHANNEL_ID.toByteArray(),
+                                acceptingTss())
                         .execute(frame);
             }
         }
@@ -569,7 +585,12 @@ class ClprDeepDiveProofAuditTest {
                             new NativeTssVerifier());
             // Control: the captured proof passes real native TSS and Merkle verification.
             assertThat(new VerifyBundleCall(
-                                    mockEnhancement(), gasCalculator, proofBytes, trustAnchor, new NativeTssVerifier())
+                                    mockEnhancement(),
+                                    gasCalculator,
+                                    proofBytes,
+                                    trustAnchor,
+                                    channel.channelId().toByteArray(),
+                                    new NativeTssVerifier())
                             .execute(frame)
                             .responseCode())
                     .isEqualTo(SUCCESS);

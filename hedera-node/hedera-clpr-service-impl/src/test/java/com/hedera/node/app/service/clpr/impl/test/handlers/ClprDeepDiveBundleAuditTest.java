@@ -1711,14 +1711,14 @@ class ClprDeepDiveBundleAuditTest {
     // ---- #333: Step 1b — apply new_endpoint_manifest / #334: Criterion 5 ----
 
     @Test
-    @DisplayName("#333: manifest replaced when version advances (flag ON)")
+    @DisplayName("#333: manifest replaced when version advances")
     void manifestReplacedWhenVersionAdvances() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
         final var newManifest = buildManifest(3L, "10.0.0.5");
         // Bundle carries a message (Criterion 1) so progress isn't in question; we're
         // asserting only that the manifest write lands.
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1735,7 +1735,7 @@ class ClprDeepDiveBundleAuditTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         final var staleManifest = buildManifest(3L, "10.0.0.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1749,7 +1749,7 @@ class ClprDeepDiveBundleAuditTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         // Bundle carries no new_endpoint_manifest.
         final var bundleContent = buildBundleWithManifest(null, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1773,29 +1773,13 @@ class ClprDeepDiveBundleAuditTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.endpointManifestVersion()).isEqualTo(2L);
         assertThat(updated.endpointManifestOrThrow()).isEqualTo(newManifest);
-    }
-
-    @Test
-    @DisplayName("#333: flag OFF skips manifest write even when version advances")
-    void flagOffSkipsManifestWrite() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.9");
-        // Bundle carries a message (Criterion 1) so it still processes without Criterion 5.
-        final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
-
-        subject.handle(handleContext);
-
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        // Flag OFF → no manifest write, cache stays at 0.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
     }
 
     @Test
@@ -1813,7 +1797,7 @@ class ClprDeepDiveBundleAuditTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1835,28 +1819,7 @@ class ClprDeepDiveBundleAuditTest {
                         .build())
                 .newEndpointManifest(staleManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
-
-        assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(CLPR_NO_PROGRESS));
-    }
-
-    @Test
-    @DisplayName("#334: flag OFF makes Criterion 5 inert (manifest-only bundle rejected)")
-    void bundleWithFlagOffAndManifestOnlyIsNoProgress() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(1L, "10.0.0.15");
-        final var bundleContent = ClprBundleContent.newBuilder()
-                .metadata(ClprQueueMetadata.newBuilder()
-                        .nextMessageId(1)
-                        .sentRunningHash(ZERO_HASH)
-                        .receivedMessageId(0)
-                        .status(ClprChannelStatus.ACTIVE)
-                        .build())
-                .newEndpointManifest(newManifest)
-                .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -2765,48 +2728,11 @@ class ClprDeepDiveBundleAuditTest {
     }
 
     @Test
-    @DisplayName("flag off: a peer-reported endpoint_manifest_version is ignored and does not perturb bundle handling")
-    void peerEndpointManifestVersionIgnoredWhenFlagOff() {
-        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS
-        // ledger's manifest version. #330 populates + carries the field through the pipeline.
-        // With clpr.endpointManifestEnabled=false the handler does not read or record it (the
-        // inbound read is flag-guarded), so the field is inert and the bundle is handled exactly
-        // as before.
-        putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
-
-        final var msg = dataPayload();
-        final var runningHash = ClprHashUtils.computeRunningHash(ZERO_HASH, msg);
-        final var metadata = ClprQueueMetadata.newBuilder()
-                .nextMessageId(2L)
-                .sentRunningHash(runningHash)
-                .receivedMessageId(0L)
-                .status(ClprChannelStatus.ACTIVE)
-                .endpointManifestVersion(42L)
-                .build();
-        final var bundle = ClprBundleContent.newBuilder()
-                .metadata(metadata)
-                .messages(List.of(msg))
-                .build();
-        setupHandleContext(bundleTxn(bundle), true);
-        putConnector();
-
-        subject.handle(handleContext);
-
-        // Bundle processed normally; channel advanced.
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated).isNotNull();
-        assertThat(updated.receivedMessageId()).isEqualTo(1L);
-        // Our OWN endpoint_manifest_version is NOT touched by the peer-reported value - this
-        // ledger's cache of the PEER's manifest is unrelated to the peer's cache of ours.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
-    }
-
-    @Test
-    @DisplayName("flag on: a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
-    void peerEndpointManifestVersionAcceptedWhenFlagOn() {
-        // With clpr.endpointManifestEnabled=true the handler reads the peer-reported version (the
-        // guarded inbound read fires). On this branch that read is log-only — recording it lands in
-        // #335 — so the observable contract is unchanged: the bundle is handled normally and this
+    @DisplayName("a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
+    void peerEndpointManifestVersionAccepted() {
+        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS ledger's
+        // manifest version. The handler records it via the lifecycle SPI (node-local, in-memory) and
+        // the observable channel contract is unchanged: the bundle is handled normally and this
         // ledger's own cache of the PEER's manifest is untouched (the bundle carries no
         // new_endpoint_manifest to apply via Step 1b).
         putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
@@ -2824,17 +2750,18 @@ class ClprDeepDiveBundleAuditTest {
                 .metadata(metadata)
                 .messages(List.of(msg))
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundle), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundle), true);
         putConnector();
 
         subject.handle(handleContext);
 
-        // Bundle processed normally with the flag on; channel advanced.
+        // Bundle processed normally; channel advanced.
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated).isNotNull();
         assertThat(updated.receivedMessageId()).isEqualTo(1L);
         // No new_endpoint_manifest in the bundle → Step 1b is a no-op; our cache stays at 0.
         assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
+        verify(channelLifecycle).recordPeerObservedManifestVersion(CHANNEL_ID, 42L);
     }
 
     // ========== Verifier outcomes ==========
@@ -2911,7 +2838,7 @@ class ClprDeepDiveBundleAuditTest {
                     .newEndpointManifest(newManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 1L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             subject.handle(handleContext);
@@ -2936,7 +2863,7 @@ class ClprDeepDiveBundleAuditTest {
                     .newEndpointManifest(staleManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             assertThatThrownBy(() -> subject.handle(handleContext))
@@ -3222,12 +3149,10 @@ class ClprDeepDiveBundleAuditTest {
         return builder.build();
     }
 
-    private void setupHandleContextWithFlags(
-            @NonNull final TransactionBody txn, final boolean clprEnabled, final boolean endpointManifestEnabled) {
+    private void setupHandleContextWithFlags(@NonNull final TransactionBody txn, final boolean clprEnabled) {
         setupHandleContext(txn, clprEnabled);
         final var config = com.hedera.node.config.testfixtures.HederaTestConfigBuilder.create()
                 .withValue("clpr.enabled", clprEnabled)
-                .withValue("clpr.endpointManifestEnabled", endpointManifestEnabled)
                 .withValue("clpr.slashBasePenalty", "10000000")
                 .withValue("clpr.slashMultiplier", "2")
                 .withValue("clpr.slashBanThreshold", "5")
@@ -3547,6 +3472,8 @@ class ClprDeepDiveBundleAuditTest {
         assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
         assertThat(channelStore.getChannel(CHANNEL_ID).ackedMessageId()).isEqualTo(1);
         assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isZero();
+        assertThat(connectorStore.getConnector(key).slashCount()).isEqualTo(1);
+        assertThat(connectorStore.getConnector(key).lockedStake()).isEqualTo(90_000_000L);
     }
 
     @Test
@@ -3572,8 +3499,13 @@ class ClprDeepDiveBundleAuditTest {
                 .when(storeFactory.readableStore(com.hedera.node.app.service.clpr.ReadableChannelStore.class))
                 .thenReturn(channelStore);
         new com.hedera.node.app.service.clpr.impl.handlers.ClprRedactMessageHandler().handle(handleContext);
-        assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1).payloadOrThrow().hasRedactedMessage())
-                .isTrue();
+        assertThat(messageQueueStore
+                        .getMessage(CHANNEL_ID, 1)
+                        .payloadOrThrow()
+                        .redactedMessageOrThrow()
+                        .connectorId())
+                .isEqualTo(CONNECTOR_ADDRESS);
+        assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isEqualTo(1);
         setupHandleContext(
                 buildBundle(
                         ClprChannelStatus.ACTIVE,
@@ -3585,6 +3517,8 @@ class ClprDeepDiveBundleAuditTest {
         subject.handle(handleContext);
         assertThat(messageQueueStore.getMessage(CHANNEL_ID, 1)).isNull();
         assertThat(connectorStore.getConnector(key).inFlightMessageCount()).isZero();
+        assertThat(connectorStore.getConnector(key).slashCount()).isZero();
+        assertThat(connectorStore.getConnector(key).lockedStake()).isEqualTo(100_000_000L);
     }
 
     private com.hedera.node.app.service.clpr.impl.ClprServiceApiImpl auditApi() {

@@ -125,7 +125,9 @@ class ClprDeepDiveConnectorAuditTest {
         derivedConnectorId =
                 CryptoTestHelpers.computeConnectorId(CHANNEL_ID.toByteArray(), ecdsaPublicKey64, SALT.toByteArray());
         ecdsaCommitment = CryptoTestHelpers.computeCommitment(derivedConnectorId.toByteArray(), ecdsaPublicKey64);
-        ecdsaSignature = CryptoTestHelpers.signEcdsa(SECRET_KEY, derivedConnectorId.toByteArray());
+        ecdsaSignature = Bytes.EMPTY;
+        ecdsaSignature =
+                CryptoTestHelpers.signEcdsa(SECRET_KEY, validOpBuilder().build());
 
         // Connectors state
         final var writableConnectors = MapWritableKVState.<ClprConnectorKey, ClprConnector>builder(
@@ -312,11 +314,9 @@ class ClprDeepDiveConnectorAuditTest {
         final var commitmentForMissing =
                 CryptoTestHelpers.computeCommitment(connIdForMissing.toByteArray(), ecdsaPublicKey64);
         commitmentStore.put(commitmentForMissing);
-        final var sig = CryptoTestHelpers.signEcdsa(SECRET_KEY, connIdForMissing.toByteArray());
         final var op = validOpBuilder()
                 .connectorId(connIdForMissing)
                 .channelId(missingChannelId)
-                .signature(sig)
                 .build();
         setupHandleContext(txnWith(op), true);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -385,7 +385,10 @@ class ClprDeepDiveConnectorAuditTest {
         commitmentStore.put(ecdsaCommitment);
         setupSmartContractMock();
         final var op = validOpBuilder().lockedStake(MIN_LOCKED_STAKE - 1).build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEcdsa(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_INSUFFICIENT_STAKE));
@@ -420,17 +423,18 @@ class ClprDeepDiveConnectorAuditTest {
                 CryptoTestHelpers.computeConnectorId(CHANNEL_ID.toByteArray(), ed25519PublicKey, SALT.toByteArray());
         final var ed25519Commitment =
                 CryptoTestHelpers.computeCommitment(ed25519ConnectorId.toByteArray(), ed25519PublicKey);
-        final var ed25519Signature = CryptoTestHelpers.signEd25519(SECRET_KEY, ed25519ConnectorId.toByteArray());
 
         commitmentStore.put(ed25519Commitment);
         setupSmartContractMock();
         final var op = validOpBuilder()
                 .connectorId(ed25519ConnectorId)
                 .publicKey(Bytes.wrap(ed25519PublicKey))
-                .signature(ed25519Signature)
                 .signatureScheme(ClprSignatureScheme.ED25519)
                 .build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEd25519(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
 
         subject.handle(handleContext);
 
@@ -448,7 +452,10 @@ class ClprDeepDiveConnectorAuditTest {
         commitmentStore.put(ecdsaCommitment);
         setupSmartContractMock();
         final var op = validOpBuilder().lockedStake(MIN_LOCKED_STAKE).build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEcdsa(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
 
         subject.handle(handleContext);
 
@@ -523,7 +530,7 @@ class ClprDeepDiveConnectorAuditTest {
         commitmentStore.put(ecdsaCommitment);
         final var attackerContract = ContractID.newBuilder().contractNum(4004).build();
         final var attackerAdmin =
-                Key.newBuilder().ed25519(Bytes.wrap(new byte[32])).build();
+                Key.newBuilder().ed25519(Bytes.fromHex("01".repeat(32))).build();
         lenient()
                 .when(accountStore.getContractById(attackerContract))
                 .thenReturn(Account.newBuilder()
@@ -537,6 +544,12 @@ class ClprDeepDiveConnectorAuditTest {
                 .build();
         assertThat(tampered.signature()).isEqualTo(original.signature());
         setupHandleContext(txnWith(tampered), true);
-        assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(HandleException.class);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_INVALID_SIGNATURE));
+        assertThat(commitmentStore.contains(ecdsaCommitment)).isTrue();
+        assertThat(connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, derivedConnectorId)))
+                .isNull();
+        org.mockito.Mockito.verifyNoInteractions(tokenServiceApi);
     }
 }

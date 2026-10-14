@@ -80,7 +80,7 @@ public class ClprSendMessageSuite {
                 clprCompleteConnector()
                         .connectorId(crypto.connectorId())
                         .publicKey(crypto.publicKey())
-                        .signature(crypto.connectorSignature())
+                        .signatureSigner(crypto::signConnector)
                         .signatureScheme(ClprSignatureScheme.ED25519)
                         .salt(crypto.connectorSalt())
                         .channelId(crypto.channelId())

@@ -463,13 +463,15 @@ public class ClprChannelManager implements ClprChannelLifecycle {
         }
 
         // Skip only when there is no pending outbound work. "Pending work" is either queued
-        // messages OR a local manifest advance the peer has not yet observed. A moved endpoint
+        // messages, a closing handshake, OR a local manifest advance the peer has not yet observed. A moved endpoint
         // must propagate even with an empty message queue, or peers stay stuck dialing the
         // obsolete address.
         final boolean noQueuedMessages = channel.nextMessageId() - 1 <= channel.ackedMessageId();
         final long peerObservedManifestVersion = peerObservedManifestVersions.getOrDefault(channel.channelId(), 0L);
         final boolean manifestStaleOnPeer = readLocalManifestVersion() > peerObservedManifestVersion;
-        if (noQueuedMessages && !manifestStaleOnPeer) {
+        final boolean closing =
+                channel.status() == ClprChannelStatus.CLOSING || channel.status() == ClprChannelStatus.DRAINED;
+        if (noQueuedMessages && !manifestStaleOnPeer && !closing) {
             logger.debug(
                     "[CLPR-SYNC-MANAGER] skipping — no queued messages and peer manifest current conn={} "
                             + "nextMsgId={} ackedMsgId={} peerObservedManifestVersion={}",

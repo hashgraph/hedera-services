@@ -478,7 +478,7 @@ public class ClprDisabledSuite {
                 clprCompleteConnector()
                         .connectorId(crypto.connectorId())
                         .publicKey(crypto.publicKey())
-                        .signature(crypto.connectorSignature())
+                        .signatureSigner(crypto::signConnector)
                         .salt(crypto.connectorSalt())
                         .channelId(crypto.channelId())
                         .connectorContract(CONNECTOR_CONTRACT)

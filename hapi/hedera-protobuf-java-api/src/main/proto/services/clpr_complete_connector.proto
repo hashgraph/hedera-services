@@ -16,7 +16,7 @@ import "services/clpr_complete_channel.proto";
  * Permissionless. The handler:
  *   1. Re-derives connectorId = keccak256(channelId || publicKey || salt).
  *   2. Verifies keccak256(connectorId || publicKey) was committed.
- *   3. Verifies sig over keccak256(connectorId || 0x000000000000000000000000000000000000016e).
+ *   3. Verifies the signature over the complete registration payload described below.
  *   4. Creates the Connector in state keyed by (channelId, connectorId).
  */
 message ClprCompleteConnectorTransactionBody {
@@ -35,8 +35,13 @@ message ClprCompleteConnectorTransactionBody {
     bytes public_key = 2;
 
     /**
-     * Signature over keccak256(connectorId || 0x000000000000000000000000000000000000016e).
-     * Always 64 bytes regardless of scheme.
+     * Signature over keccak256(UTF8("Hiero CLPR complete connector v1") ||
+     * canonical_protobuf(this body with signature cleared)). The canonical
+     * encoding uses ascending field numbers, omits default scalar/bytes values,
+     * and excludes unknown fields, including in nested messages.
+     * This authenticates the connector contract, admin key, and locked stake as
+     * well as the connector identity. Always 64 bytes regardless of scheme.
+     * Legacy signatures over only connectorId and service address are rejected.
      */
     bytes signature = 3;
 

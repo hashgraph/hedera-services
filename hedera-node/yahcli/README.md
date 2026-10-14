@@ -1003,7 +1003,12 @@ the Besu, Sei, and Ethereum verifiers accept an empty manifest proof.
 | Reveal     | `clpr complete-connector`   | Submits `ClprCompleteConnector` (Phase 2). |
 | Deregister | `clpr deregister-connector` | Removes the connector and unlocks stake.   |
 
-`generate-connector-identity` produces the matching JSON bundle for `complete-connector`.
+`generate-connector-identity` produces the key material and commitment in a JSON bundle.
+`complete-connector --identity <path>` uses its private key to sign the full reveal after
+resolving the contract, admin key, and stake. An explicit `--signature` overrides signing
+and must authenticate that exact reveal using the
+[Hiero connector signature format](../docs/design/services/clpr-service/clpr-hiero-spec.md#connector-ownership-signatures).
+Old signatures over only the connector ID and service address are no longer accepted.
 
 ### Bundles and messages
 

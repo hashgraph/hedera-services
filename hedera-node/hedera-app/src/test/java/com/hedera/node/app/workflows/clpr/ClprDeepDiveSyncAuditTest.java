@@ -958,6 +958,18 @@ class ClprDeepDiveSyncAuditTest {
     }
 
     @Test
+    void auditClosingEmptyChannelStillPropagatesClose() {
+        final var closing = makeActiveChannelWithPendingMessages(CHANNEL_ID_1)
+                .copyBuilder()
+                .status(ClprChannelStatus.CLOSING)
+                .nextMessageId(1)
+                .ackedMessageId(0)
+                .build();
+        subject.initiateSync(closing);
+        verify(synchronizer, timeout(500)).synchronize(eq(closing), any(), anyLong(), anyLong());
+    }
+
+    @Test
     void auditDrainedEmptyChannelStillPropagatesClose() {
         final var drained = makeActiveChannelWithPendingMessages(CHANNEL_ID_1)
                 .copyBuilder()

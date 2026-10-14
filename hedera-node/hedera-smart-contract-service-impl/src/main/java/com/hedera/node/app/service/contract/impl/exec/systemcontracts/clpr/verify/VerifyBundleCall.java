@@ -58,6 +58,7 @@ public class VerifyBundleCall extends AbstractCall {
 
     private final byte[] bundlePayload;
     private final byte[] trustAnchor;
+    private final Bytes channelContext;
     private final TssVerifier tssVerifier;
 
     /**
@@ -73,10 +74,12 @@ public class VerifyBundleCall extends AbstractCall {
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final byte[] bundlePayload,
             @NonNull final byte[] trustAnchor,
+            @NonNull final byte[] channelContext,
             @NonNull final TssVerifier tssVerifier) {
         super(gasCalculator, enhancement, true);
         this.bundlePayload = requireNonNull(bundlePayload);
         this.trustAnchor = requireNonNull(trustAnchor);
+        this.channelContext = Bytes.wrap(requireNonNull(channelContext));
         this.tssVerifier = requireNonNull(tssVerifier);
     }
 
@@ -87,6 +90,12 @@ public class VerifyBundleCall extends AbstractCall {
 
     @Override
     public @NonNull PricedResult execute(@NonNull final MessageFrame frame) {
+        // verifyConfig binds the channel by prefixing the peer service address with its 32-byte ID.
+        // An empty or truncated context must never permit an unbound proof verification.
+        if (channelContext.length() < 32) {
+            return fail();
+        }
+        final var expectedChannelId = channelContext.slice(0, 32);
         final var trustAnchorBytes = Bytes.wrap(trustAnchor);
         log.info(
                 "verifyBundle (receiver) ENTER trustAnchor={} ({} bytes), bundlePayload={} bytes, gasRequirement={}",
@@ -172,6 +181,10 @@ public class VerifyBundleCall extends AbstractCall {
                     final var inner = ClprProofExtraction.unwrapStateValueField(valueBytes);
                     if (inner != null) {
                         channel = ClprChannel.PROTOBUF.parseStrict(inner.toReadableSequentialData());
+                        if (!channel.channelId().equals(expectedChannelId)) {
+                            log.warn("verifyBundle: proven channel does not match the requested channel context");
+                            return fail();
+                        }
                     }
                 } else if (svTag == ClprProofExtraction.SV_MESSAGE_TAG) {
                     final var inner = ClprProofExtraction.unwrapStateValueField(valueBytes);

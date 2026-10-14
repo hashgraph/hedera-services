@@ -53,6 +53,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -115,6 +117,61 @@ class ClprCompleteConnectorHandlerTest {
     private Bytes ecdsaCommitment;
     private Bytes ecdsaSignature;
 
+    @ParameterizedTest
+    @CsvSource({
+        "ED25519,contract",
+        "ED25519,admin",
+        "ED25519,stake",
+        "ECDSA_SECP256K1,contract",
+        "ECDSA_SECP256K1,admin",
+        "ECDSA_SECP256K1,stake"
+    })
+    void ownershipSignatureBindsRegistrationFields(final ClprSignatureScheme scheme, final String field) {
+        var original = validOpBuilder().build();
+        var commitment = ecdsaCommitment;
+        if (scheme == ClprSignatureScheme.ED25519) {
+            final var publicKey = CryptoTestHelpers.deriveEd25519PublicKey(SECRET_KEY);
+            final var id =
+                    CryptoTestHelpers.computeConnectorId(CHANNEL_ID.toByteArray(), publicKey, SALT.toByteArray());
+            commitment = CryptoTestHelpers.computeCommitment(id.toByteArray(), publicKey);
+            original = original.copyBuilder()
+                    .connectorId(id)
+                    .publicKey(Bytes.wrap(publicKey))
+                    .signatureScheme(scheme)
+                    .build();
+            original = original.copyBuilder()
+                    .signature(CryptoTestHelpers.signEd25519(SECRET_KEY, original))
+                    .build();
+        }
+        commitmentStore.put(commitment);
+        final var tampered =
+                switch (field) {
+                    case "contract" ->
+                        original.copyBuilder()
+                                .connectorContract(ContractID.newBuilder()
+                                        .contractNum(4004)
+                                        .build())
+                                .build();
+                    case "admin" ->
+                        original.copyBuilder()
+                                .adminKey(Key.newBuilder()
+                                        .ed25519(Bytes.fromHex("01".repeat(32)))
+                                        .build())
+                                .build();
+                    case "stake" ->
+                        original.copyBuilder().lockedStake(VALID_STAKE + 1).build();
+                    default -> throw new AssertionError(field);
+                };
+        setupHandleContext(txnWith(tampered), true);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_INVALID_SIGNATURE));
+        assertThat(commitmentStore.contains(commitment)).isTrue();
+        assertThat(connectorStore.getConnector(new ClprConnectorKey(CHANNEL_ID, original.connectorId())))
+                .isNull();
+        org.mockito.Mockito.verifyNoInteractions(tokenServiceApi);
+    }
+
     @BeforeEach
     void setUp() {
         final var config = HederaTestConfigBuilder.createConfig();
@@ -125,7 +182,9 @@ class ClprCompleteConnectorHandlerTest {
         derivedConnectorId =
                 CryptoTestHelpers.computeConnectorId(CHANNEL_ID.toByteArray(), ecdsaPublicKey64, SALT.toByteArray());
         ecdsaCommitment = CryptoTestHelpers.computeCommitment(derivedConnectorId.toByteArray(), ecdsaPublicKey64);
-        ecdsaSignature = CryptoTestHelpers.signEcdsa(SECRET_KEY, derivedConnectorId.toByteArray());
+        ecdsaSignature = Bytes.EMPTY;
+        ecdsaSignature =
+                CryptoTestHelpers.signEcdsa(SECRET_KEY, validOpBuilder().build());
 
         // Connectors state
         final var writableConnectors = MapWritableKVState.<ClprConnectorKey, ClprConnector>builder(
@@ -312,11 +371,9 @@ class ClprCompleteConnectorHandlerTest {
         final var commitmentForMissing =
                 CryptoTestHelpers.computeCommitment(connIdForMissing.toByteArray(), ecdsaPublicKey64);
         commitmentStore.put(commitmentForMissing);
-        final var sig = CryptoTestHelpers.signEcdsa(SECRET_KEY, connIdForMissing.toByteArray());
         final var op = validOpBuilder()
                 .connectorId(connIdForMissing)
                 .channelId(missingChannelId)
-                .signature(sig)
                 .build();
         setupHandleContext(txnWith(op), true);
         assertThatThrownBy(() -> subject.handle(handleContext))
@@ -385,7 +442,10 @@ class ClprCompleteConnectorHandlerTest {
         commitmentStore.put(ecdsaCommitment);
         setupSmartContractMock();
         final var op = validOpBuilder().lockedStake(MIN_LOCKED_STAKE - 1).build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEcdsa(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_INSUFFICIENT_STAKE));
@@ -420,17 +480,18 @@ class ClprCompleteConnectorHandlerTest {
                 CryptoTestHelpers.computeConnectorId(CHANNEL_ID.toByteArray(), ed25519PublicKey, SALT.toByteArray());
         final var ed25519Commitment =
                 CryptoTestHelpers.computeCommitment(ed25519ConnectorId.toByteArray(), ed25519PublicKey);
-        final var ed25519Signature = CryptoTestHelpers.signEd25519(SECRET_KEY, ed25519ConnectorId.toByteArray());
 
         commitmentStore.put(ed25519Commitment);
         setupSmartContractMock();
         final var op = validOpBuilder()
                 .connectorId(ed25519ConnectorId)
                 .publicKey(Bytes.wrap(ed25519PublicKey))
-                .signature(ed25519Signature)
                 .signatureScheme(ClprSignatureScheme.ED25519)
                 .build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEd25519(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
 
         subject.handle(handleContext);
 
@@ -448,7 +509,10 @@ class ClprCompleteConnectorHandlerTest {
         commitmentStore.put(ecdsaCommitment);
         setupSmartContractMock();
         final var op = validOpBuilder().lockedStake(MIN_LOCKED_STAKE).build();
-        setupHandleContext(txnWith(op), true);
+        final var signed = op.copyBuilder()
+                .signature(CryptoTestHelpers.signEcdsa(SECRET_KEY, op))
+                .build();
+        setupHandleContext(txnWith(signed), true);
 
         subject.handle(handleContext);
 
