@@ -28,7 +28,12 @@ import java.time.Duration;
  *                                               threads that receive leaves, hash, or delete old leaves block once
  *                                               the next batch reaches two intervals. If zero, all data is flushed in
  *                                               the end of reconnect hashing only, and these threads never block.
- * @param maxInFlightLeaves                     The maximum number of leaf requests sent to the teacher whose
+ *                                               Every flush creates a new data file per store, and reconnect data
+ *                                               files are rarely compacted, so a small interval leaves many small
+ *                                               files behind. With flusher backpressure, up to about four intervals
+ *                                               of leaves, deleted leaves, and hash chunks may be held in memory, so
+ *                                               a large interval increases heap usage.
+ * @param maxInFlightLeaves                      The maximum number of leaf requests sent to the teacher whose
  *                                               responses haven't been fed to the hasher yet. Senders stop
  *                                               requesting leaves while this limit is reached, which bounds the
  *                                               memory used to buffer leaf responses when hashing is slower than
@@ -45,7 +50,7 @@ public record VirtualMapLearnerSyncConfig(
         @ConfigProperty(defaultValue = "600s") Duration asyncStreamIdleTimeout,
         @ConfigProperty(defaultValue = "10000") @Positive int asyncStreamBufferSize,
         @ConfigProperty(defaultValue = "8ms") Duration asyncOutputStreamFlush,
-        @Min(0) @ConfigProperty(defaultValue = "500000") int flushInterval,
+        @Min(0) @ConfigProperty(defaultValue = "2000000") int flushInterval,
         @ConfigProperty(defaultValue = "1000000") @Positive int maxInFlightLeaves,
         @ConfigProperty(defaultValue = "10s") Duration statusLogInterval) {}
 // spotless:on
