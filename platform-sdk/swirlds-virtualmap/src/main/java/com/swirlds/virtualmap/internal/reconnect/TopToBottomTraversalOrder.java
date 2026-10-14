@@ -92,17 +92,21 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
      * Returns the number of ranks between a chunk root and the rank, where the chunk's initial
      * internals are seeded.
      *
-     * <p>The seed rank is the chunk midpoint rank, moved down by up to {@code RANK_STEP - 1} ranks, so
-     * that dirty internals drilled down by {@link #RANK_STEP} ranks end exactly {@link #BOTTOM_GAP}
-     * ranks above the chunk leaf rank. Moving the seed rank down rather than up doesn't add a drill-down
-     * step, but increases the number of seeded internals by up to {@code 2^(RANK_STEP - 1)} times.
+     * <p>The lowest checked rank is {@link #BOTTOM_GAP} ranks above the chunk leaf rank, and dirty
+     * internals are drilled down by {@link #RANK_STEP} ranks. The seed rank is therefore the highest
+     * rank at or below the chunk midpoint, which is a multiple of {@code RANK_STEP} ranks above the
+     * lowest checked rank: the midpoint, or up to {@code RANK_STEP - 1} ranks below it. Seeding below
+     * rather than above the midpoint doesn't add a drill-down step, but increases the number of seeded
+     * internals by up to {@code 2^(RANK_STEP - 1)} times.
      *
-     * @param chunkHeight the number of ranks between the chunk root and the chunk leaf rank
+     * @param chunkHeight the number of ranks between the chunk root and the chunk leaf rank, at least 3
      * @return the seed rank offset from the chunk root rank
      */
     static int seedRankOffset(final int chunkHeight) {
         final int midpoint = chunkHeight / 2;
-        return midpoint + Math.floorMod(chunkHeight - midpoint - BOTTOM_GAP, RANK_STEP);
+        final int lowestCheckedOffset = chunkHeight - BOTTOM_GAP;
+        assert lowestCheckedOffset >= midpoint : "Chunk height is too small: " + chunkHeight;
+        return lowestCheckedOffset - (lowestCheckedOffset - midpoint) / RANK_STEP * RANK_STEP;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -467,11 +471,11 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
     @Override
     public void nodeReceived(final long path, final boolean isClean) {
-        if ((path == 0) || simpleMode) {
-            // No chunks in simple mode — internal responses are not expected
+        if (path == 0) {
             return;
         }
         final boolean isLeaf = path >= firstLeafPath;
+        assert isLeaf || !simpleMode : "No internal responses are expected in the simple mode";
         if (isLeaf) {
             recordLeafResponse(path, isClean);
             return;

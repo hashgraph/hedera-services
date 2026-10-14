@@ -6,6 +6,7 @@ import static com.swirlds.virtualmap.internal.reconnect.NodeTraversalOrder.PATH_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.virtualmap.MerklePathUtils;
@@ -186,15 +187,16 @@ class TopToBottomTraversalOrderTest {
         }
 
         @Test
-        @DisplayName("1.3 — nodeReceived() calls are ignored in simple mode")
+        @DisplayName("1.3 — nodeReceived() calls are ignored in simple mode, internal responses aren't expected")
         void nodeReceivedIgnoredInSimpleMode() {
             final var order = new TopToBottomTraversalOrder();
             order.start(SIMPLE_FIRST, SIMPLE_LAST, SIMPLE_FIRST, SIMPLE_LAST);
 
-            // Call nodeReceived with various paths — must not affect leaf output
+            // Root and leaf responses must not affect leaf output
             order.nodeReceived(0, true);
             order.nodeReceived(SIMPLE_FIRST, false);
-            order.nodeReceived(1L, true);
+            // No internal requests are sent in simple mode, so no internal responses are expected
+            assertThrows(AssertionError.class, () -> order.nodeReceived(1L, true));
 
             final List<Long> leaves = new ArrayList<>();
             long path;
