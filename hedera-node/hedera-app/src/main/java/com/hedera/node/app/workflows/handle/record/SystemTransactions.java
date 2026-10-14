@@ -879,6 +879,26 @@ public class SystemTransactions {
         return next;
     }
 
+    /**
+     * Returns the id of a system-initiated transaction at the given consensus time. Like every system dispatch, it
+     * uses the next dispatch nonce, so block stream consumers never mistake it for a transaction from an event.
+     *
+     * @param consensusTime the consensus time of the transaction
+     * @return the transaction id
+     */
+    public TransactionID nextSystemTransactionIdAt(@NonNull final Instant consensusTime) {
+        requireNonNull(consensusTime);
+        final var systemAdmin = configProvider
+                .getConfiguration()
+                .getConfigData(AccountsConfig.class)
+                .systemAdmin();
+        return TransactionID.newBuilder()
+                .accountID(idFactory.newAccountId(systemAdmin))
+                .transactionValidStart(asTimestamp(consensusTime))
+                .nonce(nextDispatchNonce++)
+                .build();
+    }
+
     private Instant lastReservedSystemTimeFor(final Instant before) {
         return before.minusNanos(1)
                 .minusNanos(configProvider

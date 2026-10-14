@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -248,6 +249,26 @@ class SystemTransactionsTest {
                 SystemTransactions.TriggerStakePeriodSideEffects.YES);
         assertEquals(used.plusNanos(2), context.now());
         assertTrue(context.hasDispatchesRemaining());
+    }
+
+    @Test
+    void systemTransactionIdsUseSuccessiveNonzeroNoncesUntilReset() {
+        final var adminId = AccountID.newBuilder().accountNum(50).build();
+        given(entityIdFactory.newAccountId(50)).willReturn(adminId);
+        final var at = NOW.minusNanos(10);
+        final var expected = TransactionID.newBuilder()
+                .accountID(adminId)
+                .transactionValidStart(Timestamp.newBuilder()
+                        .seconds(at.getEpochSecond())
+                        .nanos(at.getNano())
+                        .build())
+                .nonce(1)
+                .build();
+
+        assertEquals(expected, subject.nextSystemTransactionIdAt(at));
+        assertEquals(2, subject.nextSystemTransactionIdAt(at).nonce());
+        subject.resetNextDispatchNonce();
+        assertEquals(expected, subject.nextSystemTransactionIdAt(at));
     }
 
     @Test

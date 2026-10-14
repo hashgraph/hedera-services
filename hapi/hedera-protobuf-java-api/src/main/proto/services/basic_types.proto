@@ -1941,6 +1941,11 @@ enum HederaFunctionality {
      * Get the current CLPR endpoint manifest (spec §6.5).
      */
     ClprGetEndpointManifest = 128;
+
+    /**
+     * (Internal-only) Externalize CLPR singleton maintenance.
+     */
+    ClprMaintenance = 129;
 }
 
 /**

@@ -2,6 +2,10 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.ENDPOINT_MANIFEST_RECONCILIATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.GENESIS_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_ROSTER_RECONCILIATION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
@@ -36,16 +40,13 @@ import com.hedera.hapi.block.stream.input.RoundHeader;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.history.ProofKey;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.StateSignatureTransaction;
-import com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
@@ -351,7 +352,7 @@ public class HandleWorkflow {
             systemTransactions.doGenesisSetup(genesisEventTime, state, (states, entityStates, action) -> {
                 if (states.contains(V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID)) {
                     // Stage the CLPR service's initialization so its writes have a transaction owner.
-                    initializeMissingClprSingletons(state, genesisEventTime);
+                    initializeMissingClprSingletons(state, genesisEventTime, GENESIS_INITIALIZATION);
                 } else {
                     doStreamingAllChanges(states, entityStates, action);
                 }
@@ -638,7 +639,7 @@ public class HandleWorkflow {
             logger.info("Doing post-upgrade setup @ {}", consensusNow);
             systemTransactions.doPostUpgradeSetup(consensusNow, state);
             try {
-                initializeMissingClprSingletons(state, consensusNow);
+                initializeMissingClprSingletons(state, consensusNow, UPGRADE_INITIALIZATION);
             } catch (Exception e) {
                 logger.error("Failed to initialize CLPR singletons on upgrade", e);
             }
@@ -1295,9 +1296,7 @@ public class HandleWorkflow {
                         new WritableEndpointManifestStore(states),
                         new WritableEndpointManifestConstructionStore(states),
                         ctx.clprConfig()),
-                states -> TransactionBody.newBuilder()
-                        .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT),
-                "CLPR endpoint manifest reconciliation");
+                ENDPOINT_MANIFEST_RECONCILIATION);
     }
 
     /**
@@ -1343,19 +1342,18 @@ public class HandleWorkflow {
     /**
      * Seeds CLPR state for genesis or upgrade, with an informational transaction for block replay and indexing.
      * Initialization runs at handle time, after network configuration properties have taken effect.
+     *
+     * @param state the state to initialize the singletons in
+     * @param before the first event or user transaction that must follow the initialization
+     * @param reason whether this is genesis or upgrade initialization
      */
-    private void initializeMissingClprSingletons(@NonNull final State state, @NonNull final Instant before) {
+    private void initializeMissingClprSingletons(
+            @NonNull final State state, @NonNull final Instant before, @NonNull final ClprMaintenanceReason reason) {
         clprMaintenanceTransactions.perform(
                 state.getWritableStates(ClprService.NAME),
                 before,
                 states -> V0780ClprSchema.initializeSingletons(states, configProvider.getConfiguration()),
-                states -> TransactionBody.newBuilder()
-                        .clprUpdateLedgerConfiguration(ClprUpdateLedgerConfigurationTransactionBody.newBuilder()
-                                .configuration(states.<ClprLedgerConfiguration>getSingleton(
-                                                V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID)
-                                        .get())
-                                .build()),
-                "CLPR singleton initialization");
+                reason);
     }
 
     /**
@@ -1381,9 +1379,7 @@ public class HandleWorkflow {
                         new WritableEndpointManifestConstructionStore(states),
                         ctx.nodeStore(),
                         ctx.clprConfig()),
-                states -> TransactionBody.newBuilder()
-                        .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT),
-                "CLPR endpoint roster reconciliation");
+                UPGRADE_ROSTER_RECONCILIATION);
     }
 
     /**

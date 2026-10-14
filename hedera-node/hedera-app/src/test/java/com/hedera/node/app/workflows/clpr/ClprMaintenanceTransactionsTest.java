@@ -2,6 +2,8 @@
 package com.hedera.node.app.workflows.clpr;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.ENDPOINT_MANIFEST_RECONCILIATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.GENESIS_INITIALIZATION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
@@ -16,14 +18,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifest;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction;
 import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody;
+import com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceTransactionBody;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema;
@@ -46,6 +49,11 @@ import org.mockito.ArgumentCaptor;
 class ClprMaintenanceTransactionsTest {
     private static final Instant BEFORE = Instant.ofEpochSecond(1234567);
     private static final Instant CONSENSUS_TIME = BEFORE.minusNanos(100);
+    private static final TransactionID TRANSACTION_ID = TransactionID.newBuilder()
+            .accountID(AccountID.newBuilder().accountNum(50).build())
+            .transactionValidStart(asTimestamp(CONSENSUS_TIME))
+            .nonce(1)
+            .build();
     private final ConfigProvider configProvider = mock(ConfigProvider.class);
     private final BlockStreamManager blockStreamManager = mock(BlockStreamManager.class);
     private final SystemTransactions systemTransactions = mock(SystemTransactions.class);
@@ -58,6 +66,7 @@ class ClprMaintenanceTransactionsTest {
     void setUp() {
         configure("BLOCKS");
         given(systemTransactions.nextReservedSystemTimeFor(BEFORE)).willReturn(CONSENSUS_TIME);
+        given(systemTransactions.nextSystemTransactionIdAt(CONSENSUS_TIME)).willReturn(TRANSACTION_ID);
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         states = MapWritableStates.builder()
                 .state(singleton(LEDGER_CONFIGURATION_STATE_ID, (ClprLedgerConfiguration) null))
@@ -77,12 +86,14 @@ class ClprMaintenanceTransactionsTest {
         assertThat(items).hasSize(3);
         final var signed = SignedTransaction.PROTOBUF.parse(items.getFirst().signedTransactionOrThrow());
         final var body = TransactionBody.PROTOBUF.parse(signed.bodyBytes());
-        assertThat(body.hasClprUpdateLedgerConfiguration()).isTrue();
-        assertThat(body.transactionIDOrThrow().accountIDOrThrow().accountNum()).isEqualTo(50);
-        assertThat(body.transactionIDOrThrow().transactionValidStart()).isEqualTo(asTimestamp(CONSENSUS_TIME));
-        assertThat(body.clprUpdateLedgerConfigurationOrThrow().configuration())
-                .isEqualTo(states.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID)
-                        .get());
+        // Only the reason is in the body; the state changes below carry the singleton values
+        assertThat(body.clprMaintenanceOrThrow())
+                .isEqualTo(ClprMaintenanceTransactionBody.newBuilder()
+                        .reason(GENESIS_INITIALIZATION)
+                        .build());
+        // A non-zero nonce keeps block stream consumers from treating this as a transaction from an event
+        assertThat(body.transactionIDOrThrow()).isEqualTo(TRANSACTION_ID);
+        assertThat(body.memo()).isEmpty();
         assertThat(items.get(1).transactionResultOrThrow().status()).isEqualTo(SUCCESS);
         assertThat(items.get(1).transactionResultOrThrow().consensusTimestamp()).isEqualTo(asTimestamp(CONSENSUS_TIME));
         final var changes = items.getLast().stateChangesOrThrow();
@@ -102,6 +113,7 @@ class ClprMaintenanceTransactionsTest {
                 .isEqualTo(ClprEndpointManifestConstruction.DEFAULT);
         verifyNoMoreInteractions(blockStreamManager);
         verify(systemTransactions).nextReservedSystemTimeFor(BEFORE);
+        verify(systemTransactions).nextSystemTransactionIdAt(CONSENSUS_TIME);
     }
 
     @Test
@@ -120,7 +132,7 @@ class ClprMaintenanceTransactionsTest {
     }
 
     @Test
-    void manifestMaintenanceUsesEndpointBodyAndExplicitConstructionClear() throws Exception {
+    void manifestMaintenanceUsesReasonAndExplicitConstructionClear() throws Exception {
         states.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID)
                 .put(ClprEndpointManifestConstruction.newBuilder()
                         .constructionId(2)
@@ -130,15 +142,12 @@ class ClprMaintenanceTransactionsTest {
                 BEFORE,
                 staged -> staged.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID)
                         .put(ClprEndpointManifestConstruction.DEFAULT),
-                staged -> TransactionBody.newBuilder()
-                        .clprEndpointPublication(ClprEndpointPublicationTransactionBody.DEFAULT),
-                "CLPR endpoint manifest reconciliation");
+                ENDPOINT_MANIFEST_RECONCILIATION);
         final var items = capturedItems();
         final var body = TransactionBody.PROTOBUF.parse(SignedTransaction.PROTOBUF
                 .parse(items.getFirst().signedTransactionOrThrow())
                 .bodyBytes());
-        assertThat(body.hasClprEndpointPublication()).isTrue();
-        assertThat(body.clprEndpointPublicationOrThrow().hasEndpoint()).isFalse();
+        assertThat(body.clprMaintenanceOrThrow().reason()).isEqualTo(ENDPOINT_MANIFEST_RECONCILIATION);
         assertThat(items.getLast().stateChangesOrThrow().stateChanges()).hasSize(1);
         assertThat(states.getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID).get())
                 .isEqualTo(ClprEndpointManifestConstruction.DEFAULT);
@@ -164,8 +173,7 @@ class ClprMaintenanceTransactionsTest {
                                     .put(ClprEndpointManifest.DEFAULT);
                             throw new IllegalStateException("failed");
                         },
-                        staged -> TransactionBody.newBuilder(),
-                        "CLPR failure"))
+                        ENDPOINT_MANIFEST_RECONCILIATION))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(states.getSingleton(ENDPOINT_MANIFEST_STATE_ID).get()).isNull();
         verifyNoInteractions(blockStreamManager, systemTransactions);
@@ -185,13 +193,7 @@ class ClprMaintenanceTransactionsTest {
                 states,
                 BEFORE,
                 staged -> V0780ClprSchema.initializeSingletons(staged, configProvider.getConfiguration()),
-                staged -> TransactionBody.newBuilder()
-                        .clprUpdateLedgerConfiguration(ClprUpdateLedgerConfigurationTransactionBody.newBuilder()
-                                .configuration(
-                                        staged.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID)
-                                                .get())
-                                .build()),
-                "CLPR singleton initialization");
+                GENESIS_INITIALIZATION);
     }
 
     @SuppressWarnings("unchecked")
