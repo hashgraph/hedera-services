@@ -122,7 +122,7 @@ public class HgcaaLogValidator {
                 // the streamMode=BOTH block size circuit breaker (blockStream.maxBlockSizeBytes)
                 List.of("BlockStreamManagerImpl", "suppressing savepoint output for the rest of the block"),
                 List.of("QueryWorkflowImpl", "Unexpected ParseException while parsing protobuf"),
-                List.of("Timed out waiting for pending block proofs, WRB writers, or block node acknowledgements"));
+                List.of("Timed out waiting for pending block proofs"));
 
         private int numProblems = 0;
         private int linesSinceInitialProblem = -1;
