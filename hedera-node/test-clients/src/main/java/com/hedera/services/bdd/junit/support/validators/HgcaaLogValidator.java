@@ -136,7 +136,9 @@ public class HgcaaLogValidator {
                 // fail while it is unreachable. (The cause is only on the following exception line, so this
                 // ignores every streaming sync failure, not just unreachable peers.)
                 List.of("ClprStreamingSynchronizer", "Streaming sync failed for channel"),
-                List.of("ClprPeerSelector", "circuit breaker opened"));
+                List.of("ClprPeerSelector", "circuit breaker opened"),
+                // The server side of the same churn: a peer cancels its sync stream when it fails or restarts
+                List.of("ClprStreamingSyncMethod", "stream aborted by peer"));
 
         /**
          * The level of a log line: the first word after its timestamp and optional {@code <network-nN>} tag.
