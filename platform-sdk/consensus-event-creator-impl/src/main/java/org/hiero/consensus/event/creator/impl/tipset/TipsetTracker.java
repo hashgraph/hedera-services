@@ -3,11 +3,11 @@ package org.hiero.consensus.event.creator.impl.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +17,7 @@ import org.hiero.consensus.model.event.EventDescriptorWrapper;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.NodeId;
+import org.hiero.consensus.model.roster.RosterWrapper;
 import org.hiero.consensus.model.sequence.map.SequenceMap;
 import org.hiero.consensus.model.sequence.map.StandardSequenceMap;
 
@@ -41,7 +42,7 @@ public class TipsetTracker {
      */
     private Tipset latestGenerations;
 
-    private final Roster roster;
+    private final RosterWrapper roster;
 
     private EventWindow eventWindow;
     private final NodeId selfId;
@@ -53,9 +54,9 @@ public class TipsetTracker {
      *
      * @param time        provides wall clock time
      * @param selfId      the id of this node
-     * @param roster      the current roster
+     * @param roster      the active roster
      */
-    public TipsetTracker(@NonNull final Time time, @NonNull final NodeId selfId, @NonNull final Roster roster) {
+    public TipsetTracker(@NonNull final Time time, @NonNull final NodeId selfId, @NonNull final RosterWrapper roster) {
         this.roster = Objects.requireNonNull(roster);
         this.selfId = Objects.requireNonNull(selfId);
         this.latestGenerations = new Tipset(roster);
@@ -159,7 +160,14 @@ public class TipsetTracker {
 
     @NonNull
     private List<Tipset> getParentTipsets(@NonNull final List<EventDescriptorWrapper> parents) {
-        return parents.stream().map(tipsets::get).filter(Objects::nonNull).toList();
+        final ArrayList<Tipset> parentTipsets = new ArrayList<>(parents.size());
+        for (final EventDescriptorWrapper parent : parents) {
+            final Tipset tipset = tipsets.get(parent);
+            if (tipset != null) {
+                parentTipsets.add(tipset);
+            }
+        }
+        return parentTipsets;
     }
 
     private void logIfAncient(@NonNull final EventDescriptorWrapper eventDescriptorWrapper) {
@@ -199,6 +207,8 @@ public class TipsetTracker {
 
     /**
      * Get number of tipsets being tracked.
+     *
+     * @return the number of tipsets being tracked
      */
     public int size() {
         return tipsets.getSize();

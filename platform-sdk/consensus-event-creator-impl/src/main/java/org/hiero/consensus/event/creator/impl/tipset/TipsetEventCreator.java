@@ -2,8 +2,8 @@
 package org.hiero.consensus.event.creator.impl.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.INVALID_EVENT_ERROR;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.roster.Roster;
 import com.swirlds.base.time.Time;
 import com.swirlds.base.utility.Pair;
 import com.swirlds.config.api.Configuration;
@@ -15,18 +15,17 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.concurrent.throttle.RateLimitedLogger;
 import org.hiero.base.crypto.BytesSigner;
+import org.hiero.base.utility.ListUtils;
 import org.hiero.consensus.crypto.PbjStreamHasher;
 import org.hiero.consensus.event.creator.config.EventCreationConfig;
 import org.hiero.consensus.event.creator.impl.EventCreator;
@@ -37,9 +36,9 @@ import org.hiero.consensus.model.event.UnsignedEvent;
 import org.hiero.consensus.model.hashgraph.EventWindow;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
+import org.hiero.consensus.model.roster.RosterWrapper;
 import org.hiero.consensus.model.transaction.EventTransactionSupplier;
 import org.hiero.consensus.model.transaction.TimestampedTransaction;
-import org.hiero.consensus.roster.RosterUtils;
 
 /**
  * Responsible for creating new events using the tipset algorithm.
@@ -64,7 +63,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * The address book for the current network.
      */
-    private final Roster roster;
+    private final RosterWrapper roster;
 
     /**
      * The size of the current address book.
@@ -114,7 +113,7 @@ public class TipsetEventCreator implements EventCreator {
      * @param time                provides the time source for the event creator
      * @param random              a source of randomness that must be cryptographically secure
      * @param signer              used for signing things with this node's private key
-     * @param roster              the current roster
+     * @param roster              the active roster
      * @param selfId              this node's ID
      * @param transactionSupplier provides transactions to be included in new events
      */
@@ -124,16 +123,16 @@ public class TipsetEventCreator implements EventCreator {
             @NonNull final Time time,
             @NonNull final SecureRandom random,
             @NonNull final BytesSigner signer,
-            @NonNull final Roster roster,
+            @NonNull final RosterWrapper roster,
             @NonNull final NodeId selfId,
             @NonNull final EventTransactionSupplier transactionSupplier) {
 
-        this.time = Objects.requireNonNull(time);
-        this.random = Objects.requireNonNull(random);
-        this.signer = Objects.requireNonNull(signer);
-        this.selfId = Objects.requireNonNull(selfId);
-        this.transactionSupplier = Objects.requireNonNull(transactionSupplier);
-        this.roster = Objects.requireNonNull(roster);
+        this.time = requireNonNull(time);
+        this.random = requireNonNull(random);
+        this.signer = requireNonNull(signer);
+        this.selfId = requireNonNull(selfId);
+        this.transactionSupplier = requireNonNull(transactionSupplier);
+        this.roster = requireNonNull(roster);
 
         final EventCreationConfig eventCreationConfig = configuration.getConfigData(EventCreationConfig.class);
 
@@ -143,7 +142,7 @@ public class TipsetEventCreator implements EventCreator {
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
                 configuration, time, roster, selfId, tipsetTracker, childlessOtherEventTracker);
-        networkSize = roster.rosterEntries().size();
+        networkSize = roster.size();
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -168,7 +167,7 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         final NodeId eventCreator = event.getCreatorId();
-        if (RosterUtils.getIndex(roster, eventCreator.id()) == -1) {
+        if (!roster.contains(eventCreator)) {
             return;
         }
         final boolean selfEvent = eventCreator.equals(selfId);
@@ -205,7 +204,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     public void setEventWindow(@NonNull final EventWindow eventWindow) {
-        this.eventWindow = Objects.requireNonNull(eventWindow);
+        this.eventWindow = requireNonNull(eventWindow);
         this.lastReceivedEventWindow = time.now();
         tipsetTracker.setEventWindow(eventWindow);
         childlessOtherEventTracker.pruneOldEvents(eventWindow);
@@ -213,7 +212,7 @@ public class TipsetEventCreator implements EventCreator {
 
     @Override
     public void quiescenceCommand(@NonNull final QuiescenceCommand quiescenceCommand) {
-        this.quiescenceCommand = Objects.requireNonNull(quiescenceCommand);
+        this.quiescenceCommand = requireNonNull(quiescenceCommand);
     }
 
     /**
@@ -456,9 +455,7 @@ public class TipsetEventCreator implements EventCreator {
         if (otherParents.length == 0) {
             otherParentDescriptors = List.of();
         } else {
-            otherParentDescriptors = Arrays.stream(otherParents)
-                    .map(PlatformEvent::getDescriptor)
-                    .toList();
+            otherParentDescriptors = ListUtils.mapToCopy(otherParents, PlatformEvent::getDescriptor);
         }
         final UnsignedEvent event = assembleEventObject(otherParents);
 
@@ -483,19 +480,27 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private UnsignedEvent assembleEventObject(final PlatformEvent... otherParents) {
+        final Instant timeTransactionsTaken = time.now();
         final List<TimestampedTransaction> transactions = transactionSupplier.getTransactionsForEvent();
-        final List<PlatformEvent> allParents = Stream.concat(Stream.of(lastSelfEvent), Stream.of(otherParents))
-                .filter(Objects::nonNull)
-                .toList();
+        final List<PlatformEvent> allParents = new ArrayList<>(1 + otherParents.length);
+        if (lastSelfEvent != null) {
+            allParents.add(lastSelfEvent);
+        }
+        for (final PlatformEvent otherParent : otherParents) {
+            if (otherParent != null) {
+                allParents.add(otherParent);
+            }
+        }
         final List<EventDescriptorWrapper> allParentDescriptors =
-                allParents.stream().map(PlatformEvent::getDescriptor).toList();
+                ListUtils.mapToCopy(allParents, PlatformEvent::getDescriptor);
         final UnsignedEvent event = new UnsignedEvent(
                 selfId,
                 allParentDescriptors,
                 eventWindow.newEventBirthRound(),
                 calculateNewEventCreationTime(lastSelfEvent, allParents, transactions),
-                transactions.stream().map(TimestampedTransaction::transaction).toList(),
-                random.nextLong(0, roster.rosterEntries().size() + 1));
+                ListUtils.mapToCopy(transactions, TimestampedTransaction::transaction),
+                random.nextLong(0, roster.size() + 1),
+                timeTransactionsTaken);
         eventHasher.hashUnsignedEvent(event);
 
         return event;

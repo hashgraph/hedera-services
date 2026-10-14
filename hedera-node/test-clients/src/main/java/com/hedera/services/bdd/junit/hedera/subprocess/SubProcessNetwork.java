@@ -209,6 +209,50 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
+     * Creates a new isolated subprocess network. Unlike {@link #newSharedNetwork}, multiple
+     * isolated networks may coexist in the same launcher session. Used by
+     * {@link com.hedera.services.bdd.junit.extensions.MultiNetworkExtension}.
+     *
+     * @param name         unique network name (used for working directory isolation)
+     * @param size         number of nodes
+     * @param shard        shard number
+     * @param realm        realm number
+     * @param firstGrpcPort starting gRPC port; pass -1 to auto-allocate
+     * @return the new (not yet started) network
+     */
+    public static synchronized SubProcessNetwork newIsolatedNetwork(
+            @NonNull final String name, final int size, final long shard, final long realm, final int firstGrpcPort) {
+        if (firstGrpcPort > 0) {
+            initializeNextPortsForNetwork(size, firstGrpcPort);
+        } else {
+            initializeNextPortsForNetwork(size);
+        }
+        final var network = new SubProcessNetwork(
+                name,
+                IntStream.range(0, size)
+                        .mapToObj(nodeId -> new SubProcessNode(
+                                classicMetadataFor(
+                                        nodeId,
+                                        name,
+                                        SUBPROCESS_HOST,
+                                        name,
+                                        nextGrpcPort,
+                                        nextNodeOperatorPort,
+                                        nextInternalGossipPort,
+                                        nextExternalGossipPort,
+                                        nextPrometheusPort,
+                                        shard,
+                                        realm),
+                                GRPC_PINGER,
+                                PROMETHEUS_CLIENT))
+                        .toList(),
+                shard,
+                realm);
+        Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
+        return network;
+    }
+
+    /**
      * Returns the network type; for now this is always
      * {@link TargetNetworkType#SUBPROCESS_NETWORK}.
      *
@@ -309,25 +353,25 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private void awaitLedgerIdReady(@NonNull final Instant deadline) {
         final var accountId = fromPbj(nodes.getFirst().getAccountId());
         final var ledgerIdDeadline = earlierOf(deadline, Instant.now().plus(LEDGER_ID_TIMEOUT));
-        var status = WAITING_FOR_LEDGER_ID;
         while (!Instant.now().isAfter(ledgerIdDeadline)) {
             try {
-                status = requireNonNull(this.clients)
+                final var status = requireNonNull(this.clients)
                         .getCryptoSvcStub(accountId, false, false)
                         .cryptoTransfer(Transaction.getDefaultInstance())
                         .getNodeTransactionPrecheckCode();
+                if (status != WAITING_FOR_LEDGER_ID) {
+                    return;
+                }
             } catch (Throwable t) {
-                throw new IllegalStateException("Unable to probe ledger-id readiness for network '" + name() + "'", t);
-            }
-            if (status != WAITING_FOR_LEDGER_ID) {
-                return;
+                // gRPC server may not be fully ready immediately after the port binds; retry
+                log.info(
+                        "Transient error probing ledger-id readiness for '{}', will retry: {}", name(), t.getMessage());
             }
             abortAndThrowIfInterrupted(
                     () -> TimeUnit.MILLISECONDS.sleep(LEDGER_ID_RETRY_BACKOFF.toMillis()),
                     "Interrupted while waiting for ledger id readiness");
         }
-        throw new IllegalStateException(
-                "Network '" + name() + "' remained in " + WAITING_FOR_LEDGER_ID + " until " + ledgerIdDeadline);
+        throw new IllegalStateException("Network '" + name() + "' did not resolve ledger-id by " + ledgerIdDeadline);
     }
 
     private static @NonNull Instant earlierOf(@NonNull final Instant first, @NonNull final Instant second) {
@@ -692,8 +736,19 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     public void configureApplicationProperties(HederaNode node) {
         // Update bootstrap properties for the node from bootstrapPropertyOverrides if there are any
         final var nodeId = node.getNodeId();
-        if (applicationPropertyOverrides.containsKey(nodeId)) {
-            final var properties = applicationPropertyOverrides.get(nodeId);
+        // Overridable per-task defaults (build.gradle.kts prCheckDefaultOverrides -> hapi.spec.test.defaultOverrides,
+        // e.g. clpr.enabled=true) are applied via application.properties (ordinal 100), not the environment
+        // (ordinal 300, used by ProcessUtils for the forced prCheckOverrides), so a spec can still override them with
+        // overriding(...) / @ConfigOverride (ordinal 101). Merge them with any per-node overrides; a per-node override
+        // wins.
+        final var properties = new ArrayList<>(applicationPropertyOverrides.getOrDefault(nodeId, List.of()));
+        ProcessUtils.prCheckDefaultOverrides().forEach((key, value) -> {
+            if (!properties.contains(key)) {
+                properties.add(key);
+                properties.add(value);
+            }
+        });
+        if (!properties.isEmpty()) {
             log.info("Configuring application properties for node {}: {}", nodeId, properties);
             Path appPropertiesPath = node.getExternalPath(APPLICATION_PROPERTIES);
             log.info(

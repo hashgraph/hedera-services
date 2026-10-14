@@ -94,15 +94,21 @@ public class ProcessUtils {
     }
 
     /**
-     * Destroys any process that appears to be a node started from the given metadata, based on the
-     * process command being {@code java} and having a last argument matching the node ID.
+     * Destroys any process that appears to be a node started from the given network and node id, based on the
+     * process command being {@code java}, having a {@code -Dhedera.test.networkName=<networkName>} argument,
+     * and having a last argument matching the node ID.
      *
+     * @param networkName the name of the network whose node processes should be destroyed
      * @param nodeId the id of the node whose processes should be destroyed
      */
-    public static void destroyAnySubProcessNodeWithId(final long nodeId) {
+    public static void destroyAnySubProcessNodeFor(@NonNull final String networkName, final long nodeId) {
+        final var networkNameArg = "-Dhedera.test.networkName=" + networkName;
         ProcessHandle.allProcesses()
                 .filter(p -> p.info().command().orElse("").contains("java"))
-                .filter(p -> endsWith(p.info().arguments().orElse(EMPTY_STRING_ARRAY), Long.toString(nodeId)))
+                .filter(p -> {
+                    final var args = p.info().arguments().orElse(EMPTY_STRING_ARRAY);
+                    return contains(args, networkNameArg) && endsWith(args, Long.toString(nodeId));
+                })
                 .forEach(ProcessHandle::destroyForcibly);
     }
 
@@ -122,8 +128,26 @@ public class ProcessUtils {
      * @return a map of environment variable overrides
      */
     public static Map<String, String> prCheckOverrides() {
-        return Optional.ofNullable(System.getProperty("hapi.spec.test.overrides"))
-                .map(testOverrides -> Arrays.stream(testOverrides.split(","))
+        return parseOverrides("hapi.spec.test.overrides");
+    }
+
+    /**
+     * Returns the overridable per-task default node properties specified by the
+     * {@code hapi.spec.test.defaultOverrides} system property (build.gradle.kts {@code prCheckDefaultOverrides}).
+     * Unlike {@link #prCheckOverrides()} (applied as environment variables, config ordinal 300), these are
+     * written into the node's {@code application.properties} (ordinal 100) so a spec can still override them
+     * with {@code overriding(...)} / {@code @ConfigOverride} (network-properties override, ordinal 101).
+     *
+     * @return a map of default node-property overrides
+     */
+    public static Map<String, String> prCheckDefaultOverrides() {
+        return parseOverrides("hapi.spec.test.defaultOverrides");
+    }
+
+    private static Map<String, String> parseOverrides(@NonNull final String systemProperty) {
+        return Optional.ofNullable(System.getProperty(systemProperty))
+                .map(overrides -> Arrays.stream(overrides.split(","))
+                        .filter(override -> !override.isBlank())
                         .map(override -> override.split("="))
                         // Last-wins on duplicate keys so later overrides supersede earlier ones instead of throwing.
                         .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1], (first, last) -> last)))
@@ -223,9 +247,10 @@ public class ProcessUtils {
         commandLine.add("-Xlog:gc*:file=" + gcLogPath + ":time,uptime,level,tags");
         // Only activate JDWP if not in CI
         if (System.getenv("CI") == null) {
+            final int debugPort = FIRST_AGENT_PORT + (metadata.grpcPort() % 10000);
             commandLine.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend="
                     + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
-                    + (FIRST_AGENT_PORT + metadata.nodeId()));
+                    + debugPort);
         }
         commandLine.addAll(List.of(
                 "--module-path",
@@ -237,6 +262,7 @@ public class ProcessUtils {
                 "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + RECORD_STREAMS_DIR,
                 "-Dhedera.recordStream.wrappedRecordHashesDir=" + DATA_DIR + "/wrappedRecordHashes",
                 "-Dhedera.profiles.active=DEV",
+                "-Dhedera.test.networkName=" + metadata.networkName(),
                 "--module",
                 "com.hedera.node.app/com.hedera.node.app.ServicesMain",
                 "-local",
@@ -329,5 +355,14 @@ public class ProcessUtils {
 
     private static boolean endsWith(final String[] args, final String lastArg) {
         return args.length > 0 && args[args.length - 1].equals(lastArg);
+    }
+
+    private static boolean contains(final String[] args, final String arg) {
+        for (final var a : args) {
+            if (a.equals(arg)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
