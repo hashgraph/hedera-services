@@ -136,21 +136,20 @@ public interface HintsService extends Service {
     void onFinishedConstruction(@Nullable OnHintsFinished cb);
 
     /**
-     * Initializes hinTS signing from the next construction in the given {@link WritableHintsStore}.
+     * Initializes hinTS signing from a completed next construction bound to the adopted roster
+     * in the given {@link WritableHintsStore}.
      *
      * @param hintsStore the hints store
      * @param previousRoster the previous roster
      * @param adoptedRoster the adopted roster
      * @param adoptedRosterHash the adopted roster hash
-     * @param forceHandoff whether to force the handoff when the adopted roster hash doesn't match the next construction
      * @return whether the handoff happened
      */
     boolean handoff(
             @NonNull WritableHintsStore hintsStore,
             @NonNull Roster previousRoster,
             @NonNull Roster adoptedRoster,
-            @NonNull Bytes adoptedRosterHash,
-            boolean forceHandoff);
+            @NonNull Bytes adoptedRosterHash);
 
     /**
      * Takes any actions needed to advance the state of the {@link HintsService} toward

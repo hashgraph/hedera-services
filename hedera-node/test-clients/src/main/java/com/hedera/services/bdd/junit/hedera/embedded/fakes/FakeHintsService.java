@@ -98,9 +98,8 @@ public class FakeHintsService implements HintsService {
             @NonNull final WritableHintsStore hintsStore,
             @NonNull final Roster previousRoster,
             @NonNull final Roster adoptedRoster,
-            @NonNull final Bytes adoptedRosterHash,
-            final boolean forceHandoff) {
-        return delegate.handoff(hintsStore, previousRoster, adoptedRoster, adoptedRosterHash, forceHandoff);
+            @NonNull final Bytes adoptedRosterHash) {
+        return delegate.handoff(hintsStore, previousRoster, adoptedRoster, adoptedRosterHash);
     }
 
     @Override

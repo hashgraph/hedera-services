@@ -317,12 +317,11 @@ class HintsServiceImplTest {
 
     @Test
     void handoffDoesNothingWhenStoreReportsNoChange() {
-        given(hintsStore.handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false))
-                .willReturn(false);
+        given(hintsStore.handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY)).willReturn(false);
 
-        assertFalse(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false));
+        assertFalse(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY));
 
-        verify(hintsStore).handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, false);
+        verify(hintsStore).handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY);
         verify(component, never()).signingContext();
     }
 
@@ -334,12 +333,11 @@ class HintsServiceImplTest {
                 .numParties(8)
                 .hintsScheme(HintsScheme.DEFAULT)
                 .build();
-        given(hintsStore.handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, true))
-                .willReturn(true);
+        given(hintsStore.handoff(Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY)).willReturn(true);
         given(hintsStore.getActiveConstruction()).willReturn(construction);
         given(component.signingContext()).willReturn(context);
 
-        assertTrue(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY, true));
+        assertTrue(subject.handoff(hintsStore, Roster.DEFAULT, Roster.DEFAULT, Bytes.EMPTY));
 
         verify(context).setConstruction(construction, null);
     }

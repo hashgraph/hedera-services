@@ -1140,8 +1140,7 @@ public class HandleWorkflow {
                                 hintsStore,
                                 requireNonNull(rosterStore.getActiveRoster()),
                                 requireNonNull(rosterStore.getCandidateRoster()),
-                                requireNonNull(rosterStore.getCandidateRosterHash()),
-                                tssConfig.forceHandoffs());
+                                requireNonNull(rosterStore.getCandidateRosterHash()));
                     }
                 }
             });
@@ -1300,7 +1299,8 @@ public class HandleWorkflow {
      */
     private void initializeMissingClprSingletons(@NonNull final State state) {
         final var clprWritableStates = state.getWritableStates(ClprService.NAME);
-        doStreamingAllChanges(
+        // Not doStreamingAllChanges: its listener reset would drop singleton changes made earlier in this block
+        doStreamingOnlyKvChanges(
                 clprWritableStates,
                 null,
                 () -> V0780ClprSchema.initializeSingletons(clprWritableStates, configProvider.getConfiguration()));

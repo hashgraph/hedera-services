@@ -180,17 +180,14 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
 
     @Override
     public boolean handoff(
-            @NonNull final Roster fromRoster,
-            @NonNull final Roster toRoster,
-            @NonNull final Bytes toRosterHash,
-            final boolean forceHandoff) {
+            @NonNull final Roster fromRoster, @NonNull final Roster toRoster, @NonNull final Bytes toRosterHash) {
         requireNonNull(fromRoster);
         requireNonNull(toRoster);
         requireNonNull(toRosterHash);
         final var upcomingConstruction = requireNonNull(nextConstruction.get());
         final var upcomingCrs = getCrsStateFor(upcomingConstruction);
         final var currentCrs = getCrsState();
-        // A forced handoff may not bypass cryptographic readiness or target binding.
+        // Every handoff requires completed cryptographic material bound to the target roster.
         if (!isReadyToAdopt(toRosterHash)
                 || upcomingConstruction.numParties() < partySizeForRoster(toRoster)
                 || upcomingConstruction.numParties() < currentCrs.numParties()) {

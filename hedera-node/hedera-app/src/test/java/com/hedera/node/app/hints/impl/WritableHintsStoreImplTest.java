@@ -360,7 +360,7 @@ class WritableHintsStoreImplTest {
         final var publicationsBefore = subject.getHintsKeyPublications(Set.of(0L), partySizeForRoster(A_ROSTER), 1);
         assertEquals(1, publicationsBefore.size());
 
-        subject.handoff(prevRoster, C_ROSTER, C_ROSTER_HASH, false);
+        subject.handoff(prevRoster, C_ROSTER, C_ROSTER_HASH);
 
         assertSame(nextConstruction, constructionNow(ACTIVE_HINTS_CONSTRUCTION_STATE_ID));
 
@@ -446,7 +446,7 @@ class WritableHintsStoreImplTest {
         addSomeVotesFor(456L, C_ROSTER);
         assertEquals(3, subject.getVotes(456L, Set.of(1L, 2L, 3L)).size());
 
-        subject.handoff(C_ROSTER, C_ROSTER, C_ROSTER_HASH, false);
+        subject.handoff(C_ROSTER, C_ROSTER, C_ROSTER_HASH);
 
         assertSame(nextConstruction, constructionNow(ACTIVE_HINTS_CONSTRUCTION_STATE_ID));
         assertEquals(0L, votesNow().size());
@@ -586,11 +586,11 @@ class WritableHintsStoreImplTest {
                         .hintsScheme(HintsScheme.DEFAULT)
                         .build());
         assertFalse(subject.isReadyToAdopt(B_ROSTER_HASH));
-        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH, true));
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH));
     }
 
     @Test
-    void forceHandoffCannotShrinkCapacityOrIgnoreTarget() {
+    void handoffCannotShrinkCapacityOrIgnoreTarget() {
         final var active = HintsConstruction.newBuilder()
                 .constructionId(1)
                 .crsId(1)
@@ -611,15 +611,15 @@ class WritableHintsStoreImplTest {
                 .constructionId(2)
                 .targetRosterHash(B_ROSTER_HASH)
                 .build());
-        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, C_ROSTER_HASH, true));
-        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH, true));
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, C_ROSTER_HASH));
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH));
         assertSame(active, subject.getActiveConstruction());
         assertEquals(1, subject.getCrsState().ceremonyId());
         assertEquals(2, subject.getNextCrsState().ceremonyId());
     }
 
     @Test
-    void oversizedPersistedNextCrsCannotBeAdoptedEvenWithForceHandoff() {
+    void oversizedPersistedNextCrsCannotBeAdopted() {
         final var active = HintsConstruction.newBuilder()
                 .constructionId(1)
                 .crsId(1)
@@ -645,7 +645,7 @@ class WritableHintsStoreImplTest {
                         .build());
 
         assertFalse(subject.isReadyToAdopt(B_ROSTER_HASH));
-        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH, true));
+        assertFalse(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH));
 
         assertSame(active, subject.getActiveConstruction());
         assertSame(next, subject.getNextConstruction());
@@ -687,7 +687,7 @@ class WritableHintsStoreImplTest {
                 .constructionId(2)
                 .targetRosterHash(B_ROSTER_HASH)
                 .build());
-        assertTrue(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH, false));
+        assertTrue(subject.handoff(A_ROSTER, C_ROSTER, B_ROSTER_HASH));
         assertSame(next, subject.getActiveConstruction());
         assertEquals(2, subject.getCrsState().ceremonyId());
         assertEquals(10, subject.getCrsState().lastUsedCeremonyId());

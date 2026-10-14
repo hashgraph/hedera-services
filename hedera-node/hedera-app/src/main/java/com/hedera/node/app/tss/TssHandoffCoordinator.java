@@ -16,7 +16,6 @@ import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.ReadableHistoryStore;
 import com.hedera.node.app.history.WritableHistoryStore;
-import com.hedera.node.config.data.TssConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -33,17 +32,6 @@ public final class TssHandoffCoordinator {
 
     private TssHandoffCoordinator() {
         throw new UnsupportedOperationException("Utility class");
-    }
-
-    /**
-     * Whether force handoffs should use a joint hinTS/history promotion.
-     *
-     * @param tssConfig the TSS configuration
-     * @return whether to use the joint forced handoff path
-     */
-    public static boolean usesJointForcedHandoff(@NonNull final TssConfig tssConfig) {
-        requireNonNull(tssConfig);
-        return tssConfig.hintsEnabled() && tssConfig.historyEnabled() && tssConfig.forceHandoffs();
     }
 
     /**
@@ -253,25 +241,6 @@ public final class TssHandoffCoordinator {
         return true;
     }
 
-    /** Forced handoff obeys the same CRS and proof binding requirements as a normal handoff. */
-    public static boolean tryForcedJointHandoff(
-            @NonNull final WritableHistoryStore historyStore,
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final HistoryService historyService,
-            @NonNull final HintsService hintsService,
-            @NonNull final Roster previousRoster,
-            @NonNull final Roster adoptedRoster,
-            @NonNull final Bytes adoptedRosterHash) {
-        return tryJointHandoff(
-                historyStore,
-                hintsStore,
-                historyService,
-                hintsService,
-                previousRoster,
-                adoptedRoster,
-                adoptedRosterHash);
-    }
-
     private static boolean promoteTogether(
             @NonNull final WritableHistoryStore historyStore,
             @NonNull final WritableHintsStore hintsStore,
@@ -282,10 +251,10 @@ public final class TssHandoffCoordinator {
             @NonNull final Bytes adoptedRosterHash,
             @NonNull final HistoryProof proof) {
         if (!historyStore.handoff(previousRoster, adoptedRoster, adoptedRosterHash)) {
-            log.warn("Skipping forced TSS handoff because history construction did not promote");
+            log.warn("Skipping TSS handoff because history construction did not promote");
             return false;
         }
-        if (!hintsService.handoff(hintsStore, previousRoster, adoptedRoster, adoptedRosterHash, true)) {
+        if (!hintsService.handoff(hintsStore, previousRoster, adoptedRoster, adoptedRosterHash)) {
             throw new IllegalStateException("Guarded hinTS handoff failed after history promotion");
         }
         historyService.setLatestHistoryProof(proof);
@@ -298,13 +267,13 @@ public final class TssHandoffCoordinator {
         final var historyConstruction = historyStore.getNextConstruction();
         if (!hintsConstruction.hasHintsScheme()) {
             log.warn(
-                    "Skipping forced TSS handoff because next hinTS construction #{} is incomplete",
+                    "Skipping TSS handoff because next hinTS construction #{} is incomplete",
                     hintsConstruction.constructionId());
             return Optional.empty();
         }
         if (!HistoryService.isCompleted(historyConstruction)) {
             log.warn(
-                    "Skipping forced TSS handoff because next history construction #{} is incomplete",
+                    "Skipping TSS handoff because next history construction #{} is incomplete",
                     historyConstruction.constructionId());
             return Optional.empty();
         }
@@ -313,20 +282,20 @@ public final class TssHandoffCoordinator {
         final var historyProof = historyConstruction.targetProofOrThrow();
         if (!historyProof.hasTargetHistory()) {
             log.warn(
-                    "Skipping forced TSS handoff because history construction #{} has no target history",
+                    "Skipping TSS handoff because history construction #{} has no target history",
                     historyConstruction.constructionId());
             return Optional.empty();
         }
         if (!historyProof.hasChainOfTrustProof()) {
             log.warn(
-                    "Skipping forced TSS handoff because history construction #{} has no chain-of-trust proof",
+                    "Skipping TSS handoff because history construction #{} has no chain-of-trust proof",
                     historyConstruction.constructionId());
             return Optional.empty();
         }
         final var targetMetadata = historyProof.targetHistoryOrThrow().metadata();
         if (!targetMetadata.equals(verificationKey)) {
             log.warn(
-                    "Skipping forced TSS handoff because history construction #{} proves metadata that does not "
+                    "Skipping TSS handoff because history construction #{} proves metadata that does not "
                             + "match hinTS construction #{}",
                     historyConstruction.constructionId(),
                     hintsConstruction.constructionId());

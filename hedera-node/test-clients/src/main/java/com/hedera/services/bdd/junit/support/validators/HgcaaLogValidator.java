@@ -91,13 +91,10 @@ public class HgcaaLogValidator {
                 List.of("Throttle multiplier for CryptoTransfer throughput congestion has no throttle buckets"),
                 // Although we do want a little more visibility for these messages, they shouldn't fail a CI run
                 List.of("Proof future for construction", "must wait until previous finished"),
-                List.of("Ignoring forced handoff to incomplete construction"),
                 List.of("Completing signing attempt"),
                 List.of("No pending blocks found"),
-                List.of("Forcing handoff to history construction", "with different target roster"),
-                List.of("Forcing handoff to construction", "with different target roster"),
                 // Guarded joint TSS handoff deliberately skips partial promotions until both services are ready
-                List.of("TssHandoffCoordinator", "Skipping forced TSS handoff because"),
+                List.of("TssHandoffCoordinator", "Skipping TSS handoff because"),
                 List.of("HintsSubmissions", "Failed to submit"),
                 List.of("Ignoring invalid partial signature"),
                 List.of("Action stack prematurely empty"),

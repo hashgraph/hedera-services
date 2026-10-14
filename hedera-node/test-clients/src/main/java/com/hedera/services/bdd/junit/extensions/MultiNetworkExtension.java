@@ -4,6 +4,7 @@ package com.hedera.services.bdd.junit.extensions;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.WORKING_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.prCheckOverrides;
 import static com.hedera.services.bdd.spec.HapiPropertySource.getConfigRealm;
 import static com.hedera.services.bdd.spec.HapiPropertySource.getConfigShard;
 import static com.hedera.services.bdd.spec.HapiSpec.networkHapiTest;
@@ -21,7 +22,7 @@ import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
-import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,8 +45,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
@@ -54,6 +58,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hiero.consensus.roster.RosterUtils;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -459,20 +464,14 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
             // Failures in any task surface via Future.get() and
             // are caught by the outer catch, which then terminates every started network.
             try (final var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-                final List<Future<Void>> futures = networks.stream()
-                        .map(n -> executor.<Void>submit(() -> {
+                final List<Callable<Void>> tasks = networks.stream()
+                        .<Callable<Void>>map(n -> () -> {
                             n.start();
                             n.awaitReady(STARTUP_TIMEOUT);
                             return null;
-                        }))
+                        })
                         .toList();
-                for (final var f : futures) {
-                    try {
-                        f.get();
-                    } catch (final ExecutionException e) {
-                        throw new RuntimeException("Network startup failed", e.getCause());
-                    }
-                }
+                awaitAllFailFast(executor, tasks, "Network startup failed");
             }
             // Second pass: per-network TSS-readiness gate for tssPreload-opted networks.
             // Warm path (cached fixture preloaded at JVM start): returns ~immediately once the
@@ -526,6 +525,39 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
             n.terminate();
         } catch (Throwable t) {
             log.warn("Cleanup failed for '{}'", n.name(), t);
+        }
+    }
+
+    /**
+     * Runs {@code tasks} on {@code executor} and waits for them all, but FAILS FAST: the moment any one
+     * task throws, the still-running siblings are cancelled (interrupted) so the surrounding
+     * try-with-resources {@code executor.close()} returns promptly instead of blocking on a sibling that
+     * is mid-way through its (up to 25-minute) WRAPS/TSS wait. Uses an {@link ExecutorCompletionService}
+     * so the first *completed* task is observed in completion order — a fast initialization failure is
+     * detected immediately even if a slow task was submitted first. The original failure cause is
+     * rewrapped in a {@link RuntimeException} with {@code failMessage} and rethrown to the caller, whose
+     * outer catch terminates every started network.
+     */
+    private static void awaitAllFailFast(
+            @NonNull final ExecutorService executor,
+            @NonNull final List<Callable<Void>> tasks,
+            @NonNull final String failMessage) {
+        final var completion = new ExecutorCompletionService<Void>(executor);
+        final List<Future<Void>> futures =
+                tasks.stream().map(completion::submit).toList();
+        try {
+            for (int i = 0; i < futures.size(); i++) {
+                // take() blocks for the next task to finish (in completion order), so a fast failure
+                // is seen without first waiting on a slower sibling.
+                completion.take().get();
+            }
+        } catch (final ExecutionException e) {
+            futures.forEach(f -> f.cancel(true));
+            throw new RuntimeException(failMessage, e.getCause());
+        } catch (final InterruptedException e) {
+            futures.forEach(f -> f.cancel(true));
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(failMessage + " (interrupted while awaiting networks)", e);
         }
     }
 
@@ -765,6 +797,8 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
         overrides.put("clpr.minLockedStake", "100");
         overrides.put("clpr.nodeSubmitBundleMaxFee", "10000000000");
         overrides.put("clpr.verifierGasLimit", "5000000");
+        // Task defaults apply at genesis and fixture restart, while per-test setup overrides win.
+        overrides.putAll(prCheckOverrides());
         return overrides;
     }
 
@@ -1105,8 +1139,8 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
     /**
      * Rewrite the port fields of every {@code nodeMetadata} entry in a just-installed fixture at
      * {@code fixturePath} so they match the runtime ports of {@code subNet} (random-allocated per
-     * run). Keeps every other field — TSS keys, rosters, weights, gossip CA cert — intact, so the
-     * whole point of the fixture (skip the ~14-min WRAPS bootstrap) is preserved.
+     * run). Rebinds construction references to the changed roster while preserving TSS keys,
+     * proofs, weights, and gossip CA certificates so the fixture still skips WRAPS bootstrap.
      *
      * <p>Patches, per node: {@code node.serviceEndpoint[0]}, {@code node.gossipEndpoint[0..1]},
      * and {@code rosterEntry.gossipEndpoint[0..1]}. IP address is reset to loopback (fixtures are
@@ -1117,22 +1151,29 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
         final var loaded = DiskStartupNetworks.loadNetworkFrom(fixturePath)
                 .orElseThrow(() ->
                         new IllegalStateException("Failed to reload freshly-installed fixture at " + fixturePath));
-        final Map<Long, HederaNode> byId = new LinkedHashMap<>();
+        final Map<Long, NodeMetadata> byId = new LinkedHashMap<>();
         for (final var n : subNet.nodes()) {
-            byId.put(n.getNodeId(), n);
+            byId.put(n.getNodeId(), n.metadata());
         }
+        final var patched = withRuntimePorts(loaded, byId);
+        // FQN: `Network` is already imported as the `MultiNetworkHapiTest.Network` annotation,
+        // so the internal-network PBJ type must be spelled out inline for the JSON codec.
+        Files.writeString(fixturePath, com.hedera.node.internal.network.Network.JSON.toJSON(patched));
+    }
+
+    /** Applies transport-only fixture changes and keeps construction roster references consistent. */
+    static com.hedera.node.internal.network.Network withRuntimePorts(
+            @NonNull final com.hedera.node.internal.network.Network loaded,
+            @NonNull final Map<Long, NodeMetadata> byId) {
         final var localhost = Bytes.wrap(new byte[] {127, 0, 0, 1});
         final var patched = loaded.copyBuilder()
                 .nodeMetadata(loaded.nodeMetadata().stream()
                         .map(md -> {
                             final long id = md.rosterEntryOrThrow().nodeId();
-                            final var live = byId.get(id);
-                            if (live == null) {
-                                throw new IllegalStateException("Fixture references unknown nodeId=" + id
-                                        + " (runtime network '" + subNet.name() + "' has "
-                                        + subNet.nodes().size() + " nodes)");
+                            final var meta = byId.get(id);
+                            if (meta == null) {
+                                throw new IllegalStateException("Fixture references unknown runtime nodeId=" + id);
                             }
-                            final var meta = live.metadata();
                             final var internal = ServiceEndpoint.newBuilder()
                                     .ipAddressV4(localhost)
                                     .port(meta.internalGossipPort())
@@ -1159,9 +1200,40 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
                         })
                         .toList())
                 .build();
-        // FQN: `Network` is already imported as the `MultiNetworkHapiTest.Network` annotation,
-        // so the internal-network PBJ type must be spelled out inline for the JSON codec.
-        Files.writeString(fixturePath, com.hedera.node.internal.network.Network.JSON.toJSON(patched));
+        if (!loaded.hasTssMetadata()) {
+            return patched;
+        }
+        final var oldRosterHash =
+                RosterUtils.hash(RosterUtils.rosterFrom(loaded)).getBytes();
+        final var newRosterHash =
+                RosterUtils.hash(RosterUtils.rosterFrom(patched)).getBytes();
+        if (oldRosterHash.equals(newRosterHash)) {
+            return patched;
+        }
+        final var metadata = loaded.tssMetadataOrThrow();
+        final var updatedMetadata = metadata.copyBuilder();
+        // Genesis reconciliation matches both source and target to the loaded platform roster.
+        // These references are bookkeeping: hinTS and WRAPS commit to keys, node IDs and weights,
+        // not transport ports. Preserve references to any different, historical roster.
+        if (metadata.hasActiveHintsConstruction()) {
+            final var hints = metadata.activeHintsConstructionOrThrow();
+            updatedMetadata.activeHintsConstruction(hints.copyBuilder()
+                    .sourceRosterHash(rebindFixtureHash(hints.sourceRosterHash(), oldRosterHash, newRosterHash))
+                    .targetRosterHash(rebindFixtureHash(hints.targetRosterHash(), oldRosterHash, newRosterHash))
+                    .build());
+        }
+        if (metadata.hasActiveProofConstruction()) {
+            final var history = metadata.activeProofConstructionOrThrow();
+            updatedMetadata.activeProofConstruction(history.copyBuilder()
+                    .sourceRosterHash(rebindFixtureHash(history.sourceRosterHash(), oldRosterHash, newRosterHash))
+                    .targetRosterHash(rebindFixtureHash(history.targetRosterHash(), oldRosterHash, newRosterHash))
+                    .build());
+        }
+        return patched.copyBuilder().tssMetadata(updatedMetadata).build();
+    }
+
+    private static Bytes rebindFixtureHash(final Bytes hash, final Bytes oldRosterHash, final Bytes newRosterHash) {
+        return hash.equals(oldRosterHash) ? newRosterHash : hash;
     }
 
     /**

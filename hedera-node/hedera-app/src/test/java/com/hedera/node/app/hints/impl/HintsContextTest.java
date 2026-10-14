@@ -112,7 +112,6 @@ class HintsContextTest {
                 false,
                 false,
                 false,
-                false,
                 2,
                 10,
                 Duration.ofSeconds(5),

@@ -32,21 +32,28 @@ public class HintsLibraryImpl implements HintsLibrary {
     private static @Nullable Bytes cachedCrs;
     private static @Nullable Bytes cachedAggregationKey;
 
-    private final IsolatedHintsLibrary keyLibrary;
-    private final IsolatedHintsLibrary preprocessingLibrary;
+    private final Supplier<IsolatedHintsLibrary> keyLibrary;
+    private final Supplier<IsolatedHintsLibrary> preprocessingLibrary;
 
     // Load only two additional native images for the lifetime of the JVM, even when multiple
     // HintsLibraryImpl instances are created. A Java adapter alone would still share native caches.
-    private static final class PreparationLibraries {
-        private static final IsolatedHintsLibrary KEYS = new IsolatedHintsLibrary();
-        private static final IsolatedHintsLibrary PREPROCESSING = new IsolatedHintsLibrary();
+    // Independent holders defer each image until its first operation and keep initialization
+    // failures in one preparation path from poisoning the other or ordinary construction.
+    private static final class KeyLibraryHolder {
+        private static final IsolatedHintsLibrary INSTANCE = new IsolatedHintsLibrary();
+    }
+
+    private static final class PreprocessingLibraryHolder {
+        private static final IsolatedHintsLibrary INSTANCE = new IsolatedHintsLibrary();
     }
 
     public HintsLibraryImpl() {
-        this(PreparationLibraries.KEYS, PreparationLibraries.PREPROCESSING);
+        this(() -> KeyLibraryHolder.INSTANCE, () -> PreprocessingLibraryHolder.INSTANCE);
     }
 
-    HintsLibraryImpl(final IsolatedHintsLibrary keyLibrary, final IsolatedHintsLibrary preprocessingLibrary) {
+    HintsLibraryImpl(
+            final Supplier<IsolatedHintsLibrary> keyLibrary,
+            final Supplier<IsolatedHintsLibrary> preprocessingLibrary) {
         this.keyLibrary = requireNonNull(keyLibrary);
         this.preprocessingLibrary = requireNonNull(preprocessingLibrary);
     }
@@ -101,7 +108,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         requireNonNull(blsPrivateKey);
         requireExactCapacity(crs, n);
         requireValidPartyId(partyId, n);
-        final var hints = keyLibrary.computeHints(crs.toByteArray(), blsPrivateKey.toByteArray(), partyId, n);
+        final var hints = keyLibrary.get().computeHints(crs.toByteArray(), blsPrivateKey.toByteArray(), partyId, n);
         return hints == null ? null : Bytes.wrap(hints);
     }
 
@@ -114,7 +121,7 @@ public class HintsLibraryImpl implements HintsLibrary {
         if (!isValidPartyId(partyId, n)) {
             return false;
         }
-        return keyLibrary.validateHintsKey(crs.toByteArray(), hintsKey.toByteArray(), partyId, n);
+        return keyLibrary.get().validateHintsKey(crs.toByteArray(), hintsKey.toByteArray(), partyId, n);
     }
 
     @Override
@@ -139,7 +146,7 @@ public class HintsLibraryImpl implements HintsLibrary {
                 .toArray(byte[][]::new);
         final long[] weightsArray =
                 Arrays.stream(parties).mapToLong(weights::get).toArray();
-        return preprocessingLibrary.preprocess(crs.toByteArray(), parties, hintsPublicKeys, weightsArray, n);
+        return preprocessingLibrary.get().preprocess(crs.toByteArray(), parties, hintsPublicKeys, weightsArray, n);
     }
 
     @Override

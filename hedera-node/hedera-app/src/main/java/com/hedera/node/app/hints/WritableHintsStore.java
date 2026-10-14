@@ -73,16 +73,15 @@ public interface WritableHintsStore extends ReadableHintsStore {
     HintsConstruction setPreprocessingStartTime(long constructionId, @NonNull Instant now);
 
     /**
-     * Updates state for a handoff to the given roster hash.
+     * Updates state for a handoff to the given roster hash only when its CRS and hinTS scheme
+     * are complete and meet the adopted roster's capacity requirements.
      *
      * @param fromRoster the previous roster
      * @param toRoster the adopted roster
      * @param toRosterHash the adopted roster hash
-     * @param forceHandoff whether the caller requested a forced handoff; cryptographic readiness is always enforced
      * @return whether the handoff changed the hinTS scheme
      */
-    boolean handoff(
-            @NonNull Roster fromRoster, @NonNull Roster toRoster, @NonNull Bytes toRosterHash, boolean forceHandoff);
+    boolean handoff(@NonNull Roster fromRoster, @NonNull Roster toRoster, @NonNull Bytes toRosterHash);
 
     /**
      * Rebinds a completed active construction after the caller verifies that the adopted roster has

@@ -241,7 +241,7 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
             @NonNull final Roster fromRoster, @Nullable final Roster toRoster, @Nullable final Bytes toRosterHash) {
         requireNonNull(fromRoster);
         final var upcomingConstruction = requireNonNull(nextConstruction.get());
-        // A WRAPS proof binds the hash of its target address book; so even a forced handoff can only adopt
+        // A WRAPS proof binds the hash of its target address book; so a handoff can only adopt
         // a construction whose target roster is the roster being adopted
         if (toRosterHash != null && !upcomingConstruction.targetRosterHash().equals(toRosterHash)) {
             return false;

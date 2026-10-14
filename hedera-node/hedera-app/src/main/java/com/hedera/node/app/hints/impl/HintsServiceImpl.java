@@ -184,13 +184,12 @@ public class HintsServiceImpl implements HintsService, OnHintsFinished {
             @NonNull final WritableHintsStore hintsStore,
             @NonNull final Roster previousRoster,
             @NonNull final Roster adoptedRoster,
-            @NonNull final Bytes adoptedRosterHash,
-            final boolean forceHandoff) {
+            @NonNull final Bytes adoptedRosterHash) {
         requireNonNull(hintsStore);
         requireNonNull(previousRoster);
         requireNonNull(adoptedRoster);
         requireNonNull(adoptedRosterHash);
-        if (hintsStore.handoff(previousRoster, adoptedRoster, adoptedRosterHash, forceHandoff)) {
+        if (hintsStore.handoff(previousRoster, adoptedRoster, adoptedRosterHash)) {
             final var activeConstruction = requireNonNull(hintsStore.getActiveConstruction());
             component
                     .signingContext()

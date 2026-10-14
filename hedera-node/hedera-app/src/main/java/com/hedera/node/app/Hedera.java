@@ -1936,12 +1936,7 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
         } else if (tssConfig.historyEnabled()) {
             writableHistoryStore.handoff(previousRoster, adoptedRoster, adoptedRosterHash);
         } else if (tssConfig.hintsEnabled()
-                && !hintsService.handoff(
-                        writableHintsStore,
-                        previousRoster,
-                        adoptedRoster,
-                        preparedRosterHash,
-                        tssConfig.forceHandoffs())) {
+                && !hintsService.handoff(writableHintsStore, previousRoster, adoptedRoster, preparedRosterHash)) {
             throw new IllegalStateException("Prepared hinTS construction failed to promote with the adopted roster");
         }
         if (tssConfig.hintsEnabled()) {

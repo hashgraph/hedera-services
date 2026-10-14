@@ -192,7 +192,7 @@ class CrsRosterTransitionTest {
         assertTrue(controller.addPreprocessingVote(1, vote, store));
         assertTrue(store.isReadyToAdopt(NEW_HASH));
         final var oldSigning = signingContext.newSigningForActiveConstruction(MESSAGE, () -> {});
-        assertTrue(service.handoff(store, oldRoster, newRoster, NEW_HASH, false));
+        assertTrue(service.handoff(store, oldRoster, newRoster, NEW_HASH));
         assertEquals(16, store.getCrsState().numParties());
         assertEquals(completedHead, store.getCrsState().crs());
         assertEquals(CRSState.DEFAULT, store.getNextCrsState());
@@ -242,7 +242,7 @@ class CrsRosterTransitionTest {
         assertTrue(shrinkController.addPreprocessingVote(0, shrinkVote, store));
         assertTrue(shrinkController.addPreprocessingVote(1, shrinkVote, store));
         assertTrue(store.isReadyToAdopt(OLD_HASH));
-        assertTrue(service.handoff(store, newRoster, oldRoster, OLD_HASH, false));
+        assertTrue(service.handoff(store, newRoster, oldRoster, OLD_HASH));
         assertEquals(16, store.getActiveConstruction().numParties());
         assertEquals(next.crsId(), store.getCrsState().ceremonyId());
         assertEquals(completedHead, store.getCrsState().crs());

@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -27,8 +26,6 @@ import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
-import com.hedera.node.config.data.TssConfig;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -81,7 +78,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER,
                 ADOPTED_ROSTER_HASH));
         verify(historyStore, never()).handoff(any(), any(), any());
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
     }
 
     @Test
@@ -98,7 +95,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER,
                 ADOPTED_ROSTER_HASH));
         verify(historyStore, never()).handoff(any(), any(), any());
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
     }
 
     @Test
@@ -369,24 +366,16 @@ class TssHandoffCoordinatorTest {
     }
 
     @Test
-    void usesJointForcedHandoffOnlyWhenForcingHandoffsWithBothHintsAndHistory() {
-        assertTrue(TssHandoffCoordinator.usesJointForcedHandoff(tssConfig(true, true, true)));
-        assertFalse(TssHandoffCoordinator.usesJointForcedHandoff(tssConfig(false, true, true)));
-        assertFalse(TssHandoffCoordinator.usesJointForcedHandoff(tssConfig(true, false, true)));
-        assertFalse(TssHandoffCoordinator.usesJointForcedHandoff(tssConfig(true, true, false)));
-    }
-
-    @Test
     void promotesBothConstructionsWhenProofMatchesHintsVerificationKey() {
         final var proof = wrapsProof(VERIFICATION_KEY);
         given(hintsStore.getNextConstruction()).willReturn(hintsConstruction(VERIFICATION_KEY));
         given(historyStore.getNextConstruction()).willReturn(historyConstruction(proof));
         given(historyStore.handoff(PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH))
                 .willReturn(true);
-        given(hintsService.handoff(hintsStore, PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH, true))
+        given(hintsService.handoff(hintsStore, PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH))
                 .willReturn(true);
 
-        assertTrue(TssHandoffCoordinator.tryForcedJointHandoff(
+        assertTrue(TssHandoffCoordinator.tryJointHandoff(
                 historyStore,
                 hintsStore,
                 historyService,
@@ -396,7 +385,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER_HASH));
 
         verify(historyStore).handoff(PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH);
-        verify(hintsService).handoff(hintsStore, PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH, true);
+        verify(hintsService).handoff(hintsStore, PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH);
         verify(historyService).setLatestHistoryProof(proof);
     }
 
@@ -406,7 +395,7 @@ class TssHandoffCoordinatorTest {
         given(hintsStore.getNextConstruction()).willReturn(hintsConstruction(VERIFICATION_KEY));
         given(historyStore.getNextConstruction()).willReturn(historyConstruction(proof));
 
-        assertFalse(TssHandoffCoordinator.tryForcedJointHandoff(
+        assertFalse(TssHandoffCoordinator.tryJointHandoff(
                 historyStore,
                 hintsStore,
                 historyService,
@@ -416,7 +405,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER_HASH));
 
         verify(historyStore, never()).handoff(any(), any(), any());
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
         verify(historyService, never()).setLatestHistoryProof(any());
     }
 
@@ -427,7 +416,7 @@ class TssHandoffCoordinatorTest {
                 .willReturn(
                         HistoryProofConstruction.newBuilder().constructionId(3L).build());
 
-        assertFalse(TssHandoffCoordinator.tryForcedJointHandoff(
+        assertFalse(TssHandoffCoordinator.tryJointHandoff(
                 historyStore,
                 hintsStore,
                 historyService,
@@ -437,7 +426,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER_HASH));
 
         verify(historyStore, never()).handoff(any(), any(), any());
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
     }
 
     @Test
@@ -446,7 +435,7 @@ class TssHandoffCoordinatorTest {
                 .willReturn(HintsConstruction.newBuilder().constructionId(2L).build());
         given(historyStore.getNextConstruction()).willReturn(historyConstruction(wrapsProof(VERIFICATION_KEY)));
 
-        assertFalse(TssHandoffCoordinator.tryForcedJointHandoff(
+        assertFalse(TssHandoffCoordinator.tryJointHandoff(
                 historyStore,
                 hintsStore,
                 historyService,
@@ -456,7 +445,7 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER_HASH));
 
         verify(historyStore, never()).handoff(any(), any(), any());
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
     }
 
     @Test
@@ -467,7 +456,7 @@ class TssHandoffCoordinatorTest {
         given(historyStore.handoff(PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH))
                 .willReturn(false);
 
-        assertFalse(TssHandoffCoordinator.tryForcedJointHandoff(
+        assertFalse(TssHandoffCoordinator.tryJointHandoff(
                 historyStore,
                 hintsStore,
                 historyService,
@@ -477,18 +466,8 @@ class TssHandoffCoordinatorTest {
                 ADOPTED_ROSTER_HASH));
 
         verify(historyStore).handoff(PREVIOUS_ROSTER, ADOPTED_ROSTER, ADOPTED_ROSTER_HASH);
-        verify(hintsService, never()).handoff(any(), any(), any(), any(), anyBoolean());
+        verify(hintsService, never()).handoff(any(), any(), any(), any());
         verify(historyService, never()).setLatestHistoryProof(any());
-    }
-
-    private static TssConfig tssConfig(
-            final boolean hintsEnabled, final boolean historyEnabled, final boolean forceHandoffs) {
-        return HederaTestConfigBuilder.create()
-                .withValue("tss.hintsEnabled", "" + hintsEnabled)
-                .withValue("tss.historyEnabled", "" + historyEnabled)
-                .withValue("tss.forceHandoffs", "" + forceHandoffs)
-                .getOrCreateConfig()
-                .getConfigData(TssConfig.class);
     }
 
     private static HintsConstruction hintsConstruction(final Bytes verificationKey) {

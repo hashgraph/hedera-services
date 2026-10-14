@@ -69,7 +69,7 @@ class HintsPreparationLivenessTest {
         final var active = activeScheme(realLibrary);
         final var keyLibrary = mock(IsolatedHintsLibrary.class);
         final var preprocessingLibrary = mock(IsolatedHintsLibrary.class);
-        final var library = new HintsLibraryImpl(keyLibrary, preprocessingLibrary);
+        final var library = new HintsLibraryImpl(() -> keyLibrary, () -> preprocessingLibrary);
         final var entered = new CountDownLatch(1);
         final var release = new CountDownLatch(1);
         switch (operation) {

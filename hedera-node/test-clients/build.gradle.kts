@@ -129,6 +129,8 @@ val prCheckTags =
         "hapiTestClprMultinetwork" to "MULTINETWORK",
     )
 
+val clprTasks = setOf("hapiTestClpr", "hapiTestClprEmbedded", "hapiTestClprMultinetwork")
+
 val prRemoteCheckTags =
     prCheckTags
         .filterNot {
@@ -138,7 +140,7 @@ val prRemoteCheckTags =
                     "hapiTestRestart",
                     "hapiTestToken",
                     "hapiTestTokenSerial",
-                )
+                ) || it.key in clprTasks
         }
         .mapKeys { (key, _) -> key.replace("hapiTest", "remoteTest") }
 val prCheckStartPorts =
@@ -190,7 +192,7 @@ val prCheckPropOverrides =
         // start timing out as the network falls behind. Pin historyEnabled to its main-branch
         // value here to preserve the test's original (hints-only) TSS surface.
         "hapiTestRestart" to
-            "tss.hintsEnabled=true,tss.historyEnabled=false,tss.forceHandoffs=true,tss.forceMockSignatures=false,blockStream.blockPeriod=1s,quiescence.enabled=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5,platform.wiring.healthLogThreshold=5s",
+            "tss.hintsEnabled=true,tss.historyEnabled=false,tss.forceMockSignatures=false,blockStream.blockPeriod=1s,quiescence.enabled=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5,platform.wiring.healthLogThreshold=5s",
         "hapiTestMisc" to
             "blockStream.writerMode=FILE_AND_GRPC,blockStream.streamWrappedRecordBlocks=true,nodes.nodeRewardsEnabled=false,quiescence.enabled=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5,platform.wiring.healthLogThreshold=5s",
         "hapiTestMiscSerial" to
@@ -214,7 +216,24 @@ val prCheckPropOverrides =
         "hapiTestAtomicBatch" to
             "nodes.nodeRewardsEnabled=false,quiescence.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
         "hapiTestAtomicBatchSerial" to "nodes.nodeRewardsEnabled=false,quiescence.enabled=true",
-        "hapiTestClpr" to "hedera.transaction.maximumPermissibleUnhealthySeconds=5",
+        "hapiTestClpr" to
+            "tss.forceMockSignatures=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
+        "hapiTestClprEmbedded" to "tss.forceMockSignatures=true",
+        "hapiTestClprMultinetwork" to
+            "tss.hintsEnabled=true,tss.historyEnabled=true,tss.forceMockSignatures=false",
+    )
+
+// Overridable per-task DEFAULTS. Unlike prCheckPropOverrides (delivered as node environment
+// variables at config ordinal 300, which no spec can override), these are written into each
+// node's application.properties (ordinal 100) — on by default, but a spec can still override
+// them with overriding(...) / @ConfigOverride (network-properties override, ordinal 101).
+// Used to enable CLPR by default for the CLPR tasks while letting the few negative suites
+// disable it per-spec.
+val prCheckDefaultOverrides =
+    mapOf(
+        "hapiTestClpr" to "clpr.enabled=true",
+        "hapiTestClprEmbedded" to "clpr.enabled=true",
+        "hapiTestClprMultinetwork" to "clpr.enabled=true",
     )
 // hapiTestRestart reconnects the same node repeatedly; the 10m production throttle would starve it.
 val prCheckPlatformOverrides =
@@ -223,6 +242,9 @@ val prCheckPlatformOverrides =
             "platformStatus.observingStatusDelay=10s,reconnect.minimumTimeBetweenReconnects=10s"
     )
 val prCheckPrepareUpgradeOffsets = mapOf("hapiTestAdhoc" to "PT300S")
+// We don't want to run stream or log validation for these tasks
+val prCheckWithoutStreamAndLogValidation =
+    setOf("hapiTestIss", "hapiTestBlockNodeCommunication") + clprTasks
 // Use to override the default network size for a specific test task
 val prCheckNetSizeOverrides =
     mapOf(
@@ -310,7 +332,7 @@ fun registerTestSubprocess(name: String, ciTagExpression: String) {
         name,
         ciTagExpression,
         "none()|!(EMBEDDED|REPEATABLE)",
-        ciDefaultTags = "|CONCURRENT_SUBPROCESS_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
         ciDefaultTagsWithoutStreamAndLogValidation = ")&!(EMBEDDED|REPEATABLE",
         excludeTags = "CONCURRENT_SUBPROCESS_VALIDATION",
         junitParallelMode = "same_thread",
@@ -368,8 +390,8 @@ fun registerTestEmbedded(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|REPEATABLE|ONLY_SUBPROCESS|ISS|CLPR|MULTINETWORK)",
+        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|CLPR|MULTINETWORK",
         // Tell our launcher to target a concurrent embedded network
         embeddedMode = "concurrent",
         junitParallelMode = "same_thread",
@@ -386,8 +408,9 @@ fun registerTestRepeatable(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS)",
-        ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED",
+        "none()|!(RESTART|ND_RECONNECT|UPGRADE|EMBEDDED|NOT_REPEATABLE|ONLY_SUBPROCESS|ISS|MULTINETWORK)",
+        ciDefaultTags =
+            "|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|EMBEDDED|MULTINETWORK",
         embeddedMode = "repeatable",
     )
 }
@@ -442,6 +465,12 @@ fun TaskContainer.registerHapiTest(
         if (prCheckPlatformOverrides.containsKey(name)) {
             systemProperty("hapi.spec.platform.overrides", prCheckPlatformOverrides.getValue(name))
         }
+        if (prCheckDefaultOverrides.containsKey(name)) {
+            systemProperty(
+                "hapi.spec.test.defaultOverrides",
+                prCheckDefaultOverrides.getValue(name),
+            )
+        }
         if (prCheckPrepareUpgradeOffsets.containsKey(name)) {
             systemProperty(
                 "hapi.spec.prepareUpgradeOffsets",
@@ -479,15 +508,13 @@ fun TaskContainer.registerHapiTest(
             } else {
                 includeTags(
                     if (ciTagExpression.isBlank()) defaultTags
-                    else if (name == "testEmbedded" && ciTagExpression.contains("CLPR"))
-                        "(${ciTagExpression})"
-                    // We don't want to run stream or log validation for ISS or BLOCK_NODE cases
+                    // The embedded CLPR task runs only its own suites; we deliberately do not
+                    // append (or run) STREAM_VALIDATION / LOG_VALIDATION for CLPR. Matched by task
+                    // name, not by reading the tag expression as a string.
+                    else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
-                            (ciTagExpression.contains("ISS") ||
-                                ciTagExpression.contains("BLOCK_NODE") ||
-                                ciTagExpression.contains("CLPR") ||
-                                ciTagExpression.contains("MULTINETWORK"))
+                            name in prCheckWithoutStreamAndLogValidation
                     )
                         "(${ciTagExpression}${ciDefaultTagsWithoutStreamAndLogValidation})"
                     else "(${ciTagExpression}${ciDefaultTags})"
@@ -508,10 +535,6 @@ fun TaskContainer.registerHapiTest(
                 "junit.jupiter.testclass.order.default",
                 "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation",
             )
-        }
-        if (ciTagExpression.contains("CLPR") || ciTagExpression.contains("MULTINETWORK")) {
-            // Preserve the failed subprocess network's logs for CLPR diagnostics.
-            failFast = true
         }
         if (junitFixedParallelism) {
             val parallelismValue = if (networkSize.toInt() <= 3) 3 else 2

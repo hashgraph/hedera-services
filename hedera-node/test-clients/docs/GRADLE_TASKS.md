@@ -82,7 +82,7 @@ delegates to `testRemote` with the same tag expression.
 Each task that needs to ship configuration changes adds them to a comma-separated
 `hapi.spec.test.overrides` string consumed at network startup. Examples:
 
-- `hapiTestRestart` enables `tss.hintsEnabled`, forces handoffs, sets `quiescence.enabled=true`,
+- `hapiTestRestart` enables `tss.hintsEnabled`, sets `quiescence.enabled=true`,
   and shrinks `hedera.transaction.maximumPermissibleUnhealthySeconds`.
 - `hapiTestMisc` enables `blockStream.streamWrappedRecordBlocks` and `quiescence.enabled`.
 - `hapiTestCutover` configures TSS to start with `tss.hintsEnabled=false` to exercise the cutover
