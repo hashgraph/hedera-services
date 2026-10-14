@@ -499,9 +499,14 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             setHashPrivate(rootHash);
             logger.info(
                     STARTUP.getMarker(), "Full rehash took {} seconds", (System.currentTimeMillis() - start) / 1000);
+        } catch (final RuntimeException | Error e) {
+            // Release hashing threads blocked on flusher backpressure, and make sure no new flushes are started.
+            // Rehash tasks aren't interrupted, so without this they would wait till the running flush completes
+            chunkListener.cancel();
+            throw e;
         } finally {
-            // On success, all rehash tasks are already complete. On failure, tasks that are still running, e.g.
-            // hash chunk flushes, are left to finish on their own, and the pool terminates after that
+            // On success, all rehash tasks are already complete. On failure, a hash chunk flush that is still
+            // running is left to finish on its own, and the pool terminates after that
             rehashPool.shutdown();
         }
     }

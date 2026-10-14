@@ -24,8 +24,12 @@ import java.time.Duration;
  *                                               the number of updated leaves, or the number of deleted leaves. While a
  *                                               flush is running, threads that receive leaves, hash, or delete old
  *                                               leaves block once the next batch reaches this value, so about two
- *                                               batches are kept in memory. If zero, all data is flushed in the end of
- *                                               reconnect only, and these threads never block.
+ *                                               batches are kept in memory. Blocked receivers stop reading from the
+ *                                               teacher, so a single flush must complete well within the teacher's
+ *                                               {@code reconnect.teacher.asyncStreamIdleTimeout} and
+ *                                               {@code reconnect.socketTimeout}, otherwise reconnect fails. If zero,
+ *                                               all data is flushed in the end of reconnect only, and these threads
+ *                                               never block.
  */
 // spotless:off
 @ConfigData("reconnect.learner")

@@ -164,7 +164,9 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
             final RuntimeException e = assertThrows(
                     RuntimeException.class,
                     () -> TaskPerNodeFullRehasher.hash(pool, 999, 1998, reader, collector, 60_000));
-            assertInstanceOf(UncheckedIOException.class, e.getCause());
+            // Usually the flushing thread reports first, and the IO failure is the direct cause. But another
+            // hashing thread may report first, then the IO failure is wrapped by the flusher sticky failure
+            assertTrue(hasCause(e, UncheckedIOException.class), "The cause must be the flush exception");
         } finally {
             pool.shutdownNow();
         }
@@ -225,6 +227,15 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    private static boolean hasCause(final Throwable t, final Class<? extends Throwable> type) {
+        for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+            if (type.isInstance(cause)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// A data source that interrupts the current thread on every save, like if the thread

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -585,6 +586,75 @@ public class HashLeafFlusherTest {
             assertEquals(2, ds.saves.get());
             assertLeavesPresent(ds, 1, INTERVAL);
             assertLeavesPresent(ds, 100, 1);
+        }
+
+        @Test
+        void testCancelReleasesBlockedProducers() throws Exception {
+            final GatedDataSource ds = gatedDataSource("cancel");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            final Producer first = startBlockedFlush(flusher, ds);
+            addLeaves(flusher, 100, INTERVAL).await();
+            final Producer blocked = addLeaves(flusher, 200, 1);
+            blocked.awaitBlocked();
+            flusher.cancel();
+            // Released without waiting for the running flush
+            final ExecutionException released = assertThrows(ExecutionException.class, blocked::await);
+            assertTrue(released.getCause() instanceof IllegalStateException);
+            assertTrue(released.getCause().getCause() instanceof CancellationException);
+            // The running flush isn't interrupted and completes normally
+            ds.open();
+            first.await();
+            // No new flushes are started, all subsequent calls fail
+            assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(300, 300, 300)));
+            final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
+            assertTrue(finish.getCause() instanceof CancellationException);
+            assertEquals(1, ds.saves.get());
+        }
+
+        @Test
+        void testCancelReleasesBlockedFinish() throws Exception {
+            final GatedDataSource ds = gatedDataSource("cancelFinish");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            startBlockedFlush(flusher, ds);
+            final Producer finish = start(flusher::finish);
+            finish.awaitBlocked();
+            flusher.cancel();
+            final ExecutionException e = assertThrows(ExecutionException.class, finish::await);
+            assertTrue(e.getCause() instanceof IllegalStateException);
+            assertTrue(e.getCause().getCause() instanceof CancellationException);
+            assertEquals(1, ds.saves.get());
+        }
+
+        @Test
+        void testCancelDuringFinalFlushDoesNotBlock() throws Exception {
+            final GatedDataSource ds = gatedDataSource("cancelFinalFlush");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            flusher.updateLeaf(leaf(1, 1, 1));
+            final Producer finish = start(flusher::finish);
+            // No other flush is running, so finish() may only block in its own final flush
+            finish.awaitBlocked();
+            assertEquals(1, ds.saves.get());
+            // Must not wait for the final flush to complete
+            start(flusher::cancel).await();
+            // The running flush isn't interrupted and completes normally
+            ds.open();
+            finish.await();
+            assertEquals(1, ds.saves.get());
+            assertLeavesPresent(ds, 1, 1);
+        }
+
+        @Test
+        void testCancelKeepsOriginalFailure() throws Exception {
+            final GatedDataSource ds = gatedDataSource("cancelAfterFailure");
+            final RuntimeException failure = new RuntimeException("disk failure");
+            ds.failWith = failure;
+            ds.open();
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            assertThrows(ExecutionException.class, addLeaves(flusher, 1, INTERVAL)::await);
+            flusher.cancel();
+            flusher.cancel();
+            final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
+            assertSame(failure, finish.getCause());
         }
 
         @Test

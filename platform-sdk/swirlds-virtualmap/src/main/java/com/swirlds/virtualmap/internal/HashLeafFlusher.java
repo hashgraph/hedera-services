@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -39,6 +40,12 @@ import org.apache.logging.log4j.Marker;
 /// in the failed batch is lost. The failure is recorded: producers blocked on the failed flush are released,
 /// and all subsequent calls to these methods, including [#finish()], throw an [IllegalStateException]
 /// with the original exception as the cause. If [#finish()] returns normally, all data has been flushed.
+///
+/// If the job that feeds this flusher fails or times out, it must call [#cancel()]. Producers blocked on
+/// backpressure are released, and all subsequent calls fail the same way as after a flush failure, with a
+/// [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
+/// flushes are started. Cancellation only unblocks and fails calls into this flusher, the caller is still
+/// responsible for stopping the producers.
 public class HashLeafFlusher {
 
     private static final Logger logger = LogManager.getLogger(HashLeafFlusher.class);
@@ -57,7 +64,7 @@ public class HashLeafFlusher {
     // the previous flush is not complete yet. This flag is protection from that. Guarded by this
     private boolean flushInProgress = false;
 
-    // The first flush failure, if any. Once set, all subsequent calls fail. Guarded by this
+    // The first flush failure or cancellation, if any. Once set, all subsequent calls fail. Guarded by this
     private Throwable failure;
 
     // Data accumulated for a single flush
@@ -66,6 +73,11 @@ public class HashLeafFlusher {
         final List<VirtualLeafBytes> leaves = new ArrayList<>();
         final List<VirtualLeafBytes> deletedLeaves = new ArrayList<>();
     }
+
+    // If a producer is blocked on backpressure longer than this, a warning is logged. A long stall may
+    // indicate a slow disk, and it may make reconnect fail, since a blocked learner stops reading from
+    // the teacher, which times out
+    private static final long SLOW_WAIT_WARN_MS = 10_000;
 
     private final int hashChunkHeight;
 
@@ -159,8 +171,8 @@ public class HashLeafFlusher {
     ///
     /// @param chunk the hash chunk to save
     /// @throws RuntimeException if a flush run in the current thread fails, see class docs
-    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
-    ///     waiting for or running a flush. The interrupted flag is left set
+    /// @throws IllegalStateException if an earlier flush failed, if this flusher is cancelled, or if the current
+    ///     thread is interrupted while waiting for or running a flush. The interrupted flag is left set
     public void updateHashChunk(@NonNull final VirtualHashChunk chunk) {
         actionAndCheckFlush(() -> batch.hashChunks.add(chunk));
     }
@@ -170,8 +182,8 @@ public class HashLeafFlusher {
     ///
     /// @param leaf the leaf to save
     /// @throws RuntimeException if a flush run in the current thread fails, see class docs
-    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
-    ///     waiting for or running a flush. The interrupted flag is left set
+    /// @throws IllegalStateException if an earlier flush failed, if this flusher is cancelled, or if the current
+    ///     thread is interrupted while waiting for or running a flush. The interrupted flag is left set
     public void updateLeaf(final VirtualLeafBytes<?> leaf) {
         actionAndCheckFlush(() -> batch.leaves.add(leaf));
     }
@@ -185,8 +197,8 @@ public class HashLeafFlusher {
     ///
     /// @param leaf the leaf to delete
     /// @throws RuntimeException if a flush run in the current thread fails, see class docs
-    /// @throws IllegalStateException if an earlier flush failed, or if the current thread is interrupted while
-    ///     waiting for or running a flush. The interrupted flag is left set
+    /// @throws IllegalStateException if an earlier flush failed, if this flusher is cancelled, or if the current
+    ///     thread is interrupted while waiting for or running a flush. The interrupted flag is left set
     public void deleteLeaf(final VirtualLeafBytes<?> leaf) {
         actionAndCheckFlush(() -> batch.deletedLeaves.add(leaf));
     }
@@ -196,16 +208,24 @@ public class HashLeafFlusher {
         final Batch toFlush;
         synchronized (this) {
             // Backpressure: the next batch is already due for a flush, wait till the running flush is complete
-            while (flushInProgress && isFlushNeeded()) {
-                waitForFlush();
+            if (failure == null && flushInProgress && isFlushNeeded()) {
+                final long waitStart = System.currentTimeMillis();
+                while (failure == null && flushInProgress && isFlushNeeded()) {
+                    waitForFlush();
+                }
+                final long waitMs = System.currentTimeMillis() - waitStart;
+                if (waitMs >= SLOW_WAIT_WARN_MS) {
+                    logger.warn(logMarker, "Producer was blocked for {} ms waiting for a flush to complete", waitMs);
+                }
             }
             throwIfFailed();
             action.run();
             if (flushInProgress || !isFlushNeeded()) {
                 return;
             }
-            flushInProgress = true;
+            // Take the batch first, so the flag is never left set if it throws
             toFlush = takeBatch();
+            flushInProgress = true;
         }
         // Call flush() outside of the synchronized block to make sure updateHashChunk(), updateLeaf(), and
         // deleteLeaf() aren't blocked for the duration of the flush, unless the next batch is also due
@@ -213,12 +233,13 @@ public class HashLeafFlusher {
     }
 
     // Runs a flush, then releases threads waiting for it. If the flush fails, the failure is recorded,
-    // so all subsequent calls fail, too. May be called with or without the lock held
+    // so all subsequent calls fail, too. Must be called without the lock held, so cancel() and other
+    // threads aren't blocked for the duration of the flush
     private void flushAndRelease(@NonNull final Batch toFlush) {
         Throwable error = null;
         try {
             flush(toFlush);
-        } catch (final RuntimeException | Error e) {
+        } catch (final Throwable e) {
             error = e;
             throw e;
         } finally {
@@ -232,10 +253,26 @@ public class HashLeafFlusher {
         }
     }
 
+    /// Cancels this flusher. Threads blocked waiting for a running flush are released, and all subsequent
+    /// calls to [#updateHashChunk(VirtualHashChunk)], [#updateLeaf(VirtualLeafBytes)],
+    /// [#deleteLeaf(VirtualLeafBytes)], and [#finish()] throw an [IllegalStateException] with a
+    /// [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
+    /// flushes are started. If a flush has already failed, the original failure is kept. May be called
+    /// multiple times, from any thread, at any moment. Never waits for a running flush.
+    ///
+    /// This method only affects calls into this flusher. It doesn't stop producers themselves, this is the
+    /// caller's responsibility.
+    public synchronized void cancel() {
+        if (failure == null) {
+            failure = new CancellationException("Flusher is cancelled");
+        }
+        notifyAll();
+    }
+
     // Must be called with the lock held
     private void throwIfFailed() {
         if (failure != null) {
-            throw new IllegalStateException("A previous flush failed", failure);
+            throw new IllegalStateException("A previous flush failed or the flusher is cancelled", failure);
         }
     }
 
@@ -274,27 +311,30 @@ public class HashLeafFlusher {
     /// [#deleteLeaf(VirtualLeafBytes)] are complete.
     ///
     /// @throws RuntimeException if the final flush fails
-    /// @throws IllegalStateException if an earlier flush failed, if this flusher is not initialized or already
-    ///     finished, or if the current thread is interrupted while waiting for or running a flush. The
-    ///     interrupted flag is left set
-    public synchronized void finish() {
-        if (batch == null) {
-            throw new IllegalStateException("Flusher is not initialized or already finished");
+    /// @throws IllegalStateException if an earlier flush failed, if this flusher is cancelled, if this flusher is
+    ///     not initialized or already finished, or if the current thread is interrupted while waiting for or
+    ///     running a flush. The interrupted flag is left set
+    public void finish() {
+        final Batch last;
+        synchronized (this) {
+            if (batch == null) {
+                throw new IllegalStateException("Flusher is not initialized or already finished");
+            }
+            while (failure == null && flushInProgress) {
+                waitForFlush();
+            }
+            throwIfFailed();
+            last = batch;
+            batch = null;
+            flushInProgress = true;
         }
-        while (flushInProgress) {
-            waitForFlush();
-        }
-        throwIfFailed();
-        final Batch last = batch;
-        batch = null;
-        flushInProgress = true;
         // Nodes / leaves lists may be empty, but a flush is still needed to make sure
-        // all stale leaves are removed from the data source
+        // all stale leaves are removed from the data source. The flush is run outside the
+        // synchronized block, so cancel() isn't blocked till the final flush is complete
         flushAndRelease(last);
     }
 
-    // Since flushes may take quite some time, this method is called outside synchronized blocks,
-    // except in finish()
+    // Since flushes may take quite some time, this method is always called outside synchronized blocks
     private void flush(@NonNull final Batch toFlush) {
         throwIfInterrupted();
         logger.info(
