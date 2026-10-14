@@ -500,7 +500,8 @@ public class ClprChannelManager implements ClprChannelLifecycle {
         // Try to acquire a sync slot.
         // This semaphore ensures only a limited number of sync operations are performed concurrently.
         if (!syncSemaphore.tryAcquire()) {
-            logger.warn("Max concurrent sync reached, skipping sync for channel {}", channelId);
+            // The channel is synced again on a later cycle
+            logger.debug("Max concurrent sync reached, skipping sync for channel {}", channelId);
             ongoingChannelSyncs.remove(channelId);
             return;
         }
@@ -572,7 +573,7 @@ public class ClprChannelManager implements ClprChannelLifecycle {
         // by the upcoming Endpoint Manifest feature.
         if (leafCertManager.isMtlsEnabled()) {
             if (discoveryMtlsWarned.compareAndSet(false, true)) {
-                logger.warn("CLPR discovery is suppressed while mTLS is enabled: the advertised endpoint "
+                logger.info("CLPR discovery is suppressed while mTLS is enabled: the advertised endpoint "
                         + "port serves the mTLS sync listener only. Peers are learned from each channel's "
                         + "endpoint manifest.");
             }

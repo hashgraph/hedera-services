@@ -2,6 +2,7 @@
 package com.hedera.services.bdd.junit.support.translators.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.services.bdd.junit.support.translators.BaseTranslator.mapTracesToVerboseLogs;
 import static com.hedera.services.bdd.junit.support.translators.BaseTranslator.resultBuilderFrom;
@@ -10,8 +11,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.trace.TraceData;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HookId;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionPartsTranslator;
 import com.hedera.services.bdd.junit.support.translators.ScopedTraceData;
@@ -82,13 +85,34 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             }
                             final var result = derivedBuilder.build();
                             recordBuilder.contractCallResult(result);
-                            if ((parts.transactionIdOrThrow().nonce() == 0 || isDispatched) && result.gasUsed() > 0L) {
+                            // The node sets the receipt's contract id to the call's recipient, which is unknown
+                            // when a dispatched call never reached its target (e.g. a CLPR verifier call with too
+                            // little gas reports another contract in its result)
+                            final var reachedTarget = !dispatchedChild
+                                    || reached(
+                                            parts.body().contractCallOrThrow().contractIDOrThrow(),
+                                            result.contractIDOrElse(ContractID.DEFAULT));
+                            if ((parts.transactionIdOrThrow().nonce() == 0 || isDispatched)
+                                    && result.gasUsed() > 0L
+                                    && reachedTarget) {
                                 receiptBuilder.contractID(result.contractID());
                             }
                         }),
                 remainingStateChanges,
                 followingUnitTraces,
                 executingHookId);
+    }
+
+    /**
+     * Whether a call to the given target reached the given contract, comparing by number when the target
+     * has one, or by the long-zero EVM address of the contract otherwise.
+     */
+    private static boolean reached(@NonNull final ContractID target, @NonNull final ContractID called) {
+        final long calledNum = called.contractNumOrElse(0L);
+        if (target.hasContractNum()) {
+            return target.contractNumOrThrow() == calledNum;
+        }
+        return target.hasEvmAddress() && target.evmAddressOrThrow().equals(Bytes.wrap(asEvmAddress(calledNum)));
     }
 
     private static boolean needsClippedTraceBloomFallback(@NonNull final BlockTransactionParts parts) {

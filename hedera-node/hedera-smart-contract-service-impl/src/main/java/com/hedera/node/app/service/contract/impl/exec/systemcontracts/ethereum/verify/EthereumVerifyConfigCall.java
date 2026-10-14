@@ -84,7 +84,7 @@ public class EthereumVerifyConfigCall extends AbstractCall {
 
         final ClprLedgerConfiguration parsed = verified.ledgerConfiguration();
         if (parsed.initialTrustAnchor().length() == 0) {
-            log.warn(
+            log.debug(
                     "[EthereumVerifier] verifyConfig: proven config has empty initial_trust_anchor; rejecting chainId={}",
                     parsed.chainId());
             return fail();
@@ -197,11 +197,12 @@ public class EthereumVerifyConfigCall extends AbstractCall {
             return null;
         }
         if (manifest.version() == 0L) {
-            log.warn("[EthereumVerifier] verifyConfig: manifest version is 0 (must be >= 1)");
+            log.debug("[EthereumVerifier] verifyConfig: manifest version is 0 (must be >= 1)");
             return null;
         }
         if (!manifest.serviceAddress().equals(parsed.serviceAddress())) {
-            log.warn("[EthereumVerifier] verifyConfig: manifest service_address does not match config service_address");
+            log.debug(
+                    "[EthereumVerifier] verifyConfig: manifest service_address does not match config service_address");
             return null;
         }
         return manifest;

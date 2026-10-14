@@ -37,6 +37,8 @@ import com.hedera.node.config.data.ClprConfig;
 import com.hedera.node.config.testfixtures.ClprConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -303,6 +305,21 @@ class ClprStreamingSynchronizerTest {
 
             verify(streamingCall).close();
             thenFailureIsRecorded();
+            verifyNoInteractions(bundleSubmitter);
+        }
+
+        @Test
+        @DisplayName("given the peer does not have the channel yet, then the peer is not penalized")
+        void givenPeerDoesNotHaveChannelYet_thenPeerIsNotPenalized() throws Exception {
+            given(streamingCall.read())
+                    .willThrow(new ClprSyncException(
+                            "Streaming sync read failed",
+                            new StatusRuntimeException(Status.NOT_FOUND.withDescription("Channel not found"))));
+
+            synchronize(channel(6L, 0L, 0L));
+
+            verify(streamingCall).close();
+            thenNoOutcomeIsRecorded();
             verifyNoInteractions(bundleSubmitter);
         }
 

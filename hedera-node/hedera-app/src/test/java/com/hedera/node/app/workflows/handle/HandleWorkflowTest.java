@@ -992,6 +992,8 @@ class HandleWorkflowTest {
                 .willReturn(mock(WritableSingletonState.class));
         given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
                 .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
                 "initializeMissingClprSingletons", com.swirlds.state.State.class);

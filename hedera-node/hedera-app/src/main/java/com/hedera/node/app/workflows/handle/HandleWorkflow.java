@@ -1326,8 +1326,9 @@ public class HandleWorkflow {
      */
     private void initializeMissingClprSingletons(@NonNull final State state) {
         final var clprWritableStates = state.getWritableStates(ClprService.NAME);
-        // Not doStreamingAllChanges: its listener reset would drop singleton changes made earlier in this block
-        doStreamingOnlyKvChanges(
+        // Stream the new singletons immediately: an upgrading network inserts these keys now, and externalizing them
+        // only when the block closes would make the block stream replay insert them at a different point
+        doStreamingAllChanges(
                 clprWritableStates,
                 null,
                 () -> V0780ClprSchema.initializeSingletons(clprWritableStates, configProvider.getConfiguration()));

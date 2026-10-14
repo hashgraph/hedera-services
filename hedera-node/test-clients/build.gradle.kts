@@ -224,8 +224,11 @@ val prCheckPropOverrides =
         "hapiTestClpr" to
             "tss.forceMockSignatures=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
         "hapiTestClprEmbedded" to "tss.forceMockSignatures=true",
+        // The TSS fixtures' WRAPS history proof is set up as one large genesis savepoint; disable
+        // the block size circuit breaker so genesis output is not suppressed and the block stream
+        // can be validated
         "hapiTestClprMultinetwork" to
-            "tss.hintsEnabled=true,tss.historyEnabled=true,tss.wrapsEnabled=true,tss.forceMockSignatures=false",
+            "tss.hintsEnabled=true,tss.historyEnabled=true,tss.wrapsEnabled=true,tss.forceMockSignatures=false,blockStream.maxBlockSizeBytes=0",
     )
 
 // Overridable per-task DEFAULTS. Unlike prCheckPropOverrides (delivered as node environment
@@ -536,8 +539,9 @@ fun TaskContainer.registerHapiTest(
                         "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|MULTINETWORK)"
                     else if (name == "hapiTestClprEmbedded")
                         "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|MULTINETWORK)"
-                    // We don't want to run stream or log validation for ISS, BLOCK_NODE or
-                    // multi-network CLPR (each network needs its own validation)
+                    // We don't want to run stream or log validation for ISS or BLOCK_NODE; the
+                    // multi-network CLPR task validates each of its networks in its own
+                    // MultiNetworkValidationTest (tagged MULTINETWORK) instead
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
                             name in prCheckWithoutStreamAndLogValidation
