@@ -1509,7 +1509,7 @@ class HintsControllerImplTest {
 
         given(weights.sourceNodeIds()).willReturn(SOURCE_NODE_IDS);
         subject.setFinalCrsFuture(
-                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, 1)));
+                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, Set.of())));
 
         subject.advanceCrsWork(CONSENSUS_NOW, store, isActive);
 
@@ -1531,7 +1531,7 @@ class HintsControllerImplTest {
                         .build());
         given(weights.sourceNodeWeights()).willReturn(SOURCE_NODE_WEIGHTS);
         subject.setFinalCrsFuture(
-                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, 1)));
+                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, Set.of())));
 
         final var restartedState = CRSState.newBuilder()
                 .stage(CRSStage.GATHERING_CONTRIBUTIONS)
@@ -1607,8 +1607,10 @@ class HintsControllerImplTest {
                         .crs(INITIAL_CRS)
                         .build());
         given(weights.sourceNodeWeights()).willReturn(SOURCE_NODE_WEIGHTS);
+        given(weights.sourceWeightOf(0L)).willReturn(SOURCE_NODE_WEIGHTS.get(0L));
+        given(weights.sourceWeightOf(1L)).willReturn(SOURCE_NODE_WEIGHTS.get(1L));
         subject.setFinalCrsFuture(
-                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, 18)));
+                CompletableFuture.completedFuture(new HintsControllerImpl.CRSValidation(INITIAL_CRS, Set.of(0L, 1L))));
 
         subject.advanceCrsWork(CONSENSUS_NOW, store, isActive);
 
