@@ -40,15 +40,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -191,26 +188,29 @@ class SystemFileUpdatesResyncReproTest {
                 .when(blockNodeConnectionManager)
                 .start();
 
+        // Capture the queued reconciliation tasks on the injected executor so the test controls their run order
         final List<Runnable> queued = new ArrayList<>();
-        try (final MockedStatic<CompletableFuture> mocked = Mockito.mockStatic(CompletableFuture.class)) {
-            mocked.when(() -> CompletableFuture.runAsync(any(Runnable.class))).thenAnswer(inv -> {
-                queued.add(inv.getArgument(0));
-                return new CompletableFuture<>();
-            });
+        final var queuingSubject = new SystemFileUpdates(
+                configProvider,
+                exchangeRateManager,
+                feeManager,
+                throttleServiceManager,
+                blockNodeConnectionManager,
+                queued::add);
 
-            commitFile(propertiesId, fileOnlyProperties);
-            final var target =
-                    subject.resyncTarget(state, fileUpdateOf(propertiesId)).orElseThrow();
-            subject.handleTxBody(state, fileUpdateOf(propertiesId));
+        commitFile(propertiesId, fileOnlyProperties);
+        final var target =
+                queuingSubject.resyncTarget(state, fileUpdateOf(propertiesId)).orElseThrow();
+        queuingSubject.handleTxBody(state, fileUpdateOf(propertiesId));
 
-            commitFile(propertiesId, committedProperties);
-            subject.resyncIfChanged(state, target);
-        }
+        commitFile(propertiesId, committedProperties);
+        queuingSubject.resyncIfChanged(state, target);
         // The rolled-back update queued one transition and recovery queued the other; without both the test cannot
         // show the ordering gap, so require two queued tasks before replaying them reversed
         assertThat(queued).hasSize(2);
 
-        // The common pool may run a later task first
+        // Replay the tasks reversed, the worst case: each task reads the committed mode at run time, so the outcome
+        // holds even if a later task runs first (the production executor additionally runs them in submission order)
         for (int k = queued.size() - 1; k >= 0; k--) {
             queued.get(k).run();
         }
