@@ -8,6 +8,7 @@ import static com.hedera.node.app.history.schemas.V071HistorySchema.LEDGER_ID_ST
 import static com.hedera.node.app.history.schemas.V071HistorySchema.NEXT_PROOF_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
 import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_ID;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -46,6 +48,7 @@ import static org.mockito.Mockito.withSettings;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.input.EventHeader;
 import com.hedera.hapi.block.stream.input.ParentEventReference;
+import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -56,6 +59,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifest;
+import com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction;
 import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
@@ -135,12 +139,14 @@ import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.test.fixtures.CryptoRandomUtils;
@@ -923,11 +929,15 @@ class HandleWorkflowTest {
         final var clprStates = mock(WritableStates.class);
         final WritableSingletonState<ClprLedgerConfiguration> ledgerConfiguration = mock(WritableSingletonState.class);
         final WritableSingletonState<ClprEndpointManifest> manifest = mock(WritableSingletonState.class);
+        final WritableSingletonState<ClprEndpointManifestConstruction> construction =
+                mock(WritableSingletonState.class);
         given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
         given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
                 .willReturn(ledgerConfiguration);
         given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
                 .willReturn(manifest);
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(construction);
 
         final var method = HandleWorkflow.class.getDeclaredMethod(
                 "initializeMissingClprSingletons", com.swirlds.state.State.class);
@@ -936,6 +946,40 @@ class HandleWorkflowTest {
 
         verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
         verify(manifest).put(any(ClprEndpointManifest.class));
+        verify(construction).put(ClprEndpointManifestConstruction.DEFAULT);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void streamsClprSingletonsOnUpgradeWithoutResettingBoundaryListener() throws Exception {
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        final var clprStates = mock(WritableStates.class);
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(clprStates.getSingleton(anyInt())).willReturn(mock(WritableSingletonState.class));
+        // A singleton change made earlier in the block, e.g. by post-upgrade setup
+        final var earlierChange = StateChange.newBuilder()
+                .stateId(ENTITY_COUNTS_STATE_ID)
+                .singletonUpdate(SingletonUpdateChange.DEFAULT)
+                .build();
+        final var clprChange = StateChange.newBuilder()
+                .stateId(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID)
+                .singletonUpdate(SingletonUpdateChange.DEFAULT)
+                .build();
+        given(boundaryStateChangeListener.allStateChanges())
+                .willReturn(new LinkedList<>(List.of(earlierChange, clprChange)));
+
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+        method.setAccessible(true);
+        method.invoke(subject, state);
+
+        // Earlier changes must stay in the listener so they are still externalized when the block closes
+        verify(boundaryStateChangeListener, never()).reset();
+        final ArgumentCaptor<Function<Timestamp, BlockItem>> itemCaptor = ArgumentCaptor.forClass(Function.class);
+        verify(blockStreamManager).writeItem(itemCaptor.capture());
+        final var item = itemCaptor.getValue().apply(BLOCK_TIME);
+        assertEquals(
+                List.of(earlierChange, clprChange), item.stateChangesOrThrow().stateChanges());
     }
 
     @Test

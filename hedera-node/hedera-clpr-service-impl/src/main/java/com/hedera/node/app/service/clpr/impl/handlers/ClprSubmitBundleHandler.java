@@ -760,7 +760,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // isn't the remote connector that lied, maybe it was the remote ledger itself, in which case
                     // we probably should take some action because this channel is faulty.
                     if (connector == null) {
-                        log.warn(
+                        log.debug(
                                 "[ClprSubmitBundle] step10 DATA connector NOT_FOUND conn={} receivedMsgId={} "
                                         + "connectorId={} -> CONNECTOR_NOT_FOUND reply",
                                 channelId,
@@ -792,7 +792,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                 worstCaseCharge);
                         if (connectorAccount == null || connectorAccount.tinybarBalance() < worstCaseCharge) {
                             // Insufficient balance — slash, enqueue CONNECTOR_UNDERFUNDED, skip dispatch
-                            log.warn(
+                            log.debug(
                                     "[ClprSubmitBundle] step10 DATA connector underfunded conn={} "
                                             + "receivedMsgId={} connectorContract={} accountPresent={} "
                                             + "balance={} required={} -> CONNECTOR_UNDERFUNDED reply",
@@ -1027,7 +1027,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                             ? null
                             : originalPayload.hasRedactedMessage() ? originalPayload.redactedMessage() : null;
                     if (origDataMsg == null && origRedacted == null) {
-                        log.warn(
+                        log.debug(
                                 "[ClprSubmitBundle] step10 MESSAGE_REPLY has no original DATA/REDACTED message "
                                         + "conn={} replyTargetId={} originalPayloadKind={}; skipping app callback",
                                 channelId,

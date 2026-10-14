@@ -121,7 +121,13 @@ public class HgcaaLogValidator {
                 // A WRAPS-extensible history proof is a single ~63MB savepoint batch, which trips
                 // the streamMode=BOTH block size circuit breaker (blockStream.maxBlockSizeBytes)
                 List.of("BlockStreamManagerImpl", "suppressing savepoint output for the rest of the block"),
-                List.of("QueryWorkflowImpl", "Unexpected ParseException while parsing protobuf"));
+                List.of("QueryWorkflowImpl", "Unexpected ParseException while parsing protobuf"),
+                // Single-network CLPR tests run without a CLPR CA, so CLPR sync runs without mTLS
+                List.of("ClprCaCertManager", "CLPR CA cert/key not configured"),
+                // CLPR queries verify their own state proofs before returning them, which cannot succeed
+                // when a CLPR task runs with tss.forceMockSignatures=true
+                List.of("ClprGetLedgerConfigurationHandler", "TSS verification failed for ledgerId"),
+                List.of("ClprGetEndpointManifestHandler", "TSS verification failed for ledgerId"));
 
         private int numProblems = 0;
         private int linesSinceInitialProblem = -1;

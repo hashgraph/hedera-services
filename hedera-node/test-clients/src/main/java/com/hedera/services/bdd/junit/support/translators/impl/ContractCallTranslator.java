@@ -26,6 +26,19 @@ import java.util.List;
  * Translates a contract call transaction into a {@link SingleTransactionRecord}.
  */
 public class ContractCallTranslator implements BlockTransactionPartsTranslator {
+    /**
+     * Whether the calls translated are dispatched as their own child transactions (e.g. by a CLPR
+     * transaction), so their records carry the same receipt and result fields as a top-level call.
+     */
+    private final boolean dispatchedChild;
+
+    public ContractCallTranslator() {
+        this(false);
+    }
+
+    public ContractCallTranslator(final boolean dispatchedChild) {
+        this.dispatchedChild = dispatchedChild;
+    }
 
     @Override
     public SingleTransactionRecord translate(
@@ -46,8 +59,9 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             final var derivedBuilder = resultBuilderFrom(evmResult);
                             final var contractId = evmResult.contractId();
                             final var isHook = contractId != null && contractId.contractNumOrElse(0L) == 365;
+                            final var isDispatched = isHook || dispatchedChild;
                             if (parts.status() == SUCCESS
-                                    && (isHook || parts.isTopLevel() || parts.isInnerBatchTxn())) {
+                                    && (isDispatched || parts.isTopLevel() || parts.isInnerBatchTxn())) {
                                 if (needsClippedTraceBloomFallback(parts)) {
                                     // This fixture clips the only bloom-implying trace data, leaving implied bloom.
                                     derivedBuilder.logInfo(List.of()).bloom(bloomForAll(List.of()));
@@ -68,7 +82,7 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             }
                             final var result = derivedBuilder.build();
                             recordBuilder.contractCallResult(result);
-                            if ((parts.transactionIdOrThrow().nonce() == 0 || isHook) && result.gasUsed() > 0L) {
+                            if ((parts.transactionIdOrThrow().nonce() == 0 || isDispatched) && result.gasUsed() > 0L) {
                                 receiptBuilder.contractID(result.contractID());
                             }
                         }),

@@ -108,7 +108,7 @@ public class EthereumVerifyConfigCall extends AbstractCall {
         try {
             verified = verifier.verifyConfigPayload(configPayload);
         } catch (final ProofException e) {
-            log.warn("[EthereumVerifier] verifyConfig: payload rejected: {}", e.getMessage());
+            log.debug("[EthereumVerifier] verifyConfig: payload rejected: {}", e.getMessage());
             return null;
         } catch (final Exception e) {
             log.warn("[EthereumVerifier] verifyConfig: unexpected error", e);
