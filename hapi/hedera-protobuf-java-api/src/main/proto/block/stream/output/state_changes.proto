@@ -851,10 +851,9 @@ message MapUpdateChange {
     /**
      * A value in a virtual map.
      * <p>
-     * This value MUST correctly represent the state of the map entry
-     * _after_ the asserted update.<br/>
-     * This value MAY be reduced to only transmit fields that differ
-     * from the prior state.<br/>
+     * If `partial` is false, this is the full value _after_ the update.<br/>
+     * If `partial` is true, it carries only the changed top-level fields,
+     * to be applied against the preceding value (see `partial`).<br/>
      * This field is REQUIRED.
      */
     MapChangeValue value = 2;
