@@ -434,11 +434,7 @@ class HandleWorkflowTest {
 
     @Test
     void disabledClprDoesNotInstantiateEndpointManifestReconciler() throws Exception {
-        givenSubjectWith(
-                RECORDS,
-                BlockStreamWriterMode.FILE,
-                emptyList(),
-                Map.of("clpr.enabled", "false", "clpr.endpointManifestEnabled", "true"));
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "false"));
 
         for (final var methodName : List.of("reconcileClprEndpointManifest", "pruneClprEndpointManifestOnUpgrade")) {
             final var method =
@@ -965,6 +961,25 @@ class HandleWorkflowTest {
 
         verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
         verify(manifest).put(any(ClprEndpointManifest.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void initializingClprSingletonsKeepsPendingSingletonChangesOfOpenBlock() throws Exception {
+        givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
+        final var clprStates = mock(WritableStates.class);
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons", com.swirlds.state.State.class);
+        method.setAccessible(true);
+        method.invoke(subject, state);
+
+        verify(boundaryStateChangeListener, never()).reset();
     }
 
     @Test

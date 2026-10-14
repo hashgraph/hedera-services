@@ -87,7 +87,6 @@ import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -1711,14 +1710,14 @@ class ClprSubmitBundleHandlerTest {
     // ---- #333: Step 1b — apply new_endpoint_manifest / #334: Criterion 5 ----
 
     @Test
-    @DisplayName("#333: manifest replaced when version advances (flag ON)")
+    @DisplayName("#333: manifest replaced when version advances")
     void manifestReplacedWhenVersionAdvances() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
         final var newManifest = buildManifest(3L, "10.0.0.5");
         // Bundle carries a message (Criterion 1) so progress isn't in question; we're
         // asserting only that the manifest write lands.
         final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1735,7 +1734,7 @@ class ClprSubmitBundleHandlerTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         final var staleManifest = buildManifest(3L, "10.0.0.3");
         final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1749,7 +1748,7 @@ class ClprSubmitBundleHandlerTest {
         putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
         // Bundle carries no new_endpoint_manifest.
         final var bundleContent = buildBundleWithManifest(null, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1773,29 +1772,13 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.endpointManifestVersion()).isEqualTo(2L);
         assertThat(updated.endpointManifestOrThrow()).isEqualTo(newManifest);
-    }
-
-    @Test
-    @DisplayName("#333: flag OFF skips manifest write even when version advances")
-    void flagOffSkipsManifestWrite() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(3L, "10.0.0.9");
-        // Bundle carries a message (Criterion 1) so it still processes without Criterion 5.
-        final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
-
-        subject.handle(handleContext);
-
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        // Flag OFF → no manifest write, cache stays at 0.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
     }
 
     @Test
@@ -1813,7 +1796,7 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         subject.handle(handleContext);
 
@@ -1835,7 +1818,7 @@ class ClprSubmitBundleHandlerTest {
                         .build())
                 .newEndpointManifest(staleManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -1843,24 +1826,74 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("#334: flag OFF makes Criterion 5 inert (manifest-only bundle rejected)")
-    void bundleWithFlagOffAndManifestOnlyIsNoProgress() {
+    @DisplayName("no-progress pure ack still records the peer's view of our manifest version")
+    void noProgressBundleStillRecordsPeerObservedManifestVersion() {
+        // On an idle channel the peer's pure acks are the only bundles carrying its view of our manifest; they are
+        // rejected as no-progress, so the version must be recorded before that check or the push loop never ends.
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var newManifest = buildManifest(1L, "10.0.0.15");
         final var bundleContent = ClprBundleContent.newBuilder()
                 .metadata(ClprQueueMetadata.newBuilder()
                         .nextMessageId(1)
                         .sentRunningHash(ZERO_HASH)
                         .receivedMessageId(0)
                         .status(ClprChannelStatus.ACTIVE)
+                        .endpointManifestVersion(7L)
                         .build())
-                .newEndpointManifest(newManifest)
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundleContent), true, false);
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_NO_PROGRESS));
+        verify(channelLifecycle).recordPeerObservedManifestVersion(CHANNEL_ID, 7L);
+    }
+
+    @Test
+    @DisplayName("manifest advance in a bundle rejected by a later check does not reseed peer endpoint cache")
+    void rejectedBundleDoesNotReseedPeerEndpointCache() {
+        // The Step 1b channel write is rolled back with the failed transaction, so the node-local cache (the inbound
+        // mTLS trust set) must not pick up the unapplied manifest's endpoints either.
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var valid = buildBundleWithManifest(newManifest, List.of(dataPayload()));
+        final var badHash = valid.copyBuilder()
+                .metadata(valid.metadataOrThrow()
+                        .copyBuilder()
+                        .sentRunningHash(ZERO_HASH)
+                        .build())
+                .build();
+        setupHandleContextWithFlags(bundleTxn(badHash), true);
+
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(CLPR_RUNNING_HASH_MISMATCH));
+        verify(channelLifecycle, never()).seedPeerEndpoints(any(), any());
+    }
+
+    @Test
+    @DisplayName("manifest advancement reseeds peer endpoint cache")
+    void manifestAdvancementReseedsPeerEndpointCache() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var newManifest = buildManifest(3L, "10.0.0.5");
+        final var bundleContent = buildBundleWithManifest(newManifest, List.of(dataPayload()));
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
+
+        subject.handle(handleContext);
+
+        verify(channelLifecycle).seedPeerEndpoints(CHANNEL_ID, newManifest.endpoints());
+    }
+
+    @Test
+    @DisplayName("stale manifest does not reseed peer endpoint cache")
+    void staleManifestDoesNotReseedPeerEndpointCache() {
+        putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
+        final var staleManifest = buildManifest(3L, "10.0.0.3");
+        final var bundleContent = buildBundleWithManifest(staleManifest, List.of(dataPayload()));
+        setupHandleContextWithFlags(bundleTxn(bundleContent), true);
+
+        subject.handle(handleContext);
+
+        verify(channelLifecycle, never()).seedPeerEndpoints(any(), any());
     }
 
     @Test
@@ -1880,6 +1913,28 @@ class ClprSubmitBundleHandlerTest {
 
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated.peerConfigTimestamp()).isEqualTo(peerTimestamp);
+    }
+
+    @Test
+    @DisplayName("ConfigUpdate without a configuration is consumed and leaves peerConfigTimestamp unchanged")
+    void configUpdateWithoutConfigurationLeavesPeerTimestampUnchanged() {
+        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
+        final var before = channelStore.getChannel(CHANNEL_ID);
+
+        final var emptyConfigUpdatePayload = ClprMessagePayload.newBuilder()
+                .control(ClprControlMessage.newBuilder()
+                        .configUpdate(ClprConfigUpdate.newBuilder().build())
+                        .build())
+                .build();
+        final var bundle = buildBundle(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(emptyConfigUpdatePayload));
+        setupHandleContext(bundle, true);
+
+        subject.handle(handleContext);
+
+        final var updated = channelStore.getChannel(CHANNEL_ID);
+        assertThat(updated.receivedMessageId()).isEqualTo(1L);
+        assertThat(updated.peerConfigTimestamp()).isEqualTo(before.peerConfigTimestamp());
+        assertThat(updated.peerThrottles()).isEqualTo(before.peerThrottles());
     }
 
     @Test
@@ -1978,20 +2033,6 @@ class ClprSubmitBundleHandlerTest {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(CLPR_BUNDLE_VERIFICATION_FAILED));
-    }
-
-    @Test
-    @DisplayName("received ConfigUpdate keeps all endpoint keys when max_peer_endpoints is zero")
-    void receivedConfigUpdateKeepsAllEndpointKeysWhenMaxPeerEndpointsIsZero() {
-        putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var peerTimestamp = Timestamp.newBuilder().seconds(5000).nanos(42).build();
-        final var endpoints = endpointList(12);
-        final var bundle = buildBundle(
-                ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(configUpdatePayload(peerTimestamp, endpoints)));
-        setupHandleContext(bundle, true);
-        given(configStore.getConfiguration()).willReturn(createLedgerConfigWithMaxPeerEndpoints(0));
-
-        subject.handle(handleContext);
     }
 
     @Test
@@ -2765,48 +2806,11 @@ class ClprSubmitBundleHandlerTest {
     }
 
     @Test
-    @DisplayName("flag off: a peer-reported endpoint_manifest_version is ignored and does not perturb bundle handling")
-    void peerEndpointManifestVersionIgnoredWhenFlagOff() {
-        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS
-        // ledger's manifest version. #330 populates + carries the field through the pipeline.
-        // With clpr.endpointManifestEnabled=false the handler does not read or record it (the
-        // inbound read is flag-guarded), so the field is inert and the bundle is handled exactly
-        // as before.
-        putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
-
-        final var msg = dataPayload();
-        final var runningHash = ClprHashUtils.computeRunningHash(ZERO_HASH, msg);
-        final var metadata = ClprQueueMetadata.newBuilder()
-                .nextMessageId(2L)
-                .sentRunningHash(runningHash)
-                .receivedMessageId(0L)
-                .status(ClprChannelStatus.ACTIVE)
-                .endpointManifestVersion(42L)
-                .build();
-        final var bundle = ClprBundleContent.newBuilder()
-                .metadata(metadata)
-                .messages(List.of(msg))
-                .build();
-        setupHandleContext(bundleTxn(bundle), true);
-        putConnector();
-
-        subject.handle(handleContext);
-
-        // Bundle processed normally; channel advanced.
-        final var updated = channelStore.getChannel(CHANNEL_ID);
-        assertThat(updated).isNotNull();
-        assertThat(updated.receivedMessageId()).isEqualTo(1L);
-        // Our OWN endpoint_manifest_version is NOT touched by the peer-reported value - this
-        // ledger's cache of the PEER's manifest is unrelated to the peer's cache of ours.
-        assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
-    }
-
-    @Test
-    @DisplayName("flag on: a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
-    void peerEndpointManifestVersionAcceptedWhenFlagOn() {
-        // With clpr.endpointManifestEnabled=true the handler reads the peer-reported version (the
-        // guarded inbound read fires). On this branch that read is log-only — recording it lands in
-        // #335 — so the observable contract is unchanged: the bundle is handled normally and this
+    @DisplayName("a peer-reported endpoint_manifest_version is accepted and the bundle is handled cleanly")
+    void peerEndpointManifestVersionAccepted() {
+        // Spec §4.5: metadata.endpoint_manifest_version carries the sender's cache of THIS ledger's
+        // manifest version. The handler records it via the lifecycle SPI (node-local, in-memory) and
+        // the observable channel contract is unchanged: the bundle is handled normally and this
         // ledger's own cache of the PEER's manifest is untouched (the bundle carries no
         // new_endpoint_manifest to apply via Step 1b).
         putChannel(ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH);
@@ -2824,17 +2828,18 @@ class ClprSubmitBundleHandlerTest {
                 .metadata(metadata)
                 .messages(List.of(msg))
                 .build();
-        setupHandleContextWithFlags(bundleTxn(bundle), true, true);
+        setupHandleContextWithFlags(bundleTxn(bundle), true);
         putConnector();
 
         subject.handle(handleContext);
 
-        // Bundle processed normally with the flag on; channel advanced.
+        // Bundle processed normally; channel advanced.
         final var updated = channelStore.getChannel(CHANNEL_ID);
         assertThat(updated).isNotNull();
         assertThat(updated.receivedMessageId()).isEqualTo(1L);
         // No new_endpoint_manifest in the bundle → Step 1b is a no-op; our cache stays at 0.
         assertThat(updated.endpointManifestVersion()).isEqualTo(0L);
+        verify(channelLifecycle).recordPeerObservedManifestVersion(CHANNEL_ID, 42L);
     }
 
     // ========== Verifier outcomes ==========
@@ -2911,7 +2916,7 @@ class ClprSubmitBundleHandlerTest {
                     .newEndpointManifest(newManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 1L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             subject.handle(handleContext);
@@ -2936,7 +2941,7 @@ class ClprSubmitBundleHandlerTest {
                     .newEndpointManifest(staleManifest)
                     .build();
             putChannelWithManifestVersion(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH, 5L);
-            setupHandleContextWithFlags(validSingleDataBundle(), true, true);
+            setupHandleContextWithFlags(validSingleDataBundle(), true);
             given(mockVerifier.verifyBundle(any(), any(), any(), any())).willReturn(manifestOnlyContent);
 
             assertThatThrownBy(() -> subject.handle(handleContext))
@@ -3222,12 +3227,10 @@ class ClprSubmitBundleHandlerTest {
         return builder.build();
     }
 
-    private void setupHandleContextWithFlags(
-            @NonNull final TransactionBody txn, final boolean clprEnabled, final boolean endpointManifestEnabled) {
+    private void setupHandleContextWithFlags(@NonNull final TransactionBody txn, final boolean clprEnabled) {
         setupHandleContext(txn, clprEnabled);
         final var config = com.hedera.node.config.testfixtures.HederaTestConfigBuilder.create()
                 .withValue("clpr.enabled", clprEnabled)
-                .withValue("clpr.endpointManifestEnabled", endpointManifestEnabled)
                 .withValue("clpr.slashBasePenalty", "10000000")
                 .withValue("clpr.slashMultiplier", "2")
                 .withValue("clpr.slashBanThreshold", "5")
@@ -3433,28 +3436,6 @@ class ClprSubmitBundleHandlerTest {
                                 .maxGasPerMessage(maxGasPerMessage)
                                 .build())
                         .build());
-    }
-
-    private static ClprMessagePayload configUpdatePayload(
-            @NonNull final Timestamp peerTimestamp, @NonNull final List<ClprEndpoint> endpoints) {
-        return ClprMessagePayload.newBuilder()
-                .control(ClprControlMessage.newBuilder()
-                        .configUpdate(ClprConfigUpdate.newBuilder()
-                                .configuration(ClprLedgerConfiguration.newBuilder()
-                                        .timestamp(peerTimestamp)
-                                        .endpoints(endpoints)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
-    }
-
-    private static List<ClprEndpoint> endpointList(final int count) {
-        final var endpoints = new ArrayList<ClprEndpoint>();
-        for (int i = 0; i < count; i++) {
-            endpoints.add(ClprEndpoint.newBuilder().build());
-        }
-        return endpoints;
     }
 
     @Test
