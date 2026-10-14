@@ -2,11 +2,11 @@
 package org.hiero.consensus.model.event;
 
 import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.function.Consumer;
+import java.util.List;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.model.transaction.Transaction;
 
@@ -20,11 +20,12 @@ import org.hiero.consensus.model.transaction.Transaction;
 public interface Event {
 
     /**
-     * Returns an iterator over the application events in this transaction.
+     * Returns an immutable List of transactions in this event.
      *
      * @return a transaction iterator
      */
-    Iterator<Transaction> transactionIterator();
+    @NonNull
+    List<? extends Transaction> getTransactions();
 
     /**
      * Returns the time this event was created as claimed by its creator.
@@ -42,20 +43,8 @@ public interface Event {
     NodeId getCreatorId();
 
     /**
-     * A convenience method that supplies every transaction in this event to a consumer.
-     *
-     * @param consumer
-     * 		a transaction consumer
-     */
-    default void forEachTransaction(final Consumer<Transaction> consumer) {
-        for (final Iterator<Transaction> transIt = transactionIterator(); transIt.hasNext(); ) {
-            consumer.accept(transIt.next());
-        }
-    }
-
-    /**
      * Returns the birth round of this event.
-     *
+     * @see EventDescriptor#birthRound()
      * @return the birth round of the event
      */
     long getBirthRound();
@@ -75,4 +64,22 @@ public interface Event {
      */
     @NonNull
     Bytes getSignature();
+
+    /**
+     * Indicates if this event was read from PCES. This happens after the node
+     * restarts in order to recover the latest consensus state.
+     *
+     * @return true if the event was read from PCES on disk, false otherwise
+     */
+    boolean isPcesEvent();
+
+    /**
+     * Wait until all transactions have been pre-handled for this event.
+     */
+    void awaitPrehandleCompletion();
+
+    /**
+     * Signal that all transactions have been pre-handled for this event.
+     */
+    void signalPrehandleCompletion();
 }
