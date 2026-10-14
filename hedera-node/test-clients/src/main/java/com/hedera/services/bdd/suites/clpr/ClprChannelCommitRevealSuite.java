@@ -61,7 +61,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> commitThenRevealCreatesActiveChannel() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 cryptoCreate("registrant").balance(ONE_HUNDRED_HBARS),
@@ -85,7 +84,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> commitIsIdempotent() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 clprRegisterChannel()
                         .ownershipCommitment(crypto.commitment())
                         .payingWith(GENESIS)
@@ -101,7 +99,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> differentPayerCanComplete() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 cryptoCreate("committer").balance(ONE_HUNDRED_HBARS),
@@ -128,7 +125,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> doubleRevealFails() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 clprRegisterChannel().ownershipCommitment(crypto.commitment()).payingWith(GENESIS),
@@ -157,7 +153,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> adminDeletesPendingThenRevealFails() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 // Phase 1: commit
@@ -185,7 +180,6 @@ public class ClprChannelCommitRevealSuite {
         final var legitimate = new ClprChannelCrypto();
         final var attacker = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 cryptoCreate("attacker").balance(ONE_HUNDRED_HBARS),
@@ -216,7 +210,6 @@ public class ClprChannelCommitRevealSuite {
                 .setContractNum(99_999_999L)
                 .build();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 clprRegisterChannel().ownershipCommitment(crypto.commitment()).payingWith(GENESIS),
                 clprCompleteChannel()
                         .channelId(crypto.channelId())
@@ -229,7 +222,9 @@ public class ClprChannelCommitRevealSuite {
                         .hasKnownStatus(CLPR_INVALID_VERIFIER_CONTRACT));
     }
 
-    @LeakyHapiTest(requirement = PROPERTY_OVERRIDES)
+    @LeakyHapiTest(
+            requirement = PROPERTY_OVERRIDES,
+            overrides = {"clpr.enabled"})
     @DisplayName("Commit when CLPR is disabled fails with CLPR_NOT_ENABLED")
     final Stream<DynamicTest> commitWhenDisabledFails() {
         return hapiTest(
@@ -249,7 +244,6 @@ public class ClprChannelCommitRevealSuite {
     final Stream<DynamicTest> verifyConfigFieldsStoredOnChannel() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 uploadInitCode(VERIFIER),
                 contractCreate(VERIFIER),
                 clprRegisterChannel().ownershipCommitment(crypto.commitment()).payingWith(GENESIS),
