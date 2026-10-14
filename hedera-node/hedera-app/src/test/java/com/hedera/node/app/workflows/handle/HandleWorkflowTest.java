@@ -43,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -454,6 +455,35 @@ class HandleWorkflowTest {
         }
 
         assertEquals(0, clprEndpointManifestReconcilerProviderCalls.get());
+    }
+
+    @Test
+    void failedPostUpgradeSetupStaysPendingWithoutDroppingTheTransaction() {
+        given(blockStreamManager.pendingWork()).willReturn(POST_UPGRADE_WORK);
+        willThrow(new IllegalStateException("No reserved consensus time remains"))
+                .given(systemTransactions)
+                .doPostUpgradeSetup(any(), any());
+        final var txn = new TransactionWrapper(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY);
+        txn.setConsensusTimestamp(NOW);
+        given(event.getHash()).willReturn(CryptoRandomUtils.randomHash());
+        given(event.allParentsIterator())
+                .willReturn(List.<EventDescriptorWrapper>of().iterator());
+        given(event.getEventCore()).willReturn(EventCore.DEFAULT);
+        given(blockStreamManager.lastIntervalProcessTime()).willReturn(NOW);
+        given(round.iterator()).willAnswer(invocation -> List.of(event).iterator());
+        final var creatorId = NodeId.of(0);
+        given(event.getCreatorId()).willReturn(creatorId);
+        given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
+        given(event.consensusTransactionIterator())
+                .willAnswer(invocation -> List.<ConsensusTransaction>of(txn).iterator());
+        givenSubjectWith(StreamMode.BLOCKS, BlockStreamWriterMode.FILE, List.of());
+
+        subject.handleRound(state, round, txns -> {});
+
+        // The transaction is still handled, while the rest of the post-upgrade work waits for a later one
+        verify(parentTxnFactory).createTopLevelTxn(eq(state), any(), eq(txn), eq(NOW), any());
+        verify(blockStreamManager, never()).confirmPendingWorkFinished();
+        verify(state, never()).getWritableStates(ClprService.NAME);
     }
 
     @Test
@@ -1119,7 +1149,7 @@ class HandleWorkflowTest {
         subject.handleRound(state, round, ignore -> {});
 
         final var changes = boundaryStateChangeListener.allStateChanges();
-        verify(systemTransactions).nextReservedSystemTimeFor(firstEventTime);
+        verify(systemTransactions, atLeastOnce()).nextReservedSystemTimeFor(firstEventTime);
         verify(blockStreamManager)
                 .writeSavepointItems(
                         argThat(items -> {
@@ -1574,7 +1604,6 @@ class HandleWorkflowTest {
         given(entityIdFactory.newAccountId(anyLong())).willReturn(AccountID.DEFAULT);
         given(networkInfo.addressBook()).willReturn(List.of(creatorInfo));
         final var realSystemTransactions = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -1641,6 +1670,7 @@ class HandleWorkflowTest {
     void stakePeriodInitializedBeforeFeeDistribution() {
         final var creatorId = NodeId.of(0);
         given(event.getCreatorId()).willReturn(creatorId);
+        given(event.getConsensusTimestamp()).willReturn(NOW);
         given(event.consensusTransactionIterator()).willReturn(emptyIterator());
         given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
         given(round.iterator()).willAnswer(ignore -> List.of(event).iterator());
@@ -1654,5 +1684,28 @@ class HandleWorkflowTest {
         final InOrder inOrder = Mockito.inOrder(stakePeriodManager, nodeFeeManager);
         inOrder.verify(stakePeriodManager).setCurrentStakePeriodFor(eq(NOW));
         inOrder.verify(nodeFeeManager).distributeFees(any(), any(), any());
+    }
+
+    @Test
+    void feeAndRewardDispatchesPrecedeFirstEventUntilSignerIsReady() {
+        final var creatorId = NodeId.of(0);
+        given(event.getCreatorId()).willReturn(creatorId);
+        given(event.getConsensusTimestamp()).willReturn(NOW);
+        given(event.consensusTransactionIterator()).willReturn(emptyIterator());
+        given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
+        given(round.iterator()).willAnswer(ignore -> List.of(event).iterator());
+        given(blockRecordManager.consTimeOfLastHandledTxn()).willReturn(NOW);
+        given(blockRecordManager.lastIntervalProcessTime()).willReturn(NOW);
+        given(blockHashSigner.isReady()).willReturn(false);
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList());
+        // The round's consensus time is that of its last transaction, which is handled after these dispatches
+        final var lastTxnTime = NOW.plusSeconds(1);
+        given(round.getConsensusTimestamp()).willReturn(lastTxnTime);
+
+        subject.handleRound(state, round, txns -> {});
+
+        // The mock SystemTransactions reserves the time 100ns before the round's first event
+        verify(nodeFeeManager).distributeFees(any(), eq(NOW.minusNanos(100)), any());
+        verify(nodeRewardManager).maybeRewardActiveNodes(any(), eq(NOW.minusNanos(100)), any());
     }
 }

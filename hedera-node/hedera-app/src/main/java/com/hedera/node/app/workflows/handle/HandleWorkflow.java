@@ -420,18 +420,22 @@ public class HandleWorkflow {
                 ? (streamMode == RECORDS
                         ? blockRecordManager.lastUsedConsensusTime()
                         : blockStreamManager.lastUsedConsensusTime())
-                : round.getConsensusTimestamp();
+                : null;
         // Each of these dispatches takes the next free slot after the last used consensus time, where a slot is
         // wide enough for the dispatch and a preceding NODE_STAKE_UPDATE if it triggers stake period side effects
         try {
             transactionsDispatched |= nodeFeeManager.distributeFees(
-                    state, lastUsedConsTime.plusNanos(MAX_NANOS_PER_SYSTEM_DISPATCH), systemTransactions);
+                    state,
+                    roundStartDispatchTime(lastUsedConsTime, MAX_NANOS_PER_SYSTEM_DISPATCH, firstEvent),
+                    systemTransactions);
         } catch (Exception e) {
             logger.error("{} Failed to pay node fees to nodes", ALERT_MESSAGE, e);
         }
         try {
             transactionsDispatched |= nodeRewardManager.maybeRewardActiveNodes(
-                    state, lastUsedConsTime.plusNanos(2L * MAX_NANOS_PER_SYSTEM_DISPATCH), systemTransactions);
+                    state,
+                    roundStartDispatchTime(lastUsedConsTime, 2L * MAX_NANOS_PER_SYSTEM_DISPATCH, firstEvent),
+                    systemTransactions);
         } catch (Exception e) {
             logger.error("{} Failed to reward active nodes", ALERT_MESSAGE, e);
         }
@@ -637,7 +641,15 @@ public class HandleWorkflow {
         }
         if (type == POST_UPGRADE_TRANSACTION) {
             logger.info("Doing post-upgrade setup @ {}", consensusNow);
-            systemTransactions.doPostUpgradeSetup(consensusNow, state);
+            try {
+                systemTransactions.doPostUpgradeSetup(consensusNow, state);
+            } catch (Exception e) {
+                // Leave the post-upgrade work pending for a later transaction, but still handle this one
+                logger.error("{} Failed to do post-upgrade setup @ {}", ALERT_MESSAGE, consensusNow, e);
+                type = ORDINARY_TRANSACTION;
+            }
+        }
+        if (type == POST_UPGRADE_TRANSACTION) {
             try {
                 initializeMissingClprSingletons(state, consensusNow, UPGRADE_INITIALIZATION);
             } catch (Exception e) {
@@ -1338,6 +1350,27 @@ public class HandleWorkflow {
             @NonNull WritableEndpointManifestStore manifestStore,
             @NonNull WritableEndpointManifestConstructionStore constructionStore,
             @NonNull ClprConfig clprConfig) {}
+
+    /**
+     * Returns the consensus time for a system dispatch made before the round's events are handled. Given the last used
+     * consensus time from before these dispatches, that is the given number of nanoseconds after it. Without one (until
+     * the block hash signer is ready), it is the next free time reserved before the round's first event; a time after
+     * the round's own consensus time would instead follow its last transaction, which is not yet handled, and could
+     * collide with that transaction's following children.
+     *
+     * @param lastUsedConsTime if the block hash signer is ready, the last used consensus time before these dispatches
+     * @param nanosAfterLastUsed the nanoseconds after the last used consensus time to use for this dispatch
+     * @param firstEvent the first event of the round
+     * @return the consensus time for the dispatch
+     */
+    private Instant roundStartDispatchTime(
+            @Nullable final Instant lastUsedConsTime,
+            final long nanosAfterLastUsed,
+            @NonNull final ConsensusEvent firstEvent) {
+        return lastUsedConsTime != null
+                ? lastUsedConsTime.plusNanos(nanosAfterLastUsed)
+                : systemTransactions.nextReservedSystemTimeFor(firstEvent.getConsensusTimestamp());
+    }
 
     /**
      * Seeds CLPR state for genesis or upgrade, with an informational transaction for block replay and indexing.

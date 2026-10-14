@@ -2,6 +2,8 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.NONE;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_ID;
@@ -81,7 +83,6 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
@@ -111,9 +112,6 @@ class SystemTransactionsTest {
     private static final long CLPR_STAKING_ACCOUNT_NUM = 803L;
     private static final AccountID CLPR_STAKING_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(CLPR_STAKING_ACCOUNT_NUM).build();
-
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private InitTrigger initTrigger;
 
     @Mock
     private ParentTxnFactory parentTxnFactory;
@@ -195,7 +193,6 @@ class SystemTransactionsTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
         given(appContext.idFactory()).willReturn(entityIdFactory);
-        given(initTrigger.name()).willReturn("EVENT_STREAM_RECOVERY");
 
         // Set up creator node info for address book
         given(creatorNodeInfo.nodeId()).willReturn(0L);
@@ -203,7 +200,6 @@ class SystemTransactionsTest {
         given(creatorNodeInfo.sigCertBytes()).willReturn(Bytes.EMPTY);
         given(networkInfo.addressBook()).willReturn(List.of(creatorNodeInfo));
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -358,8 +354,8 @@ class SystemTransactionsTest {
 
     @Test
     void testFirstReservedSystemTimeForGenesis() {
-        // For genesis, we need to also subtract firstUserEntity
-        given(initTrigger.name()).willReturn("GENESIS");
+        // While genesis work is pending, we need to also subtract firstUserEntity
+        given(blockStreamManager.pendingWork()).willReturn(GENESIS_WORK);
 
         final var config = HederaTestConfigBuilder.create()
                 .withValue("blockStream.streamMode", "BLOCKS")
@@ -371,9 +367,7 @@ class SystemTransactionsTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
-        // Recreate subject with GENESIS trigger
         subject = new SystemTransactions(
-                InitTrigger.GENESIS,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -397,6 +391,47 @@ class SystemTransactionsTest {
         assertTrue(result.isBefore(NOW));
         // Should be NOW minus (1 + 3 + 1000 + 1001) = 2005 nanos
         assertEquals(NOW.minusNanos(2005), result);
+    }
+
+    @Test
+    void genesisReservationEndsWithGenesisWork() {
+        // Every node must reserve the same times after genesis, however its process started
+        given(blockStreamManager.pendingWork()).willReturn(GENESIS_WORK, NONE);
+
+        assertEquals(NOW.minusNanos(2005), subject.firstReservedSystemTimeFor(NOW));
+        assertEquals(NOW.minusNanos(1004), subject.firstReservedSystemTimeFor(NOW));
+    }
+
+    @Test
+    void recordStreamGenesisReservationLastsUntilFirstHandledTransaction() {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("blockStream.streamMode", "RECORDS")
+                .withValue("consensus.handleMaxPrecedingRecords", 3)
+                .withValue("scheduling.reservedSystemTxnNanos", 1000)
+                .withValue("hedera.firstUserEntity", 1001)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        subject = new SystemTransactions(
+                parentTxnFactory,
+                fileService,
+                networkInfo,
+                configProvider,
+                dispatchProcessor,
+                appContext,
+                servicesRegistry,
+                blockRecordManager,
+                blockStreamManager,
+                exchangeRateManager,
+                recordCache,
+                startupNetworks,
+                stakePeriodChanges,
+                selfNodeAccountIdManager,
+                wrappedRecordBlockHashMigration,
+                migrationRootHashSubmissions);
+        given(blockRecordManager.consTimeOfLastHandledTxn()).willReturn(Instant.EPOCH, NOW.minusSeconds(1));
+
+        assertEquals(NOW.minusNanos(2005), subject.firstReservedSystemTimeFor(NOW));
+        assertEquals(NOW.minusNanos(1004), subject.firstReservedSystemTimeFor(NOW));
     }
 
     @Test
@@ -548,7 +583,6 @@ class SystemTransactionsTest {
 
         // Recreate subject
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -591,7 +625,6 @@ class SystemTransactionsTest {
 
         // Recreate subject
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -672,7 +705,6 @@ class SystemTransactionsTest {
 
         // Recreate subject with updated config
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -725,7 +757,6 @@ class SystemTransactionsTest {
         given(filesState.get(any())).willReturn(File.DEFAULT);
         // Recreate subject with updated config
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -827,7 +858,6 @@ class SystemTransactionsTest {
                 .getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
         subject = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,

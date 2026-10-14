@@ -4,6 +4,7 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
+import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.parseEd25519NodeAdminKeysFrom;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_ID;
@@ -23,7 +24,6 @@ import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.TransactionType.INTERNAL_TRANSACTION;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.node.config.types.StreamMode.RECORDS;
-import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static java.util.Objects.requireNonNull;
 import static org.hiero.consensus.node.NodeUtilities.formatNodeName;
 import static org.hiero.consensus.platformstate.V0540PlatformStateSchema.PLATFORM_STATE_STATE_ID;
@@ -113,7 +113,6 @@ import com.hedera.node.config.types.StreamMode;
 import com.hedera.node.internal.network.NodeMetadata;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
@@ -175,7 +174,6 @@ public class SystemTransactions {
             EnumSet.of(SUCCESS, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
     private static final Consumer<Dispatch> DEFAULT_DISPATCH_ON_SUCCESS = dispatch -> {};
 
-    private final InitTrigger initTrigger;
     private final BlocklistParser blocklistParser = new BlocklistParser();
     private final FileServiceImpl fileService;
     private final ParentTxnFactory parentTxnFactory;
@@ -210,7 +208,6 @@ public class SystemTransactions {
      */
     @Inject
     public SystemTransactions(
-            @NonNull final InitTrigger initTrigger,
             @NonNull final ParentTxnFactory parentTxnFactory,
             @NonNull final FileServiceImpl fileService,
             @NonNull final NetworkInfo networkInfo,
@@ -227,7 +224,6 @@ public class SystemTransactions {
             @NonNull final SelfNodeAccountIdManager selfNodeAccountIdManager,
             @NonNull final WrappedRecordBlockHashMigration wrappedRecordBlockHashMigration,
             @NonNull final MigrationRootHashSubmissions migrationRootHashSubmissions) {
-        this.initTrigger = requireNonNull(initTrigger);
         this.fileService = requireNonNull(fileService);
         this.parentTxnFactory = requireNonNull(parentTxnFactory);
         this.networkInfo = requireNonNull(networkInfo);
@@ -840,7 +836,8 @@ public class SystemTransactions {
     }
 
     /**
-     * Returns the timestamp to use for startup work state change consensus time in the block stream.
+     * Returns the first consensus time reserved for system work before the given event or user transaction. While
+     * genesis work is pending, the reservation steps further back to make room for creating the system entities.
      *
      * @param firstEventTime the timestamp of the first event in the current round
      */
@@ -857,9 +854,20 @@ public class SystemTransactions {
                 .minusNanos(config.getConfigData(SchedulingConfig.class).reservedSystemTxnNanos())
                 // And at genesis, further step back to accommodate creating system entities
                 .minusNanos(
-                        initTrigger == GENESIS
+                        isGenesisWorkPending()
                                 ? (int) config.getConfigData(HederaConfig.class).firstUserEntity()
                                 : 0);
+    }
+
+    /**
+     * Whether genesis work is still pending in the current round. Unlike how this process started, this is the same on
+     * every node, so reserved consensus times derived from it are deterministic.
+     */
+    private boolean isGenesisWorkPending() {
+        return switch (streamMode) {
+            case RECORDS -> Instant.EPOCH.equals(blockRecordManager.consTimeOfLastHandledTxn());
+            case BLOCKS, BOTH -> blockStreamManager.pendingWork() == GENESIS_WORK;
+        };
     }
 
     /**
