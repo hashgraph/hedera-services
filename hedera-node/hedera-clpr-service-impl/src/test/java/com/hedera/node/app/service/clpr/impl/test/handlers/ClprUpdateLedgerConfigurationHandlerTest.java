@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.service.clpr.impl.test.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_INVALID_SEED_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_NOT_ENABLED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CLPR_TOO_MANY_SEED_ENDPOINTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CLPR_CONFIGURATION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.CLPR_SERVICE_ADDRESS;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,9 +13,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody;
-import com.hedera.hapi.node.state.clpr.ClprEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
-import com.hedera.hapi.node.state.clpr.ClprServiceEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.clpr.impl.ClprStateProofManager;
@@ -31,12 +28,13 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -64,8 +62,6 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final String CHAIN_ID = "hiero:unit";
     private static final int PROTOCOL_VERSION = 1;
-    private static final Bytes SERVICE_ADDRESS = Bytes.wrap(new byte[] {0, 0, 1});
-    private static final Bytes TLS_CERT = Bytes.wrap(new byte[] {1, 2, 3, 4});
     private static final Bytes LEDGER_ID = Bytes.wrap(new byte[] {0x11, 0x22, 0x33, 0x44});
 
     @BeforeEach
@@ -194,86 +190,12 @@ class ClprUpdateLedgerConfigurationHandlerTest {
     void rejectsNoThrottles() {
         final var config = ClprLedgerConfiguration.newBuilder()
                 .chainId(CHAIN_ID)
-                .serviceAddress(SERVICE_ADDRESS)
-                .endpoints(List.of(validEndpoint()))
+                .serviceAddress(CLPR_SERVICE_ADDRESS)
                 .build();
         final var txnBody = txnBodyWith(config);
         given(pureChecksContext.body()).willReturn(txnBody);
 
         assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_CLPR_CONFIGURATION);
-    }
-
-    @Test
-    @DisplayName("should accept more than 10 endpoints when max_local_endpoints is zero")
-    void acceptsMoreThanTenEndpointsWhenMaxLocalEndpointsIsZero() throws PreCheckException {
-        final List<ClprEndpoint> endpoints = new ArrayList<>();
-        for (int i = 0; i < 11; i++) {
-            endpoints.add(validEndpoint());
-        }
-        final var config = validConfigBuilder().endpoints(endpoints).build();
-        final var txnBody = txnBodyWith(config);
-        given(pureChecksContext.body()).willReturn(txnBody);
-
-        subject.pureChecks(pureChecksContext);
-    }
-
-    @Test
-    @DisplayName("should reject endpoints exceeding non-zero max_local_endpoints")
-    void rejectsEndpointsExceedingMaxLocalEndpoints() {
-        final List<ClprEndpoint> endpoints = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            endpoints.add(validEndpoint());
-        }
-        final var config = validConfigBuilder()
-                .throttles(validThrottlesBuilder().maxLocalEndpoints(2).build())
-                .endpoints(endpoints)
-                .build();
-        final var txnBody = txnBodyWith(config);
-        given(pureChecksContext.body()).willReturn(txnBody);
-
-        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), CLPR_TOO_MANY_SEED_ENDPOINTS);
-    }
-
-    @Test
-    @DisplayName("should accept endpoints equal to non-zero max_local_endpoints")
-    void acceptsEndpointsEqualToMaxLocalEndpoints() throws PreCheckException {
-        final List<ClprEndpoint> endpoints = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            endpoints.add(validEndpoint());
-        }
-        final var config = validConfigBuilder()
-                .throttles(validThrottlesBuilder().maxLocalEndpoints(3).build())
-                .endpoints(endpoints)
-                .build();
-        final var txnBody = txnBodyWith(config);
-        given(pureChecksContext.body()).willReturn(txnBody);
-
-        subject.pureChecks(pureChecksContext);
-    }
-
-    @Test
-    @DisplayName("should reject endpoint missing service_endpoint")
-    void rejectsEndpointMissingServiceEndpoint() {
-        final var badEndpoint =
-                ClprEndpoint.newBuilder().tlsCertificate(TLS_CERT).build();
-        final var config = validConfigBuilder().endpoints(List.of(badEndpoint)).build();
-        final var txnBody = txnBodyWith(config);
-        given(pureChecksContext.body()).willReturn(txnBody);
-
-        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), CLPR_INVALID_SEED_ENDPOINT);
-    }
-
-    @Test
-    @DisplayName("should reject endpoint missing tls_certificate")
-    void rejectsEndpointMissingTlsCert() {
-        final var badEndpoint = ClprEndpoint.newBuilder()
-                .serviceEndpoint(validServiceEndpoint())
-                .build();
-        final var config = validConfigBuilder().endpoints(List.of(badEndpoint)).build();
-        final var txnBody = txnBodyWith(config);
-        given(pureChecksContext.body()).willReturn(txnBody);
-
-        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), CLPR_INVALID_SEED_ENDPOINT);
     }
 
     @Test
@@ -285,6 +207,35 @@ class ClprUpdateLedgerConfigurationHandlerTest {
 
         subject.pureChecks(pureChecksContext);
         // No exception means success
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonCanonicalServiceAddresses")
+    @DisplayName("should reject a service_address other than the CLPR system contract address")
+    void rejectsNonCanonicalServiceAddress(final Bytes serviceAddress) {
+        final var config = validConfigBuilder().serviceAddress(serviceAddress).build();
+        given(pureChecksContext.body()).willReturn(txnBodyWith(config));
+
+        assertThrowsPreCheck(() -> subject.pureChecks(pureChecksContext), INVALID_CLPR_CONFIGURATION);
+    }
+
+    @Test
+    @DisplayName("should accept the CLPR system contract address as service_address")
+    void acceptsCanonicalServiceAddress() throws PreCheckException {
+        final var config =
+                validConfigBuilder().serviceAddress(CLPR_SERVICE_ADDRESS).build();
+        given(pureChecksContext.body()).willReturn(txnBodyWith(config));
+
+        subject.pureChecks(pureChecksContext);
+    }
+
+    @Test
+    @DisplayName("should accept an omitted service_address")
+    void acceptsEmptyServiceAddress() throws PreCheckException {
+        final var config = validConfigBuilder().serviceAddress(Bytes.EMPTY).build();
+        given(pureChecksContext.body()).willReturn(txnBodyWith(config));
+
+        subject.pureChecks(pureChecksContext);
     }
 
     @Test
@@ -321,9 +272,26 @@ class ClprUpdateLedgerConfigurationHandlerTest {
         assertThat(saved.protocolVersion()).isEqualTo(PROTOCOL_VERSION);
         assertThat(saved.chainId()).isEqualTo(CHAIN_ID);
         // Mutable fields come from the supplied configuration
-        assertThat(saved.serviceAddress()).isEqualTo(SERVICE_ADDRESS);
+        assertThat(saved.serviceAddress()).isEqualTo(CLPR_SERVICE_ADDRESS);
         assertThat(saved.timestamp().seconds()).isEqualTo(1_234_567L);
         assertThat(saved.timestamp().nanos()).isEqualTo(890);
+    }
+
+    @Test
+    @DisplayName("should default an omitted service_address to the CLPR system contract address")
+    void defaultsOmittedServiceAddressToClprSystemContractAddress() {
+        final var configuration =
+                HederaTestConfigBuilder.create().withValue("clpr.enabled", true).getOrCreateConfig();
+        setupHandleContext(configuration);
+
+        final var newConfig = validConfigBuilder().serviceAddress(Bytes.EMPTY).build();
+        given(handleContext.body()).willReturn(txnBodyWith(newConfig));
+
+        subject.handle(handleContext);
+
+        final var captor = ArgumentCaptor.forClass(ClprLedgerConfiguration.class);
+        verify(configStore).put(captor.capture());
+        assertThat(captor.getValue().serviceAddress()).isEqualTo(CLPR_SERVICE_ADDRESS);
     }
 
     @Test
@@ -405,12 +373,19 @@ class ClprUpdateLedgerConfigurationHandlerTest {
                 .build();
     }
 
+    private static Stream<Bytes> nonCanonicalServiceAddresses() {
+        return Stream.of(
+                // Not an EVM address at all
+                Bytes.wrap(new byte[] {0, 0, 1}),
+                // A 20-byte EVM address, but not the CLPR system contract's (0x16f, not 0x16e)
+                Bytes.fromHex("000000000000000000000000000000000000016f"));
+    }
+
     private static ClprLedgerConfiguration.Builder validConfigBuilder() {
         return ClprLedgerConfiguration.newBuilder()
                 .chainId(CHAIN_ID)
-                .serviceAddress(SERVICE_ADDRESS)
-                .throttles(validThrottlesBuilder().build())
-                .endpoints(List.of(validEndpoint()));
+                .serviceAddress(CLPR_SERVICE_ADDRESS)
+                .throttles(validThrottlesBuilder().build());
     }
 
     private static ClprThrottles.Builder validThrottlesBuilder() {
@@ -420,19 +395,5 @@ class ClprUpdateLedgerConfigurationHandlerTest {
                 .maxGasPerMessage(150_000L)
                 .maxQueueDepth(1000)
                 .maxSyncBytes(1_048_576L);
-    }
-
-    private static ClprEndpoint validEndpoint() {
-        return ClprEndpoint.newBuilder()
-                .serviceEndpoint(validServiceEndpoint())
-                .tlsCertificate(TLS_CERT)
-                .build();
-    }
-
-    private static ClprServiceEndpoint validServiceEndpoint() {
-        return ClprServiceEndpoint.newBuilder()
-                .ipAddress("192.168.1.1")
-                .port(50211)
-                .build();
     }
 }

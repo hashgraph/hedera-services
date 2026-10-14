@@ -15,18 +15,17 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.concurrent.throttle.RateLimitedLogger;
 import org.hiero.base.crypto.BytesSigner;
+import org.hiero.base.utility.ListUtils;
 import org.hiero.consensus.crypto.PbjStreamHasher;
 import org.hiero.consensus.event.creator.config.EventCreationConfig;
 import org.hiero.consensus.event.creator.impl.EventCreator;
@@ -456,9 +455,7 @@ public class TipsetEventCreator implements EventCreator {
         if (otherParents.length == 0) {
             otherParentDescriptors = List.of();
         } else {
-            otherParentDescriptors = Arrays.stream(otherParents)
-                    .map(PlatformEvent::getDescriptor)
-                    .toList();
+            otherParentDescriptors = ListUtils.mapToCopy(otherParents, PlatformEvent::getDescriptor);
         }
         final UnsignedEvent event = assembleEventObject(otherParents);
 
@@ -483,19 +480,27 @@ public class TipsetEventCreator implements EventCreator {
      */
     @NonNull
     private UnsignedEvent assembleEventObject(final PlatformEvent... otherParents) {
+        final Instant timeTransactionsTaken = time.now();
         final List<TimestampedTransaction> transactions = transactionSupplier.getTransactionsForEvent();
-        final List<PlatformEvent> allParents = Stream.concat(Stream.of(lastSelfEvent), Stream.of(otherParents))
-                .filter(Objects::nonNull)
-                .toList();
+        final List<PlatformEvent> allParents = new ArrayList<>(1 + otherParents.length);
+        if (lastSelfEvent != null) {
+            allParents.add(lastSelfEvent);
+        }
+        for (final PlatformEvent otherParent : otherParents) {
+            if (otherParent != null) {
+                allParents.add(otherParent);
+            }
+        }
         final List<EventDescriptorWrapper> allParentDescriptors =
-                allParents.stream().map(PlatformEvent::getDescriptor).toList();
+                ListUtils.mapToCopy(allParents, PlatformEvent::getDescriptor);
         final UnsignedEvent event = new UnsignedEvent(
                 selfId,
                 allParentDescriptors,
                 eventWindow.newEventBirthRound(),
                 calculateNewEventCreationTime(lastSelfEvent, allParents, transactions),
-                transactions.stream().map(TimestampedTransaction::transaction).toList(),
-                random.nextLong(0, roster.size() + 1));
+                ListUtils.mapToCopy(transactions, TimestampedTransaction::transaction),
+                random.nextLong(0, roster.size() + 1),
+                timeTransactionsTaken);
         eventHasher.hashUnsignedEvent(event);
 
         return event;
