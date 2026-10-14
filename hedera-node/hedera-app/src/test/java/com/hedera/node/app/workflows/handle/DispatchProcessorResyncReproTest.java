@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -44,6 +45,7 @@ import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.io.IOException;
 import java.util.Optional;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.junit.jupiter.api.BeforeEach;
@@ -263,5 +265,23 @@ class DispatchProcessorResyncReproTest {
         assertThatThrownBy(() -> subject.processDispatch(dispatch))
                 .isSameAs(ratesFailure)
                 .satisfies(thrown -> assertThat(thrown.getSuppressed()).containsExactly(feesFailure));
+    }
+
+    @Test
+    void checkedResyncFailureIsRethrownAsIsNotCoercedToAnUncheckedType() {
+        given(stack.isRoot()).willReturn(false, true);
+        given(systemFileUpdates.resyncTarget(stack, TXN_BODY)).willReturn(Optional.of(RATES_TARGET));
+        // A checked throwable can only reach the cross-iteration rethrow by being sneaky-thrown, which Mockito's
+        // doThrow would reject; sneaky-throw it from the answer instead. The rethrow must surface this exact instance,
+        // not coerce it (a cast to an unchecked type would mask it with a ClassCastException).
+        final var checkedFailure = new IOException("cannot re-derive the rates");
+        doAnswer(invocation -> {
+                    throw checkedFailure;
+                })
+                .when(systemFileUpdates)
+                .resyncIfChanged(stack, RATES_TARGET);
+
+        subject.processDispatch(dispatch);
+        assertThatThrownBy(() -> subject.processDispatch(dispatch)).isSameAs(checkedFailure);
     }
 }

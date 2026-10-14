@@ -189,11 +189,11 @@ public class DispatchProcessor {
      * @param stack the committed state of the transaction
      */
     private void resyncFromCommittedState(@NonNull final State stack) {
-        RuntimeException firstFailure = null;
+        Throwable firstFailure = null;
         for (final var target : pendingFacilityResyncs.values()) {
             try {
                 systemFileUpdates.resyncIfChanged(stack, target);
-            } catch (final RuntimeException e) {
+            } catch (final Throwable e) {
                 // One facility failing to re-derive must not leave the others out of step with the committed state;
                 // record the first failure, re-derive the rest, then rethrow so the failure is still surfaced. Attach
                 // any later failure as suppressed so none is silently dropped.
@@ -209,7 +209,7 @@ public class DispatchProcessor {
         if (pendingNodeInfoResync) {
             try {
                 networkInfo.updateFrom(stack);
-            } catch (final RuntimeException e) {
+            } catch (final Throwable e) {
                 // Like a facility failure above, a node-info failure must still leave the pending flag cleared and must
                 // not mask an earlier facility failure; record it (or attach it to the first failure as suppressed).
                 logger.error("Failed to re-derive node info from committed state", e);
@@ -223,8 +223,20 @@ public class DispatchProcessor {
             }
         }
         if (firstFailure != null) {
-            throw firstFailure;
+            // firstFailure was captured across iterations, so precise rethrow does not apply; rethrow the exact
+            // instance without assuming it is unchecked (a sneaky-thrown checked Throwable must not become a CCE).
+            sneakyRethrow(firstFailure);
         }
+    }
+
+    /**
+     * Rethrows the given throwable as-is, preserving its exact type and identity, without declaring it. Used to
+     * resurface a resync failure captured across iterations (see {@link #resyncFromCommittedState(State)}), where the
+     * failure may be any {@link Throwable} and must not be wrapped or coerced.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void sneakyRethrow(@NonNull final Throwable t) throws T {
+        throw (T) t;
     }
 
     /**
