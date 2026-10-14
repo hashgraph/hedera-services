@@ -1944,17 +1944,21 @@ class ClprDeepDiveBundleAuditTest {
     }
 
     @Test
-    @DisplayName("received ConfigUpdate keeps all endpoint keys when max_peer_endpoints is zero")
-    void receivedConfigUpdateKeepsAllEndpointKeysWhenMaxPeerEndpointsIsZero() {
+    @DisplayName("received endpoint manifest keeps all endpoints when max_peer_endpoints is zero")
+    void receivedManifestKeepsAllEndpointsWhenMaxPeerEndpointsIsZero() {
         putChannel(ClprChannelStatus.ACTIVE, 1, 0, ZERO_HASH);
-        final var peerTimestamp = Timestamp.newBuilder().seconds(5000).nanos(42).build();
         final var endpoints = endpointList(12);
-        final var bundle = buildBundle(
-                ClprChannelStatus.ACTIVE, 0, 0, ZERO_HASH, List.of(configUpdatePayload(peerTimestamp, endpoints)));
-        setupHandleContext(bundle, true);
+        final var manifest = ClprEndpointManifest.newBuilder()
+                .version(1)
+                .endpoints(endpoints)
+                .build();
+        setupHandleContext(bundleTxn(buildBundleWithManifest(manifest, List.of())), true);
         given(configStore.getConfiguration()).willReturn(createLedgerConfigWithMaxPeerEndpoints(0));
 
         subject.handle(handleContext);
+
+        assertThat(channelStore.getChannel(CHANNEL_ID).endpointManifestOrThrow().endpoints())
+                .containsExactlyElementsOf(endpoints);
     }
 
     @Test
@@ -3358,20 +3362,6 @@ class ClprDeepDiveBundleAuditTest {
                                 .maxGasPerMessage(maxGasPerMessage)
                                 .build())
                         .build());
-    }
-
-    private static ClprMessagePayload configUpdatePayload(
-            @NonNull final Timestamp peerTimestamp, @NonNull final List<ClprEndpoint> endpoints) {
-        return ClprMessagePayload.newBuilder()
-                .control(ClprControlMessage.newBuilder()
-                        .configUpdate(ClprConfigUpdate.newBuilder()
-                                .configuration(ClprLedgerConfiguration.newBuilder()
-                                        .timestamp(peerTimestamp)
-                                        .endpoints(endpoints)
-                                        .build())
-                                .build())
-                        .build())
-                .build();
     }
 
     private static List<ClprEndpoint> endpointList(final int count) {

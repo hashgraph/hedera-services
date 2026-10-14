@@ -16,19 +16,18 @@ The Hiero CLPR Service is deployed at EVM address `0x000000000000000000000000000
 (decimal `366`). This is a Hiero system-contract address following the standard Hedera
 numbering scheme.
 
+**Why this matters:** the service address is bound into the connector registration
+signature: `ECDSA(keccak256(connector_id ‖ service_address))` (spec §6.3 callout).
+Any Hiero connector contract must use `0x000000000000000000000000000000000000016e`
+as the `service_address` value when computing the binding.
+
 The address is a constant `CLPR_EVM_ADDRESS` in `ClprSystemContract`. It is also
-set in `LEDGER_CONFIGURATION.service_address` at genesis.
+set in `LEDGER_CONFIGURATION.service_address` at genesis (via `V0650ClprSchema`).
 
-### Connector ownership signatures
-
-Hiero connector reveals sign `keccak256(connector_id || service_address)`, as specified
-in canonical spec §6.3. The `service_address` is the 20-byte CLPR system-contract address
-`0x000000000000000000000000000000000000016e`. Both supported signature schemes sign this
-32-byte digest and produce a 64-byte signature.
-
-`generate-connector-identity` generates the key material, commitment, and reveal signature.
-`complete-connector --identity ...` submits that signature with the registration fields.
-Explicit externally generated signatures remain supported.
+**Canonical spec note:** this address is Hiero-specific and must not appear in the
+canonical spec. Peer ledgers on non-Hiero platforms will have their own service
+address, and a connector's binding must use the service address of the *destination*
+ledger.
 
 ---
 
