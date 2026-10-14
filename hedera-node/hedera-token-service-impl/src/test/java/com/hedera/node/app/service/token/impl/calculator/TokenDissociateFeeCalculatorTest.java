@@ -90,13 +90,13 @@ class TokenDissociateFeeCalculatorTest {
                         .extras(List.of(makeExtraIncluded(Extra.SIGNATURES, 1)))
                         .build())
                 .network(NetworkFee.newBuilder().multiplier(9).build())
-                .extras(makeExtraDef(Extra.SIGNATURES, 1000000L), makeExtraDef(Extra.TOKEN_ASSOCIATE, 500000000L))
+                .extras(makeExtraDef(Extra.SIGNATURES, 1000000L), makeExtraDef(Extra.TOKEN_DISSOCIATE, 500000000L))
                 .services(makeService(
                         "TokenService",
                         makeServiceFee(
                                 HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT,
                                 499000000L,
-                                makeExtraIncluded(Extra.TOKEN_ASSOCIATE, 1))))
+                                makeExtraIncluded(Extra.TOKEN_DISSOCIATE, 1))))
                 .build();
     }
 }

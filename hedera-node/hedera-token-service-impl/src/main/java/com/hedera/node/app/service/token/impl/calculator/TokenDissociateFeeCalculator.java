@@ -26,12 +26,12 @@ public class TokenDissociateFeeCalculator implements ServiceFeeCalculator {
                 lookupServiceFee(feeSchedule, HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT);
         feeResult.setServiceBaseFeeTinycents(serviceDef.baseFee());
 
-        // Priced like TokenAssociate, per token; a schedule without the extra charges only the base fee
-        if (serviceDef.extras().stream().anyMatch(ref -> ref.name() == Extra.TOKEN_ASSOCIATE)) {
+        // Charged per token; a schedule without the extra charges only the base fee
+        if (serviceDef.extras().stream().anyMatch(ref -> ref.name() == Extra.TOKEN_DISSOCIATE)) {
             addExtraFee(
                     feeResult,
                     serviceDef,
-                    Extra.TOKEN_ASSOCIATE,
+                    Extra.TOKEN_DISSOCIATE,
                     feeSchedule,
                     op.tokens().size());
         }
