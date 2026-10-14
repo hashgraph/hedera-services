@@ -3,8 +3,6 @@ package com.swirlds.merkledb.collections;
 
 import static com.swirlds.base.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChannel;
-import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.recordSnapshotFailure;
-import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.runSnapshotOperation;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
@@ -15,6 +13,8 @@ import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -27,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BooleanSupplier;
 import java.util.stream.LongStream;
@@ -179,7 +178,7 @@ public abstract class AbstractLongList<C> implements LongList {
         chunkList = new AtomicReferenceArray<>(calculateNumberOfChunks(capacity));
     }
 
-    /// Loads index data from a file previously saved using [#writeToFile(Path, Executor)].
+    /// Loads index data from a file previously saved using [#writeToFile(Path, Executor, int)].
     ///
     /// @param file the file to load from
     /// @throws IOException if the file cannot be read
@@ -491,62 +490,127 @@ public abstract class AbstractLongList<C> implements LongList {
 
     /// {@inheritDoc}
     @Override
-    public CompletableFuture<Void> writeToFile(
-            final Path file, final Executor pool, final AtomicReference<Throwable> failure) {
+    public void writeToFile(final Path file, final Executor executor, final int threadCount) throws IOException {
         final long firstIndex = minValidIndex.get();
         final long endIndex = size();
-        final int firstChunk = toIntExact(max(firstIndex, 0) / longsPerChunk);
-        // Moving the valid range beyond populated data leaves only the header to write.
-        final int chunkCount =
-                endIndex > 0 && firstIndex < endIndex ? calculateNumberOfChunks(endIndex) - firstChunk : 0;
-        final AtomicReference<FileChannel> channel = new AtomicReference<>();
+        try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+            writeHeader(fc);
+            // Moving the valid range beyond populated data leaves only the header to write.
+            final long longsToWrite =
+                    endIndex > 0 && firstIndex < endIndex ? Math.subtractExact(endIndex, firstIndex) : 0;
+            final long fileLength = Math.addExact(FILE_HEADER_SIZE_V3, Math.multiplyExact(longsToWrite, Long.BYTES));
+            // Set the logical length before any writer starts. This does not reserve physical storage.
+            try (final RandomAccessFile sizedFile = new RandomAccessFile(file.toFile(), "rw")) {
+                sizedFile.setLength(fileLength);
+            }
+            if (longsToWrite > 0) {
+                if (threadCount == 1) {
+                    writeLongsData(fc, firstIndex, endIndex, FILE_HEADER_SIZE_V3);
+                } else {
+                    writeLongsDataInParallel(fc, executor, threadCount, firstIndex, endIndex);
+                }
+            }
+        }
+    }
 
-        final CompletableFuture<Void> headerWritten = runSnapshotOperation(pool, failure, () -> {
-            channel.set(FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE));
-            writeHeader(channel.get());
-        });
-        final CompletableFuture<Void> writesFinished = headerWritten.thenCompose(_ -> {
-            final List<CompletableFuture<Void>> writes = new ArrayList<>(chunkCount);
-            try {
-                for (int i = 0; i < chunkCount && failure.get() == null; i++) {
-                    final int chunkIndex = firstChunk + i;
-                    writes.add(runSnapshotOperation(pool, failure, () -> {
-                        final long chunkStart = (long) chunkIndex * longsPerChunk;
-                        final int startInChunk = toIntExact(max(firstIndex - chunkStart, 0));
-                        final int endInChunk = toIntExact(min(endIndex - chunkStart, longsPerChunk));
-                        final long fileOffset =
-                                FILE_HEADER_SIZE_V3 + (chunkStart + startInChunk - firstIndex) * Long.BYTES;
-                        final C chunk = chunkList.get(chunkIndex);
-                        if (chunk == null) {
-                            writeZeroes(channel.get(), (endInChunk - startInChunk) * Long.BYTES, fileOffset);
-                        } else {
-                            writeChunkData(channel.get(), chunk, startInChunk, endInChunk, fileOffset);
-                        }
-                    }));
-                }
-            } catch (final RuntimeException | Error t) {
-                recordSnapshotFailure(failure, t);
+    /// Writes contiguous chunk ranges in parallel and waits for all submitted tasks to finish.
+    ///
+    /// @param fc target file channel
+    /// @param executor executor for the writer tasks
+    /// @param threadCount maximum number of writer tasks
+    /// @param firstIndex first valid list index, inclusive
+    /// @param endIndex last list index, exclusive
+    /// @throws IOException if a range cannot be written
+    private void writeLongsDataInParallel(
+            final FileChannel fc,
+            final Executor executor,
+            final int threadCount,
+            final long firstIndex,
+            final long endIndex)
+            throws IOException {
+        // Chunk containing the minimum valid index; writer ranges start here, inclusive.
+        final int firstValidChunkIndex = toIntExact(firstIndex / longsPerChunk);
+        // Chunk just past the list's end; writer ranges stop here, exclusive.
+        final int totalNumOfChunks = calculateNumberOfChunks(endIndex);
+        final int activeChunkCount = totalNumOfChunks - firstValidChunkIndex;
+        // Cap the writer ranges so every task owns at least one chunk.
+        final int taskCount = min(threadCount, activeChunkCount);
+        // Minimum chunks per range (or task).
+        final int chunksPerRange = activeChunkCount / taskCount;
+        // Leading ranges (or tasks) that receive one extra chunk.
+        final int rangesWithOneMoreChunk = activeChunkCount % taskCount;
+        final List<CompletableFuture<Void>> tasks = new ArrayList<>(taskCount);
+
+        int rangeFirstChunkInclusive = firstValidChunkIndex;
+        Throwable failure = null;
+        try {
+            // Balanced contiguous ranges keep each writer moving forward through the file.
+            for (int rangeIndex = 0; rangeIndex < taskCount; rangeIndex++) {
+                final int rangeChunkCount = chunksPerRange + (rangeIndex < rangesWithOneMoreChunk ? 1 : 0);
+                final int rangeLastChunkExclusive = rangeFirstChunkInclusive + rangeChunkCount;
+                final long rangeStartIndex = max(firstIndex, (long) rangeFirstChunkInclusive * longsPerChunk);
+                final long rangeEndIndex = min(endIndex, (long) rangeLastChunkExclusive * longsPerChunk);
+                final long fileOffset = FILE_HEADER_SIZE_V3 + (rangeStartIndex - firstIndex) * Long.BYTES;
+                tasks.add(CompletableFuture.runAsync(
+                        () -> {
+                            try {
+                                writeLongsData(fc, rangeStartIndex, rangeEndIndex, fileOffset);
+                            } catch (final IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        },
+                        executor));
+                rangeFirstChunkInclusive = rangeLastChunkExclusive;
             }
-            // Even after a failure, accepted writes must finish before the channel can close.
-            return CompletableFuture.allOf(writes.toArray(CompletableFuture[]::new));
-        });
-        return writesFinished.handle((_, exception) -> {
-            // Execution and submission failures have already been recorded by the tasks above.
-            try {
-                if (channel.get() != null) {
-                    channel.get().close();
-                }
-            } catch (final IOException t) {
-                recordSnapshotFailure(failure, t);
+        } catch (final RuntimeException | Error e) {
+            failure = e;
+        }
+        try {
+            // Accepted writes must finish before the shared channel closes, even after a failure.
+            CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new)).join();
+        } catch (final CompletionException e) {
+            final Throwable writeFailure =
+                    e.getCause() instanceof UncheckedIOException ioException ? ioException.getCause() : e;
+            if (failure == null) {
+                failure = writeFailure;
+            } else {
+                // A submission failure remains primary if an accepted writer also failed.
+                failure.addSuppressed(writeFailure);
             }
-            if (failure.get() != null) {
-                throw new CompletionException(failure.get());
+        }
+        if (failure instanceof IOException ioException) {
+            throw ioException;
+        } else if (failure instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        } else if (failure instanceof Error error) {
+            throw error;
+        }
+    }
+
+    /// Writes the specified index range, clipping edge chunks and filling missing chunks with zeroes.
+    ///
+    /// @param fc target file channel
+    /// @param startIndex first list index to write, inclusive
+    /// @param endIndex last list index to write, exclusive
+    /// @param fileOffset target offset for `startIndex`
+    /// @throws IOException if the range cannot be written
+    private void writeLongsData(final FileChannel fc, final long startIndex, final long endIndex, long fileOffset)
+            throws IOException {
+        final int firstChunkIndex = toIntExact(startIndex / longsPerChunk);
+        final int lastChunkIndex = toIntExact((endIndex - 1) / longsPerChunk);
+        for (int chunkIndex = firstChunkIndex; chunkIndex <= lastChunkIndex; chunkIndex++) {
+            final long chunkStart = (long) chunkIndex * longsPerChunk;
+            final int startInChunk = toIntExact(max(startIndex - chunkStart, 0));
+            final int endInChunk = toIntExact(min(endIndex - chunkStart, longsPerChunk));
+            final int bytesToWrite = (endInChunk - startInChunk) * Long.BYTES;
+            final C chunk = chunkList.get(chunkIndex);
+            if (chunk == null) {
+                writeZeroes(fc, bytesToWrite, fileOffset);
+            } else {
+                writeChunkData(fc, chunk, startInChunk, endInChunk, fileOffset);
             }
-            if (exception != null) {
-                throw new CompletionException(exception);
-            }
-            return null;
-        });
+            fileOffset += bytesToWrite;
+        }
     }
 
     /// Writes exactly the missing part of a chunk without allocating a chunk-sized zero buffer.

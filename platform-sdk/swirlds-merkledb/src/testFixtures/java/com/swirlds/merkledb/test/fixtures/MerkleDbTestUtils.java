@@ -12,7 +12,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.MerklePathUtils;
@@ -64,7 +63,7 @@ public class MerkleDbTestUtils {
     public static final MerkleDbConfig DEFAULT_MERKLE_DB_CONFIG =
             DEFAULT_CONFIGURATION.getConfigData(MerkleDbConfig.class);
 
-    /// Writes the list using the default snapshot parallelism, replacing any existing file,
+    /// Writes the list using the default long list parallelism, replacing any existing file,
     /// and verifies that the file exists.
     ///
     /// @param longList the LongList instance to write
@@ -77,8 +76,9 @@ public class MerkleDbTestUtils {
         final Path file = tempDir.resolve(fileName);
 
         Files.deleteIfExists(file);
-        try (final ExecutorService pool = Executors.newFixedThreadPool(DEFAULT_MERKLE_DB_CONFIG.snapshotThreads())) {
-            MerkleDbFileUtils.waitForSnapshot(longList.writeToFile(file, pool));
+        final int threadCount = DEFAULT_MERKLE_DB_CONFIG.longListWriteThreads();
+        try (final ExecutorService pool = Executors.newFixedThreadPool(threadCount)) {
+            longList.writeToFile(file, pool, threadCount);
         }
 
         assertTrue(

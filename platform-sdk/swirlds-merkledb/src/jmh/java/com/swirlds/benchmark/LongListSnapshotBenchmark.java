@@ -10,7 +10,6 @@ import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.collections.LongListSegment;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
-import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -62,8 +61,11 @@ public class LongListSnapshotBenchmark {
     private Path trialDirectory;
     private Path snapshotFile;
     private LongList source;
-    private ExecutorService pool;
+    private ExecutorService executor;
 
+    /// Creates and populates the source index outside the timed measurement.
+    ///
+    /// @throws IOException if setup files cannot be created or flushed
     @Setup(Level.Trial)
     public void setupTrial() throws IOException {
         final Path directory = Files.createDirectories(Path.of(workDir));
@@ -95,14 +97,22 @@ public class LongListSnapshotBenchmark {
                 forceFile(file);
             }
         }
-        pool = Executors.newFixedThreadPool(threadsPerLongList);
+        if (threadsPerLongList > 1) {
+            executor = Executors.newFixedThreadPool(threadsPerLongList);
+        }
     }
 
+    /// Measures a snapshot write with [LongList#writeToFile].
+    ///
+    /// @throws IOException if the snapshot cannot be created or written
     @Benchmark
     public void writeToFile() throws IOException {
-        MerkleDbFileUtils.waitForSnapshot(source.writeToFile(snapshotFile, pool));
+        source.writeToFile(snapshotFile, executor, threadsPerLongList);
     }
 
+    /// Flushes and removes the snapshot after each measured write.
+    ///
+    /// @throws IOException if the snapshot cannot be flushed or removed
     @TearDown(Level.Invocation)
     public void tearDownInvocation() throws IOException {
         try {
@@ -113,11 +123,14 @@ public class LongListSnapshotBenchmark {
         }
     }
 
+    /// Closes the source index and executor, then removes the trial files.
+    ///
+    /// @throws IOException if the source index cannot be closed or the trial files removed
     @TearDown(Level.Trial)
     public void tearDownTrial() throws IOException {
         try {
-            if (pool != null) {
-                pool.close();
+            if (executor != null) {
+                executor.close();
             }
             if (source != null) {
                 source.close();

@@ -3,6 +3,7 @@ package com.swirlds.merkledb.collections;
 
 import static com.swirlds.merkledb.collections.AbstractLongList.FILE_HEADER_SIZE_V3;
 import static com.swirlds.merkledb.collections.LongList.IMPERMISSIBLE_VALUE;
+import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.DEFAULT_MERKLE_DB_CONFIG;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils.writeLongListToFileAndVerify;
@@ -24,13 +25,16 @@ import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig_;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
@@ -600,6 +604,44 @@ abstract class AbstractLongListTest<T extends AbstractLongList<?>> extends Abstr
                 assertEquals(1599, restored.get(599));
                 // Make sure chunk 3 doesn't have any values carried over from chunk 2
                 assertEquals(0, restored.get(799));
+            }
+        }
+    }
+
+    @Test
+    void testSnapshotSizedBeforeWriters(@TempDir final Path testDir) throws IOException {
+        final int firstIndex = 7;
+        final int lastIndex = 4 * NUM_LONGS_PER_CHUNK + 5;
+        final long expectedFileSize = FILE_HEADER_SIZE_V3 + (lastIndex - firstIndex + 1L) * Long.BYTES;
+        final Path snapshot = testDir.resolve("sizedBeforeWriters.ll");
+        final int threadCount = DEFAULT_MERKLE_DB_CONFIG.longListWriteThreads();
+        final AtomicBoolean writerSubmitted = new AtomicBoolean();
+        try (final LongList longList = createLongList(NUM_LONGS_PER_CHUNK, MAX_LONGS, 0)) {
+            longList.updateValidRange(firstIndex, lastIndex);
+            longList.put(firstIndex + 1, 42);
+            longList.put(lastIndex, 84);
+            longList.writeToFile(
+                    snapshot,
+                    task -> {
+                        try {
+                            assertEquals(expectedFileSize, Files.size(snapshot), "Size before each writer starts");
+                        } catch (final IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        writerSubmitted.set(true);
+                        task.run();
+                    },
+                    threadCount);
+            assertTrue(writerSubmitted.get(), "The size check should run before a writer is submitted");
+            assertEquals(expectedFileSize, Files.size(snapshot));
+            assertThrows(
+                    FileAlreadyExistsException.class, () -> longList.writeToFile(snapshot, Runnable::run, threadCount));
+            try (final LongList restored = createLongList(snapshot, NUM_LONGS_PER_CHUNK, MAX_LONGS, 0)) {
+                assertEquals(firstIndex, restored.getMinValidIndex());
+                assertEquals(lastIndex + 1, restored.size());
+                assertEquals(42, restored.get(firstIndex + 1));
+                assertEquals(84, restored.get(lastIndex));
+                assertEquals(0, restored.get(2 * NUM_LONGS_PER_CHUNK));
             }
         }
     }

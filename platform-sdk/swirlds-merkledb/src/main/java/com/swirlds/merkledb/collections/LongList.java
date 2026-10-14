@@ -3,10 +3,9 @@ package com.swirlds.merkledb.collections;
 
 import com.swirlds.merkledb.files.DataFileCommon;
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
 /**
@@ -93,25 +92,16 @@ public interface LongList extends CASableLongIndex, Closeable, OffHeapUser {
     LongStream stream();
 
     /// Writes all longs in this LongList to a file.
-    /// Submits one task per chunk and returns without waiting. Completion includes closing the file,
-    /// even after a write fails. Keep the list unchanged and the pool open until completion.
-    /// Do not cancel or complete the returned future yourself.
+    /// If another thread calls `put()` during the write, the file may contain both old and updated values.
+    ///
+    /// With one thread, writes on the calling thread. Otherwise, submits up to `threadCount` tasks
+    /// to `executor` and waits for them to finish. The caller owns the executor.
     ///
     /// @param file new file to write; its parent directory must exist and be writable
-    /// @param pool pool shared by the snapshot tasks
-    /// @return completion of all writes and file cleanup; failures are reported through this future
-    default CompletableFuture<Void> writeToFile(final Path file, final Executor pool) {
-        return writeToFile(file, pool, new AtomicReference<>());
-    }
-
-    /// Writes this index as part of a snapshot, skipping queued chunks if any snapshot operation fails.
-    /// The list and pool must remain available until the returned future completes, including file cleanup.
-    ///
-    /// @param file new file to write; its parent directory must exist and be writable
-    /// @param pool pool shared by the snapshot tasks
-    /// @param failure shared snapshot failure; initially empty
-    /// @return completion after all accepted writers stop and the file is closed
-    CompletableFuture<Void> writeToFile(Path file, Executor pool, AtomicReference<Throwable> failure);
+    /// @param executor executor able to run writer tasks while this method waits
+    /// @param threadCount maximum number of writer threads for this list, at least one
+    /// @throws IOException if there was a problem creating or writing to the file
+    void writeToFile(Path file, Executor executor, int threadCount) throws IOException;
 
     /**
      * Updates min and max valid indexes in this list. If both values are -1, this indicates
