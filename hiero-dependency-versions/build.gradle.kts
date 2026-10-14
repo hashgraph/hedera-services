@@ -96,7 +96,6 @@ dependencies.constraints {
     api("org.assertj:assertj-core:3.27.7") { because("org.assertj.core") }
     api("org.bouncycastle:bcpkix-jdk18on:$bouncycastle") { because("org.bouncycastle.pkix") }
     api("org.bouncycastle:bcprov-jdk18on:$bouncycastle") { because("org.bouncycastle.provider") }
-    api("org.bouncycastle:bctls-jdk18on:$bouncycastle") { because("org.bouncycastle.tls") }
     api("org.eclipse.collections:eclipse-collections-api:$eclipseCollections") {
         because("org.eclipse.collections.api")
     }
@@ -140,6 +139,9 @@ dependencies.constraints {
     }
     api("com.hedera.cryptography:libxkcp:$hederaCryptography") {
         because("com.hedera.cryptography.libxkcp")
+    }
+    api("com.hedera.cryptography:security:$hederaCryptography") {
+        because("com.hedera.cryptography.security")
     }
 
     // Versions of additional tools that are not part of the product or test module paths
