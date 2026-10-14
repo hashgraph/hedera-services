@@ -361,7 +361,7 @@ val prCheckPlatformOverrides =
 val prCheckPrepareUpgradeOffsets = mapOf("hapiTestAdhoc" to "PT300S")
 // We don't want to run stream or log validation for these tasks
 val prCheckWithoutStreamAndLogValidation =
-    setOf("hapiTestIss", "hapiTestBlockNodeCommunication, hapiTestGenesisSubProcess") + clprTasks
+    setOf("hapiTestIss", "hapiTestBlockNodeCommunication", "hapiTestGenesisSubProcess") + clprTasks
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
