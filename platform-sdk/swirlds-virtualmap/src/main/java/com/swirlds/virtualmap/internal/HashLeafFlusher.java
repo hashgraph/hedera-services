@@ -8,6 +8,7 @@ import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashChunk;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -74,10 +75,13 @@ public class HashLeafFlusher {
         final List<VirtualLeafBytes> deletedLeaves = new ArrayList<>();
     }
 
-    // If a producer is blocked on backpressure longer than this, a warning is logged. A long stall may
-    // indicate a slow disk, and it may make reconnect fail, since a blocked learner stops reading from
-    // the teacher, which times out
-    private static final long SLOW_WAIT_WARN_MS = 10_000;
+    // When producers started blocking on the running flush, or 0 if none are blocked. Guarded by this
+    private long backpressureStart = 0;
+
+    // Total time producers were blocked on backpressure, logged in finish(). A long total may indicate
+    // a slow disk, and it may make reconnect fail, since a blocked learner stops reading from the teacher,
+    // which times out. Guarded by this
+    private long backpressureMs = 0;
 
     private final int hashChunkHeight;
 
@@ -207,30 +211,13 @@ public class HashLeafFlusher {
         assert batch != null : "Flusher is not initialized or already finished";
         final Batch toFlush;
         synchronized (this) {
-            // Backpressure: the next batch is already due for a flush, wait till the running flush is complete
-            if (failure == null && flushInProgress && isFlushNeeded()) {
-                final long waitStart = System.currentTimeMillis();
-                try {
-                    while (failure == null && flushInProgress && isFlushNeeded()) {
-                        waitForFlush();
-                    }
-                } finally {
-                    // Log even if the wait is interrupted, so a prolonged wait is always diagnosed
-                    final long waitMs = System.currentTimeMillis() - waitStart;
-                    if (waitMs >= SLOW_WAIT_WARN_MS) {
-                        logger.warn(
-                                logMarker, "Producer was blocked for {} ms waiting for a flush to complete", waitMs);
-                    }
-                }
-            }
+            waitIfBackpressured();
             throwIfFailed();
             action.run();
             if (flushInProgress || !isFlushNeeded()) {
                 return;
             }
-            // Take the batch first, so the flag is never left set if it throws
-            toFlush = takeBatch();
-            flushInProgress = true;
+            toFlush = prepareBatchFlush(new Batch());
         }
         // Call flush() outside of the synchronized block to make sure updateHashChunk(), updateLeaf(), and
         // deleteLeaf() aren't blocked for the duration of the flush, unless the next batch is also due
@@ -281,8 +268,31 @@ public class HashLeafFlusher {
         }
     }
 
+    // Backpressure: if the current batch is already due for a flush while another flush is running,
+    // waits till the running flush is complete. Must be called with the lock held
+    private void waitIfBackpressured() {
+        while (failure == null && flushInProgress && isFlushNeeded()) {
+            if (backpressureStart == 0) {
+                backpressureStart = System.currentTimeMillis();
+            }
+            waitOnLock();
+        }
+        // The first producer released from a stall adds its duration, others see 0 and skip it
+        if (backpressureStart != 0) {
+            backpressureMs += System.currentTimeMillis() - backpressureStart;
+            backpressureStart = 0;
+        }
+    }
+
+    // Waits till the running flush, if any, is complete. Must be called with the lock held
+    private void waitForRunningFlush() {
+        while (failure == null && flushInProgress) {
+            waitOnLock();
+        }
+    }
+
     // Must be called with the lock held
-    private void waitForFlush() {
+    private void waitOnLock() {
         try {
             wait();
         } catch (final InterruptedException e) {
@@ -291,22 +301,22 @@ public class HashLeafFlusher {
         }
     }
 
-    // Must be called with the lock held
-    private Batch takeBatch() {
-        final Batch full = batch;
-        batch = new Batch();
-        return full;
+    // Replaces the current batch with the given one, marks a flush as in progress, and returns the
+    // batch to flush. Must be called with the lock held
+    private Batch prepareBatchFlush(@Nullable final Batch next) {
+        final Batch toFlush = batch;
+        batch = next;
+        flushInProgress = true;
+        return toFlush;
     }
 
     // Must be called with the lock held
     private boolean isFlushNeeded() {
-        if (flushInterval <= 0) {
-            // All data is flushed in finish() only
-            return false;
-        }
-        return (batch.hashChunks.size() * VirtualHashChunk.getChunkSize(hashChunkHeight) >= flushInterval)
-                || (batch.leaves.size() >= flushInterval)
-                || (batch.deletedLeaves.size() >= flushInterval);
+        // If flushInterval isn't positive, all data is flushed in finish() only
+        return flushInterval > 0
+                && ((batch.hashChunks.size() * VirtualHashChunk.getChunkSize(hashChunkHeight) >= flushInterval)
+                        || (batch.leaves.size() >= flushInterval)
+                        || (batch.deletedLeaves.size() >= flushInterval));
     }
 
     /// Waits for the running flush, if any, to complete, then flushes all remaining data in the current
@@ -325,13 +335,11 @@ public class HashLeafFlusher {
             if (batch == null) {
                 throw new IllegalStateException("Flusher is not initialized or already finished");
             }
-            while (failure == null && flushInProgress) {
-                waitForFlush();
-            }
+            waitForRunningFlush();
+            // Log before throwIfFailed(), so the total is logged even if an earlier flush failed
+            logger.info(logMarker, "Producers were blocked on backpressure for {} ms in total", backpressureMs);
             throwIfFailed();
-            last = batch;
-            batch = null;
-            flushInProgress = true;
+            last = prepareBatchFlush(null);
         }
         // Nodes / leaves lists may be empty, but a flush is still needed to make sure
         // all stale leaves are removed from the data source. The flush is run outside the
