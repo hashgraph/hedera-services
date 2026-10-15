@@ -2,6 +2,7 @@
 package com.hedera.services.bdd.junit.support.translators;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ATOMIC_BATCH;
+import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_MAINTENANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_DELETE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
@@ -121,8 +122,8 @@ import org.apache.logging.log4j.Logger;
 public class BlockTransactionalUnitTranslator {
     private static final Logger log = LogManager.getLogger(BlockTransactionalUnitTranslator.class);
 
-    private static final Set<HederaFunctionality> RECORD_STREAM_ABSENT_FUNCTIONALITIES =
-            EnumSet.of(STATE_SIGNATURE_TRANSACTION, HINTS_PARTIAL_SIGNATURE, MIGRATION_ROOT_HASH_VOTE);
+    private static final Set<HederaFunctionality> RECORD_STREAM_ABSENT_FUNCTIONALITIES = EnumSet.of(
+            STATE_SIGNATURE_TRANSACTION, HINTS_PARTIAL_SIGNATURE, MIGRATION_ROOT_HASH_VOTE, CLPR_MAINTENANCE);
 
     /**
      * The base translator used to create the {@link SingleTransactionRecord}s.
@@ -199,6 +200,7 @@ public class BlockTransactionalUnitTranslator {
                     put(HISTORY_PROOF_VOTE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(LEDGER_ID_PUBLICATION, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(MIGRATION_ROOT_HASH_VOTE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
+                    put(CLPR_MAINTENANCE, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                 }
             };
 
