@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCloseChanne
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprDeregisterConnector;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRedactMessage;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprSubmitBundle;
@@ -124,8 +123,9 @@ public class ClprDisabledSuite {
     private static final String CONNECTOR_CONTRACT = "PassThroughAuth";
     private static final long GAS_TO_OFFER = 500_000L;
     private static final String INGEST_BYPASS_NODE = "4";
+    // ClprMaintenance is never submitted, only externalized by nodes in the block stream
     private static final EnumSet<HederaFunctionality> NODE_INTERNAL_CLPR_FUNCTIONS =
-            EnumSet.of(HederaFunctionality.ClprEndpointPublication);
+            EnumSet.of(HederaFunctionality.ClprEndpointPublication, HederaFunctionality.ClprMaintenance);
     private static final List<String> CLPR_SYSTEM_CONTRACT_NUMS =
             List.of(String.valueOf(0x16eL), String.valueOf(0x16fL), String.valueOf(0x170L), String.valueOf(0x171L));
 
@@ -482,9 +482,6 @@ public class ClprDisabledSuite {
                         .connectorId(crypto.connectorId())
                         .adminKey(GENESIS)
                         .stakeRecipient(GENESIS));
-        txns.put(
-                "redactMessage",
-                clprRedactMessage().channelId(crypto.channelId()).messageId(1L));
         // A verified message referencing an unknown remote connector produces CONNECTOR_NOT_FOUND
         // in the outbound reply. The bundle itself must still be accepted successfully.
         final var payload = ClprMessagePayload.newBuilder()
