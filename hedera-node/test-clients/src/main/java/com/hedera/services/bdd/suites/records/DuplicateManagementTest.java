@@ -267,6 +267,8 @@ public class DuplicateManagementTest {
                 // Reach consensus more than 180 seconds after the valid start of the "success" transaction
                 sleepFor(179_000L),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
+                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND),
+                // The far-future id is not kept in the deduplication cache either
+                getReceipt(TXN_ID).hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 }
