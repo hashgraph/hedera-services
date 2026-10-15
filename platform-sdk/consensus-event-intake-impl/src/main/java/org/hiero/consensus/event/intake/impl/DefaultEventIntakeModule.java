@@ -117,6 +117,31 @@ public class DefaultEventIntakeModule implements EventIntakeModule {
         this.branchDetectorWiring = new ComponentWiring<>(model, BranchDetector.class, wiringConfig.branchDetector());
         this.branchReporterWiring = new ComponentWiring<>(model, BranchReporter.class, wiringConfig.branchReporter());
 
+        // Wire metrics before the components: an output wire forwards to its destinations in the order they were
+        // soldered, and a stage must record an event before the next stage receives it
+        if (pipelineTracker != null) {
+            pipelineTracker.registerMetric("hashing", EventOrigin.GOSSIP, EventOrigin.STORAGE);
+            eventHasherWiring
+                    .getOutputWire()
+                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("hashing", platformEvent));
+            pipelineTracker.registerMetric("validation");
+            eventValidatorWiring
+                    .getOutputWire()
+                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("validation", platformEvent));
+            pipelineTracker.registerMetric("deduplication");
+            eventDeduplicatorWiring
+                    .getOutputWire()
+                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("deduplication", platformEvent));
+            pipelineTracker.registerMetric("verification");
+            eventSignatureValidatorWiring
+                    .getOutputWire()
+                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("verification", platformEvent));
+            pipelineTracker.registerMetric("orphanBuffer");
+            orphanBufferWiring
+                    .<PlatformEvent>getSplitOutput()
+                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("orphanBuffer", platformEvent));
+        }
+
         // Wire components
         eventWindowExtractor.getOutputWire().solderTo(eventWindowDispatcher.getInputWire(), INJECT);
         eventHasherWiring
@@ -160,30 +185,6 @@ public class DefaultEventIntakeModule implements EventIntakeModule {
         clearCommandDispatcher
                 .getOutputWire()
                 .solderTo(branchReporterWiring.getInputWire(BranchReporter::clear), INJECT);
-
-        // Wire metrics
-        if (pipelineTracker != null) {
-            pipelineTracker.registerMetric("hashing", EventOrigin.GOSSIP, EventOrigin.STORAGE);
-            eventHasherWiring
-                    .getOutputWire()
-                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("hashing", platformEvent));
-            pipelineTracker.registerMetric("validation");
-            eventValidatorWiring
-                    .getOutputWire()
-                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("validation", platformEvent));
-            pipelineTracker.registerMetric("deduplication");
-            eventDeduplicatorWiring
-                    .getOutputWire()
-                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("deduplication", platformEvent));
-            pipelineTracker.registerMetric("verification");
-            eventSignatureValidatorWiring
-                    .getOutputWire()
-                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("verification", platformEvent));
-            pipelineTracker.registerMetric("orphanBuffer");
-            orphanBufferWiring
-                    .<PlatformEvent>getSplitOutput()
-                    .solderForMonitoring(platformEvent -> pipelineTracker.recordEvent("orphanBuffer", platformEvent));
-        }
 
         // Force not soldered wires to be built
         eventDeduplicatorWiring.getInputWire(EventDeduplicator::clear);

@@ -25,14 +25,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.ClprBundleContent;
 import com.hederahashgraph.api.proto.java.ClprChannelStatus;
-import com.hederahashgraph.api.proto.java.ClprEndpoint;
 import com.hederahashgraph.api.proto.java.ClprLedgerConfiguration;
 import com.hederahashgraph.api.proto.java.ClprMessage;
 import com.hederahashgraph.api.proto.java.ClprMessagePayload;
 import com.hederahashgraph.api.proto.java.ClprMessageReply;
 import com.hederahashgraph.api.proto.java.ClprMessageReplyStatus;
 import com.hederahashgraph.api.proto.java.ClprQueueMetadata;
-import com.hederahashgraph.api.proto.java.ClprServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ClprSignatureScheme;
 import com.hederahashgraph.api.proto.java.ClprThrottles;
 import java.util.stream.Stream;
@@ -136,14 +134,14 @@ public class ClprCloseChannelSuite {
                         .configProofBytes(defaultConfigProofBytes())
                         .payingWith(GENESIS),
                 // Submit a bundle with peer=CLOSING containing one DATA message. The receiving ledger
-                // transitions ACTIVE → CLOSING and enqueues a CHANNEL_CLOSED reply. Not yet DRAINED — peer hasn't
+                // transitions ACTIVE → CLOSING and enqueues a CONNECTOR_NOT_FOUND reply. Not yet DRAINED — peer hasn't
                 // acked the receiving ledger's reply.
                 clprSubmitBundle()
                         .channelId(crypto.channelId())
                         .bundlePayload(ClprTestProofs.toBundleProofBytes(drainingBundle))
                         .endpointNodeId(0L)
                         .payingWith(GENESIS),
-                // Peer confirms it received our CHANNEL_CLOSED reply (receivedMessageId=1) and has
+                // Peer confirms it received our CONNECTOR_NOT_FOUND reply (receivedMessageId=1) and has
                 // no further data to send — both queues should now be empty, so the receiving ledger's channel
                 // drains.
                 clprSubmitBundle()
@@ -154,14 +152,14 @@ public class ClprCloseChannelSuite {
                                                 .setNextMessageId(3)
                                                 .setSentRunningHash(ByteString.copyFrom(new byte[32]))
                                                 // Setting received message ID simulates the peer ledger receiving the
-                                                // CHANNEL_CLOSED response from the receiving ledger
+                                                // CONNECTOR_NOT_FOUND response from the receiving ledger
                                                 .setReceivedMessageId(1)
                                                 .setStatus(ClprChannelStatus.CLOSING)
                                                 .build())
                                         .addMessages(ClprMessagePayload.newBuilder()
                                                 .setMessageReply(ClprMessageReply.newBuilder()
                                                         .setMessageId(1)
-                                                        .setStatus(ClprMessageReplyStatus.CHANNEL_CLOSED)
+                                                        .setStatus(ClprMessageReplyStatus.SUCCESS)
                                                         .build())
                                                 .build())
                                         .build(),
@@ -197,16 +195,6 @@ public class ClprCloseChannelSuite {
                         .setMaxGasPerMessage(1_000_000L)
                         .setMaxQueueDepth(1000)
                         .setMaxSyncBytes(1_048_576L)
-                        .build())
-                // At least one endpoint is required: ClprCompleteChannelHandler asserts
-                // !peerConfig.endpoints().isEmpty() (spec §5.1.3 step 5 — verified peer config
-                // must carry a non-empty endpoints list; matches §1.1 / §1.2 ClprEndpoint).
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211)
-                                .build())
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {0x01}))
                         .build())
                 .build());
     }
