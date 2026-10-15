@@ -6,7 +6,7 @@ name: "007: [USER] Benchmark Calibration"
 on:
   # TEMPORARY, for the check run on the throwaway branch; remove before merging
   push:
-    branches: ["benchmark-tooling-check-tmp"]
+    branches: ["27444-benchmark-tooling-check-tmp"]
   workflow_dispatch:
     inputs:
       module:

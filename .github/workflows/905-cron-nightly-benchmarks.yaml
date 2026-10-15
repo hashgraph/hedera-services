@@ -3,7 +3,7 @@ name: "905: [CRON] Nightly Benchmarks"
 on:
   # TEMPORARY, for the check run on the throwaway branch; remove before merging
   push:
-    branches: ["benchmark-tooling-check-tmp"]
+    branches: ["27444-benchmark-tooling-check-tmp"]
   schedule:
     - cron: "17 2 * * *"
   workflow_dispatch:
