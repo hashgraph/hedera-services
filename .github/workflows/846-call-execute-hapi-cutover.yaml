@@ -62,7 +62,7 @@ env:
 
 jobs:
   hapi-tests-cutover:
-    name: "HAPI Tests (Cutover)"
+    name: "HAPI Tests (Cutover & Wraps Download)"
     # Dedicated runner pool with the WRAPS proving-key artifacts mounted at
     # /opt/wraps-v1.0.0 (see hedera-node/infrastructure/docker/containers/production-next/wraps-proving-key)
     runs-on: hl-cn-hapi-wraps-lin-lg
@@ -87,7 +87,7 @@ jobs:
           setup-node: "true"
           node-version: "${{ inputs.node-version }}"
 
-      - name: HAPI Testing (Cutover)
+      - name: HAPI Testing (Cutover & Wraps Download)
         id: gradle-hapi-cutover
         env:
           LC_ALL: en.UTF-8
@@ -110,6 +110,7 @@ jobs:
             echo "❌ ${t} FAILED — expand group above for details"
           }
           run_subtask hapiTestCutover
+          run_subtask hapiTestWrapsDownload
           exit "${status}"
 
       - name: Publish HAPI Test (Cutover) Reports

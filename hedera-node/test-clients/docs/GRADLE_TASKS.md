@@ -115,7 +115,8 @@ instead of the production defaults:
 Stream assertions follow the effective stream mode: with no record stream (`BLOCKS`), record-stream checks read
 the block stream instead.
 
-XTS reruns the MATS HAPI panels and the Wraps panel this way (`829-call-execute-xts-hapi-testnet.yaml`).
+XTS reruns the MATS HAPI panels, `hapiTestWraps` and `hapiTestWrapsDownload` this way
+(`829-call-execute-xts-hapi-testnet.yaml`).
 
 ```bash
 ./gradlew :test-clients:hapiTestCrypto -PhapiTestConfigProfile=testnet
