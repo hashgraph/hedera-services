@@ -18,6 +18,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.interledger.ClprTestHelpers.CLPR_SERVICE_ADDRESS_20;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -30,9 +31,7 @@ import com.hedera.hapi.platform.state.StateItem;
 import com.hedera.hapi.platform.state.StateValue;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
-import com.hederahashgraph.api.proto.java.ClprEndpoint;
 import com.hederahashgraph.api.proto.java.ClprLedgerConfiguration;
-import com.hederahashgraph.api.proto.java.ClprServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ClprSignatureScheme;
 import com.hederahashgraph.api.proto.java.ClprThrottles;
 import java.nio.charset.StandardCharsets;
@@ -156,14 +155,7 @@ public class ClprOrchestratorSubmitTest {
     private static ClprLedgerConfiguration buildLedgerConfig() {
         return ClprLedgerConfiguration.newBuilder()
                 .setChainId("hiero:embedded")
-                .setServiceAddress(ByteString.copyFrom(new byte[] {0, 0, 1}))
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211)
-                                .build())
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {0x01}))
-                        .build())
+                .setServiceAddress(ByteString.copyFrom(CLPR_SERVICE_ADDRESS_20))
                 .setThrottles(ClprThrottles.newBuilder()
                         .setMaxMessagesPerBundle(100)
                         .setMaxMessagePayloadBytes(65536)

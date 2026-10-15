@@ -32,9 +32,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hederahashgraph.api.proto.java.ClprEndpoint;
 import com.hederahashgraph.api.proto.java.ClprLedgerConfiguration;
-import com.hederahashgraph.api.proto.java.ClprServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ClprSignatureScheme;
 import com.hederahashgraph.api.proto.java.ClprThrottles;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -247,8 +245,8 @@ public class ClprChannelCommitRevealSuite {
     @LeakyEmbeddedHapiTest(
             reason = NEEDS_STATE_ACCESS,
             overrides = {"clpr.enabled"})
-    @DisplayName("verifyConfigWithSeedEndpoints: verifier-returned throttles and chainId are stored on channel")
-    final Stream<DynamicTest> verifyConfigWithSeedEndpointsFieldsStoredOnChannel() {
+    @DisplayName("verifyConfig: verifier-returned throttles and chainId are stored on channel")
+    final Stream<DynamicTest> verifyConfigFieldsStoredOnChannel() {
         final var crypto = new ClprChannelCrypto();
         return hapiTest(
                 overriding("clpr.enabled", "true"),
@@ -267,11 +265,9 @@ public class ClprChannelCommitRevealSuite {
                 withOpContext((spec, opLog) -> {
                     final var conn = readChannelFromState(spec, crypto);
                     assertEquals(
-                            "hiero:testing",
-                            conn.chainId(),
-                            "chainId from verifyConfigWithSeedEndpoints should be stored on channel");
+                            "hiero:testing", conn.chainId(), "chainId from verifyConfig should be stored on channel");
                     final var t = conn.peerThrottles();
-                    assertNotNull(t, "peerThrottles should be stored from verifyConfigWithSeedEndpoints return");
+                    assertNotNull(t, "peerThrottles should be stored from verifyConfig return");
                     assertEquals(
                             100,
                             t.maxMessagesPerBundle(),
@@ -311,15 +307,6 @@ public class ClprChannelCommitRevealSuite {
                         .setMaxGasPerMessage(1_000_000L)
                         .setMaxQueueDepth(1000)
                         .setMaxSyncBytes(1_048_576L)
-                        .build())
-                // Non-empty endpoints required by ClprCompleteChannelHandler (spec §5.1.3
-                // step 5 — verified peer config must include at least one endpoint).
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211)
-                                .build())
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {0x01}))
                         .build())
                 .build());
     }
