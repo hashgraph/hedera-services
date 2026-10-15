@@ -754,6 +754,27 @@ class BesuQbftVerifierTest {
                 new BesuQbftVerifier(new BesuQbftVerifier.Config(SERVICE_ADDR, null, 30_000L));
 
         @Test
+        void auditRelayContentCanChangeWithoutChangingSignedProof() {
+            // Security characterization: the signature covers the account state, not bundleContent.
+            // The system-contract adapter must therefore validate all returned content fields.
+            final var accountProof = buildAccountMptProof(SERVICE_ADDR, EMPTY_TRIE_ROOT, new byte[32]);
+            final var signedHeader = buildSignedHeader(VALIDATOR_ADDR, accountProof[0], VALIDATOR_PRIV);
+            final var proofFields = List.of(
+                    signedHeader,
+                    Rlp.encodeList(List.of()),
+                    Rlp.encodeList(List.of(Rlp.encodeBytes(accountProof[1]))),
+                    Rlp.encodeList(List.of()));
+            for (final byte[] relayContent : List.of(new byte[] {1}, new byte[] {2, 3, 4})) {
+                final var fields = new ArrayList<>(proofFields);
+                fields.add(Rlp.encodeBytes(relayContent));
+                final var verified = BUNDLE_SUBJECT.verifyBundle(Rlp.encodeList(fields), validatorSet(VALIDATOR_ADDR));
+                assertThat(verified.bundleContentBytes()).isEqualTo(relayContent);
+                assertThat(verified.queueMetadata().nextMessageId()).isZero();
+                assertThat(verified.newTrustAnchor()).isEmpty();
+            }
+        }
+
+        @Test
         void storageProofWith3ParamEntriesRejected() {
             byte[] encodedStorageEntry = Rlp.encodeList(
                     List.of(Rlp.encodeBytes(new byte[32]), Rlp.encodeBytes(new byte[32]), Rlp.encodeList(List.of())));
