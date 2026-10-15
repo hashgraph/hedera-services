@@ -96,6 +96,8 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
                 model, "EventCreator_EventWindowExtractor", "consensus round", ConsensusRound::getEventWindow);
         eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, wiringConfig.eventCreationManager());
+
+        // Set up input wires
         orderedEventInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent);
         initialEventWindowInputWire =
                 eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow, "event window");
