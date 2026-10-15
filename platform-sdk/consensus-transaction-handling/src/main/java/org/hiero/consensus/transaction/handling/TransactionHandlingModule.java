@@ -95,8 +95,8 @@ public class TransactionHandlingModule {
                 TransactionHandler.class,
                 wiringConfig.handler(),
                 TransactionHandlerDataCounter.create(wiringConfig.handler(), lowTpsTargetRounds));
-        final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring = new ComponentWiring<>(model,
-                SignedStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
+        final ComponentWiring<SignedStateNexus, Void> latestImmutableStateNexusWiring =
+                new ComponentWiring<>(model, SignedStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
 
         // Set up input wires
         preHandleEventInputWire = prehanderWiring.getInputWire(TransactionPrehandler::prehandleApplicationTransactions);

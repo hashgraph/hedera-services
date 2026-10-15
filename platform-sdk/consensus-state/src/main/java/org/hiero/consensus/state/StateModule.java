@@ -140,12 +140,12 @@ public class StateModule {
                 new ComponentWiring<>(model, StateSignatureCollector.class, wiringConfig.stateSignatureCollector());
         this.stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, wiringConfig.stateSnapshotManager());
-        final ComponentWiring<SavedStateController, StateWithHashComplexity> savedStateControllerWiring = new ComponentWiring<>(
-                model, SavedStateController.class, DIRECT_THREADSAFE_CONFIGURATION);
-        final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring = new ComponentWiring<>(
-                model, LatestCompleteStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
-        final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring = new ComponentWiring<>(model,
-                StateGarbageCollector.class, wiringConfig.stateGarbageCollector());
+        final ComponentWiring<SavedStateController, StateWithHashComplexity> savedStateControllerWiring =
+                new ComponentWiring<>(model, SavedStateController.class, DIRECT_THREADSAFE_CONFIGURATION);
+        final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring =
+                new ComponentWiring<>(model, LatestCompleteStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
+        final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring =
+                new ComponentWiring<>(model, StateGarbageCollector.class, wiringConfig.stateGarbageCollector());
         final ComponentWiring<SignedStateSentinel, Void> signedStateSentinelWiring =
                 new ComponentWiring<>(model, SignedStateSentinel.class, wiringConfig.signedStateSentinel());
 
