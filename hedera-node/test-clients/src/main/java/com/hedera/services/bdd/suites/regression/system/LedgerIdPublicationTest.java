@@ -24,8 +24,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
- * Asserts {@code LedgerIdPublication} is externalized to the record stream when TSS is enabled at
- * genesis (#25643). Needs a real multi-node subprocess network; the ceremony can't complete embedded.
+ * Asserts {@code LedgerIdPublication} is externalized when TSS is enabled at genesis (#25643), read from the
+ * record stream, or from the block stream when the node streams only blocks. Needs a real multi-node
+ * subprocess network; the ceremony can't complete embedded.
  */
 public class LedgerIdPublicationTest {
     private static final int NETWORK_SIZE = 4;
@@ -74,7 +75,7 @@ public class LedgerIdPublicationTest {
     private static VisibleItemsValidator ledgerIdPublicationValidator() {
         return (spec, allItems) -> {
             final var items = Objects.requireNonNull(allItems.get(SELECTED_ITEMS_KEY));
-            assertEquals(1, items.size(), "Expected exactly one LedgerIdPublication in the record stream");
+            assertEquals(1, items.size(), "Expected exactly one LedgerIdPublication in the stream");
             // PBJ re-parse: protobuf-java LedgerIdPublication type is in a non-exported package.
             final TransactionBody body;
             try {

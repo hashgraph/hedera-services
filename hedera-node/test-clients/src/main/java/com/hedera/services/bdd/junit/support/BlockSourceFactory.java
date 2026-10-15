@@ -45,10 +45,10 @@ public final class BlockSourceFactory {
     /**
      * Returns the <em>effective</em> startup properties for the spec's first node — its network
      * {@link HapiSpec#startupProperties() startup properties} with that node's per-node
-     * {@code @GenesisSubprocessTest}/{@code @HapiBlockNode} overrides layered on top (see
-     * {@link SubProcessNetwork#effectiveStartupProperties(long)}). For non-subprocess networks, or when the
-     * node has no per-node overrides, this is exactly {@link HapiSpec#startupProperties()} — so per-task
-     * PR-check overrides (e.g. {@code blockStream.streamMode=RECORDS}) stay authoritative.
+     * {@code @GenesisSubprocessTest}/{@code @HapiBlockNode} overrides layered under the per-task PR-check
+     * overrides, as on the node itself (see {@link SubProcessNetwork#effectiveStartupProperties(long)}). For
+     * non-subprocess networks, or when the node has no per-node overrides, this is exactly
+     * {@link HapiSpec#startupProperties()}.
      *
      * @param spec the spec
      * @return the effective startup properties for routing decisions

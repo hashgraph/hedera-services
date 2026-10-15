@@ -28,12 +28,12 @@ on:
         required: false
         default: "false"
       enable-hapi-tests-wraps:
-        description: "HAPI WRAPS Testing Enabled"
+        description: "HAPI WRAPS & Wraps Download Testing Enabled"
         type: string
         required: false
         default: "false"
       enable-hapi-tests-cutover:
-        description: "HAPI Cutover & Wraps Download Testing Enabled"
+        description: "HAPI Cutover Testing Enabled"
         type: string
         required: false
         default: "false"

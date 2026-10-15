@@ -108,11 +108,14 @@ instead of the production defaults:
   and `hapiTestIss` off the block node), and `preCutoverDefaultsOverrides` are skipped;
 - a real block node is started for the gRPC writer;
 - embedded and repeatable tasks keep the `FILE` writer and mock signatures;
-- `hapiTestClpr` and `hapiTestClprMultinetwork` keep the `FILE` writer (multi-network nets get no block node);
-- `hapiTestMiscRecords*`, `hapiTestGenesisSubProcess`, `hapiTestCutover` and
-  `hapiTestBlockNodeCommunication` ignore it.
+- `hapiTestGenesisSubProcess`, `hapiTestClpr` and `hapiTestClprMultinetwork` keep the `FILE` writer (genesis and
+  multi-network nets get no block node);
+- `hapiTestMiscRecords*`, `hapiTestCutover` and `hapiTestBlockNodeCommunication` ignore it.
 
-XTS reruns the MATS HAPI panels this way (`829-call-execute-xts-hapi-testnet.yaml`).
+Stream assertions follow the effective stream mode: with no record stream (`BLOCKS`), record-stream checks read
+the block stream instead.
+
+XTS reruns the MATS HAPI panels and the Wraps panel this way (`829-call-execute-xts-hapi-testnet.yaml`).
 
 ```bash
 ./gradlew :test-clients:hapiTestCrypto -PhapiTestConfigProfile=testnet

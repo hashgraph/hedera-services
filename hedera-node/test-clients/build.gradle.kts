@@ -311,18 +311,18 @@ val profileOverrides: Map<String, String> =
         }
         else -> throw GradleException("Unknown hapiTestConfigProfile '$hapiTestConfigProfile'")
     }
-// These tasks deliberately run another world: records-only, pre-cutover, per-node or per-test pins
+// These tasks deliberately run another world: records-only, pre-cutover, or per-test pins
 val profileExemptTasks =
     setOf(
         "hapiTestMiscRecords",
         "hapiTestMiscRecordsSerial",
-        "hapiTestGenesisSubProcess",
         "hapiTestCutover",
         "hapiTestBlockNodeCommunication",
     )
-// Under the profile these keep a FILE writer: multi-network nets get no block node, and
-// hapiTestClpr's mock signatures stalled its network against a real block node
-val profileFileWriterTasks = setOf("hapiTestClpr", "hapiTestClprMultinetwork")
+// Under the profile these keep a FILE writer: genesis and multi-network nets get no block node,
+// and hapiTestClpr's mock signatures stalled its network against a real block node
+val profileFileWriterTasks =
+    setOf("hapiTestGenesisSubProcess", "hapiTestClpr", "hapiTestClprMultinetwork")
 
 fun profileAppliesTo(name: String, remote: Boolean) =
     profileOverrides.isNotEmpty() && !remote && name !in profileExemptTasks

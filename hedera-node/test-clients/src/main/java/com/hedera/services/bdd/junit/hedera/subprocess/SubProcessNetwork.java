@@ -939,11 +939,10 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
-     * Returns the effective startup properties as seen by the given node: this network's
-     * {@link #startupProperties() startup properties} with that node's per-node application-property
-     * overrides (e.g. those supplied by {@code @GenesisSubprocessTest}/{@code @HapiBlockNode}) layered on
-     * top at the highest priority. PR-check overrides, network defaults and service defaults all still come
-     * from {@code startupProperties()}; only the node's explicit per-node overrides win over them.
+     * Returns the effective startup properties as seen by the given node, in the node's own precedence: the
+     * per-task PR-check overrides (process environment) beat that node's per-node application-property
+     * overrides (e.g. those supplied by {@code @GenesisSubprocessTest}/{@code @HapiBlockNode}), which beat
+     * the rest of this network's {@link #startupProperties() startup properties}.
      *
      * <p>This reads the <em>in-memory</em> per-node override map, not the node's on-disk
      * {@code application.properties}. That file also carries the {@code configuration/dev} base config
@@ -952,7 +951,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * process environment (and so are present in {@code startupProperties()} but not in the file).
      *
      * @param nodeId the node whose effective startup properties to resolve
-     * @return startup properties with that node's per-node overrides layered on top
+     * @return startup properties with that node's per-node overrides layered under the PR-check overrides
      */
     @NonNull
     public HapiPropertySource effectiveStartupProperties(final long nodeId) {
@@ -965,7 +964,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         for (int i = 0; i + 1 < overrides.size(); i += 2) {
             overrideMap.put(overrides.get(i), overrides.get(i + 1));
         }
-        return HapiPropertySource.inPriorityOrder(new MapPropertySource(overrideMap), startupProperties());
+        // The node gets PR-check overrides as environment variables, which beat its application.properties
+        return HapiPropertySource.inPriorityOrder(
+                new MapPropertySource(ProcessUtils.prCheckOverrides()),
+                new MapPropertySource(overrideMap),
+                startupProperties());
     }
 
     public Map<NodeId, KeysAndCerts> getNodeKeys() {

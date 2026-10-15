@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
-# Reruns the MATS HAPI panels with testnet's block stream and TSS values instead of the production defaults
+# Reruns the MATS HAPI panels, Wraps and Wraps Download with testnet's block stream and TSS values
+# instead of the production defaults
 name: "829: [CALL] Exec XTS HAPI Testnet Suites"
 on:
   workflow_call:
@@ -191,6 +192,23 @@ jobs:
       gradle-cache-username: ${{ secrets.gradle-cache-username }}
       gradle-cache-password: ${{ secrets.gradle-cache-password }}
 
+  hapi-tests-wraps:
+    uses: ./.github/workflows/845-call-execute-hapi-wraps.yaml
+    with:
+      ref: ${{ inputs.ref }}
+      java-distribution: ${{ inputs.java-distribution }}
+      java-version: ${{ inputs.java-version }}
+      node-version: ${{ inputs.node-version }}
+      enable-network-log-capture: ${{ inputs.enable-network-log-capture }}
+      # This rerun skips 846, whose hapiTestCutover ignores the profile anyway
+      include-wraps-download: true
+      hapi-test-config-profile: "testnet"
+      name-suffix: " (Cutover configs)"
+    secrets:
+      access-token: ${{ secrets.access-token }}
+      gradle-cache-username: ${{ secrets.gradle-cache-username }}
+      gradle-cache-password: ${{ secrets.gradle-cache-password }}
+
   set-failure-mode:
     name: "Set Failure Mode"
     runs-on: hl-cn-default-lin-sm
@@ -204,6 +222,7 @@ jobs:
       - hapi-tests-atomic-batch
       - hapi-tests-state-throttling
       - hapi-tests-clpr
+      - hapi-tests-wraps
     if: ${{ always() }}
     outputs:
       failure-mode: ${{ steps.set-failure-mode.outputs.failure-mode }}
@@ -228,6 +247,7 @@ jobs:
             ${{ needs.hapi-tests-atomic-batch.result }}
             ${{ needs.hapi-tests-state-throttling.result }}
             ${{ needs.hapi-tests-clpr.result }}
+            ${{ needs.hapi-tests-wraps.result }}
           INPUT_JOB_FAILURE_MODES: >-
             ${{ needs.hapi-tests-misc.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-misc-records-crypto-and-serial.outputs.failure-mode || 'none' }}
@@ -238,6 +258,7 @@ jobs:
             ${{ needs.hapi-tests-atomic-batch.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-state-throttling.outputs.failure-mode || 'none' }}
             ${{ needs.hapi-tests-clpr.outputs.failure-mode || 'none' }}
+            ${{ needs.hapi-tests-wraps.outputs.failure-mode || 'none' }}
           INPUT_JOB_NAMES: >-
             hapi-tests-misc
             hapi-tests-misc-records-crypto-and-serial
@@ -248,4 +269,5 @@ jobs:
             hapi-tests-atomic-batch
             hapi-tests-state-throttling
             hapi-tests-clpr
+            hapi-tests-wraps
         run: bash .github/workflows/support/scripts/set-failure-mode.sh

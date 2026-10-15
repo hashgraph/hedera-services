@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.hip1299;
 
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.hedera.services.bdd.junit.TestTags.ONLY_SUBPROCESS;
 import static com.hedera.services.bdd.junit.TestTags.SERIAL;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.BLOCK_STREAMS_PARENT_DIR;
@@ -29,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.bdd.GenesisSubprocessTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.BlockSourceFactory;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,8 +62,7 @@ public class UpdateNodeAccountTestSubprocess {
     class UpdateNodeAccountIdPositiveTests {
 
         // This test asserts the node writes per-account stream directories to its own disk, so it needs a
-        // file-writing node on a dedicated genesis network with no block node. The default BOTH stream mode
-        // writes record and block files without back-pressure (BLOCKS + gRPC would stall with no block node).
+        // file-writing node on a dedicated genesis network with no block node (BLOCKS + gRPC would stall).
         @Tag(ONLY_SUBPROCESS)
         @HapiTest
         @GenesisSubprocessTest
@@ -82,24 +84,32 @@ public class UpdateNodeAccountTestSubprocess {
                         // @GenesisSubprocessTest network is scoped by method name, not the default "hapi"
                         // scope, so workingDirFor(..., null) would point at a non-existent path.
                         final var node = spec.getNetworkNodes().get(Integer.parseInt(nodeToUpdate));
-                        // Both streams are asserted unconditionally: the @GenesisSubprocessTest annotation above
-                        // pins every node to streamMode=BOTH + writerMode=FILE_AND_GRPC, so both directories must
-                        // exist. Branching on spec.startupProperties() would silently skip the record half --
-                        // that property source does not see the per-node overrides (only
-                        // SubProcessNetwork#effectiveStartupProperties does) and resolves to the BLOCKS default.
-                        final var recordsDir =
-                                node.getExternalPath(RECORD_STREAMS_DIR).getParent();
-                        final var oldRecordPath =
-                                recordsDir.resolve("record" + asAccountString(oldNodeAccountId.get()));
-                        final var newRecordPath = recordsDir.resolve("record" + asAccountString(newAccountId.get()));
-                        assertTrue(oldRecordPath.toFile().exists());
-                        assertFalse(newRecordPath.toFile().exists());
-
-                        final var blocksDir = node.getExternalPath(BLOCK_STREAMS_PARENT_DIR);
-                        final var oldBlockPath = blocksDir.resolve("block-" + asAccountString(oldNodeAccountId.get()));
-                        final var newBlockPath = blocksDir.resolve("block-" + asAccountString(newAccountId.get()));
-                        assertTrue(oldBlockPath.toFile().exists());
-                        assertFalse(newBlockPath.toFile().exists());
+                        // Check whichever stream files the node writes: no record files when it streams only
+                        // blocks, no block files when it streams only records or only over gRPC
+                        final var streamMode = BlockSourceFactory.effectiveStartupProperties(spec)
+                                .getStreamMode("blockStream.streamMode");
+                        final boolean writesRecordFiles = streamMode != BLOCKS;
+                        final boolean writesBlockFiles =
+                                streamMode != RECORDS && !BlockSourceFactory.isWriterModeGrpcOnly(spec);
+                        assertTrue(writesRecordFiles || writesBlockFiles, "The node writes no stream files to check");
+                        if (writesRecordFiles) {
+                            final var recordsDir =
+                                    node.getExternalPath(RECORD_STREAMS_DIR).getParent();
+                            final var oldRecordPath =
+                                    recordsDir.resolve("record" + asAccountString(oldNodeAccountId.get()));
+                            final var newRecordPath =
+                                    recordsDir.resolve("record" + asAccountString(newAccountId.get()));
+                            assertTrue(oldRecordPath.toFile().exists());
+                            assertFalse(newRecordPath.toFile().exists());
+                        }
+                        if (writesBlockFiles) {
+                            final var blocksDir = node.getExternalPath(BLOCK_STREAMS_PARENT_DIR);
+                            final var oldBlockPath =
+                                    blocksDir.resolve("block-" + asAccountString(oldNodeAccountId.get()));
+                            final var newBlockPath = blocksDir.resolve("block-" + asAccountString(newAccountId.get()));
+                            assertTrue(oldBlockPath.toFile().exists());
+                            assertFalse(newBlockPath.toFile().exists());
+                        }
                     }));
         }
     }
