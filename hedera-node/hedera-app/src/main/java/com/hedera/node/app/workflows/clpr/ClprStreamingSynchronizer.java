@@ -44,10 +44,11 @@ import org.apache.logging.log4j.Logger;
  * <p><b>The stream ends as soon as this side (the client) has no more bundles to send.</b> The peer's session (server)
  * closes the stream as soon as we half-close, even if it still had bundles queued; they wait for the next cycle.
  *
- * <p><b>No pure-ACK bundles from this side.</b> The producer is built with {@code allowPureAck=false}.
- * Our acknowledgement of the peer's messages still reaches it whenever it opens its own cycle against us,
- * where our session replies with a pure-ACK; sending one here as well would add a fee-bearing submission on the peer
- * each cycle that is usually rejected as no-progress.
+ * <p><b>Channel-only bundles are sent during shutdown.</b> CLOSING and DRAINED channels allow a proof even
+ * when the outbound queue is empty and the peer's manifest is current, so the peer learns the proven closing status.
+ * Other eligible channels suppress pure-ACK bundles from this side: our acknowledgement of the peer's messages
+ * reaches it whenever it opens its own cycle against us, where our session replies with a pure-ACK. Sending one here
+ * as well would add a fee-bearing submission on the peer each cycle that is usually rejected as no-progress.
  *
  * <p>Holds no mutable state of its own; the per-peer circuit breakers and reputations live in the thread-safe
  * {@link ClprPeerSelector}.
@@ -272,8 +273,10 @@ public final class ClprStreamingSynchronizer implements ClprSynchronizer {
          */
         @NonNull
         private ClprBundleProducer openProducer(@Nullable final ClprBundleRequest peerRequest) {
+            final boolean closing =
+                    channel.status() == ClprChannelStatus.CLOSING || channel.status() == ClprChannelStatus.DRAINED;
             final var producer =
-                    new ClprBundleProducer(stateProofManager, channel, peerRequest, false, maxBundlesPerCycle);
+                    new ClprBundleProducer(stateProofManager, channel, peerRequest, closing, maxBundlesPerCycle);
             if (producer.peerClosed()) {
                 logger.debug(
                         "[CLPR-SYNC-OUTBOUND] peer reports CLOSED; skipping bundle conn={} peer={}", channelId, peerId);

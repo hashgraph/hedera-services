@@ -910,10 +910,9 @@ public abstract class HieroToHieroBase implements LifecycleTest {
         return networkHapiTest(
                         "Install ledger config (" + ownChainId + ")",
                         network,
-                        // Block until the latest BlockProvenSnapshot's ledger_id is populated, so
-                        // ClprUpdateLedgerConfigurationHandler can read a non-empty
-                        // stateProofManager.latestLedgerId() and set initial_trust_anchor on the
-                        // config. Sequence:
+                        // Wait for the consensus history ledger id and signed snapshots to be ready.
+                        // The handler reads the trust anchor from consensus history; subsequent
+                        // captureConfigProof calls also need a snapshot carrying that identity. Sequence:
                         //   1. WRAPS-extensible — proving state is loaded.
                         //   2. [CLPR-SYNC-POINT] — the FIRST block proof embeds the WRAPS recursive
                         //      proof. On warm-cache this is block #0; the snapshot for that block is
@@ -922,8 +921,7 @@ public abstract class HieroToHieroBase implements LifecycleTest {
                         //   3. POST_SYNC_POINT_SETTLE — give the system time to sign at least one
                         //      MORE block, whose snapshot is captured strictly after the WRAPS-
                         //      embed, so latestSnapshot().ledgerId() is guaranteed non-empty.
-                        // Without this, captureConfigProof produces a StateProof with empty
-                        // initial_trust_anchor and VerifyConfigCall rejects it on the peer.
+                        // Without this, the peer's proof verification may run before TSS is ready.
                         withOpContext((spec, ignored) -> {
                             awaitWrapsExtensible(network);
                             awaitWrapsSyncPoint(network);

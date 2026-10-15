@@ -9,6 +9,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_DEREGISTER_CONN
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_ENDPOINT_PUBLICATION;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_GET_ENDPOINT_MANIFEST;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_GET_LEDGER_CONFIGURATION;
+import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_MAINTENANCE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_REGISTER_CHANNEL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_REGISTER_CONNECTOR;
 import static com.hedera.hapi.node.base.HederaFunctionality.CLPR_SUBMIT_BUNDLE;
@@ -320,7 +321,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange clprSubmitBundle,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange clprGetLedgerConfiguration,
         @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange clprEndpointPublication,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange clprGetEndpointManifest) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange clprGetEndpointManifest,
+        @ConfigProperty(defaultValue = "0-0") PermissionedAccountsRange clprMaintenance) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -427,6 +429,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(CLPR_GET_LEDGER_CONFIGURATION, c -> c.clprGetLedgerConfiguration);
         permissionKeys.put(CLPR_ENDPOINT_PUBLICATION, c -> c.clprEndpointPublication);
         permissionKeys.put(CLPR_GET_ENDPOINT_MANIFEST, c -> c.clprGetEndpointManifest);
+        permissionKeys.put(CLPR_MAINTENANCE, c -> c.clprMaintenance);
     }
 
     /**

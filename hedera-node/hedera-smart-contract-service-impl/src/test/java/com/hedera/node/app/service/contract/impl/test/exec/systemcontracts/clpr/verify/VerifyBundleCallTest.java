@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Unit tests for {@link VerifyBundleCall}, in two flavours:
@@ -66,7 +67,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 class VerifyBundleCallTest {
 
-    private static final Bytes CHANNEL_ID = Bytes.wrap(new byte[] {1, 1, 1});
+    private static final Bytes CHANNEL_ID = Bytes.wrap(new byte[32]);
 
     /**
      * Offline replay of the {@code VerifyBundle} verifier path against checked-in fixtures captured
@@ -226,7 +227,13 @@ class VerifyBundleCallTest {
         // ---- helpers ----
 
         private VerifyBundleCall subject(@NonNull final byte[] bundlePayload) {
-            return new VerifyBundleCall(mockEnhancement(), gasCalculator, bundlePayload, TRUST_ANCHOR, acceptingTss());
+            return new VerifyBundleCall(
+                    mockEnhancement(),
+                    gasCalculator,
+                    bundlePayload,
+                    TRUST_ANCHOR,
+                    CHANNEL_ID.toByteArray(),
+                    acceptingTss());
         }
     }
 
@@ -256,6 +263,29 @@ class VerifyBundleCallTest {
                 .receivedRunningHash(Bytes.wrap(new byte[32]))
                 .status(ClprChannelStatus.ACTIVE)
                 .build();
+
+        @ParameterizedTest
+        @ValueSource(ints = {0, 1, 31})
+        void rejectsMissingOrTruncatedChannelContext(final int length) {
+            final var result = new VerifyBundleCall(
+                            mockEnhancement(),
+                            gasCalculator,
+                            multiLeafProof(channelLeaf(CHANNEL)),
+                            TRUST_ANCHOR,
+                            new byte[length],
+                            mock(TssVerifier.class))
+                    .execute(frame);
+            assertThat(result.responseCode()).isEqualTo(CLPR_BUNDLE_VERIFICATION_FAILED);
+        }
+
+        @Test
+        void rejectsPureAckFromAnotherChannel() {
+            final var other = CHANNEL.copyBuilder()
+                    .channelId(Bytes.fromHex("01".repeat(32)))
+                    .build();
+            final var result = executeWithStubbedPathsForResult(channelLeaf(other));
+            assertThat(result.responseCode()).isEqualTo(CLPR_BUNDLE_VERIFICATION_FAILED);
+        }
 
         @Test
         @DisplayName("given messages 4 and 5 with nothing acked, then nextMessageId is 6, one past the last key")
@@ -318,7 +348,12 @@ class VerifyBundleCallTest {
                     messageIds.isEmpty() ? channel.nextMessageId() : messageIds.getLast() + 1;
 
             final var result = new VerifyBundleCall(
-                            mockEnhancement(), gasCalculator, proofBytes, trustAnchor, new NativeTssVerifier())
+                            mockEnhancement(),
+                            gasCalculator,
+                            proofBytes,
+                            trustAnchor,
+                            channel.channelId().toByteArray(),
+                            new NativeTssVerifier())
                     .execute(frame);
 
             assertThat(result.responseCode()).isEqualTo(SUCCESS);
@@ -439,7 +474,12 @@ class VerifyBundleCallTest {
                         .thenReturn(new byte[32]);
                 verifier.when(() -> StateProofVerifier.verifyPath(any(), any())).thenReturn(true);
                 return new VerifyBundleCall(
-                                mockEnhancement(), gasCalculator, multiLeafProof(leaves), TRUST_ANCHOR, acceptingTss())
+                                mockEnhancement(),
+                                gasCalculator,
+                                multiLeafProof(leaves),
+                                TRUST_ANCHOR,
+                                CHANNEL_ID.toByteArray(),
+                                acceptingTss())
                         .execute(frame);
             }
         }
