@@ -4,7 +4,6 @@ package org.hiero.otter.fixtures.network.simulation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hiero.consensus.model.node.NodeId;
@@ -17,9 +16,9 @@ import org.hiero.consensus.model.node.NodeId;
  * them this way is what makes a connection that is down skippable: its queue is simply left out of the comparison, so
  * it holds up only its own events instead of blocking every other sender's events behind its head.
  *
- * <p>Nothing here sorts. A connection's queue is in arrival order because events are appended to it in arrival order,
- * which {@link InFlightConnections#add(NodeId, InTransit)} enforces rather than arranges. Delivery then merges the
- * heads of the queues to recover the arrival order across all of the senders.
+ * <p>A connection's queue is a priority queue ordered by arrival time, with ties broken by the order the events were
+ * added, so an event added later may be delivered before one added earlier. Delivery then merges the heads of the
+ * queues to recover the arrival order across all of the senders.
  *
  * <p>This class is not safe to use from more than one thread.
  */
@@ -31,14 +30,14 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
      * @param connected reports whether the connection from a sender to a receiver is currently up
      */
     public InFlightEvents(@NonNull final BiPredicate<NodeId, NodeId> connected) {
-        super(connected, "event");
+        super(connected);
     }
 
     /**
      * Delivers every event that has arrived at the receiving node, in the order the events arrived, until the node
      * stops accepting them.
      *
-     * <p>Each connection's queue is already in arrival order, so repeatedly delivering the earliest of their heads
+     * <p>Each connection's queue hands out its events in arrival order, so repeatedly delivering the earliest of their heads
      * walks the events in arrival order across all the senders. A connection whose head has not arrived yet, or
      * which is down, is left out of the comparison rather than skipped over, so it holds up only its own events and
      * this method always either delivers an event or returns.
@@ -49,10 +48,10 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
     @Override
     void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
-        final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections = incomingConnections(receiverId);
+        final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections = incomingConnections(receiverId);
 
         while (true) {
-            final ArrayDeque<EventInTransit> earliestConnection =
+            final InFlightQueue<EventInTransit> earliestConnection =
                     earliestArrivedConnection(receiverId, incomingConnections, now);
             if (earliestConnection == null) {
                 // every connection is either empty, holding events that have not arrived yet, or down
@@ -61,10 +60,10 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
 
             // only remove the event from the queue if it was successfully delivered. If the event is not
             // successfully delivered, stop attempting event delivery until the next time this method is called.
-            if (!receiver.receiveEvent(earliestConnection.peekFirst().event())) {
+            if (!receiver.receiveEvent(earliestConnection.peek().event())) {
                 return;
             }
-            earliestConnection.pollFirst();
+            earliestConnection.poll();
         }
     }
 
@@ -77,21 +76,21 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
      * @return the connection whose head should be delivered next, or {@code null} if there is nothing to deliver
      */
     @Nullable
-    private ArrayDeque<EventInTransit> earliestArrivedConnection(
+    private InFlightQueue<EventInTransit> earliestArrivedConnection(
             @NonNull final NodeId receiverId,
-            @NonNull final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections,
+            @NonNull final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections,
             @NonNull final Instant now) {
 
-        ArrayDeque<EventInTransit> earliestConnection = null;
+        InFlightQueue<EventInTransit> earliestConnection = null;
         Instant earliestArrivalTime = null;
 
         for (final NodeId sender : sortedNodeIds()) {
-            final ArrayDeque<EventInTransit> connection = incomingConnections.get(sender);
+            final InFlightQueue<EventInTransit> connection = incomingConnections.get(sender);
             if (connection == null) {
                 // the receiver is the sender, so there is no connection
                 continue;
             }
-            final EventInTransit event = connection.peekFirst();
+            final EventInTransit event = connection.peek();
             if (event == null || event.arrivalTime().isAfter(now)) {
                 // nothing in flight on this connection has arrived yet
                 continue;
