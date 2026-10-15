@@ -141,7 +141,7 @@ public class V0780ClprSchema extends Schema<SemanticVersion> {
      * network properties such as {@code clpr.chainId} are in effect; a migration only sees node-local
      * configuration, and would not run at all when upgrading from a state at or after this schema's version.
      *
-     * <p>Both singletons are initialized even when {@code clpr.enabled} is false. CLPR handlers need
+     * <p>All three singletons are initialized even when {@code clpr.enabled} is false. CLPR handlers need
      * them as soon as the flag is set, and since the flag is a network property that a later file
      * update can change, no setup would run then to initialize them. The writes are
      * deterministic and only touch CLPR's own states.
@@ -174,9 +174,8 @@ public class V0780ClprSchema extends Schema<SemanticVersion> {
             // the actual consensus time.
             final var initializationTimestamp =
                     Timestamp.newBuilder().seconds(1L).build();
-            // The trust anchor fields remain unset during initialization because the Hiero TSS
-            // ledger ID is only available after a signed block snapshot has been produced. The
-            // first configuration update after that point populates them.
+            // The trust anchor fields remain unset until the history ledger ID is established.
+            // The first configuration update after that point populates them from consensus state.
             final var initialConfig = ClprLedgerConfiguration.newBuilder()
                     .chainId(clprConfig.chainId())
                     .protocolVersion(clprConfig.protocolVersion())
@@ -197,6 +196,13 @@ public class V0780ClprSchema extends Schema<SemanticVersion> {
                     .serviceAddress(CLPR_SERVICE_ADDRESS)
                     .build();
             manifestState.put(initialManifest);
+            initialized = true;
+        }
+        final var constructionState =
+                writableStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
+        if (constructionState.get() == null) {
+            // An explicit empty value is needed to reconstruct the singleton during block replay.
+            constructionState.put(ClprEndpointManifestConstruction.DEFAULT);
             initialized = true;
         }
         return initialized;
