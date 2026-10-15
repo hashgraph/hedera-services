@@ -70,11 +70,6 @@ public class StateModule {
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
 
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final ComponentWiring<SavedStateController, StateWithHashComplexity> savedStateControllerWiring;
-
-    private final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring;
-
-    private final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring;
 
     private final OutputWire<ReservedSignedState> hashedStateOutputWire;
 
@@ -145,12 +140,12 @@ public class StateModule {
                 new ComponentWiring<>(model, StateSignatureCollector.class, wiringConfig.stateSignatureCollector());
         this.stateSnapshotManagerWiring =
                 new ComponentWiring<>(model, StateSnapshotManager.class, wiringConfig.stateSnapshotManager());
-        this.savedStateControllerWiring =
-                new ComponentWiring<>(model, SavedStateController.class, DIRECT_THREADSAFE_CONFIGURATION);
-        this.latestCompleteStateNexusWiring =
-                new ComponentWiring<>(model, LatestCompleteStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
-        this.stateGarbageCollectorWiring =
-                new ComponentWiring<>(model, StateGarbageCollector.class, wiringConfig.stateGarbageCollector());
+        final ComponentWiring<SavedStateController, StateWithHashComplexity> savedStateControllerWiring = new ComponentWiring<>(
+                model, SavedStateController.class, DIRECT_THREADSAFE_CONFIGURATION);
+        final ComponentWiring<LatestCompleteStateNexus, Void> latestCompleteStateNexusWiring = new ComponentWiring<>(
+                model, LatestCompleteStateNexus.class, DIRECT_THREADSAFE_CONFIGURATION);
+        final ComponentWiring<StateGarbageCollector, Void> stateGarbageCollectorWiring = new ComponentWiring<>(model,
+                StateGarbageCollector.class, wiringConfig.stateGarbageCollector());
         final ComponentWiring<SignedStateSentinel, Void> signedStateSentinelWiring =
                 new ComponentWiring<>(model, SignedStateSentinel.class, wiringConfig.signedStateSentinel());
 

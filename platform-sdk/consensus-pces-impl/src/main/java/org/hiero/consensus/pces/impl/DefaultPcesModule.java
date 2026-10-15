@@ -115,6 +115,7 @@ public class DefaultPcesModule implements PcesModule {
         discontinuityInputWire = pcesWriterWiring.getInputWire(InlinePcesWriter::registerDiscontinuity);
 
         // Wire components
+        assert initialEventWindowInputWire != null;
         consensusRoundDispatcher.getOutputWire().solderTo(eventWindowExtractor.getInputWire(), INJECT);
         eventWindowExtractor.getOutputWire().solderTo(initialEventWindowInputWire, INJECT);
         pcesReplayerWiring
