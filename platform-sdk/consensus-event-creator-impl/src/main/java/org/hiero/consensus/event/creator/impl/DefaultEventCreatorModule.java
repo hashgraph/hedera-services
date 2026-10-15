@@ -91,7 +91,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
         final EventCreationConfig eventCreationConfig = configuration.getConfigData(EventCreationConfig.class);
         final EventCreationWiringConfig wiringConfig = configuration.getConfigData(EventCreationWiringConfig.class);
 
-        // Set up component wiring
+        // Set up wired components
         eventWindowExtractor = new WireTransformer<>(
                 model, "EventCreator_EventWindowExtractor", "consensus round", ConsensusRound::getEventWindow);
         eventCreationManagerWiring =

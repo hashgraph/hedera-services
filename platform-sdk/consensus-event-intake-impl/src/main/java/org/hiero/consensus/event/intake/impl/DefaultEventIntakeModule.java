@@ -10,7 +10,6 @@ import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.hiero.base.crypto.CryptoUtils;
 import org.hiero.consensus.crypto.DefaultEventHasher;
@@ -107,7 +106,7 @@ public class DefaultEventIntakeModule implements EventIntakeModule {
             throw new IllegalStateException("Already initialized");
         }
 
-        // Set up wiring
+        // Set up wired components
         this.eventWindowExtractor = new WireTransformer<>(
                 model, "EventIntake_EventWindowExtractor", "consensus round", ConsensusRound::getEventWindow);
         this.eventWindowDispatcher =
@@ -130,7 +129,8 @@ public class DefaultEventIntakeModule implements EventIntakeModule {
         // Set up input wires
         unhashedEventsInputWire = eventHasherWiring.getInputWire(EventHasher::hashEvent);
         nonValidatedEventsInputWire = eventValidatorWiring.getInputWire(InternalEventValidator::validateEvent);
-        rosterHistoryInputWire = eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateRosterHistory);
+        rosterHistoryInputWire =
+                eventSignatureValidatorWiring.getInputWire(EventSignatureValidator::updateRosterHistory);
 
         // Wire metrics before the components: an output wire forwards to its destinations in the order they were
         // soldered, and a stage must record an event before the next stage receives it
