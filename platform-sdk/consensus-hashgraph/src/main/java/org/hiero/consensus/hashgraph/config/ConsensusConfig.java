@@ -19,5 +19,6 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("consensus")
 public record ConsensusConfig(
         @ConfigProperty(defaultValue = "26") int roundsNonAncient,
-        @ConfigProperty(defaultValue = "1000") int roundsExpired,
+        // TEMPORARY for the 1B reconnect convergence test (was 1000): revert before opening a PR
+        @ConfigProperty(defaultValue = "2000") int roundsExpired,
         @ConfigProperty(defaultValue = "12") int coinFreq) {}
