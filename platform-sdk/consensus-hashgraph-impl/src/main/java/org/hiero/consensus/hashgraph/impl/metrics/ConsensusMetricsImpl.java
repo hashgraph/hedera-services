@@ -37,6 +37,11 @@ import org.hiero.consensus.model.node.NodeId;
  */
 public class ConsensusMetricsImpl implements ConsensusMetrics {
 
+    private static final Config EVENT_LATENCY_CONFIG = new Config(PLATFORM_CATEGORY, "eventLatency_R2C")
+            .withDescription("time from receiving a gossiped event until the consensus engine emits its round");
+    private static final Config TRANSACTION_LATENCY_CONFIG = new Config(PLATFORM_CATEGORY, "transactionLatency_total")
+            .withDescription("time from a transaction entering the transaction pool until the consensus engine emits "
+                    + "its round measured only on the node that received the transaction");
     private static final RunningAverageMetric.Config AVG_JUDGES_WEIGHT_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "judgesWeight")
             .withDescription("weight of judges of rounds")
@@ -167,14 +172,11 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
                         configuration, "configuration must not be null")
                 .getConfigData(ConsensusLayerMetricsConfig.class);
         if (metricsConfig.latencyEnabled()) {
-            final Config eventLatencyR2C = new Config(PLATFORM_CATEGORY, "eventLatency_R2C")
-                    .withDescription("time from receiving a gossiped event until the consensus engine emits its round")
+            final Config eventLatencyR2C = EVENT_LATENCY_CONFIG
                     .withWindow(metricsConfig.latencyWindow())
                     .withPercentiles(metricsConfig.latencyPercentiles());
             receivedToConsensus = LatencyGauges.register(metrics, configuration, time, eventLatencyR2C);
-            final Config transactionLatencyTotal = new Config(PLATFORM_CATEGORY, "transactionLatency_total")
-                    .withDescription("time from a transaction entering the transaction pool until"
-                            + " the consensus engine emits its round")
+            final Config transactionLatencyTotal = TRANSACTION_LATENCY_CONFIG
                     .withWindow(metricsConfig.transactionLatencyWindow())
                     .withPercentiles(metricsConfig.transactionLatencyPercentiles());
             transactionToConsensus = LatencyGauges.register(metrics, configuration, time, transactionLatencyTotal);
