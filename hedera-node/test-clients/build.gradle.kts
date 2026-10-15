@@ -532,15 +532,13 @@ fun TaskContainer.registerHapiTest(
             } else {
                 includeTags(
                     if (ciTagExpression.isBlank()) defaultTags
-                    // The single-network CLPR task runs its own suites followed by log and stream
-                    // validation against the shared network. Matched by task name, not by reading
-                    // the tag expression as a string.
+                    // The single-network CLPR tasks run their own suites followed by log and
+                    // stream validation against the shared network. Matched by task name, not by
+                    // reading the tag expression as a string.
                     else if (name == "hapiTestClpr")
                         "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|MULTINETWORK)"
-                    // The embedded CLPR task runs only its own suites, without log and stream
-                    // validation (it intermittently hung in CI with them). Its own selector is
-                    // needed: the embedded defaults exclude CLPR.
-                    else if (name == "hapiTestClprEmbedded") "(${ciTagExpression})"
+                    else if (name == "hapiTestClprEmbedded")
+                        "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|MULTINETWORK)"
                     // We don't want to run stream or log validation for ISS or BLOCK_NODE; the
                     // multi-network CLPR task validates each of its networks in its own
                     // MultiNetworkValidationTest (tagged MULTINETWORK) instead
