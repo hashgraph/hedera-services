@@ -46,6 +46,27 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Nullable
     private ComponentWiring<EventCreationManager, PlatformEvent> eventCreationManagerWiring;
 
+    @Nullable
+    private InputWire<PlatformEvent> orderedEventInputWire;
+
+    @Nullable
+    private InputWire<EventWindow> initialEventWindowInputWire;
+
+    @Nullable
+    private InputWire<PlatformStatus> platformStatusInputWire;
+
+    @Nullable
+    private InputWire<Duration> healthStatusInputWire;
+
+    @Nullable
+    private InputWire<SyncProgress> syncProgressInputWire;
+
+    @Nullable
+    private InputWire<QuiescenceCommand> quiescenceCommandInputWire;
+
+    @Nullable
+    private InputWire<Object> clearCreationManagerInputWire;
+
     /**
      * {@inheritDoc}
      */
@@ -71,27 +92,30 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
         final EventCreationWiringConfig wiringConfig = configuration.getConfigData(EventCreationWiringConfig.class);
 
         // Set up component wiring
-        this.eventWindowExtractor = new WireTransformer<>(
+        eventWindowExtractor = new WireTransformer<>(
                 model, "EventCreator_EventWindowExtractor", "consensus round", ConsensusRound::getEventWindow);
-        this.eventCreationManagerWiring =
+        eventCreationManagerWiring =
                 new ComponentWiring<>(model, EventCreationManager.class, wiringConfig.eventCreationManager());
+        orderedEventInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent);
+        initialEventWindowInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow, "event window");
+        platformStatusInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus, "PlatformStatus");
+        healthStatusInputWire =
+                eventCreationManagerWiring.getInputWire(EventCreationManager::reportUnhealthyDuration, "health info");
+        syncProgressInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::reportSyncProgress);
+        quiescenceCommandInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::quiescenceCommand);
+        clearCreationManagerInputWire = eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
 
         // Wire components
-        eventWindowExtractor
-                .getOutputWire()
-                .solderTo(
-                        eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow, "event window"),
-                        INJECT);
+        assert initialEventWindowInputWire != null;
+        eventWindowExtractor.getOutputWire().solderTo(initialEventWindowInputWire, INJECT);
 
         // Set up heartbeat wire
         model.buildHeartbeatWire(eventCreationConfig.period())
                 .solderTo(
                         eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent, "heartbeat"),
                         OFFER);
-
-        // Force not soldered wires to be built
-        eventCreationManagerWiring.getInputWire(EventCreationManager::clear);
-        eventCreationManagerWiring.getInputWire(EventCreationManager::quiescenceCommand);
 
         // Create and bind components
         final BytesSigner bytesSigner = new PlatformSigner(keysAndCerts);
@@ -117,8 +141,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<PlatformEvent> orderedEventInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::registerEvent);
+        return requireNonNull(orderedEventInputWire, "Not initialized");
     }
 
     /**
@@ -136,8 +159,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<EventWindow> initialEventWindowInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::setEventWindow, "event window");
+        return requireNonNull(initialEventWindowInputWire, "Not initialized");
     }
 
     /**
@@ -146,8 +168,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<PlatformStatus> platformStatusInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::updatePlatformStatus, "PlatformStatus");
+        return requireNonNull(platformStatusInputWire, "Not initialized");
     }
 
     /**
@@ -156,8 +177,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<Duration> healthStatusInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::reportUnhealthyDuration, "health info");
+        return requireNonNull(healthStatusInputWire, "Not initialized");
     }
 
     /**
@@ -166,8 +186,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<SyncProgress> syncProgressInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::reportSyncProgress);
+        return requireNonNull(syncProgressInputWire, "Not initialized");
     }
 
     /**
@@ -176,8 +195,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
     @Override
     @NonNull
     public InputWire<QuiescenceCommand> quiescenceCommandInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized")
-                .getInputWire(EventCreationManager::quiescenceCommand);
+        return requireNonNull(quiescenceCommandInputWire, "Not initialized");
     }
 
     /**
@@ -221,7 +239,7 @@ public class DefaultEventCreatorModule implements EventCreatorModule {
      */
     @Override
     @NonNull
-    public InputWire<Object> clearCreationMangerInputWire() {
-        return requireNonNull(eventCreationManagerWiring, "Not initialized").getInputWire(EventCreationManager::clear);
+    public InputWire<Object> clearCreationManagerInputWire() {
+        return requireNonNull(clearCreationManagerInputWire, "Not initialized");
     }
 }
