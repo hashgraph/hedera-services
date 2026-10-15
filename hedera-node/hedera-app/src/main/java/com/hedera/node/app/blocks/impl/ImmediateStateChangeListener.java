@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.blocks.impl;
 
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.blocks.impl.BoundaryStateChangeListener.singletonUpdateChangeValueFor;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -101,6 +104,8 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP, QUEUE, SINGLETON);
 
+    private final List<StateChange> singletonStateChanges = new ArrayList<>();
+
     private final List<StateChange> kvStateChanges = new ArrayList<>();
 
     private final List<StateChange> queueStateChanges = new ArrayList<>();
@@ -133,17 +138,73 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     @Override
     public boolean requiresPreviousValue(final int stateId) {
-        return stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID
-                || (deltasEnabled
-                        && (!registeredCodecs.containsKey(stateId)
-                                || registeredCodecs.get(stateId) instanceof com.hedera.pbj.runtime.DiffCodec<?>));
+        return deltasEnabled
+                && (!registeredCodecs.containsKey(stateId)
+                        || registeredCodecs.get(stateId) instanceof com.hedera.pbj.runtime.DiffCodec<?>);
     }
 
     @Nullable
     private Predicate<Object> logicallyIdenticalMapping;
 
+    /** Whether this singleton's changes belong to a transaction instead of the block boundary. */
+    public static boolean isImmediateSingleton(final int stateId) {
+        return stateId == LEDGER_CONFIGURATION_STATE_ID
+                || stateId == ENDPOINT_MANIFEST_STATE_ID
+                || stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+    }
+
+    @Override
+    public <V> void singletonUpdateChange(final int stateId, @NonNull final V value) {
+        singletonUpdateChange(stateId, null, value);
+    }
+
+    /** Selects the payload for each transaction-owned singleton update at terminal commit. */
+    @Override
+    public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
+        requireNonNull(value);
+        if (!isImmediateSingleton(stateId)) {
+            return;
+        }
+        var change = new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value));
+        final var type = StateChangeDeltas.singletonType(
+                stateId, change.newValue().kind().protoOrdinal());
+        if (deltasEnabled && type != null) {
+            try {
+                change = StateChangeDeltas.encodeSingleton(
+                        stateId,
+                        previousValue,
+                        change,
+                        deltaMinSaving,
+                        registeredCodecs.getOrDefault(stateId, type.codec()));
+            } catch (final RuntimeException e) {
+                // A listener runs after storage has changed; keep the remaining commit safe and deterministic.
+                log.error("Failed to encode a partial update for singleton {}; emitting the full value", stateId, e);
+            }
+        }
+        final var choice = change.newValue();
+        final var wireChange = new SingletonUpdateChange(
+                change.partial(),
+                change.clearedFields(),
+                new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
+                change.getUnknownFields());
+        singletonStateChanges.add(StateChange.newBuilder()
+                .stateId(stateId)
+                .singletonUpdate(wireChange)
+                .build());
+    }
+
+    /** Resets transaction-associated singleton changes without discarding queue changes. */
+    public void resetSingletonStateChanges() {
+        singletonStateChanges.clear();
+    }
+
+    /** Returns transaction-associated singleton changes. */
+    public List<StateChange> getSingletonStateChanges() {
+        return singletonStateChanges;
+    }
+
     /**
-     * Resets map changes and any first CLPR construction insertion captured alongside them.
+     * Resets key/value state changes.
      */
     public void resetKvStateChanges(@Nullable final Predicate<Object> logicallyIdenticalMapping) {
         this.logicallyIdenticalMapping = logicallyIdenticalMapping;
@@ -164,26 +225,12 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         this.logicallyIdenticalMapping = logicallyIdenticalMapping;
         kvStateChanges.clear();
         queueStateChanges.clear();
+        singletonStateChanges.clear();
     }
 
     @Override
     public Set<StateType> stateTypes() {
         return TARGET_DATA_TYPES;
-    }
-
-    /** The lazy construction's first insertion must retain its position among committed map changes. */
-    @Override
-    public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
-        if (stateId == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID && previousValue == null) {
-            final var change = new SingletonUpdateChange(
-                    false,
-                    List.of(),
-                    BoundaryStateChangeListener.singletonUpdateChangeValueFor(CopyBuilderTracking.untracked(value)));
-            kvStateChanges.add(StateChange.newBuilder()
-                    .stateId(stateId)
-                    .singletonUpdate(change)
-                    .build());
-        }
     }
 
     @Override
@@ -267,7 +314,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
     }
 
     /**
-     * Returns map changes and any first CLPR construction insertion in their terminal commit order.
+     * Returns key/value state changes in their terminal commit order.
      * @return the list of keyValue state changes
      */
     public List<StateChange> getKvStateChanges() {
@@ -290,6 +337,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         final var allStateChanges = new LinkedList<StateChange>();
         allStateChanges.addAll(kvStateChanges);
         allStateChanges.addAll(queueStateChanges);
+        allStateChanges.addAll(singletonStateChanges);
         return allStateChanges;
     }
 

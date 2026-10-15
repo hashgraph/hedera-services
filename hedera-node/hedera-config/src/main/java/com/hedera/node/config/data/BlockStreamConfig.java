@@ -82,10 +82,6 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "false") @NodeProperty
         boolean enhancedObservabilityEnabled,
 
-        // Whether to use SHA-256 instead of SHA-384 for block stream-related hashing
-        @ConfigProperty(defaultValue = "false") @NetworkProperty
-        boolean useSha256,
-
         // Activate only after every consumer supports partial state updates. Preview output may
         // have gaps, so deltas are restricted to the complete BLOCKS stream.
         @ConfigProperty(defaultValue = "true") @NetworkProperty

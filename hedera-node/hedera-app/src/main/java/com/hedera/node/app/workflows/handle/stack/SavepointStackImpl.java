@@ -317,10 +317,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, State {
             savepoint.commit();
         }
         if (streamMode != RECORDS && immediateStateChangeListener != null) {
-            final var changes = immediateStateChangeListener.getStateChanges();
-            builder.stateChanges(changes);
-            // The first lazy CLPR construction insertion is now part of this committed transaction's output.
-            boundaryStateChangeListener.stateChangesEmitted(changes);
+            builder.stateChanges(immediateStateChangeListener.getStateChanges());
         }
         setupFirstSavepoint(baseBuilder.category());
     }

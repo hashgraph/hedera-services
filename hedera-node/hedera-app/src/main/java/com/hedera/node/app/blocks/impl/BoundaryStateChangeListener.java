@@ -103,13 +103,14 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     @Override
     public boolean requiresPreviousValue(final int stateId) {
         return deltasEnabled
+                && !ImmediateStateChangeListener.isImmediateSingleton(stateId)
                 && (!registeredCodecs.containsKey(stateId)
                         || registeredCodecs.get(stateId) instanceof com.hedera.pbj.runtime.DiffCodec<?>);
     }
 
     @Override
     public <V> void singletonUpdateChange(final int stateId, @Nullable final V previousValue, @NonNull final V value) {
-        if (deltasEnabled && !singletonUpdates.containsKey(stateId)) {
+        if (requiresPreviousValue(stateId) && !singletonUpdates.containsKey(stateId)) {
             singletonBaselines.put(stateId, previousValue);
         }
         singletonUpdateChange(stateId, value);
@@ -181,16 +182,6 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         return allStateChanges(true);
     }
 
-    /** The final block-hash checkpoint must be recoverable from saved state alone. */
-    public List<StateChange> allStateChanges(final boolean allowPartial) {
-        return stateChangesFor(singletonUpdates.keySet(), allowPartial);
-    }
-
-    /** Returns pending changes for selected singletons without modifying their values or baselines. */
-    public List<StateChange> stateChangesFor(@NonNull final Set<Integer> stateIds) {
-        return stateChangesFor(requireNonNull(stateIds), true);
-    }
-
     /** Clears published singleton updates and their baselines; immediate map and queue changes are ignored. */
     public void stateChangesEmitted(@NonNull final List<StateChange> changes) {
         requireNonNull(changes);
@@ -202,12 +193,10 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
     }
 
-    private List<StateChange> stateChangesFor(final Set<Integer> stateIds, final boolean allowPartial) {
+    /** The final block-hash checkpoint must be recoverable from saved state alone. */
+    public List<StateChange> allStateChanges(final boolean allowPartial) {
         final var allStateChanges = new LinkedList<StateChange>();
         for (final var entry : singletonUpdates.entrySet()) {
-            if (!stateIds.contains(entry.getKey())) {
-                continue;
-            }
             final var full = entry.getValue();
             final var update = full.singletonUpdateOrThrow();
             final var type = StateChangeDeltas.singletonType(
@@ -251,6 +240,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     @Override
     public <V> void singletonUpdateChange(final int stateId, @NonNull final V value) {
         requireNonNull(value, "value must not be null");
+        if (ImmediateStateChangeListener.isImmediateSingleton(stateId)) {
+            return;
+        }
         final var stateChange = StateChange.newBuilder()
                 .stateId(stateId)
                 .singletonUpdate(new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value)))

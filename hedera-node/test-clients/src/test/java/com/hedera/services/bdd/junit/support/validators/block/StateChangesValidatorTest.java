@@ -4,6 +4,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema.ENTITY_COUNTS_STATE_ID;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.applyPartial;
+import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.carriesCompressedWrapsProof;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.currentBlockHashFromNextBlockFooter;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.validateStartOfBlockStateHash;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.TssSignedBlockProof;
 import com.hedera.hapi.block.stream.output.BlockFooter;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.hapi.node.base.AccountID;
@@ -34,6 +36,7 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.service.entityid.EntityIdService;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.StateLifecycleManager;
@@ -227,7 +230,7 @@ class StateChangesValidatorTest {
                 .map(bytes -> {
                     final var state = mock(VirtualMapState.class);
                     final var root = mock(VirtualMap.class);
-                    final var hash = new Hash(bytes.toByteArray());
+                    final var hash = new Hash(bytes, org.hiero.base.crypto.DigestType.SHA_384);
                     when(state.getRoot()).thenReturn(root);
                     when(root.getHash()).thenReturn(hash);
                     when(state.getHash()).thenReturn(hash);
@@ -240,7 +243,10 @@ class StateChangesValidatorTest {
                 .thenAnswer(ignored -> states.get(Math.min(copyIndex.incrementAndGet(), states.size() - 1)));
         setField(validator, "stateLifecycleManager", lifecycle);
         setField(validator, "state", states.getFirst());
-        setField(validator, "initializedGenesisStateHash", new Hash(PREV_BLOCK_ROOT_HASH.toByteArray()));
+        setField(
+                validator,
+                "initializedGenesisStateHash",
+                new Hash(PREV_BLOCK_ROOT_HASH, org.hiero.base.crypto.DigestType.SHA_384));
         setField(validator, "expectedRootHash", endHashes.getLast());
         setField(validator, "entityChanges", Map.of());
         return new ReplayFixture(validator, lifecycle);
@@ -371,6 +377,32 @@ class StateChangesValidatorTest {
         assertThrows(IndexOutOfBoundsException.class, () -> blocks.get(i + 1));
     }
 
+    @Test
+    void detectsBlockSignedWithCompressedWrapsProof() {
+        final var block = blockBuilder()
+                .items(List.of(
+                        headerItem(437L),
+                        footerItem(PREV_BLOCK_ROOT_HASH),
+                        signedProofItem(437L, HintsLibraryImpl.VK_LENGTH + 1632 + 704)))
+                .build();
+
+        assertTrue(carriesCompressedWrapsProof(block));
+    }
+
+    @Test
+    void doesNotDetectCompressedWrapsProofInMockOrMissingProof() {
+        final var mockSigned = blockBuilder()
+                .items(List.of(headerItem(443L), footerItem(PREV_BLOCK_ROOT_HASH), signedProofItem(443L, 48)))
+                .build();
+        final var incomplete = blockBuilder()
+                .items(List.of(headerItem(444L), footerItem(PREV_BLOCK_ROOT_HASH)))
+                .build();
+
+        assertFalse(carriesCompressedWrapsProof(mockSigned));
+        assertFalse(carriesCompressedWrapsProof(incomplete));
+        assertFalse(carriesCompressedWrapsProof(blockBuilder().build()));
+    }
+
     private static Block.Builder blockBuilder() {
         return Block.newBuilder();
     }
@@ -392,6 +424,17 @@ class StateChangesValidatorTest {
     private static BlockItem proofItem(final long blockNumber) {
         return BlockItem.newBuilder()
                 .blockProof(BlockProof.newBuilder().block(blockNumber).build())
+                .build();
+    }
+
+    private static BlockItem signedProofItem(final long blockNumber, final int signatureLength) {
+        return BlockItem.newBuilder()
+                .blockProof(BlockProof.newBuilder()
+                        .block(blockNumber)
+                        .signedBlockProof(TssSignedBlockProof.newBuilder()
+                                .blockSignature(Bytes.wrap(new byte[signatureLength]))
+                                .build())
+                        .build())
                 .build();
     }
 }

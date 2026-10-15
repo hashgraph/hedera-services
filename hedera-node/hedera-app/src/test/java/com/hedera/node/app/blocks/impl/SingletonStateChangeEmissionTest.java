@@ -3,7 +3,7 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCKS;
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_BLOCK_STREAM_INFO;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
@@ -15,7 +15,6 @@ import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.util.Set;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
@@ -95,7 +94,7 @@ class SingletonStateChangeEmissionTest {
     void emissionFollowedByRevertedFieldUsesFreshCallbackBaseline() {
         listener.beginBlock(true);
         listener.singletonUpdateChange(BLOCKS, INITIAL, UPDATED);
-        final var first = listener.stateChangesFor(Set.of(BLOCKS));
+        final var first = listener.allStateChanges();
         final var firstUpdate = first.getFirst().singletonUpdateOrThrow();
         assertThat(firstUpdate.partial()).isTrue();
         Object replay = StateChangeDeltas.applySingleton(BLOCKS, INITIAL, firstUpdate);
@@ -103,7 +102,7 @@ class SingletonStateChangeEmissionTest {
         assertThat(listener.allStateChanges()).isEmpty();
 
         listener.singletonUpdateChange(BLOCKS, UPDATED, INITIAL);
-        final var second = listener.stateChangesFor(Set.of(BLOCKS));
+        final var second = listener.allStateChanges();
         final var secondUpdate = second.getFirst().singletonUpdateOrThrow();
         assertThat(secondUpdate.partial()).isTrue();
         replay = StateChangeDeltas.applySingleton(BLOCKS, replay, secondUpdate);
@@ -126,7 +125,7 @@ class SingletonStateChangeEmissionTest {
     }
 
     @Test
-    void selectiveEmissionPreservesUnrelatedPendingValueAndBaseline() {
+    void transactionOwnedSingletonDoesNotDisturbBoundaryValueAndBaseline() {
         listener.beginBlock(true);
         listener.singletonUpdateChange(BLOCKS, INITIAL, UPDATED);
         final var initialConstruction = ClprEndpointManifestConstruction.newBuilder()
@@ -136,11 +135,8 @@ class SingletonStateChangeEmissionTest {
         final var nextConstruction =
                 initialConstruction.copyBuilder().graceExtensionsUsed(1).build();
         listener.singletonUpdateChange(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, initialConstruction, nextConstruction);
-        final var selected = listener.stateChangesFor(Set.of(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID));
-        assertThat(selected).hasSize(1);
-        listener.stateChangesEmitted(selected);
-        assertThat(listener.stateChangesFor(Set.of(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID)))
-                .isEmpty();
+        assertThat(listener.requiresPreviousValue(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .isFalse();
         final var pending = listener.allStateChanges();
         assertThat(pending).hasSize(1);
         assertThat(pending.getFirst().stateId()).isEqualTo(BLOCKS);
@@ -157,12 +153,11 @@ class SingletonStateChangeEmissionTest {
     }
 
     @Test
-    void unrelatedUpdateSurvivesEmptyClprPublicationWithoutALaterWrite() {
+    void unrelatedUpdateSurvivesAnImmediateClprUpdateWithoutALaterWrite() {
         listener.beginBlock(true);
         listener.singletonUpdateChange(BLOCKS, INITIAL, UPDATED);
-        final var selected = listener.stateChangesFor(Set.of(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID));
-        assertThat(selected).isEmpty();
-        listener.stateChangesEmitted(selected);
+        listener.singletonUpdateChange(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, ClprEndpointManifestConstruction.DEFAULT);
         final var finalChanges = listener.allStateChanges();
         assertThat(finalChanges).hasSize(1);
         assertThat(StateChangeDeltas.applySingleton(

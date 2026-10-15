@@ -56,7 +56,7 @@ class InFlightEventsTest {
     @Test
     @DisplayName("nothing is delivered when no events are in flight")
     void deliveringWithNothingInFlight() {
-        inFlightEvents.deliverArrivedEvents(START, node0);
+        inFlightEvents.deliverArrived(START, node0);
 
         assertThat(node0.receivedEvents).isEmpty();
     }
@@ -67,7 +67,7 @@ class InFlightEventsTest {
         final PlatformEvent first = addEvent(NODE_1, 10);
         final PlatformEvent second = addEvent(NODE_1, 20);
 
-        inFlightEvents.deliverArrivedEvents(at(30), node0);
+        inFlightEvents.deliverArrived(at(30), node0);
 
         assertThat(node0.receivedEvents).containsExactly(first, second);
     }
@@ -81,7 +81,7 @@ class InFlightEventsTest {
         final PlatformEvent fromTwoEarly = addEvent(NODE_2, 20);
         final PlatformEvent fromTwoLate = addEvent(NODE_2, 40);
 
-        inFlightEvents.deliverArrivedEvents(at(50), node0);
+        inFlightEvents.deliverArrived(at(50), node0);
 
         assertThat(node0.receivedEvents).containsExactly(fromOneEarly, fromTwoEarly, fromOneLate, fromTwoLate);
     }
@@ -92,10 +92,10 @@ class InFlightEventsTest {
         final PlatformEvent early = addEvent(NODE_1, 10);
         final PlatformEvent late = addEvent(NODE_1, 30);
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
         assertThat(node0.receivedEvents).containsExactly(early);
 
-        inFlightEvents.deliverArrivedEvents(at(40), node0);
+        inFlightEvents.deliverArrived(at(40), node0);
         assertThat(node0.receivedEvents).containsExactly(early, late);
     }
 
@@ -104,7 +104,7 @@ class InFlightEventsTest {
     void eventArrivingExactlyNowIsDelivered() {
         final PlatformEvent event = addEvent(NODE_1, 10);
 
-        inFlightEvents.deliverArrivedEvents(at(10), node0);
+        inFlightEvents.deliverArrived(at(10), node0);
 
         assertThat(node0.receivedEvents).containsExactly(event);
     }
@@ -117,7 +117,7 @@ class InFlightEventsTest {
         final PlatformEvent fromOpenConnection = addEvent(NODE_2, 20);
         downConnections.add(Map.entry(NODE_1, NODE_0));
 
-        inFlightEvents.deliverArrivedEvents(at(30), node0);
+        inFlightEvents.deliverArrived(at(30), node0);
 
         assertThat(node0.receivedEvents).containsExactly(fromOpenConnection);
     }
@@ -128,11 +128,11 @@ class InFlightEventsTest {
         final PlatformEvent held = addEvent(NODE_1, 10);
         downConnections.add(Map.entry(NODE_1, NODE_0));
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
         assertThat(node0.receivedEvents).isEmpty();
 
         downConnections.clear();
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
         assertThat(node0.receivedEvents).containsExactly(held);
     }
 
@@ -142,7 +142,7 @@ class InFlightEventsTest {
         final PlatformEvent event = addEvent(NODE_1, 10);
         downConnections.add(Map.entry(NODE_0, NODE_1));
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
 
         assertThat(node0.receivedEvents).containsExactly(event);
     }
@@ -154,11 +154,11 @@ class InFlightEventsTest {
         final PlatformEvent second = addEvent(NODE_1, 20);
         node0.accepting = false;
 
-        inFlightEvents.deliverArrivedEvents(at(30), node0);
+        inFlightEvents.deliverArrived(at(30), node0);
         assertThat(node0.receivedEvents).isEmpty();
 
         node0.accepting = true;
-        inFlightEvents.deliverArrivedEvents(at(30), node0);
+        inFlightEvents.deliverArrived(at(30), node0);
         assertThat(node0.receivedEvents).containsExactly(first, second);
     }
 
@@ -169,7 +169,7 @@ class InFlightEventsTest {
         final PlatformEvent fromTwo = addEvent(NODE_2, 10);
         final PlatformEvent fromOne = addEvent(NODE_1, 10);
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
 
         assertThat(node0.receivedEvents).containsExactly(fromOne, fromTwo);
     }
@@ -182,11 +182,11 @@ class InFlightEventsTest {
 
         inFlightEvents.clearIncoming(NODE_0);
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
         assertThat(node0.receivedEvents).isEmpty();
 
         final RecordingReceiver node1 = new RecordingReceiver(NODE_1);
-        inFlightEvents.deliverArrivedEvents(at(20), node1);
+        inFlightEvents.deliverArrived(at(20), node1);
         assertThat(node1.receivedEvents).containsExactly(towardsNodeOne);
     }
 
@@ -199,11 +199,11 @@ class InFlightEventsTest {
         final PlatformEvent towardsNodeZero = addEvent(NODE_0, nodeThree, 10);
         final PlatformEvent towardsNodeThree = addEvent(nodeThree, NODE_0, 10);
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
         assertThat(node0.receivedEvents).containsExactly(towardsNodeZero);
 
         final RecordingReceiver nodeThreeReceiver = new RecordingReceiver(nodeThree);
-        inFlightEvents.deliverArrivedEvents(at(20), nodeThreeReceiver);
+        inFlightEvents.deliverArrived(at(20), nodeThreeReceiver);
         assertThat(nodeThreeReceiver.receivedEvents).containsExactly(towardsNodeThree);
     }
 
@@ -221,7 +221,7 @@ class InFlightEventsTest {
         final PlatformEvent first = addEvent(NODE_1, 10);
         final PlatformEvent second = addEvent(NODE_1, 10);
 
-        inFlightEvents.deliverArrivedEvents(at(20), node0);
+        inFlightEvents.deliverArrived(at(20), node0);
 
         assertThat(node0.receivedEvents).containsExactly(first, second);
     }

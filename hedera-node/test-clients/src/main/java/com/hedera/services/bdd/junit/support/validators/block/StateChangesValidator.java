@@ -530,7 +530,13 @@ public class StateChangesValidator implements BlockStreamValidator {
         boolean hashChainBroken = false;
         for (int i = 0; i < n; i++) {
             final var block = blocks.get(i);
-            var shouldVerifyProof = shouldVerifyProof(i, lastVerifiableIndex);
+            var shouldVerifyProof = shouldVerifyProof(i, lastVerifiableIndex)
+                    // Don't leave the at-least-one-WRAPS assertion to sampling what may be a short window of blocks
+                    || (!observedCompressedWrapsProof
+                            && wrapsEnabled
+                            && hintsLibrary != null
+                            && historyLibrary != null
+                            && carriesCompressedWrapsProof(block));
             if (i != 0) {
                 final var stateToBeCopied = state;
                 this.state = stateLifecycleManager.copyMutableState();
@@ -1048,6 +1054,18 @@ public class StateChangesValidator implements BlockStreamValidator {
         requireNonNull(tssSignature);
         return tssSignature.length() - HintsLibraryImpl.VK_LENGTH - HINTS_SIGNATURE_LENGTH
                 == COMPRESSED_WRAPS_PROOF_LENGTH;
+    }
+
+    static boolean carriesCompressedWrapsProof(@NonNull final Block block) {
+        requireNonNull(block);
+        if (block.items().isEmpty()) {
+            return false;
+        }
+        final var lastItem = block.items().getLast();
+        return lastItem.hasBlockProof()
+                && lastItem.blockProofOrThrow().hasSignedBlockProof()
+                && hasCompressedWrapsProof(
+                        lastItem.blockProofOrThrow().signedBlockProofOrThrow().blockSignature());
     }
 
     private void applyStateChanges(@NonNull final StateChanges stateChanges) {

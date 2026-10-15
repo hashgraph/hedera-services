@@ -764,7 +764,13 @@ class VirtualMapTests extends VirtualTestBase {
             metricValue = newValue;
         }
 
-        final long value = metricValue;
+        // The metric is updated asynchronously by the pipeline thread, so wait for it to become positive
+        assertEventuallyTrue(
+                () -> (long) metric.get(ValueType.VALUE) > 0,
+                Duration.ofSeconds(4),
+                "Node cache size must be positive before flush",
+                () -> new AssertionError("node cache size = " + metric.get(ValueType.VALUE)));
+        final long value = (long) metric.get(ValueType.VALUE);
 
         final VirtualMap lastMap = map0;
         lastMap.enableFlush();
@@ -779,7 +785,9 @@ class VirtualMapTests extends VirtualTestBase {
                     return lastValue < value;
                 },
                 Duration.ofSeconds(4),
-                "Node cache size must decrease after flush");
+                "Node cache size must decrease after flush",
+                () -> new AssertionError(
+                        "size before flush = " + value + ", size after flush = " + metric.get(ValueType.VALUE)));
     }
 
     @Test

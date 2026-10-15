@@ -15,11 +15,13 @@ pluginManagement {
         }
         gradlePluginPortal()
     }
+    includeBuild("gradle/benchmark-tracking")
 }
 
 plugins {
     id("org.hiero.gradle.build") version "0.7.11"
     id("com.hedera.pbj.pbj-compiler") version "0.15.10-partial-diff-SNAPSHOT" apply false
+    id("org.gradlex.java-module-packaging") version "1.3" apply false
     id("org.hiero.gradle.feature.besu-native-patch")
 }
 
@@ -114,6 +116,15 @@ gradle.lifecycle.afterProject {
             module("io.vertx:vertx-core", "io.vertx.core")
             module("io.consensys.tuweni:tuweni-bytes", "tuweni.bytes")
             module("io.consensys.tuweni:tuweni-units", "tuweni.units")
+            module("org.openjdk.jmh:jmh-core", "jmh.core") {
+                exportAllPackages()
+                requireAllDefinedDependencies()
+                requires("java.logging")
+                requires("java.management")
+                requires("jdk.unsupported")
+            }
+            module("net.sf.jopt-simple:jopt-simple", "jopt.simple")
+            module("org.apache.commons:commons-math3", "commons.math3")
         }
     }
 

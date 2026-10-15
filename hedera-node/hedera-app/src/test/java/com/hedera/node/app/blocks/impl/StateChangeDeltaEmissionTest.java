@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.junit.jupiter.api.Test;
 
@@ -311,8 +310,8 @@ class StateChangeDeltaEmissionTest {
         final var moreFiles = COUNTS.copyBuilder().numFiles(1_000_001).build();
         final var moreAccounts = moreFiles.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreFiles);
-        // A mid-block CLPR publication must preserve the pending update and its original baseline
-        assertThat(listener.stateChangesFor(Set.of(MANIFEST))).isEmpty();
+        // Transaction-owned CLPR changes do not disturb a pending boundary baseline.
+        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
         listener.singletonUpdateChange(ENTITY_COUNTS, moreFiles, moreAccounts);
         assertThat(replaySingletons(COUNTS, listener.allStateChanges())).isEqualTo(moreAccounts);
     }
@@ -351,17 +350,17 @@ class StateChangeDeltaEmissionTest {
             ClprEndpointManifest.newBuilder().version(2).build();
 
     @Test
-    void selectedPublicationDrainsOnlyItsOwnUpdates() {
+    void immediatePublicationLeavesBoundaryUpdatesPending() {
         final var listener = boundaryListener();
+        final var immediate = new ImmediateStateChangeListener();
         listener.beginBlock(false);
         listener.singletonUpdateChange(
                 ENTITY_COUNTS, COUNTS, COUNTS.copyBuilder().numAccounts(1_001).build());
         listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var captured = listener.stateChangesFor(Set.of(MANIFEST));
-        assertThat(captured).extracting(StateChange::stateId).containsExactly(MANIFEST);
-        assertThat(captured.getFirst().singletonUpdateOrThrow().clprEndpointManifestValueOrThrow())
-                .isEqualTo(NEXT_MANIFEST);
-        listener.stateChangesEmitted(captured);
+        immediate.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        assertThat(immediate.getSingletonStateChanges())
+                .extracting(StateChange::stateId)
+                .containsExactly(MANIFEST);
         assertThat(listener.allStateChanges()).extracting(StateChange::stateId).containsExactly(ENTITY_COUNTS);
     }
 
@@ -379,11 +378,11 @@ class StateChangeDeltaEmissionTest {
 
     @Test
     void singletonEncodingFailureFallsBackToFullValue() {
-        final var listener = boundaryListener();
+        final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true, 0);
-        // A baseline of the wrong type makes the encoder throw at publication time
+        // A baseline of the wrong type makes the encoder throw at commit time
         listener.singletonUpdateChange(MANIFEST, COUNTS, NEXT_MANIFEST);
-        final var changes = listener.allStateChanges(true);
+        final var changes = listener.getSingletonStateChanges();
         assertThat(changes).hasSize(1);
         final var update = changes.getFirst().singletonUpdateOrThrow();
         assertThat(update.partial()).isFalse();
@@ -401,12 +400,12 @@ class StateChangeDeltaEmissionTest {
         listener.beginBlock(true, 0);
         final var moreAccounts = COUNTS.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, moreAccounts);
-        // The CLPR reconcile externalizes just its own updates mid-block, as HandleWorkflow does
-        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var midBlock = listener.stateChangesFor(Set.of(MANIFEST));
+        final var immediate = new ImmediateStateChangeListener();
+        immediate.beginBlock(true, 0);
+        immediate.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        final var midBlock = immediate.getSingletonStateChanges();
         assertThat(midBlock).extracting(StateChange::stateId).containsExactly(MANIFEST);
         replay(reader, midBlock);
-        listener.stateChangesEmitted(midBlock);
         // A later round of the same block
         listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(2), platformStateAt(3));
         final var evenMoreAccounts =
@@ -433,7 +432,7 @@ class StateChangeDeltaEmissionTest {
         final var second = first.copyBuilder().numFiles(1_000_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
         listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
-        final var selected = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        final var selected = listener.allStateChanges();
         assertThat(replaySingletons(COUNTS, selected)).isEqualTo(second);
         listener.stateChangesEmitted(selected);
         assertThat(listener.allStateChanges()).isEmpty();
@@ -463,10 +462,10 @@ class StateChangeDeltaEmissionTest {
         final var first = COUNTS.copyBuilder().numAccounts(1_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, COUNTS, first);
         // Inspection or a failed publication does not acknowledge this update.
-        final var unpublished = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        final var unpublished = listener.allStateChanges();
         final var second = first.copyBuilder().numFiles(1_000_001).build();
         listener.singletonUpdateChange(ENTITY_COUNTS, first, second);
-        final var selected = listener.stateChangesFor(Set.of(ENTITY_COUNTS));
+        final var selected = listener.allStateChanges();
         assertThat(replaySingletons(COUNTS, unpublished)).isEqualTo(first);
         assertThat(replaySingletons(COUNTS, selected)).isEqualTo(second);
     }
@@ -478,10 +477,10 @@ class StateChangeDeltaEmissionTest {
         listener.beginBlock(true, 0);
         listener.singletonUpdateChange(
                 ENTITY_COUNTS, counts, counts.copyBuilder().numAccounts(1_001).build());
-        listener.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
-        final var selected = listener.stateChangesFor(Set.of(MANIFEST));
-        final var emitted = new ArrayList<>(selected);
-        listener.stateChangesEmitted(selected);
+        final var immediate = new ImmediateStateChangeListener();
+        immediate.beginBlock(true, 0);
+        immediate.singletonUpdateChange(MANIFEST, ClprEndpointManifest.DEFAULT, NEXT_MANIFEST);
+        final var emitted = new ArrayList<>(immediate.getSingletonStateChanges());
         listener.singletonUpdateChange(PLATFORM_STATE, platformStateAt(3), platformStateAt(4));
         emitted.addAll(emitAll(listener));
         return emitted;

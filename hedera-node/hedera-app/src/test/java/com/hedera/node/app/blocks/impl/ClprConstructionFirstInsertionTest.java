@@ -3,7 +3,7 @@ package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.SignedTxCustomizer.NOOP_SIGNED_TX_CUSTOMIZER;
@@ -79,22 +79,21 @@ class ClprConstructionFirstInsertionTest {
     }
 
     @Test
-    void firstInsertionRetainsItsOrderAmongMapChangesInTheSameCommit() {
+    void firstInsertionIsOwnedByTheTransactionAlongsideItsMapChanges() {
         final var harness = new Harness(true);
         harness.putConstruction(harness.root, INITIAL);
         harness.putAccount(harness.root);
         harness.root.commitFullStack();
 
-        assertThat(harness.outputChanges().stream()
-                        .map(change -> change.hasSingletonUpdate() ? "construction" : "account")
-                        .toList())
-                .containsExactlyElementsOf(harness.physicalInsertions);
+        assertThat(harness.outputChanges())
+                .extracting(StateChange::stateId)
+                .containsExactly(ACCOUNTS, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
         assertThat(harness.physicalInsertions).hasSize(2);
         assertThat(harness.boundary.allStateChanges()).isEmpty();
     }
 
     @Test
-    void laterReplacementsRemainDeferredAndUseTheInsertedValueAsBaseline() {
+    void laterReplacementsAreImmediateAndUseTheInsertedValueAsBaseline() {
         final var harness = new Harness(true);
         final var preceding = harness.root.createIrreversiblePrecedingBuilder();
         initialize(preceding, HederaFunctionality.NODE_STAKE_UPDATE, 1);
@@ -104,27 +103,25 @@ class ClprConstructionFirstInsertionTest {
         harness.putConstruction(harness.root, updated);
         harness.root.commitFullStack();
 
-        assertThat(harness.outputChanges()).hasSize(1);
-        final var deferred = harness.boundary.allStateChanges();
-        assertThat(deferred).hasSize(1);
-        final var update = deferred.getFirst().singletonUpdateOrThrow();
+        assertThat(harness.outputChanges()).hasSize(2);
+        assertThat(harness.boundary.allStateChanges()).isEmpty();
+        final var update = harness.outputChanges().getLast().singletonUpdateOrThrow();
         assertThat(update.partial()).isTrue();
         assertThat(StateChangeDeltas.applySingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, INITIAL, update))
                 .isEqualTo(updated);
     }
 
     @Test
-    void openingAfterAStoredDefaultIsADeferredReplacement() {
+    void openingAfterAStoredDefaultIsAnImmediateReplacement() {
         final var harness = new Harness(true);
         harness.storedConstruction.set(ClprEndpointManifestConstruction.DEFAULT);
         harness.putConstruction(harness.root, INITIAL);
         harness.root.commitFullStack();
 
-        assertThat(harness.outputChanges()).isEmpty();
+        assertThat(harness.outputChanges()).hasSize(1);
         assertThat(harness.physicalInsertions).isEmpty();
-        assertThat(harness.boundary.allStateChanges()).hasSize(1);
-        assertThat(harness.boundary
-                        .allStateChanges()
+        assertThat(harness.boundary.allStateChanges()).isEmpty();
+        assertThat(harness.outputChanges()
                         .getFirst()
                         .singletonUpdateOrThrow()
                         .clprEndpointManifestConstructionValueOrThrow())
@@ -188,6 +185,7 @@ class ClprConstructionFirstInsertionTest {
                 @Override
                 public void singletonUpdateChange(final ClprEndpointManifestConstruction value) {
                     boundary.singletonUpdateChange(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, value);
+                    immediate.singletonUpdateChange(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, value);
                 }
 
                 @Override

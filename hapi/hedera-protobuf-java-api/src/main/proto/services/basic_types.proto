@@ -114,18 +114,13 @@ message TokenID {
  */
 enum BlockHashAlgorithm {
     /**
-     * A SHA2 algorithm SHA-256 hash.
+     * A SHA2 algorithm SHA-384 hash.
      * <p>
      * This is the default value, if a field of this enumerated type is
      * not set, then this is the value that will be decoded when the
      * serialized message is read.
      */
-    SHA2_256 = 0;
-
-    /**
-     * A SHA2 algorithm SHA-384 hash.
-     */
-    SHA2_384 = 1;
+    SHA2_384 = 0;
 }
 
 /**
@@ -1917,11 +1912,6 @@ enum HederaFunctionality {
     ClprSubmitBundle = 122;
 
     /**
-     * Redact a message from the outbound queue before delivery.
-     */
-    ClprRedactMessage = 123;
-
-    /**
      * Register a Connector on the CLPR Service.
      */
     ClprRegisterConnector = 124;
@@ -1946,6 +1936,11 @@ enum HederaFunctionality {
      * Get the current CLPR endpoint manifest (spec §6.5).
      */
     ClprGetEndpointManifest = 128;
+
+    /**
+     * (Internal-only) Externalize CLPR singleton maintenance.
+     */
+    ClprMaintenance = 129;
 }
 
 /**

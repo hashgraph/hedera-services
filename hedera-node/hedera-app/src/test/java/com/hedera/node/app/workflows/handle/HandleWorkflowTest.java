@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.ENDPOINT_MANIFEST_RECONCILIATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.GENESIS_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_INITIALIZATION;
+import static com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason.UPGRADE_ROSTER_RECONCILIATION;
+import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.history.schemas.V071HistorySchema.ACTIVE_PROOF_CONSTRUCTION_STATE_ID;
@@ -8,8 +13,9 @@ import static com.hedera.node.app.history.schemas.V071HistorySchema.LEDGER_ID_ST
 import static com.hedera.node.app.history.schemas.V071HistorySchema.NEXT_PROOF_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
 import static com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema.NODES_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema.ENTITY_COUNTS_STATE_ID;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0730EntityIdSchema.HIGHEST_NODE_ID_STATE_ID;
@@ -22,30 +28,28 @@ import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.hiero.consensus.platformstate.PlatformStateService.NAME;
+import static org.hiero.consensus.roster.RosterStateId.ROSTERS_STATE_ID;
 import static org.hiero.consensus.roster.RosterStateId.ROSTER_STATE_STATE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import com.hedera.hapi.block.stream.BlockItem;
@@ -57,11 +61,15 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifest;
 import com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction;
+import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.file.File;
@@ -70,29 +78,34 @@ import com.hedera.hapi.node.state.history.History;
 import com.hedera.hapi.node.state.history.HistoryProof;
 import com.hedera.hapi.node.state.history.HistoryProofConstruction;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.roster.Roster;
+import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.node.state.roster.RosterState;
 import com.hedera.hapi.node.state.roster.RoundRosterPair;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.state.PlatformState;
+import com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceReason;
 import com.hedera.node.app.blocks.BlockHashSigner;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.impl.BoundaryStateChangeListener;
 import com.hedera.node.app.blocks.impl.ImmediateStateChangeListener;
 import com.hedera.node.app.blocks.impl.streaming.BlockBufferService;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.hints.HintsService;
 import com.hedera.node.app.history.HistoryService;
 import com.hedera.node.app.history.WritableHistoryStore;
 import com.hedera.node.app.history.impl.OnProofFinished;
-import com.hedera.node.app.metrics.StoreMetricsServiceImpl;
 import com.hedera.node.app.quiescence.QuiescenceController;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.WrappedRecordBlockHashMigration;
 import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.clpr.ClprService;
 import com.hedera.node.app.service.entityid.EntityIdFactory;
 import com.hedera.node.app.service.entityid.EntityIdService;
 import com.hedera.node.app.service.file.FileService;
@@ -110,13 +123,16 @@ import com.hedera.node.app.spi.AppContext;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.migrate.StartupNetworks;
 import com.hedera.node.app.spi.records.SelfNodeAccountIdManager;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.CongestionMetrics;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.OpWorkflowMetrics;
+import com.hedera.node.app.workflows.clpr.ClprCaCertManager;
 import com.hedera.node.app.workflows.clpr.ClprEndpointManifestReconciler;
+import com.hedera.node.app.workflows.clpr.ClprSubmissions;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.record.MigrationRootHashSubmissions;
 import com.hedera.node.app.workflows.handle.record.SystemTransactions;
@@ -134,28 +150,27 @@ import com.swirlds.state.merkle.VirtualMapState;
 import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.SingletonChangeListener;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.test.fixtures.FunctionWritableSingletonState;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.MapWritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.lang.reflect.InvocationTargetException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.LongStream;
+import javax.inject.Provider;
 import org.apache.logging.log4j.LogManager;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.crypto.test.fixtures.CryptoRandomUtils;
-import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.model.event.ConsensusEvent;
 import org.hiero.consensus.model.event.EventDescriptorWrapper;
 import org.hiero.consensus.model.hashgraph.Round;
@@ -167,6 +182,9 @@ import org.hiero.consensus.platformstate.V0540PlatformStateSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -421,198 +439,52 @@ class HandleWorkflowTest {
 
     @Test
     void disabledClprDoesNotInstantiateEndpointManifestReconciler() throws Exception {
-        givenSubjectWith(
-                RECORDS,
-                BlockStreamWriterMode.FILE,
-                emptyList(),
-                Map.of("clpr.enabled", "false", "clpr.endpointManifestEnabled", "true"));
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "false"));
 
         for (final var methodName : List.of("reconcileClprEndpointManifest", "pruneClprEndpointManifestOnUpgrade")) {
-            final var method =
-                    HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
+            final var reconcile = methodName.equals("reconcileClprEndpointManifest");
+            final var method = reconcile
+                    ? HandleWorkflow.class.getDeclaredMethod(
+                            methodName, com.swirlds.state.State.class, Instant.class, Instant.class)
+                    : HandleWorkflow.class.getDeclaredMethod(methodName, com.swirlds.state.State.class, Instant.class);
             method.setAccessible(true);
-            method.invoke(subject, state, NOW);
+            if (reconcile) {
+                method.invoke(subject, state, NOW, NOW);
+            } else {
+                method.invoke(subject, state, NOW);
+            }
         }
 
         assertEquals(0, clprEndpointManifestReconcilerProviderCalls.get());
     }
 
     @Test
-    void noOpClprPublicationPreservesUnrelatedPendingUpdatesWithoutALaterWrite() throws Exception {
-        givenRealBoundaryListener();
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var prior = EntityCounts.newBuilder().numAccounts(10).build();
-        final var next = prior.copyBuilder().numAccounts(11).build();
-        boundaryStateChangeListener.singletonUpdateChange(ENTITY_COUNTS_STATE_ID, prior, next);
+    void failedPostUpgradeSetupStaysPendingWithoutDroppingTheTransaction() {
+        given(blockStreamManager.pendingWork()).willReturn(POST_UPGRADE_WORK);
+        willThrow(new IllegalStateException("No reserved consensus time remains"))
+                .given(systemTransactions)
+                .doPostUpgradeSetup(any(), any());
+        final var txn = new TransactionWrapper(com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY);
+        txn.setConsensusTimestamp(NOW);
+        given(event.getHash()).willReturn(CryptoRandomUtils.randomHash());
+        given(event.allParentsIterator())
+                .willReturn(List.<EventDescriptorWrapper>of().iterator());
+        given(event.getEventCore()).willReturn(EventCore.DEFAULT);
+        given(blockStreamManager.lastIntervalProcessTime()).willReturn(NOW);
+        given(round.iterator()).willAnswer(invocation -> List.of(event).iterator());
+        final var creatorId = NodeId.of(0);
+        given(event.getCreatorId()).willReturn(creatorId);
+        given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
+        given(event.consensusTransactionIterator())
+                .willAnswer(invocation -> List.<ConsensusTransaction>of(txn).iterator());
+        givenSubjectWith(StreamMode.BLOCKS, BlockStreamWriterMode.FILE, List.of());
 
-        invokeStreamingClprChanges(MapWritableStates.builder().build(), () -> {});
+        subject.handleRound(state, round, txns -> {});
 
-        verify(blockStreamManager, never()).writeItem(any(Function.class));
-        final var pending = boundaryStateChangeListener.allStateChanges();
-        assertEquals(1, pending.size());
-        assertEquals(ENTITY_COUNTS_STATE_ID, pending.getFirst().stateId());
-        assertEquals(
-                next,
-                StateChangeDeltas.applySingleton(
-                        ENTITY_COUNTS_STATE_ID, prior, pending.getFirst().singletonUpdateOrThrow()));
-    }
-
-    @Test
-    void clprPublicationDrainsOnlyItsSingletonsAndRevertedFieldsReplayCorrectly() throws Exception {
-        givenRealBoundaryListener();
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var counts = EntityCounts.newBuilder().numAccounts(10).build();
-        final var nextCounts = counts.copyBuilder().numAccounts(11).build();
-        boundaryStateChangeListener.singletonUpdateChange(ENTITY_COUNTS_STATE_ID, counts, nextCounts);
-        final var manifest = ClprEndpointManifest.newBuilder().version(1).build();
-        boundaryStateChangeListener.singletonUpdateChange(
-                ENDPOINT_MANIFEST_STATE_ID, ClprEndpointManifest.DEFAULT, manifest);
-        final var initial = initialClprConstruction();
-        final var construction = streamingConstructionState(initial);
-        final var states = MapWritableStates.builder().state(construction).build();
-        final var extended = initial.copyBuilder().graceExtensionsUsed(1).build();
-        invokeStreamingClprChanges(states, () -> construction.put(extended));
-        invokeStreamingClprChanges(states, () -> construction.put(initial));
-
-        final ArgumentCaptor<Function<Timestamp, BlockItem>> publications = ArgumentCaptor.forClass(Function.class);
-        verify(blockStreamManager, times(2)).writeItem(publications.capture());
-        Object replay = initial;
-        int constructionUpdates = 0;
-        int manifestUpdates = 0;
-        for (final var publication : publications.getAllValues()) {
-            for (final var change :
-                    publication.apply(BLOCK_TIME).stateChangesOrThrow().stateChanges()) {
-                if (change.stateId() == ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID) {
-                    assertTrue(change.singletonUpdateOrThrow().partial());
-                    replay = StateChangeDeltas.applySingleton(
-                            ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, replay, change.singletonUpdateOrThrow());
-                    constructionUpdates++;
-                } else {
-                    assertEquals(ENDPOINT_MANIFEST_STATE_ID, change.stateId());
-                    assertEquals(
-                            manifest,
-                            StateChangeDeltas.applySingleton(
-                                    ENDPOINT_MANIFEST_STATE_ID,
-                                    ClprEndpointManifest.DEFAULT,
-                                    change.singletonUpdateOrThrow()));
-                    manifestUpdates++;
-                }
-            }
-        }
-        assertEquals(initial, replay);
-        assertEquals(2, constructionUpdates);
-        assertEquals(1, manifestUpdates);
-        final var finalChanges = boundaryStateChangeListener.allStateChanges();
-        assertEquals(1, finalChanges.size());
-        assertEquals(ENTITY_COUNTS_STATE_ID, finalChanges.getFirst().stateId());
-        assertEquals(
-                nextCounts,
-                StateChangeDeltas.applySingleton(
-                        ENTITY_COUNTS_STATE_ID, counts, finalChanges.getFirst().singletonUpdateOrThrow()));
-        boundaryStateChangeListener.stateChangesEmitted(finalChanges);
-        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
-    }
-
-    @Test
-    void failedClprPublicationKeepsThePendingUpdateAndItsBaselineForRetry() throws Exception {
-        givenRealBoundaryListener();
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var initial = initialClprConstruction();
-        final var construction = streamingConstructionState(initial);
-        final var states = MapWritableStates.builder().state(construction).build();
-        final var extended = initial.copyBuilder().graceExtensionsUsed(1).build();
-        doThrow(new IllegalStateException("publication failed"))
-                .doNothing()
-                .when(blockStreamManager)
-                .writeItem(any(Function.class));
-
-        final var failure = assertThrows(
-                InvocationTargetException.class,
-                () -> invokeStreamingClprChanges(states, () -> construction.put(extended)));
-        assertEquals("publication failed", failure.getCause().getMessage());
-        assertEquals(1, boundaryStateChangeListener.allStateChanges().size());
-        invokeStreamingClprChanges(states, () -> {});
-
-        final ArgumentCaptor<Function<Timestamp, BlockItem>> publications = ArgumentCaptor.forClass(Function.class);
-        verify(blockStreamManager, times(2)).writeItem(publications.capture());
-        final var retried = publications.getAllValues().getLast().apply(BLOCK_TIME);
-        assertEquals(
-                extended,
-                StateChangeDeltas.applySingleton(
-                        ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
-                        initial,
-                        retried.stateChangesOrThrow().stateChanges().getFirst().singletonUpdateOrThrow()));
-        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
-    }
-
-    @Test
-    void firstClprConstructionInsertionIsPublishedOnceAndLeavesOtherSingletonsPending() throws Exception {
-        givenRealBoundaryListener();
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var counts = EntityCounts.newBuilder().numAccounts(10).build();
-        boundaryStateChangeListener.singletonUpdateChange(
-                ENTITY_COUNTS_STATE_ID,
-                counts,
-                counts.copyBuilder().numAccounts(11).build());
-        final var construction = streamingConstructionState(null);
-        final var states = MapWritableStates.builder().state(construction).build();
-        final var initial = initialClprConstruction();
-        final var published = new java.util.ArrayList<BlockItem>();
-        doAnswer(invocation -> {
-                    final Function<Timestamp, BlockItem> publication = invocation.getArgument(0);
-                    published.add(publication.apply(BLOCK_TIME));
-                    return null;
-                })
-                .when(blockStreamManager)
-                .writeItem(any(Function.class));
-
-        invokeStreamingClprChanges(states, () -> construction.put(initial));
-        invokeStreamingClprChanges(states, () -> {});
-
-        verify(blockStreamManager).writeItem(any(Function.class));
-        final var changes = published.getFirst().stateChangesOrThrow().stateChanges();
-        assertEquals(1, changes.size());
-        assertEquals(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, changes.getFirst().stateId());
-        assertFalse(changes.getFirst().singletonUpdateOrThrow().partial());
-        assertEquals(
-                initial, changes.getFirst().singletonUpdateOrThrow().clprEndpointManifestConstructionValueOrThrow());
-        assertEquals(
-                List.of(ENTITY_COUNTS_STATE_ID),
-                boundaryStateChangeListener.allStateChanges().stream()
-                        .map(StateChange::stateId)
-                        .toList());
-    }
-
-    @Test
-    void failedFirstClprConstructionPublicationCanRetryAsAFullInsertion() throws Exception {
-        givenRealBoundaryListener();
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var construction = streamingConstructionState(null);
-        final var states = MapWritableStates.builder().state(construction).build();
-        final var initial = initialClprConstruction();
-        doThrow(new IllegalStateException("publication failed"))
-                .doNothing()
-                .when(blockStreamManager)
-                .writeItem(any(Function.class));
-
-        assertThrows(
-                InvocationTargetException.class,
-                () -> invokeStreamingClprChanges(states, () -> construction.put(initial)));
-        invokeStreamingClprChanges(states, () -> {});
-
-        final ArgumentCaptor<Function<Timestamp, BlockItem>> publications = ArgumentCaptor.forClass(Function.class);
-        verify(blockStreamManager, times(2)).writeItem(publications.capture());
-        final var retried = publications
-                .getAllValues()
-                .getLast()
-                .apply(BLOCK_TIME)
-                .stateChangesOrThrow()
-                .stateChanges()
-                .getFirst()
-                .singletonUpdateOrThrow();
-        assertFalse(retried.partial());
-        assertEquals(initial, retried.clprEndpointManifestConstructionValueOrThrow());
-        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
+        // The transaction is still handled, while the rest of the post-upgrade work waits for a later one
+        verify(parentTxnFactory).createTopLevelTxn(eq(state), any(), eq(txn), eq(NOW), any());
+        verify(blockStreamManager, never()).confirmPendingWorkFinished();
+        verify(state, never()).getWritableStates(ClprService.NAME);
     }
 
     @Test
@@ -647,116 +519,12 @@ class HandleWorkflowTest {
 
     private void givenRealBoundaryListener() {
         boundaryStateChangeListener = new BoundaryStateChangeListener(
-                new StoreMetricsServiceImpl(new NoOpMetrics()), HederaTestConfigBuilder::createConfig);
+                new com.hedera.node.app.metrics.StoreMetricsServiceImpl(
+                        new org.hiero.consensus.fakes.noop.NoOpMetrics()),
+                HederaTestConfigBuilder::createConfig);
         boundaryStateChangeListener.beginBlock(true);
         immediateStateChangeListener = new ImmediateStateChangeListener();
         immediateStateChangeListener.beginBlock(true);
-    }
-
-    private static ClprEndpointManifestConstruction initialClprConstruction() {
-        return ClprEndpointManifestConstruction.newBuilder()
-                .constructionId(1)
-                .targetNodeIds(LongStream.range(0, 100).boxed().toList())
-                .build();
-    }
-
-    private FunctionWritableSingletonState<ClprEndpointManifestConstruction> streamingConstructionState(
-            final ClprEndpointManifestConstruction initial) {
-        final var value = new AtomicReference<>(initial);
-        final var singleton = new FunctionWritableSingletonState<>(
-                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, "ENDPOINT_MANIFEST_CONSTRUCTION", value::get, value::set);
-        singleton.registerListener(new SingletonChangeListener<>() {
-            @Override
-            public boolean requiresPreviousValue() {
-                return boundaryStateChangeListener.requiresPreviousValue(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
-            }
-
-            @Override
-            public void singletonUpdateChange(final ClprEndpointManifestConstruction next) {
-                boundaryStateChangeListener.singletonUpdateChange(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, next);
-            }
-
-            @Override
-            public void singletonUpdateChange(
-                    final ClprEndpointManifestConstruction prior, final ClprEndpointManifestConstruction next) {
-                boundaryStateChangeListener.singletonUpdateChange(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, prior, next);
-                immediateStateChangeListener.singletonUpdateChange(
-                        ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, prior, next);
-            }
-        });
-        return singleton;
-    }
-
-    private void invokeStreamingClprChanges(final WritableStates states, final Runnable action) throws Exception {
-        final var method =
-                HandleWorkflow.class.getDeclaredMethod("doStreamingClprChanges", WritableStates.class, Runnable.class);
-        method.setAccessible(true);
-        method.invoke(subject, states, action);
-    }
-
-    @Test
-    void streamingSelectedChangesAcknowledgesSingletonsAfterPublication() throws Exception {
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var writableStates =
-                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
-        final var action = mock(Runnable.class);
-        final var selectedIds = Set.of(ENDPOINT_MANIFEST_STATE_ID, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
-        final var manifestChange =
-                StateChange.newBuilder().stateId(ENDPOINT_MANIFEST_STATE_ID).build();
-        final var changes = List.of(manifestChange);
-        given(boundaryStateChangeListener.stateChangesFor(selectedIds)).willReturn(changes);
-
-        doStreamingChangesInternal(writableStates, action, selectedIds);
-
-        final var inOrder = Mockito.inOrder(boundaryStateChangeListener, action, writableStates, blockStreamManager);
-        inOrder.verify(action).run();
-        inOrder.verify((CommittableWritableStates) writableStates).commit();
-        inOrder.verify(boundaryStateChangeListener).stateChangesFor(selectedIds);
-        final ArgumentCaptor<Function<Timestamp, BlockItem>> itemSpec = ArgumentCaptor.captor();
-        inOrder.verify(blockStreamManager).writeItem(itemSpec.capture());
-        inOrder.verify(boundaryStateChangeListener).stateChangesEmitted(changes);
-        assertEquals(
-                changes,
-                itemSpec.getValue()
-                        .apply(Timestamp.DEFAULT)
-                        .stateChangesOrThrow()
-                        .stateChanges());
-        verify(boundaryStateChangeListener, never()).reset();
-        verify(boundaryStateChangeListener, never()).allStateChanges(anyBoolean());
-    }
-
-    @Test
-    void streamingOnlyKvChangesLeavesPendingSingletonsAlone() throws Exception {
-        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
-        final var writableStates =
-                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
-
-        doStreamingChangesInternal(writableStates, () -> {}, Set.of());
-
-        verify((CommittableWritableStates) writableStates).commit();
-        verifyNoInteractions(boundaryStateChangeListener);
-    }
-
-    @Test
-    void recordsModeStreamsNoStateChanges() throws Exception {
-        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList());
-        final var writableStates =
-                mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
-
-        doStreamingChangesInternal(writableStates, () -> {}, Set.of(ENDPOINT_MANIFEST_STATE_ID));
-
-        verify((CommittableWritableStates) writableStates).commit();
-        verifyNoInteractions(boundaryStateChangeListener);
-        verify(blockStreamManager, never()).writeItem(any(Function.class));
-    }
-
-    private void doStreamingChangesInternal(
-            final WritableStates writableStates, final Runnable action, final Set<Integer> singletonStateIds)
-            throws Exception {
-        final var method = HandleWorkflow.class.getDeclaredMethod(
-                "doStreamingChangesInternal", WritableStates.class, WritableStates.class, Runnable.class, Set.class);
-        method.setAccessible(true);
-        method.invoke(subject, writableStates, null, action, singletonStateIds);
     }
 
     @Test
@@ -1087,6 +855,16 @@ class HandleWorkflowTest {
         final var hederaConfig = config.getOrCreateConfig();
         given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(hederaConfig, 1L));
         lenient().when(round.getConsensusTimestamp()).thenReturn(NOW);
+        lenient()
+                .when(systemTransactions.nextReservedSystemTimeFor(any()))
+                .thenAnswer(invocation -> ((Instant) invocation.getArgument(0)).minusNanos(100));
+        lenient()
+                .when(systemTransactions.nextSystemTransactionIdAt(any()))
+                .thenAnswer(invocation -> TransactionID.newBuilder()
+                        .transactionValidStart(asTimestamp(invocation.getArgument(0)))
+                        .nonce(1)
+                        .build());
+        lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
         subject = new HandleWorkflow(
                 networkInfo,
                 stakePeriodChanges,
@@ -1118,7 +896,7 @@ class HandleWorkflowTest {
                 congestionMetrics,
                 () -> PlatformStatus.ACTIVE,
                 blockHashSigner,
-                null,
+                new java.util.concurrent.atomic.AtomicBoolean(),
                 nodeRewardManager,
                 blockBufferService,
                 Map.of(),
@@ -1252,6 +1030,372 @@ class HandleWorkflowTest {
                 BlockStreamWriterMode.FILE,
                 emptyList(),
                 Map.of("tss.hintsEnabled", "true", "tss.historyEnabled", "true"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void initializesMissingClprSingletonsOnUpgrade() throws Exception {
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList());
+        final var clprStates = mock(WritableStates.class);
+        final WritableSingletonState<ClprLedgerConfiguration> ledgerConfiguration = mock(WritableSingletonState.class);
+        final WritableSingletonState<ClprEndpointManifest> manifest = mock(WritableSingletonState.class);
+        final WritableSingletonState<ClprEndpointManifestConstruction> construction =
+                mock(WritableSingletonState.class);
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(construction);
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
+                .willReturn(ledgerConfiguration);
+        given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
+                .willReturn(manifest);
+
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
+        method.setAccessible(true);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
+
+        verify(ledgerConfiguration).put(any(ClprLedgerConfiguration.class));
+        verify(manifest).put(any(ClprEndpointManifest.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = StreamMode.class,
+            names = {"BLOCKS", "BOTH"})
+    void upgradeSingletonInitializationEmitsOneTransactionAndPreservesBoundaryChanges(final StreamMode mode)
+            throws Exception {
+        boundaryStateChangeListener = new BoundaryStateChangeListener(
+                mock(StoreMetricsService.class), () -> configProvider.getConfiguration());
+        final var ledgerConfig =
+                clprSingleton(LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", (ClprLedgerConfiguration) null);
+        final var manifest =
+                clprSingleton(ENDPOINT_MANIFEST_STATE_ID, "ENDPOINT_MANIFEST", (ClprEndpointManifest) null);
+        final var construction = clprSingleton(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                "ENDPOINT_MANIFEST_CONSTRUCTION",
+                (ClprEndpointManifestConstruction) null);
+        final var clprStates = MapWritableStates.builder()
+                .state(ledgerConfig)
+                .state(manifest)
+                .state(construction)
+                .build();
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        givenSubjectWith(mode, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.chainId", "upgrade-chain"));
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
+        method.setAccessible(true);
+        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
+        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
+
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
+
+        final var changes = boundaryStateChangeListener.allStateChanges();
+        assertEquals(List.of(pendingChange), changes);
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> {
+                            final var updates = items.stream()
+                                    .filter(BlockItem::hasStateChanges)
+                                    .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                                    .toList();
+                            return updates.size() == 3
+                                    && reasonOf(items) == UPGRADE_INITIALIZATION
+                                    && items.get(1).hasTransactionResult();
+                        }),
+                        eq(NOW.minusNanos(100)));
+        assertEquals(ClprEndpointManifestConstruction.DEFAULT, construction.get());
+        assertEquals("upgrade-chain", ledgerConfig.get().chainId());
+        assertEquals(new Timestamp(1, 0), ledgerConfig.get().timestamp());
+        assertEquals(1, manifest.get().version());
+
+        // Once the block boundary has consumed these changes, initialization must not emit them again.
+        boundaryStateChangeListener.reset();
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
+        assertTrue(boundaryStateChangeListener.allStateChanges().isEmpty());
+        verify(blockStreamManager, times(1)).writeSavepointItems(any(), any());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "false, NONE", "true, NONE",
+        "false, CA_INITIALIZATION", "true, CA_INITIALIZATION",
+        "false, CA_ENCODING", "true, CA_ENCODING",
+        "false, SUBMISSION", "true, SUBMISSION",
+        "false, SUBMISSIONS_INITIALIZATION", "true, SUBMISSIONS_INITIALIZATION"
+    })
+    void emptyRoundStreamsReconciliationDespiteLocalPublicationFailures(
+            final boolean extendsGrace, final LocalClprFailure failure) throws Exception {
+        boundaryStateChangeListener = new BoundaryStateChangeListener(
+                mock(StoreMetricsService.class), () -> configProvider.getConfiguration());
+        final var caCertManager = mock(ClprCaCertManager.class);
+        final var submissions = mock(ClprSubmissions.class);
+        final Provider<ClprCaCertManager> caProvider = () -> {
+            if (failure == LocalClprFailure.CA_INITIALIZATION) {
+                throw new IllegalStateException("local CA unavailable");
+            }
+            return caCertManager;
+        };
+        final Provider<ClprSubmissions> submissionsProvider = () -> {
+            if (failure == LocalClprFailure.SUBMISSIONS_INITIALIZATION) {
+                throw new IllegalStateException("local submissions unavailable");
+            }
+            return submissions;
+        };
+        if (failure == LocalClprFailure.CA_ENCODING) {
+            final var cert = mock(X509Certificate.class);
+            given(caCertManager.isMtlsEnabled()).willReturn(true);
+            given(caCertManager.caCert()).willReturn(cert);
+            given(cert.getEncoded()).willThrow(new CertificateEncodingException("local CA failure"));
+        } else if (failure == LocalClprFailure.SUBMISSION) {
+            given(submissions.submitEndpointPublication(any()))
+                    .willThrow(new RejectedExecutionException("local gossip executor unavailable"));
+        }
+        clprEndpointManifestReconciler = new ClprEndpointManifestReconciler(submissionsProvider, caProvider);
+        // Timeout-close without changing manifest contents, or extend grace while waiting for a publication.
+        final var manifest = clprSingleton(
+                ENDPOINT_MANIFEST_STATE_ID,
+                "ENDPOINT_MANIFEST",
+                ClprEndpointManifest.newBuilder().version(1).build());
+        final var construction = clprSingleton(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                "ENDPOINT_MANIFEST_CONSTRUCTION",
+                ClprEndpointManifestConstruction.newBuilder()
+                        .constructionId(2)
+                        .targetNodeIds(List.of(0L))
+                        .gracePeriodEndTime(new Timestamp(NOW.getEpochSecond() - 1, 0))
+                        .graceExtensionsUsed(extendsGrace ? 0 : 2)
+                        .build());
+        given(state.getWritableStates(ClprService.NAME))
+                .willReturn(MapWritableStates.builder()
+                        .state(manifest)
+                        .state(construction)
+                        .state(clprSingleton(
+                                LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", ClprLedgerConfiguration.DEFAULT))
+                        .build());
+        givenClprRoster(Roster.DEFAULT);
+        given(networkInfo.selfNodeInfo()).willReturn(creatorInfo);
+        final var firstEventTime = givenEmptyRound();
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "true"));
+        // Preserve singleton updates from earlier rounds of this still-open block.
+        boundaryStateChangeListener.singletonUpdateChange(LEDGER_ID_STATE_ID, new ProtoBytes(Bytes.wrap("ledger-id")));
+        final var pendingChange = boundaryStateChangeListener.allStateChanges().getFirst();
+
+        subject.handleRound(state, round, ignore -> {});
+        subject.handleRound(state, round, ignore -> {});
+
+        final var changes = boundaryStateChangeListener.allStateChanges();
+        verify(systemTransactions, atLeastOnce()).nextReservedSystemTimeFor(firstEventTime);
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> {
+                            final var updates = items.stream()
+                                    .filter(BlockItem::hasStateChanges)
+                                    .flatMap(item -> item.stateChangesOrThrow().stateChanges().stream())
+                                    .toList();
+                            return reasonOf(items) == ENDPOINT_MANIFEST_RECONCILIATION
+                                    && updates.stream().anyMatch(change -> change.singletonUpdateOrThrow()
+                                            .hasClprEndpointManifestConstructionValue());
+                        }),
+                        eq(firstEventTime.minusNanos(100)));
+        assertEquals(List.of(pendingChange), changes);
+        if (extendsGrace) {
+            assertEquals(1, construction.get().graceExtensionsUsed());
+        } else {
+            assertEquals(ClprEndpointManifestConstruction.DEFAULT, construction.get());
+        }
+        assertEquals(1, manifest.get().version());
+    }
+
+    private void givenClprRoster(final Roster roster) {
+        final var rosterHash = Bytes.wrap("active-roster");
+        final var rosterState = new FunctionWritableSingletonState<>(
+                ROSTER_STATE_STATE_ID,
+                "ROSTER_STATE",
+                () -> RosterState.newBuilder()
+                        .roundRosterPairs(new RoundRosterPair(0, rosterHash))
+                        .build(),
+                ignore -> {});
+        given(state.getReadableStates(RosterService.NAME))
+                .willReturn(MapWritableStates.builder()
+                        .state(rosterState)
+                        .state(MapWritableKVState.<ProtoBytes, Roster>builder(ROSTERS_STATE_ID, "ROSTERS")
+                                .value(new ProtoBytes(rosterHash), roster)
+                                .build())
+                        .build());
+        given(state.getReadableStates(AddressBookService.NAME))
+                .willReturn(MapWritableStates.builder()
+                        .state(MapWritableKVState.<EntityNumber, Node>builder(NODES_STATE_ID, "NODES")
+                                .value(
+                                        new EntityNumber(0),
+                                        Node.newBuilder()
+                                                .nodeId(0)
+                                                .accountId(AccountID.newBuilder()
+                                                        .accountNum(3)
+                                                        .build())
+                                                .serviceEndpoint(ServiceEndpoint.newBuilder()
+                                                        .domainName("node0")
+                                                        .port(50211)
+                                                        .build())
+                                                .build())
+                                .build())
+                        .build());
+        given(state.getReadableStates(EntityIdService.NAME)).willReturn(mock(ReadableStates.class));
+    }
+
+    private Instant givenEmptyRound() {
+        given(event.getHash()).willReturn(CryptoRandomUtils.randomHash());
+        given(event.getCreatorId()).willReturn(NodeId.of(0));
+        given(event.getEventCore()).willReturn(EventCore.DEFAULT);
+        given(event.allParentsIterator()).willAnswer(ignore -> emptyIterator());
+        given(event.consensusTransactionIterator()).willAnswer(ignore -> emptyIterator());
+        given(round.iterator()).willAnswer(ignore -> List.of(event).iterator());
+        final var firstEventTime = NOW.minusNanos(1000);
+        given(event.getConsensusTimestamp()).willReturn(firstEventTime);
+        given(networkInfo.nodeInfo(0)).willReturn(creatorInfo);
+        given(blockStreamManager.lastIntervalProcessTime()).willReturn(NOW);
+        return firstEventTime;
+    }
+
+    @Test
+    void genesisSeedsClprInsideSyntheticTransaction() {
+        final var clprStates = MapWritableStates.builder()
+                .state(clprSingleton(
+                        LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", (ClprLedgerConfiguration) null))
+                .state(clprSingleton(ENDPOINT_MANIFEST_STATE_ID, "ENDPOINT_MANIFEST", (ClprEndpointManifest) null))
+                .state(clprSingleton(
+                        ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                        "ENDPOINT_MANIFEST_CONSTRUCTION",
+                        (ClprEndpointManifestConstruction) null))
+                .build();
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(blockStreamManager.pendingWork())
+                .willReturn(com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK);
+        final var firstEventTime = givenEmptyRound();
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList());
+        willAnswer(invocation -> {
+                    final SystemTransactions.StateChangeStreaming streaming = invocation.getArgument(2);
+                    streaming.doStreamingChanges(
+                            clprStates,
+                            null,
+                            () -> com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.initializeSingletons(
+                                    clprStates, configProvider.getConfiguration()));
+                    return null;
+                })
+                .given(systemTransactions)
+                .doGenesisSetup(eq(firstEventTime), eq(state), any());
+
+        subject.handleRound(state, round, ignore -> {});
+
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> items.size() == 3
+                                && reasonOf(items) == GENESIS_INITIALIZATION
+                                && items.getLast()
+                                                .stateChangesOrThrow()
+                                                .stateChanges()
+                                                .size()
+                                        == 3),
+                        eq(firstEventTime.minusNanos(100)));
+        assertEquals(
+                ClprEndpointManifestConstruction.DEFAULT,
+                clprStates.getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID).get());
+    }
+
+    @Test
+    void upgradeRosterChangeEmitsSyntheticMaintenanceTransaction() throws Exception {
+        clprEndpointManifestReconciler = new ClprEndpointManifestReconciler(
+                () -> mock(ClprSubmissions.class), () -> mock(ClprCaCertManager.class));
+        final var construction = clprSingleton(
+                ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID,
+                "ENDPOINT_MANIFEST_CONSTRUCTION",
+                ClprEndpointManifestConstruction.DEFAULT);
+        final var clprStates = MapWritableStates.builder()
+                .state(clprSingleton(
+                        LEDGER_CONFIGURATION_STATE_ID, "LEDGER_CONFIGURATION", ClprLedgerConfiguration.DEFAULT))
+                .state(clprSingleton(
+                        ENDPOINT_MANIFEST_STATE_ID,
+                        "ENDPOINT_MANIFEST",
+                        ClprEndpointManifest.newBuilder().version(1).build()))
+                .state(construction)
+                .build();
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        givenClprRoster(Roster.newBuilder()
+                .rosterEntries(RosterEntry.newBuilder().nodeId(0).weight(1).build())
+                .build());
+        givenSubjectWith(BLOCKS, BlockStreamWriterMode.FILE, emptyList(), Map.of("clpr.enabled", "true"));
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "pruneClprEndpointManifestOnUpgrade", com.swirlds.state.State.class, Instant.class);
+        method.setAccessible(true);
+
+        method.invoke(subject, state, NOW);
+
+        verify(blockStreamManager)
+                .writeSavepointItems(
+                        argThat(items -> reasonOf(items) == UPGRADE_ROSTER_RECONCILIATION
+                                && items.getLast()
+                                                .stateChangesOrThrow()
+                                                .stateChanges()
+                                                .size()
+                                        == 1),
+                        eq(NOW.minusNanos(100)));
+        assertEquals(List.of(0L), construction.get().targetNodeIds());
+        assertEquals(2, construction.get().constructionId());
+    }
+
+    private static ClprMaintenanceReason reasonOf(final List<BlockItem> items) {
+        try {
+            final var body = TransactionBody.PROTOBUF.parse(SignedTransaction.PROTOBUF
+                    .parse(items.getFirst().signedTransactionOrThrow())
+                    .bodyBytes());
+            return body.clprMaintenanceOrThrow().reason();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private enum LocalClprFailure {
+        NONE,
+        CA_INITIALIZATION,
+        CA_ENCODING,
+        SUBMISSION,
+        SUBMISSIONS_INITIALIZATION
+    }
+
+    private <T> FunctionWritableSingletonState<T> clprSingleton(final int stateId, final String name, final T initial) {
+        final var value = new AtomicReference<>(initial);
+        final var singleton = new FunctionWritableSingletonState<>(stateId, name, value::get, value::set);
+        singleton.registerListener(updated -> boundaryStateChangeListener.singletonUpdateChange(stateId, updated));
+        return singleton;
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void initializingClprSingletonsKeepsPendingSingletonChangesOfOpenBlock() throws Exception {
+        givenSubjectWith(BOTH, BlockStreamWriterMode.FILE, emptyList());
+        final var clprStates = mock(WritableStates.class);
+        given(state.getWritableStates(ClprService.NAME)).willReturn(clprStates);
+        given(clprStates.<ClprLedgerConfiguration>getSingleton(LEDGER_CONFIGURATION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifest>getSingleton(ENDPOINT_MANIFEST_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+        given(clprStates.<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID))
+                .willReturn(mock(WritableSingletonState.class));
+
+        final var method = HandleWorkflow.class.getDeclaredMethod(
+                "initializeMissingClprSingletons",
+                com.swirlds.state.State.class,
+                Instant.class,
+                ClprMaintenanceReason.class);
+        method.setAccessible(true);
+        method.invoke(subject, state, NOW, UPGRADE_INITIALIZATION);
+
+        verify(boundaryStateChangeListener, never()).reset();
     }
 
     @Test
@@ -1501,7 +1645,6 @@ class HandleWorkflowTest {
         given(entityIdFactory.newAccountId(anyLong())).willReturn(AccountID.DEFAULT);
         given(networkInfo.addressBook()).willReturn(List.of(creatorInfo));
         final var realSystemTransactions = new SystemTransactions(
-                initTrigger,
                 parentTxnFactory,
                 fileService,
                 networkInfo,
@@ -1568,6 +1711,7 @@ class HandleWorkflowTest {
     void stakePeriodInitializedBeforeFeeDistribution() {
         final var creatorId = NodeId.of(0);
         given(event.getCreatorId()).willReturn(creatorId);
+        given(event.getConsensusTimestamp()).willReturn(NOW);
         given(event.consensusTransactionIterator()).willReturn(emptyIterator());
         given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
         given(round.iterator()).willAnswer(ignore -> List.of(event).iterator());
@@ -1581,5 +1725,28 @@ class HandleWorkflowTest {
         final InOrder inOrder = Mockito.inOrder(stakePeriodManager, nodeFeeManager);
         inOrder.verify(stakePeriodManager).setCurrentStakePeriodFor(eq(NOW));
         inOrder.verify(nodeFeeManager).distributeFees(any(), any(), any());
+    }
+
+    @Test
+    void feeAndRewardDispatchesPrecedeFirstEventUntilSignerIsReady() {
+        final var creatorId = NodeId.of(0);
+        given(event.getCreatorId()).willReturn(creatorId);
+        given(event.getConsensusTimestamp()).willReturn(NOW);
+        given(event.consensusTransactionIterator()).willReturn(emptyIterator());
+        given(networkInfo.nodeInfo(creatorId.id())).willReturn(mock(NodeInfo.class));
+        given(round.iterator()).willAnswer(ignore -> List.of(event).iterator());
+        given(blockRecordManager.consTimeOfLastHandledTxn()).willReturn(NOW);
+        given(blockRecordManager.lastIntervalProcessTime()).willReturn(NOW);
+        given(blockHashSigner.isReady()).willReturn(false);
+        givenSubjectWith(RECORDS, BlockStreamWriterMode.FILE, emptyList());
+        // The round's consensus time is that of its last transaction, which is handled after these dispatches
+        final var lastTxnTime = NOW.plusSeconds(1);
+        given(round.getConsensusTimestamp()).willReturn(lastTxnTime);
+
+        subject.handleRound(state, round, txns -> {});
+
+        // The mock SystemTransactions reserves the time 100ns before the round's first event
+        verify(nodeFeeManager).distributeFees(any(), eq(NOW.minusNanos(100)), any());
+        verify(nodeRewardManager).maybeRewardActiveNodes(any(), eq(NOW.minusNanos(100)), any());
     }
 }
