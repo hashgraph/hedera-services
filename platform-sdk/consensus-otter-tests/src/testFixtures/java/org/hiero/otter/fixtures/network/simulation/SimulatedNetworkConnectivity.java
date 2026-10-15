@@ -93,17 +93,10 @@ public class SimulatedNetworkConnectivity {
      * report while they are running concurrently, and only the last window a node reports within a tick is kept, since
      * the ones before it are superseded and would be discarded on arrival anyway.
      *
-     * <p>Drained by {@link #takeNewlyReportedEventWindows()}. Until then it also serves as the record of
+     * <p>Drained by {@link #scheduleEventWindows(Instant)}. Until then it also serves as the record of
      * whether anything has changed since the last tick, which is what {@link #applyOldestEventWindow()} needs to know.
      */
     private final Map<NodeId, EventWindow> newlyReportedEventWindows = new ConcurrentHashMap<>();
-
-    /**
-     * The event windows that are being put on the network on the current tick, keyed by the node that reported them.
-     * Filled from {@link #newlyReportedEventWindows} at the start of {@link #scheduleForDelivery(Instant)}, so that the
-     * windows can be sent receiver by receiver, and reused across ticks so that doing so does not allocate.
-     */
-    private final Map<NodeId, EventWindow> eventWindowsToSend = new HashMap<>();
 
     /**
      * Recognizes events that have already been submitted, so that each one is added to {@link #eventLog} exactly once.
@@ -264,7 +257,7 @@ public class SimulatedNetworkConnectivity {
      *
      * <p>Does nothing when no node has reported a window since the last tick, since the oldest one cannot have moved.
      * Reads {@link #newlyReportedEventWindows} rather than draining it; the draining is done later in the tick by
-     * {@link #takeNewlyReportedEventWindows()}.
+     * {@link #scheduleEventWindows(Instant)}.
      */
     private void applyOldestEventWindow() {
         if (newlyReportedEventWindows.isEmpty()) {
@@ -342,9 +335,9 @@ public class SimulatedNetworkConnectivity {
      * Put onto the network everything that is waiting to be sent: the event windows that nodes have reported since the
      * previous tick, and the events that each node's cursor has not handed out yet.
      *
-     * <p>The order is: receivers in node id order, and for each receiver the event windows before the events. This is
-     * not the order {@link #deliverArrived(Instant)} uses, which delivers the event windows to every receiver before
-     * any events. Here the order is not incidental either: everything scheduled draws an arrival time from
+     * <p>The event windows are scheduled first, sender by sender, and then the events, receiver by receiver. This is
+     * the order {@link #deliverArrived(Instant)} follows too, which delivers the event windows to every receiver
+     * before any events. The order is not incidental: everything scheduled draws an arrival time from
      * {@link #random}, and a window and an event on the same connection share the clamp in
      * {@link #lastArrivalTimestamps}, so which goes first decides the arrival times of both, and the same seed only
      * reproduces a run if it is always the same.
@@ -357,50 +350,40 @@ public class SimulatedNetworkConnectivity {
             return;
         }
 
-        takeNewlyReportedEventWindows();
+        scheduleEventWindows(now);
         for (final NodeId receiver : sortedNodeIds) {
-            scheduleEventWindowsTo(receiver, now);
             scheduleEventsTo(receiver, now);
         }
     }
 
     /**
-     * Move the event windows reported since the previous tick from {@link #newlyReportedEventWindows} to
-     * {@link #eventWindowsToSend}.
+     * Schedule the event windows reported since the previous tick for delivery, sender by sender, to every node the
+     * sender has a connection to. A node is not sent its own window, and a node that has not reported since the last
+     * tick has nothing to send, because its peers already hold the window it would send.
      *
-     * <p>A node that has not reported since the last tick has nothing to send, because its peers already hold the
-     * window it would send.
+     * <p>This drains {@link #newlyReportedEventWindows}.
+     *
+     * @param now the current time
      */
-    private void takeNewlyReportedEventWindows() {
-        eventWindowsToSend.clear();
+    private void scheduleEventWindows(@NonNull final Instant now) {
         for (final NodeId sender : sortedNodeIds) {
             final EventWindow eventWindow = newlyReportedEventWindows.remove(sender);
-            if (eventWindow != null) {
-                eventWindowsToSend.put(sender, eventWindow);
-            }
-        }
-    }
-
-    /**
-     * Schedule the event windows being sent this tick for delivery to a receiver, one from each node that has reported
-     * a new one and has a connection to the receiver. A node is not sent its own window.
-     *
-     * @param receiver the node the event windows are traveling to
-     * @param now      the current time
-     */
-    private void scheduleEventWindowsTo(@NonNull final NodeId receiver, @NonNull final Instant now) {
-        for (final NodeId sender : sortedNodeIds) {
-            final EventWindow eventWindow = eventWindowsToSend.get(sender);
-            if (eventWindow == null || sender.equals(receiver)) {
+            if (eventWindow == null) {
                 continue;
             }
 
-            // As with events, whether the connection is up is decided at delivery time. A window held through a
-            // partition is superseded by the ones scheduled behind it, so when the connection returns the
-            // receiver is given the sender's current window rather than a stale one.
-            final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
-            if (arrivalTime != null) {
-                inFlightEventWindows.add(receiver, new EventWindowInTransit(eventWindow, sender, arrivalTime));
+            for (final NodeId receiver : sortedNodeIds) {
+                if (sender.equals(receiver)) {
+                    continue;
+                }
+
+                // As with events, whether the connection is up is decided at delivery time. A window held through a
+                // partition is superseded by the ones scheduled behind it, so when the connection returns the
+                // receiver is given the sender's current window rather than a stale one.
+                final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
+                if (arrivalTime != null) {
+                    inFlightEventWindows.add(receiver, new EventWindowInTransit(eventWindow, sender, arrivalTime));
+                }
             }
         }
     }
