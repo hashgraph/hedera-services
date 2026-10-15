@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pluginManagement { includeBuild("gradle/besu-native-patch") }
+pluginManagement {
+    includeBuild("gradle/besu-native-patch")
+    includeBuild("gradle/benchmark-tracking")
+}
 
 plugins {
     id("org.hiero.gradle.build") version "0.7.11"
