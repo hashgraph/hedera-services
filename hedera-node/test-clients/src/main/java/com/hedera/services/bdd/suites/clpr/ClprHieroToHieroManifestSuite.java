@@ -13,7 +13,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
-import com.hedera.services.bdd.junit.extensions.MultiNetworkExtension;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
@@ -49,13 +48,8 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     private static final int MTLS_PORT_B_ROTATED = 44460;
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = LEDGER_A_MANIFEST,
-                size = 2,
-                firstGrpcPort = 32000,
-                enableClprMtls = true,
-                firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("Manifest-enabled round-trip (mTLS): both ledgers self-derive manifests, complete an "
             + "mTLS channel, and exchange messages both ways")
@@ -129,13 +123,8 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = LEDGER_A_MANIFEST,
-                size = 2,
-                firstGrpcPort = 32000,
-                enableClprMtls = true,
-                firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.1 partial rotation (mTLS, 3-node): A's node0 rotates its clpr.mtlsPort; the advanced "
             + "manifest propagates to B via a bundle state proof, B dials A's new listener, and no messages are lost")
@@ -247,13 +236,8 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = LEDGER_A_MANIFEST,
-                size = 2,
-                firstGrpcPort = 32000,
-                enableClprMtls = true,
-                firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.2 complete turnover (one side): A rotates all its mTLS ports; B recovers A's advanced "
             + "manifest out-of-band via clprGetEndpointManifest + clprSubmitBundle, with no gRPC to A's old endpoints")
@@ -292,13 +276,8 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = LEDGER_A_MANIFEST,
-                size = 2,
-                firstGrpcPort = 32000,
-                enableClprMtls = true,
-                firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.3 simultaneous turnover (both sides): A and B both rotate mTLS ports; each side "
             + "independently recovers the other's advanced manifest via clprGetEndpointManifest + clprSubmitBundle")

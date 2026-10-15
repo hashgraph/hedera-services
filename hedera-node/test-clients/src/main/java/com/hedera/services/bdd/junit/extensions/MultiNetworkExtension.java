@@ -5,6 +5,7 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.DATA_CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.WORKING_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ClprWrapsProvingKeyInstaller.ensureProvisioned;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.prCheckOverrides;
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.CACHE_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.GENESIS_NETWORK_JSON;
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.fixtureBaseAndNodeCount;
@@ -13,7 +14,6 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.fixtur
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.generateNetworkFixture;
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.installFixture;
 import static com.hedera.services.bdd.junit.hedera.subprocess.TssFixtures.resolveCachedFixturePath;
-import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.prCheckOverrides;
 import static com.hedera.services.bdd.spec.HapiPropertySource.getConfigRealm;
 import static com.hedera.services.bdd.spec.HapiPropertySource.getConfigShard;
 import static com.hedera.services.bdd.spec.HapiSpec.networkHapiTest;
