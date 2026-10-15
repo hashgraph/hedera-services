@@ -105,7 +105,7 @@ jobs:
             ) &
             local watchdog=$!
             local rc=0
-            ${GRADLE_EXEC} "$t" --no-daemon || rc=$?
+            ${GRADLE_EXEC} "$t" "${@:3}" --no-daemon || rc=$?
             # Stop the watchdog and its sleep, so no background process outlives the task
             pkill -P "${watchdog}" 2>/dev/null || true
             kill "${watchdog}" 2>/dev/null || true
@@ -122,9 +122,14 @@ jobs:
           # @Tag(MULTINETWORK) subprocess suites (the multinetwork task self-installs its
           # WRAPS proving-key fixtures via the harness, so no CI download step is needed).
           # Limits are well above normal run times (about 5, 1 and 30 minutes)
-          run_subtask hapiTestClpr 20
-          run_subtask hapiTestClprEmbedded 15
-          run_subtask hapiTestClprMultinetwork 75
+          # TEMP (revert before merge): rerun only the embedded task 30 times, bypassing the build cache,
+          # to check whether its intermittent hang is fixed
+          # run_subtask hapiTestClpr 20
+          for i in $(seq 1 30); do
+            echo "Embedded run ${i}/30"
+            run_subtask hapiTestClprEmbedded 15 --rerun
+          done
+          # run_subtask hapiTestClprMultinetwork 75
           exit $status
 
       - name: Publish HAPI Test (CLPR) Reports
