@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
-# Reruns the MATS HAPI panels, Wraps and Wraps Download with testnet's block stream and TSS values
-# instead of the production defaults
+# Reruns the MATS HAPI panels, Wraps and Wraps Download with the cutover block stream
+# and TSS values instead of the production defaults
 name: "829: [CALL] Exec XTS HAPI Testnet Suites"
 on:
   workflow_call:

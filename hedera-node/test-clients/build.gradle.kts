@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 import java.lang.management.ManagementFactory
-import java.util.Properties
 import org.gradlex.javamodule.packaging.tasks.FatModuleJar
 import org.hiero.gradle.environment.EnvAccess
 
@@ -257,7 +256,7 @@ val prCheckDefaultOverrides =
         "hapiTestClprMultinetwork" to "clpr.enabled=true",
     )
 // Pins needed only while the production block stream and TSS defaults are pre-cutover; the
-// testnet profile replaces them. FUTURE: delete when those defaults switch to testnet's values.
+// testnet profile replaces them. FUTURE: delete when those defaults switch to the cutover values.
 val preCutoverDefaultsOverrides =
     mapOf(
         "hapiTestAdhoc" to "tss.wrapsEnabled=true,tss.forceMockSignatures=false",
@@ -271,44 +270,27 @@ val preCutoverDefaultsOverrides =
         "hapiTestWraps" to "tss.forceMockSignatures=false",
         "hapiTestNodeStaking" to "tss.forceMockSignatures=false",
     )
-// -PhapiTestConfigProfile=testnet (or env HAPI_TEST_CONFIG_PROFILE) runs the HAPI tasks with
-// testnet's block stream and TSS values instead of the production defaults (used by XTS 829)
+// -PhapiTestConfigProfile=testnet (or env HAPI_TEST_CONFIG_PROFILE) runs the HAPI tasks with the
+// cutover values below instead of the production defaults (used by XTS 829)
 val hapiTestConfigProfile =
     providers
         .gradleProperty("hapiTestConfigProfile")
         .orElse(providers.environmentVariable("HAPI_TEST_CONFIG_PROFILE"))
         .getOrElse("")
+// The cutover block stream and TSS values (planned for testnet; FUTURE: the production defaults)
+val cutoverConfigValues =
+    mapOf(
+        "blockStream.streamMode" to "BLOCKS",
+        "blockStream.writerMode" to "GRPC",
+        "blockStream.enableCutover" to "true",
+        "blockStream.streamWrappedRecordBlocks" to "false",
+        "blockStream.buffer.isBufferPersistenceEnabled" to "true",
+        "tss.forceMockSignatures" to "false",
+    )
 val profileOverrides: Map<String, String> =
     when (hapiTestConfigProfile) {
         "" -> emptyMap()
-        "testnet" -> {
-            val testnetProperties =
-                Properties().apply {
-                    load(
-                        providers
-                            .fileContents(
-                                layout.settingsDirectory.file(
-                                    "hedera-node/configuration/testnet/application.properties"
-                                )
-                            )
-                            .asText
-                            .get()
-                            .reader()
-                    )
-                }
-            listOf(
-                    "blockStream.streamMode",
-                    "blockStream.writerMode",
-                    "blockStream.enableCutover",
-                    "blockStream.streamWrappedRecordBlocks",
-                    "blockStream.buffer.isBufferPersistenceEnabled",
-                    "tss.forceMockSignatures",
-                )
-                .associateWith {
-                    testnetProperties.getProperty(it)
-                        ?: throw GradleException("testnet/application.properties is missing $it")
-                }
-        }
+        "testnet" -> cutoverConfigValues
         else -> throw GradleException("Unknown hapiTestConfigProfile '$hapiTestConfigProfile'")
     }
 // These tasks deliberately run another world: records-only, pre-cutover, or per-test pins

@@ -96,13 +96,13 @@ See `build.gradle.kts` for the full table.
 
 `preCutoverDefaultsOverrides` holds the pins a task needs only while the production block stream and TSS
 defaults are pre-cutover (e.g. `tss.forceMockSignatures=false` for `hapiTestCrypto`); it goes away once
-those defaults switch to the testnet values.
+those defaults switch to the cutover values.
 
 ### Testnet configuration profile
 
-`-PhapiTestConfigProfile=testnet` (or `HAPI_TEST_CONFIG_PROFILE=testnet`) runs the HAPI tasks with
-testnet's block stream and TSS values, read from `hedera-node/configuration/testnet/application.properties`,
-instead of the production defaults:
+`-PhapiTestConfigProfile=testnet` (or `HAPI_TEST_CONFIG_PROFILE=testnet`) runs the HAPI tasks with the cutover
+block stream and TSS values planned for testnet (`cutoverConfigValues` in `build.gradle.kts`) instead of the
+production defaults:
 
 - each task's `prCheckPropOverrides` still win (e.g. the `writerMode=FILE` pins that keep `hapiTestRestart`
   and `hapiTestIss` off the block node), and `preCutoverDefaultsOverrides` are skipped;
