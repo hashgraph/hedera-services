@@ -49,8 +49,13 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     private static final int MTLS_PORT_B_ROTATED = 44460;
 
     @MultiNetworkHapiTest({
-        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(
+                name = LEDGER_A_MANIFEST,
+                size = 2,
+                firstGrpcPort = 32000,
+                enableClprMtls = true,
+                firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("Manifest-enabled round-trip (mTLS): both ledgers self-derive manifests, complete an "
             + "mTLS channel, and exchange messages both ways")
@@ -59,11 +64,9 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
         // Reuse the shared size-2 mTLS ledgerA_manifest / ledgerB_manifest fixtures (the same @Network
         // definition the rotation tests use), so the endpoint-manifest feature is enabled at boot on
         // networks that no non-manifest suite shares — the boot-time flag cannot leak across suites.
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // A → B: send 2 messages, then verify both delivery and ack complete.
                         networkHapiTest(
@@ -126,8 +129,13 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(
+                name = LEDGER_A_MANIFEST,
+                size = 2,
+                firstGrpcPort = 32000,
+                enableClprMtls = true,
+                firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.1 partial rotation (mTLS, 3-node): A's node0 rotates its clpr.mtlsPort; the advanced "
             + "manifest propagates to B via a bundle state proof, B dials A's new listener, and no messages are lost")
@@ -137,14 +145,12 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
         // Each network's real ECDSA CLPR CA cert (advertised on-chain in tls_certificate). The endpoint
         // ports are each network's clpr.mtlsPort, so the channel completes over — and syncs across —
         // the dedicated mutual-TLS listener rather than the plaintext path.
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         // A's finalized manifest version captured just before the rotation; the propagation
         // assertions are all expressed relative to it (versionBeforeRotation -> +1).
         final AtomicLong versionBeforeRotation = new AtomicLong();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // Baseline: A's cold-start-derived manifest (version >= 2, three endpoints).
                         captureManifestVersion(ledgerA, versionBeforeRotation),
@@ -241,22 +247,25 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(
+                name = LEDGER_A_MANIFEST,
+                size = 2,
+                firstGrpcPort = 32000,
+                enableClprMtls = true,
+                firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.2 complete turnover (one side): A rotates all its mTLS ports; B recovers A's advanced "
             + "manifest out-of-band via clprGetEndpointManifest + clprSubmitBundle, with no gRPC to A's old endpoints")
     Stream<DynamicTest> completeTurnoverOneSideRecoversViaSubmitBundle(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         // A's manifest version B cached at connection time; the recovery is expressed relative to it.
         final AtomicLong aVersionBaseline = new AtomicLong();
         final AtomicReference<ByteString> aManifestProof = new AtomicReference<>();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // Baseline: A's manifest version B cached at connect (captured dynamically, so the
                         // scenario is order-independent even on the shared, possibly already-rotated network).
@@ -283,23 +292,26 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     }
 
     @MultiNetworkHapiTest({
-        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
+        @Network(
+                name = LEDGER_A_MANIFEST,
+                size = 2,
+                firstGrpcPort = 32000,
+                enableClprMtls = true,
+                firstMtlsPort = MTLS_PORT_A),
+        @Network(name = LEDGER_B_MANIFEST, firstGrpcPort = 32100, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
     })
     @DisplayName("8.1.3 simultaneous turnover (both sides): A and B both rotate mTLS ports; each side "
             + "independently recovers the other's advanced manifest via clprGetEndpointManifest + clprSubmitBundle")
     Stream<DynamicTest> simultaneousTurnoverBothSidesRecoverIndependently(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         final AtomicLong aVersionBaseline = new AtomicLong();
         final AtomicLong bVersionBaseline = new AtomicLong();
         final AtomicReference<ByteString> aManifestProof = new AtomicReference<>();
         final AtomicReference<ByteString> bManifestProof = new AtomicReference<>();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         captureManifestVersion(ledgerA, aVersionBaseline),
                         captureManifestVersion(ledgerB, bVersionBaseline),

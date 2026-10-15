@@ -95,14 +95,6 @@ These delays drive the status state machine; see [architecture/topics/platform-s
 | TUN-020 | `platformStatus.activeStatusDelay`                 | Duration | `10s`   | Wall-clock time required to transition out of `ACTIVE` (no self event reached, or quiescence change). |       | —         |
 | TUN-021 | `platformStatus.statusStateMachineHeartbeatPeriod` | Duration | `100ms` | Wall-clock interval between heartbeats sent to the status state machine.                              |       | —         |
 
-## `platform.metrics.*` — PlatformMetricsConfig
-
-Module: `swirlds-platform-core`. Source: [PlatformMetricsConfig.java](../../swirlds-platform-core/src/main/java/com/swirlds/platform/metrics/PlatformMetricsConfig.java).
-
-|   ID    |                      Key                       |  Type   | Default |                                    Effect                                    | Range | Fragility |
-|---------|------------------------------------------------|---------|---------|------------------------------------------------------------------------------|-------|-----------|
-| TUN-022 | `platform.metrics.eventPipelineMetricsEnabled` | boolean | `true`  | If true, the platform collects and reports metrics about the event pipeline. |       | —         |
-
 ## `status.monitor.*` — StatusMonitorWiringConfig
 
 Module: `consensus-status-monitor`. Source: [StatusMonitorWiringConfig.java](../../consensus-status-monitor/src/main/java/org/hiero/consensus/status/monitor/config/StatusMonitorWiringConfig.java).
@@ -293,6 +285,16 @@ Extracted from the retired `PlatformSchedulersConfig` `consensusEventStream` key
 |---------|--------------------------------------------|----------------------------|---------------------|---------------------------------------------------------|-------|-----------|
 | TUN-208 | `event.stream.wiring.consensusEventStream` | TaskSchedulerConfiguration | `DIRECT_THREADSAFE` | Scheduler configuration for the consensus event stream. |       | —         |
 
+## `transactionHandling.*` — TransactionHandlingConfig
+
+Module: `consensus-transaction-handling`. Source: [TransactionHandlingConfig.java](../../consensus-transaction-handling/src/main/java/org/hiero/consensus/transaction/handling/config/TransactionHandlingConfig.java).
+
+Read by [TransactionHandlerDataCounter.create](../../consensus-transaction-handling/src/main/java/org/hiero/consensus/transaction/handling/internal/TransactionHandlerDataCounter.java#create), which weighs each round queued for the transaction handler.
+
+|   ID    |                   Key                    |  Type  | Default |                                                                                      Effect                                                                                      | Range | Fragility |
+|---------|------------------------------------------|--------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-224 | `transactionHandling.lowTpsTargetRounds` | double | `25`    | Each consensus round counts as at least the handler's unhandled-task capacity (TUN-210) ÷ this value, so at low TPS backpressure engages once about this many rounds are queued. |       | —         |
+
 ## `transaction.handling.wiring.*` — TransactionHandlingWiringConfig
 
 Module: `consensus-transaction-handling`. Source: [TransactionHandlingWiringConfig.java](../../consensus-transaction-handling/src/main/java/org/hiero/consensus/transaction/handling/config/TransactionHandlingWiringConfig.java).
@@ -323,6 +325,17 @@ Module: `consensus-hashgraph`. Source: [HashgraphWiringConfig.java](../../consen
 |   ID    |                Key                 |            Type            |                                              Default                                               |                           Effect                            | Range | Fragility |
 |---------|------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------|-----------|
 | TUN-103 | `hashgraph.wiring.consensusEngine` | TaskSchedulerConfiguration | `SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC` | Scheduler configuration for the hashgraph consensus engine. |       | —         |
+
+## `event.pipeline.metrics.*` — ConsensusLayerMetricsConfig
+
+Module: `consensus-metrics`. Source: [ConsensusLayerMetricsConfig.java](../../consensus-metrics/src/main/java/org/hiero/consensus/metrics/config/ConsensusLayerMetricsConfig.java).
+
+|   ID    |                       Key                        |   Type   | Default |                                                      Effect                                                      | Range | Fragility |
+|---------|--------------------------------------------------|----------|---------|------------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-022 | `event.pipeline.metrics.averageAndMaxEnabled`    | boolean  | `true`  | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline.       |       | —         |
+| TUN-225 | `event.pipeline.metrics.latencyEnabled`          | boolean  | `true`  | If true, the platform reports sliding-window percentiles and the maximum of stage delays and `eventLatency_R2C`. |       | —         |
+| TUN-226 | `event.pipeline.metrics.selfEventsLatencyWindow` | Duration | `10m`   | Length of the sliding window of stages that only self events pass, for percentiles up to p99.                    |       | —         |
+| TUN-227 | `event.pipeline.metrics.latencyWindow`           | Duration | `5m`    | Length of the sliding window of stages that gossiped events pass and of `eventLatency_R2C`, up to p99.9.         |       | —         |
 
 ## `metrics.*` — MetricsConfig
 
