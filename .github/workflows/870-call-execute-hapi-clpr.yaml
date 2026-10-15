@@ -91,25 +91,8 @@ jobs:
           status=0
           run_subtask() {
             local t=$1
-            local limit_minutes=$2
             echo "::group::$t"
-            # Watchdog: if the task outlives its limit, print a thread dump of the test JVM and kill it, so a
-            # hang fails the task (uploading network logs and failure artifacts) and shows where it was stuck
-            (
-              sleep $((limit_minutes * 60))
-              echo "::warning::$t still running after ${limit_minutes}m; dumping test JVM threads and stopping it"
-              for pid in $(pgrep -f "Gradle Test Executor"); do
-                "${JAVA_HOME}/bin/jcmd" "${pid}" Thread.print -l || true
-              done
-              pkill -f "Gradle Test Executor" || true
-            ) &
-            local watchdog=$!
-            local rc=0
-            ${GRADLE_EXEC} "$t" "${@:3}" --no-daemon || rc=$?
-            # Stop the watchdog and its sleep, so no background process outlives the task
-            pkill -P "${watchdog}" 2>/dev/null || true
-            kill "${watchdog}" 2>/dev/null || true
-            if [[ "${rc}" -eq 0 ]]; then
+            if ${GRADLE_EXEC} "$t" --no-daemon; then
               echo "::endgroup::"
               return 0
             fi
@@ -121,15 +104,9 @@ jobs:
           # CLPR (cross-ledger) HAPI suites: @Tag(CLPR), @Tag(CLPR)+embedded, and the
           # @Tag(MULTINETWORK) subprocess suites (the multinetwork task self-installs its
           # WRAPS proving-key fixtures via the harness, so no CI download step is needed).
-          # Limits are well above normal run times (about 5, 1 and 30 minutes)
-          # TEMP (revert before merge): rerun only the embedded task 30 times, bypassing the build cache,
-          # to check whether its intermittent hang is fixed
-          # run_subtask hapiTestClpr 20
-          for i in $(seq 1 30); do
-            echo "Embedded run ${i}/30"
-            run_subtask hapiTestClprEmbedded 15 --rerun
-          done
-          # run_subtask hapiTestClprMultinetwork 75
+          run_subtask hapiTestClpr
+          run_subtask hapiTestClprEmbedded
+          run_subtask hapiTestClprMultinetwork
           exit $status
 
       - name: Publish HAPI Test (CLPR) Reports
