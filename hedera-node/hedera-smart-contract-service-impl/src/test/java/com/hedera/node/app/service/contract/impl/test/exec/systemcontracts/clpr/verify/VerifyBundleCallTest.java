@@ -6,6 +6,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -620,8 +621,9 @@ class VerifyBundleCallTest {
 
     /** Gives the frame a default config, since {@link VerifyBundleCall} reads the block digest type from it. */
     private static void givenDefaultConfig(@NonNull final MessageFrame frame) {
-        given(frame.getMessageFrameStack()).willReturn(new ArrayDeque<>());
-        given(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
-                .willReturn(HederaTestConfigBuilder.createConfig());
+        lenient().when(frame.getMessageFrameStack()).thenReturn(new ArrayDeque<>());
+        lenient()
+                .when(frame.getContextVariable(FrameUtils.CONFIG_CONTEXT_VARIABLE))
+                .thenReturn(HederaTestConfigBuilder.createConfig());
     }
 }
