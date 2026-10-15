@@ -45,7 +45,7 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
      * @param now      the current time
      * @param receiver accepts the event windows on behalf of the receiving node
      */
-    public void deliverArrivedEventWindows(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
+    public void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
         final Map<NodeId, ArrayDeque<EventWindowInTransit>> incomingConnections = incomingConnections(receiverId);
 
@@ -85,13 +85,5 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
                 connection.pollFirst();
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
-        deliverArrivedEventWindows(now, receiver);
     }
 }

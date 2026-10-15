@@ -46,7 +46,8 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
      * @param now      the current time
      * @param receiver accepts the events on behalf of the receiving node
      */
-    public void deliverArrivedEvents(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
+    @Override
+    void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
         final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections = incomingConnections(receiverId);
 
@@ -65,14 +66,6 @@ public class InFlightEvents extends InFlightConnections<EventInTransit> {
             }
             earliestConnection.pollFirst();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
-        deliverArrivedEvents(now, receiver);
     }
 
     /**

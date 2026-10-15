@@ -4,6 +4,7 @@ package org.hiero.otter.fixtures.network.simulation;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.hashgraph.ConsensusConstants;
 import org.hiero.consensus.model.hashgraph.EventWindow;
@@ -342,9 +342,10 @@ public class SimulatedNetworkConnectivity {
      * Put onto the network everything that is waiting to be sent: the event windows that nodes have reported since the
      * previous tick, and the events that each node's cursor has not handed out yet.
      *
-     * <p>This follows the same order as {@link #deliverArrived(Instant)}: receivers in node id order, and for each
-     * receiver the event windows before the events. The order is not incidental. Everything scheduled draws an arrival
-     * time from {@link #random}, and a window and an event on the same connection share the clamp in
+     * <p>The order is: receivers in node id order, and for each receiver the event windows before the events. This is
+     * not the order {@link #deliverArrived(Instant)} uses, which delivers the event windows to every receiver before
+     * any events. Here the order is not incidental either: everything scheduled draws an arrival time from
+     * {@link #random}, and a window and an event on the same connection share the clamp in
      * {@link #lastArrivalTimestamps}, so which goes first decides the arrival times of both, and the same seed only
      * reproduces a run if it is always the same.
      *
@@ -397,12 +398,10 @@ public class SimulatedNetworkConnectivity {
             // As with events, whether the connection is up is decided at delivery time. A window held through a
             // partition is superseded by the ones scheduled behind it, so when the connection returns the
             // receiver is given the sender's current window rather than a stale one.
-            transmit(
-                    inFlightEventWindows,
-                    sender,
-                    receiver,
-                    now,
-                    arrivalTime -> new EventWindowInTransit(eventWindow, sender, arrivalTime));
+            final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
+            if (arrivalTime != null) {
+                inFlightEventWindows.add(receiver, new EventWindowInTransit(eventWindow, sender, arrivalTime));
+            }
         }
     }
 
@@ -410,7 +409,7 @@ public class SimulatedNetworkConnectivity {
      * Walk a node's cursor over {@link #eventLog} and schedule every event it has not been sent yet for delivery. A
      * node is not sent its own events, nor events that are already ancient for it.
      *
-     * <p>When each event arrives is decided by {@link #nextArrivalTime(ConnectionKey, ConnectionState, Instant)}.
+     * <p>When each event arrives is decided by {@link #nextArrivalTime(NodeId, NodeId, Instant)}.
      *
      * @param receiver the node the events are traveling to
      * @param now      the current time
@@ -438,44 +437,15 @@ public class SimulatedNetworkConnectivity {
             // Whether the connection is up is decided at delivery time rather than here: the cursor is consumed
             // either way, so an event dropped now would never be offered to this receiver again, and a partition
             // would permanently deprive it of every event created while the partition was in place.
-            transmit(inFlightEvents, sender, receiver, now, arrivalTime -> {
+            final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
+            if (arrivalTime != null) {
                 // create a copy so that nodes don't modify each other's events
                 final PlatformEvent eventToDeliver = event.copyGossipedData();
                 eventToDeliver.setSenderId(sender);
                 eventToDeliver.setTimeReceived(arrivalTime);
-                return new EventInTransit(eventToDeliver, sender, arrivalTime);
-            });
+                inFlightEvents.add(receiver, new EventInTransit(eventToDeliver, sender, arrivalTime));
+            }
         }
-    }
-
-    /**
-     * Puts something on the connection from a sender to a receiver, if the two are known to each other.
-     *
-     * <p>The arrival time is picked first, by {@link #nextArrivalTime(ConnectionKey, ConnectionState, Instant)}, and
-     * only then is the item built, since it carries that time. Picking draws from {@link #random}, so the order
-     * callers call this in is part of what a seed reproduces.
-     *
-     * @param inFlight        where the item is held until it is delivered
-     * @param sender          the node at the sending end of the connection
-     * @param receiver        the node at the receiving end of the connection
-     * @param now             the current time
-     * @param itemArrivingAt  builds the item, given the time it will arrive
-     * @param <T>             what is held in {@code inFlight}
-     */
-    private <T extends InTransit> void transmit(
-            @NonNull final InFlightConnections<T> inFlight,
-            @NonNull final NodeId sender,
-            @NonNull final NodeId receiver,
-            @NonNull final Instant now,
-            @NonNull final Function<Instant, T> itemArrivingAt) {
-        final ConnectionKey connectionKey = new ConnectionKey(sender, receiver);
-        final ConnectionState connectionState = connections.get(connectionKey);
-        if (connectionState == null) {
-            return;
-        }
-
-        final Instant arrivalTime = nextArrivalTime(connectionKey, connectionState, now);
-        inFlight.add(receiver, itemArrivingAt.apply(arrivalTime));
     }
 
     /**
@@ -486,16 +456,22 @@ public class SimulatedNetworkConnectivity {
      * so the result is clamped to be no earlier than the previous one. That clamp is what lets {@link InFlightEvents}
      * and {@link InFlightEventWindows} treat each connection's queue as being in arrival order.
      *
-     * @param connectionKey   the connection being scheduled onto
-     * @param connectionState the latency and jitter of that connection
-     * @param now             the current time
-     * @return the time of arrival at the receiving end
+     * <p>Picking draws from {@link #random}, so the order callers call this in is part of what a seed reproduces. No
+     * draw is made when the sender and receiver are not known to each other.
+     *
+     * @param sender   the node at the sending end of the connection
+     * @param receiver the node at the receiving end of the connection
+     * @param now      the current time
+     * @return the time of arrival at the receiving end, or {@code null} if the two nodes have no connection
      */
-    @NonNull
+    @Nullable
     private Instant nextArrivalTime(
-            @NonNull final ConnectionKey connectionKey,
-            @NonNull final ConnectionState connectionState,
-            @NonNull final Instant now) {
+            @NonNull final NodeId sender, @NonNull final NodeId receiver, @NonNull final Instant now) {
+        final ConnectionKey connectionKey = new ConnectionKey(sender, receiver);
+        final ConnectionState connectionState = connections.get(connectionKey);
+        if (connectionState == null) {
+            return null;
+        }
 
         // Simulate network latency and jitter using truncated Gaussian distribution
         final double sigma = connectionState.latency().toNanos() * connectionState.jitter().value / 100.0;
