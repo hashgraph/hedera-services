@@ -660,7 +660,7 @@ def choose(summaries, args):
 
 
 def calibration_block(summaries, config, args):
-    """the Javadoc block of roadmap Appendix E"""
+    """the calibration record as a Javadoc block (platform-sdk/docs/consensus-layer/benchmarks/calibration.md)"""
     expected = [evaluate(s, config, args) for s in summaries]
     last = summaries[-1]["units"][-1]
     b = last.b
