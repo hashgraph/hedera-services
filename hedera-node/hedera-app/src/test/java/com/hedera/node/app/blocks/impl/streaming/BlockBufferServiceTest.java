@@ -29,6 +29,7 @@ import com.hedera.hapi.block.stream.BlockItem.ItemOneOfType;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.node.app.blocks.impl.streaming.BlockBufferService.PruneResult;
 import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeConfiguration;
+import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeEndpoint;
 import com.hedera.node.app.blocks.impl.streaming.obs.BlockStreamingObs;
 import com.hedera.node.app.metrics.BlockStreamMetrics;
 import com.hedera.node.config.ConfigProvider;
@@ -167,19 +168,19 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         blockNode1 = mock(BlockNode.class);
         final BlockNodeConfiguration bn1Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn1Config.address()).thenReturn("10.0.0.1");
+        lenient().when(bn1Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.1", 10));
         lenient().when(blockNode1.configuration()).thenReturn(bn1Config);
         blockNode2 = mock(BlockNode.class);
         final BlockNodeConfiguration bn2Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn2Config.address()).thenReturn("10.0.0.2");
+        lenient().when(bn2Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.1", 11));
         lenient().when(blockNode2.configuration()).thenReturn(bn2Config);
         blockNode3 = mock(BlockNode.class);
         final BlockNodeConfiguration bn3Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn3Config.address()).thenReturn("10.0.0.3");
+        lenient().when(bn3Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.2", 10));
         lenient().when(blockNode3.configuration()).thenReturn(bn3Config);
         blockNode4 = mock(BlockNode.class);
         final BlockNodeConfiguration bn4Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn4Config.address()).thenReturn("10.0.0.4");
+        lenient().when(bn4Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.3", 10));
         lenient().when(blockNode4.configuration()).thenReturn(bn4Config);
     }
 
@@ -217,20 +218,73 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
         assertThat(blockBufferService.acknowledgeBlock(5, blockNode1)).isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+
+        /*
+        Current ACKs:
+
+         5+
+        BN1
+
+        Min Required ACKs: 3
+        Current ACK high watermark: -1 (not enough ACKs)
+         */
+
         // BN2 ACKs block 7, but since there is just 2 ACKs, nothing is truly ACKed yet
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
         assertThat(blockBufferService.acknowledgeBlock(7, blockNode2)).isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+
+        /*
+        Current ACKs:
+
+              7+
+              6~
+         5+   5~
+        BN1  BN2
+
+        Min Required ACKs: 3
+        Current ACK high watermark: -1 (not enough ACKs)
+         */
+
         // BN3 ACKs block 9, there are now 3 ACKs, with the lowest common block being block 5... which is the new
         // highest ACKed block
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
         assertThat(blockBufferService.acknowledgeBlock(9, blockNode3)).isEqualTo(5L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(5L);
+
+        /*
+        Current ACKs:
+
+                   9+
+                   8~
+              7+   7~
+              6~   6~
+         5+   5~   5~ <---- new ACK high watermark
+        BN1  BN2  BN3
+
+        Min Required ACKs: 3
+        Current ACK high watermark: 5
+         */
+
         // BN4 ACKs block 8, since there are now 4 ACKs, the third-highest ACK will be the newest high watermark,
         // which in this case is bock 7
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(5L);
         assertThat(blockBufferService.acknowledgeBlock(8, blockNode4)).isEqualTo(7L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(7L);
+
+        /*
+        Current ACKs:
+
+                   9+
+                   8~   8+
+              7+   7~   7~ <---- new ACK high watermark
+              6~   6~   6~
+         5+   5~   5~   5~
+        BN1  BN2  BN3  BN4
+
+        Min Required ACKs: 3
+        Current ACK high watermark: 7
+         */
 
         verify(blockStreamMetrics).recordLatestBlockAcked(5L);
         verify(blockStreamMetrics).recordLatestBlockAcked(7L);
@@ -426,7 +480,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
     void testCompletedExpiredBlockStateIsRemovedUpToSpecificBlockNumber() {
         // given
         // mock the number of batch items by modifying the default config
-        final var mockConfig = HederaTestConfigBuilder.create()
+        final Configuration mockConfig = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .withValue("blockStream.writerMode", "GRPC")
                 .withValue("blockStream.buffer.isBufferPersistenceEnabled", false)
@@ -466,7 +520,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         blockBufferService = initBufferService(configProvider);
 
         // when
-        final var future = blockBufferService.acknowledgedThroughFuture(-1L);
+        final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(-1L);
 
         // then
         assertThat(future).isCompleted();
@@ -482,7 +536,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // when
-        final var future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER);
+        final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER);
 
         // then
         assertThat(future).isCompleted();
@@ -498,7 +552,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // when
-        final var future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
+        final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
 
         // then
         assertThat(future).isNotCompleted();
@@ -515,7 +569,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
     }
 
     @Test
-    void teastAcknowledgedThroughFutureSupportsBlockNotYetOpened() {
+    void testAcknowledgedThroughFutureSupportsBlockNotYetOpened() {
         // The freeze wait registers its future with the freeze block's number taken from the
         // BlockStreamManager, which can be ahead of this buffer's lastProducedBlockNumber
         // (openBlock arrives on the async pipeline); the future must hold until the ack
@@ -525,7 +579,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         blockBufferService.openBlock(TEST_BLOCK_NUMBER);
 
         // when: the wait targets a block the buffer has not opened yet
-        final var future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
+        final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
 
         // then
         assertThat(blockBufferService.getLastBlockNumberProduced()).isEqualTo(TEST_BLOCK_NUMBER);
@@ -541,6 +595,29 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
     }
 
     @Test
+    void testAcknowledgedThroughFuture_multipleAcksRequired() throws Throwable {
+        // create 3 unacked blocks for setup that requires 2 ACKs
+        setupState(3, false, 2);
+
+        final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(3);
+
+        assertThat(blockBufferService.acknowledgeBlock(1, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(4, blockNode2)).isEqualTo(1L);
+
+        // there has been 1 ACK received for block 3, but since we require 2 ACKs, the future should not yet complete
+        assertThat(future).isNotCompleted();
+
+        // include another acknowledgement from a different BN, but still waiting for enough ACKs for block 3
+        assertThat(blockBufferService.acknowledgeBlock(2, blockNode3)).isEqualTo(2L);
+        assertThat(future).isNotCompleted();
+
+        // now add another ACK from BN3 for block 3 - this will cause block 3 to now be fully ACKed since we've
+        // received 2 ACKs for it
+        assertThat(blockBufferService.acknowledgeBlock(3, blockNode3)).isEqualTo(3L);
+        assertThat(future).isCompleted();
+    }
+
+    @Test
     void testAcknowledgedThroughFutureCompletesWhenAckJumpsPastBlock() {
         // given
         blockBufferService = initBufferService(configProvider);
@@ -549,8 +626,10 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // when
-        final var firstBlockFuture = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER);
-        final var secondBlockFuture = blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
+        final CompletableFuture<Void> firstBlockFuture =
+                blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER);
+        final CompletableFuture<Void> secondBlockFuture =
+                blockBufferService.acknowledgedThroughFuture(TEST_BLOCK_NUMBER2);
 
         // then
         assertThat(firstBlockFuture).isNotCompleted();
@@ -1727,6 +1806,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
                 .withValue("blockStream.buffer.maxBlocks", 10)
                 .withValue("blockStream.buffer.recoveryThreshold", 70.0)
                 .withValue("blockStream.buffer.isBufferPersistenceEnabled", false)
+                .withValue("blockStream.buffer.minAcksRequiredPerBlock", 2)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1));
 
@@ -1773,7 +1853,20 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(backPressureFutureRef1.get()).isNotCompleted();
 
         // ACK two blocks, which should bring us to 80% saturation... still above the recovery threshold
-        blockBufferService.acknowledgeBlock(1L, blockNode1); // ACK blocks 0 and 1
+        // Note: we require 2 ACKs per block, so after the first ACK backpressure should still be active
+        assertThat(blockBufferService.acknowledgeBlock(1L, blockNode1)).isEqualTo(-1L);
+
+        checkBufferHandle.invoke(blockBufferService);
+
+        // the buffer status should match the previous check
+        final BlockBufferStatus bufferStatus1b = blockBufferService.latestBufferStatus();
+        assertThat(bufferStatus1b).isNotNull();
+        assertThat(bufferStatus1b.saturationPercent()).isEqualTo(bufferStatus1.saturationPercent());
+        assertThat(bufferStatus1b.isActionStage()).isEqualTo(bufferStatus1.isActionStage());
+        reset(blockStreamMetrics);
+
+        // add the second ACK to advance the acknowledgement high watermark
+        assertThat(blockBufferService.acknowledgeBlock(1L, blockNode2)).isEqualTo(1L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1806,7 +1899,19 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // ACK one more block to get to the recovery threshold
-        blockBufferService.acknowledgeBlock(2L, blockNode1);
+        assertThat(blockBufferService.acknowledgeBlock(2L, blockNode1)).isEqualTo(1L);
+
+        checkBufferHandle.invoke(blockBufferService);
+
+        // the buffer status should match the previous check
+        final BlockBufferStatus bufferStatus2b = blockBufferService.latestBufferStatus();
+        assertThat(bufferStatus2b).isNotNull();
+        assertThat(bufferStatus2b.saturationPercent()).isEqualTo(bufferStatus2.saturationPercent());
+        assertThat(bufferStatus2b.isActionStage()).isEqualTo(bufferStatus2.isActionStage());
+        reset(blockStreamMetrics);
+
+        // add another ACK to advance the acknowledgement high watermark
+        assertThat(blockBufferService.acknowledgeBlock(2L, blockNode2)).isEqualTo(2L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1839,7 +1944,20 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // ACK remaining blocks
-        blockBufferService.acknowledgeBlock(10L, blockNode1);
+        assertThat(blockBufferService.acknowledgeBlock(10L, blockNode1)).isEqualTo(2L);
+
+        checkBufferHandle.invoke(blockBufferService);
+
+        // the buffer status should match the previous check
+        final BlockBufferStatus bufferStatus3b = blockBufferService.latestBufferStatus();
+        assertThat(bufferStatus3b).isNotNull();
+        assertThat(bufferStatus3b.saturationPercent()).isEqualTo(bufferStatus3.saturationPercent());
+        assertThat(bufferStatus3b.isActionStage()).isEqualTo(bufferStatus3.isActionStage());
+        reset(blockStreamMetrics);
+
+        // add another ACK to advance the acknowledgement high watermark
+
+        assertThat(blockBufferService.acknowledgeBlock(10L, blockNode2)).isEqualTo(10L);
 
         checkBufferHandle.invoke(blockBufferService);
 

@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.internal.BufferedBlock;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeEndpoint;
 import com.hedera.node.app.blocks.impl.streaming.obs.BlockStreamingObs;
 import com.hedera.node.app.metrics.BlockStreamMetrics;
 import com.hedera.node.config.ConfigProvider;
@@ -149,7 +150,8 @@ public class BlockBufferService extends BlockStreamingBase {
     /**
      * Tracks the highest block acknowledged by each block node.
      */
-    private final ConcurrentMap<String, AtomicLong> highestAcknowledgementByBlockNode = new ConcurrentHashMap<>();
+    private final ConcurrentMap<BlockNodeEndpoint, AtomicLong> highestAcknowledgementByBlockNode =
+            new ConcurrentHashMap<>();
 
     /**
      * Creates a new BlockBufferService with the given configuration.
@@ -223,6 +225,7 @@ public class BlockBufferService extends BlockStreamingBase {
         disableBackPressure();
         // clear metadata
         highestAckedBlockNumber.set(Long.MIN_VALUE);
+        highestAcknowledgementByBlockNode.clear();
         lastProducedBlockNumber.set(-1);
         earliestBlockNumber.set(Long.MIN_VALUE);
         lastPruningResultRef.set(PruneResult.NIL);
@@ -481,7 +484,7 @@ public class BlockBufferService extends BlockStreamingBase {
             return getHighestAckedBlockNumber();
         }
 
-        final String origin = acknowledgementOrigin.configuration().address();
+        final BlockNodeEndpoint origin = acknowledgementOrigin.configuration().streamingEndpoint();
         highestAcknowledgementByBlockNode
                 .computeIfAbsent(origin, _ -> new AtomicLong())
                 .updateAndGet(current -> Math.max(current, blockNumber));
@@ -489,8 +492,6 @@ public class BlockBufferService extends BlockStreamingBase {
 
         if (minAcknowledgementsRequired == 1) {
             // fast path: only one ack is required so we can jump to updating the high watermark and exit early
-            logger.trace(
-                    "Acknowledgement threshold ({}) reached for block {}", minAcknowledgementsRequired, blockNumber);
             return updateAcknowledgementHighWatermark(blockNumber);
         }
 

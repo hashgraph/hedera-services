@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeConfiguration;
+import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeEndpoint;
 import com.hedera.node.app.blocks.impl.streaming.obs.BlockStreamingObs;
 import com.hedera.node.app.metrics.BlockStreamMetrics;
 import com.hedera.node.config.ConfigProvider;
@@ -127,7 +128,7 @@ class BlockBufferRestartIntegrationTest extends BlockNodeCommunicationTestBase {
 
         blockNode1 = mock(BlockNode.class);
         final BlockNodeConfiguration bn1Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn1Config.address()).thenReturn("10.0.0.1");
+        lenient().when(bn1Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.1", 10));
         lenient().when(blockNode1.configuration()).thenReturn(bn1Config);
     }
 
@@ -456,7 +457,7 @@ class BlockBufferRestartIntegrationTest extends BlockNodeCommunicationTestBase {
                 .withValue("blockStream.buffer.actionStageThreshold", 50.0)
                 .withValue("blockStream.buffer.actionGracePeriod", Duration.ofSeconds(2))
                 .withValue("blockStream.buffer.recoveryThreshold", 70.0)
-                .withValue("blockStream.buffer.minimumAcksPerBlock", 1)
+                .withValue("blockStream.buffer.minAcksRequiredPerBlock", 1)
                 .getOrCreateConfig();
     }
 
