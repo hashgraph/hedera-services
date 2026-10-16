@@ -95,14 +95,6 @@ These delays drive the status state machine; see [architecture/topics/platform-s
 | TUN-020 | `platformStatus.activeStatusDelay`                 | Duration | `10s`   | Wall-clock time required to transition out of `ACTIVE` (no self event reached, or quiescence change). |       | —         |
 | TUN-021 | `platformStatus.statusStateMachineHeartbeatPeriod` | Duration | `100ms` | Wall-clock interval between heartbeats sent to the status state machine.                              |       | —         |
 
-## `platform.metrics.*` — PlatformMetricsConfig
-
-Module: `swirlds-platform-core`. Source: [PlatformMetricsConfig.java](../../swirlds-platform-core/src/main/java/com/swirlds/platform/metrics/PlatformMetricsConfig.java).
-
-|   ID    |                      Key                       |  Type   | Default |                                    Effect                                    | Range | Fragility |
-|---------|------------------------------------------------|---------|---------|------------------------------------------------------------------------------|-------|-----------|
-| TUN-022 | `platform.metrics.eventPipelineMetricsEnabled` | boolean | `true`  | If true, the platform collects and reports metrics about the event pipeline. |       | —         |
-
 ## `status.monitor.*` — StatusMonitorWiringConfig
 
 Module: `consensus-status-monitor`. Source: [StatusMonitorWiringConfig.java](../../consensus-status-monitor/src/main/java/org/hiero/consensus/status/monitor/config/StatusMonitorWiringConfig.java).
@@ -333,6 +325,21 @@ Module: `consensus-hashgraph`. Source: [HashgraphWiringConfig.java](../../consen
 |   ID    |                Key                 |            Type            |                                              Default                                               |                           Effect                            | Range | Fragility |
 |---------|------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-------|-----------|
 | TUN-103 | `hashgraph.wiring.consensusEngine` | TaskSchedulerConfiguration | `SEQUENTIAL_THREAD CAPACITY(500) FLUSHABLE SQUELCHABLE UNHANDLED_TASK_METRIC BUSY_FRACTION_METRIC` | Scheduler configuration for the hashgraph consensus engine. |       | —         |
+
+## `event.pipeline.metrics.*` — ConsensusLayerMetricsConfig
+
+Module: `consensus-metrics`. Source: [ConsensusLayerMetricsConfig.java](../../consensus-metrics/src/main/java/org/hiero/consensus/metrics/config/ConsensusLayerMetricsConfig.java).
+
+|   ID    |                          Key                           |        Type        |     Default     |                                                                  Effect                                                                   | Range | Fragility |
+|---------|--------------------------------------------------------|--------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------|-------|-----------|
+| TUN-022 | `event.pipeline.metrics.averageAndMaxEnabled`          | boolean            | `true`          | If true, the platform reports the average and maximum delay of events at each stage of the event pipeline.                                |       | —         |
+| TUN-225 | `event.pipeline.metrics.latencyEnabled`                | boolean            | `true`          | If true, the platform reports sliding-window percentiles and the maximum of stage delays, `eventLatency_R2C`, and `transactionLatency_*`. |       | —         |
+| TUN-226 | `event.pipeline.metrics.selfEventsLatencyWindow`       | Duration           | `10m`           | Length of the sliding window of stages that only self events pass, for the percentiles of TUN-230.                                        |       | —         |
+| TUN-227 | `event.pipeline.metrics.latencyWindow`                 | Duration           | `5m`            | Length of the sliding window of stages that gossiped events pass and of `eventLatency_R2C`, for the percentiles of TUN-229.               |       | —         |
+| TUN-228 | `event.pipeline.metrics.transactionLatencyWindow`      | Duration           | `5m`            | Length of the sliding window of `transactionLatency_total` and `transactionLatency_poolWait`, for the percentiles of TUN-231.             |       | —         |
+| TUN-229 | `event.pipeline.metrics.latencyPercentiles`            | List&lt;Double&gt; | `50,90,99,99.9` | Percentiles reported over the window of TUN-227, each above 0 and below 100; each is a gauge of its own.                                  |       | —         |
+| TUN-230 | `event.pipeline.metrics.selfEventsLatencyPercentiles`  | List&lt;Double&gt; | `50,90,99`      | Percentiles reported over the window of TUN-226, each above 0 and below 100; each is a gauge of its own.                                  |       | —         |
+| TUN-231 | `event.pipeline.metrics.transactionLatencyPercentiles` | List&lt;Double&gt; | `50,90`         | Percentiles reported over the window of TUN-228, each above 0 and below 100; each is a gauge of its own.                                  |       | —         |
 
 ## `metrics.*` — MetricsConfig
 
