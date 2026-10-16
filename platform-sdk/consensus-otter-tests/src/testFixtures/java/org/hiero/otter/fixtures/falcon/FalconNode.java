@@ -102,7 +102,7 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
      */
     @Override
     public boolean receiveEvent(@NonNull final PlatformEvent event) {
-        if (statusPermitsGossip()) {
+        if (receiveAllowed()) {
             assert wiring != null;
             wiring.receivedGossipEventsInputWire().put(event);
             return true;
@@ -118,10 +118,10 @@ public class FalconNode extends AbstractNode implements Node, TimeTickReceiver, 
      */
     @Override
     public boolean receiveEventWindow(@NonNull final NodeId sender, @NonNull final EventWindow eventWindow) {
-        return statusPermitsGossip();
+        return receiveAllowed();
     }
 
-    private boolean statusPermitsGossip() {
+    private boolean receiveAllowed() {
         final PlatformStatus status = platformStatus;
         return wiring != null && status != null && SyncStatusChecker.doesStatusPermitSync(status);
     }
