@@ -52,4 +52,10 @@ public class TokenAirdropFeeCalculator extends CryptoTransferFeeCalculator {
     public Set<Extra> requiredExtras() {
         return Set.of();
     }
+
+    /** The airdrop charges the extras of the {@code CRYPTO_TRANSFER} definition it is priced from. */
+    @Override
+    public Set<Extra> chargedExtras() {
+        return super.requiredExtras();
+    }
 }

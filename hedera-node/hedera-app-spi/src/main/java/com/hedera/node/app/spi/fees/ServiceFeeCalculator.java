@@ -62,6 +62,18 @@ public interface ServiceFeeCalculator {
     }
 
     /**
+     * Returns the extras this calculator charges through {@link #addExtraFee}. This is {@link #requiredExtras()}
+     * except when the calculator charges from another function's service fee definition, in which case it is the
+     * set that definition must reference. Enabled assertions check every charged extra against this set, so an
+     * undeclared extra fails the first test that reaches it.
+     *
+     * @return the extras this calculator may charge
+     */
+    default Set<Extra> chargedExtras() {
+        return requiredExtras();
+    }
+
+    /**
      * Adds an extra fee to the result.
      *
      * @param result the fee result
@@ -76,6 +88,8 @@ public interface ServiceFeeCalculator {
             @NonNull final Extra extra,
             @NonNull FeeSchedule feeSchedule,
             final long amount) {
+        assert chargedExtras().contains(extra)
+                : getClass().getSimpleName() + " charges " + extra + " but does not declare it";
         for (ExtraFeeReference ref : serviceFeeDef.extras()) {
             if (ref.name() == extra) {
                 int included = ref.includedCount();
