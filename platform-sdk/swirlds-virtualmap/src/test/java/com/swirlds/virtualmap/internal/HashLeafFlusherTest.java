@@ -492,7 +492,7 @@ public class HashLeafFlusherTest {
         }
 
         @Test
-        void testFlushFailureIsSticky() throws Exception {
+        void testFlushFailureReleasesBlockedProducers() throws Exception {
             final GatedDataSource ds = gatedDataSource("failure");
             final RuntimeException failure = new RuntimeException("disk failure");
             ds.failWith = failure;
@@ -505,17 +505,12 @@ public class HashLeafFlusherTest {
             // The original exception is thrown to the flushing thread
             final ExecutionException flushing = assertThrows(ExecutionException.class, first::await);
             assertSame(failure, flushing.getCause());
-            // Blocked producers are released, but fail, too
-            final ExecutionException released = assertThrows(ExecutionException.class, blocked::await);
-            assertTrue(released.getCause() instanceof IllegalStateException);
-            assertSame(failure, released.getCause().getCause());
-            // All subsequent calls fail, no more flushes are run
-            final IllegalStateException later =
-                    assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(300, 300, 300)));
-            assertSame(failure, later.getCause());
-            final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
-            assertSame(failure, finish.getCause());
-            assertEquals(1, ds.saves.get());
+            // The blocked producer is released, and flushes the next batch, which is already due
+            blocked.await();
+            flusher.finish();
+            assertEquals(3, ds.saves.get());
+            assertLeavesPresent(ds, 100, INTERVAL);
+            assertLeavesPresent(ds, 200, 1);
         }
 
         @Test
@@ -546,7 +541,7 @@ public class HashLeafFlusherTest {
         }
 
         @Test
-        void testInterruptBeforeFlushFailsFlusher() throws Exception {
+        void testInterruptBeforeFlushFails() throws Exception {
             final GatedDataSource ds = gatedDataSource("interruptFlush");
             ds.open();
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
@@ -567,25 +562,6 @@ public class HashLeafFlusherTest {
             assertTrue(e.getCause() instanceof IllegalStateException);
             assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
             assertEquals(0, ds.saves.get());
-            // The batch is lost, so the flusher fails rather than hangs or completes normally
-            final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
-            assertSame(e.getCause(), finish.getCause());
-        }
-
-        @Test
-        void testFinishWaitsForFlushAndFlushesRemainder() throws Exception {
-            final GatedDataSource ds = gatedDataSource("finish");
-            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
-            final Producer first = startBlockedFlush(flusher, ds);
-            flusher.updateLeaf(leaf(100, 100, 100));
-            final Producer finish = start(flusher::finish);
-            finish.awaitBlocked();
-            ds.open();
-            first.await();
-            finish.await();
-            assertEquals(2, ds.saves.get());
-            assertLeavesPresent(ds, 1, INTERVAL);
-            assertLeavesPresent(ds, 100, 1);
         }
 
         @Test
@@ -612,20 +588,6 @@ public class HashLeafFlusherTest {
         }
 
         @Test
-        void testCancelReleasesBlockedFinish() throws Exception {
-            final GatedDataSource ds = gatedDataSource("cancelFinish");
-            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
-            startBlockedFlush(flusher, ds);
-            final Producer finish = start(flusher::finish);
-            finish.awaitBlocked();
-            flusher.cancel();
-            final ExecutionException e = assertThrows(ExecutionException.class, finish::await);
-            assertTrue(e.getCause() instanceof IllegalStateException);
-            assertTrue(e.getCause().getCause() instanceof CancellationException);
-            assertEquals(1, ds.saves.get());
-        }
-
-        @Test
         void testCancelDuringFinalFlushDoesNotBlock() throws Exception {
             final GatedDataSource ds = gatedDataSource("cancelFinalFlush");
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
@@ -641,20 +603,6 @@ public class HashLeafFlusherTest {
             finish.await();
             assertEquals(1, ds.saves.get());
             assertLeavesPresent(ds, 1, 1);
-        }
-
-        @Test
-        void testCancelKeepsOriginalFailure() throws Exception {
-            final GatedDataSource ds = gatedDataSource("cancelAfterFailure");
-            final RuntimeException failure = new RuntimeException("disk failure");
-            ds.failWith = failure;
-            ds.open();
-            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
-            assertThrows(ExecutionException.class, addLeaves(flusher, 1, INTERVAL)::await);
-            flusher.cancel();
-            flusher.cancel();
-            final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
-            assertSame(failure, finish.getCause());
         }
 
         @Test
