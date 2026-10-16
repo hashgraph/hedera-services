@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.roster.RosterUtils;
@@ -60,6 +61,20 @@ class RoundHashValidatorTests {
     record HashGenerationData(List<NodeHashInfo> nodeList, Hash consensusHash) {}
 
     /**
+     * Generates a random hash that can stand in for a state hash.
+     * <p>
+     * State hashes use {@link Cryptography#DEFAULT_DIGEST_TYPE}. The ISS detector rebuilds the hashes it receives in
+     * state signature transactions with that digest type, and {@link Hash#equals(Object)} compares digest types as
+     * well as bytes, so a hash of any other digest type would either be rejected or never match the self hash.
+     *
+     * @param random a source of randomness
+     * @return a random hash with the digest type used for state hashes
+     */
+    static Hash randomStateHash(final Random random) {
+        return randomHash(random, Cryptography.DEFAULT_DIGEST_TYPE);
+    }
+
+    /**
      * Based on the desired network status, generate hashes for all nodes.
      *
      * @param random                a source of randomness
@@ -96,12 +111,12 @@ class RoundHashValidatorTests {
         final long totalWeight = RosterUtils.computeTotalWeight(roster);
 
         // This is the hash we want to be chosen for the consensus hash.
-        final Hash consensusHash = randomHash(random);
+        final Hash consensusHash = randomStateHash(random);
         final List<NodeId> correctHashNodes = new LinkedList<>();
         long correctHashWeight = 0;
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
-        final Hash otherHash = randomHash(random);
+        final Hash otherHash = randomStateHash(random);
         long otherHashWeight = 0;
         final List<NodeId> otherHashNodes = new LinkedList<>();
 
@@ -168,7 +183,7 @@ class RoundHashValidatorTests {
                 // The random hashes will never reach a majority, so they can go in whenever
                 if (!randomHashNodes.isEmpty()) {
                     final NodeId nodeId = randomHashNodes.remove(0);
-                    nodes.add(new NodeHashInfo(nodeId, randomHash(random), round));
+                    nodes.add(new NodeHashInfo(nodeId, randomStateHash(random), round));
                 }
             }
         }
@@ -193,7 +208,7 @@ class RoundHashValidatorTests {
         Collections.shuffle(randomNodeOrder, random);
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
-        final Hash otherHash = randomHash(random);
+        final Hash otherHash = randomStateHash(random);
         long otherHashWeight = 0;
 
         final Map<Long, RosterEntry> nodesById = RosterUtils.toMap(roster);
@@ -205,7 +220,7 @@ class RoundHashValidatorTests {
                 nodes.add(new NodeHashInfo(nodeId, otherHash, round));
                 otherHashWeight += weight;
             } else {
-                nodes.add(new NodeHashInfo(nodeId, randomHash(random), round));
+                nodes.add(new NodeHashInfo(nodeId, randomStateHash(random), round));
             }
         }
 
