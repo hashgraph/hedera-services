@@ -69,7 +69,6 @@ public class ClprOrchestratorSubmitTest {
 
         final var proofBytes = buildProofBytes();
         return hapiTest(
-                overriding("clpr.enabled", "true"),
                 overriding("clpr.minLockedStake", String.valueOf(MIN_LOCKED_STAKE)),
                 // Fund the self node's account (account 3 in embedded) so the inbound
                 // ClprSubmitBundle transaction — submitted by the node and paying with its
