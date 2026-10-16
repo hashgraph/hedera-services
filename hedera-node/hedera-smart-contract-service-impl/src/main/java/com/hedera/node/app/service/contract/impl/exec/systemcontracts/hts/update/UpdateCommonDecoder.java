@@ -105,7 +105,8 @@ public abstract class UpdateCommonDecoder {
         if (tokenSymbol != null) {
             txnBodyBuilder.symbol(tokenSymbol);
         }
-        if (memo != null && !memo.isEmpty()) {
+        // A blank memo from a contract means "unchanged", so don't externalize it
+        if (memo != null && !memo.isBlank()) {
             txnBodyBuilder.memo(memo);
         }
         // A zero treasury means "unchanged", so don't externalize it as an update to 0.0.0
