@@ -92,7 +92,7 @@ jobs:
     if: ${{ needs.detect-change-type.outputs.workflow-files-changed == 'true' }}
     uses: ./.github/workflows/857-call-workflow-unit-tests.yaml
 
-  # The EVM functional tests (870) run only when a non-documentation file under the smart-contract service
+  # The EVM functional tests (871) run only when a non-documentation file under the smart-contract service
   # modules changed, or when the PR carries the "Run EVM Tests" (or "Run Full CI") label. The gate is a job-level
   # `if:` rather than an `on.pull_request.paths` filter so the workflow always reports; a skipped job counts as
   # passing. The result is advisory: it is surfaced in the PR summary and the per-shard check runs, but
@@ -117,7 +117,7 @@ jobs:
       - extract-citr-vars
       - mats-pr-checks
     if: ${{ needs.detect-change-type.outputs.smart-contracts-changed == 'true' }}
-    uses: ./.github/workflows/870-call-evm-functional-tests.yaml
+    uses: ./.github/workflows/871-call-evm-functional-tests.yaml
     with:
       ref: ${{ github.event.pull_request.head.sha }}
       custom-job-name: "Standard"

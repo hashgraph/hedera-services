@@ -117,7 +117,7 @@ one hardhat test file.
 
 |            Test Name             |                                             Workflow                                             |                                                             Required Parameters                                                              |                     Required Workflow Secrets                          | Precursor Steps |
 |----------------------------------|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|-----------------|
-| EVM Functional Tests (18 shards) | [870: [CALL] EVM Functional Tests](/.github/workflows/870-call-evm-functional-tests.yaml)        | `ref: <commit-sha>`<br/>`solo-version: <citr-solo-version>`<br/>`mirror-node-version: 0.163.1`<br/>`json-rpc-relay-version: 0.79.0-rc1`      | `access-token`<br/>`gradle-cache-username`<br/>`gradle-cache-password` | MATS            |
+| EVM Functional Tests (18 shards) | [871: [CALL] EVM Functional Tests](/.github/workflows/871-call-evm-functional-tests.yaml)        | `ref: <commit-sha>`<br/>`solo-version: <citr-solo-version>`<br/>`mirror-node-version: 0.163.1`<br/>`json-rpc-relay-version: 0.79.0-rc1`      | `access-token`<br/>`gradle-cache-username`<br/>`gradle-cache-password` | MATS            |
 
 ## XTS
 
