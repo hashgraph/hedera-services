@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package org.hiero.otter.fixtures.network.simulation;
 
-import static java.util.Objects.requireNonNull;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -23,31 +18,16 @@ import org.hiero.consensus.model.node.NodeId;
  * them this way is what makes a connection that is down skippable: its queue is simply left out of the comparison, so
  * it holds up only its own events instead of blocking every other sender's events behind its head.
  *
- * <p>Nothing here sorts. A connection's queue is in arrival order because events are appended to it in arrival order,
- * which {@link #add(NodeId, EventInTransit)} enforces rather than arranges. Delivery then merges the heads of the
+ * <p>A connection's queue is a priority queue ordered by arrival time, with ties broken by the order the events were
+ * added, so an event added later may be delivered before one added earlier. Delivery then merges the heads of the
  * queues to recover the arrival order across all of the senders.
+ *
+ * <p>A receiver can refuse the events of one sender without affecting the others: the refused connection is left out
+ * for the rest of the delivery, its events stay queued, and they are offered again the next time delivery happens.
  *
  * <p>This class is not safe to use from more than one thread.
  */
-public class InFlightEvents {
-
-    /**
-     * Whether a connection is currently up, given the sender and then the receiver. Supplied by the owner of the
-     * network topology, so that this class is concerned only with holding events and ordering them.
-     */
-    private final BiPredicate<NodeId, NodeId> connected;
-
-    /**
-     * The events in flight, keyed by the node that will receive them and then by the node that sent them. A node does
-     * not send to itself, so a node's map holds no queue for itself.
-     */
-    private final Map<NodeId, Map<NodeId, ArrayDeque<EventInTransit>>> connectionsByReceiver = new HashMap<>();
-
-    /**
-     * Every node, in node id order. Delivery walks the senders in this order, so that events which arrive at the same
-     * instant are always delivered in the same order and the simulation stays reproducible.
-     */
-    private final List<NodeId> sortedNodeIds = new ArrayList<>();
+public class InFlightEvents extends InFlightConnections<EventInTransit> {
 
     /**
      * Constructor.
@@ -55,110 +35,77 @@ public class InFlightEvents {
      * @param connected reports whether the connection from a sender to a receiver is currently up
      */
     public InFlightEvents(@NonNull final BiPredicate<NodeId, NodeId> connected) {
-        this.connected = requireNonNull(connected);
+        super(connected);
     }
 
     /**
-     * Adds a node to the network, giving it a queue for every node already present and each of them a queue for it.
+     * Delivers every event that has arrived at the receiving node, in the order the events arrived.
      *
-     * @param newNodeId the id of the node to add
-     */
-    public void addNode(@NonNull final NodeId newNodeId) {
-        final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections = new HashMap<>();
-        for (final NodeId existingNodeId : sortedNodeIds) {
-            incomingConnections.put(existingNodeId, new ArrayDeque<>());
-            connectionsByReceiver.get(existingNodeId).put(newNodeId, new ArrayDeque<>());
-        }
-        connectionsByReceiver.put(newNodeId, incomingConnections);
-
-        sortedNodeIds.add(newNodeId);
-        Collections.sort(sortedNodeIds);
-    }
-
-    /**
-     * Adds an event that should be delivered to a receiver in the future.
-     *
-     * <p>The event must not have an arrival time before the event added most recently for the same connection.
-     * Delivery relies on each connection's queue being in arrival order, and appending is the only thing that puts
-     * it in that order.
-     *
-     * @param receiver the node the event is traveling to
-     * @param event    the event, carrying the node that sent it and the time it arrives
-     * @throws IllegalArgumentException if the event arrives before the event added most recently for the same
-     *                                  connection
-     */
-    public void add(@NonNull final NodeId receiver, @NonNull final EventInTransit event) {
-        final ArrayDeque<EventInTransit> connection =
-                connectionsByReceiver.get(receiver).get(event.sender());
-
-        final EventInTransit previousEvent = connection.peekLast();
-        if (previousEvent != null && event.arrivalTime().isBefore(previousEvent.arrivalTime())) {
-            throw new IllegalArgumentException(
-                    ("The event sent from %s to %s arrives at %s, which is before the event ahead of it on that "
-                                    + "connection arrives at %s. They would be delivered out of order.")
-                            .formatted(event.sender(), receiver, event.arrivalTime(), previousEvent.arrivalTime()));
-        }
-
-        connection.addLast(event);
-    }
-
-    /**
-     * Delivers every event that has arrived at the receiving node, in the order the events arrived, until the node
-     * stops accepting them.
-     *
-     * <p>Each connection's queue is already in arrival order, so repeatedly delivering the earliest of their heads
-     * walks the events in arrival order across all the senders. A connection whose head has not arrived yet, or
+     * <p>Each connection's queue hands out its events in arrival order, so repeatedly delivering the earliest of their
+     * heads walks the events in arrival order across all the senders. A connection whose head has not arrived yet, or
      * which is down, is left out of the comparison rather than skipped over, so it holds up only its own events and
-     * this method always either delivers an event or returns.
+     * this method always makes progress or returns.
      *
-     * @param now           the current time
+     * <p>When the receiver refuses an event, only that sender's connection is left out for the remainder of this call;
+     * the event stays at the head of its queue and the other senders' events are still delivered.
+     *
+     * @param now      the current time
      * @param receiver accepts the events on behalf of the receiving node
      */
-    public void deliverArrivedEvents(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
+    @Override
+    void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
-        final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections = connectionsByReceiver.get(receiverId);
+        final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections = incomingConnections(receiverId);
+        // senders still worth considering during this delivery; a sender that refuses is removed from it
+        final List<NodeId> candidateSenders = new ArrayList<>(sortedNodeIds());
 
         while (true) {
-            final ArrayDeque<EventInTransit> earliestConnection =
-                    earliestArrivedConnection(receiverId, incomingConnections, now);
+            final InFlightQueue<EventInTransit> earliestConnection =
+                    earliestArrivedConnection(receiverId, incomingConnections, now, candidateSenders);
             if (earliestConnection == null) {
-                // every connection is either empty, holding events that have not arrived yet, or down
+                // every connection is either empty, holding events that have not arrived yet, down or refused
                 return;
             }
 
-            // only remove the event from the queue if it was successfully delivered. If the event is not
-            // successfully delivered, stop attempting event delivery until the next time this method is called.
-            if (!receiver.receiveEvent(earliestConnection.peekFirst().event())) {
-                return;
+            final EventInTransit head = earliestConnection.peek();
+
+            // only remove the event from the queue if it was successfully delivered. If the receiver refuses it,
+            // stop delivering from that sender until the next time this method is called.
+            if (receiver.receiveEvent(head.event())) {
+                earliestConnection.poll();
+            } else {
+                candidateSenders.remove(head.sender());
             }
-            earliestConnection.pollFirst();
         }
     }
 
     /**
      * Finds the connection holding the event that arrived earliest among those that can be delivered right now.
      *
-     * @param receiverId            the node the events are traveling to
+     * @param receiverId          the node the events are traveling to
      * @param incomingConnections the events in flight towards the receiver, keyed by the node that sent them
      * @param now                 the current time
+     * @param candidateSenders    the senders to consider, in node id order, without those the receiver has refused
+     *                            during this delivery
      * @return the connection whose head should be delivered next, or {@code null} if there is nothing to deliver
      */
     @Nullable
-    private ArrayDeque<EventInTransit> earliestArrivedConnection(
+    private InFlightQueue<EventInTransit> earliestArrivedConnection(
             @NonNull final NodeId receiverId,
-            @NonNull final Map<NodeId, ArrayDeque<EventInTransit>> incomingConnections,
-            @NonNull final Instant now) {
+            @NonNull final Map<NodeId, InFlightQueue<EventInTransit>> incomingConnections,
+            @NonNull final Instant now,
+            @NonNull final List<NodeId> candidateSenders) {
 
-        ArrayDeque<EventInTransit> earliestConnection = null;
+        InFlightQueue<EventInTransit> earliestConnection = null;
         Instant earliestArrivalTime = null;
 
-        for (final NodeId sender : sortedNodeIds) {
-            final ArrayDeque<EventInTransit> connection = incomingConnections.get(sender);
+        for (final NodeId sender : candidateSenders) {
+            final InFlightQueue<EventInTransit> connection = incomingConnections.get(sender);
             if (connection == null) {
                 // the receiver is the sender, so there is no connection
                 continue;
             }
-            final EventInTransit event = connection.peekFirst();
+            final EventInTransit event = connection.peek();
             if (event == null || event.arrivalTime().isAfter(now)) {
                 // nothing in flight on this connection has arrived yet
                 continue;
@@ -167,7 +114,7 @@ public class InFlightEvents {
                 // another connection is holding an event that arrived earlier
                 continue;
             }
-            if (!connected.test(sender, receiverId)) {
+            if (!isUp(sender, receiverId)) {
                 // the connection is down, so its events are not deliverable
                 continue;
             }
@@ -176,15 +123,5 @@ public class InFlightEvents {
         }
 
         return earliestConnection;
-    }
-
-    /**
-     * Discards every event in flight towards a node. Used when the node restarts and is about to be sent everything it
-     * needs again.
-     *
-     * @param receiverId the node whose incoming events should be discarded
-     */
-    public void clearIncoming(@NonNull final NodeId receiverId) {
-        connectionsByReceiver.get(receiverId).values().forEach(ArrayDeque::clear);
     }
 }
