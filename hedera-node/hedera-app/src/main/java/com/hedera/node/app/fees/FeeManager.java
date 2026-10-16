@@ -5,6 +5,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.HOOK_DISPATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 import static org.hiero.hapi.fees.FeeScheduleUtils.isValid;
 import static org.hiero.hapi.fees.FeeScheduleUtils.lookupExtraFee;
 import static org.hiero.hapi.fees.FeeScheduleUtils.lookupServiceFee;
@@ -28,11 +29,13 @@ import java.nio.BufferUnderflowException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.hapi.support.fees.Extra;
+import org.hiero.hapi.support.fees.ExtraFeeReference;
 import org.hiero.hapi.support.fees.FeeSchedule;
 
 /**
@@ -45,6 +48,12 @@ public final class FeeManager {
 
     /** Functions only dispatched by a handler as a step of another transaction, which pays for them. */
     private static final Set<HederaFunctionality> HANDLER_STEP_FUNCTIONS = EnumSet.of(HOOK_DISPATCH);
+
+    /**
+     * Extras that handlers read straight from the schedule, so they must be defined even though no calculator
+     * charges them through a service fee definition.
+     */
+    private static final Set<Extra> EXTRAS_READ_BY_HANDLERS = EnumSet.of(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS);
 
     private FeeSchedule simpleFeesSchedule;
     private volatile SimpleFeeCalculator simpleFeeCalculator;
@@ -73,8 +82,9 @@ public final class FeeManager {
 
     /**
      * Updates the simple fee schedule based on the given file content. This is called on genesis and whenever
-     * the simple fee schedule file is updated. The schedule must be well-formed and must price every transaction
-     * and query type that has a registered fee calculator; otherwise it is rejected and the current schedule is kept.
+     * the simple fee schedule file is updated. The schedule must be well-formed, must price every transaction
+     * and query type that has a registered fee calculator, and must define every extra those calculators and the
+     * handlers charge; otherwise it is rejected and the current schedule is kept.
      *
      * @param bytes The new simple fee schedule file content.
      * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise
@@ -86,11 +96,12 @@ public final class FeeManager {
 
     /**
      * Updates the simple fee schedule based on the given file content. A well-formed schedule that leaves some
-     * registered transaction or query type unpriced is rejected when {@code requireFullCoverage} is true; otherwise
-     * it is installed and the unpriced types are logged.
+     * registered transaction or query type unpriced, or lacks an extra that a calculator or handler charges, is
+     * rejected when {@code requireFullCoverage} is true; otherwise it is installed and the gaps are logged.
      *
      * @param bytes The new simple fee schedule file content.
-     * @param requireFullCoverage whether to reject a schedule that leaves a registered type unpriced
+     * @param requireFullCoverage whether to reject a schedule that leaves a registered type unpriced or an extra
+     * undefined
      * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise
      * {@link ResponseCodeEnum#FEE_SCHEDULE_FILE_PART_UPLOADED}
      */
@@ -109,6 +120,14 @@ public final class FeeManager {
                     return FEE_SCHEDULE_FILE_PART_UPLOADED;
                 }
                 logger.error("Installing simple fee schedule with no prices for {}", unpriced);
+            }
+            final var missingExtras = missingExtras(schedule);
+            if (!missingExtras.isEmpty()) {
+                if (requireFullCoverage) {
+                    logger.error("Rejecting simple fee schedule missing extras {}", missingExtras);
+                    return FEE_SCHEDULE_FILE_PART_UPLOADED;
+                }
+                logger.error("Installing simple fee schedule missing extras {}", missingExtras);
             }
             logger.info("Successfully validated simple fee schedule.");
             this.simpleFeesSchedule = schedule;
@@ -143,6 +162,40 @@ public final class FeeManager {
             }
         }
         return unpriced;
+    }
+
+    /**
+     * Returns the extras that a registered calculator or handler charges but the given schedule does not provide.
+     * Each entry is either the name of an extra that is not defined at all, or {@code FUNCTION.EXTRA} for an
+     * extra that the function's service fee definition does not reference. Functions the schedule does not price
+     * are reported by {@link #unpricedFunctions(FeeSchedule)} instead.
+     *
+     * @param schedule the schedule to check
+     * @return the missing extras
+     */
+    @VisibleForTesting
+    Set<String> missingExtras(@NonNull final FeeSchedule schedule) {
+        final var missing = new TreeSet<String>();
+        for (final var extra : EXTRAS_READ_BY_HANDLERS) {
+            if (lookupExtraFee(schedule, extra) == null) {
+                missing.add(extra.name());
+            }
+        }
+        for (final var calculator : serviceFeeCalculators) {
+            final var function = functionOf(calculator.getTransactionType());
+            final var definition = lookupServiceFee(schedule, function);
+            if (definition == null) {
+                continue;
+            }
+            final var referenced =
+                    definition.extras().stream().map(ExtraFeeReference::name).collect(toSet());
+            for (final var extra : calculator.requiredExtras()) {
+                if (!referenced.contains(extra)) {
+                    missing.add(function + "." + extra);
+                }
+            }
+        }
+        return missing;
     }
 
     private static HederaFunctionality functionOf(@NonNull final TransactionBody.DataOneOfType kind) {

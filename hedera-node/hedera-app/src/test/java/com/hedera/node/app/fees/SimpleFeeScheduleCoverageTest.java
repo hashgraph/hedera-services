@@ -30,6 +30,10 @@ import com.hedera.node.app.throttle.AppScheduleThrottleFactory;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +41,8 @@ import java.util.Set;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -58,6 +64,30 @@ class SimpleFeeScheduleCoverageTest {
     @Test
     void genesisSchedulePricesEveryRegisteredTransactionAndQueryType() throws ParseException {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var feeManager = realFeeManager(config);
+        final var genesisBytes = new V0490FileSchema().genesisSimpleFeesSchedules(config);
+        final var genesis = FeeSchedule.PROTOBUF.parseStrict(genesisBytes);
+
+        assertThat(feeManager.unpricedFunctions(genesis)).isEmpty();
+        assertThat(feeManager.missingExtras(genesis)).isEmpty();
+        assertEquals(SUCCESS, feeManager.updateSimpleFees(genesisBytes));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mainnet", "testnet", "previewnet"})
+    void shippedUpgradeSchedulesProvideEveryExtraTheCalculatorsCharge(final String network) throws Exception {
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var feeManager = realFeeManager(config);
+        final var json =
+                Files.readAllBytes(Path.of("..", "configuration", network, "upgrade", "simpleFeesSchedules.json"));
+
+        final var schedule = FeeSchedule.JSON.parse(Bytes.wrap(json).toReadableSequentialData());
+
+        assertThat(feeManager.unpricedFunctions(schedule)).isEmpty();
+        assertThat(feeManager.missingExtras(schedule)).isEmpty();
+    }
+
+    private FeeManager realFeeManager(final Configuration config) {
         final var state = new FakeState();
         final var appContext = new AppContextImpl(
                 InstantSource.system(),
@@ -84,13 +114,6 @@ class SimpleFeeScheduleCoverageTest {
             serviceFeeCalculators.addAll(service.serviceFeeCalculators());
             queryFeeCalculators.addAll(service.queryFeeCalculators());
         }
-        final var feeManager =
-                new FeeManager(exchangeRateManager, congestionMultipliers, serviceFeeCalculators, queryFeeCalculators);
-
-        final var genesisBytes = new V0490FileSchema().genesisSimpleFeesSchedules(config);
-
-        assertThat(feeManager.unpricedFunctions(FeeSchedule.PROTOBUF.parseStrict(genesisBytes)))
-                .isEmpty();
-        assertEquals(SUCCESS, feeManager.updateSimpleFees(genesisBytes));
+        return new FeeManager(exchangeRateManager, congestionMultipliers, serviceFeeCalculators, queryFeeCalculators);
     }
 }

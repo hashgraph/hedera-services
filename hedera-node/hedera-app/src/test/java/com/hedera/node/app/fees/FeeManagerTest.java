@@ -3,6 +3,7 @@ package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_GET_INFO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
@@ -21,8 +22,12 @@ import com.hedera.node.app.spi.fees.QueryFeeCalculator;
 import com.hedera.node.app.spi.fees.ServiceFeeCalculator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import org.hiero.hapi.support.fees.Extra;
+import org.hiero.hapi.support.fees.ExtraFeeDefinition;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.hiero.hapi.support.fees.NetworkFee;
 import org.hiero.hapi.support.fees.NodeFee;
@@ -44,6 +49,9 @@ class FeeManagerTest {
 
     @Mock
     private ServiceFeeCalculator topicCreateCalculator;
+
+    @Mock
+    private ServiceFeeCalculator cryptoTransferCalculator;
 
     @Mock
     private QueryFeeCalculator fileGetInfoCalculator;
@@ -72,6 +80,8 @@ class FeeManagerTest {
                         makeExtraDef(Extra.KEYS, 1),
                         makeExtraDef(Extra.STATE_BYTES, 1),
                         makeExtraDef(Extra.SIGNATURES, 1),
+                        makeExtraDef(Extra.TOKEN_ASSOCIATE, 1),
+                        makeExtraDef(Extra.AIRDROPS, 1),
                         makeExtraDef(Extra.GAS, 852))
                 .node(NodeFee.DEFAULT
                         .copyBuilder()
@@ -92,7 +102,10 @@ class FeeManagerTest {
     void getGasPriceInTinyCentsUsesSimpleFeesWhenGasExtraPresent() {
         final var simpleSchedule = org.hiero.hapi.support.fees.FeeSchedule.DEFAULT
                 .copyBuilder()
-                .extras(makeExtraDef(Extra.GAS, 100_000L))
+                .extras(
+                        makeExtraDef(Extra.GAS, 100_000L),
+                        makeExtraDef(Extra.TOKEN_ASSOCIATE, 1),
+                        makeExtraDef(Extra.AIRDROPS, 1))
                 .node(NodeFee.DEFAULT.copyBuilder().baseFee(0).build())
                 .network(NetworkFee.DEFAULT.copyBuilder().multiplier(1).build())
                 .services(makeService("Crypto", makeServiceFee(CRYPTO_CREATE, 0)))
@@ -172,6 +185,70 @@ class FeeManagerTest {
     }
 
     @Test
+    void updateSimpleFeesRejectsScheduleMissingAnExtraReferenceACalculatorNeeds() {
+        given(cryptoTransferCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.CRYPTO_TRANSFER);
+        given(cryptoTransferCalculator.requiredExtras()).willReturn(Set.of(Extra.ACCOUNTS));
+        subject =
+                new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(cryptoTransferCalculator), Set.of());
+        final var complete = scheduleWith(
+                extraDefs(Extra.ACCOUNTS, Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS),
+                makeServiceFee(CRYPTO_TRANSFER, 100, makeExtraIncluded(Extra.ACCOUNTS, 2)));
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete)));
+
+        final var withoutReference = scheduleWith(
+                extraDefs(Extra.ACCOUNTS, Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_TRANSFER, 100));
+
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutReference)));
+        assertEquals(complete, subject.getSimpleFeesSchedule());
+    }
+
+    @Test
+    void updateSimpleFeesRejectsScheduleMissingAnExtraHandlersReadDirectly() {
+        final var complete =
+                scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete)));
+
+        final var withoutAirdrops = scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE), makeServiceFee(CRYPTO_CREATE, 100));
+        final var withoutAssociate = scheduleWith(extraDefs(Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
+
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutAirdrops)));
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutAssociate)));
+        assertEquals(complete, subject.getSimpleFeesSchedule());
+    }
+
+    @Test
+    void missingExtrasNamesEachGap() {
+        given(cryptoTransferCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.CRYPTO_TRANSFER);
+        given(cryptoTransferCalculator.requiredExtras()).willReturn(Set.of(Extra.ACCOUNTS, Extra.KEYS));
+        subject =
+                new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(cryptoTransferCalculator), Set.of());
+        final var schedule = scheduleWith(
+                extraDefs(Extra.ACCOUNTS, Extra.KEYS, Extra.TOKEN_ASSOCIATE),
+                makeServiceFee(CRYPTO_TRANSFER, 100, makeExtraIncluded(Extra.ACCOUNTS, 2)));
+
+        assertEquals(Set.of("AIRDROPS", "CRYPTO_TRANSFER.KEYS"), subject.missingExtras(schedule));
+    }
+
+    @Test
+    void missingExtrasLeavesUnpricedFunctionsToTheCoverageCheck() {
+        given(cryptoTransferCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.CRYPTO_TRANSFER);
+        subject =
+                new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(cryptoTransferCalculator), Set.of());
+        final var schedule =
+                scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
+
+        assertEquals(Set.of(), subject.missingExtras(schedule));
+    }
+
+    @Test
+    void updateSimpleFeesCanInstallScheduleMissingExtrasWhenCoverageIsNotRequired() {
+        final var incomplete = scheduleWith(makeServiceFee(CRYPTO_CREATE, 100));
+
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(incomplete), false));
+        assertEquals(incomplete, subject.getSimpleFeesSchedule());
+    }
+
+    @Test
     void updateSimpleFeesFailsForCalculatorWithUnsetTransactionType() {
         given(unsetTypeCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.UNSET);
         subject = new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(unsetTypeCalculator), Set.of());
@@ -190,9 +267,19 @@ class FeeManagerTest {
     }
 
     private static FeeSchedule scheduleWith(final ServiceFeeDefinition... fees) {
+        return scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), fees);
+    }
+
+    private static ExtraFeeDefinition[] extraDefs(final Extra... extras) {
+        return Arrays.stream(extras).map(extra -> makeExtraDef(extra, 1)).toArray(ExtraFeeDefinition[]::new);
+    }
+
+    private static FeeSchedule scheduleWith(final ExtraFeeDefinition[] extras, final ServiceFeeDefinition... fees) {
+        final var allExtras = new ArrayList<>(List.of(makeExtraDef(Extra.GAS, 852)));
+        allExtras.addAll(List.of(extras));
         return FeeSchedule.DEFAULT
                 .copyBuilder()
-                .extras(makeExtraDef(Extra.GAS, 852))
+                .extras(allExtras)
                 .node(NodeFee.DEFAULT.copyBuilder().baseFee(0).build())
                 .network(NetworkFee.DEFAULT.copyBuilder().multiplier(1).build())
                 .services(makeService("Test", fees))

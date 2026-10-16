@@ -21,6 +21,7 @@ import static org.hiero.hapi.fees.FeeScheduleUtils.lookupExtraFee;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import org.hiero.hapi.fees.FeeResult;
 import org.hiero.hapi.support.fees.Extra;
 import org.hiero.hapi.support.fees.ExtraFeeReference;
@@ -48,6 +49,17 @@ public interface ServiceFeeCalculator {
      * @return the transaction type
      */
     TransactionBody.DataOneOfType getTransactionType();
+
+    /**
+     * Returns the extras this calculator may charge through {@link #addExtraFee}. A fee schedule is only usable
+     * if the service fee definition for this calculator's transaction type references every one of them,
+     * since charging an unreferenced extra fails the fee calculation. The default is no extras.
+     *
+     * @return the extras that must be referenced by this calculator's service fee definition
+     */
+    default Set<Extra> requiredExtras() {
+        return Set.of();
+    }
 
     /**
      * Adds an extra fee to the result.
