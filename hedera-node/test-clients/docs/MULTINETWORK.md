@@ -6,13 +6,13 @@ regeneration) see [`../tss-startup-assets/README.md`](../tss-startup-assets/READ
 
 The main classes:
 
-|                    Class                    |                                          Role                                          |
-|---------------------------------------------|----------------------------------------------------------------------------------------|
-| `MultiNetworkHapiTest` / `@Network`         | Declares the networks a test needs (name, size, setup overrides, mTLS, `tssPreload`).  |
-| `SharedMultiNetworkLauncherSessionListener` | Starts every declared network once at test-plan start; stops them at plan end.         |
-| `MultiNetworkExtension`                     | Allocates ports, starts networks, runs the cold/warm TSS path, applies test overrides. |
-| `TssFixtures`                               | Resolves, merges, writes and installs the per-network genesis TSS fixtures.            |
-| `ClprWrapsProvingKeyInstaller`              | Extracts the WRAPS proving-key archive for cold starts.                                |
+|                    Class                    |                                                               Role                                                               |
+|---------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `MultiNetworkHapiTest` / `@Network`         | Declares the networks a test needs (name, size, setup overrides, mTLS, `tssPreload`).                                            |
+| `SharedMultiNetworkLauncherSessionListener` | Collects the declared networks at test-plan start, starts them once through `MultiNetworkExtension`, and stops them at plan end. |
+| `MultiNetworkExtension`                     | Allocates ports and boots networks (for the listener, or per test), runs the cold/warm TSS path, applies test overrides.         |
+| `TssFixtures`                               | Resolves, merges, writes and installs the per-network genesis TSS fixtures.                                                      |
+| `ClprWrapsProvingKeyInstaller`              | Extracts the WRAPS proving-key archive for cold starts.                                                                          |
 
 ## Phase 0 — test-plan start
 
@@ -67,7 +67,9 @@ Typical cost: well under a minute per network.
 
 - **Shared networks:** reuses them and re-checks each node is `ACTIVE` (an earlier test may have
   frozen or restarted it).
-- **Otherwise:** starts per-test networks through the same Phase 1 path.
+- **Otherwise:** starts per-test networks through the same Phase 1 path and stops them in `afterEach`.
+  The fixture generators take this path: the listener skips `@Disabled` methods, so when they are run
+  with `-PsysProp.junit.jupiter.conditions.deactivate='*'` their networks were never started as shared.
 - Applies the test's `setupOverrides` at runtime through a `0.0.121` file update, after snapshotting the
   previous values. Startup-only node settings (`clpr.mtlsPort`, CA paths) are skipped here — they only take
   effect from `application.properties`.

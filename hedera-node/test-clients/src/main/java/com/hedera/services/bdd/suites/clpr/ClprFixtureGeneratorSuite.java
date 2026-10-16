@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Tag;
  *
  * <p>Every generator is {@link Disabled} so it never runs in a normal suite pass. Delete the fixture(s) you
  * want to refresh and run the specific test (removing its {@code @Disabled}, or with
- * {@code -Djunit.jupiter.conditions.deactivate=*}). Running the <b>whole</b> suite in one JVM regenerates
+ * {@code -PsysProp.junit.jupiter.conditions.deactivate='*'}). Running the <b>whole</b> suite in one JVM regenerates
  * every fixture with globally-unique, non-overlapping ports, which is what lets a warm start reproduce a
  * fixture's ports without any patching (see {@code MultiNetworkExtension.ensureFixturePortReservations}).
  * The mTLS bases below are kept distinct from every other network's so a full run never collides.
@@ -50,12 +50,13 @@ public class ClprFixtureGeneratorSuite {
     }
 
     @MultiNetworkHapiTest({@Network(name = "ledgerA_restart"), @Network(name = "ledgerB_restart")})
-    @DisplayName("Generate ledgerA / ledgerB fixtures")
+    @DisplayName("Generate ledgerA_restart / ledgerB_restart fixtures")
     Stream<DynamicTest> generateRestartLedgerFixtures(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         return multiNetworkHapiTest(
-                "generateLedgerFixtures",
-                Stream.of(liveness("ledgerA liveness", ledgerA), liveness("ledgerB liveness", ledgerB)));
+                "generateRestartLedgerFixtures",
+                Stream.of(
+                        liveness("ledgerA_restart liveness", ledgerA), liveness("ledgerB_restart liveness", ledgerB)));
     }
 
     @MultiNetworkHapiTest({
