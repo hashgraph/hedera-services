@@ -21,11 +21,15 @@ public interface EventReceiver {
     /**
      * Receive an event from the simulated network.
      *
+     * <p>Returning {@code false} refuses the event and every other event from the same sender (see
+     * {@link PlatformEvent#getSenderId()}) for the rest of the current tick. The refused events stay queued on that
+     * sender's connection and are offered again on a later tick; events from other senders are still delivered.
+     *
      * <p>Events are refused in statuses in which production does not gossip. This is currently not implemented in
      * Turtle (<a href="https://github.com/hiero-ledger/hiero-consensus-node/issues/27528">#27528</a>).
      *
      * @param event the event to receive
-     * @return true if the event was successfully received, false otherwise
+     * @return true if the event was successfully received, false to refuse it and its sender's events for this tick
      */
     boolean receiveEvent(@NonNull PlatformEvent event);
 
