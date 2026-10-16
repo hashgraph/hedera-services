@@ -21,6 +21,9 @@ public interface EventReceiver {
     /**
      * Receive an event from the simulated network.
      *
+     * <p>Events are refused in statuses in which production does not gossip. This is currently not implemented in
+     * Turtle (<a href="https://github.com/hiero-ledger/hiero-consensus-node/issues/27528">#27528</a>).
+     *
      * @param event the event to receive
      * @return true if the event was successfully received, false otherwise
      */
@@ -28,6 +31,9 @@ public interface EventReceiver {
 
     /**
      * Receive a peer's latest event window from the simulated network.
+     *
+     * <p>Event windows are refused in statuses in which production does not gossip. This is currently not implemented
+     * in Turtle (<a href="https://github.com/hiero-ledger/hiero-consensus-node/issues/27528">#27528</a>).
      *
      * <p>Only the newest window a peer has sent is delivered; the ones it supersedes are discarded by the network. A
      * window is therefore the peer's current position, not a step in a sequence, and no window is delivered twice.
