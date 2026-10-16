@@ -2,7 +2,6 @@
 package org.hiero.otter.fixtures.network.simulation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -208,11 +207,30 @@ class InFlightEventsTest {
     }
 
     @Test
-    @DisplayName("adding an event that arrives before the previous one is rejected")
-    void addingOutOfArrivalOrderIsRejected() {
-        addEvent(NODE_1, 20);
+    @DisplayName("events on one connection are delivered in arrival order regardless of scheduling order")
+    void eventsOnOneConnectionAreDeliveredInArrivalOrder() {
+        final PlatformEvent late = addEvent(NODE_1, 30);
+        final PlatformEvent early = addEvent(NODE_1, 10);
+        final PlatformEvent middle = addEvent(NODE_1, 20);
 
-        assertThatThrownBy(() -> addEvent(NODE_1, 10)).isInstanceOf(IllegalArgumentException.class);
+        inFlightEvents.deliverArrived(at(15), node0);
+        assertThat(node0.receivedEvents).containsExactly(early);
+
+        inFlightEvents.deliverArrived(at(40), node0);
+        assertThat(node0.receivedEvents).containsExactly(early, middle, late);
+    }
+
+    @Test
+    @DisplayName("events with equal arrival times on one connection keep their scheduling order")
+    void equalArrivalTimesKeepSchedulingOrder() {
+        final PlatformEvent first = addEvent(NODE_1, 10);
+        final PlatformEvent second = addEvent(NODE_1, 10);
+        final PlatformEvent third = addEvent(NODE_1, 10);
+        final PlatformEvent earlier = addEvent(NODE_1, 5);
+
+        inFlightEvents.deliverArrived(at(20), node0);
+
+        assertThat(node0.receivedEvents).containsExactly(earlier, first, second, third);
     }
 
     @Test
