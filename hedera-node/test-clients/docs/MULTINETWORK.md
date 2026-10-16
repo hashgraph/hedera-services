@@ -10,7 +10,7 @@ The main classes:
 |---------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `MultiNetworkHapiTest` / `@Network`         | Declares the networks a test needs (name, size, setup overrides, mTLS, `tssPreload`).                                            |
 | `SharedMultiNetworkLauncherSessionListener` | Collects the declared networks at test-plan start, starts them once through `MultiNetworkExtension`, and stops them at plan end. |
-| `MultiNetworkExtension`                     | Allocates ports and boots networks (for the listener, or per test), runs the cold/warm TSS path, applies test overrides.         |
+| `MultiNetworkExtension`                     | Allocates ports and boots networks for the listener, runs the cold/warm TSS path, hands them to tests, applies test overrides.   |
 | `TssFixtures`                               | Resolves, merges, writes and installs the per-network genesis TSS fixtures.                                                      |
 | `ClprWrapsProvingKeyInstaller`              | Extracts the WRAPS proving-key archive for cold starts.                                                                          |
 
@@ -65,16 +65,14 @@ Typical cost: well under a minute per network.
 
 `MultiNetworkExtension.beforeEach`:
 
-- **Shared networks:** reuses them and re-checks each node is `ACTIVE` (an earlier test may have
-  frozen or restarted it).
-- **Otherwise:** starts per-test networks through the same Phase 1 path and stops them in `afterEach`.
-  The fixture generators take this path: the listener skips `@Disabled` methods, so when they are run
-  with `-PsysProp.junit.jupiter.conditions.deactivate='*'` their networks were never started as shared.
+- Looks up the test's networks in `SHARED_NETWORKS` and re-checks each node is `ACTIVE` (an earlier test
+  may have frozen or restarted it). It never starts networks itself: a network the listener did not start
+  (it failed to boot, or the test is `@Disabled`) fails the test.
 - Applies the test's `setupOverrides` at runtime through a `0.0.121` file update, after snapshotting the
   previous values. Startup-only node settings (`clpr.mtlsPort`, CA paths) are skipped here — they only take
   effect from `application.properties`.
 
-`MultiNetworkExtension.afterEach` restores the snapshotted values, stops per-test networks, and clears
+`MultiNetworkExtension.afterEach` restores the snapshotted values and clears
 each node's CLPR peer-endpoint cache so the next test starts clean.
 
 ## Phase 3 — test-plan end

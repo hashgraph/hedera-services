@@ -73,7 +73,6 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
     private static final String NETWORKS_KEY = "multiNetworks";
     private static final String PARAM_INDEXES_KEY = "networkParamIndexes";
     private static final String ANNOTATION_KEY = "multiNetworkAnnotation";
-    private static final String SHARED_FLAG_KEY = "networksShared";
     private static final String CAPTURED_PROPS_KEY = "capturedProps";
     private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(5);
     /** How long to wait for an already-started shared network to be ACTIVE again before reusing it. */
@@ -82,7 +81,7 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
     /**
      * Networks pre-started once per test plan by {@code SharedMultiNetworkLauncherSessionListener}
      * and reused across every {@link MultiNetworkHapiTest} method whose declared network names
-     * resolve here. Empty unless the launcher-session listener populated it.
+     * resolve here. Every test's networks must be here; the extension never starts networks itself.
      */
     public static final Map<String, SubProcessNetwork> SHARED_NETWORKS = new ConcurrentHashMap<>();
 
@@ -122,8 +121,7 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
      * {@code [SHARED_PORT_BASE, SHARED_PORT_BASE + SHARED_POOL_SLOTS * SHARED_PORT_SLOT)} for
      * the first slot that doesn't overlap any prior reservation. Explicit allocations fail loudly
      * if their range overlaps any prior reservation (including ranges outside the pool). Repeat
-     * lookups for the same name return the cached base so both discovery paths (per-test boot
-     * and listener) resolve identically.
+     * lookups for the same name return the cached base.
      *
      * <p>Slot width of 100 accommodates any {@code size <= 16} (each node reserves 6 ports);
      * larger sizes must pin {@code firstGrpcPort} explicitly.
@@ -193,7 +191,7 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
      * WRAPS bootstrap (wait-for-extensible + 5-min settle) before the test runs. Test-layer
      * helpers (e.g. {@code HieroToHieroBase.captureConfigProof}) consult this via
      * {@link #wasTssBootstrapHandled} to skip their own settle when the extension already paid
-     * for it. Cleared in {@link #afterEach} so stale entries can't leak into the next test.
+     * for it.
      */
     private static final Set<SubProcessNetwork> TSS_BOOTSTRAP_HANDLED = ConcurrentHashMap.newKeySet();
 
@@ -209,7 +207,6 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
      * Per-network-name CLPR mTLS CA material, provisioned in {@link #provisionClprMtls} when a
      * {@link Network#enableClprMtls()} network starts (or restarts warm). Keyed by name so it survives the
      * cold-path {@link #restartWithFixture} that swaps the {@link SubProcessNetwork} instance.
-     * Cleared in {@link #afterEach}.
      */
     private static final Map<String, ClprMtlsCa> CLPR_MTLS_CAS = new ConcurrentHashMap<>();
 
@@ -232,40 +229,28 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
         findAnnotation(ctx).ifPresent(annotation -> {
             store(ctx).put(ANNOTATION_KEY, annotation);
             final var configs = annotation.value();
-            final SubProcessNetwork[] networks;
-            final boolean shared;
-            if (!SHARED_NETWORKS.isEmpty() && allShared(configs)) {
-                networks = new SubProcessNetwork[configs.length];
-                for (int i = 0; i < configs.length; i++) {
-                    networks[i] = SHARED_NETWORKS.get(resolveName(configs[i]));
-                }
-                shared = true;
-                log.info(
-                        "[MultiNetworkExtension] Reusing shared networks {} for test {}",
-                        Arrays.stream(configs)
-                                .map(MultiNetworkExtension::resolveName)
-                                .toList(),
-                        ctx.getDisplayName());
-                // SubProcessNetwork#awaitReady memoizes its result for the lifetime of the instance and
-                // is never re-armed, so it is a no-op on reuse. A shared network that an earlier suite
-                // left non-ACTIVE (e.g. freeze/shutdown/restart) would
-                // otherwise be handed straight to applySetupOverrides below, whose specs then fail with
-                // PLATFORM_NOT_ACTIVE. Re-verify per node; this returns immediately when already ACTIVE.
-                for (final var network : networks) {
-                    network.nodes().forEach(node -> awaitStatus(node, SHARED_REUSE_ACTIVE_TIMEOUT, ACTIVE));
-                }
-            } else {
-                log.info(
-                        "[MultiNetworkExtension] Starting per-test networks {} for test {} (no compatible shared set)",
-                        Arrays.stream(configs)
-                                .map(MultiNetworkExtension::resolveName)
-                                .toList(),
-                        ctx.getDisplayName());
-                networks = startNetworks(configs);
-                shared = false;
+            final var names = Arrays.stream(configs)
+                    .map(MultiNetworkExtension::resolveName)
+                    .toList();
+            final var missing = names.stream()
+                    .filter(name -> !SHARED_NETWORKS.containsKey(name))
+                    .toList();
+            if (!missing.isEmpty()) {
+                throw new IllegalStateException("Networks " + missing + " for test " + ctx.getDisplayName()
+                        + " were not started by SharedMultiNetworkLauncherSessionListener (did they fail to"
+                        + " start, or is the test @Disabled?)");
+            }
+            final var networks = names.stream().map(SHARED_NETWORKS::get).toArray(SubProcessNetwork[]::new);
+            log.info("[MultiNetworkExtension] Reusing shared networks {} for test {}", names, ctx.getDisplayName());
+            // SubProcessNetwork#awaitReady memoizes its result for the lifetime of the instance and
+            // is never re-armed, so it is a no-op on reuse. A shared network that an earlier suite
+            // left non-ACTIVE (e.g. freeze/shutdown/restart) would
+            // otherwise be handed straight to applySetupOverrides below, whose specs then fail with
+            // PLATFORM_NOT_ACTIVE. Re-verify per node; this returns immediately when already ACTIVE.
+            for (final var network : networks) {
+                network.nodes().forEach(node -> awaitStatus(node, SHARED_REUSE_ACTIVE_TIMEOUT, ACTIVE));
             }
             store(ctx).put(NETWORKS_KEY, networks);
-            store(ctx).put(SHARED_FLAG_KEY, shared);
             store(ctx).put(PARAM_INDEXES_KEY, networkParamIndexes(ctx, networks.length));
             // Snapshot each override's pre-test value on its network, then apply the test's value.
             // The captured map is stashed on the JUnit store so afterEach can undo exactly what
@@ -278,44 +263,18 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
     public void afterEach(@NonNull final ExtensionContext ctx) {
         final var networks = store(ctx).remove(NETWORKS_KEY, SubProcessNetwork[].class);
         store(ctx).remove(ANNOTATION_KEY, MultiNetworkHapiTest.class);
-        final Boolean sharedFlag = store(ctx).remove(SHARED_FLAG_KEY, Boolean.class);
-        final boolean shared = sharedFlag != null && sharedFlag;
         @SuppressWarnings("unchecked")
         final var captured =
                 (Map<SubProcessNetwork, Map<String, String>>) store(ctx).remove(CAPTURED_PROPS_KEY, Map.class);
-        // Restore each network by replaying the pre-test value of every key this test touched.
-        // Done BEFORE any termination so shared networks are clean for the next test.
+        // Restore each network by replaying the pre-test value of every key this test touched,
+        // so shared networks are clean for the next test.
         if (networks != null && captured != null) {
             restoreCapturedProperties(networks, captured);
-        }
-        if (networks != null && !shared) {
-            // Collect URIs before terminating so we can clean up stale channels.
-            // Dead channels accumulate in the static HapiClients.channelPools and cause
-            // "Connection refused" on subsequent runs because the round-robin picks them.
-            final List<String> uris = new ArrayList<>();
-            for (final var n : networks) {
-                n.nodes().forEach(node -> uris.add(node.getHost() + ":" + node.getGrpcPort()));
-            }
-            for (final var n : networks) {
-                TSS_BOOTSTRAP_HANDLED.remove(n);
-                CLPR_MTLS_CAS.remove(n.name());
-                safeTerminate(n);
-            }
-            HapiClients.removeChannelsFor(uris);
         }
         if (networks != null) {
             wipeClprPeerEndpointsCache(networks);
         }
         store(ctx).remove(PARAM_INDEXES_KEY);
-    }
-
-    private static boolean allShared(@NonNull final Network[] configs) {
-        for (final var cfg : configs) {
-            if (!SHARED_NETWORKS.containsKey(resolveName(cfg))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override
@@ -993,8 +952,8 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
     }
 
     /**
-     * Deletes {@code data/clpr/peer-endpoints.json} on every node of every network. Safe for both
-     * per-test (terminated) networks and live shared networks.
+     * Deletes {@code data/clpr/peer-endpoints.json} on every node of every network. Safe on live
+     * shared networks.
      */
     private static void wipeClprPeerEndpointsCache(@NonNull final SubProcessNetwork[] networks) {
         for (final var n : networks) {
