@@ -375,6 +375,9 @@ val prCheckNetSizeOverrides =
         "hapiTestWrapsDownload" to "3",
         "hapiTestNodeStaking" to "3",
     )
+// Caps a concurrent task's JUnit pool: the fixed strategy adds compensation threads
+// while tests block, up to parallelism + 256
+val prCheckJunitMaxPoolSizes = mapOf("hapiTestToken" to 32)
 
 val embeddedBaseTags =
     mapOf(
@@ -681,6 +684,9 @@ fun TaskContainer.registerHapiTest(
                 "junit.jupiter.execution.parallel.config.fixed.parallelism",
                 parallelismValue,
             )
+            prCheckJunitMaxPoolSizes[name]?.let {
+                systemProperty("junit.jupiter.execution.parallel.config.fixed.max-pool-size", it)
+            }
         }
         if (embeddedMode != null) {
             systemProperty("hapi.spec.embedded.mode", embeddedMode)

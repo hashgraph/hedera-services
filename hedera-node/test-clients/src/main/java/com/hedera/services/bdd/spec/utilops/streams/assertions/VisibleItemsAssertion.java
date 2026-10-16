@@ -9,7 +9,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -29,12 +28,9 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     private static final Logger log = LogManager.getLogger(VisibleItemsAssertion.class);
 
     private final HapiSpec spec;
-    private final HapiSpecRegistry registry;
     private final Set<String> allIds;
     private final VisibleItemsValidator validator;
     private final Map<String, VisibleItems> items = new ConcurrentHashMap<>();
-    // [block-assert-diag] Last unseen-id set logged, so the "waiting on" diagnostic only fires on change.
-    private List<String> lastLoggedMissing = null;
     private final boolean withLogging = true;
     private final boolean viewAll;
 
@@ -116,7 +112,6 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
             @NonNull final SkipSynthItems skipSynthItems,
             @NonNull final String... specTxnIds) {
         this.spec = requireNonNull(spec);
-        this.registry = requireNonNull(spec.registry());
         this.validator = validator;
         this.skipSynthItems = requireNonNull(skipSynthItems);
         allIds = Set.copyOf(List.of(specTxnIds));
@@ -224,29 +219,6 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
         if (!allIdsHaveItems) {
             allIdsHaveItems = allIds.stream().allMatch(items::containsKey);
         }
-        if (!allIdsHaveItems && withLogging) {
-            // [block-assert-diag] When the set of not-yet-collected ids changes, log which expected
-            // ids are still unseen and whether the spec registry can resolve them. Resolvable-but-unseen
-            // points to a stream/translation gap (the matching record never arrives); unresolvable
-            // points to a registry/wiring gap. This is the state in which the assertion times out.
-            final var missing = allIds.stream()
-                    .filter(id -> !items.containsKey(id))
-                    .sorted()
-                    .toList();
-            if (!missing.equals(lastLoggedMissing)) {
-                lastLoggedMissing = missing;
-                final var resolvable = missing.stream()
-                        .filter(id -> registry.getMaybeTxnId(id).isPresent())
-                        .sorted()
-                        .toList();
-                log.info(
-                        "[block-assert-diag] waiting on {} unseen id(s): {} (registry-resolvable of those: {}); collected: {}",
-                        missing.size(),
-                        missing,
-                        resolvable,
-                        items.keySet());
-            }
-        }
         if (allIdsHaveItems) {
             // Only re-run the validator when collected state has changed since the
             // last failed attempt — count both entries and skipped synth items,
@@ -291,7 +263,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
         final var observedId = item.getRecord().getTransactionID();
         boolean allResolvable = true;
         for (final var id : allIds) {
-            final var maybeTxnId = registry.getMaybeTxnId(id);
+            final var maybeTxnId = spec.registry().getMaybeTxnId(id);
             if (maybeTxnId.isEmpty()) {
                 allResolvable = false;
                 continue;

@@ -306,7 +306,8 @@ public class BlockNode {
 
         // The connection can close before registration completes, in which case onClose() already ran as a
         // no-op; without this undo the node holds a dead connection forever and is never selected again.
-        if (connection.currentState().isTerminal() && activeStreamingConnectionRef.compareAndSet(connection, null)) {
+        if (connection.currentState() == ConnectionState.CLOSED
+                && activeStreamingConnectionRef.compareAndSet(connection, null)) {
             logger.warn(
                     "[{}:{}] Connection ({}) closed before registration completed; "
                             + "unregistering so this block node remains selectable",

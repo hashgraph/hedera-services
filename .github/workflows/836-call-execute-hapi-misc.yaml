@@ -122,6 +122,8 @@ jobs:
 
       - name: YahCLI Subprocess Regression Tests
         id: gradle-yahcli-misc
+        # yahcli ignores the HAPI test config profile, so a profile rerun would only repeat it
+        if: ${{ inputs.hapi-test-config-profile == '' }}
         env:
           LC_ALL: en.UTF-8
           LANG: en_US.UTF-8

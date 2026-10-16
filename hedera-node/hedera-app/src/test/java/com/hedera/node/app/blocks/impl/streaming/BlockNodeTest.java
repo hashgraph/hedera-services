@@ -372,6 +372,27 @@ class BlockNodeTest extends BlockNodeCommunicationTestBase {
     }
 
     @Test
+    void testOnActive_connectionStillClosingKeepsItsCoolDown() {
+        final ConnectionId connId = new ConnectionId(NODE_ID, ConnectionType.BLOCK_STREAMING, 1);
+        final BlockNodeStreamingConnection connection = mock(BlockNodeStreamingConnection.class);
+        when(connection.configuration()).thenReturn(configuration);
+        when(connection.connectionId()).thenReturn(connId);
+        when(connection.closeReason()).thenReturn(CloseReason.CONNECTION_ERROR);
+        // close() is still running on another thread; it calls onClose() once the connection is CLOSED
+        when(connection.currentState()).thenReturn(ConnectionState.CLOSING);
+
+        node.onActive(connection);
+        node.onClose(connection);
+
+        // the registration must survive the in-progress close, or onClose() would skip the cool down
+        assertThat(nodeCoolDownTimestampRef()).hasValue(Instant.now(clock).plusSeconds(BASIC_COOL_DOWN_SECONDS));
+        assertThat(activeStreamingConnectionRef()).hasNullValue();
+        assertThat(globalActiveStreamConnectionCount).hasValue(0);
+        assertThat(localActiveStreamingConnectionCount()).hasValue(0);
+        assertThat(connectionHistories().get(connId).closeReason).isEqualTo(CloseReason.CONNECTION_ERROR);
+    }
+
+    @Test
     void testOnClose_nullConnection() {
         assertThatThrownBy(() -> node.onClose(null))
                 .isInstanceOf(NullPointerException.class)

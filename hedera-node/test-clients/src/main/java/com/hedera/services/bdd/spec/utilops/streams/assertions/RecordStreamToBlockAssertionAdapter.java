@@ -51,11 +51,9 @@ public class RecordStreamToBlockAssertionAdapter implements BlockStreamAssertion
         requireNonNull(block);
         try {
             final var units = blockSplitter.split(block);
-            int translatedRecords = 0;
             for (final var unit : units) {
                 final var records = blockTranslator.translate(unit.withBatchTransactionParts());
                 for (final var record : records) {
-                    translatedRecords++;
                     final var item = toRecordStreamItem(record);
                     if (delegate.isApplicableTo(item)) {
                         if (delegate.test(item)) {
@@ -64,13 +62,6 @@ public class RecordStreamToBlockAssertionAdapter implements BlockStreamAssertion
                     }
                 }
             }
-            // [block-assert-diag] Reached only when this block did not satisfy the assertion; logs how
-            // many records the block->record translation produced, so a translation gap (0 records)
-            // can be told apart from a match gap (records produced but none matched the expected ids).
-            log.info(
-                    "[block-assert-diag] translated {} record(s) from {} unit(s) in a block",
-                    translatedRecords,
-                    units.size());
             // Even when this block produced no (matching) records, give the delegate a chance to
             // re-check items it buffered pending transaction-ID registration and re-evaluate; without
             // this, a buffered match is stranded once the stream goes idle (writerMode=GRPC).
