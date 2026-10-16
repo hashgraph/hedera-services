@@ -27,6 +27,7 @@ import com.hedera.hapi.node.state.clpr.ClprChannelStatus;
 import com.hedera.hapi.node.state.clpr.ClprConfigUpdate;
 import com.hedera.hapi.node.state.clpr.ClprConnectorKey;
 import com.hedera.hapi.node.state.clpr.ClprControlMessage;
+import com.hedera.hapi.node.state.clpr.ClprEndpoint;
 import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.clpr.ClprMessagePayload;
 import com.hedera.hapi.node.state.clpr.ClprMessageReply;
@@ -61,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -120,6 +122,17 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
 
     @Override
     protected void doHandle(@NonNull final HandleContext context) throws HandleException {
+        // Step 1b refreshes the node-local peer endpoint cache, and with it the inbound mTLS trust set. That cache is
+        // in-memory, so the full-stack rollback of a later penalizing HandleException would not undo it; the refresh
+        // is therefore applied only once the bundle has been handled without an exception.
+        final var deferredPeerEndpoints = new DeferredPeerEndpoints();
+        handleBundle(context, deferredPeerEndpoints);
+        deferredPeerEndpoints.seedInto(channelLifecycle);
+    }
+
+    private void handleBundle(
+            @NonNull final HandleContext context, @NonNull final DeferredPeerEndpoints deferredPeerEndpoints)
+            throws HandleException {
         final var op = context.body().clprSubmitBundleOrThrow();
         final var nodeAccountId = context.body().transactionIDOrThrow().accountIDOrThrow();
         log.debug(
@@ -229,24 +242,19 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
         // Spec §4.2 Step 1b: apply new_endpoint_manifest, and Step 1c: install successor
         // trust anchor. Applied together in a single copyBuilder / put so a manifest update
         // and a trust-anchor rotation carried by the same bundle are atomic (they're already
-        // covered by the same verifyBundle call). Persisted immediately after the verifier
-        // returns — before any early-return path (EmptyBundle, maxSyncBytes, etc.) so both
-        // fields are installed even if a later check causes a penalizing rejection.
+        // covered by the same verifyBundle call). Written immediately after the verifier
+        // returns — before any early-return path (EmptyBundle, maxSyncBytes, etc.). A later
+        // penalizing rejection throws, which rolls this write back with the rest of the transaction.
         //
         // Step 1b guard rules (per ADR "Propagating Updates Through Bundle Payloads"):
-        // - Applied only when clpr.endpointManifestEnabled=true (flag-gates the acceptance
-        //   of manifest updates carried by peer verifier contracts on this ledger).
         // - Applied only when newEndpointManifest.version() strictly advances the current
         //   cached version. Absent or stale manifest → silent skip; the bundle is NOT
         //   rejected for this reason alone. Manifest updates are allowed on CLOSING /
         //   DRAINED channels (harmless, keeps the cache current for admin purposes).
         // - Entire manifest replacement; no partial merge.
         final var newEndpointManifest = bundleContent.newEndpointManifest();
-        final boolean endpointManifestEnabled =
-                context.configuration().getConfigData(ClprConfig.class).endpointManifestEnabled();
-        final boolean shouldUpdateManifest = endpointManifestEnabled
-                && newEndpointManifest != null
-                && newEndpointManifest.version() > channel.endpointManifestVersion();
+        final boolean shouldUpdateManifest =
+                newEndpointManifest != null && newEndpointManifest.version() > channel.endpointManifestVersion();
         final boolean shouldUpdateTrustAnchor = newTrustAnchor.length() > 0;
         if (shouldUpdateManifest || shouldUpdateTrustAnchor) {
             var updatedBuilder = channel.copyBuilder();
@@ -278,6 +286,10 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                 updatedBuilder = updatedBuilder
                         .endpointManifest(storedManifest)
                         .endpointManifestVersion(storedManifest.version());
+                // Refresh the orchestrator's node-local peer endpoint cache, so the inbound mTLS trust set
+                // (ClprChannelManager.knownPeerCaCertificatesByIssuer) picks up any new CA certificate —
+                // deferred until the bundle is handled without an exception (see doHandle).
+                deferredPeerEndpoints.set(channelId, truncatedEndpoints);
             }
             if (shouldUpdateTrustAnchor) {
                 log.debug(
@@ -310,6 +322,25 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             return;
         }
 
+        // Spec §4.5: sender's cached view of THIS ledger's endpoint manifest version. Handed to
+        // the runtime sync orchestrator, which compares it against our local
+        // ClprEndpointManifest.version() on the next outbound cycle to decide whether to embed a
+        // proof of our own manifest. Recorded via the lifecycle SPI as a node-local, in-memory
+        // signal — NOT consensus state — so it self-heals from the live metadata stream and needs
+        // no proto/state field.
+        //
+        // Recorded BEFORE the Step 4a NoProgress check, and deliberately kept even if a later check
+        // rejects the bundle: on an idle channel the only bundles carrying this value are no-progress
+        // pure acks, so recording it after the check would leave our manifest looking stale forever
+        // and every sync tick would push another (rejected) manifest-only bundle. See
+        // ClprVerifierAbi.metadataTuple for the value's provenance per verifier family.
+        final long peerEndpointManifestVersion = metadata.endpointManifestVersion();
+        log.debug(
+                "[ClprSubmitBundle] peer-reported cache of our manifest version: conn={} peerVersion={}",
+                channelId,
+                peerEndpointManifestVersion);
+        channelLifecycle.recordPeerObservedManifestVersion(channelId, peerEndpointManifestVersion);
+
         // --- Step 4a: NoProgress check (spec §4.2 Step 1a, §2.1.2) ---
         // Any ONE of the five Bundle Progress Criteria satisfies the check.
         final boolean hasNewMessages = !messages.isEmpty();
@@ -325,7 +356,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
         final boolean hasStateTransition = isStateTransitionProgress(metadata.status(), channel.status());
         // Criterion 5 (endpoint-manifest advancement) per spec §4.2 Step 1a and ADR
         // "Endpoint Manifest Advancement as a Bundle Progress Criterion". Reuses the Step 1b
-        // guard (flag ON + non-null + strictly advancing version) computed against the
+        // guard (non-null + strictly advancing version) computed against the
         // pre-bundle version — a bundle that only advances the manifest is still valid.
         final boolean hasManifestAdvancement = shouldUpdateManifest;
         final boolean hasProgressOtherThanAck =
@@ -398,9 +429,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
         log.debug("[ClprSubmitBundle] check passed: step5 replay-defense (idempotent)");
 
         // --- Step 6: Running hash verification (spec §4.2 step 4, §4.4) ---
-        // Non-redacted slot: fold its serialized payload into the chain.
-        // Redacted slot: adopt the running_hash carried inside the redacted payload — the
-        // original bytes are gone so we can't recompute. Trust comes from the verifier proof.
+        // Fold each slot's serialized payload into the chain.
         //
         // We fold only the NEW tail (newMessages); the replayed prefix has already been folded
         // into channel.receivedRunningHash from a prior bundle, and the peer's
@@ -422,36 +451,17 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             computedHash = ZERO_HASH;
         }
         for (final var payload : newMessages) {
-            if (payload.hasRedactedMessage()) {
-                final var messageHash = payload.redactedMessageOrThrow().messageHash();
-                log.debug(
-                        "[ClprSubmitBundle] step6 redacted slot conn={} messageHash={} beforeHash={}",
-                        channelId,
-                        shortHex(messageHash),
-                        shortHex(computedHash));
-                validateTrueOrPenalize(
-                        messageHash != null && messageHash.length() == 32,
-                        CLPR_RUNNING_HASH_MISMATCH,
-                        nodeAccountId,
-                        penaltyAmount);
-                computedHash = ClprHashUtils.computeRunningHashFromPayloadHash(computedHash, messageHash);
-                log.debug(
-                        "[ClprSubmitBundle] step6 redacted slot folded conn={} afterHash={}",
-                        channelId,
-                        shortHex(computedHash));
-            } else {
-                log.debug(
-                        "[ClprSubmitBundle] step6 folding payload conn={} kind={} beforeHash={}",
-                        channelId,
-                        payloadKind(payload),
-                        shortHex(computedHash));
-                computedHash = ClprHashUtils.computeRunningHash(computedHash, payload);
-                log.debug(
-                        "[ClprSubmitBundle] step6 folded payload conn={} kind={} afterHash={}",
-                        channelId,
-                        payloadKind(payload),
-                        shortHex(computedHash));
-            }
+            log.debug(
+                    "[ClprSubmitBundle] step6 folding payload conn={} kind={} beforeHash={}",
+                    channelId,
+                    payloadKind(payload),
+                    shortHex(computedHash));
+            computedHash = ClprHashUtils.computeRunningHash(computedHash, payload);
+            log.debug(
+                    "[ClprSubmitBundle] step6 folded payload conn={} kind={} afterHash={}",
+                    channelId,
+                    payloadKind(payload),
+                    shortHex(computedHash));
         }
         validateTrueOrPenalize(
                 computedHash.equals(metadata.sentRunningHash()),
@@ -487,22 +497,6 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
 
         var currentStatus = channel.status(); // Our current channel status
         final var peerStatus = metadata.status(); // Remote peer state (used in step 10 and step 11)
-        // Spec §4.5: sender's cached view of THIS ledger's endpoint manifest version. Handed to
-        // the runtime sync orchestrator, which compares it against our local
-        // ClprEndpointManifest.version() on the next outbound cycle to decide whether to embed a
-        // proof of our own manifest. Recorded via the lifecycle SPI as a node-local, in-memory
-        // signal — NOT consensus state — so it self-heals from the live metadata stream and needs
-        // no proto/state field. Gated by clpr.endpointManifestEnabled: when the feature is disabled
-        // we do not read or forward the peer-reported version, so no manifest-related signal leaks
-        // while the feature is off.
-        if (clprConfig.endpointManifestEnabled()) {
-            final long peerEndpointManifestVersion = metadata.endpointManifestVersion();
-            log.debug(
-                    "[ClprSubmitBundle] peer-reported cache of our manifest version: conn={} peerVersion={}",
-                    channelId,
-                    peerEndpointManifestVersion);
-            channelLifecycle.recordPeerObservedManifestVersion(channelId, peerEndpointManifestVersion);
-        }
 
         // --- Step 8: Read-only outbound queue pre-scan ---
         // Validates that replies in the bundle match our outbound Data messages in order.
@@ -560,7 +554,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
         // scan — they have no matching acked DATA slot. Two legitimate cases remain:
         //   1. The reply targets a one-way outbound slot (control or messageReply) that still exists.
         //      One-way slots never require a reply, but the peer may optionally acknowledge them —
-        //      e.g. when a peer acks a CHANNEL_CLOSED reply with its own messageReply.
+        //      e.g. when a peer acks one of our replies with its own messageReply.
         //   2. The slot was a one-way slot acked and deleted by Pass 2 within THIS bundle, so
         //      getMessage returns null. We identify this case by checking that the target ID falls
         //      within the range Pass 2 just processed: (oldAckedMessageId, newAckedMessageId].
@@ -612,8 +606,8 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
 
         // --- Pass 2: Mutations begin ---
 
-        // Delete acked one-way outbound messages (control, reply). Data and redacted-Data
-        // slots are deleted later when their inbound reply is processed in Step 10.
+        // Delete acked one-way outbound messages (control, reply). Data slots are deleted later when their inbound
+        // reply is processed in Step 10.
         for (long id = oldAckedMessageId + 1; id <= newAckedMessageId; id++) {
             final var msg = messageQueueStore.getMessage(channelId, id);
             if (msg == null) {
@@ -661,6 +655,15 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             currentStatus = ClprChannelStatus.CLOSING;
         }
 
+        // Nested application callbacks read the channel through the service API. Publish these
+        // changes before dispatch so they cannot send after closing or enqueue this config again.
+        // Use the latest queue state, including the config message just enqueued above.
+        channelStore.put(requireNonNull(channelStore.getChannel(channelId))
+                .copyBuilder()
+                .status(currentStatus)
+                .lastConfigTimestamp(lastConfigTimestamp)
+                .build());
+
         var peerConfigTimestamp = channel.peerConfigTimestamp();
         var peerThrottles = channel.peerThrottles();
         var receivedMessageId = channel.receivedMessageId();
@@ -691,11 +694,10 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                         final var peerConfig = control.configUpdateOrThrow().configuration();
                         log.debug(
                                 "[ClprSubmitBundle] step10 CONTROL configUpdate conn={} receivedMsgId={} "
-                                        + "peerTimestamp={} endpoints={}",
+                                        + "peerTimestamp={}",
                                 channelId,
                                 receivedMessageId,
-                                peerConfig == null ? null : peerConfig.timestamp(),
-                                peerConfig == null ? 0 : peerConfig.endpoints().size());
+                                peerConfig == null ? null : peerConfig.timestamp());
                         if (peerConfig != null) {
                             validatePeerConfig(
                                     peerConfig, ledgerConfig, peerConfigTimestamp, nodeAccountId, penaltyAmount);
@@ -997,23 +999,14 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // It should never be the case that originalMsg, its payload, or its inner message are EVER null.
                     // That should not have been allowed to be enqueued in this way. If something went wrong, we should
                     // log a stern warning and then just ignore the original message and the response.
-                    //
-                    // The originating slot may be either an unredacted Data Message OR a ClprRedactedMessage that
-                    // preserved the sender when the admin redacted before delivery. Both paths
-                    // need the sender to dispatch the response back to the originating application; only the
-                    // unredacted Data Message path can slash the source-side connector (redacted slots don't carry
-                    // the connector id — and redacting an admin-approved outbound shouldn't be a slashing event).
                     final var originalPayload =
                             originalMsg == null ? null : originalMsg.hasPayload() ? originalMsg.payload() : null;
                     final var origDataMsg = originalPayload == null
                             ? null
                             : originalPayload.hasMessage() ? originalPayload.message() : null;
-                    final var origRedacted = originalPayload == null
-                            ? null
-                            : originalPayload.hasRedactedMessage() ? originalPayload.redactedMessage() : null;
-                    if (origDataMsg == null && origRedacted == null) {
+                    if (origDataMsg == null) {
                         log.warn(
-                                "[ClprSubmitBundle] step10 MESSAGE_REPLY has no original DATA/REDACTED message "
+                                "[ClprSubmitBundle] step10 MESSAGE_REPLY has no original DATA message "
                                         + "conn={} replyTargetId={} originalPayloadKind={}; skipping app callback",
                                 channelId,
                                 replyTargetId,
@@ -1024,7 +1017,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // Deliver response to the originating application (best-effort). The response might even be
                     // CONNECTOR_NOT_FOUND or some other error, or that the remote side is CLOSED. Whatever it is,
                     // we must inform the originating application so it can do proper bookkeeping.
-                    final var senderAddress = origDataMsg != null ? origDataMsg.sender() : origRedacted.sender();
+                    final var senderAddress = origDataMsg.sender();
                     if (senderAddress.length() > 0) {
                         final var callData = encodeOnClprResponse(
                                 channelId, replyTargetId, reply.status(), reply.messageReplyData());
@@ -1083,23 +1076,19 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
 
                     // Source-side slashing on failure responses. That is, if we sent a message to the remote ledger
                     // and it replied indicating the connector on our side was at fault, then we will punish the
-                    // connector on our side accordingly. Skipped when the originating slot was redacted: the
-                    // connector id isn't preserved in ClprRedactedMessage, and an admin-approved redaction
-                    // shouldn't retroactively punish the connector for what was originally an authorized send.
-                    if (origDataMsg == null) {
-                        continue;
-                    }
+                    // connector on our side accordingly.
                     final var replyStatus = reply.status();
                     final var sourceConnectorKey = new ClprConnectorKey(channelId, origDataMsg.connectorId());
-                    final var sourceConnector = connectorStore.getConnector(sourceConnectorKey);
+                    var sourceConnector = connectorStore.getConnector(sourceConnectorKey);
                     if (sourceConnector != null) {
                         // Decrement in-flight counter — this reply is a terminal event for the DATA message.
                         final long current = sourceConnector.inFlightMessageCount();
                         if (current > 0) {
-                            connectorStore.put(sourceConnector
+                            sourceConnector = sourceConnector
                                     .copyBuilder()
                                     .inFlightMessageCount(current - 1)
-                                    .build());
+                                    .build();
+                            connectorStore.put(sourceConnector);
                             log.debug(
                                     "[ClprSubmitBundle] step10 MESSAGE_REPLY decremented source connector in-flight "
                                             + "conn={} connectorId={} {}->{}",
@@ -1138,15 +1127,6 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                                 origDataMsg.connectorId(),
                                 replyTargetId);
                     }
-                } else if (payload.hasRedactedMessage()) {
-                    // Redacted slot — all oneof fields unset. The verifier attested to this slot existing,
-                    // so we must acknowledge it. Enqueue a REDACTED reply so the remote peer knows we saw
-                    // the slot but cannot act on it (the contents were intentionally withheld).
-                    log.debug(
-                            "[ClprSubmitBundle] step10 REDACTED conn={} receivedMsgId={} -> REDACTED reply",
-                            channelId,
-                            receivedMessageId);
-                    outbound.enqueueReply(receivedMessageId, ClprMessageReplyStatus.REDACTED, Bytes.EMPTY);
                 }
                 // Empty-oneof payloads with no variant set are not expected; the hash check
                 // in Step 6 already rejected them via the chain mismatch path.
@@ -1337,7 +1317,7 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
     /**
      * Matches the bundle's replies, in order, against our outbound messages the peer has received,
      * {@code oldAckedMessageId + 1 .. peerReceivedMessageId}. One-way slots (control messages and our own replies) need
-     * no reply. Each Data slot, redacted or not, takes the bundle's next reply, which must name it. Running out of
+     * no reply. Each Data slot takes the bundle's next reply, which must name it. Running out of
      * replies is not a violation: the ack stops just before that Data slot, and its reply arrives in a later bundle.
      *
      * <p>Advances {@code remainingMessages} past every reply it consumed, leaving it at the trailing messages.
@@ -1355,8 +1335,6 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             validateTrue(msg != null, CLPR_INTERNAL_STATE_CORRUPTION);
             final var msgPayload = msg.payload();
             // Control and MessageReply slots are one-way — no inbound reply expected.
-            // Redacted slots WERE originally Data, so the peer ships a REDACTED reply for them;
-            // they participate in reply matching just like normal Data.
             if (msgPayload != null && (msgPayload.hasControl() || msgPayload.hasMessageReply())) {
                 continue;
             }
@@ -1454,8 +1432,6 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             return "MESSAGE";
         } else if (payload.hasMessageReply()) {
             return "MESSAGE_REPLY";
-        } else if (payload.hasRedactedMessage()) {
-            return "REDACTED";
         } else {
             return "EMPTY";
         }
@@ -1487,8 +1463,6 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     + reply.messageReplyData().length()
                     + " replyData="
                     + shortHex(reply.messageReplyData());
-        } else if (payload.hasRedactedMessage()) {
-            return "messageHash=" + shortHex(payload.redactedMessageOrThrow().messageHash());
         } else if (payload.hasControl()) {
             final var control = payload.controlOrThrow();
             if (!control.hasConfigUpdate()) {
@@ -1654,6 +1628,29 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * A Step 1b peer endpoint cache refresh, held until the bundle has been handled without an exception so the
+     * node-local cache only ever mirrors a manifest that is actually committed (see {@link #doHandle}).
+     */
+    private static final class DeferredPeerEndpoints {
+        @Nullable
+        private Bytes channelId;
+
+        @Nullable
+        private List<ClprEndpoint> endpoints;
+
+        void set(@NonNull final Bytes channelId, @NonNull final List<ClprEndpoint> endpoints) {
+            this.channelId = requireNonNull(channelId);
+            this.endpoints = requireNonNull(endpoints);
+        }
+
+        void seedInto(@NonNull final ClprChannelLifecycle channelLifecycle) {
+            if (channelId != null && endpoints != null) {
+                channelLifecycle.seedPeerEndpoints(channelId, endpoints);
+            }
         }
     }
 
