@@ -74,7 +74,7 @@ public class LearningSynchronizer {
                 originalVirtualMap.getMetadata().getLastLeafPath());
 
         final VirtualMapConfig virtualMapConfig = originalVirtualMap.getVirtualMapConfig();
-        final VirtualMapLearner vmapLearner = new VirtualMapLearner(originalVirtualMap);
+        final VirtualMapLearner vmapLearner = new VirtualMapLearner(originalVirtualMap, syncConfig.flushInterval());
 
         return switch (virtualMapConfig.reconnectMode()) {
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM ->
@@ -186,6 +186,10 @@ public class LearningSynchronizer {
             VirtualMap syncedVirtualMap = exchanger.onSuccessfulComplete();
             logger.info(RECONNECT.getMarker(), "learner is done synchronizing");
             logger.info(RECONNECT.getMarker(), syncMetrics::toString);
+            final String traversalStatistics = exchanger.getTraversalStatistics();
+            if (!traversalStatistics.isEmpty()) {
+                logger.info(RECONNECT.getMarker(), "Traversal statistics: {}", traversalStatistics);
+            }
             return syncedVirtualMap;
         } catch (final Throwable t) {
             logger.info(RECONNECT.getMarker(), "Caught exception while completing synchronization", t);
