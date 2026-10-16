@@ -35,6 +35,7 @@ jobs:
   extract-jdk-version:
     name: Extract Java Version
     uses: ./.github/workflows/854-call-extract-jdk-version.yaml
+    if: ${{ github.event.repository.visibility == 'public' }}
     with:
       ref: ${{ inputs.ref || github.ref }}
     secrets:
@@ -46,6 +47,7 @@ jobs:
   jmh:
     name: JMH Benchmarks
     runs-on: hl-cn-benchmark-lin
+    if: ${{ github.event.repository.visibility == 'public' }}
     timeout-minutes: 95
     needs:
       - extract-jdk-version
