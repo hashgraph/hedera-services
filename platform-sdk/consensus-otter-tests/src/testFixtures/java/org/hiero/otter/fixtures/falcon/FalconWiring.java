@@ -24,6 +24,8 @@ import org.hiero.consensus.event.creator.impl.EventCreationManager;
 import org.hiero.consensus.event.creator.impl.EventCreator;
 import org.hiero.consensus.event.creator.impl.tipset.TipsetEventCreator;
 import org.hiero.consensus.event.intake.config.EventIntakeWiringConfig;
+import org.hiero.consensus.event.intake.impl.deduplication.EventDeduplicator;
+import org.hiero.consensus.event.intake.impl.deduplication.StandardEventDeduplicator;
 import org.hiero.consensus.fakes.noop.NoOpMetrics;
 import org.hiero.consensus.hashgraph.FreezePeriodChecker;
 import org.hiero.consensus.hashgraph.config.HashgraphWiringConfig;
@@ -48,16 +50,20 @@ import org.hiero.consensus.wiring.framework.wires.output.OutputWire;
 import org.hiero.otter.fixtures.internal.AbstractTimeManager.TimeTickReceiver;
 
 /**
- * A wiring configuration for a stripped down consensus layer that is suitable for testing. It wires together the event intake, orphan buffer, consensus engine, and event creation manager components.
+ * A wiring configuration for a stripped down consensus layer that is suitable for testing. It
+ * wires together the event deduplicator, orphan buffer, consensus engine, and event creation
+ * manager components.
  */
 public class FalconWiring implements TimeTickReceiver {
 
     private static final Bytes DEFAULT_SIGNATURE = Bytes.EMPTY;
 
     private final DeterministicWiringModel model;
+    private final ComponentWiring<EventDeduplicator, PlatformEvent> eventDeduplicatorWiring;
     private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, ConsensusEngineOutput> consensusEngineWiring;
     private final ComponentWiring<EventCreationManager, PlatformEvent> eventCreationManagerWiring;
+    private final InputWire<PlatformEvent> receivedGossipEventsInputWire;
     private final OutputWire<EventWindow> eventWindowOutputWire;
 
     /**
@@ -88,6 +94,13 @@ public class FalconWiring implements TimeTickReceiver {
         final EventIntakeWiringConfig eventIntakeConfig = configuration.getConfigData(EventIntakeWiringConfig.class);
 
         final IntakeEventCounter intakeEventCounter = new NoOpIntakeEventCounter();
+
+        final EventDeduplicator eventDeduplicator = new StandardEventDeduplicator(metrics, intakeEventCounter);
+        eventDeduplicatorWiring =
+                new ComponentWiring<>(model, EventDeduplicator.class, eventIntakeConfig.eventDeduplicator());
+        eventDeduplicatorWiring.bind(eventDeduplicator);
+        receivedGossipEventsInputWire = eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent);
+
         final OrphanBuffer orphanBuffer = new DefaultOrphanBuffer(metrics, intakeEventCounter);
         orphanBufferWiring = new ComponentWiring<>(model, OrphanBuffer.class, eventIntakeConfig.orphanBuffer());
         orphanBufferWiring.bind(orphanBuffer);
@@ -113,6 +126,8 @@ public class FalconWiring implements TimeTickReceiver {
                 new ComponentWiring<>(model, EventCreationManager.class, eventCreationConfig.eventCreationManager());
         eventCreationManagerWiring.bind(eventCreationManager);
 
+        eventDeduplicatorWiring.getOutputWire().solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
+
         final OutputWire<PlatformEvent> orphanBufferOutput = orphanBufferWiring.getSplitOutput();
         orphanBufferOutput.solderTo(consensusEngineWiring.getInputWire(ConsensusEngine::addEvent));
         orphanBufferOutput.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::registerEvent));
@@ -123,6 +138,7 @@ public class FalconWiring implements TimeTickReceiver {
                 .<ConsensusRound>buildSplitter("ConsensusRoundSplitter", "consensus rounds")
                 .buildTransformer("EventWindow", "consensus round", ConsensusRound::getEventWindow);
 
+        eventWindowOutputWire.solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::setEventWindow));
         eventWindowOutputWire.solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::setEventWindow));
         eventWindowOutputWire.solderTo(eventCreationManagerWiring.getInputWire(EventCreationManager::setEventWindow));
 
@@ -132,7 +148,9 @@ public class FalconWiring implements TimeTickReceiver {
                 .solderTo(
                         eventCreationManagerWiring.getInputWire(EventCreationManager::maybeCreateEvent, "heartbeat"),
                         OFFER);
-        eventCreationManagerWiring.getOutputWire().solderTo(orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent));
+        eventCreationManagerWiring
+                .getOutputWire()
+                .solderTo(eventDeduplicatorWiring.getInputWire(EventDeduplicator::handleEvent));
 
         consensusEngineWiring.getInputWire(ConsensusEngine::updatePlatformStatus);
         eventCreationManagerWiring.getInputWire(EventCreationManager::updatePlatformStatus);
@@ -145,17 +163,18 @@ public class FalconWiring implements TimeTickReceiver {
      */
     @NonNull
     public InputWire<PlatformEvent> receivedGossipEventsInputWire() {
-        return orphanBufferWiring.getInputWire(OrphanBuffer::handleEvent);
+        return receivedGossipEventsInputWire;
     }
 
     /**
-     * Get the output wire that provides created self-events for gossiping.
+     * Get the output wire that provides the events to gossip: every event that leaves the orphan buffer, self-created
+     * and received alike.
      *
      * @return the output wire for sent gossip events
      */
     @NonNull
     public OutputWire<PlatformEvent> sentGossipEventsOutputWire() {
-        return eventCreationManagerWiring.getOutputWire();
+        return orphanBufferWiring.getSplitOutput();
     }
 
     /**
