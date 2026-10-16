@@ -29,6 +29,8 @@ public class TestTags {
     public static final String WRAPS = "WRAPS";
     public static final String WRAPS_DOWNLOAD = "WRAPS_DOWNLOAD";
     public static final String CUTOVER = "CUTOVER";
+    /** Tags tests of block hashing under the configured {@code blockStream.digestType}. */
+    public static final String BLOCK_HASHING = "BLOCK_HASHING";
     /**
      * Tests that stake a weight-changing amount to a node (directly or via a funded staked account),
      * which forces a TSS roster handoff at a stake-period boundary. A real block node cannot verify

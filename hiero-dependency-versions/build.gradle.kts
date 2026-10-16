@@ -20,7 +20,7 @@ val hederaCryptographySecurity = "3.20.0"
 
 val helidon = "4.5.0"
 val jackson = "2.22.2"
-val junit5 = "5.10.3!!" // no updates beyond 5.10.3 until #17125 is resolved
+val junit5 = "6.1.3"
 val log4j = "2.26.0"
 val mockito = "5.23.0"
 val pbj = pluginVersions.version("com.hedera.pbj.pbj-compiler")

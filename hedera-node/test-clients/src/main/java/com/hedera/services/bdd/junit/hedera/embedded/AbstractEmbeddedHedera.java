@@ -173,8 +173,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             // Trigger creation of system entities
             handleRoundWith(mockStateSignatureTxn());
         }
-        // Start only after genesis, or the platform handles node-submitted transactions (e.g. a CLPR endpoint
-        // publication) concurrently with the genesis round
+        // Start the platform only after the genesis round, since a transaction submitted during it (e.g., a CLPR
+        // endpoint publication) would otherwise be handled in a round concurrent with it
         fakePlatform().start();
     }
 

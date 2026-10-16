@@ -128,6 +128,7 @@ val prCheckTags =
         "hapiTestAtomicBatchSerial" to "(ATOMIC_BATCH&SERIAL)",
         "hapiTestStateThrottling" to "(STATE_THROTTLING&SERIAL)",
         "hapiTestClpr" to "CLPR",
+        "hapiTestBlockHashingSha256" to "BLOCK_HASHING|STREAM_VALIDATION",
         "hapiTestClprMultinetwork" to "MULTINETWORK",
         "hapiTestNodeStaking" to "(NODE_STAKING)&!(SERIAL)",
         "hapiTestNodeStakingSerial" to "(NODE_STAKING&SERIAL)",
@@ -177,9 +178,10 @@ val prCheckStartPorts =
         "hapiTestAtomicBatchSerial" to "29200",
         "hapiTestSmartContractSerial" to "29400",
         "hapiTestClpr" to "29600",
-        "hapiTestGenesisSubProcess" to "29800",
-        "hapiTestNodeStaking" to "30000",
-        "hapiTestTimeConsumingSerial" to "30200",
+        "hapiTestBlockHashingSha256" to "29800",
+        "hapiTestGenesisSubProcess" to "30000",
+        "hapiTestNodeStaking" to "30200",
+        "hapiTestTimeConsumingSerial" to "30400",
     )
 val prCheckWrapsEnabledFromGenesis = setOf("hapiTestWraps", "hapiTestWrapsDownload")
 val prCheckPropOverrides =
@@ -233,6 +235,8 @@ val prCheckPropOverrides =
             "hapiTestClprEmbedded" to "tss.forceMockSignatures=true",
             "hapiTestClprMultinetwork" to
                 "tss.hintsEnabled=true,tss.historyEnabled=true,tss.wrapsEnabled=true,tss.forceMockSignatures=false",
+            "hapiTestBlockHashingSha256" to
+                "blockStream.digestType=SHA_256,blockStream.streamWrappedRecordBlocks=true,block.stateproof.verification.enabled=true,hedera.transaction.maximumPermissibleUnhealthySeconds=5",
             "hapiTestNodeStaking" to
                 "blockStream.writerMode=FILE,nodes.nodeRewardsEnabled=false,quiescence.enabled=true",
             "hapiTestNodeStakingSerial" to
@@ -347,11 +351,20 @@ val prCheckWithoutStreamAndLogValidation =
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
+// The CLPR multi-network suites (@Tag(MULTINETWORK)) cold-bootstrap WRAPS, so they read the
+// canonical dev-local artifacts dir (version-agnostic name), which
+// ClprWrapsProvingKeyInstaller.ensureProvisioned fills from the sibling wraps*.tar.gz. Only
+// hapiTestClprMultinetwork (the CI selector) is mapped; a bare testSubprocess run must pass
+// -Dhapi.spec.tssLibWrapsArtifactsPath explicitly. Plain tag selectors like hapiTestCrypto stay
+// out of the map, so they never get the path.
+val canonicalWrapsArtifactsPath =
+    layout.projectDirectory.dir("tss-startup-assets/wraps").asFile.absolutePath
 val prCheckTssLibWrapsArtifactsPaths =
     mapOf(
         "hapiTestWraps" to tssLibWrapsArtifactsPath,
         "hapiTestCutover" to tssLibWrapsArtifactsPath,
         "hapiTestWrapsDownload" to "data/keys",
+        "hapiTestClprMultinetwork" to canonicalWrapsArtifactsPath,
     )
 // Use to override the default network size for a specific test task
 val prCheckNetSizeOverrides =
@@ -373,6 +386,7 @@ val prCheckNetSizeOverrides =
         "hapiTestWraps" to "3",
         "hapiTestCutover" to "3",
         "hapiTestWrapsDownload" to "3",
+        "hapiTestBlockHashingSha256" to "3",
         "hapiTestNodeStaking" to "3",
     )
 // Caps a concurrent task's JUnit pool: the fixed strategy adds compensation threads
@@ -621,11 +635,23 @@ fun TaskContainer.registerHapiTest(
                 .systemProperty("hapi.spec.quiet.mode")
                 .getOrElse(if (ciTagExpression.isNotBlank()) "true" else "false"),
         )
-        if (prCheckTssLibWrapsArtifactsPaths.containsKey(name)) {
-            systemProperty(
-                "hapi.spec.tssLibWrapsArtifactsPath",
-                prCheckTssLibWrapsArtifactsPaths.getValue(name),
-            )
+        // WRAPS artifacts path for the forked test JVM, forwarded only to the WRAPS-needing tasks
+        // (via prCheckTssLibWrapsArtifactsPaths), not every task:
+        //   1. an explicit -Dhapi.spec.tssLibWrapsArtifactsPath=<dir> on the Gradle command line
+        //      (or systemProp.… in ~/.gradle/gradle.properties) wins;
+        //   2. else the task's mapped value — hapiTestWraps/Cutover (the TSS_LIB env dir),
+        //      hapiTestWrapsDownload ("data/keys"), or hapiTestClprMultinetwork (the canonical
+        //      tss-startup-assets/wraps dir).
+        val explicitWrapsPath =
+            System.getProperty("hapi.spec.tssLibWrapsArtifactsPath")?.takeIf { it.isNotBlank() }
+        when {
+            explicitWrapsPath != null ->
+                systemProperty("hapi.spec.tssLibWrapsArtifactsPath", explicitWrapsPath)
+            prCheckTssLibWrapsArtifactsPaths.containsKey(name) ->
+                systemProperty(
+                    "hapi.spec.tssLibWrapsArtifactsPath",
+                    prCheckTssLibWrapsArtifactsPaths.getValue(name),
+                )
         }
 
         // In-process (embedded) networks have no block node and only fake TSS services: FILE
