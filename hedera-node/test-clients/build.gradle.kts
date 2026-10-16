@@ -253,11 +253,20 @@ val prCheckWithoutStreamAndLogValidation =
 // Path to the extracted WRAPS proving-key artifacts (decider_pp.bin, decider_vp.bin,
 // nova_pp.bin, nova_vp.bin); blank disables WRAPS proof assertions in the ceremony tests
 val tssLibWrapsArtifactsPath = System.getenv("TSS_LIB_WRAPS_ARTIFACTS_PATH") ?: ""
+// The CLPR multi-network suites (@Tag(MULTINETWORK)) cold-bootstrap WRAPS, so they read the
+// canonical dev-local artifacts dir (version-agnostic name), which
+// ClprWrapsProvingKeyInstaller.ensureProvisioned fills from the sibling wraps*.tar.gz. Only
+// hapiTestClprMultinetwork (the CI selector) is mapped; a bare testSubprocess run must pass
+// -Dhapi.spec.tssLibWrapsArtifactsPath explicitly. Plain tag selectors like hapiTestCrypto stay
+// out of the map, so they never get the path.
+val canonicalWrapsArtifactsPath =
+    layout.projectDirectory.dir("tss-startup-assets/wraps").asFile.absolutePath
 val prCheckTssLibWrapsArtifactsPaths =
     mapOf(
         "hapiTestWraps" to tssLibWrapsArtifactsPath,
         "hapiTestCutover" to tssLibWrapsArtifactsPath,
         "hapiTestWrapsDownload" to "data/keys",
+        "hapiTestClprMultinetwork" to canonicalWrapsArtifactsPath,
     )
 // Use to override the default network size for a specific test task
 val prCheckNetSizeOverrides =
@@ -511,11 +520,23 @@ fun TaskContainer.registerHapiTest(
                 .systemProperty("hapi.spec.quiet.mode")
                 .getOrElse(if (ciTagExpression.isNotBlank()) "true" else "false"),
         )
-        if (prCheckTssLibWrapsArtifactsPaths.containsKey(name)) {
-            systemProperty(
-                "hapi.spec.tssLibWrapsArtifactsPath",
-                prCheckTssLibWrapsArtifactsPaths.getValue(name),
-            )
+        // WRAPS artifacts path for the forked test JVM, forwarded only to the WRAPS-needing tasks
+        // (via prCheckTssLibWrapsArtifactsPaths), not every task:
+        //   1. an explicit -Dhapi.spec.tssLibWrapsArtifactsPath=<dir> on the Gradle command line
+        //      (or systemProp.… in ~/.gradle/gradle.properties) wins;
+        //   2. else the task's mapped value — hapiTestWraps/Cutover (the TSS_LIB env dir),
+        //      hapiTestWrapsDownload ("data/keys"), or hapiTestClprMultinetwork (the canonical
+        //      tss-startup-assets/wraps dir).
+        val explicitWrapsPath =
+            System.getProperty("hapi.spec.tssLibWrapsArtifactsPath")?.takeIf { it.isNotBlank() }
+        when {
+            explicitWrapsPath != null ->
+                systemProperty("hapi.spec.tssLibWrapsArtifactsPath", explicitWrapsPath)
+            prCheckTssLibWrapsArtifactsPaths.containsKey(name) ->
+                systemProperty(
+                    "hapi.spec.tssLibWrapsArtifactsPath",
+                    prCheckTssLibWrapsArtifactsPaths.getValue(name),
+                )
         }
         // Pass a system property "KEY=VALUE" to the test JVM via "-PsysProp.KEY=VALUE"
         providers.gradlePropertiesPrefixedBy("sysProp.").get().forEach { (k, v) ->
