@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.services.bdd.junit.extensions.MultiNetworkExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
@@ -77,7 +78,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.rfc8032.Ed25519;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -1561,28 +1561,24 @@ public abstract class HieroToHieroBase implements LifecycleTest {
             Ed25519.generatePublicKey(TEST_PRIVATE_KEY, 0, publicKey, 0);
 
             final var seed = "hiero-e2e-test-conn-v1-" + INSTANCE_COUNTER.incrementAndGet();
-            channelId = keccak256(seed.getBytes(StandardCharsets.UTF_8));
+            channelId = MiscCryptoUtils.keccak256DigestOf(seed.getBytes(StandardCharsets.UTF_8));
 
             // Channel commitment: keccak256(channelId || pubKey)
-            channelCommitment = keccak256(concat(channelId, publicKey));
+            channelCommitment = MiscCryptoUtils.keccak256DigestOf(concat(channelId, publicKey));
 
             // Channel signature: Ed25519 over keccak256(channelId)
-            final var connSigMsg = keccak256(channelId);
+            final var connSigMsg = MiscCryptoUtils.keccak256DigestOf(channelId);
             Ed25519.sign(TEST_PRIVATE_KEY, 0, connSigMsg, 0, connSigMsg.length, channelSignature, 0);
 
             // connectorId = keccak256(channelId || pubKey || connectorSalt)
-            connectorId = keccak256(concat(channelId, concat(publicKey, connectorSalt)));
+            connectorId = MiscCryptoUtils.keccak256DigestOf(concat(channelId, concat(publicKey, connectorSalt)));
 
             // Connector commitment: keccak256(connectorId || pubKey)
-            connectorCommitment = keccak256(concat(connectorId, publicKey));
+            connectorCommitment = MiscCryptoUtils.keccak256DigestOf(concat(connectorId, publicKey));
 
             // Connector signature: Ed25519 over keccak256(connectorId || CLPR_SERVICE_ADDRESS)
-            final var connectorSigMsg = keccak256(concat(connectorId, CLPR_SERVICE_ADDRESS));
+            final var connectorSigMsg = MiscCryptoUtils.keccak256DigestOf(concat(connectorId, CLPR_SERVICE_ADDRESS));
             Ed25519.sign(TEST_PRIVATE_KEY, 0, connectorSigMsg, 0, connectorSigMsg.length, connectorSignature, 0);
-        }
-
-        private static byte[] keccak256(final byte[] input) {
-            return new Keccak.Digest256().digest(input);
         }
 
         private static byte[] concat(final byte[] a, final byte[] b) {
