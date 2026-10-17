@@ -27,7 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * GHSA-q776-f4m7-g642 regression tests for updateTokenKeys at 0x167. Each "Rejected" test asserts the decoder
- * refuses (null body -> revert) instead of dispatching an update that changes nothing and reports SUCCESS.
+ * refuses (null body, which the call path turns into an exceptional halt) instead of dispatching an update that
+ * changes nothing and reports SUCCESS.
  */
 @ExtendWith(MockitoExtension.class)
 class UpdateKeysDecoderTest {
@@ -52,16 +53,31 @@ class UpdateKeysDecoderTest {
         lenient()
                 .when(addressIdConverter.convert(ZERO_ADDRESS))
                 .thenReturn(AccountID.newBuilder().accountNum(0).build());
-        lenient().when(addressIdConverter.convert(FUNGIBLE_TOKEN_HEADLONG_ADDRESS)).thenReturn(OWNER_ID);
+        lenient()
+                .when(addressIdConverter.convert(FUNGIBLE_TOKEN_HEADLONG_ADDRESS))
+                .thenReturn(OWNER_ID);
     }
 
     private static Tuple tokenKey(final BigInteger keyType) {
         return Tuple.of(
-                keyType, Tuple.of(Boolean.FALSE, FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
+                keyType,
+                Tuple.of(Boolean.FALSE, FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
     }
 
     private static Tuple tokenKey(final long keyType) {
         return tokenKey(BigInteger.valueOf(keyType));
+    }
+
+    private static Tuple inheritAccountKey(final long keyType) {
+        return Tuple.of(
+                BigInteger.valueOf(keyType),
+                Tuple.of(Boolean.TRUE, ZERO_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
+    }
+
+    private static Tuple emptyKeyValue(final long keyType) {
+        return Tuple.of(
+                BigInteger.valueOf(keyType),
+                Tuple.of(Boolean.FALSE, ZERO_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
     }
 
     private TransactionBody decode(final Tuple... tokenKeys) {
@@ -127,5 +143,26 @@ class UpdateKeysDecoderTest {
         assertNotNull(op.supplyKey());
         assertNotNull(op.feeScheduleKey());
         assertNotNull(op.pauseKey());
+    }
+
+    @Test
+    void inheritAccountKeyOnlyEntryIsRejected() {
+        // inheritAccountKey is only resolved for token creation; on an update it would yield a key-less no-op
+        assertNull(decode(inheritAccountKey(0x01)));
+    }
+
+    @Test
+    void inheritAccountKeyAlongsideValidEntryIsRejected() {
+        assertNull(decode(tokenKey(0x01), inheritAccountKey(0x02)));
+    }
+
+    @Test
+    void entryWithNoKeyMaterialDoesNotProduceAnUpdate() {
+        // either rejected (null) or refused by the decoder; never a body that would dispatch an empty update
+        try {
+            assertNull(decode(emptyKeyValue(0x01)));
+        } catch (final IllegalArgumentException expected) {
+            // refused by the decoder
+        }
     }
 }

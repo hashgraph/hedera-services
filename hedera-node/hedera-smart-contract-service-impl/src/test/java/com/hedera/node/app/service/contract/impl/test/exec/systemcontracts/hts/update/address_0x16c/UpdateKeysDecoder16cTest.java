@@ -52,7 +52,9 @@ class UpdateKeysDecoder16cTest {
         lenient()
                 .when(addressIdConverter.convert(ZERO_ADDRESS))
                 .thenReturn(AccountID.newBuilder().accountNum(0).build());
-        lenient().when(addressIdConverter.convert(FUNGIBLE_TOKEN_HEADLONG_ADDRESS)).thenReturn(OWNER_ID);
+        lenient()
+                .when(addressIdConverter.convert(FUNGIBLE_TOKEN_HEADLONG_ADDRESS))
+                .thenReturn(OWNER_ID);
     }
 
     private static Tuple tokenKey(final long keyType) {
@@ -61,9 +63,21 @@ class UpdateKeysDecoder16cTest {
                 Tuple.of(Boolean.FALSE, FUNGIBLE_TOKEN_HEADLONG_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
     }
 
+    private static Tuple inheritAccountKey(final long keyType) {
+        return Tuple.of(
+                BigInteger.valueOf(keyType),
+                Tuple.of(Boolean.TRUE, ZERO_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
+    }
+
+    private static Tuple emptyKeyValue(final long keyType) {
+        return Tuple.of(
+                BigInteger.valueOf(keyType),
+                Tuple.of(Boolean.FALSE, ZERO_ADDRESS, new byte[0], new byte[0], ZERO_ADDRESS));
+    }
+
     private TransactionBody decode(final Tuple... tokenKeys) {
-        final var encoded = Bytes.wrapByteBuffer(
-                UpdateKeysTranslator.TOKEN_UPDATE_KEYS_16C.encodeCallWithArgs(FUNGIBLE_TOKEN_HEADLONG_ADDRESS, tokenKeys));
+        final var encoded = Bytes.wrapByteBuffer(UpdateKeysTranslator.TOKEN_UPDATE_KEYS_16C.encodeCallWithArgs(
+                FUNGIBLE_TOKEN_HEADLONG_ADDRESS, tokenKeys));
         lenient().when(attempt.input()).thenReturn(encoded);
         return subject.decodeTokenUpdateKeys(attempt);
     }
@@ -93,5 +107,26 @@ class UpdateKeysDecoder16cTest {
         final var body = decode(tokenKey(0x80));
         assertNotNull(body);
         assertNotNull(body.tokenUpdateOrThrow().metadataKey());
+    }
+
+    @Test
+    void inheritAccountKeyOnlyEntryIsRejectedAt0x16c() {
+        // inheritAccountKey is only resolved for token creation; on an update it would yield a key-less no-op
+        assertNull(decode(inheritAccountKey(0x01)));
+    }
+
+    @Test
+    void inheritAccountKeyAlongsideValidEntryIsRejectedAt0x16c() {
+        assertNull(decode(tokenKey(0x01), inheritAccountKey(0x02)));
+    }
+
+    @Test
+    void entryWithNoKeyMaterialDoesNotProduceAnUpdateAt0x16c() {
+        // either rejected (null) or refused by the decoder; never a body that would dispatch an empty update
+        try {
+            assertNull(decode(emptyKeyValue(0x01)));
+        } catch (final IllegalArgumentException expected) {
+            // refused by the decoder
+        }
     }
 }

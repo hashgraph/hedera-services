@@ -166,7 +166,10 @@ public abstract class UpdateCommonDecoder {
 
     /**
      * True iff the raw key list is non-empty, every keyType is a positive value within {@code supportedMask}
-     * (checked on the full uint256, before any int narrowing), and no two entries address the same key slot.
+     * (checked on the full uint256, before any int narrowing), no two entries address the same key slot, and no
+     * entry asks to inherit the account key. {@code inheritAccountKey} has no meaning for an update (the inherited key
+     * is only resolved when a token is created), so such an entry would produce a key-less
+     * {@code TokenUpdateTransactionBody} that changes nothing yet reports SUCCESS.
      * Anything else would dispatch an update that changes nothing yet reports SUCCESS, or silently drop
      * conflicting key material (GHSA-q776-f4m7-g642).
      */
@@ -178,6 +181,10 @@ public abstract class UpdateCommonDecoder {
         for (final var tokenKeyTuple : tokenKeysTuples) {
             final var rawKeyType = (BigInteger) tokenKeyTuple.get(KEY_TYPE);
             if (rawKeyType.signum() <= 0 || rawKeyType.bitLength() > 31) {
+                return false;
+            }
+            final Tuple keyValueTuple = tokenKeyTuple.get(KEY_VALUE);
+            if ((Boolean) keyValueTuple.get(INHERIT_ACCOUNT_KEY)) {
                 return false;
             }
             final int keyType = rawKeyType.intValue();
