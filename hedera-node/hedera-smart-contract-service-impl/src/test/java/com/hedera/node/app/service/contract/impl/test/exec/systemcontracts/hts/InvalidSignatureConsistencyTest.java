@@ -36,7 +36,10 @@ class InvalidSignatureConsistencyTest extends CallTestBase {
         given(attempt.defaultVerificationStrategy()).willReturn(verificationStrategy);
         final var subject = new DispatchForResponseCodeHtsCall(attempt, TransactionBody.DEFAULT, dispatchGasCalculator);
         given(systemContractOperations.dispatch(
-                        TransactionBody.DEFAULT, verificationStrategy, AccountID.DEFAULT, ContractCallStreamBuilder.class))
+                        TransactionBody.DEFAULT,
+                        verificationStrategy,
+                        AccountID.DEFAULT,
+                        ContractCallStreamBuilder.class))
                 .willReturn(recordBuilder);
         given(dispatchGasCalculator.gasRequirement(
                         TransactionBody.DEFAULT, gasCalculator, mockEnhancement(), AccountID.DEFAULT))
