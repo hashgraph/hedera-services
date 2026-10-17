@@ -31,6 +31,7 @@ import org.hiero.base.concurrent.AbstractTask;
 import org.hiero.base.concurrent.ExecutorFactory;
 import org.hiero.base.concurrent.ThreadLocalStorage;
 import org.hiero.base.crypto.Cryptography;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 
 /**
@@ -49,6 +50,9 @@ public final class VirtualHasher {
     private static final Logger logger = LogManager.getLogger(VirtualHasher.class);
 
     private final ForkJoinPool hashingPool;
+
+    private final boolean useSha256MessageDigest;
+    private final boolean useSha384MessageDigest;
 
     /**
      * Pre-loads virtual hash chunks by chunk paths.
@@ -83,6 +87,8 @@ public final class VirtualHasher {
                         (_, e) -> logger.error(
                                 EXCEPTION.getMarker(), "Virtual hasher thread terminated with exception", e))
                 .createForkJoinPool(virtualMapConfig.getNumHashThreads());
+        useSha256MessageDigest = Cryptography.DEFAULT_DIGEST_TYPE == DigestType.SHA_256;
+        useSha384MessageDigest = Cryptography.DEFAULT_DIGEST_TYPE == DigestType.SHA_384;
     }
 
     /**
@@ -235,8 +241,7 @@ public final class VirtualHasher {
             final int chunkLastRank = chunkRank + hashChunk.height();
             long rankPath = MerklePathUtils.getLeftGrandChildPath(path, height);
             int currentRank = taskRank + height;
-            final WritableMessageDigest wmd = ThreadLocalStorage.getWritableMessageDigest(
-                    Cryptography.DEFAULT_DIGEST_TYPE::buildDigest);
+            final WritableMessageDigest wmd = getWritableMessageDigest();
             while (len > 1) {
                 for (int i = 0; i < len / 2; i++) {
                     byte[] left = ins[i * 2];
@@ -321,8 +326,7 @@ public final class VirtualHasher {
 
         @Override
         protected boolean onExecute() {
-            final WritableMessageDigest wmd = ThreadLocalStorage.getWritableMessageDigest(
-                    Cryptography.DEFAULT_DIGEST_TYPE::buildDigest);
+            final WritableMessageDigest wmd = getWritableMessageDigest();
             out.setHash(path, MerkleHasher.leafNodeHashBytes(wmd, leaf));
             return true;
         }
@@ -635,5 +639,15 @@ public final class VirtualHasher {
         chunkTasks.clear();
 
         return rootTask;
+    }
+
+    private WritableMessageDigest getWritableMessageDigest() {
+        if (useSha256MessageDigest) {
+            return ThreadLocalStorage.getWritableMessageDigest256();
+        } else if (useSha384MessageDigest) {
+            return ThreadLocalStorage.getWritableMessageDigest384();
+        } else {
+            throw new IllegalStateException("Only SHA-256 and SHA-384 are supported");
+        }
     }
 }

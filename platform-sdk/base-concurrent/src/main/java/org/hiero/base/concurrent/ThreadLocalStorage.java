@@ -1,47 +1,92 @@
+// SPDX-License-Identifier: Apache-2.0
 package org.hiero.base.concurrent;
 
 import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import java.security.MessageDigest;
-import java.util.function.Supplier;
+import java.security.NoSuchAlgorithmException;
 import org.hiero.base.concurrent.internal.DefaultForkJoinWorkerThread;
 
 public final class ThreadLocalStorage {
 
-    private static final ThreadLocal<MessageDigest> TLS_MESSAGE_DIGEST = new ThreadLocal<>();
-    private static final ThreadLocal<WritableMessageDigest> TLS_WRITABLE_MESSAGE_DIGEST = new ThreadLocal<>();
+    private static final ThreadLocal<MessageDigest> TLS_MESSAGE_DIGEST_SHA_256 = new ThreadLocal<>();
+    private static final ThreadLocal<WritableMessageDigest> TLS_WRITABLE_MESSAGE_DIGEST_SHA_256 = new ThreadLocal<>();
 
-    private ThreadLocalStorage() {
-    }
+    private static final ThreadLocal<MessageDigest> TLS_MESSAGE_DIGEST_SHA_384 = new ThreadLocal<>();
+    private static final ThreadLocal<WritableMessageDigest> TLS_WRITABLE_MESSAGE_DIGEST_SHA_384 = new ThreadLocal<>();
 
-    public static MessageDigest getMessageDigest(final Supplier<MessageDigest> initializer) {
+    private ThreadLocalStorage() {}
+
+    public static MessageDigest getMessageDigest256() {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
-            return dfjThread.getThreadLocalMessageDigest(initializer);
+            return dfjThread.getThreadLocalMessageDigest256();
         } else {
-            MessageDigest md = TLS_MESSAGE_DIGEST.get();
-            if (md == null) {
-                md = initializer.get();
-                TLS_MESSAGE_DIGEST.set(md);
-                assert TLS_WRITABLE_MESSAGE_DIGEST.get() == null;
-                final WritableMessageDigest wmd = new WritableMessageDigest(md);
-                TLS_WRITABLE_MESSAGE_DIGEST.set(wmd);
-            }
-            return md;
+            return getMessageDigestFromTLS("SHA-256", TLS_MESSAGE_DIGEST_SHA_256, TLS_WRITABLE_MESSAGE_DIGEST_SHA_256);
         }
     }
 
-    public static WritableMessageDigest getWritableMessageDigest(final Supplier<MessageDigest> initializer) {
+    public static MessageDigest getMessageDigest384() {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
-            return dfjThread.getThreadLocalWritableMessageDigest(initializer);
+            return dfjThread.getThreadLocalMessageDigest384();
         } else {
-            WritableMessageDigest wmd = TLS_WRITABLE_MESSAGE_DIGEST.get();
-            if (wmd == null) {
-                assert TLS_MESSAGE_DIGEST.get() == null;
-                final MessageDigest md = initializer.get();
-                TLS_MESSAGE_DIGEST.set(md);
-                wmd = new WritableMessageDigest(md);
-                TLS_WRITABLE_MESSAGE_DIGEST.set(wmd);
-            }
-            return wmd;
+            return getMessageDigestFromTLS("SHA-384", TLS_MESSAGE_DIGEST_SHA_384, TLS_WRITABLE_MESSAGE_DIGEST_SHA_384);
+        }
+    }
+
+    private static MessageDigest getMessageDigestFromTLS(
+            final String algorithm,
+            final ThreadLocal<MessageDigest> tlsMD,
+            final ThreadLocal<WritableMessageDigest> tlsWMD) {
+        MessageDigest md = tlsMD.get();
+        if (md == null) {
+            initLocalMessageDigest(algorithm, tlsMD, tlsWMD);
+            md = tlsMD.get();
+        }
+        return md;
+    }
+
+    public static WritableMessageDigest getWritableMessageDigest256() {
+        if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
+            return dfjThread.getThreadLocalWritableMessageDigest256();
+        } else {
+            return getWritableMessageDigestFromTLS(
+                    "SHA-256", TLS_MESSAGE_DIGEST_SHA_256, TLS_WRITABLE_MESSAGE_DIGEST_SHA_256);
+        }
+    }
+
+    public static WritableMessageDigest getWritableMessageDigest384() {
+        if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
+            return dfjThread.getThreadLocalWritableMessageDigest384();
+        } else {
+            return getWritableMessageDigestFromTLS(
+                    "SHA-384", TLS_MESSAGE_DIGEST_SHA_384, TLS_WRITABLE_MESSAGE_DIGEST_SHA_384);
+        }
+    }
+
+    private static WritableMessageDigest getWritableMessageDigestFromTLS(
+            final String algorithm,
+            final ThreadLocal<MessageDigest> tlsMD,
+            final ThreadLocal<WritableMessageDigest> tlsWMD) {
+        WritableMessageDigest wmd = tlsWMD.get();
+        if (wmd == null) {
+            initLocalMessageDigest(algorithm, tlsMD, tlsWMD);
+            wmd = tlsWMD.get();
+        }
+        return wmd;
+    }
+
+    private static void initLocalMessageDigest(
+            final String algorithm,
+            final ThreadLocal<MessageDigest> tlsMD,
+            final ThreadLocal<WritableMessageDigest> tlsWMD) {
+        assert tlsMD.get() == null;
+        assert tlsWMD.get() == null;
+        try {
+            final MessageDigest md = MessageDigest.getInstance(algorithm);
+            tlsMD.set(md);
+            final WritableMessageDigest wmd = new WritableMessageDigest(md);
+            tlsWMD.set(wmd);
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to initialize " + algorithm + " digest", e);
         }
     }
 }

@@ -593,7 +593,10 @@ public class VirtualHashChunk {
     }
 
     public byte[] calcHashBytes(
-            final WritableMessageDigest messageDigest, final long path, final long firstLeafPath, final long lastLeafPath) {
+            final WritableMessageDigest messageDigest,
+            final long path,
+            final long firstLeafPath,
+            final long lastLeafPath) {
         final int pathRank = MerklePathUtils.getRank(path);
         final int chunkRank = MerklePathUtils.getRank(this.path);
         assert pathRank >= chunkRank;
@@ -619,7 +622,11 @@ public class VirtualHashChunk {
     }
 
     private byte[] calcHashBytes(
-            final WritableMessageDigest messageDigest, final long h, final long path, final long firstLeafPath, final long lastLeafPath) {
+            final WritableMessageDigest messageDigest,
+            final long h,
+            final long path,
+            final long firstLeafPath,
+            final long lastLeafPath) {
         if (path > lastLeafPath) {
             assert path == 2;
             return null;
