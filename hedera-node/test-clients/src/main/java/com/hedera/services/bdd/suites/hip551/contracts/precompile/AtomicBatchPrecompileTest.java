@@ -1988,8 +1988,7 @@ class AtomicBatchPrecompileTest {
                                                 .gas(GAS_TO_OFFER)
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
                                 .hasKnownStatus(INNER_TRANSACTION_FAILED))),
-                validatedHtsPrecompileResult(
-                        wrongPauseKeyTxn, CONTRACT_REVERT_EXECUTED, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE),
+                validatedHtsPrecompileResult(wrongPauseKeyTxn, CONTRACT_REVERT_EXECUTED, INVALID_SIGNATURE),
                 validatedHtsPrecompileResult(tokenDeletedTxn, CONTRACT_REVERT_EXECUTED, TOKEN_WAS_DELETED));
     }
 

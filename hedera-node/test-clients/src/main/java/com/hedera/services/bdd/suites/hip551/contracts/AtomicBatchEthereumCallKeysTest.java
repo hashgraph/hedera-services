@@ -209,9 +209,7 @@ class AtomicBatchEthereumCallKeysTest {
                                         .ethereumHash(ByteString.copyFrom(
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))),
                 childRecordsCheck(
-                        mintTxn,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
+                        mintTxn, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_SIGNATURE)));
     }
 
     private HapiAtomicBatch atomicBatchDefaultOperator(final HapiTxnOp<?>... ops) {

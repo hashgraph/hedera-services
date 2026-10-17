@@ -258,9 +258,7 @@ class AtomicHelloWorldEthereumSuite {
                         .hasKnownStatus(INNER_TRANSACTION_FAILED)),
                 getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
                 childRecordsCheck(
-                        maliciousTxn,
-                        CONTRACT_REVERT_EXECUTED,
-                        recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        maliciousTxn, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_SIGNATURE)),
                 sourcing(() -> getAccountBalance(maliciousEOAId.get())
                         .hasTinyBars(spec -> amount -> (amount > maliciousStartBalance)
                                 ? Optional.of("Malicious" + " EOA balance" + " increased")
