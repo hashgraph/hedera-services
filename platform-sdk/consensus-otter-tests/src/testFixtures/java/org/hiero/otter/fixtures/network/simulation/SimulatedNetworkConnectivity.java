@@ -112,14 +112,13 @@ public class SimulatedNetworkConnectivity {
     /**
      * Events that have been transmitted onto the network but not yet delivered.
      *
-     * <p>It relies on the delivery times of a connection being non-decreasing to keep its queues in arrival order,
-     * which is what {@link #scheduleEventsTo(NodeId, Instant)} guarantees with {@link #lastArrivalTimestamps}.
+     * <p>Each connection's queue is ordered by arrival time, so delivery does not depend on {@link #arrivalTimeClamp}.
+     * The clamp just keeps each kind of route on a connection from being reordered by jitter.
      */
     private final InFlightEvents inFlightEvents = new InFlightEvents(this::isConnected);
 
     /**
-     * Event windows that have been transmitted onto the network but not yet delivered. Relies on the same
-     * per-connection ordering as {@link #inFlightEvents}.
+     * Event windows that have been transmitted onto the network but not yet delivered.
      */
     private final InFlightEventWindows inFlightEventWindows = new InFlightEventWindows(this::isConnected);
 
@@ -142,10 +141,9 @@ public class SimulatedNetworkConnectivity {
     private final Map<ConnectionKey, ConnectionState> connections = new HashMap<>();
 
     /**
-     * The last time an event was delivered from a sender to a receiver. Used to ensure that events are delivered in
-     * strictly increasing order of time, even when network jitter is applied.
+     * Keeps the arrival times of each kind of route on each connection in order, even when network jitter is applied.
      */
-    private final Map<ConnectionKey, Instant> lastArrivalTimestamps = new HashMap<>();
+    private final ArrivalTimeClamp arrivalTimeClamp = new ArrivalTimeClamp();
 
     /**
      * Constructor.
@@ -339,7 +337,7 @@ public class SimulatedNetworkConnectivity {
      * the order {@link #deliverArrived(Instant)} follows too, which delivers the event windows to every receiver
      * before any events. The order is not incidental: everything scheduled draws an arrival time from
      * {@link #random}, and a window and an event on the same connection share the clamp in
-     * {@link #lastArrivalTimestamps}, so which goes first decides the arrival times of both, and the same seed only
+     * {@link #arrivalTimeClamp}, so which goes first decides the arrival times of both, and the same seed only
      * reproduces a run if it is always the same.
      *
      * @param now the current time
@@ -380,7 +378,7 @@ public class SimulatedNetworkConnectivity {
                 // As with events, whether the connection is up is decided at delivery time. A window held through a
                 // partition is superseded by the ones scheduled behind it, so when the connection returns the
                 // receiver is given the sender's current window rather than a stale one.
-                final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
+                final Instant arrivalTime = nextArrivalTime(sender, receiver, MessageRoute.BROADCAST, now);
                 if (arrivalTime != null) {
                     inFlightEventWindows.add(receiver, new EventWindowInTransit(eventWindow, sender, arrivalTime));
                 }
@@ -392,7 +390,8 @@ public class SimulatedNetworkConnectivity {
      * Walk a node's cursor over {@link #eventLog} and schedule every event it has not been sent yet for delivery. A
      * node is not sent its own events, nor events that are already ancient for it.
      *
-     * <p>When each event arrives is decided by {@link #nextArrivalTime(NodeId, NodeId, Instant)}.
+     * <p>When each event arrives is decided by
+     * {@link #nextArrivalTime(NodeId, NodeId, MessageRoute, Instant)}.
      *
      * @param receiver the node the events are traveling to
      * @param now      the current time
@@ -420,7 +419,7 @@ public class SimulatedNetworkConnectivity {
             // Whether the connection is up is decided at delivery time rather than here: the cursor is consumed
             // either way, so an event dropped now would never be offered to this receiver again, and a partition
             // would permanently deprive it of every event created while the partition was in place.
-            final Instant arrivalTime = nextArrivalTime(sender, receiver, now);
+            final Instant arrivalTime = nextArrivalTime(sender, receiver, MessageRoute.BROADCAST, now);
             if (arrivalTime != null) {
                 // create a copy so that nodes don't modify each other's events
                 final PlatformEvent eventToDeliver = event.copyGossipedData();
@@ -436,20 +435,24 @@ public class SimulatedNetworkConnectivity {
      *
      * <p>The time is the current time plus the connection's latency, offset by a jitter value drawn from a truncated
      * Gaussian distribution. Jitter can pull an arrival time earlier than one already scheduled on the same connection,
-     * so the result is clamped to be no earlier than the previous one. That clamp is what lets {@link InFlightEvents}
-     * and {@link InFlightEventWindows} treat each connection's queue as being in arrival order.
+     * so the result is clamped to be no earlier than the previous one of the same kind on the same connection. That
+     * clamp keeps each kind of route in order.
      *
      * <p>Picking draws from {@link #random}, so the order callers call this in is part of what a seed reproduces. No
      * draw is made when the sender and receiver are not known to each other.
      *
      * @param sender   the node at the sending end of the connection
      * @param receiver the node at the receiving end of the connection
+     * @param kind     the route over which message is being scheduled
      * @param now      the current time
      * @return the time of arrival at the receiving end, or {@code null} if the two nodes have no connection
      */
     @Nullable
     private Instant nextArrivalTime(
-            @NonNull final NodeId sender, @NonNull final NodeId receiver, @NonNull final Instant now) {
+            @NonNull final NodeId sender,
+            @NonNull final NodeId receiver,
+            @NonNull final MessageRoute kind,
+            @NonNull final Instant now) {
         final ConnectionKey connectionKey = new ConnectionKey(sender, receiver);
         final ConnectionState connectionState = connections.get(connectionKey);
         if (connectionState == null) {
@@ -459,16 +462,10 @@ public class SimulatedNetworkConnectivity {
         // Simulate network latency and jitter using truncated Gaussian distribution
         final double sigma = connectionState.latency().toNanos() * connectionState.jitter().value / 100.0;
         final double jitter = Math.clamp(random.nextGaussian() * sigma, -3 * sigma, 3 * sigma);
-        Instant arrivalTime = now.plus(connectionState.latency()).plusNanos((long) jitter);
+        final Instant arrivalTime = now.plus(connectionState.latency()).plusNanos((long) jitter);
 
-        // Ensure arrival time is always incremental
-        final Instant lastArrivalTime = lastArrivalTimestamps.getOrDefault(connectionKey, Instant.MIN);
-        if (arrivalTime.isBefore(lastArrivalTime)) {
-            arrivalTime = lastArrivalTime.plusNanos(1L);
-        }
-        lastArrivalTimestamps.put(connectionKey, arrivalTime);
-
-        return arrivalTime;
+        // Ensure arrival time is always incremental within a kind of route
+        return arrivalTimeClamp.clamp(connectionKey, kind, arrivalTime);
     }
 
     /**

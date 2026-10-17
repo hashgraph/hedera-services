@@ -2,7 +2,6 @@
 package org.hiero.otter.fixtures.network.simulation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -181,11 +180,14 @@ class InFlightEventWindowsTest {
     }
 
     @Test
-    @DisplayName("adding a window that arrives before the previous one is rejected")
-    void addingOutOfArrivalOrderIsRejected() {
-        addEventWindow(NODE_1, 20, 105);
+    @DisplayName("windows are delivered by arrival time regardless of the order they were added in")
+    void windowsAreOrderedByArrivalTime() {
+        final PeerEventWindow later = addEventWindow(NODE_1, 20, 105);
+        addEventWindow(NODE_1, 10, 106);
 
-        assertThatThrownBy(() -> addEventWindow(NODE_1, 10, 106)).isInstanceOf(IllegalArgumentException.class);
+        inFlightEventWindows.deliverArrived(at(30), node0);
+
+        assertThat(node0.receivedEventWindows).containsExactly(later);
     }
 
     /**
