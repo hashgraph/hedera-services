@@ -159,10 +159,43 @@ public abstract class UpdateCommonDecoder {
         return tokenKeys;
     }
 
+    /** keyType bits updateTokenKeys can apply at 0x167 (admin..pause; metadata 0x80 is not applied there). */
+    protected static final int UPDATE_KEYS_SUPPORTED_MASK_167 = 0x7F;
+    /** keyType bits updateTokenKeys can apply at 0x16c (adds the metadata key, 0x80). */
+    protected static final int UPDATE_KEYS_SUPPORTED_MASK_16C = 0xFF;
+
+    /**
+     * True iff the raw key list is non-empty, every keyType is a positive value within {@code supportedMask}
+     * (checked on the full uint256, before any int narrowing), and no two entries address the same key slot.
+     * Anything else would dispatch an update that changes nothing yet reports SUCCESS, or silently drop
+     * conflicting key material (GHSA-q776-f4m7-g642).
+     */
+    protected static boolean isMeaningfulKeyUpdate(@NonNull final Tuple[] tokenKeysTuples, final int supportedMask) {
+        if (tokenKeysTuples.length == 0) {
+            return false;
+        }
+        int slotsInUse = 0;
+        for (final var tokenKeyTuple : tokenKeysTuples) {
+            final var rawKeyType = (BigInteger) tokenKeyTuple.get(KEY_TYPE);
+            if (rawKeyType.signum() <= 0 || rawKeyType.bitLength() > 31) {
+                return false;
+            }
+            final int keyType = rawKeyType.intValue();
+            if ((keyType & ~supportedMask) != 0 || (slotsInUse & keyType) != 0) {
+                return false;
+            }
+            slotsInUse |= keyType;
+        }
+        return true;
+    }
+
     @Nullable
     public TransactionBody decodeTokenUpdateKeys(@NonNull final HtsCallAttempt attempt) {
 
         final var call = decodeCall(attempt);
+        if (!isMeaningfulKeyUpdate(call.get(TOKEN_KEYS), UPDATE_KEYS_SUPPORTED_MASK_167)) {
+            return null;
+        }
 
         final var tokenId =
                 ConversionUtils.asTokenId(attempt.nativeOperations().entityIdFactory(), call.get(TOKEN_ADDRESS));
