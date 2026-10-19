@@ -2097,7 +2097,7 @@ done
 [[ "${DOCKER_MIN_MEMORY_MIB}" =~ ^[1-9][0-9]*$ ]] || { echo "DOCKER_MIN_MEMORY_MIB must be a positive integer" >&2; exit 1; }
 verify_docker_memory_budget
 case "${ENABLE_TCK_TESTS}" in
-  true) require_cmd lsof; require_cmd pgrep; ensure_pnpm_available ;;
+  true) require_cmd pgrep; ensure_pnpm_available ;;
   false) ;;
   *) echo "ENABLE_TCK_TESTS must be true or false" >&2; exit 1 ;;
 esac
