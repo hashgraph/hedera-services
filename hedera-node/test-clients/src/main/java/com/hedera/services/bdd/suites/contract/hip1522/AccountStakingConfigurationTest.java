@@ -178,6 +178,7 @@ public class AccountStakingConfigurationTest {
                         // getter reads 0 here. getStakingInfo maps that same state to the -1 sentinel,
                         // because Solidity has no oneof; GetStakingInfoCallTest pins that encoding.
                         getContractInfo(HRC1522_CONTRACT).has(contractWith().noStakingNodeId()),
+                        readsOwnStakingInfo("read1", false, SENTINEL_NODE_ID, ZERO_ADDRESS),
                         // 2. the node-id sentinel
                         stakeToNode(contractAddress.get(), "stake2"),
                         getContractInfo(HRC1522_CONTRACT).has(contractWith().stakedNodeId(NODE_ID)),
@@ -187,6 +188,7 @@ public class AccountStakingConfigurationTest {
                                 .via("unstake2"),
                         succeeded("unstake2", "stakeToNodeCall"),
                         getContractInfo(HRC1522_CONTRACT).has(contractWith().noStakingNodeId()),
+                        readsOwnStakingInfo("read2", false, SENTINEL_NODE_ID, ZERO_ADDRESS),
                         // 3. the zero address, which resolves to the 0.0.0 staked_account_id sentinel
                         stakeToNode(contractAddress.get(), "stake3"),
                         getContractInfo(HRC1522_CONTRACT).has(contractWith().stakedNodeId(NODE_ID)),
@@ -196,7 +198,9 @@ public class AccountStakingConfigurationTest {
                                 .via("unstake3"),
                         succeeded("unstake3", "stakeToAccountCall"),
                         getContractInfo(HRC1522_CONTRACT)
-                                .has(contractWith().noStakedAccountId().noStakingNodeId()))));
+                                .has(contractWith().noStakedAccountId().noStakingNodeId()),
+                        // ...and getStakingInfo reports the cleared state as both sentinels, every time
+                        readsOwnStakingInfo("read3", false, SENTINEL_NODE_ID, ZERO_ADDRESS))));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})
@@ -319,7 +323,10 @@ public class AccountStakingConfigurationTest {
                                 .via("stakeToAccount"),
                         succeeded("stakeToAccount", "stakeToAccountCall"),
                         getContractInfo(HRC1522_CONTRACT)
-                                .has(contractWith().stakedAccountId(OTHER).noStakingNodeId()))));
+                                .has(contractWith().stakedAccountId(OTHER).noStakingNodeId()),
+                        // An account with no alias reads back in its long-zero form, with no node target
+                        readsOwnStakingInfo(
+                                "readAccountTarget", false, SENTINEL_NODE_ID, idAsHeadlongAddress(otherId.get())))));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})
