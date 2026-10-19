@@ -181,10 +181,17 @@ check goes wrong.
 
 ### Authorization
 
-Unchanged from HIP-632/906. A contract calling on its own account is inherently authorized:
-`PreHandleContextImpl#requireKey` short-circuits when the target account equals the dispatch payer,
-so executing the bytecode *is* the authorization and no signature is required. A cross-account call
-requires the target account's key to have signed the top-level transaction.
+Unchanged from HIP-632/906. A contract calling on its own account is inherently authorized: the
+calling contract is the dispatch payer, and `PreHandleContextImpl#requireKey` elides a required key
+equal to the payer's, so executing the bytecode *is* the authorization and no signature is required.
+
+A cross-account call is authorized only when the target account's key activates under the
+smart-contract security model — for example a contract or delegatable contract key for the calling
+contract. Top-level signatures are deliberately **not** honored: `StakingUpdateCall` dispatches with
+`HasCallAttempt#defaultVerificationStrategy`, which never delegates to cryptographic verification,
+exactly as `hbarApprove` does. Honoring them would let any contract a user calls restake that user's
+account with the user's own signature. A target signing the top-level transaction is therefore not
+enough on its own.
 
 Note the dispatched `CryptoUpdate` fails an unauthorized cross-account call with `INVALID_SIGNATURE`
 (7), but `ReturnTypes#standardized` normalizes that one code for every system contract call, so the
@@ -309,7 +316,7 @@ Two properties make the assertions meaningful and are easy to lose:
 
 #### Negative
 
-- A cross-account call without the target's signature returns
+- A cross-account call on a target whose key does not activate for the calling contract returns
   `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` and leaves the target's staking untouched.
 - `stakeToAccount` naming the account itself returns `SELF_STAKING_IS_NOT_ALLOWED`, from a contract
   and through the `IHRC632` facade, and leaves the account's staking untouched.
