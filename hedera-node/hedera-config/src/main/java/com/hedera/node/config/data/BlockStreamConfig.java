@@ -9,6 +9,7 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Min;
 import java.time.Duration;
+import org.hiero.base.crypto.DigestType;
 
 /**
  * Configuration for the block stream.
@@ -27,6 +28,8 @@ import java.time.Duration;
  * @param blockFileBufferGzipSizeKb block file writer GZIP buffer size (in kilobytes) (see FileBlockItemWriter#openBlock(long) for details)
  * @param enableStateChangeDeltas coordinated emission of top-level replacements and clears in complete block streams
  * @param stateChangeDeltaMinSaving minimum omitted entity bytes after partial metadata overhead
+ * @param digestType the digest algorithm to use for block-root Merkle hashing; {@code SHA_256} enables 32-byte
+ *                   SHA-256 hashing, {@code SHA_384} (the default) uses 48-byte SHA-384
  */
 @ConfigData("blockStream")
 public record BlockStreamConfig(
@@ -75,6 +78,9 @@ public record BlockStreamConfig(
 
         @ConfigProperty(defaultValue = "false") @NetworkProperty
         boolean enableCutover,
+
+        @ConfigProperty(defaultValue = "SHA_384") @NetworkProperty
+        DigestType digestType,
 
         @ConfigProperty(defaultValue = "true") @NetworkProperty
         boolean streamWrappedRecordBlocks,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit.support.validators.block;
 
-import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
+import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO_384;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema.ENTITY_COUNTS_STATE_ID;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.carriesCompressedWrapsProof;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.currentBlockHashFromNextBlockFooter;
@@ -288,7 +288,7 @@ class StateChangesValidatorTest {
     private static Block blockWithStateHash(final long number, final Bytes stateHash, final boolean withProof) {
         final var footer = BlockItem.newBuilder()
                 .blockFooter(BlockFooter.newBuilder()
-                        .previousBlockRootHash(HASH_OF_ZERO)
+                        .previousBlockRootHash(HASH_OF_ZERO_384)
                         .startOfBlockStateRootHash(stateHash))
                 .build();
         final var header = BlockItem.newBuilder()
