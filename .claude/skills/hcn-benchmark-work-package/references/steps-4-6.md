@@ -76,14 +76,15 @@ the nightly job runs there from 17:00 UTC. Ask the developer before starting a r
 BRANCH=<the pushed branch>
 gh workflow run 007-user-benchmark-calibration.yaml --ref main \
   -f module="$MODULE" -f benchmark="$BENCH" -f ref="$BRANCH" -f jmh-args="-f 10 -wi 0 -i 20 -r 5s"
-gh run list --workflow 007-user-benchmark-calibration.yaml --limit 1     # the run's id
+gh run list --workflow 007-user-benchmark-calibration.yaml --limit 4     # the runs' ids
 gh run download <run id> -n benchmark-calibration -D "$OUT/calibration/<run id>"   # once the run is done
 ```
 
 - **The default arguments** take about 40 minutes for the example's two parameter sets, after the queue. The other
   inputs (`profilers`, `max-load`, `attempts`, `deadline-minutes`) rarely change.
 - **Repeat with a new workflow run,** never `gh run rerun`. Analyze several runs together; the pilot used three to four
-  quiet runs. The noise between runs comes from the nightly history later, not from calibration
+  quiet runs. Dispatch them at once: the workflow queues them and runs them one after another, behind any other
+  benchmark's calibration. The noise between runs comes from the nightly history later, not from calibration
   ([the noise between runs](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#the-noise-between-runs)).
 - **Keep the downloaded runs:** the artifacts expire after 90 days, and the block links them.
 
