@@ -100,8 +100,8 @@ class MerkleDbCompactionCoordinator {
         return compactionExecutor;
     }
 
-    // Synchronized on this
-    private boolean compactionEnabled = false;
+    // Written while synchronized on this. Volatile, so running scanner tasks can check it without locking
+    private volatile boolean compactionEnabled = false;
 
     ///
     /// Active compactors by task key (e.g. `IdToHashChunk_compact_0_1`). Synchronized on this.
@@ -177,7 +177,8 @@ class MerkleDbCompactionCoordinator {
     ///
     /// Disables background compaction and interrupts all compactions in progress. All subsequent
     /// calls to compacting methods will be ignored until [#enableBackgroundCompaction()] is
-    /// called. Scanner tasks are not interrupted (they are read-only and will finish harmlessly).
+    /// called. Running scanner tasks stop at their next check of whether compaction is enabled,
+    /// every [GarbageScanner#STOP_CHECK_INTERVAL] index entries, and publish no results.
     ///
     /// Queued compaction tasks that have not yet started will check `compactionEnabled` when they
     /// begin execution and exit immediately.
@@ -595,7 +596,12 @@ class MerkleDbCompactionCoordinator {
         @Override
         public void run() {
             try {
-                scanStatsByStore.put(storeName, scanner.scan());
+                // The scan stops early, if compaction is disabled in the meantime. Such a scan has no
+                // results to publish
+                final IndexedGarbageFileStats stats = scanner.scan(() -> compactionEnabled);
+                if (stats != null) {
+                    scanStatsByStore.put(storeName, stats);
+                }
             } catch (Exception e) {
                 logger.error(EXCEPTION.getMarker(), "[{}] Garbage scan failed", taskKey, e);
             } finally {
