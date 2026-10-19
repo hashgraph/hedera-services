@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -97,6 +98,9 @@ public class AccountStakingConfigurationTest {
     private static final long SENTINEL_NODE_ID = -1L;
 
     private static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
+    /** A long-zero address far beyond any entity a test network creates. */
+    private static final Address MISSING_ACCOUNT_ADDRESS =
+            asHeadlongAddress(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x7f, -1, -1, -1});
 
     // --- The motivating case: a keyless contract staking its own balance ---------------------------
 
@@ -125,6 +129,31 @@ public class AccountStakingConfigurationTest {
                 // The contract account really is staked now
                 getContractInfo(HRC1522_CONTRACT)
                         .has(contractWith().stakedNodeId(NODE_ID).isDeclinedReward(true)));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("getStakingInfo externalizes no child record")
+    final Stream<DynamicTest> getStakingInfoExternalizesNoChildRecord() {
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                contractCall(HRC1522_CONTRACT, "stakeSelfToNodeCall", NODE_ID, true)
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000),
+                // getStakingInfo dispatches nothing, so per HIP-1522 it leaves no trace in the record stream -
+                // neither when it succeeds nor when it names an account that does not exist
+                contractCall(HRC1522_CONTRACT, "getOwnStakingInfoCall")
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000)
+                        .via("readForRecord"),
+                emptyChildRecordsCheck("readForRecord", SUCCESS),
+                contractCall(HRC1522_CONTRACT, "getStakingInfoCall", MISSING_ACCOUNT_ADDRESS)
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000)
+                        .via("missingReadForRecord"),
+                emptyChildRecordsCheck("missingReadForRecord", SUCCESS));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})

@@ -134,7 +134,10 @@ compares equal.
 | `GetStakingInfoCall` | Reads state via `HederaNativeOperations#stakingInfoOf`. Priced with `viewGasRequirement()`; allows a static frame. |
 
 All five mutating functions produce the same artifact and are priced identically, so they share one
-`Call` class. `getStakingInfo` reuses `AccountSummariesApi#summarizeStakingInfo` — the same helper
+`Call` class. `GetStakingInfoCall` is deliberately *not* flagged as a view call in the `AbstractCall`
+sense: that flag makes `AbstractNativeSystemContract` externalize the result as a synthetic child
+record, and the HIP specifies that `getStakingInfo` produces no record and is invisible to the
+mirror node. `getStakingInfo` reuses `AccountSummariesApi#summarizeStakingInfo` — the same helper
 `CryptoGetInfo` and `ContractGetInfo` use — so the EVM and HAPI views agree by construction rather
 than by parallel implementation.
 
@@ -242,7 +245,7 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
   business failure is returned, never reverted.
 - `GetStakingInfoCallTest` — every field and sentinel; the priority-EVM-address rendering for an
   aliased, non-aliased and missing staked-to account; a missing target returns `INVALID_ACCOUNT_ID`
-  and a zeroed struct.
+  and a zeroed struct; neither a success nor a failure externalizes a child record.
 - `HandleHederaNativeOperationsTest` — the staking stores and consensus time are exposed from the
   handle scope, and `stakingInfoOf` is exercised **on an account staked to a node**, so the derived
   `stake_period_start` pins the `periodMins` argument. Without that case the five arguments consumed
@@ -277,6 +280,7 @@ Two properties make the assertions meaningful and are easy to lose:
 - A contract created with **no admin key** stakes its own balance to a node and declines rewards;
   `getContractInfo` confirms it.
 - A contract reads its own staking state back, asserting every field of the returned struct.
+- `getStakingInfo` leaves no child record, whether it succeeds or names a missing account.
 - A contract stakes to another account, and `setDeclineReward` toggles the flag without disturbing
   the node target.
 - An EOA configures its own staking, and declines rewards, through the `IHRC632` facade.

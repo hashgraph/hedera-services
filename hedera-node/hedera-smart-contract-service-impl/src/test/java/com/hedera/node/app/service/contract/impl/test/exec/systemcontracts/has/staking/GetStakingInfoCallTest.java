@@ -58,6 +58,30 @@ class GetStakingInfoCallTest extends CallTestBase {
     }
 
     @Test
+    void externalizesNoChildRecordOnSuccess() {
+        // HIP-1522: getStakingInfo dispatches nothing and produces no record. A view-call result would be
+        // externalized as a synthetic child record by AbstractNativeSystemContract, so it must not be one.
+        givenViewGas();
+        givenTargetWith(StakingInfo.newBuilder().stakedNodeId(3L).build());
+
+        final var pricedResult = new GetStakingInfoCall(attempt, GET_STAKING_INFO, TARGET_ID).execute(frame);
+
+        assertThat(pricedResult.isViewCall()).isFalse();
+        assertThat(pricedResult.fullResult().recordBuilder()).isNull();
+    }
+
+    @Test
+    void externalizesNoChildRecordOnFailure() {
+        givenViewGas();
+        given(nativeOperations.getAccount(TARGET_ID)).willReturn(null);
+
+        final var pricedResult = new GetStakingInfoCall(attempt, GET_STAKING_INFO, TARGET_ID).execute(frame);
+
+        assertThat(pricedResult.isViewCall()).isFalse();
+        assertThat(pricedResult.fullResult().recordBuilder()).isNull();
+    }
+
+    @Test
     void reportsANodeStakedAccount() {
         givenViewGas();
         givenTargetWith(StakingInfo.newBuilder()

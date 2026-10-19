@@ -55,7 +55,10 @@ public class GetStakingInfoCall extends AbstractCall {
             @NonNull final HasCallAttempt attempt,
             @NonNull final SystemContractMethod method,
             @Nullable final AccountID target) {
-        super(attempt.systemContractGasCalculator(), attempt.enhancement(), true);
+        // Deliberately not a "view call" in the AbstractCall sense, even though it reads state only: that flag
+        // makes AbstractNativeSystemContract externalize the result as a synthetic child record, and HIP-1522
+        // specifies that getStakingInfo produces no record and is invisible to the mirror node
+        super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
         this.method = requireNonNull(method);
         this.target = target;
     }
@@ -75,11 +78,13 @@ public class GetStakingInfoCall extends AbstractCall {
         if (account == null) {
             // Non-reverting, per the HAS convention: the response code carries the failure
             return gasOnly(
-                    successResult(encoded(INVALID_ACCOUNT_ID, ZEROED_INFO), gasRequirement), INVALID_ACCOUNT_ID, true);
+                    successResult(encoded(INVALID_ACCOUNT_ID, ZEROED_INFO), gasRequirement),
+                    INVALID_ACCOUNT_ID,
+                    isViewCall);
         }
 
         final var info = nativeOperations().stakingInfoOf(account);
-        return gasOnly(successResult(encoded(SUCCESS, asTuple(info)), gasRequirement), SUCCESS, true);
+        return gasOnly(successResult(encoded(SUCCESS, asTuple(info)), gasRequirement), SUCCESS, isViewCall);
     }
 
     private Tuple asTuple(@NonNull final StakingInfo info) {
