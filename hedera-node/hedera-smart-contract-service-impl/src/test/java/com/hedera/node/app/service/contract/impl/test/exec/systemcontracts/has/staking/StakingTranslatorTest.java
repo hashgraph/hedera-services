@@ -33,6 +33,7 @@ import static org.mockito.Mockito.never;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.metrics.ContractMetrics;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -194,11 +195,27 @@ class StakingTranslatorTest extends CallAttemptTestBase {
     }
 
     @Test
-    void stakeToAccountWithTheZeroAddressClearsTheTarget() {
-        // The converter resolves the zero address to 0.0.0, the HAPI staked_account_id sentinel
-        given(addressIdConverter.convert(ZERO_ADDRESS)).willReturn(SENTINEL_ACCOUNT_ID);
-        final var body = bodyDispatchedBy(STAKE_TO_ACCOUNT, ZERO_ADDRESS).cryptoUpdateAccountOrThrow();
-        assertThat(body.stakedAccountIdOrThrow()).isEqualTo(SENTINEL_ACCOUNT_ID);
+    void stakeToAccountWithTheZeroAddressDispatchesExactlyWhatUnstakeDoes() {
+        // HIP-1522: unstake(), stakeToNode(-1) and stakeToAccount(address(0)) produce the same account state and
+        // the same child record, so the zero address must not become the 0.0.0 staked_account_id sentinel
+        final var body = bodyDispatchedBy(STAKE_TO_ACCOUNT, ZERO_ADDRESS);
+        assertThat(body)
+                .isEqualTo(TransactionBody.newBuilder()
+                        .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                                .accountIDToUpdate(TARGET_ID)
+                                .stakedNodeId(SENTINEL_NODE_ID))
+                        .build());
+        verify(addressIdConverter, never()).convert(ZERO_ADDRESS);
+    }
+
+    @Test
+    void facadeStakeToAccountWithTheZeroAddressDispatchesExactlyWhatUnstakeDoes() {
+        final var body = facadeBodyDispatchedBy(STAKE_TO_ACCOUNT_PROXY, ZERO_ADDRESS);
+        assertThat(body.cryptoUpdateAccountOrThrow())
+                .isEqualTo(CryptoUpdateTransactionBody.newBuilder()
+                        .accountIDToUpdate(TARGET_ID)
+                        .stakedNodeId(SENTINEL_NODE_ID)
+                        .build());
     }
 
     @Test

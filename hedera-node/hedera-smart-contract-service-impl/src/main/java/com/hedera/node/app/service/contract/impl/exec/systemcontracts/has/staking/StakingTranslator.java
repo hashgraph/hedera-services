@@ -225,19 +225,22 @@ public class StakingTranslator extends AbstractCallTranslator<HasCallAttempt> {
 
     private Call stakeToAccount(
             @NonNull final HasCallAttempt attempt, @Nullable final AccountID target, @NonNull final Address stakedTo) {
-        // The zero address needs no special case: it converts to 0.0.0, which is the HAPI staked_account_id
-        // sentinel for "no target", and it converts without consulting the entity id factory, so this is
-        // correct on networks that do not run in shard 0 realm 0.
-        //
-        // But 0.0.0 is not the *only* way to reach that sentinel. The converter also yields it for a
-        // non-canonical reference - the long-zero form of an account whose priority address is an EVM alias,
-        // which is exactly the form getHederaAccountNumAlias hands back. Everywhere else in the system
-        // contracts 0.0.0 is an id deliberately built to fail downstream; staking is the one place it is a
-        // *valid sentinel*, so passing it through would fail open: "stake to Alice" would silently mean
-        // "unstake". HIP-1522 instead requires stakeToAccount to accept either form of an account, so resolve
-        // a non-canonical reference by the number it encodes - the same account its alias resolves to.
+        // The zero address is the stakeToAccount spelling of "clear the target". HIP-1522 requires all three
+        // spellings to produce the same account state and the same child record, so dispatch exactly what
+        // unstake() does rather than the 0.0.0 staked_account_id sentinel, which the handler stores in the
+        // other arm of the staked_id oneof.
+        if (ZERO_ADDRESS.equals(stakedTo)) {
+            return unstake(attempt, target);
+        }
+        // Any other address converting to 0.0.0 is a non-canonical reference - the long-zero form of an account
+        // whose priority address is an EVM alias, which is exactly the form getHederaAccountNumAlias hands back.
+        // Everywhere else in the system contracts 0.0.0 is an id deliberately built to fail downstream; staking
+        // is the one place it is a *valid sentinel*, so passing it through would fail open: "stake to Alice"
+        // would silently mean "unstake". HIP-1522 instead requires stakeToAccount to accept either form of an
+        // account, so resolve a non-canonical reference by the number it encodes - the same account its alias
+        // resolves to.
         var stakedToId = attempt.addressIdConverter().convert(stakedTo);
-        if (SENTINEL_ACCOUNT_ID.equals(stakedToId) && !ZERO_ADDRESS.equals(stakedTo)) {
+        if (SENTINEL_ACCOUNT_ID.equals(stakedToId)) {
             if (!isLongZero(stakedTo)) {
                 // Only a long-zero address can be a non-canonical reference; fail closed on anything else
                 return new StakingUpdateCall(attempt, INVALID_STAKING_ID);
@@ -249,7 +252,7 @@ public class StakingTranslator extends AbstractCallTranslator<HasCallAttempt> {
         // HAPI lets an account stake to itself, but HIP-1522 does not: an account naming itself is rejected
         // here, before dispatch, so the HAPI behavior of CryptoUpdate is left exactly as it was. (Both ids come
         // from the same resolution, so an alias and a long-zero spelling of one account compare equal.)
-        if (stakedToId.equals(target) && !SENTINEL_ACCOUNT_ID.equals(stakedToId)) {
+        if (stakedToId.equals(target)) {
             return new StakingUpdateCall(attempt, SELF_STAKING_IS_NOT_ALLOWED);
         }
         return callFor(attempt, target, CryptoUpdateTransactionBody.newBuilder().stakedAccountId(stakedToId));

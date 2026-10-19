@@ -99,7 +99,12 @@ Three spellings reach the same state and produce the same child record:
 |------------------------------|--------------------------------------------------------------------------------------|
 | `unstake()`                  | The canonical form. Dispatches `staked_node_id = -1`.                                |
 | `stakeToNode(-1)`            | `-1` is the HAPI `staked_node_id` sentinel.                                          |
-| `stakeToAccount(address(0))` | The zero address resolves to account `0.0.0`, the HAPI `staked_account_id` sentinel. |
+| `stakeToAccount(address(0))` | Dispatches exactly the `unstake()` body, `staked_node_id = -1`.                      |
+
+The HIP requires all three to produce the same account state and the same child record. The zero
+address would naturally convert to account `0.0.0`, the HAPI `staked_account_id` sentinel, but the
+handler stores that in the other arm of the `staked_id` oneof and the dispatched body would differ, so
+`stakeToAccount` maps the literal zero address to the `unstake()` body instead.
 
 Only the **literal** zero address spells the third form. `AddressIdConverter` also yields `0.0.0` for a
 non-canonical reference, and `stakeToAccount` resolves that by the account number it encodes rather
