@@ -1609,7 +1609,9 @@ deploy_stage1_hash_writing() {
   if [[ -n "${DEPLOY_RELEASE_TAG}" ]]; then
     setup_args+=(--release-tag "${DEPLOY_RELEASE_TAG}")
   else
-    setup_args+=(--local-build-path "${LOCAL_BUILD_PATH}")
+    # Without an explicit version, setup falls back to Solo's default release (v0.76.4) and looks
+    # for that version's staging files instead of the ones prepared by network deploy.
+    setup_args+=(--local-build-path "${LOCAL_BUILD_PATH}" --consensus-node-version "${DEPLOY_VERSION_LABEL}")
   fi
   "${setup_args[@]}"
   inject_wraps_env_into_statefulsets
