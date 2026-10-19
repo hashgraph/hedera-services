@@ -100,6 +100,7 @@ public class AccountStakingConfigurationTest {
     private static final String ALIASED = "aliased";
     private static final String ALIASED_KEY = "aliasedKey";
     private static final String DELEGATE_KEY = "delegateKey";
+    private static final String ADMIN_KEY = "adminKey";
 
     /**
      * Deliberately non-zero. HAPI reports a cleared staking target as an unset {@code staked_id} oneof, so the
@@ -205,6 +206,28 @@ public class AccountStakingConfigurationTest {
                         .gas(1_000_000)
                         .via("missingReadForRecord"),
                 emptyChildRecordsCheck("missingReadForRecord", SUCCESS));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("a contract with an admin key stakes itself without that key's signature")
+    final Stream<DynamicTest> adminKeyedContractStakesItselfWithoutTheAdminKey() {
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).adminKey(ADMIN_KEY),
+                getContractInfo(HRC1522_CONTRACT).has(contractWith().adminKey(ADMIN_KEY)),
+                // HIP-1522: a contract is inherently authorized for its own account, whatever its Hedera key. Only
+                // the payer signs here, so the admin key - the contract account's key - never does
+                contractCall(HRC1522_CONTRACT, "stakeSelfToNodeCall", NODE_ID, true)
+                        .payingWith(ACCOUNT)
+                        .signedBy(ACCOUNT)
+                        .gas(1_000_000)
+                        .via("adminKeyedStakeSelf"),
+                succeeded("adminKeyedStakeSelf", "stakeSelfToNodeCall"),
+                getContractInfo(HRC1522_CONTRACT)
+                        .has(contractWith().stakedNodeId(NODE_ID).isDeclinedReward(true)));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})

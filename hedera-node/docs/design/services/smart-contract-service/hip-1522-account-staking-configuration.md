@@ -279,6 +279,8 @@ Two properties make the assertions meaningful and are easy to lose:
 
 - A contract created with **no admin key** stakes its own balance to a node and declines rewards;
   `getContractInfo` confirms it.
+- A contract **with** an admin key stakes itself without that key signing: a contract is inherently
+  authorized for its own account, whatever its Hedera key.
 - A contract reads its own staking state back, asserting every field of the returned struct.
 - A staking call externalizes exactly one child, whose body in the record stream is a `CryptoUpdate`
   naming the contract and carrying the staking fields alone.
