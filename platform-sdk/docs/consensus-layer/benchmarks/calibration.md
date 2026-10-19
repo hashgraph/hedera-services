@@ -66,7 +66,7 @@ docstring describes the method.
 
 - **If the forks differ more than their iterations, keep each fork short.** A fork costs its warmup, its iterations,
   and a few seconds to start the JVM. An iteration that does not lower the predicted noise is wasted time.
-- **More forks allow a tighter alert threshold but cost more of the night.** The tracked benchmarks run one after
+- **More forks allow a tighter alert threshold but cost more testing time.** The tracked benchmarks run one after
   another on one machine. The target is about 10 minutes per benchmark on average; calibration decides how long each
   benchmark gets, and some take longer than others.
 - **If whole runs differ a lot, use fewer forks and average over several nights instead.** More forks do not reduce the
