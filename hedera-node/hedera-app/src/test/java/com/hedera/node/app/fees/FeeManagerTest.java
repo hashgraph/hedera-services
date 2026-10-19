@@ -171,7 +171,7 @@ class FeeManagerTest {
         subject = new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(hookDispatchCalculator), Set.of());
         final var schedule = scheduleWith(makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(schedule)));
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(schedule), true));
     }
 
     @Test
@@ -200,12 +200,12 @@ class FeeManagerTest {
         final var complete = scheduleWith(
                 extraDefs(Extra.ACCOUNTS, Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS),
                 makeServiceFee(CRYPTO_TRANSFER, 100, makeExtraIncluded(Extra.ACCOUNTS, 2)));
-        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete)));
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete), true));
 
         final var withoutReference = scheduleWith(
                 extraDefs(Extra.ACCOUNTS, Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_TRANSFER, 100));
 
-        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutReference)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutReference), true));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
@@ -213,13 +213,13 @@ class FeeManagerTest {
     void updateSimpleFeesRejectsScheduleMissingAnExtraHandlersReadDirectly() {
         final var complete =
                 scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
-        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete)));
+        assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(complete), true));
 
         final var withoutAirdrops = scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE), makeServiceFee(CRYPTO_CREATE, 100));
         final var withoutAssociate = scheduleWith(extraDefs(Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAirdrops)));
-        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAssociate)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAirdrops), true));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAssociate), true));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
