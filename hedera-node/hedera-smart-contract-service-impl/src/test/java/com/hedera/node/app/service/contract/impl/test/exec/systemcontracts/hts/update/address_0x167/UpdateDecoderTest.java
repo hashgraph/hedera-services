@@ -25,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -80,10 +82,11 @@ class UpdateDecoderTest {
             assertEquals("memo", tokenUpdate.memo());
         }
 
-        @Test
-        void updateOmitsZeroTreasuryAndEmptyMemo() {
+        @ParameterizedTest
+        @ValueSource(strings = {"", "   "})
+        void updateOmitsZeroTreasuryAndBlankMemo(final String memo) {
             final var nameOnlyToken =
-                    Tuple.from(newName, "", ZERO_ADDRESS, "", true, 1000L, false, new Tuple[] {}, expiry);
+                    Tuple.from(newName, "", ZERO_ADDRESS, memo, true, 1000L, false, new Tuple[] {}, expiry);
             final var encoded = Bytes.wrapByteBuffer(UpdateTranslator.TOKEN_UPDATE_INFO_FUNCTION_V3.encodeCallWithArgs(
                     FUNGIBLE_TOKEN_HEADLONG_ADDRESS, nameOnlyToken));
             given(attempt.input()).willReturn(encoded);
