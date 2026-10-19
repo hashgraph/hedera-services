@@ -96,6 +96,9 @@ public class SidecarWatcher {
     @Nullable
     private final Runnable unsubscribeBlocks;
 
+    private final java.util.concurrent.atomic.AtomicReference<Throwable> blockStreamFailure =
+            new java.util.concurrent.atomic.AtomicReference<>();
+
     private final Queue<ExpectedSidecar> expectedSidecars = new LinkedBlockingDeque<>();
     private final Queue<TransactionSidecarRecord> actualSidecars = new LinkedBlockingDeque<>();
     private final HashSet<TransactionSidecarRecord> seenActualSidecars = new HashSet<>();
@@ -185,6 +188,11 @@ public class SidecarWatcher {
             }
 
             @Override
+            public void onBlockError(@NonNull final Throwable error) {
+                blockStreamFailure.compareAndSet(null, error);
+            }
+
+            @Override
             public void onNewBlock(@NonNull final Block block) {
                 try {
                     pumpBlockSidecars(block, translator, split, foundGenesis);
@@ -268,6 +276,7 @@ public class SidecarWatcher {
      * @throws AssertionError if there are mismatched sidecars or pending sidecars
      */
     public void assertExpectations(@NonNull final HapiSpec spec) {
+        assertNoBlockStreamFailure();
         // Ensure our listener has more than fair opportunity to observe all expected sidecars
         triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
         triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
@@ -293,6 +302,7 @@ public class SidecarWatcher {
             drainActualSidecars();
         }
 
+        assertNoBlockStreamFailure();
         // Stop listening for any more actual sidecars, then drain anything already queued.
         unsubscribe.run();
         if (unsubscribeBlocks != null) {
@@ -300,6 +310,7 @@ public class SidecarWatcher {
         }
         drainUnseenSidecarsFromStorage();
         drainActualSidecars();
+        assertNoBlockStreamFailure();
 
         assertTrue(thereAreNoMismatchedSidecars(), getMismatchErrors());
         assertTrue(
@@ -403,8 +414,14 @@ public class SidecarWatcher {
         }
     }
 
-    /** Expands partial state changes for translation, or returns the blocks as written if that fails. */
-    private static List<Block> withFullStateValues(@NonNull final List<Block> blocks) {
+    private void assertNoBlockStreamFailure() {
+        final var failure = blockStreamFailure.get();
+        if (failure != null)
+            throw new AssertionError("Cannot expand block state changes for sidecar translation", failure);
+    }
+
+    /** Expands partial state changes for translation, failing if a complete baseline is unavailable. */
+    private List<Block> withFullStateValues(@NonNull final List<Block> blocks) {
         if (blocks.stream().noneMatch(StateChangeDeltas::hasPartialUpdates)) {
             return blocks;
         }
@@ -412,8 +429,9 @@ public class SidecarWatcher {
         try {
             return blocks.stream().map(reconstructor::fullValuesForTranslation).toList();
         } catch (final RuntimeException e) {
-            log.warn("Cannot expand partial state changes; translating blocks as written", e);
-            return blocks;
+            blockStreamFailure.compareAndSet(null, e);
+            ensureUnsubscribed();
+            throw new AssertionError("Cannot expand partial state changes for sidecar translation", e);
         }
     }
 

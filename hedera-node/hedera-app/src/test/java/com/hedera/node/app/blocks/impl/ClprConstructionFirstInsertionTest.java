@@ -80,17 +80,18 @@ class ClprConstructionFirstInsertionTest {
         assertThat(harness.physicalInsertions).containsExactly("construction", "account");
     }
 
-    @Test
-    void firstInsertionIsOwnedByTheTransactionAlongsideItsMapChanges() {
-        final var harness = new Harness(true);
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void firstInsertionPreservesPhysicalCommitOrderAlongsideMapChanges(final boolean deltasEnabled) {
+        final var harness = new Harness(deltasEnabled);
         harness.putConstruction(harness.root, INITIAL);
         harness.putAccount(harness.root);
         harness.root.commitFullStack();
 
         assertThat(harness.outputChanges())
                 .extracting(StateChange::stateId)
-                .containsExactly(ACCOUNTS, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
-        assertThat(harness.physicalInsertions).hasSize(2);
+                .containsExactly(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, ACCOUNTS);
+        assertThat(harness.physicalInsertions).containsExactly("construction", "account");
         assertThat(harness.boundary.allStateChanges()).isEmpty();
     }
 

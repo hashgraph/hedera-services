@@ -219,15 +219,11 @@ public class StateChangeStrategyBenchmark {
         if (encoded.hasMapUpdate()) {
             final var u = encoded.mapUpdateOrThrow();
             rebuilt = StateChangeDeltas.applyBytes(
-                    type,
-                    priorBytes,
-                    type.bytes(u.valueOrThrow().valueChoice().value()),
-                    u.partial(),
-                    u.clearedFields());
+                    priorBytes, type.bytes(u.valueOrThrow().valueChoice().value()), u.partial(), u.clearedFields());
         } else {
             final var u = encoded.singletonUpdateOrThrow();
             rebuilt = StateChangeDeltas.applyBytes(
-                    type, priorBytes, type.bytes(u.newValue().value()), u.partial(), u.clearedFields());
+                    priorBytes, type.bytes(u.newValue().value()), u.partial(), u.clearedFields());
         }
         if (!rebuilt.equals(nextBytes)) throw new IllegalStateException("Byte replay mismatch: " + fixture);
     }

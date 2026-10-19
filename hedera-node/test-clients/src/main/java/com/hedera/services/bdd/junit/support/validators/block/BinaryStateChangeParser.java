@@ -2,6 +2,7 @@
 package com.hedera.services.bdd.junit.support.validators.block;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.schema.SingletonUpdateChangeSchema;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
@@ -130,25 +131,23 @@ final class BinaryStateChangeParser {
             @NonNull final ReadableSequentialData input,
             final long endPosition) {
         Bytes rawValue = null;
-        int valueField = 0;
         boolean partial = false;
         boolean unknownMetadata = false;
         final var clearedFields = new ArrayList<Integer>();
         while (input.position() < endPosition) {
             final int tag = input.readVarInt(false);
-            // partial:        field 1, bool varint     => (1 << 3) | 0 = 8
-            // cleared_fields: field 2, packed/unpacked => (2 << 3) | 2 = 18, (2 << 3) | 0 = 16
-            if (tag == 8) {
+            if (tag == (SingletonUpdateChangeSchema.PARTIAL.number() << 3)) {
                 partial = readPartial(input);
-            } else if (tag == 18) {
+            } else if (tag == ((SingletonUpdateChangeSchema.CLEARED_FIELDS.number() << 3) | 2)) {
                 readClearedFields(input, endPosition, clearedFields);
-            } else if (tag == 16) {
+            } else if (tag == (SingletonUpdateChangeSchema.CLEARED_FIELDS.number() << 3)) {
                 clearedFields.add(ProtoParserTools.readUint32(input));
-            } else if ((tag & 7) == 2 && StateChangeDeltas.singletonType(stateId, tag >>> 3) != null) {
+            } else if ((tag & 7) == 2
+                    && SingletonUpdateChangeSchema.getField(tag >>> 3) != null
+                    && SingletonUpdateChangeSchema.getField(tag >>> 3).oneOf()) {
                 if (rawValue != null) {
                     throw new IllegalArgumentException("Multiple singleton values");
                 }
-                valueField = tag >>> 3;
                 rawValue = readPayload(input, endPosition);
             } else {
                 unknownMetadata = true;
@@ -162,11 +161,7 @@ final class BinaryStateChangeParser {
         binaryState.updateSingleton(
                 stateId,
                 StateChangeDeltas.applyBytes(
-                        StateChangeDeltas.singletonType(stateId, valueField),
-                        partial ? binaryState.getSingleton(stateId) : null,
-                        rawValue,
-                        partial,
-                        clearedFields));
+                        partial ? binaryState.getSingleton(stateId) : null, rawValue, partial, clearedFields));
     }
 
     private static void processMapUpdateChange(
@@ -176,7 +171,6 @@ final class BinaryStateChangeParser {
             final long endPosition) {
         Bytes rawKey = null;
         Bytes rawValue = null;
-        int valueField = 0;
         boolean partial = false;
         boolean unknownMetadata = false;
         final var clearedFields = new ArrayList<Integer>();
@@ -201,7 +195,6 @@ final class BinaryStateChangeParser {
                     if ((valueTag & 7) != 2 || (valueTag >>> 3) == 0) {
                         throw new IllegalArgumentException("Invalid value type");
                     }
-                    valueField = valueTag >>> 3;
                     rawValue = readPayload(input, valueEnd);
                     if (input.position() != valueEnd) {
                         throw new IllegalArgumentException("Multiple map values");
@@ -225,11 +218,7 @@ final class BinaryStateChangeParser {
                 stateId,
                 rawKey,
                 StateChangeDeltas.applyBytes(
-                        StateChangeDeltas.mapType(stateId, valueField),
-                        partial ? binaryState.getKv(stateId, rawKey) : null,
-                        rawValue,
-                        partial,
-                        clearedFields));
+                        partial ? binaryState.getKv(stateId, rawKey) : null, rawValue, partial, clearedFields));
     }
 
     private static void readClearedFields(

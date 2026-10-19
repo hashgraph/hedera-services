@@ -115,19 +115,29 @@ public class StreamFileAlterationListener extends FileAlterationListenerAdaptor 
 
         final var block =
                 BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocks(blockFilePath).getFirst();
+        exposeBlock(blockFilePath.getParent(), block);
+    }
+
+    /** Delivers sparse blocks only to raw consumers; expansion failures use the explicit error callback. */
+    void exposeBlock(@NonNull final java.nio.file.Path blockDir, @NonNull final Block block) {
         Block fullBlock = null;
-        for (final var l : listeners) {
-            try {
-                if (!l.wantsFullStateValues()) {
-                    l.onNewBlock(block);
-                } else {
-                    if (fullBlock == null) {
-                        fullBlock = fullStateValues.expand(blockFilePath.getParent(), block);
-                    }
-                    l.onNewBlock(fullBlock);
+        RuntimeException expansionFailure = null;
+        for (final var listener : listeners) {
+            if (listener.wantsFullStateValues() && fullBlock == null && expansionFailure == null) {
+                try {
+                    fullBlock = fullStateValues.expand(blockDir, block);
+                } catch (final RuntimeException e) {
+                    expansionFailure = e;
                 }
+            }
+            if (listener.wantsFullStateValues() && expansionFailure != null) {
+                listener.onBlockError(expansionFailure);
+                continue;
+            }
+            try {
+                listener.onNewBlock(listener.wantsFullStateValues() ? fullBlock : block);
             } catch (Exception e) {
-                log.error("{} failed to process block file {}", l.name(), file.getAbsolutePath(), e);
+                log.error("{} failed to process block in {}", listener.name(), blockDir, e);
             }
         }
     }

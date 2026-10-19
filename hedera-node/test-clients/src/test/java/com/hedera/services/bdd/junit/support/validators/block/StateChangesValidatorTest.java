@@ -3,6 +3,7 @@ package com.hedera.services.bdd.junit.support.validators.block;
 
 import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO_384;
 import static com.hedera.node.app.service.entityid.impl.schemas.V0590EntityIdSchema.ENTITY_COUNTS_STATE_ID;
+import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.applyPartial;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.carriesCompressedWrapsProof;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.currentBlockHashFromNextBlockFooter;
 import static com.hedera.services.bdd.junit.support.validators.block.StateChangesValidator.validateStartOfBlockStateHash;
@@ -35,10 +36,8 @@ import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.service.entityid.EntityIdService;
-import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.StateLifecycleManager;
 import com.swirlds.state.merkle.VirtualMapState;
@@ -116,15 +115,6 @@ class StateChangesValidatorTest {
     }
 
     @Test
-    void oneofSwitchWithoutClearingTheOldAlternativeIsRejected() {
-        final var node = Account.newBuilder().stakedNodeId(7).build();
-        final var account = Account.newBuilder()
-                .stakedAccountId(AccountID.newBuilder().accountNum(123))
-                .build();
-        assertThrows(IllegalArgumentException.class, () -> applyPartial(Account.PROTOBUF, node, account, List.of()));
-    }
-
-    @Test
     void malformedPartialMetadataIsRejected() {
         final var prior = Account.newBuilder().tinybarBalance(10).memo("memo").build();
         final var partial = Account.newBuilder().tinybarBalance(20).build();
@@ -134,9 +124,6 @@ class StateChangesValidatorTest {
         assertThrows(
                 IllegalArgumentException.class, () -> applyPartial(Account.PROTOBUF, prior, partial, List.of(6, 6)));
         assertThrows(IllegalArgumentException.class, () -> applyPartial(Account.PROTOBUF, prior, partial, List.of(5)));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> StateChangesValidator.applyPartial(null, Account.PROTOBUF, prior, partial, List.of()));
         assertThrows(IllegalArgumentException.class, () -> applyPartial(Account.PROTOBUF, null, partial, List.of()));
     }
 
@@ -462,11 +449,5 @@ class StateChangesValidatorTest {
                                 .build())
                         .build())
                 .build();
-    }
-
-    private static <T> T applyPartial(
-            final Codec<T> codec, final T prior, final T partial, final List<Integer> clearedFields) {
-        final var type = StateChangeDeltas.valueType(prior == null ? partial : prior);
-        return StateChangesValidator.applyPartial(type, codec, prior, partial, clearedFields);
     }
 }

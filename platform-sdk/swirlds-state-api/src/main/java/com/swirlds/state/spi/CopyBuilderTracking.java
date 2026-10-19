@@ -13,13 +13,6 @@ public final class CopyBuilderTracking {
         return prior != null && value instanceof CopyBuilderTracked<?> tracked && tracked.$copyBuilderOrigin() == prior;
     }
 
-    /** Whether a protobuf field is a candidate; untracked values must include every field. */
-    public static boolean fieldMayHaveChanged(@Nullable final Object value, final int fieldNumber) {
-        return !(value instanceof CopyBuilderTracked<?> tracked)
-                || tracked.$copyBuilderOrigin() == null
-                || tracked.$copyBuilderFieldChanged(fieldNumber);
-    }
-
     /** Remove shallow provenance before storing a value, preserving its immutable field values. */
     @Nullable
     public static <T> T untracked(@Nullable final T value) {

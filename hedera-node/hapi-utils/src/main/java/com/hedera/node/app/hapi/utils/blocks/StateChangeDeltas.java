@@ -17,12 +17,12 @@ import com.hedera.pbj.runtime.DiffCodec;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.PartialApplier;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.IntFunction;
 
 /** Universal top-level replacements and explicit clears. No recursive patches or appends. */
 public final class StateChangeDeltas {
@@ -69,22 +69,13 @@ public final class StateChangeDeltas {
         private final String name;
         private final Class<?> javaType;
         private final Codec<Object> codec;
-        final IntFunction<FieldDefinition> fields;
-        final IntFunction<String> oneof;
         private final DiffCodec<Object> diffCodec;
 
         @SuppressWarnings("unchecked")
-        <T> ValueType(
-                String name,
-                Class<T> javaType,
-                Codec<T> codec,
-                IntFunction<FieldDefinition> fields,
-                IntFunction<String> oneof) {
+        <T> ValueType(String name, Class<T> javaType, Codec<T> codec) {
             this.name = name;
             this.javaType = javaType;
             this.codec = (Codec<Object>) codec;
-            this.fields = fields;
-            this.oneof = oneof;
             this.diffCodec = codec instanceof DiffCodec<?> capable ? (DiffCodec<Object>) capable : null;
         }
 
@@ -188,13 +179,11 @@ public final class StateChangeDeltas {
             FieldDefinition partialField,
             FieldDefinition clearedField) {
         if (minSaving < 0) throw new IllegalArgumentException("Minimum saving must be nonnegative");
-        long overhead = PartialStateChangeApplier.varintSize((long) partialField.number() << 3) + 1;
+        long overhead = varintSize((long) partialField.number() << 3) + 1;
         if (!delta.clearedFields().isEmpty()) {
             long length = 0;
-            for (int field : delta.clearedFields()) length += PartialStateChangeApplier.varintSize(field);
-            overhead += PartialStateChangeApplier.varintSize(((long) clearedField.number() << 3) | 2)
-                    + PartialStateChangeApplier.varintSize(length)
-                    + length;
+            for (int field : delta.clearedFields()) length += varintSize(field);
+            overhead += varintSize(((long) clearedField.number() << 3) | 2) + varintSize(length) + length;
         }
         return type.diffCodec.worthPartial(type.stateValue(next), delta.mask, minSaving, Math.toIntExact(overhead));
     }
@@ -277,7 +266,7 @@ public final class StateChangeDeltas {
         if (prior == null) throw new IllegalArgumentException("Partial update requires a prior value");
         if (type.diffCodec == null) {
             // Byte replay remains possible even when this build did not generate object diff APIs.
-            return type.parse(applyBytes(type, type.bytes(prior), type.bytes(partial), true, cleared));
+            return type.parse(applyBytes(type.bytes(prior), type.bytes(partial), true, cleared));
         }
         try {
             return type.diffCodec.applyPartial(
@@ -289,16 +278,16 @@ public final class StateChangeDeltas {
         }
     }
 
-    public static Bytes applyBytes(
-            @Nullable ValueType type,
-            @Nullable Bytes prior,
-            Bytes value,
-            boolean partial,
-            List<Integer> clearedFields) {
+    /**
+     * Replays top-level field replacements without a payload schema. Inputs must be canonical PBJ encodings;
+     * producers must explicitly clear old oneof alternatives when switching members.
+     */
+    public static Bytes applyBytes(@Nullable Bytes prior, Bytes value, boolean partial, List<Integer> clearedFields) {
         requireMetadata(partial, clearedFields);
         if (!partial) return value;
         if (prior == null) throw new IllegalArgumentException("Partial update requires a prior value");
-        return PartialStateChangeApplier.splice(requireType(type), prior, value, clearedFields);
+        return PartialApplier.splice(
+                prior, value, clearedFields.stream().mapToInt(Integer::intValue).toArray());
     }
 
     public static boolean hasPartialUpdates(Block block) {
@@ -356,5 +345,11 @@ public final class StateChangeDeltas {
                 throw new IllegalArgumentException("Invalid or unordered clear");
             previous = field;
         }
+    }
+
+    static int varintSize(long value) {
+        int size = 1;
+        while ((value >>>= 7) != 0) size++;
+        return size;
     }
 }

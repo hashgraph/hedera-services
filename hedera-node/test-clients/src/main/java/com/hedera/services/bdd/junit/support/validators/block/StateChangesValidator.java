@@ -48,7 +48,6 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamUtils;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
-import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas.ValueType;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.history.HistoryLibrary;
@@ -1116,8 +1115,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                             new SingletonUpdateChange(update.newValue(), false, List.of()));
                     final var singleton = update.partial()
                             ? applyPartial(
-                                    StateChangeDeltas.singletonType(
-                                            stateId, update.newValue().kind().protoOrdinal()),
                                     valueCodecFor(serviceName, stateId),
                                     singletonState.get(),
                                     value,
@@ -1137,12 +1134,6 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var payload = BlockStreamUtils.mapValueFor(update.valueOrThrow());
                     final var value = update.partial()
                             ? applyPartial(
-                                    StateChangeDeltas.mapType(
-                                            stateId,
-                                            update.valueOrThrow()
-                                                    .valueChoice()
-                                                    .kind()
-                                                    .protoOrdinal()),
                                     valueCodecFor(serviceName, stateId),
                                     mapState.get(key),
                                     payload,
@@ -1199,17 +1190,12 @@ public class StateChangesValidator implements BlockStreamValidator {
     }
 
     /**
-     * Reconstruct a full state value with the strict top-level splice, which also rejects non-canonical payloads,
-     * unknown or overlapping fields, unordered clears, and oneof switches that do not clear the old alternative.
+     * Reconstruct a full state value by splicing canonical field runs, then decoding with the state's codec.
      */
     static <T> T applyPartial(
-            @Nullable final ValueType type,
-            final Codec<T> codec,
-            @Nullable final T prior,
-            final T partial,
-            final List<Integer> clearedFields) {
+            final Codec<T> codec, @Nullable final T prior, final T partial, final List<Integer> clearedFields) {
         final var merged = StateChangeDeltas.applyBytes(
-                type, prior == null ? null : codec.toBytes(prior), codec.toBytes(partial), true, clearedFields);
+                prior == null ? null : codec.toBytes(prior), codec.toBytes(partial), true, clearedFields);
         try {
             return codec.parse(merged);
         } catch (ParseException e) {

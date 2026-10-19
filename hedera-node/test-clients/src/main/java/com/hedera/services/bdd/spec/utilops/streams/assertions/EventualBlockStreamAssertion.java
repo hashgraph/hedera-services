@@ -116,6 +116,11 @@ public class EventualBlockStreamAssertion extends AbstractEventualStreamAssertio
             }
 
             @Override
+            public void onBlockError(@NonNull final Throwable error) {
+                result.fail("Cannot reconstruct full block state values: " + error);
+            }
+
+            @Override
             public void onNewBlock(@NonNull final Block block) {
                 requireNonNull(block);
                 try {

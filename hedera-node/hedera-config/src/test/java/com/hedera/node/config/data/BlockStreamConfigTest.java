@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
 class BlockStreamConfigTest {
 
     @Test
-    void deltasAreOffByDefaultAndRestrictedToCompleteBlockStreams() {
+    void deltasAreOnByDefaultOnlyForCompleteBlockStreams() {
         for (final var mode : StreamMode.values()) {
             final var defaults = com.hedera.node.config.testfixtures.HederaTestConfigBuilder.create()
                     .withValue("blockStream.streamMode", mode.name())
                     .getOrCreateConfig()
                     .getConfigData(BlockStreamConfig.class);
-            assertThat(defaults.stateChangeDeltasEnabled()).isFalse();
+            assertThat(defaults.stateChangeDeltasEnabled()).isEqualTo(mode == StreamMode.BLOCKS);
             assertThat(defaults.stateChangeDeltaMinSaving()).isEqualTo(64);
             final var enabled = com.hedera.node.config.testfixtures.HederaTestConfigBuilder.create()
                     .withValue("blockStream.streamMode", mode.name())

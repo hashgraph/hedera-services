@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 class BlockContentsValidatorTest {
 
     private static final Timestamp TIMESTAMP = new Timestamp(1_000_000L, 0);
-    private static final Bytes EMPTY_HASH = Bytes.wrap(new byte[32]);
+    private static final Bytes EMPTY_HASH = com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO_384;
 
     private static BlockItem headerItem(long blockNumber) {
         return new BlockItem(new OneOf<>(
@@ -94,9 +94,17 @@ class BlockContentsValidatorTest {
 
     @Test
     void validWrbGenesis() {
+        final var block = new Block(List.of(headerItem(0), recordFileItem(), footerItem(), wrbProofItem(0, 2)));
+        assertDoesNotThrow(() -> new BlockContentsValidator().validateBlocks(List.of(block)));
+    }
+
+    @Test
+    void wrbGenesisCannotContainStateChanges() {
         final var block = new Block(
                 List.of(headerItem(0), stateChangesItem(), recordFileItem(), footerItem(), wrbProofItem(0, 2)));
-        assertDoesNotThrow(() -> new BlockContentsValidator().validateBlocks(List.of(block)));
+        final var error =
+                assertThrows(AssertionError.class, () -> new BlockContentsValidator().validateBlocks(List.of(block)));
+        assertTrue(error.getMessage().contains("StateChanges found"));
     }
 
     @Test
@@ -152,7 +160,7 @@ class BlockContentsValidatorTest {
                 List.of(headerItem(5), stateChangesItem(), recordFileItem(), footerItem(), wrbProofItem(5, 6)));
         final var err =
                 assertThrows(AssertionError.class, () -> new BlockContentsValidator().validateBlocks(List.of(block)));
-        assertTrue(err.getMessage().contains("non-genesis block"));
+        assertTrue(err.getMessage().contains("StateChanges found"));
     }
 
     @Test
@@ -161,7 +169,7 @@ class BlockContentsValidatorTest {
                 List.of(headerItem(1), recordFileItem(), stateChangesItem(), footerItem(), wrbProofItem(1, 6)));
         final var err =
                 assertThrows(AssertionError.class, () -> new BlockContentsValidator().validateBlocks(List.of(block)));
-        assertTrue(err.getMessage().contains("StateChanges found after RecordFileItem"));
+        assertTrue(err.getMessage().contains("StateChanges found"));
     }
 
     @Test

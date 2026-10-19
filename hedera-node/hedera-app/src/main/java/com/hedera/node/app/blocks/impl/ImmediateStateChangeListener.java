@@ -85,7 +85,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -102,11 +101,8 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP, QUEUE, SINGLETON);
 
-    private final List<StateChange> singletonStateChanges = new ArrayList<>();
-
-    private final List<StateChange> kvStateChanges = new ArrayList<>();
-
-    private final List<StateChange> queueStateChanges = new ArrayList<>();
+    /** All callbacks in terminal commit order, including across state types and services. */
+    private final List<StateChange> stateChanges = new ArrayList<>();
 
     private int deltaMinSaving = StateChangeDeltas.DEFAULT_MIN_SAVING;
     private boolean deltasEnabled;
@@ -164,7 +160,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
                 change.partial(),
                 change.clearedFields(),
                 change.getUnknownFields());
-        singletonStateChanges.add(StateChange.newBuilder()
+        stateChanges.add(StateChange.newBuilder()
                 .stateId(stateId)
                 .singletonUpdate(wireChange)
                 .build());
@@ -172,12 +168,12 @@ public class ImmediateStateChangeListener implements StateChangeListener {
 
     /** Resets transaction-associated singleton changes without discarding queue changes. */
     public void resetSingletonStateChanges() {
-        singletonStateChanges.clear();
+        stateChanges.removeIf(StateChange::hasSingletonUpdate);
     }
 
     /** Returns transaction-associated singleton changes. */
     public List<StateChange> getSingletonStateChanges() {
-        return singletonStateChanges;
+        return stateChanges.stream().filter(StateChange::hasSingletonUpdate).toList();
     }
 
     /**
@@ -185,14 +181,14 @@ public class ImmediateStateChangeListener implements StateChangeListener {
      */
     public void resetKvStateChanges(@Nullable final Predicate<Object> logicallyIdenticalMapping) {
         this.logicallyIdenticalMapping = logicallyIdenticalMapping;
-        kvStateChanges.clear();
+        stateChanges.removeIf(change -> change.hasMapUpdate() || change.hasMapDelete());
     }
 
     /**
      * Resets queue state changes.
      */
     public void resetQueueStateChanges() {
-        queueStateChanges.clear();
+        stateChanges.removeIf(change -> change.hasQueuePush() || change.hasQueuePop());
     }
 
     /**
@@ -200,9 +196,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
      */
     public void reset(@Nullable final Predicate<Object> logicallyIdenticalMapping) {
         this.logicallyIdenticalMapping = logicallyIdenticalMapping;
-        kvStateChanges.clear();
-        queueStateChanges.clear();
-        singletonStateChanges.clear();
+        stateChanges.clear();
     }
 
     @Override
@@ -250,7 +244,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
                 .stateId(stateId)
                 .mapUpdate(CopyBuilderTracking.untracked(change))
                 .build();
-        kvStateChanges.add(stateChange);
+        stateChanges.add(stateChange);
     }
 
     @Override
@@ -258,7 +252,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         Objects.requireNonNull(key, "key must not be null");
         final var change =
                 MapDeleteChange.newBuilder().key(mapChangeKeyFor(key)).build();
-        kvStateChanges.add(
+        stateChanges.add(
                 StateChange.newBuilder().stateId(stateId).mapDelete(change).build());
     }
 
@@ -269,7 +263,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
                 .stateId(stateId)
                 .queuePush(new QueuePushChange(queuePushChangeValueFor(value)))
                 .build();
-        queueStateChanges.add(stateChange);
+        stateChanges.add(stateChange);
     }
 
     @Override
@@ -278,7 +272,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
                 .stateId(stateId)
                 .queuePop(new QueuePopChange())
                 .build();
-        queueStateChanges.add(stateChange);
+        stateChanges.add(stateChange);
     }
 
     /**
@@ -286,7 +280,9 @@ public class ImmediateStateChangeListener implements StateChangeListener {
      * @return the list of keyValue state changes
      */
     public List<StateChange> getKvStateChanges() {
-        return kvStateChanges;
+        return stateChanges.stream()
+                .filter(change -> change.hasMapUpdate() || change.hasMapDelete())
+                .toList();
     }
 
     /**
@@ -294,7 +290,9 @@ public class ImmediateStateChangeListener implements StateChangeListener {
      * @return the list of queue state changes
      */
     public List<StateChange> getQueueStateChanges() {
-        return queueStateChanges;
+        return stateChanges.stream()
+                .filter(change -> change.hasQueuePush() || change.hasQueuePop())
+                .toList();
     }
 
     /**
@@ -302,11 +300,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
      * @return the list of state changes
      */
     public List<StateChange> getStateChanges() {
-        final var allStateChanges = new LinkedList<StateChange>();
-        allStateChanges.addAll(kvStateChanges);
-        allStateChanges.addAll(queueStateChanges);
-        allStateChanges.addAll(singletonStateChanges);
-        return allStateChanges;
+        return new ArrayList<>(stateChanges);
     }
 
     private static <K> MapChangeKey mapChangeKeyFor(@NonNull final K key) {

@@ -22,8 +22,8 @@ import org.apache.logging.log4j.Logger;
 /**
  * Expands partial state changes in the blocks of one directory, delivered in increasing order, for listeners that
  * translate state values. Stays idle until the first block with a partial update, then replays the completed
- * blocks before it from disk; later gaps are filled from disk the same way. If expansion fails, it logs once and
- * hands back the blocks as written from then on.
+ * blocks before it from disk; later gaps are filled from disk the same way. An expansion failure is terminal
+ * and must be surfaced to consumers; sparse values must never be presented as complete state.
  */
 final class FullStateValues {
     private static final Logger log = LogManager.getLogger(FullStateValues.class);
@@ -32,16 +32,19 @@ final class FullStateValues {
     private StateChangeReconstructor reconstructor;
 
     private long nextBlock;
-    private boolean failed;
+
+    @Nullable
+    private IllegalStateException failure;
 
     /**
      * Returns the block with every partial update replaced by its full value, or the block itself when nothing
-     * needs expanding or it cannot be expanded. The result must not be used to verify proofs.
+     * needs expanding. Throws if a complete baseline cannot be recovered. The result must not be used to verify proofs.
      */
     synchronized Block expand(@NonNull final Path blockDir, @NonNull final Block block) {
         requireNonNull(blockDir);
         requireNonNull(block);
-        if (failed || (reconstructor == null && !StateChangeDeltas.hasPartialUpdates(block))) {
+        if (failure != null) throw failure;
+        if (reconstructor == null && !StateChangeDeltas.hasPartialUpdates(block)) {
             return block;
         }
         try {
@@ -51,8 +54,7 @@ final class FullStateValues {
                 reconstructor = new StateChangeReconstructor();
                 nextBlock = -1;
             } else if (number < nextBlock) {
-                log.warn("Block #{} in {} arrived after #{}; passing it on unexpanded", number, blockDir, nextBlock);
-                return block;
+                throw new IllegalStateException("Out-of-order block #" + number + "; expected #" + nextBlock);
             }
             for (final var earlier : completedBlocks(blockDir, nextBlock, number)) {
                 reconstructor.fullValuesForTranslation(earlier);
@@ -61,9 +63,8 @@ final class FullStateValues {
             nextBlock = number + 1;
             return expanded;
         } catch (final RuntimeException e) {
-            failed = true;
-            log.warn("Cannot expand partial state changes in {}; passing blocks on as written", blockDir, e);
-            return block;
+            failure = new IllegalStateException("Cannot expand partial state changes in " + blockDir, e);
+            throw failure;
         }
     }
 

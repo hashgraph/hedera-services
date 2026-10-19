@@ -65,12 +65,7 @@ class StateChangeDeltasTest {
         final var prior =
                 Account.newBuilder().memo("x".repeat(200)).tinybarBalance(1).build();
         final var next = prior.copyBuilder().tinybarBalance(2).build();
-        final var adapter = new ValueType(
-                "account",
-                Account.class,
-                plain,
-                com.hedera.hapi.node.state.token.schema.AccountSchema::getField,
-                field -> "");
+        final var adapter = new ValueType("account", Account.class, plain);
         assertThat(adapter.canDiff(next)).isFalse();
         final var delta = StateChangeDeltas.diff(prior, next);
         assertThat(adapter.applyPartial(prior, delta.value(), delta.clearedFields()))
@@ -98,11 +93,7 @@ class StateChangeDeltasTest {
         assertThat(StateChangeTypes.PROTO_STRING.applyPartial(prior, cleared, List.of(1)))
                 .isEqualTo(cleared);
         assertThat(StateChangeDeltas.applyBytes(
-                        StateChangeTypes.PROTO_STRING,
-                        StateChangeTypes.PROTO_STRING.bytes(prior),
-                        Bytes.EMPTY,
-                        true,
-                        List.of(1)))
+                        StateChangeTypes.PROTO_STRING.bytes(prior), Bytes.EMPTY, true, List.of(1)))
                 .isEqualTo(Bytes.EMPTY);
     }
 
@@ -193,7 +184,7 @@ class StateChangeDeltasTest {
         final var delta = StateChangeDeltas.diff(old, value);
         assertThat(delta).as(type.name()).isNotNull();
         final var sparse = type.bytes(delta.value());
-        assertThat(StateChangeDeltas.applyBytes(type, type.bytes(old), sparse, true, delta.clearedFields()))
+        assertThat(StateChangeDeltas.applyBytes(type.bytes(old), sparse, true, delta.clearedFields()))
                 .as(type.name())
                 .isEqualTo(type.bytes(value));
         final var descriptor = descriptor(type);
@@ -208,7 +199,7 @@ class StateChangeDeltasTest {
         assertThat(applied).isEqualTo(value);
         assertThat(type.bytes(applied)).isEqualTo(type.bytes(value));
         final long omitted = type.bytes(value).length() - sparse.length();
-        // Map metadata tags (4, 5) and singleton tags (1, 2) each take one byte.
+        // Account for the different tag lengths of map and singleton metadata.
         for (final var fields : List.of(
                 List.of(MapUpdateChangeSchema.PARTIAL, MapUpdateChangeSchema.CLEARED_FIELDS),
                 List.of(SingletonUpdateChangeSchema.PARTIAL, SingletonUpdateChangeSchema.CLEARED_FIELDS))) {
@@ -217,10 +208,9 @@ class StateChangeDeltasTest {
             long overhead = (partialField.number() < 16 ? 1 : 2) + 1;
             if (!delta.clearedFields().isEmpty()) {
                 long length = delta.clearedFields().stream()
-                        .mapToLong(PartialStateChangeApplier::varintSize)
+                        .mapToLong(StateChangeDeltas::varintSize)
                         .sum();
-                overhead +=
-                        (clearedField.number() < 16 ? 1 : 2) + PartialStateChangeApplier.varintSize(length) + length;
+                overhead += (clearedField.number() < 16 ? 1 : 2) + StateChangeDeltas.varintSize(length) + length;
             }
             for (int min : List.of(0, 1, 32, 64, 128, 4096)) {
                 assertThat(StateChangeDeltas.worthPartial(type, value, delta, min, partialField, clearedField))
@@ -357,7 +347,6 @@ class StateChangeDeltasTest {
             final var delta = StateChangeDeltas.diff(values.getFirst(), values.getLast());
             assertThat(delta).isNotNull();
             assertThat(StateChangeDeltas.applyBytes(
-                            tokenType,
                             tokenType.bytes(values.getFirst()),
                             tokenType.bytes(delta.value()),
                             true,
@@ -419,7 +408,7 @@ class StateChangeDeltasTest {
     }
 
     @Test
-    void malformedMetadataMissingBaselineAndWrongOneofInstructionsFail() {
+    void malformedMetadataMissingBaselineAndInvalidWireFramingFail() {
         final var prior = Account.newBuilder()
                 .memo("keep")
                 .tinybarBalance(1)
@@ -428,28 +417,32 @@ class StateChangeDeltasTest {
         final var type = StateChangeDeltas.valueType(prior);
         final var balance =
                 Account.PROTOBUF.toBytes(Account.newBuilder().tinybarBalance(2).build());
-        assertThatThrownBy(() -> StateChangeDeltas.applyBytes(type, null, balance, true, List.of()))
+        assertThatThrownBy(() -> StateChangeDeltas.applyBytes(null, balance, true, List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        for (var clears : List.of(List.of(5, 5), List.of(6, 5), List.of(0), List.of(999), List.of(5))) {
-            assertThatThrownBy(() -> StateChangeDeltas.applyBytes(type, type.bytes(prior), balance, true, clears))
+        for (var clears : List.of(List.of(5, 5), List.of(6, 5), List.of(0), List.of(536870912), List.of(5))) {
+            assertThatThrownBy(() -> StateChangeDeltas.applyBytes(type.bytes(prior), balance, true, clears))
                     .isInstanceOf(IllegalArgumentException.class);
         }
-        assertThatThrownBy(() -> StateChangeDeltas.applyBytes(type, null, balance, false, List.of(5)))
+        assertThatThrownBy(() -> StateChangeDeltas.applyBytes(null, balance, false, List.of(5)))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> StateChangeDeltas.applyBytes(
-                        type,
-                        type.bytes(prior),
-                        Account.PROTOBUF.toBytes(Account.newBuilder()
-                                .stakedAccountId(AccountID.DEFAULT)
-                                .build()),
-                        true,
-                        List.of()))
-                .isInstanceOf(IllegalArgumentException.class);
-        for (String bytes : List.of("2800", "baffff", "2a0101", "32026b", "808000")) {
-            assertThatThrownBy(() -> StateChangeDeltas.applyBytes(
-                            type, type.bytes(prior), Bytes.fromHex(bytes), true, List.of()))
+        for (String bytes : List.of("baffff", "32026b", "808000", "00", "10010801", "0b")) {
+            assertThatThrownBy(() ->
+                            StateChangeDeltas.applyBytes(type.bytes(prior), Bytes.fromHex(bytes), true, List.of()))
                     .isInstanceOf(RuntimeException.class);
         }
+    }
+
+    @Test
+    void byteReplaySplicesOpaqueFieldsWithoutAPayloadSchema() {
+        // Preserve field 1 and future field 100, replace field 2, clear field 3,
+        // and add the entire repeated run for future field 99.
+        final var prior = Bytes.fromHex("08011201611801a00601");
+        final var partial = Bytes.fromHex("1201629a0601789a060179");
+        assertThat(StateChangeDeltas.applyBytes(prior, partial, true, List.of(3)))
+                .isEqualTo(Bytes.fromHex("08011201629a0601789a060179a00601"));
+        // An absent field can be cleared without knowing whether the current schema declares it.
+        assertThat(StateChangeDeltas.applyBytes(prior, Bytes.EMPTY, true, List.of(999)))
+                .isEqualTo(prior);
     }
 
     @Test
@@ -460,7 +453,7 @@ class StateChangeDeltasTest {
         assertThat(delta.clearedFields()).containsExactly(11);
         final var type = StateChangeDeltas.valueType(prior);
         assertThat(StateChangeDeltas.applyBytes(
-                        type, type.bytes(prior), type.bytes(delta.value()), true, delta.clearedFields()))
+                        type.bytes(prior), type.bytes(delta.value()), true, delta.clearedFields()))
                 .isEqualTo(type.bytes(next));
         final var update = full((Account) delta.value())
                 .copyBuilder()
@@ -471,7 +464,7 @@ class StateChangeDeltasTest {
         assertThatThrownBy(() -> StateChangeDeltas.applyMap(
                         2, prior, update.copyBuilder().clearedFields(List.of()).build()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThat(StateChangeDeltas.applyBytes(type, type.bytes(next), Bytes.EMPTY, true, List.of(11)))
+        assertThat(StateChangeDeltas.applyBytes(type.bytes(next), Bytes.EMPTY, true, List.of(11)))
                 .isEqualTo(type.bytes(next)); // Clearing an absent alternative is idempotent.
         assertThat(type.applyPartial(next, Account.DEFAULT, List.of(11))).isEqualTo(next);
     }

@@ -3,6 +3,7 @@ package com.hedera.services.bdd.junit.support;
 
 import static com.hedera.hapi.block.stream.output.StateIdentifier.STATE_ID_ACCOUNTS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
@@ -43,19 +44,83 @@ class FullStateValuesTest {
         assertThat(subject.expand(dir, unchanged)).isSameAs(unchanged);
         assertThat(accountIn(subject.expand(dir, partial))).isEqualTo(full(SECOND));
         assertThat(accountIn(subject.expand(dir, later))).isEqualTo(full(THIRD));
-        // A block it has already passed can no longer be expanded
-        assertThat(subject.expand(dir, partial)).isSameAs(partial);
+        // A block it has already passed cannot safely use the current baseline.
+        assertThatThrownBy(() -> subject.expand(dir, partial))
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseMessage("Out-of-order block #2; expected #4");
     }
 
     @Test
-    void passesBlocksOnAsWrittenOnceExpansionFails() throws Exception {
+    void missingBaselineFailsExplicitlyAndStopsLaterExpansion() throws Exception {
         // Without block 0 on disk there is no baseline for the partial in block 1
         final var partial = written(block(1, partial(FIRST, SECOND)));
         final var later = written(block(2, partial(SECOND, THIRD)));
         final var subject = new FullStateValues();
 
-        assertThat(subject.expand(dir, partial)).isSameAs(partial);
-        assertThat(subject.expand(dir, later)).isSameAs(later);
+        assertThatThrownBy(() -> subject.expand(dir, partial))
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseMessage("Partial update requires a prior value");
+        assertThatThrownBy(() -> subject.expand(dir, later))
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseMessage("Partial update requires a prior value");
+    }
+
+    @Test
+    void aGapInCompletedBlocksFailsInsteadOfReturningASparseValue() throws Exception {
+        written(block(0, full(FIRST)));
+        final var subject = new FullStateValues();
+        subject.expand(dir, written(block(1, partial(FIRST, SECOND))));
+        final var later = written(block(3, partial(SECOND, THIRD)));
+        assertThatThrownBy(() -> subject.expand(dir, later))
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseMessage("Blocks #2 to #2 are incomplete in " + dir);
+    }
+
+    @Test
+    void fullValueListenersReceiveAnErrorWhileRawListenersKeepTheOriginalBlock() {
+        final var sparse = block(1, partial(FIRST, SECOND));
+        final var delivered = new java.util.ArrayList<Block>();
+        final var errors = new java.util.ArrayList<Throwable>();
+        final var listener = new StreamFileAlterationListener();
+        listener.subscribe(new StreamDataListener() {
+            @Override
+            public boolean wantsFullStateValues() {
+                return true;
+            }
+
+            @Override
+            public void onNewBlock(final Block block) {
+                throw new AssertionError("Sparse value delivered as full");
+            }
+
+            @Override
+            public void onBlockError(final Throwable error) {
+                errors.add(error);
+            }
+        });
+        listener.subscribe(new StreamDataListener() {
+            @Override
+            public void onNewBlock(final Block block) {
+                delivered.add(block);
+            }
+        });
+        listener.exposeBlock(dir, sparse);
+        assertThat(delivered).containsExactly(sparse);
+        assertThat(errors).singleElement().isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void unhandledExpansionErrorsFailTheListener() {
+        final var listener = new StreamFileAlterationListener();
+        listener.subscribe(new StreamDataListener() {
+            @Override
+            public boolean wantsFullStateValues() {
+                return true;
+            }
+        });
+        assertThatThrownBy(() -> listener.exposeBlock(dir, block(1, partial(FIRST, SECOND))))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Cannot reconstruct full block state values");
     }
 
     private Block written(final Block block) throws Exception {

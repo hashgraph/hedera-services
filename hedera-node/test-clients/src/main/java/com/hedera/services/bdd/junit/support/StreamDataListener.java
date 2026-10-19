@@ -31,6 +31,11 @@ public interface StreamDataListener {
      */
     default void onNewBlock(@NonNull final Block block) {}
 
+    /** Called instead of onNewBlock when full state values cannot be reconstructed. */
+    default void onBlockError(@NonNull final Throwable error) {
+        throw new AssertionError("Cannot reconstruct full block state values", error);
+    }
+
     default void onNewItem(RecordStreamItem item) {}
 
     default void onNewSidecar(TransactionSidecarRecord sidecar) {}
