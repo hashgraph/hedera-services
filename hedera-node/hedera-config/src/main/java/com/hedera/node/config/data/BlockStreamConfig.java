@@ -82,8 +82,6 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "false") @NodeProperty
         boolean enhancedObservabilityEnabled,
 
-        // Activate only after every consumer supports partial state updates. Preview output may
-        // have gaps, so deltas are restricted to the complete BLOCKS stream.
         @ConfigProperty(defaultValue = "true") @NetworkProperty
         boolean enableStateChangeDeltas,
 

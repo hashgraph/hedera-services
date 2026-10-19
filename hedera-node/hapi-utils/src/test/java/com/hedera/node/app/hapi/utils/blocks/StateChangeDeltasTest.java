@@ -39,8 +39,17 @@ class StateChangeDeltasTest {
     void catalogBackedBlockStateValuesHaveDiffCapabilityAndUnrelatedModelsHaveNone() {
         for (var type : types().toList()) {
             assertThat(type.codec()).as(type.name()).isInstanceOf(DiffCodec.class);
-            assertThat(type.defaultValue()).as(type.name()).isInstanceOf(CopyBuilderTracked.class);
+            // PBJ tracks only roots with more than 8 mask entries; smaller ones use the full-field comparison.
+            assertThat(type.defaultValue() instanceof CopyBuilderTracked<?>)
+                    .as(type.name())
+                    .isEqualTo(maskEntries(descriptor(type)) > MAX_UNTRACKED_MASK_ENTRIES);
         }
+        // Small, ubiquitous types must not carry per-instance tracking state everywhere they are nested.
+        assertThat(CopyBuilderTracked.class.isAssignableFrom(AccountID.class)).isFalse();
+        assertThat(CopyBuilderTracked.class.isAssignableFrom(com.hedera.hapi.node.base.Timestamp.class))
+                .isFalse();
+        assertThat(Account.DEFAULT).isInstanceOf(CopyBuilderTracked.class);
+        assertThat(Token.DEFAULT).isInstanceOf(CopyBuilderTracked.class);
         assertThat(com.hedera.hapi.node.transaction.TransactionBody.PROTOBUF).isNotInstanceOf(DiffCodec.class);
         assertThat(com.hedera.hapi.block.stream.output.StateChange.PROTOBUF).isNotInstanceOf(DiffCodec.class);
         assertThat(com.hedera.hapi.node.base.Key.PROTOBUF).isNotInstanceOf(DiffCodec.class);
@@ -98,6 +107,18 @@ class StateChangeDeltasTest {
                         true,
                         List.of(1)))
                 .isEqualTo(Bytes.EMPTY);
+    }
+
+    /** Mirrors PBJ's {@code LookupHelper.MAX_UNTRACKED_DIFF_ENTRIES}. */
+    private static final int MAX_UNTRACKED_MASK_ENTRIES = 8;
+
+    /** One mask entry per ordinary or map field, and one per oneof group. */
+    static int maskEntries(Descriptor descriptor) {
+        int entries = descriptor.getRealOneofs().size();
+        for (FieldDescriptor field : descriptor.getFields()) {
+            if (field.getRealContainingOneof() == null) entries++;
+        }
+        return entries;
     }
 
     static Stream<ValueType> types() {
@@ -190,7 +211,7 @@ class StateChangeDeltasTest {
         assertThat(applied).isEqualTo(value);
         assertThat(type.bytes(applied)).isEqualTo(type.bytes(value));
         final long omitted = type.bytes(value).length() - sparse.length();
-        // Map metadata tags (4, 5) take one byte each; singleton tags (24, 25) take two.
+        // Map metadata tags (4, 5) and singleton tags (1, 2) each take one byte.
         for (final var fields : List.of(
                 List.of(MapUpdateChangeSchema.PARTIAL, MapUpdateChangeSchema.CLEARED_FIELDS),
                 List.of(SingletonUpdateChangeSchema.PARTIAL, SingletonUpdateChangeSchema.CLEARED_FIELDS))) {

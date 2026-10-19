@@ -222,9 +222,9 @@ public class BoundaryStateChangeListener implements StateChangeListener {
             // Keep provenance until diff selection, then retain only the selected wire payload.
             final var choice = encoded.newValue();
             final var wireUpdate = new SingletonUpdateChange(
+                    new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
                     encoded.partial(),
                     encoded.clearedFields(),
-                    new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
                     encoded.getUnknownFields());
             allStateChanges.add(CopyBuilderTracking.untracked(
                     full.copyBuilder().singletonUpdate(wireUpdate).build()));
@@ -245,7 +245,12 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
         final var stateChange = StateChange.newBuilder()
                 .stateId(stateId)
-                .singletonUpdate(new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value)))
+                .singletonUpdate(new SingletonUpdateChange(
+                        new OneOf<>(
+                                singletonUpdateChangeValueFor(value).kind(),
+                                singletonUpdateChangeValueFor(value).value()),
+                        false,
+                        List.of()))
                 .build();
         singletonUpdates.put(stateId, stateChange);
         if (stateId == ENTITY_COUNTS_STATE_ID) {

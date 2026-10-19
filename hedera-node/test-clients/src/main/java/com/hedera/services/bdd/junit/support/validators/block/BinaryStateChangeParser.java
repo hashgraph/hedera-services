@@ -136,11 +136,13 @@ final class BinaryStateChangeParser {
         final var clearedFields = new ArrayList<Integer>();
         while (input.position() < endPosition) {
             final int tag = input.readVarInt(false);
-            if (tag == 192) {
+            // partial:        field 1, bool varint     => (1 << 3) | 0 = 8
+            // cleared_fields: field 2, packed/unpacked => (2 << 3) | 2 = 18, (2 << 3) | 0 = 16
+            if (tag == 8) {
                 partial = readPartial(input);
-            } else if (tag == 202) {
+            } else if (tag == 18) {
                 readClearedFields(input, endPosition, clearedFields);
-            } else if (tag == 200) {
+            } else if (tag == 16) {
                 clearedFields.add(ProtoParserTools.readUint32(input));
             } else if ((tag & 7) == 2 && StateChangeDeltas.singletonType(stateId, tag >>> 3) != null) {
                 if (rawValue != null) {

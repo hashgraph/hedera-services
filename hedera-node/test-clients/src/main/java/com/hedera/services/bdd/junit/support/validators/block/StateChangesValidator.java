@@ -47,6 +47,8 @@ import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamUtils;
+import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
+import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas.ValueType;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.app.history.HistoryLibrary;
@@ -57,7 +59,6 @@ import com.hedera.node.app.service.entityid.EntityIdService;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
-import com.hedera.pbj.runtime.PartialApplier;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.support.BlockStreamValidator;
@@ -1095,9 +1096,11 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var update = stateChange.singletonUpdateOrThrow();
                     // Decode the payload separately from its partial-update metadata.
                     final var value = BlockStreamUtils.singletonPutFor(
-                            new SingletonUpdateChange(false, List.of(), update.newValue()));
+                            new SingletonUpdateChange(update.newValue(), false, List.of()));
                     final var singleton = update.partial()
                             ? applyPartial(
+                                    StateChangeDeltas.singletonType(
+                                            stateId, update.newValue().kind().protoOrdinal()),
                                     valueCodecFor(serviceName, stateId),
                                     singletonState.get(),
                                     value,
@@ -1117,6 +1120,12 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var payload = BlockStreamUtils.mapValueFor(update.valueOrThrow());
                     final var value = update.partial()
                             ? applyPartial(
+                                    StateChangeDeltas.mapType(
+                                            stateId,
+                                            update.valueOrThrow()
+                                                    .valueChoice()
+                                                    .kind()
+                                                    .protoOrdinal()),
                                     valueCodecFor(serviceName, stateId),
                                     mapState.get(key),
                                     payload,
@@ -1172,16 +1181,18 @@ public class StateChangesValidator implements BlockStreamValidator {
                 .valueCodec();
     }
 
-    /** Reconstruct a full state value using PBJ's generic top-level field splice. */
+    /**
+     * Reconstruct a full state value with the strict top-level splice, which also rejects non-canonical payloads,
+     * unknown or overlapping fields, unordered clears, and oneof switches that do not clear the old alternative.
+     */
     static <T> T applyPartial(
-            final Codec<T> codec, @Nullable final T prior, final T partial, final List<Integer> clearedFields) {
-        if (prior == null) {
-            throw new IllegalArgumentException("Partial update requires a prior value");
-        }
-        final var merged = PartialApplier.splice(
-                codec.toBytes(prior),
-                codec.toBytes(partial),
-                clearedFields.stream().mapToInt(Integer::intValue).toArray());
+            @Nullable final ValueType type,
+            final Codec<T> codec,
+            @Nullable final T prior,
+            final T partial,
+            final List<Integer> clearedFields) {
+        final var merged = StateChangeDeltas.applyBytes(
+                type, prior == null ? null : codec.toBytes(prior), codec.toBytes(partial), true, clearedFields);
         try {
             return codec.parse(merged);
         } catch (ParseException e) {

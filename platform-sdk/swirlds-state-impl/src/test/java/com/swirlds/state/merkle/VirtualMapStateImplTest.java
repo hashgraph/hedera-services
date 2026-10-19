@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.state.MutabilityException;
@@ -695,25 +696,37 @@ public class VirtualMapStateImplTest extends MerkleTestBase {
 
         @Test
         void virtualMapBridgePreservesOriginalValueWhileStorageShedsTracking() {
-            addKvState(virtualMapState.getRoot(), fruitMetadata, C_KEY, CHERRY);
-            virtualMapState.initializeState(fruitMetadata);
-            given(kvListener.requiresPreviousValue(FRUIT_STATE_ID)).willReturn(true);
+            // Account is a tracked diff root; small wrappers such as ProtoBytes have no copy-builder tracking.
+            final int accountStateId = 12;
+            final StateMetadata<ProtoBytes, Account> accountMetadata = new StateMetadata<>(
+                    FIRST_SERVICE,
+                    StateDefinition.keyValue(accountStateId, "ACCOUNTS", ProtoBytes.PROTOBUF, Account.PROTOBUF));
+            virtualMapState
+                    .getRoot()
+                    .put(
+                            StateUtils.getStateKeyForKv(accountStateId, C_KEY, ProtoBytes.PROTOBUF),
+                            StateUtils.getStateValueForKv(
+                                    accountStateId,
+                                    Account.newBuilder().memo("old").build()),
+                            new StateValue.StateValueCodec<>(accountStateId, Account.PROTOBUF));
+            virtualMapState.initializeState(accountMetadata);
+            given(kvListener.requiresPreviousValue(accountStateId)).willReturn(true);
             virtualMapState.registerCommitListener(kvListener);
             virtualMapState.registerCommitListener(singletonListener);
             virtualMapState.registerCommitListener(queueListener);
             final var states = virtualMapState.getWritableStates(FIRST_SERVICE);
-            final var fruit = states.<ProtoBytes, ProtoBytes>get(FRUIT_STATE_ID);
-            final var prior = fruit.get(C_KEY);
-            final var next = prior.copyBuilder().value(EGGPLANT.value()).build();
+            final var accounts = states.<ProtoBytes, Account>get(accountStateId);
+            final var prior = accounts.get(C_KEY);
+            final var next = prior.copyBuilder().memo("new").build();
             assertThat(next.$copyBuilderOrigin()).isSameAs(prior);
-            fruit.put(C_KEY, next);
+            accounts.put(C_KEY, next);
             ((CommittableWritableStates) states).commit();
-            final var stored = fruit.get(C_KEY);
+            final var stored = accounts.get(C_KEY);
             assertThat(stored).isEqualTo(next).isNotSameAs(next);
             assertThat(stored.$copyBuilderOrigin()).isNull();
             verify(kvListener)
                     .mapUpdateChange(
-                            org.mockito.ArgumentMatchers.eq(FRUIT_STATE_ID),
+                            org.mockito.ArgumentMatchers.eq(accountStateId),
                             org.mockito.ArgumentMatchers.eq(C_KEY),
                             org.mockito.ArgumentMatchers.same(prior),
                             org.mockito.ArgumentMatchers.same(next));

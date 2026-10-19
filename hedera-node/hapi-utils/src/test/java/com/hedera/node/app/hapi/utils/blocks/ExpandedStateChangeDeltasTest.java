@@ -37,10 +37,10 @@ class ExpandedStateChangeDeltasTest {
             var type = StateChangeDeltas.singletonType(9999, kind.protoOrdinal());
             assertThat(type).as(kind.name()).isNotNull();
             var value = type.defaultValue();
-            var full = new SingletonUpdateChange(false, List.of(), new OneOf<>(kind, type.wireValue(value)));
+            var full = new SingletonUpdateChange(new OneOf<>(kind, type.wireValue(value)), false, List.of());
             assertThat(StateChangeDeltas.encodeSingleton(9999, null, full).partial())
                     .isFalse();
-            var partial = new SingletonUpdateChange(true, List.of(), full.newValue());
+            var partial = new SingletonUpdateChange(full.newValue(), true, List.of());
             assertThat(StateChangeDeltas.applySingleton(9999, value, partial)).isEqualTo(value);
         }
     }

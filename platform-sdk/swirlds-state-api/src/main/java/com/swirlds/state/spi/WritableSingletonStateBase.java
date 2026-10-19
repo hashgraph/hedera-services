@@ -82,7 +82,7 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
                         listeners.stream().anyMatch(SingletonChangeListener::requiresPreviousValue);
                 final var previousValue = capturePrevious ? readFromDataSource() : null;
                 // Keep the tracked next value for listeners; only the stored instance sheds provenance.
-                putIntoDataSource(CopyBuilderTracking.untracked(currentValue()));
+                putIntoDataSource(untrackOnCommit() ? CopyBuilderTracking.untracked(currentValue()) : currentValue());
                 //noinspection DataFlowIssue
                 listeners.forEach(l -> {
                     if (l.requiresPreviousValue()) {
@@ -121,6 +121,17 @@ public abstract class WritableSingletonStateBase<T> extends ReadableSingletonSta
      * @param value value to put
      */
     protected abstract void putIntoDataSource(@NonNull T value);
+
+    /**
+     * Whether {@link #commit()} strips copy-builder provenance before {@link #putIntoDataSource}. Durable storage
+     * must not retain it; savepoint wrappers return false so the base state's listeners can diff tracked values
+     * against their origin.
+     *
+     * @return true if committed values are stored untracked
+     */
+    protected boolean untrackOnCommit() {
+        return true;
+    }
 
     /**
      * Removes the value related to this singleton from the underlying data source.

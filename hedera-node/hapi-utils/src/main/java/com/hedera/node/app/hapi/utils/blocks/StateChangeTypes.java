@@ -627,29 +627,29 @@ final class StateChangeTypes {
 
     static ValueType singletonType(final int field) {
         return switch (field) {
-            case 1 -> BLOCK_INFO;
-            case 2 -> CONGESTION_LEVEL_STARTS;
-            case 3 -> ENTITY_NUMBER;
-            case 4 -> EXCHANGE_RATE_SET;
-            case 5 -> NETWORK_STAKING_REWARDS;
-            case 6 -> PROTO_BYTES;
-            case 7 -> PROTO_STRING;
-            case 8 -> RUNNING_HASHES;
-            case 9 -> THROTTLE_USAGE_SNAPSHOTS;
-            case 10 -> TIMESTAMP;
-            case 11 -> BLOCK_STREAM_INFO;
-            case 12 -> PLATFORM_STATE;
-            case 13 -> ROSTER_STATE;
-            case 14 -> HINTS_CONSTRUCTION;
-            case 15 -> ENTITY_COUNTS;
-            case 16 -> HISTORY_PROOF_CONSTRUCTION;
-            case 17 -> CRS_STATE;
-            case 18 -> NODE_REWARDS;
-            case 19 -> NODE_PAYMENTS;
-            case 20 -> NODE_ID;
-            case 21 -> CLPR_LEDGER_CONFIGURATION;
-            case 22 -> CLPR_ENDPOINT_MANIFEST;
-            case 23 -> CLPR_ENDPOINT_MANIFEST_CONSTRUCTION;
+            case 3 -> BLOCK_INFO;
+            case 4 -> CONGESTION_LEVEL_STARTS;
+            case 5 -> ENTITY_NUMBER;
+            case 6 -> EXCHANGE_RATE_SET;
+            case 7 -> NETWORK_STAKING_REWARDS;
+            case 8 -> PROTO_BYTES;
+            case 9 -> PROTO_STRING;
+            case 10 -> RUNNING_HASHES;
+            case 11 -> THROTTLE_USAGE_SNAPSHOTS;
+            case 12 -> TIMESTAMP;
+            case 13 -> BLOCK_STREAM_INFO;
+            case 14 -> PLATFORM_STATE;
+            case 15 -> ROSTER_STATE;
+            case 16 -> HINTS_CONSTRUCTION;
+            case 17 -> ENTITY_COUNTS;
+            case 18 -> HISTORY_PROOF_CONSTRUCTION;
+            case 19 -> CRS_STATE;
+            case 20 -> NODE_REWARDS;
+            case 21 -> NODE_PAYMENTS;
+            case 22 -> NODE_ID;
+            case 23 -> CLPR_LEDGER_CONFIGURATION;
+            case 24 -> CLPR_ENDPOINT_MANIFEST;
+            case 25 -> CLPR_ENDPOINT_MANIFEST_CONSTRUCTION;
             default -> null;
         };
     }

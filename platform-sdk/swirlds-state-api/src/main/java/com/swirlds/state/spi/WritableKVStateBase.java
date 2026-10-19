@@ -93,7 +93,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
                 listeners.forEach(listener -> listener.mapDeleteChange(key));
             } else {
                 final var previousValue = capturePrevious ? getOriginalValue(key) : null;
-                putIntoDataSource(key, CopyBuilderTracking.untracked(value));
+                putIntoDataSource(key, untrackOnCommit() ? CopyBuilderTracking.untracked(value) : value);
                 listeners.forEach(listener -> {
                     if (listener.requiresPreviousValue()) {
                         listener.mapUpdateChange(key, previousValue, value);
@@ -200,6 +200,17 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * @param value value to put
      */
     protected abstract void putIntoDataSource(@NonNull K key, @NonNull V value);
+
+    /**
+     * Whether {@link #commit()} strips copy-builder provenance before {@link #putIntoDataSource}. Durable storage
+     * must not retain it; savepoint wrappers return false so the base state's listeners can diff tracked values
+     * against their origin.
+     *
+     * @return true if committed values are stored untracked
+     */
+    protected boolean untrackOnCommit() {
+        return true;
+    }
 
     /**
      * Removes the given key and implicit value from the underlying data source.

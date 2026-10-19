@@ -42,7 +42,7 @@ class BinaryStateChangeParserTest {
             final var state = mock(BinaryState.class);
             when(state.getSingleton(ID)).thenReturn(Bytes.EMPTY);
             final var update =
-                    new SingletonUpdateChange(true, List.of(), new OneOf<>(kind, type.wireValue(type.defaultValue())));
+                    new SingletonUpdateChange(new OneOf<>(kind, type.wireValue(type.defaultValue())), true, List.of());
             apply(
                     state,
                     StateChange.newBuilder().stateId(ID).singletonUpdate(update).build());

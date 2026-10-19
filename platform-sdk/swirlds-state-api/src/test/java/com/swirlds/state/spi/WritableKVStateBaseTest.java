@@ -7,6 +7,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,40 +40,51 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
 
-    @Test
-    void preservesOriginalValueForListenersWhileStorageShedsTracking() {
-        final var backing = new HashMap<ProtoBytes, ProtoBytes>();
-        final var root = new ProtoBytes(com.hedera.pbj.runtime.io.buffer.Bytes.wrap("old"));
-        backing.put(A_KEY, root);
-        final var writable = new MapWritableKVState<>(FRUIT_STATE_ID, FRUIT_STATE_LABEL, backing);
-        final var next = root.copyBuilder()
-                .value(com.hedera.pbj.runtime.io.buffer.Bytes.wrap("new"))
-                .build();
-        final var delivered = new ArrayList<ProtoBytes>();
-        writable.registerListener(new KVChangeListener<>() {
+    /** Account is a tracked diff root; small wrappers such as ProtoBytes have no copy-builder tracking. */
+    private static Account account(final String memo) {
+        return Account.newBuilder().memo(memo).build();
+    }
+
+    /** Listener for the tracked Account states, requiring the previous-value callback. */
+    private static KVChangeListener<ProtoBytes, Account> priorValueListener(
+            final BiConsumer<Account, Account> onUpdate) {
+        return new KVChangeListener<>() {
             @Override
             public boolean requiresPreviousValue() {
                 return true;
             }
 
             @Override
-            public void mapUpdateChange(ProtoBytes key, ProtoBytes value) {
+            public void mapUpdateChange(ProtoBytes key, Account value) {
                 fail("Expected previous-value callback");
             }
 
             @Override
-            public void mapUpdateChange(ProtoBytes key, ProtoBytes prior, ProtoBytes value) {
-                assertThat(prior).isSameAs(root);
-                assertThat(value).isSameAs(next);
-                assertThat(backing.get(key)).isEqualTo(next).isNotSameAs(next);
-                delivered.add(value);
+            public void mapUpdateChange(ProtoBytes key, Account prior, Account value) {
+                onUpdate.accept(prior, value);
             }
 
             @Override
             public void mapDeleteChange(ProtoBytes key) {
                 fail("Unexpected deletion");
             }
-        });
+        };
+    }
+
+    @Test
+    void preservesOriginalValueForListenersWhileStorageShedsTracking() {
+        final var backing = new HashMap<ProtoBytes, Account>();
+        final var root = account("old");
+        backing.put(A_KEY, root);
+        final var writable = new MapWritableKVState<>(FRUIT_STATE_ID, FRUIT_STATE_LABEL, backing);
+        final var next = root.copyBuilder().memo("new").build();
+        final var delivered = new ArrayList<Account>();
+        writable.registerListener(priorValueListener((prior, value) -> {
+            assertThat(prior).isSameAs(root);
+            assertThat(value).isSameAs(next);
+            assertThat(backing.get(A_KEY)).isEqualTo(next).isNotSameAs(next);
+            delivered.add(value);
+        }));
         assertThat(next.$copyBuilderOrigin()).isSameAs(root);
         writable.put(A_KEY, next);
         writable.commit();
@@ -79,6 +92,30 @@ public class WritableKVStateBaseTest extends ReadableKVStateBaseTest {
         assertThat(delivered.getFirst()).isSameAs(next);
         assertThat(writable.get(A_KEY)).isEqualTo(next).isNotSameAs(next);
         assertThat(writable.get(A_KEY).$copyBuilderOrigin()).isNull();
+    }
+
+    @Test
+    void savepointLayersKeepTrackingUntilBaseCommit() {
+        final var backing = new HashMap<ProtoBytes, Account>();
+        backing.put(A_KEY, account("old"));
+        final var base = new MapWritableKVState<>(FRUIT_STATE_ID, FRUIT_STATE_LABEL, backing);
+        final var outer = new WrappedWritableKVState<>(base);
+        final var inner = new WrappedWritableKVState<>(outer);
+        // Reads pass through every layer to the base read cache, so the origin is the base's prior instance
+        final var root = inner.get(A_KEY);
+        final var next = root.copyBuilder().memo("new").build();
+        final var delivered = new ArrayList<Account>();
+        base.registerListener(priorValueListener((prior, value) -> {
+            assertThat(CopyBuilderTracking.hasOrigin(value, prior)).isTrue();
+            delivered.add(value);
+        }));
+        inner.put(A_KEY, next);
+        inner.commit();
+        outer.commit();
+        base.commit();
+        assertThat(delivered).containsExactly(next);
+        assertThat(backing.get(A_KEY)).isEqualTo(next).isNotSameAs(next);
+        assertThat(backing.get(A_KEY).$copyBuilderOrigin()).isNull();
     }
 
     private static final String NUM_ITERATIONS_ARG = "WritableKVStateBaseTest.DeterministicUpdates.numIterations";

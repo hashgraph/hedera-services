@@ -281,9 +281,9 @@ public final class StateChangeDeltas {
                         SingletonUpdateChangeSchema.PARTIAL,
                         SingletonUpdateChangeSchema.CLEARED_FIELDS)) return full;
         return new SingletonUpdateChange(
+                new OneOf<>(choice.kind(), type.wireValue(delta.value())),
                 true,
                 delta.clearedFields(),
-                new OneOf<>(choice.kind(), type.wireValue(delta.value())),
                 full.getUnknownFields());
     }
 

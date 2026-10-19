@@ -646,17 +646,6 @@ message RemovedStateChange {
  * An update to a `Singleton` state.
  */
 message SingletonUpdateChange {
-    /**
-     * Whether new_value is a canonical delta, as defined for
-     * MapUpdateChange.partial. The baseline is the last emitted singleton
-     * value, including across block boundaries. Default false means full replacement.
-     * <p>
-     * The same reader rules apply as for MapUpdateChange.partial.
-     */
-    bool partial = 24;
-
-    /** Sorted, unique top-level fields to reset; valid only when partial is true. */
-    repeated uint32 cleared_fields = 25;
 
     oneof new_value {
         /**
@@ -827,6 +816,20 @@ message SingletonUpdateChange {
          */
         com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction clpr_endpoint_manifest_construction_value = 23;
     }
+    /**
+     * Whether new_value is a canonical delta, as defined for
+     * MapUpdateChange.partial. The baseline is the last emitted singleton
+     * value, including across block boundaries. Default false means full replacement.
+     * <p>
+     * The same reader rules apply as for MapUpdateChange.partial.
+     * <p>
+     * Update metadata takes the lowest field numbers so that new singleton
+     * types can keep appending to `new_value` without colliding with it.
+     */
+    bool partial = 24;
+
+    /** Sorted, unique top-level fields to reset; valid only when partial is true. */
+    repeated uint32 cleared_fields = 25;
 }
 
 /**

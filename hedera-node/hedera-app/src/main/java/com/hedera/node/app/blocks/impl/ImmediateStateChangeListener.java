@@ -165,7 +165,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         if (!isImmediateSingleton(stateId)) {
             return;
         }
-        var change = new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value));
+        var change = new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of());
         final var type = StateChangeDeltas.singletonType(
                 stateId, change.newValue().kind().protoOrdinal());
         if (deltasEnabled && type != null) {
@@ -183,9 +183,9 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         }
         final var choice = change.newValue();
         final var wireChange = new SingletonUpdateChange(
+                new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
                 change.partial(),
                 change.clearedFields(),
-                new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
                 change.getUnknownFields());
         singletonStateChanges.add(StateChange.newBuilder()
                 .stateId(stateId)

@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.inOrder;
 
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
+import com.hedera.hapi.node.state.token.Account;
 import com.swirlds.state.test.fixtures.FunctionWritableSingletonState;
 import java.time.Duration;
 import java.util.SplittableRandom;
@@ -14,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,21 +27,62 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 public class WritableSingletonStateBaseTest extends ReadableSingletonStateTest {
 
+    /** Account is a tracked diff root; small wrappers such as ProtoBytes have no copy-builder tracking. */
+    private final AtomicReference<Account> trackedStore =
+            new AtomicReference<>(Account.newBuilder().memo("initial").build());
+
+    private WritableSingletonStateBase<Account> createTrackedState() {
+        return new FunctionWritableSingletonState<>(
+                COUNTRY_STATE_ID, COUNTRY_STATE_LABEL, trackedStore::get, trackedStore::set);
+    }
+
     @Test
     void storesUntrackedValueAndNotifiesWithOriginalTrackedValue() {
-        final var writable = createState();
-        final var root = backingStore.get();
-        final var next = root.copyBuilder()
-                .value(com.hedera.pbj.runtime.io.buffer.Bytes.wrap("updated"))
-                .build();
-        final var delivered = new java.util.ArrayList<ProtoBytes>();
+        final var writable = createTrackedState();
+        final var root = trackedStore.get();
+        final var next = root.copyBuilder().memo("updated").build();
+        final var delivered = new java.util.ArrayList<Account>();
         writable.registerListener(delivered::add);
         writable.put(next);
         writable.commit();
         assertThat(delivered.getFirst()).isSameAs(next);
         assertThat(next.$copyBuilderOrigin()).isSameAs(root);
-        assertThat(backingStore.get()).isEqualTo(next).isNotSameAs(next);
-        assertThat(backingStore.get().$copyBuilderOrigin()).isNull();
+        assertThat(trackedStore.get()).isEqualTo(next).isNotSameAs(next);
+        assertThat(trackedStore.get().$copyBuilderOrigin()).isNull();
+    }
+
+    @Test
+    void savepointLayersKeepTrackingUntilBaseCommit() {
+        final var base = createTrackedState();
+        final var outer = new WrappedWritableSingletonState<>(base);
+        final var inner = new WrappedWritableSingletonState<>(outer);
+        final var root = inner.get();
+        final var next = root.copyBuilder().memo("updated").build();
+        final var delivered = new java.util.ArrayList<Account>();
+        base.registerListener(new SingletonChangeListener<>() {
+            @Override
+            public boolean requiresPreviousValue() {
+                return true;
+            }
+
+            @Override
+            public void singletonUpdateChange(final Account value) {
+                throw new AssertionError("Expected prior-value callback");
+            }
+
+            @Override
+            public void singletonUpdateChange(final Account prior, final Account value) {
+                assertThat(CopyBuilderTracking.hasOrigin(value, prior)).isTrue();
+                delivered.add(value);
+            }
+        });
+        inner.put(next);
+        inner.commit();
+        outer.commit();
+        base.commit();
+        assertThat(delivered).containsExactly(next);
+        assertThat(trackedStore.get()).isEqualTo(next).isNotSameAs(next);
+        assertThat(trackedStore.get().$copyBuilderOrigin()).isNull();
     }
 
     @Test

@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.record.TraceDataSizeLimiter;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.types.StreamMode;
+import com.hedera.pbj.runtime.CopyBuilderTracked;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.KVChangeListener;
 import com.swirlds.state.spi.SingletonChangeListener;
@@ -72,8 +73,9 @@ class ClprConstructionFirstInsertionTest {
         final var insertion = changes.getFirst().singletonUpdateOrThrow();
         assertThat(insertion.partial()).isFalse();
         assertThat(insertion.clprEndpointManifestConstructionValueOrThrow()).isEqualTo(INITIAL);
-        assertThat(insertion.clprEndpointManifestConstructionValueOrThrow().$copyBuilderOrigin())
-                .isNull();
+        // Emitted values carry no copy-builder provenance, whether or not the type is tracked.
+        final var emitted = insertion.clprEndpointManifestConstructionValueOrThrow();
+        assertThat(CopyBuilderTracked.untracked(emitted)).isSameAs(emitted);
         assertThat(harness.boundary.allStateChanges()).isEmpty();
         assertThat(harness.physicalInsertions).containsExactly("construction", "account");
     }

@@ -109,9 +109,9 @@ public final class StateChangeReconstructor {
         final var type = StateChangeDeltas.singletonType(
                 stateId, update.newValue().kind().protoOrdinal());
         return new SingletonUpdateChange(
+                new OneOf<>(update.newValue().kind(), type.wireValue(value)),
                 false,
                 List.of(),
-                new OneOf<>(update.newValue().kind(), type.wireValue(value)),
                 update.getUnknownFields());
     }
 }
