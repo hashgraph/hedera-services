@@ -73,7 +73,7 @@ import org.junit.jupiter.api.Tag;
 
 /**
  * Tests the account staking-configuration functions added to the Hedera Account Service by
- * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1522">HIP-1522</a>.
+ * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1522.md">HIP-1522</a>.
  *
  * <p>Two surfaces are covered. A contract configures its own account through the explicit
  * {@code IHederaAccountService} form on {@code 0x16a} — the case the HIP exists to serve, and the only one

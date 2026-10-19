@@ -24,7 +24,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * Applies a staking configuration change to an account by dispatching a {@code CryptoUpdate} carrying staking
  * fields only, as specified by
- * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1522">HIP-1522</a>.
+ * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1522.md">HIP-1522</a>.
  *
  * <p>Backs all five mutating functions — {@code stakeToNode}, {@code stakeToAccount}, {@code unstake},
  * {@code setDeclineReward} and {@code stakeToNodeAndDeclineReward} — on both the {@code IHRC632} facade and the

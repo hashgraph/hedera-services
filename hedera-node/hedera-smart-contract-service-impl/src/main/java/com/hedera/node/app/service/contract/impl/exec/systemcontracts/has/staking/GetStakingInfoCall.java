@@ -25,7 +25,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * Reads an account's staking state, as specified by
- * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1522">HIP-1522</a>.
+ * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1522.md">HIP-1522</a>.
  *
  * <p>Backs {@code getStakingInfo()} on the {@code IHRC632} facade and {@code getStakingInfo(address)} on
  * {@code IHederaAccountService}. This dispatches nothing and mutates nothing, so it produces no child record and

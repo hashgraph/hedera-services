@@ -13,7 +13,7 @@ operations to the Hedera Account Service (HAS) system contract at `0x16a`.
 
 ## References
 
-- [HIP-1522: Account Staking Configuration via the Hedera Account Service](https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1522)
+- [HIP-1522: Account Staking Configuration via the Hedera Account Service](https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1522.md)
 - [HIP-632: Hedera Account Service (HAS) System Contract](https://hips.hedera.com/hip/hip-632)
 - [HIP-906: Proxy Redirect Contract for Hbar Allowance and Approval](https://hips.hedera.com/hip/hip-906)
 
@@ -122,6 +122,16 @@ translator rejects that case before dispatch rather than adding the check to `St
 the HAPI behavior of `CryptoUpdate` is left exactly as it was. Both ids come from the same resolution,
 so an account named by its alias in one argument and its long-zero address in the other still
 compares equal.
+
+### Staking not enabled
+
+The HIP lists `STAKING_NOT_ENABLED (323)` for a network on which native staking is not enabled. No
+such network configuration exists: there is no staking-enabled property, and staking elections are
+accepted from genesis. (Reward *activation* is a different thing — it gates payment out of 0.0.800,
+not the election itself, and a contract that declines rewards is unaffected by it.) The condition the
+HIP attaches to 323 therefore never holds, and no function returns it. The feature's own switch,
+`stakingEnabled`, is not native staking; with it off the selectors are simply unrecognized, as the
+HIP's Backwards Compatibility section describes for a network that predates the feature.
 
 ### System contract module
 

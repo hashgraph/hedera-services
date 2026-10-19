@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 
 /**
  * Translates the account staking-configuration calls of
- * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/pull/1522">HIP-1522</a> to the Hedera
+ * <a href="https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1522.md">HIP-1522</a> to the Hedera
  * Account Service system contract.
  *
  * <p>Each function comes in two forms. The {@code IHRC632} facade form names no account and targets the account
