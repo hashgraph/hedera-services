@@ -11,12 +11,12 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepForSeconds;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.SIMPLE_FEE_SCHEDULE;
@@ -30,16 +30,19 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.stream.Stream;
 import org.hiero.hapi.support.fees.Extra;
 import org.hiero.hapi.support.fees.FeeSchedule;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 /**
  * Two schedules expire in the same interval: a CryptoTransfer and a ConsensusSubmitMessage. Both execute with the
  * shipped simple fee schedule, and both still execute after an attempt to install a schedule whose CRYPTO_TRANSFER
- * definition lacks the ACCOUNTS extra reference, since such a schedule is rejected.
+ * definition lacks the ACCOUNTS extra reference, since such a schedule is rejected atomically (the file write itself
+ * rolls back, so there is nothing to restore afterward).
  */
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(REPEATABLE)
@@ -88,17 +91,44 @@ public class RepeatableSimpleFeeScheduleScheduledExecutionTest {
                                     ByteString.copyFrom(
                                             FeeSchedule.PROTOBUF.toBytes(broken).toByteArray()));
                 }),
-                updateLargeFile(GENESIS, SIMPLE_FEE_SCHEDULE, BROKEN),
+                rejectedUpdate(),
+                unchangedFileContent(),
                 sleepForSeconds(LIFETIME + 1),
                 cryptoCreate("trigger"),
                 sleepForSeconds(1),
-                restore(),
                 getAccountBalance(RECEIVER).hasTinyBars(1L),
                 getTopicInfo(TOPIC).hasSeqNo(1L)));
     }
 
-    private static SpecOperation restore() {
-        return withOpContext((spec, opLog) -> allRunFor(spec, updateLargeFile(GENESIS, SIMPLE_FEE_SCHEDULE, ORIGINAL)));
+    /**
+     * Submits the broken schedule (saved to the registry as {@value #BROKEN} by the caller) as a single FileUpdate,
+     * which it fits in: it is rejected with {@code INVALID_FEE_FILE}, and the dispatch (including the file write)
+     * rolls back.
+     */
+    private static SpecOperation rejectedUpdate() {
+        return withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                fileUpdate(SIMPLE_FEE_SCHEDULE)
+                        .contents(s -> ByteString.copyFrom(s.registry().getBytes(BROKEN)))
+                        .payingWith(GENESIS)
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FEE_FILE)));
+    }
+
+    /**
+     * Proves the rejected update never took effect: the file still holds exactly the bytes saved as ORIGINAL.
+     * Compares raw bytes directly ({@code HapiGetFileContents.hasContents} decodes both sides through the default
+     * charset before comparing, which can equate distinct binary content) since the schedule is binary protobuf,
+     * not text.
+     */
+    private static SpecOperation unchangedFileContent() {
+        return withOpContext((spec, opLog) -> {
+            final var original = spec.registry().getBytes(ORIGINAL);
+            allRunFor(
+                    spec,
+                    getFileContents(SIMPLE_FEE_SCHEDULE)
+                            .consumedBy(actual -> Assertions.assertArrayEquals(
+                                    original, actual, "Simple fee schedule file content changed")));
+        });
     }
 
     private static SpecOperation setUp() {

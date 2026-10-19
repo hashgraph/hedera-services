@@ -3,6 +3,7 @@ package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.HOOK_DISPATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_FILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
@@ -87,8 +88,7 @@ public final class FeeManager {
      * handlers charge; otherwise it is rejected and the current schedule is kept.
      *
      * @param bytes The new simple fee schedule file content.
-     * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise
-     * {@link ResponseCodeEnum#FEE_SCHEDULE_FILE_PART_UPLOADED}
+     * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise a failure status
      */
     public ResponseCodeEnum updateSimpleFees(@NonNull final Bytes bytes) {
         return updateSimpleFees(bytes, true);
@@ -99,11 +99,29 @@ public final class FeeManager {
      * registered transaction or query type unpriced, or lacks an extra that a calculator or handler charges, is
      * rejected when {@code requireFullCoverage} is true; otherwise it is installed and the gaps are logged.
      *
+     * <p>Two different kinds of rejection are distinguished so a caller can tell a schedule that still coherently
+     * parses from one that may simply be an in-progress chunked upload:
+     * <ul>
+     *   <li>{@link ResponseCodeEnum#FEE_SCHEDULE_FILE_PART_UPLOADED} for content that does not even parse, or
+     *   parses but fails {@link org.hiero.hapi.fees.FeeScheduleUtils#isValid} (which also covers empty or
+     *   otherwise structurally incomplete content) — consistent with an intermediate upload chunk.
+     *   <li>{@link ResponseCodeEnum#INVALID_FEE_FILE} for content that passes {@code isValid} (so it is internally
+     *   consistent on its own terms) but still cannot be evaluated by the registered calculators, treated as a
+     *   hard failure the caller may roll back.
+     * </ul>
+     *
+     * <p>{@code isValid} can accept a prefix of a larger, well-formed schedule (for example one that already has a
+     * node fee, a network fee and a well-formed service), so a schedule uploaded in chunks could in principle
+     * pass {@code isValid} before every chunk has arrived and then hit this branch for an intermediate chunk, not
+     * only for a genuinely final-but-incomplete schedule. This is deliberately out of scope today: every schedule
+     * actually shipped is a single {@code FileUpdate}, well under the chunk size (see the size pins in
+     * {@code SimpleFeeScheduleCoverageTest}), so no real upload is ever chunked. A multi-chunk upload would need to
+     * defer this check until the upload is known to be complete, which this method does not attempt.
+     *
      * @param bytes The new simple fee schedule file content.
      * @param requireFullCoverage whether to reject a schedule that leaves a registered type unpriced or an extra
      * undefined
-     * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise
-     * {@link ResponseCodeEnum#FEE_SCHEDULE_FILE_PART_UPLOADED}
+     * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise a failure status
      */
     public synchronized ResponseCodeEnum updateSimpleFees(
             @NonNull final Bytes bytes, final boolean requireFullCoverage) {
@@ -117,7 +135,7 @@ public final class FeeManager {
             if (!unpriced.isEmpty()) {
                 if (requireFullCoverage) {
                     logger.error("Rejecting simple fee schedule with no prices for {}", unpriced);
-                    return FEE_SCHEDULE_FILE_PART_UPLOADED;
+                    return INVALID_FEE_FILE;
                 }
                 logger.error("Installing simple fee schedule with no prices for {}", unpriced);
             }
@@ -125,7 +143,7 @@ public final class FeeManager {
             if (!missingExtras.isEmpty()) {
                 if (requireFullCoverage) {
                     logger.error("Rejecting simple fee schedule missing extras {}", missingExtras);
-                    return FEE_SCHEDULE_FILE_PART_UPLOADED;
+                    return INVALID_FEE_FILE;
                 }
                 logger.error("Installing simple fee schedule missing extras {}", missingExtras);
             }

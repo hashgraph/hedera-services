@@ -49,6 +49,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /** Pins the shipped genesis simple fee schedule to the fee calculators the services register. */
 @ExtendWith(MockitoExtension.class)
 class SimpleFeeScheduleCoverageTest {
+    /** {@link com.hedera.node.config.data.HederaConfig#transactionMaxBytes()}'s default: see the pins below. */
+    private static final int TRANSACTION_MAX_BYTES = 6144;
+
+    /**
+     * A generous reserve for what wraps the schedule bytes in an actual FileUpdate: the {@code TransactionBody}
+     * envelope (transaction ID, node account ID, fee, valid duration, memo, the FileUpdate field tag) and the
+     * {@code SignedTransaction}'s {@code SignatureMap} (comfortably covers a multi-key threshold signature). The
+     * pins below measure only the serialized schedule, so this budget is subtracted from the transaction limit
+     * rather than measuring a real signed transaction, which this module cannot construct.
+     */
+    private static final int TRANSACTION_OVERHEAD_BUDGET = 2_000;
+
     @Mock
     private SignatureVerifier signatureVerifier;
 
@@ -85,6 +97,33 @@ class SimpleFeeScheduleCoverageTest {
 
         assertThat(feeManager.unpricedFunctions(schedule)).isEmpty();
         assertThat(feeManager.missingExtras(schedule)).isEmpty();
+    }
+
+    /**
+     * A FileUpdate/FileAppend of the simple fee schedule file is rejected atomically (the file write itself rolls
+     * back) only because every real update today is a single transaction: genesis and the three shipped upgrade
+     * schedules all fit under one transaction's maximum size. If a shipped schedule ever needed chunking, a
+     * multi-chunk upload would have to be validated as it assembles, not atomically per transaction — a different,
+     * larger design. This pin fails loudly if growth ever approaches that boundary, instead of silently depending
+     * on an assumption nothing else checks.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"mainnet", "testnet", "previewnet"})
+    void shippedUpgradeSchedulesFitInASingleTransaction(final String network) throws Exception {
+        final var json =
+                Files.readAllBytes(Path.of("..", "configuration", network, "upgrade", "simpleFeesSchedules.json"));
+        final var schedule = V0490FileSchema.parseSimpleFeesSchedules(json);
+        final var serializedSize = FeeSchedule.PROTOBUF.toBytes(schedule).length();
+
+        assertThat(serializedSize).isLessThan(TRANSACTION_MAX_BYTES - TRANSACTION_OVERHEAD_BUDGET);
+    }
+
+    @Test
+    void genesisScheduleFitsInASingleTransaction() throws ParseException {
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var genesisBytes = new V0490FileSchema().genesisSimpleFeesSchedules(config);
+
+        assertThat(genesisBytes.length()).isLessThan(TRANSACTION_MAX_BYTES - TRANSACTION_OVERHEAD_BUDGET);
     }
 
     private FeeManager realFeeManager(final Configuration config) {

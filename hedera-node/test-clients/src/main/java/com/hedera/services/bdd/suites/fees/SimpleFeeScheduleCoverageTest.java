@@ -5,12 +5,12 @@ import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -29,12 +29,15 @@ import org.hiero.hapi.support.fees.Extra;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.hiero.hapi.support.fees.ServiceFeeDefinition;
 import org.hiero.hapi.support.fees.ServiceFeeSchedule;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
- * Verifies that an update of the simple fee schedule file is rejected, leaving the current schedule in place, when the
- * new schedule cannot price a transaction the network supports: it omits a function definition, an extra reference a
- * fee calculator charges, or an extra that a handler reads directly.
+ * Verifies that an update of the simple fee schedule file is rejected atomically when the new schedule is a
+ * complete, well-formed schedule the registered calculators still cannot evaluate: it omits a function definition,
+ * an extra reference a fee calculator charges, or an extra that a handler reads directly. "Atomically" means the
+ * file write itself rolls back with the dispatch, so the file content and the schedule in use are both left
+ * exactly as they were — there is nothing to restore afterward.
  */
 public class SimpleFeeScheduleCoverageTest {
     private static final String ORIGINAL = "originalSimpleFeeSchedule";
@@ -43,16 +46,12 @@ public class SimpleFeeScheduleCoverageTest {
 
     @LeakyHapiTest(requirement = ContextRequirement.NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> scheduleWithoutAFunctionDefinitionIsRejected() {
-        return transferAfterInstalling(
-                withoutFunction(HederaFunctionality.CRYPTO_TRANSFER), ResponseCodeEnum.OK, "missing CRYPTO_TRANSFER");
+        return transferAfterRejectedInstall(withoutFunction(HederaFunctionality.CRYPTO_TRANSFER));
     }
 
     @LeakyHapiTest(requirement = ContextRequirement.NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> scheduleWithoutAnExtraReferenceTheCalculatorNeedsIsRejected() {
-        return transferAfterInstalling(
-                withoutExtraRef(HederaFunctionality.CRYPTO_TRANSFER, Extra.ACCOUNTS),
-                ResponseCodeEnum.OK,
-                "CRYPTO_TRANSFER without ACCOUNTS ref");
+        return transferAfterRejectedInstall(withoutExtraRef(HederaFunctionality.CRYPTO_TRANSFER, Extra.ACCOUNTS));
     }
 
     @LeakyHapiTest(requirement = ContextRequirement.NO_CONCURRENT_CREATIONS)
@@ -69,11 +68,11 @@ public class SimpleFeeScheduleCoverageTest {
                             withoutExtra(Extra.TOKEN_ASSOCIATE).apply(original));
                     spec.registry().saveBytes(MODIFIED, ByteString.copyFrom(mutated.toByteArray()));
                 }),
-                updateLargeFile(GENESIS, SIMPLE_FEE_SCHEDULE, MODIFIED),
+                rejectedUpdate(),
+                unchangedFileContent(),
                 tokenAirdrop(moving(1L, "token").between(PAYER, "receiver"))
                         .payingWith(PAYER)
-                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
-                restore());
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS));
     }
 
     private static UnaryOperator<FeeSchedule> withoutExtra(final Extra extra) {
@@ -101,8 +100,7 @@ public class SimpleFeeScheduleCoverageTest {
                 .build();
     }
 
-    private static Stream<DynamicTest> transferAfterInstalling(
-            final UnaryOperator<FeeSchedule> mutation, final ResponseCodeEnum expectedPrecheck, final String label) {
+    private static Stream<DynamicTest> transferAfterRejectedInstall(final UnaryOperator<FeeSchedule> mutation) {
         return hapiTest(
                 cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                 getFileContents(SIMPLE_FEE_SCHEDULE).saveToRegistry(ORIGINAL),
@@ -112,17 +110,42 @@ public class SimpleFeeScheduleCoverageTest {
                     final var mutated = FeeSchedule.PROTOBUF.toBytes(mutation.apply(original));
                     spec.registry().saveBytes(MODIFIED, ByteString.copyFrom(mutated.toByteArray()));
                 }),
-                updateLargeFile(GENESIS, SIMPLE_FEE_SCHEDULE, MODIFIED),
+                rejectedUpdate(),
+                unchangedFileContent(),
                 cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1L))
                         .payingWith(PAYER)
-                        .hasPrecheck(expectedPrecheck)
-                        .logging(),
-                restore(),
-                withOpContext((spec, opLog) -> opLog.info("{}: transfer precheck was {}", label, expectedPrecheck)));
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS));
     }
 
-    private static SpecOperation restore() {
-        return withOpContext((spec, opLog) -> allRunFor(spec, updateLargeFile(GENESIS, SIMPLE_FEE_SCHEDULE, ORIGINAL)));
+    /**
+     * Submits the mutated schedule (saved to the registry as {@value #MODIFIED} by the caller) as a single
+     * FileUpdate, which every schedule used in this suite fits in: it is rejected with {@code INVALID_FEE_FILE},
+     * and the dispatch (including the file write) rolls back.
+     */
+    private static SpecOperation rejectedUpdate() {
+        return withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                fileUpdate(SIMPLE_FEE_SCHEDULE)
+                        .contents(s -> ByteString.copyFrom(s.registry().getBytes(MODIFIED)))
+                        .payingWith(GENESIS)
+                        .hasKnownStatus(ResponseCodeEnum.INVALID_FEE_FILE)));
+    }
+
+    /**
+     * Proves the rejected update never took effect: the file still holds exactly the bytes saved as ORIGINAL.
+     * Compares raw bytes directly ({@code HapiGetFileContents.hasContents} decodes both sides through the default
+     * charset before comparing, which can equate distinct binary content) since the schedule is binary protobuf,
+     * not text.
+     */
+    private static SpecOperation unchangedFileContent() {
+        return withOpContext((spec, opLog) -> {
+            final var original = spec.registry().getBytes(ORIGINAL);
+            allRunFor(
+                    spec,
+                    getFileContents(SIMPLE_FEE_SCHEDULE)
+                            .consumedBy(actual -> Assertions.assertArrayEquals(
+                                    original, actual, "Simple fee schedule file content changed")));
+        });
     }
 
     private static UnaryOperator<FeeSchedule> withoutFunction(final HederaFunctionality function) {

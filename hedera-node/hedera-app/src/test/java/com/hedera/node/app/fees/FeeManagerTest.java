@@ -6,6 +6,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.HederaFunctionality.FILE_GET_INFO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FEE_FILE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.hiero.hapi.fees.FeeScheduleUtils.makeExtraDef;
 import static org.hiero.hapi.fees.FeeScheduleUtils.makeExtraIncluded;
@@ -147,7 +148,7 @@ class FeeManagerTest {
 
         final var incomplete = scheduleWith(makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(incomplete)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(incomplete)));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
@@ -160,7 +161,7 @@ class FeeManagerTest {
 
         final var incomplete = scheduleWith(makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(incomplete)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(incomplete)));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
@@ -198,7 +199,7 @@ class FeeManagerTest {
         final var withoutReference = scheduleWith(
                 extraDefs(Extra.ACCOUNTS, Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_TRANSFER, 100));
 
-        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutReference)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutReference)));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
@@ -211,8 +212,8 @@ class FeeManagerTest {
         final var withoutAirdrops = scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE), makeServiceFee(CRYPTO_CREATE, 100));
         final var withoutAssociate = scheduleWith(extraDefs(Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutAirdrops)));
-        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(toBytes(withoutAssociate)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAirdrops)));
+        assertEquals(INVALID_FEE_FILE, subject.updateSimpleFees(toBytes(withoutAssociate)));
         assertEquals(complete, subject.getSimpleFeesSchedule());
     }
 
@@ -242,10 +243,31 @@ class FeeManagerTest {
 
     @Test
     void updateSimpleFeesCanInstallScheduleMissingExtrasWhenCoverageIsNotRequired() {
-        final var incomplete = scheduleWith(makeServiceFee(CRYPTO_CREATE, 100));
+        given(cryptoTransferCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.CRYPTO_TRANSFER);
+        given(cryptoTransferCalculator.requiredExtras()).willReturn(Set.of(Extra.ACCOUNTS));
+        subject =
+                new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(cryptoTransferCalculator), Set.of());
+        // Missing the ACCOUNTS reference, so missingExtras(incomplete) is non-empty: this exercises the lenient
+        // branch actually being taken, not merely a schedule the strict path would have accepted anyway.
+        final var incomplete = scheduleWith(makeServiceFee(CRYPTO_TRANSFER, 100));
 
         assertEquals(SUCCESS, subject.updateSimpleFees(toBytes(incomplete), false));
         assertEquals(incomplete, subject.getSimpleFeesSchedule());
+    }
+
+    @Test
+    void updateSimpleFeesRejectsUnparseableContentWithTheChunkStatusRegardlessOfRequireFullCoverage() {
+        final var garbage = Bytes.wrap(new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
+
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(garbage, true));
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(garbage, false));
+    }
+
+    @Test
+    void updateSimpleFeesRejectsAStructurallyIncompleteScheduleWithTheChunkStatusEvenWhenStrict() {
+        // Empty content parses to FeeSchedule.DEFAULT, which fails isValid (no node/network fee): this is the
+        // benign "still uploading" bucket, distinct from a complete schedule the calculators cannot evaluate.
+        assertEquals(FEE_SCHEDULE_FILE_PART_UPLOADED, subject.updateSimpleFees(Bytes.EMPTY, true));
     }
 
     @Test
