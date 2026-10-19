@@ -4,6 +4,7 @@ package com.hedera.node.app.blocks;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.*;
 import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
@@ -36,6 +37,9 @@ public class StateChangeStrategyBenchmark {
             "ACCOUNT_BALANCE",
             "ACCOUNT_ALLOWANCE",
             "ACCOUNT_NESTED",
+            "ACCOUNT_LARGE_KEY_BALANCE",
+            "ACCOUNT_ED25519_BALANCE",
+            "TOPIC_LARGE_KEYS_SUBMIT",
             "THROTTLE_LIST",
             "SLOT_UPDATE",
             "FILE_APPEND_1M",
@@ -47,6 +51,9 @@ public class StateChangeStrategyBenchmark {
         "ACCOUNT_BALANCE",
         "ACCOUNT_ALLOWANCE",
         "ACCOUNT_NESTED",
+        "ACCOUNT_LARGE_KEY_BALANCE",
+        "ACCOUNT_ED25519_BALANCE",
+        "TOPIC_LARGE_KEYS_SUBMIT",
         "THROTTLE_LIST",
         "SLOT_UPDATE",
         "FILE_APPEND_1M",
@@ -129,6 +136,34 @@ public class StateChangeStrategyBenchmark {
                     .singletonUpdate(SingletonUpdateChange.newBuilder()
                             .throttleUsageSnapshotsValue((ThrottleUsageSnapshots) next))
                     .build();
+        } else if (fixture.equals("TOPIC_LARGE_KEYS_SUBMIT")) {
+            // A message submission changes only the sequence number and running hash; the role keys are unchanged.
+            type = StateChangeDeltas.valueType(Topic.DEFAULT);
+            final var topicId = TopicID.newBuilder().topicNum(1234).build();
+            final var before = Topic.newBuilder()
+                    .topicId(topicId)
+                    .sequenceNumber(1_000)
+                    .expirationSecond(2_000_000_000)
+                    .autoRenewPeriod(7_776_000)
+                    .autoRenewAccountId(owner)
+                    .runningHash(Bytes.wrap(randomBytes(random, 48)))
+                    .memo("topic benchmark memo")
+                    .adminKey(thresholdKey(random, 32))
+                    .submitKey(thresholdKey(random, 32))
+                    .feeScheduleKey(thresholdKey(random, 8))
+                    .feeExemptKeyList(ed25519Keys(random, 8))
+                    .build();
+            prior = before;
+            next = before.copyBuilder()
+                    .sequenceNumber(1_001)
+                    .runningHash(Bytes.wrap(randomBytes(random, 48)))
+                    .build();
+            full = StateChange.newBuilder()
+                    .stateId(21)
+                    .mapUpdate(MapUpdateChange.newBuilder()
+                            .key(MapChangeKey.newBuilder().topicIdKey(topicId))
+                            .value(MapChangeValue.newBuilder().topicValue((Topic) next)))
+                    .build();
         } else if (fixture.equals("SLOT_UPDATE")) {
             type = StateChangeDeltas.valueType(SlotValue.DEFAULT);
             final var before = new SlotValue(
@@ -186,6 +221,24 @@ public class StateChangeStrategyBenchmark {
                                         .copyBuilder()
                                         .threshold(2)))
                         .build();
+            } else if (fixture.equals("ACCOUNT_LARGE_KEY_BALANCE")) {
+                // A multisig account doing a transfer: the large key is unchanged.
+                before = CopyBuilderTracking.untracked(
+                        before.copyBuilder().key(thresholdKey(random, 32)).build());
+                next = before.copyBuilder().tinybarBalance(1_000_001).build();
+            } else if (fixture.equals("ACCOUNT_ED25519_BALANCE")) {
+                // A typical single-key account with associations and staking metadata doing a transfer.
+                before = CopyBuilderTracking.untracked(before.copyBuilder()
+                        .key(Key.newBuilder().ed25519(Bytes.wrap(randomBytes(random, 32))))
+                        .numberAssociations(3)
+                        .numberPositiveBalances(2)
+                        .headTokenId(TokenID.newBuilder().tokenNum(5678))
+                        .ethereumNonce(17)
+                        .stakedNodeId(3)
+                        .stakePeriodStart(19_000)
+                        .stakeAtStartOfLastRewardedPeriod(500_000)
+                        .build());
+                next = before.copyBuilder().tinybarBalance(1_000_001).build();
             } else next = before.copyBuilder().tinybarBalance(1_000_001).build();
             prior = before;
             full = StateChange.newBuilder()
@@ -262,6 +315,22 @@ public class StateChangeStrategyBenchmark {
                 .stateChanges(StateChanges.newBuilder()
                         .consensusTimestamp(Timestamp.newBuilder().seconds(1_000_000))
                         .stateChanges(change))
+                .build();
+    }
+
+    private static List<Key> ed25519Keys(final Random random, final int count) {
+        final var keys = new ArrayList<Key>();
+        for (int i = 0; i < count; i++)
+            keys.add(Key.newBuilder()
+                    .ed25519(Bytes.wrap(randomBytes(random, 32)))
+                    .build());
+        return keys;
+    }
+
+    private static Key thresholdKey(final Random random, final int size) {
+        return Key.newBuilder()
+                .thresholdKey(
+                        ThresholdKey.newBuilder().threshold(size / 2).keys(new KeyList(ed25519Keys(random, size))))
                 .build();
     }
 

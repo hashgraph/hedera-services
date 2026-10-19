@@ -57,15 +57,17 @@ class StreamValidationOpTest {
         final var binaryReplay = mock(BinaryStateChangesValidator.class, CALLS_REAL_METHODS);
         doNothing().when(objectReplay).validateBlocks(blocks.active());
         doNothing().when(binaryReplay).validateBlocks(blocks.active());
-        final var op = new StreamValidationOp(
-                List.of(TransactionRecordParityValidator.FACTORY, ignored -> objectReplay, ignored -> binaryReplay));
+        final var parityFactory = mock(BlockStreamValidator.Factory.class);
+        when(parityFactory.requiresRecordStream()).thenReturn(true);
+        when(parityFactory.appliesTo(spec)).thenReturn(true);
+        final var op = new StreamValidationOp(List.of(parityFactory, ignored -> objectReplay, ignored -> binaryReplay));
 
         submitWithCapturedBlocks(op, spec, blocks);
 
         verify(objectReplay).validateBlocks(blocks.active());
         verify(binaryReplay).validateBlocks(blocks.active());
-        // The real parity factory would need a target network if instantiated. BLOCKS mode must skip it.
-        verify(spec, never()).targetNetworkOrThrow();
+        // Record-dependent validators must not even be created in BLOCKS mode.
+        verify(parityFactory, never()).create(spec);
     }
 
     @ParameterizedTest

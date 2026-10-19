@@ -120,6 +120,8 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final SplittableRandom RANDOM = new SplittableRandom(System.currentTimeMillis());
     public static final AtomicBoolean AT_LEAST_ONE_WRAPS_ASSERTION_ENABLED = new AtomicBoolean(true);
     public static final AtomicBoolean ADAPTIVE_SIGNATURE_CHECKS_ENABLED = new AtomicBoolean(false);
+    /** Length of a mock block signature, which is a SHA-384 hash of the block hash. */
+    private static final int MOCK_SIGNATURE_LENGTH = 48;
 
     // The saved-state root hash in the state-metadata file is the platform signed-state Merkle root, hashed with the
     // platform digest Cryptography.DEFAULT_DIGEST_TYPE (NOT BlockStreamConfig.digestType). Tracking the platform digest
@@ -936,6 +938,31 @@ public class StateChangesValidator implements BlockStreamValidator {
         return footer;
     }
 
+    /**
+     * Whether a signature on block {@code blockNumber} is verified by the hinTS library alone, rather than with
+     * {@code TSS.verifyTSS()} (which assumes the target address book hash is always the ledger id).
+     */
+    private boolean verifiesWithHintsOnly(final long blockNumber) {
+        return historyLibrary == null || (!wrapsEnabled && blockNumber > 0);
+    }
+
+    /**
+     * Whether {@code signature} is a valid signature on {@code blockHash}, by the checks used for block
+     * {@code blockNumber}'s own signed proof.
+     */
+    private boolean isValidBlockSignature(
+            final long blockNumber, @NonNull final Bytes signature, @NonNull final Bytes blockHash) {
+        if (verifiesWithHintsOnly(blockNumber)) {
+            // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
+            // convenience API directly here since we don't have a chain-of-trust proof
+            final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
+            final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
+            return requireNonNull(hintsLibrary).verifyAggregate(sig, blockHash, vk, 1, hintsThresholdDenominator);
+        }
+        return TSS.verifyTSS(
+                requireNonNull(ledgerIdFromState).toByteArray(), signature.toByteArray(), blockHash.toByteArray());
+    }
+
     private void validateBlockProof(
             final long blockNumber,
             final long firstRound,
@@ -985,29 +1012,19 @@ public class StateChangesValidator implements BlockStreamValidator {
         // If hints are enabled, verify the signature using the hints library
         if (hintsLibrary != null) {
             final var signature = proof.signedBlockProofOrThrow().blockSignature();
-            if (ADAPTIVE_SIGNATURE_CHECKS_ENABLED.get() && signature.length() == 48) {
+            if (ADAPTIVE_SIGNATURE_CHECKS_ENABLED.get() && signature.length() == MOCK_SIGNATURE_LENGTH) {
                 assertMockSignature(proof, expectedBlockHash);
                 return;
             }
-            // TSS.verifyTSS() assumes target address book hash is always ledger id
-            if (historyLibrary == null || (!wrapsEnabled && proof.block() > 0)) {
-                // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
-                // convenience API directly here since we don't have a chain-of-trust proof
-                final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
-                final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
-                final boolean valid =
-                        hintsLibrary.verifyAggregate(sig, expectedBlockHash, vk, 1, hintsThresholdDenominator);
+            final boolean valid = isValidBlockSignature(blockNumber, signature, expectedBlockHash);
+            if (verifiesWithHintsOnly(blockNumber)) {
                 if (!valid) {
                     Assertions.fail(() -> "Invalid signature in proof (start round #" + firstRound + ") - " + proof);
                 } else {
                     logger.info("Verified signature on #{}", proof.block());
                 }
             } else {
-                requireNonNull(ledgerIdFromState);
                 final var usedCompressedWrapsProof = hasCompressedWrapsProof(signature);
-                // Use convenience API to verify signature
-                final var valid = TSS.verifyTSS(
-                        ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
                 if (!valid) {
                     final var details = invalidSigDetails(
                             ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
@@ -1019,11 +1036,26 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             if (indirectProofsNeedVerification()) {
                 logger.info("Verifying contiguous indirect proofs prior to block {}", blockNumber);
-                requireNonNull(indirectProofSeq).verify();
+                requireNonNull(indirectProofSeq)
+                        .verify(embeddedSignature ->
+                                isValidBlockSignature(blockNumber, embeddedSignature, expectedBlockHash));
                 indirectProofSeq = null; // Clear out the indirect proof sequence after verification
             }
         } else {
-            assertMockSignature(proof, expectedBlockHash);
+            // Without a hints library there is nothing to verify a real signature against, so only a
+            // mock signature can be checked here; asserting one against a TSS signature just reports
+            // a spurious mismatch.
+            final var signature = proof.signedBlockProofOrThrow().blockSignature();
+            if (signature.length() == MOCK_SIGNATURE_LENGTH) {
+                assertMockSignature(proof, expectedBlockHash);
+            } else {
+                logger.warn(
+                        "Skipping signature check on #{}; hints are disabled for this validator but the "
+                                + "proof carries a {}-byte signature, not a {}-byte mock",
+                        proof.block(),
+                        signature.length(),
+                        MOCK_SIGNATURE_LENGTH);
+            }
         }
     }
 
