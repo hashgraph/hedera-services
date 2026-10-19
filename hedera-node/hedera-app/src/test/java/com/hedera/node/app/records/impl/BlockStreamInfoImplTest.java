@@ -181,6 +181,69 @@ class BlockStreamInfoImplTest {
                 "prngSeed must return the full 48-byte leftmost pre-cutover running hash");
     }
 
+    /** A 32-byte SHA-256 hash left-padded with 16 leading zeros to the uniform 48-byte stored size. */
+    private static Bytes paddedSha256Hash(final int seed) {
+        final var out = new byte[DigestType.SHA_384.digestLength()];
+        final var real = new byte[DigestType.SHA_256.digestLength()];
+        java.util.Arrays.fill(real, (byte) seed);
+        System.arraycopy(real, 0, out, out.length - real.length, real.length);
+        return Bytes.wrap(out);
+    }
+
+    @Test
+    void blockHashByBlockNumberDecodesMixedPaddedWindowWithSha256() {
+        // After a cutover, trailingBlockHashes is a uniform 48-byte-per-entry window mixing genuine 48-byte SHA-384
+        // record hashes (pre-cutover, left) with left-padded 32-byte SHA-256 block hashes (post-cutover, right).
+        // blockNumber = 3, trailing covers blocks 0, 1 (SHA-384) and 2 (padded SHA-256); block 3 is reconstructed.
+        // The window is genesis-consistent (3 entries for blockNumber 3) so the per-entry stride resolves to 48.
+        final var trailing = concat(hash(1), hash(2), paddedSha256Hash(3));
+        final var blockStreamInfo = info(3L, trailing);
+        final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
+        final var reconstructedLast =
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+
+        // Pre-cutover blocks keep their full 48-byte SHA-384 record hash.
+        assertEquals(hash(1), subject.blockHashByBlockNumber(0L), "pre-cutover block 0 is a full 48-byte hash");
+        assertEquals(48, (int) subject.blockHashByBlockNumber(0L).length());
+        assertEquals(hash(2), subject.blockHashByBlockNumber(1L));
+        // Post-cutover block's padding is stripped back to its real 32-byte SHA-256 hash.
+        final var realSha256Block2 = runningHash(3, DigestType.SHA_256);
+        assertEquals(
+                realSha256Block2, subject.blockHashByBlockNumber(2L), "post-cutover block 2 is stripped to 32 bytes");
+        assertEquals(32, (int) subject.blockHashByBlockNumber(2L).length());
+        // The reconstructed last block's hash resolves and is 32 bytes under SHA-256.
+        assertEquals(reconstructedLast, subject.blockHashByBlockNumber(3L));
+        assertEquals(32, (int) subject.blockHashByBlockNumber(3L).length());
+
+        assertNull(subject.blockHashByBlockNumber(-1L), "older than the available window");
+        assertNull(subject.blockHashByBlockNumber(4L), "future block");
+    }
+
+    @Test
+    void blockHashByBlockNumberDecodesCompactedNativeWindowWithSha256() {
+        // Post-compaction: once no genuine pre-cutover hashes remain, trailingBlockHashes is a uniform
+        // 32-byte-per-entry
+        // native window (no padding). blockNumber = 3, trailing covers blocks 0, 1, 2; block 3 is reconstructed.
+        final var block0 = runningHash(1, DigestType.SHA_256);
+        final var block1 = runningHash(2, DigestType.SHA_256);
+        final var block2 = runningHash(3, DigestType.SHA_256);
+        final var trailing = concat(block0, block1, block2);
+        assertEquals(96, (int) trailing.length(), "three native 32-byte entries");
+        final var blockStreamInfo = info(3L, trailing);
+        final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
+        final var reconstructedLast =
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+
+        assertEquals(block0, subject.blockHashByBlockNumber(0L));
+        assertEquals(32, (int) subject.blockHashByBlockNumber(0L).length());
+        assertEquals(block1, subject.blockHashByBlockNumber(1L));
+        assertEquals(block2, subject.blockHashByBlockNumber(2L));
+        assertEquals(reconstructedLast, subject.blockHashByBlockNumber(3L));
+        assertEquals(32, (int) subject.blockHashByBlockNumber(3L).length());
+        assertNull(subject.blockHashByBlockNumber(-1L), "older than the available window");
+        assertNull(subject.blockHashByBlockNumber(4L), "future block");
+    }
+
     @Test
     void blockHashByBlockNumberIsNullAtGenesis() {
         final var subject = new BlockStreamInfoImpl(info(-1L, Bytes.EMPTY), DigestType.SHA_384);
@@ -190,18 +253,18 @@ class BlockStreamInfoImplTest {
 
     @Test
     void blockHashByBlockNumberReconstructsLastBlockAndResolvesTrailing() {
-        // blockNumber = 3, trailing covers blocks 1 and 2; block 3's own hash is not in state.
+        // blockNumber = 2, trailing covers blocks 0 and 1 (genesis-consistent); block 2's own hash is not in state.
         final var trailing = concat(hash(1), hash(2));
-        final var blockStreamInfo = info(3L, trailing);
+        final var blockStreamInfo = info(2L, trailing);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
 
-        assertEquals(reconstructedLast, subject.blockHashByBlockNumber(3L), "last block hash is reconstructed");
-        assertEquals(hash(2), subject.blockHashByBlockNumber(2L), "previous block comes from trailing hashes");
-        assertEquals(hash(1), subject.blockHashByBlockNumber(1L));
-        assertNull(subject.blockHashByBlockNumber(0L), "older than the available window");
-        assertNull(subject.blockHashByBlockNumber(4L), "future block");
+        assertEquals(reconstructedLast, subject.blockHashByBlockNumber(2L), "last block hash is reconstructed");
+        assertEquals(hash(2), subject.blockHashByBlockNumber(1L), "previous block comes from trailing hashes");
+        assertEquals(hash(1), subject.blockHashByBlockNumber(0L));
+        assertNull(subject.blockHashByBlockNumber(-1L), "older than the available window");
+        assertNull(subject.blockHashByBlockNumber(3L), "future block");
     }
 
     @Test
@@ -210,7 +273,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(0L, Bytes.EMPTY);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
 
         assertEquals(reconstructedLast, subject.blockHashByBlockNumber(0L));
         assertNull(subject.blockHashByBlockNumber(1L));
@@ -219,9 +282,10 @@ class BlockStreamInfoImplTest {
 
     @Test
     void extendedHashesAreStableAcrossRepeatedCalls() {
-        final var subject = new BlockStreamInfoImpl(info(3L, concat(hash(1), hash(2))), DigestType.SHA_384);
-        assertEquals(subject.blockHashByBlockNumber(3L), subject.blockHashByBlockNumber(3L));
+        // Genesis-consistent window: blockNumber = 2, trailing covers blocks 0 and 1.
+        final var subject = new BlockStreamInfoImpl(info(2L, concat(hash(1), hash(2))), DigestType.SHA_384);
         assertEquals(subject.blockHashByBlockNumber(2L), subject.blockHashByBlockNumber(2L));
+        assertEquals(subject.blockHashByBlockNumber(1L), subject.blockHashByBlockNumber(1L));
     }
 
     @Test
@@ -271,22 +335,23 @@ class BlockStreamInfoImplTest {
 
     @Test
     void blockHashByBlockNumberHasFullParityWithRecords() {
-        // Blocks-mode view: blockNumber = 3, trailing covers blocks 1 and 2.
+        // Blocks-mode view: blockNumber = 2, trailing covers blocks 0 and 1 (genesis-consistent).
         final var trailing = concat(hash(1), hash(2));
-        final var blockStreamInfo = info(3L, trailing);
+        final var blockStreamInfo = info(2L, trailing);
         final var blocks = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
-        final var lastBlockHash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
+        final var lastBlockHash =
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
 
-        // Equivalent records-mode view: lastBlockNumber = 3 and blockHashes include block 3's hash directly.
+        // Equivalent records-mode view: lastBlockNumber = 2 and blockHashes include block 2's hash directly.
         final var records = new BlockRecordInfoImpl(
                 BlockInfo.newBuilder()
-                        .lastBlockNumber(3L)
+                        .lastBlockNumber(2L)
                         .blockHashes(concat(hash(1), hash(2), lastBlockHash))
                         .firstConsTimeOfCurrentBlock(BLOCK_TIME)
                         .build(),
                 RunningHashes.DEFAULT);
 
-        for (long n = -1; n <= 4; n++) {
+        for (long n = -1; n <= 3; n++) {
             assertEquals(
                     records.blockHashByBlockNumber(n),
                     blocks.blockHashByBlockNumber(n),

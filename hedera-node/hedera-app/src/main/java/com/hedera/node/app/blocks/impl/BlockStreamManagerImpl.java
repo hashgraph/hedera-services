@@ -10,7 +10,6 @@ import static com.hedera.node.app.blocks.BlockHashSigner.Request.SUCCINCT_SIGNAT
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.GENESIS_WORK;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.NONE;
 import static com.hedera.node.app.blocks.BlockStreamManager.PendingWork.POST_UPGRADE_WORK;
-import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter.blockDirFor;
 import static com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter.cleanUpPendingBlock;
 import static com.hedera.node.app.blocks.impl.streaming.FileBlockItemWriter.loadContiguousPendingBlocks;
@@ -406,7 +405,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .map(Bytes::toByteArray)
                             .toList(),
                     blockStreamInfo.intermediateBlockRootsLeafCount());
-            effectiveLastBlockHash = reconstructLastBlockHash(blockStreamInfo, digestType());
+            effectiveLastBlockHash =
+                    reconstructLastBlockHash(blockStreamInfo, digestType(), blockHashManager.numTrailingBlocks);
         }
         this.lastBlockHash = effectiveLastBlockHash;
         if (!previousBlockHashesUpdated && !Objects.equals(effectiveLastBlockHash, hashOfZero())) {
@@ -415,20 +415,27 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     public static Bytes reconstructLastBlockHash(
-            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType) {
+            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType, final int maxHashes) {
         requireNonNull(blockStreamInfo);
         requireNonNull(digestType);
         if (blockStreamInfo.blockNumber() < 0L) {
             return BlockRootTreeHasher.emptySubtreeFor(digestType);
         }
         final int hashSize = digestType.digestLength();
-        final var prevBlockHash = blockStreamInfo.blockNumber() == 0L
-                ? BlockRootTreeHasher.emptySubtreeFor(digestType)
-                : BlockImplUtils.blockHashByBlockNumber(
-                        blockStreamInfo.trailingBlockHashes(),
-                        blockStreamInfo.blockNumber() - 1,
-                        blockStreamInfo.blockNumber() - 1,
-                        hashSize);
+        final Bytes prevBlockHash;
+        if (blockStreamInfo.blockNumber() == 0L) {
+            prevBlockHash = BlockRootTreeHasher.emptySubtreeFor(digestType);
+        } else {
+            // The trailing window may be in 48-byte padded mode (mixed era) or compacted 32-byte native mode;
+            // realBlockHashByBlockNumber derives the stride and strips any left-padding to recover the true (unpadded)
+            // hash of block N-1, which feeds computeBlockRootHash.
+            prevBlockHash = BlockImplUtils.realBlockHashByBlockNumber(
+                    blockStreamInfo.trailingBlockHashes(),
+                    blockStreamInfo.blockNumber() - 1,
+                    blockStreamInfo.blockNumber() - 1,
+                    maxHashes,
+                    hashSize);
+        }
         final var prevBlocksHasher = new IncrementalStreamingHasher(
                 digestType.buildDigest(),
                 blockStreamInfo.intermediatePreviousBlockRootHashes().stream()
@@ -1619,7 +1626,15 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * @param blockStreamInfo the trailing block hashes at the start of the round
          */
         void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
-            blockHashes = appendHash(prevBlockHash, blockStreamInfo.trailingBlockHashes(), numTrailingBlocks);
+            // Keep all entries a uniform size: pad to RECORD_HASH_SIZE while any genuine pre-cutover hash remains,
+            // then compact the window to the active digest length once none do (one-time, derived purely from state).
+            blockHashes = BlockImplUtils.appendTrailingBlockHash(
+                    prevBlockHash,
+                    blockStreamInfo.trailingBlockHashes(),
+                    numTrailingBlocks,
+                    blockStreamInfo.blockNumber(),
+                    RECORD_HASH_SIZE,
+                    digestOrThrow().getDigestLength());
         }
 
         /**
@@ -1635,8 +1650,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          */
         @Nullable
         Bytes hashOfBlock(final long blockNo) {
-            final int hashSize = digestOrThrow().getDigestLength();
-            return BlockImplUtils.blockHashByBlockNumber(blockHashes, blockNumber - 1, blockNo, hashSize);
+            // The window may be in 48-byte padded mode or compacted 32-byte native mode; derive the stride from the
+            // entry count and strip any left-padding to recover the real hash.
+            return BlockImplUtils.realBlockHashByBlockNumber(
+                    blockHashes,
+                    blockNumber - 1,
+                    blockNo,
+                    numTrailingBlocks,
+                    digestOrThrow().getDigestLength());
         }
 
         /**

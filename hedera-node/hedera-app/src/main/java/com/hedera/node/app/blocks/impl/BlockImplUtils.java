@@ -2,6 +2,7 @@
 package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.hashOfAll;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.RECORD_HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -80,6 +81,158 @@ public class BlockImplUtils {
             long offset = (blockNo - firstAvailableBlockNo) * hashSize;
             return blockHashes.slice(offset, hashSize);
         }
+    }
+
+    /**
+     * Left-pads the given hash with leading zero bytes so that it occupies exactly {@code storedSize} bytes. Returns the
+     * hash unchanged if it is already {@code storedSize} bytes long. This lets a shorter (e.g. 32-byte SHA-256) block
+     * hash be stored uniformly alongside full-size (48-byte SHA-384) entries in {@code trailingBlockHashes}.
+     *
+     * @param hash the hash to pad
+     * @param storedSize the uniform byte length each stored entry must occupy
+     * @return the left-padded hash
+     * @throws IllegalArgumentException if the hash is longer than {@code storedSize}
+     */
+    public static Bytes leftPadTo(@NonNull final Bytes hash, final int storedSize) {
+        requireNonNull(hash);
+        final int hashLen = (int) hash.length();
+        if (hashLen == storedSize) {
+            return hash;
+        }
+        if (hashLen > storedSize) {
+            throw new IllegalArgumentException("Hash of length " + hashLen + " exceeds stored size " + storedSize);
+        }
+        final byte[] out = new byte[storedSize];
+        hash.getBytes(0, out, storedSize - hashLen, hashLen);
+        return Bytes.wrap(out);
+    }
+
+    /**
+     * Reverses {@link #leftPadTo(Bytes, int)} for a single stored entry. If the leading {@code stored.length() -
+     * realSize} bytes are all zero, the entry was a padded shorter hash and its real {@code realSize}-byte value is
+     * returned; otherwise the entry is a genuine full-size hash (e.g. a pre-cutover SHA-384 record hash) and is returned
+     * unchanged.
+     *
+     * @param stored the stored, possibly padded, entry
+     * @param realSize the byte length of the active digest's hashes
+     * @return the real hash
+     */
+    public static Bytes stripLeadingPad(@NonNull final Bytes stored, final int realSize) {
+        requireNonNull(stored);
+        final int storedLen = (int) stored.length();
+        if (storedLen <= realSize) {
+            return stored;
+        }
+        // A genuine full-size hash (e.g. pre-cutover SHA-384) effectively never begins with a full run of zero bytes,
+        // so an all-zero leading region reliably identifies a padded shorter hash.
+        for (int i = 0; i < storedLen - realSize; i++) {
+            if (stored.getByte(i) != 0) {
+                return stored;
+            }
+        }
+        return stored.slice(storedLen - realSize, realSize);
+    }
+
+    /**
+     * Reads the real (unpadded) hash of a block from a uniform trailing window that may be in {@code preSize}-byte
+     * padded mode (mixed era, still containing genuine pre-cutover hashes) or {@code activeSize}-byte native mode
+     * (post-compaction). The stored entry stride is derived from the window length (and, only when that is ambiguous,
+     * the entry count pinned by the block number), since blob length alone can be ambiguous.
+     *
+     * @param window the concatenated trailing block hashes
+     * @param lastBlockNo the block number of the rightmost entry in the window
+     * @param blockNo the block number of the hash to return
+     * @param maxHashes the maximum number of entries the window retains
+     * @param activeSize the byte length of the active digest's hashes
+     * @return the real hash of the requested block, or null if out of range
+     */
+    public static @Nullable Bytes realBlockHashByBlockNumber(
+            @NonNull final Bytes window,
+            final long lastBlockNo,
+            final long blockNo,
+            final int maxHashes,
+            final int activeSize) {
+        final int stride =
+                storedStride(window.length(), Math.min(lastBlockNo + 1, maxHashes), RECORD_HASH_SIZE, activeSize);
+        final var stored = blockHashByBlockNumber(window, lastBlockNo, blockNo, stride);
+        return stored == null ? null : stripLeadingPad(stored, activeSize);
+    }
+
+    /**
+     * Appends a new native block hash to the trailing window, keeping all entries a uniform size. While a genuine
+     * full-size (pre-cutover) hash remains, shorter hashes are left-padded to {@code preSize}. Once the oldest entry is
+     * itself padded (no genuine hashes remain), the window is compacted to {@code activeSize} and subsequent hashes are
+     * stored natively.
+     *
+     * @param newHash the new native block hash to append
+     * @param window the current trailing block hashes
+     * @param maxHashes the maximum number of entries the window retains
+     * @param newBlockNo the block number of {@code newHash}
+     * @param preSize the pre-cutover (full-size) stored entry length
+     * @param activeSize the byte length of the active digest's hashes
+     * @return the updated trailing block hashes
+     */
+    public static Bytes appendTrailingBlockHash(
+            @NonNull final Bytes newHash,
+            @NonNull final Bytes window,
+            final int maxHashes,
+            final long newBlockNo,
+            final int preSize,
+            final int activeSize) {
+        final long countExisting = Math.min(newBlockNo, maxHashes);
+        final int existingStride = storedStride(window.length(), countExisting, preSize, activeSize);
+        if (preSize != activeSize
+                && existingStride == preSize
+                && countExisting > 0
+                && isLeftmostPadded(window, preSize - activeSize)) {
+            // No genuine (pre-cutover) hashes remain: compact to native size and store natively hereafter.
+            final var compacted = stripWindowPadding(window, preSize, activeSize);
+            return appendHash(newHash, compacted, maxHashes);
+        }
+        final int targetStride = (preSize != activeSize && existingStride == preSize) ? preSize : activeSize;
+        return appendHash(leftPadTo(newHash, targetStride), window, maxHashes);
+    }
+
+    /**
+     * Determines the uniform per-entry byte length of a trailing window that is either in {@code preSize}-byte padded
+     * mode or {@code activeSize}-byte native (post-compaction) mode. Uses length divisibility first — a window compacts
+     * only once it has been full of padded entries, so any length that divides evenly by exactly one of the two sizes
+     * is unambiguous. Only when the length is compatible with both strides (a multiple of their least common multiple)
+     * does it fall back to the entry {@code count}, which the design pins to the block number.
+     */
+    private static int storedStride(final long length, final long count, final int preSize, final int activeSize) {
+        if (preSize == activeSize || length == 0) {
+            return activeSize;
+        }
+        final boolean divPre = length % preSize == 0;
+        final boolean divActive = length % activeSize == 0;
+        if (divPre && !divActive) {
+            return preSize;
+        }
+        if (divActive && !divPre) {
+            return activeSize;
+        }
+        return count <= 0 ? activeSize : (int) (length / count);
+    }
+
+    /** Returns true if the leading {@code padLen} bytes of the window (the leftmost entry's pad region) are all zero. */
+    private static boolean isLeftmostPadded(final Bytes window, final int padLen) {
+        for (int i = 0; i < padLen; i++) {
+            if (window.getByte(i) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Compacts a window of {@code preSize}-byte padded entries to {@code activeSize}-byte native entries. */
+    private static Bytes stripWindowPadding(final Bytes window, final int preSize, final int activeSize) {
+        final int k = (int) (window.length() / preSize);
+        final byte[] out = new byte[k * activeSize];
+        for (int i = 0; i < k; i++) {
+            window.getBytes((long) i * preSize + (preSize - activeSize), out, i * activeSize, activeSize);
+        }
+        return Bytes.wrap(out);
     }
 
     public static Bytes hashLeaf(@NonNull final MessageDigest digest, @NonNull final Bytes leafData) {

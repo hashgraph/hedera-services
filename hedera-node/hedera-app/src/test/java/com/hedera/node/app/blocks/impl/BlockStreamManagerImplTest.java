@@ -264,7 +264,7 @@ class BlockStreamManagerImplTest {
     @Test
     void reconstructLastBlockHashWithSha256DigestSupplierReturns32ByteHash() {
         final var blockStreamInfo = blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION);
-        final Bytes hash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256);
+        final Bytes hash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
         assertEquals(32, hash.length());
     }
 
@@ -2120,8 +2120,11 @@ class BlockStreamManagerImplTest {
                 null,
                 streamingObs);
 
-        // init with HASH_OF_ZERO should NOT read from BlockRecordService at all
-        subject.init(state, HASH_OF_ZERO_384, true);
+        // init with the configured-digest genesis sentinel should take the genesis branch and NOT read
+        // from BlockRecordService/BlockStreamService at all (the sentinel tracks the configured digest, so it
+        // is the 32-byte sha256(0x00) under SHA_256 and the 48-byte HASH_OF_ZERO_384 under SHA_384).
+        subject.init(
+                state, hashOfZero(config.getConfigData(BlockStreamConfig.class).digestType()), true);
         // If cutover had run, it would have tried to read BlockRecordService states,
         // which are not mocked here; the test succeeding proves cutover was skipped.
     }
@@ -2195,8 +2198,10 @@ class BlockStreamManagerImplTest {
                 .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
         given(state.getReadableStates(BlockRecordService.NAME)).willReturn(blockRecordReadable);
 
-        // loadCutoverData should see previewStreamOverwritten=false and skip
-        subject.init(state, HASH_OF_ZERO_384, true);
+        // loadCutoverData should see previewStreamOverwritten=false and skip; init then takes the genesis
+        // branch via the configured-digest sentinel without reading BlockStreamService.
+        subject.init(
+                state, hashOfZero(config.getConfigData(BlockStreamConfig.class).digestType()), true);
     }
 
     @Test
@@ -2319,9 +2324,6 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(100)
                 .previewStreamOverwritten(true)
                 .build();
-        // BlockStreamInfo has advanced — real blocks were produced after cutover
-        final var advancedBsi = BlockStreamInfo.newBuilder().blockNumber(137).build();
-
         final var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .withValue("blockStream.roundsPerBlock", 1)
@@ -2344,6 +2346,25 @@ class BlockStreamManagerImplTest {
                 null,
                 streamingObs);
 
+        // BlockStreamInfo has advanced — real blocks were produced after cutover. The normal init path calls
+        // reconstructLastBlockHash, which needs a block time, the previous block's trailing hash, and non-null
+        // subtree roots, each sized to the configured digest.
+        final var hash = Bytes.wrap(
+                new byte
+                        [config.getConfigData(BlockStreamConfig.class)
+                                .digestType()
+                                .digestLength()]);
+        final var advancedBsi = BlockStreamInfo.newBuilder()
+                .blockNumber(137)
+                .blockTime(new Timestamp(1000, 0))
+                .trailingBlockHashes(hash)
+                .startOfBlockStateHash(hash)
+                .consensusHeaderRootHash(hash)
+                .inputTreeRootHash(hash)
+                .outputItemRootHash(hash)
+                .traceDataRootHash(hash)
+                .build();
+
         final var blockRecordReadable = mock(ReadableStates.class);
         given(blockRecordReadable.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
                 .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
@@ -2355,7 +2376,74 @@ class BlockStreamManagerImplTest {
                         BLOCK_STREAM_INFO_STATE_ID, BLOCK_STREAM_INFO_STATE_LABEL, () -> advancedBsi));
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(blockStreamReadable);
 
-        // init with HASH_OF_ZERO — cutover should be skipped since BSI has advanced
+        // init with a non-genesis hash — cutover should be skipped since BSI has advanced, and init takes the
+        // normal path (reconstructing the last block hash from the advanced BlockStreamInfo).
+        subject.init(state, HASH_OF_ZERO_384, true);
+    }
+
+    @Test
+    void cutoverSkippedUsesSha256NormalPathWhenBlockStreamInfoHasAdvanced() {
+        // Same "BSI advanced, cutover skipped" scenario as above, but forcing digestType=SHA_256 so the normal
+        // init path reconstructs the last block hash entirely with 32-byte SHA-256 subtree hashes.
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(100)
+                .previewStreamOverwritten(true)
+                .build();
+
+        final var config = HederaTestConfigBuilder.create()
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.roundsPerBlock", 1)
+                .withValue("blockStream.enableCutover", true)
+                .withValue("blockStream.digestType", "SHA_256")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
+        subject = new BlockStreamManagerImpl(
+                blockHashSigner,
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                boundaryStateChangeListener,
+                platform,
+                quiescenceController,
+                hashInfo,
+                SemanticVersion.DEFAULT,
+                lifecycle,
+                quiescedHeartbeat,
+                metrics,
+                null,
+                streamingObs);
+
+        // Every reconstructed subtree hash must be the SHA-256 digest length (32 bytes).
+        final var sha256Size = DigestType.SHA_256.digestLength();
+        assertEquals(32, sha256Size);
+        final var hash = Bytes.wrap(new byte[sha256Size]);
+        // trailingBlockHashes entries are stored at the uniform 48-byte RECORD_HASH_SIZE (SHA-256 block hashes are
+        // left-padded), so block 136's prev-block hash must be a 48-byte entry for reconstruction to resolve it.
+        final var paddedTrailingHash = Bytes.wrap(new byte[DigestType.SHA_384.digestLength()]);
+        final var advancedBsi = BlockStreamInfo.newBuilder()
+                .blockNumber(137)
+                .blockTime(new Timestamp(1000, 0))
+                .trailingBlockHashes(paddedTrailingHash)
+                .startOfBlockStateHash(hash)
+                .consensusHeaderRootHash(hash)
+                .inputTreeRootHash(hash)
+                .outputItemRootHash(hash)
+                .traceDataRootHash(hash)
+                .build();
+
+        final var blockRecordReadable = mock(ReadableStates.class);
+        given(blockRecordReadable.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+        given(state.getReadableStates(BlockRecordService.NAME)).willReturn(blockRecordReadable);
+
+        final var blockStreamReadable = mock(ReadableStates.class);
+        given(blockStreamReadable.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(
+                        BLOCK_STREAM_INFO_STATE_ID, BLOCK_STREAM_INFO_STATE_LABEL, () -> advancedBsi));
+        given(state.getReadableStates(BlockStreamService.NAME)).willReturn(blockStreamReadable);
+
+        // A non-genesis hash (the SHA-256 genesis sentinel is the 32-byte sha256(0x00), so HASH_OF_ZERO_384 is
+        // non-genesis here too) routes init through the normal SHA-256 reconstruction path.
         subject.init(state, HASH_OF_ZERO_384, true);
     }
 

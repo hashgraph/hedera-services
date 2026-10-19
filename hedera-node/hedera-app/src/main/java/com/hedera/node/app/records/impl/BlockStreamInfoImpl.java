@@ -102,14 +102,24 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
         // The last completed block's own hash is not persisted in its own state, so the state-resident trailing
         // hashes only reach blockNumber - 1. Reconstruct it and append so the set covers up to blockNumber, letting
         // queries resolve blockhash(block.number - 1) for the most recent block exactly as BlockRecordInfoImpl does.
-        return BlockImplUtils.blockHashByBlockNumber(
-                extendedBlockHashes(), lastCompleted, blockNo, digestType.digestLength());
+        // The window may be in 48-byte padded mode or compacted 32-byte native mode; realBlockHashByBlockNumber
+        // derives the stride from the entry count and strips any left-padding to recover the real hash.
+        return BlockImplUtils.realBlockHashByBlockNumber(
+                extendedBlockHashes(), lastCompleted, blockNo, NUM_TRAILING_BLOCKS, digestType.digestLength());
     }
 
     private Bytes extendedBlockHashes() {
         if (extendedBlockHashes == null) {
-            final var lastBlockHash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
-            extendedBlockHashes = appendHash(lastBlockHash, blockStreamInfo.trailingBlockHashes(), NUM_TRAILING_BLOCKS);
+            final var lastBlockHash =
+                    BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, NUM_TRAILING_BLOCKS);
+            // Append the reconstructed last hash at the window's CURRENT stride (48 padded or 32 native) without
+            // compacting — this is a read-only extension for queries, never persisted. Derive the stride from the
+            // state window's entry count (pinned by the block number), then pad the native last hash to match.
+            final var trailing = blockStreamInfo.trailingBlockHashes();
+            final long countState = Math.min(blockStreamInfo.blockNumber(), NUM_TRAILING_BLOCKS);
+            final int stride = countState <= 0 ? (int) lastBlockHash.length() : (int) (trailing.length() / countState);
+            extendedBlockHashes =
+                    appendHash(BlockImplUtils.leftPadTo(lastBlockHash, stride), trailing, NUM_TRAILING_BLOCKS);
         }
         return extendedBlockHashes;
     }

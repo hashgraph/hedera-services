@@ -335,4 +335,239 @@ class BlockImplUtilsTest {
         // The middle slice starts at a different offset under each stride (48 vs 32), so the bytes differ too.
         assertNotEquals(sha384Slice, sha256Slice);
     }
+
+    @Test
+    void leftPadToPrependsZeroBytesForShorterHash() {
+        final byte[] raw = new byte[32];
+        for (int i = 0; i < raw.length; i++) {
+            raw[i] = (byte) (i + 1); // non-zero so padding is distinguishable
+        }
+        final var padded = BlockImplUtils.leftPadTo(Bytes.wrap(raw), 48);
+        assertEquals(48L, padded.length());
+        final byte[] out = padded.toByteArray();
+        for (int i = 0; i < 16; i++) {
+            assertEquals(0, out[i], "leading byte " + i + " should be zero padding");
+        }
+        assertArrayEquals(raw, java.util.Arrays.copyOfRange(out, 16, 48));
+    }
+
+    @Test
+    void leftPadToReturnsHashUnchangedWhenAlreadyStoredSize() {
+        final byte[] raw = new byte[48];
+        for (int i = 0; i < raw.length; i++) {
+            raw[i] = (byte) (i + 1);
+        }
+        final var padded = BlockImplUtils.leftPadTo(Bytes.wrap(raw), 48);
+        assertEquals(48L, padded.length());
+        assertArrayEquals(raw, padded.toByteArray());
+    }
+
+    @Test
+    void leftPadToThrowsWhenHashLongerThanStoredSize() {
+        final var tooLong = Bytes.wrap(new byte[64]);
+        assertThrows(IllegalArgumentException.class, () -> BlockImplUtils.leftPadTo(tooLong, 48));
+    }
+
+    @Test
+    void stripLeadingPadReturnsRealHashWhenLeadingBytesAreZero() {
+        final byte[] stored = new byte[48];
+        for (int i = 16; i < 48; i++) {
+            stored[i] = (byte) (i + 1); // 16 leading zeros, then a 32-byte real hash
+        }
+        final var real = BlockImplUtils.stripLeadingPad(Bytes.wrap(stored), 32);
+        assertEquals(32L, real.length());
+        assertArrayEquals(java.util.Arrays.copyOfRange(stored, 16, 48), real.toByteArray());
+    }
+
+    @Test
+    void stripLeadingPadReturnsGenuineFullSizeEntryUnchanged() {
+        // A genuine 48-byte SHA-384 hash whose leading bytes are non-zero must not be truncated to 32 bytes.
+        final byte[] genuine = new byte[48];
+        for (int i = 0; i < genuine.length; i++) {
+            genuine[i] = (byte) (i + 1);
+        }
+        final var result = BlockImplUtils.stripLeadingPad(Bytes.wrap(genuine), 32);
+        assertEquals(48L, result.length());
+        assertArrayEquals(genuine, result.toByteArray());
+    }
+
+    @Test
+    void stripLeadingPadReturnsEntryUnchangedWhenAlreadyRealSize() {
+        final byte[] raw = new byte[32];
+        for (int i = 0; i < raw.length; i++) {
+            raw[i] = (byte) (i + 1);
+        }
+        final var result = BlockImplUtils.stripLeadingPad(Bytes.wrap(raw), 32);
+        assertEquals(32L, result.length());
+        assertArrayEquals(raw, result.toByteArray());
+    }
+
+    // --- realBlockHashByBlockNumber: stride derived from entry count, reads real (unpadded) hash ---
+
+    private static byte[] seq(final int len, final int start) {
+        final byte[] out = new byte[len];
+        for (int i = 0; i < len; i++) {
+            out[i] = (byte) (start + i + 1); // non-zero so padding is distinguishable
+        }
+        return out;
+    }
+
+    private static byte[] padded48(final byte[] real32) {
+        final byte[] out = new byte[48];
+        System.arraycopy(real32, 0, out, 16, 32);
+        return out;
+    }
+
+    @Test
+    void realBlockHashByBlockNumberReadsNativeWindowAtActiveStride() {
+        // Three native 32-byte entries for blocks 0,1,2 (post-compaction / all-native era). The stride is derived
+        // from the entry count, which the design pins to min(lastBlockNo + 1, maxHashes).
+        final byte[] b0 = seq(32, 0);
+        final byte[] b1 = seq(32, 100);
+        final byte[] b2 = seq(32, 200);
+        final byte[] window = new byte[96];
+        System.arraycopy(b0, 0, window, 0, 32);
+        System.arraycopy(b1, 0, window, 32, 32);
+        System.arraycopy(b2, 0, window, 64, 32);
+
+        final var got = BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 2L, 1L, 256, 32);
+        assertNotNull(got);
+        assertEquals(32L, got.length());
+        assertArrayEquals(b1, got.toByteArray());
+    }
+
+    @Test
+    void realBlockHashByBlockNumberStripsPaddingFromAllPaddedWindow() {
+        // Three padded 48-byte entries (each a padded 32-byte hash) for blocks 0,1,2.
+        final byte[] r0 = seq(32, 0);
+        final byte[] r1 = seq(32, 100);
+        final byte[] r2 = seq(32, 200);
+        final byte[] window = new byte[144];
+        System.arraycopy(padded48(r0), 0, window, 0, 48);
+        System.arraycopy(padded48(r1), 0, window, 48, 48);
+        System.arraycopy(padded48(r2), 0, window, 96, 48);
+
+        final var got = BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 2L, 0L, 256, 32);
+        assertNotNull(got);
+        assertEquals(32L, got.length());
+        assertArrayEquals(r0, got.toByteArray());
+    }
+
+    @Test
+    void realBlockHashByBlockNumberReadsMixedWindowGenuineAndPadded() {
+        // Mixed 48-byte era: genuine SHA-384 hash (non-zero leading bytes) at block 0, padded 32 at block 1.
+        final byte[] genuine48 = seq(48, 0); // leading bytes non-zero -> genuine
+        final byte[] real1 = seq(32, 200);
+        final byte[] window = new byte[96];
+        System.arraycopy(genuine48, 0, window, 0, 48);
+        System.arraycopy(padded48(real1), 0, window, 48, 48);
+
+        final var genuine = BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 1L, 0L, 256, 32);
+        assertNotNull(genuine);
+        assertEquals(48L, genuine.length());
+        assertArrayEquals(genuine48, genuine.toByteArray());
+
+        final var padded = BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 1L, 1L, 256, 32);
+        assertNotNull(padded);
+        assertEquals(32L, padded.length());
+        assertArrayEquals(real1, padded.toByteArray());
+    }
+
+    @Test
+    void realBlockHashByBlockNumberReturnsNullWhenOutOfRange() {
+        final byte[] window = new byte[64]; // two native 32-byte entries for blocks 0,1
+        assertEquals(null, BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 1L, 2L, 256, 32));
+        assertEquals(null, BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(window), 1L, -1L, 256, 32));
+    }
+
+    // --- appendTrailingBlockHash: uniform window, one-time compaction once no genuine hashes remain ---
+
+    @Test
+    void appendTrailingBlockHashPadsNewEntryWhileGenuineRemains() {
+        // Mixed era, window not yet full: one genuine 48-byte entry for block 0, appending native hash for block 1.
+        final byte[] genuine48 = seq(48, 0);
+        final byte[] window = genuine48.clone(); // one entry, newBlockNo=1 so countExisting=1 matches one entry
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32);
+        assertEquals(96L, result.length()); // grew by one 48-byte padded entry
+        final byte[] out = result.toByteArray();
+        // genuine entry unchanged
+        assertArrayEquals(genuine48, java.util.Arrays.copyOfRange(out, 0, 48));
+        // new entry left-padded to 48
+        for (int i = 48; i < 64; i++) {
+            assertEquals(0, out[i], "new entry leading byte should be zero padding");
+        }
+        assertArrayEquals(newNative, java.util.Arrays.copyOfRange(out, 64, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashRollsOffWhileGenuineRemainsAtFullWindow() {
+        // Full window of maxHashes=2 padded 48-byte entries, oldest genuine -> stays 48-mode, rolls off left.
+        final byte[] genuine48 = seq(48, 0); // oldest, genuine
+        final byte[] padded = padded48(seq(32, 100));
+        final byte[] window = new byte[96];
+        System.arraycopy(genuine48, 0, window, 0, 48);
+        System.arraycopy(padded, 0, window, 48, 48);
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32);
+        assertEquals(96L, result.length()); // stays maxHashes*48
+        final byte[] out = result.toByteArray();
+        // oldest genuine rolled off; previously-second entry now first
+        assertArrayEquals(padded, java.util.Arrays.copyOfRange(out, 0, 48));
+        // new entry padded to 48, rightmost
+        assertArrayEquals(newNative, java.util.Arrays.copyOfRange(out, 64, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashCompactsWhenNoGenuineRemain() {
+        // Full window of maxHashes=2 entries, both padded (no genuine) -> compact to 32-mode then native append.
+        final byte[] r0 = seq(32, 50);
+        final byte[] r1 = seq(32, 100);
+        final byte[] window = new byte[96];
+        System.arraycopy(padded48(r0), 0, window, 0, 48);
+        System.arraycopy(padded48(r1), 0, window, 48, 48);
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32);
+        assertEquals(64L, result.length()); // compacted to maxHashes*32
+        final byte[] out = result.toByteArray();
+        // oldest (r0) rolled off; r1 compacted to native, new entry rightmost native
+        assertArrayEquals(r1, java.util.Arrays.copyOfRange(out, 0, 32));
+        assertArrayEquals(newNative, java.util.Arrays.copyOfRange(out, 32, 64));
+    }
+
+    @Test
+    void appendTrailingBlockHashAppendsNativelyInPostCompactionEra() {
+        // Already-native 32-mode window grows/rolls at 32.
+        final byte[] r0 = seq(32, 50);
+        final byte[] window = r0.clone(); // one native entry, countExisting = min(1,256)=1
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32);
+        assertEquals(64L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(r0, java.util.Arrays.copyOfRange(out, 0, 32));
+        assertArrayEquals(newNative, java.util.Arrays.copyOfRange(out, 32, 64));
+    }
+
+    @Test
+    void appendTrailingBlockHashNeverCompactsWhenPreSizeEqualsActiveSize() {
+        // Degenerate SHA-384 case (preSize == activeSize == 48): always 48, never compacts.
+        final byte[] e0 = seq(48, 0);
+        final byte[] window = e0.clone();
+        final byte[] newHash = seq(48, 100);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newHash), Bytes.wrap(window), 256, 1L, 48, 48);
+        assertEquals(96L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(e0, java.util.Arrays.copyOfRange(out, 0, 48));
+        assertArrayEquals(newHash, java.util.Arrays.copyOfRange(out, 48, 96));
+    }
 }

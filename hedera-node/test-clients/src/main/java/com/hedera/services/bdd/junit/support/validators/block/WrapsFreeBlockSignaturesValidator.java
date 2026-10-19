@@ -1398,8 +1398,9 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         if (blockStreamInfo == null || blockStreamInfo.blockNumber() != blockNumberOf(block)) {
             return null;
         }
-        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with
-        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
+        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with.
+        // 256 is the default blockRecordStream.numOfBlockHashesInState, the window size the stride is derived against.
+        return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, 256);
     }
 
     private static @Nullable BlockProof proofFrom(@NonNull final Block block) {
