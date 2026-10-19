@@ -2,17 +2,11 @@
 package org.hiero.otter.test.falcon;
 
 import static org.hiero.consensus.model.status.PlatformStatus.ACTIVE;
-import static org.hiero.consensus.model.status.PlatformStatus.BEHIND;
 import static org.hiero.consensus.model.status.PlatformStatus.CHECKING;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
 import static org.hiero.consensus.model.status.PlatformStatus.OBSERVING;
 import static org.hiero.consensus.model.status.PlatformStatus.REPLAYING_EVENTS;
 import static org.hiero.consensus.test.fixtures.WeightGenerators.BALANCED;
 import static org.hiero.consensus.test.fixtures.WeightGenerators.INCREMENTING;
-import static org.hiero.consensus.test.fixtures.WeightGenerators.ONE_THIRD_ZERO_WEIGHT;
-import static org.hiero.consensus.test.fixtures.WeightGenerators.RANDOM;
-import static org.hiero.consensus.test.fixtures.WeightGenerators.RANDOM_REAL_WEIGHT;
-import static org.hiero.otter.fixtures.OtterAssertions.assertContinuouslyThat;
 import static org.hiero.otter.fixtures.OtterAssertions.assertThat;
 import static org.hiero.otter.fixtures.assertions.StatusProgressionStep.target;
 import static org.junit.jupiter.api.Named.named;
@@ -46,11 +40,14 @@ public class OrderInvarianceTest {
                 arguments(2, named("Balanced Weight", BALANCED)),
                 arguments(2, named("Incremental Node Weight", INCREMENTING)),
                 arguments(4, named("Incremental Node Weight", INCREMENTING)));
-// spotless:off
-//                arguments(9, named("One Third of Nodes Have Zero Weight", ONE_THIRD_ZERO_WEIGHT)),
-//                arguments(50, named("Random Weight, Real Total Weight Value", RANDOM_REAL_WEIGHT)),
-//                arguments(50, named("Random Weight", RANDOM)));
-// spotless:on
+
+        // Falcon is currently not capable of running tests with large networks efficiently,
+        // so we skip the larger networks for now. The following tests are disabled until Falcon is improved.
+        // spotless:off
+        //      arguments(9, named("One Third of Nodes Have Zero Weight", ONE_THIRD_ZERO_WEIGHT)),
+        //      arguments(50, named("Random Weight, Real Total Weight Value", RANDOM_REAL_WEIGHT)),
+        //      arguments(50, named("Random Weight", RANDOM)));
+        // spotless:on
     }
 
     /**
@@ -78,9 +75,7 @@ public class OrderInvarianceTest {
         timeManager.waitFor(Duration.ofSeconds(10L));
 
         // Validations
-        assertThat(network.newConsensusResults())
-                .haveEqualCommonRounds()
-                .haveConsistentRounds();
+        assertThat(network.newConsensusResults()).haveEqualCommonRounds().haveConsistentRounds();
         assertThat(network.newPlatformStatusResults())
                 .haveSteps(target(ACTIVE).requiringInterim(REPLAYING_EVENTS, OBSERVING, CHECKING));
     }
