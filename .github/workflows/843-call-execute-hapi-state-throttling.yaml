@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-name: "843: [CALL] Exec HAPI Token State Throttle"
+name: "843: [CALL] Exec HAPI Token Thrtl"
 on:
   workflow_call:
     inputs:
