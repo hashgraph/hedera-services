@@ -899,6 +899,31 @@ public class StateChangesValidator implements BlockStreamValidator {
         return indirectProofSeq != null && indirectProofSeq.containsIndirectProofs();
     }
 
+    /**
+     * Whether a signature on block {@code blockNumber} is verified by the hinTS library alone, rather than with
+     * {@code TSS.verifyTSS()} (which assumes the target address book hash is always the ledger id).
+     */
+    private boolean verifiesWithHintsOnly(final long blockNumber) {
+        return historyLibrary == null || (!wrapsEnabled && blockNumber > 0);
+    }
+
+    /**
+     * Whether {@code signature} is a valid signature on {@code blockHash}, by the checks used for block
+     * {@code blockNumber}'s own signed proof.
+     */
+    private boolean isValidBlockSignature(
+            final long blockNumber, @NonNull final Bytes signature, @NonNull final Bytes blockHash) {
+        if (verifiesWithHintsOnly(blockNumber)) {
+            // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
+            // convenience API directly here since we don't have a chain-of-trust proof
+            final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
+            final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
+            return requireNonNull(hintsLibrary).verifyAggregate(sig, blockHash, vk, 1, hintsThresholdDenominator);
+        }
+        return TSS.verifyTSS(
+                requireNonNull(ledgerIdFromState).toByteArray(), signature.toByteArray(), blockHash.toByteArray());
+    }
+
     private void validateBlockProof(
             final long blockNumber,
             final long firstRound,
@@ -958,25 +983,15 @@ public class StateChangesValidator implements BlockStreamValidator {
                 assertMockSignature(proof, expectedBlockHash);
                 return;
             }
-            // TSS.verifyTSS() assumes target address book hash is always ledger id
-            if (historyLibrary == null || (!wrapsEnabled && proof.block() > 0)) {
-                // C.f. cases in BlockStreamManagerImpl.finishProofWithSignature(); cannot use the
-                // convenience API directly here since we don't have a chain-of-trust proof
-                final var vk = signature.slice(0, HintsLibraryImpl.VK_LENGTH);
-                final var sig = signature.slice(HintsLibraryImpl.VK_LENGTH, HintsLibraryImpl.SIGNATURE_LENGTH);
-                final boolean valid =
-                        hintsLibrary.verifyAggregate(sig, expectedBlockHash, vk, 1, hintsThresholdDenominator);
+            final boolean valid = isValidBlockSignature(blockNumber, signature, expectedBlockHash);
+            if (verifiesWithHintsOnly(blockNumber)) {
                 if (!valid) {
                     Assertions.fail(() -> "Invalid signature in proof (start round #" + firstRound + ") - " + proof);
                 } else {
                     logger.info("Verified signature on #{}", proof.block());
                 }
             } else {
-                requireNonNull(ledgerIdFromState);
                 final var usedCompressedWrapsProof = hasCompressedWrapsProof(signature);
-                // Use convenience API to verify signature
-                final var valid = TSS.verifyTSS(
-                        ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
                 if (!valid) {
                     final var details = invalidSigDetails(
                             ledgerIdFromState.toByteArray(), signature.toByteArray(), expectedBlockHash.toByteArray());
@@ -988,7 +1003,9 @@ public class StateChangesValidator implements BlockStreamValidator {
             }
             if (indirectProofsNeedVerification()) {
                 logger.info("Verifying contiguous indirect proofs prior to block {}", blockNumber);
-                requireNonNull(indirectProofSeq).verify();
+                requireNonNull(indirectProofSeq)
+                        .verify(embeddedSignature ->
+                                isValidBlockSignature(blockNumber, embeddedSignature, expectedBlockHash));
                 indirectProofSeq = null; // Clear out the indirect proof sequence after verification
             }
         } else {
