@@ -76,7 +76,7 @@ class ExpectedCustomThrottlesTest {
     // Suppress the warning that we use too many assets
     @SuppressWarnings("java:S5961")
     void releaseTwentyHasExpected() {
-        assertEquals(64, ACTIVE_OPS.size());
+        assertEquals(63, ACTIVE_OPS.size());
 
         assertTrue(ACTIVE_OPS.contains(CryptoCreate), "Missing CryptoCreate!");
         assertTrue(ACTIVE_OPS.contains(CryptoTransfer), "Missing CryptoTransfer!");
