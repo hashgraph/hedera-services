@@ -1,9 +1,18 @@
 # Gradle Tasks
 
-`test-clients/build.gradle.kts` defines four base `Test` tasks plus dozens of `hapiTest*` and
+`test-clients/build.gradle.kts` defines unit and HAPI `Test` tasks plus dozens of `hapiTest*` and
 `remoteTest*` PR-check tasks that delegate to them with specific tag/network/property combinations.
 
-## Base test tasks
+## Unit tests
+
+`./gradlew :test-clients:unitTest` runs the test-client unit tests in `src/test/java`. These test
+the client framework and helpers without starting HAPI suites. The `check` task includes
+`unitTest`. Use `--tests '*BinaryStateChangeParserTest'` to run an individual class.
+
+The executable HAPI suites live in `src/main/java` and are packaged with the test-client
+application. The tasks below run those suites with the appropriate network setup.
+
+## Base HAPI test tasks
 
 |            Task            |            Targets             |             Tag filter             |                                                                                                                                                       Notes                                                                                                                                                        |
 |----------------------------|--------------------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
