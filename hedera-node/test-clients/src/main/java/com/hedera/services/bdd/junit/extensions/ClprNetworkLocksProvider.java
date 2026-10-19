@@ -13,7 +13,8 @@ import org.junit.platform.commons.support.AnnotationSupport;
 
 /**
  * Derives a multi-network test's resource locks at runtime from its {@code @Network} set, so JUnit
- * serializes same-network tests while different network groups run in parallel.
+ * coordinates tests that share a network: readers run concurrently, a leaky test runs alone on its
+ * networks, and tests on disjoint networks never contend.
  *
  * <p>Each network the test declares becomes one {@link Lock} keyed by network name. The access mode is
  * {@code READ} by default, so tests that only exercise their own channel run concurrently as readers, or
