@@ -204,7 +204,7 @@ the ledger id.
 Since computing a WRAPS proof is expensive, nodes stagger that work: each node waits `tss.wrapsVoteJitterPerRank` per
 rank it has before computing its own proof (nodes that published first-round signing messages for the construction rank
 first, so an offline node never holds up the proof), and votes congruent with any valid proof it sees in the meantime.
-The 3.20.1 library supports a hinTS domain of at most 64 slots, with its final slot reserved, and a WRAPS address
+The 3.23.0 library supports a hinTS domain of at most 64 slots, with its final slot reserved, and a WRAPS address
 book of at most 63 nodes. Our party allocation also leaves slot zero unused, so `nodes.maxNumber` defaults to 62.
 TSS refuses larger candidate rosters even if configuration permits more node records. A retained CRS with a domain
 larger than 64 is unsupported and must never be truncated to fit; startup rejects such state.
@@ -212,8 +212,14 @@ larger than 64 is unsupported and must never be truncated to fit; startup reject
 WRAPS proving parameters and its fixed compressed verification key remain bundled in the library. Prover and
 verifier initialization are separate and are warmed before use. Existing supported CRS values and full WRAPS proofs
 remain usable; the library no longer accepts the legacy Schnorr-only address book proof through its TSS API.
-The published 3.20.1 hinTS and WRAPS JARs include native binaries for macOS and Linux on AMD64 and ARM64,
-and Windows on AMD64. WRAPS still ships a single JAR containing both proving and verification material.
+The 3.23.0 library caches CRS and aggregation keys by their serialized bytes, with at most four entries
+in each native cache. CN uses one shared native library for preparation and signing. Cache misses deserialize
+outside the map lock, and in-flight operations retain their values across eviction or reset. Construction
+handoffs retain their lifecycle synchronization, but no longer switch/reset the native cache or serialize
+old/new construction verification.
+
+The published 3.23.0 hinTS and WRAPS JARs include native binaries for macOS and Linux on AMD64 and ARM64,
+and Windows on AMD64. CN uses the full WRAPS JAR, including proving parameters, because it generates proofs.
 
 ### Integration with protocol components
 

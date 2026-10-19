@@ -61,19 +61,12 @@ public class HintsContext {
     private final Supplier<Configuration> configProvider;
     private final HintsSigningMetrics signingMetrics;
 
-    private final ReentrantReadWriteLock akCacheLock = new ReentrantReadWriteLock(true);
+    private final ReentrantReadWriteLock constructionLock = new ReentrantReadWriteLock(true);
 
     private volatile ConstructionSnapshots constructionSnapshots = ConstructionSnapshots.EMPTY;
     private volatile long lastStartedBlock = NO_BLOCK_STARTED;
     private volatile long mixedModePreviousConstructionId = NO_CONSTRUCTION_ID;
-    private volatile long mixedModeActiveConstructionId = NO_CONSTRUCTION_ID;
     private volatile long mixedModeExpiresAtBlock = NO_BLOCK_STARTED;
-
-    /**
-     * The construction id whose aggregation key was last allowed to populate the native hinTS AK cache.
-     * Guarded by {@link #akCacheLock}'s write lock.
-     */
-    private long lastAkCacheConstructionId = NO_CONSTRUCTION_ID;
 
     /**
      * The active and, during mixed mode, immediately previous construction snapshots.
@@ -155,7 +148,7 @@ public class HintsContext {
             throw new IllegalArgumentException("Construction must be bound to its completed CRS");
         }
         final var newSnapshot = snapshotOf(construction, crsState);
-        final var writeLock = akCacheLock.writeLock();
+        final var writeLock = constructionLock.writeLock();
         writeLock.lock();
         try {
             final var current = constructionSnapshots;
@@ -165,7 +158,6 @@ public class HintsContext {
             final boolean canEnterMixedMode = activeChanged && lastStartedBlock != NO_BLOCK_STARTED;
             constructionSnapshots = new ConstructionSnapshots(newSnapshot, canEnterMixedMode ? currentActive : null);
             if (activeChanged) {
-                resetAkCache();
                 if (canEnterMixedMode) {
                     beginMixedMode(currentActive.constructionId(), newSnapshot.constructionId());
                 } else {
@@ -186,18 +178,17 @@ public class HintsContext {
      * @param blockNumber the block number being started
      */
     public synchronized void onBlockStarted(final long blockNumber) {
-        lastStartedBlock = blockNumber;
-        if (isMixedModeActive() && blockNumber >= mixedModeExpiresAtBlock) {
-            final var writeLock = akCacheLock.writeLock();
-            writeLock.lock();
-            try {
-                resetAkCache();
+        final var writeLock = constructionLock.writeLock();
+        writeLock.lock();
+        try {
+            lastStartedBlock = blockNumber;
+            if (isMixedModeActive() && blockNumber >= mixedModeExpiresAtBlock) {
                 clearMixedMode();
                 final var snapshots = constructionSnapshots;
                 constructionSnapshots = new ConstructionSnapshots(snapshots.active(), null);
-            } finally {
-                writeLock.unlock();
             }
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -270,15 +261,8 @@ public class HintsContext {
         return mixedModePreviousConstructionId != NO_CONSTRUCTION_ID;
     }
 
-    private boolean requiresExclusiveAkCacheAccess(final long constructionId) {
-        return isAcceptedPreviousConstruction()
-                && (constructionId == mixedModePreviousConstructionId
-                        || constructionId == mixedModeActiveConstructionId);
-    }
-
     private void beginMixedMode(final long previousConstructionId, final long activeConstructionId) {
         mixedModePreviousConstructionId = previousConstructionId;
-        mixedModeActiveConstructionId = activeConstructionId;
         mixedModeExpiresAtBlock = lastStartedBlock + MIXED_MODE_BLOCKS;
         log.info(
                 "Entering hinTS mixed construction mode for #{} and #{} through block #{}",
@@ -292,7 +276,6 @@ public class HintsContext {
             log.info("Exiting hinTS mixed construction mode");
         }
         mixedModePreviousConstructionId = NO_CONSTRUCTION_ID;
-        mixedModeActiveConstructionId = NO_CONSTRUCTION_ID;
         mixedModeExpiresAtBlock = NO_BLOCK_STARTED;
     }
 
@@ -429,10 +412,8 @@ public class HintsContext {
         requireNonNull(signature);
         requireNonNull(message);
         requireNonNull(aggregationKey);
-        return withAkCacheProtection(
-                constructionId,
-                () -> acceptsConstruction(constructionId)
-                        && library.verifyBls(crs, signature, message, aggregationKey, partyId));
+        return withConstructionReadLock(() -> acceptsConstruction(constructionId)
+                && library.verifyBls(crs, signature, message, aggregationKey, partyId));
     }
 
     private @Nullable Bytes aggregateSignatures(
@@ -445,52 +426,20 @@ public class HintsContext {
         requireNonNull(aggregationKey);
         requireNonNull(verificationKey);
         requireNonNull(partialSignatures);
-        return withAkCacheProtection(
-                constructionId,
-                () -> acceptsConstruction(constructionId)
-                        ? library.aggregateSignatures(crs, aggregationKey, verificationKey, partialSignatures)
-                        : null);
+        return withConstructionReadLock(() -> acceptsConstruction(constructionId)
+                ? library.aggregateSignatures(crs, aggregationKey, verificationKey, partialSignatures)
+                : null);
     }
 
-    private <T> T withAkCacheProtection(final long constructionId, @NonNull final Supplier<T> operation) {
-        requireNonNull(operation);
-        if (requiresExclusiveAkCacheAccess(constructionId)) {
-            return withExclusiveAkCacheAccess(constructionId, operation);
-        }
-        final var readLock = akCacheLock.readLock();
+    /** Keeps acceptance stable across a handoff while allowing old/new construction operations concurrently. */
+    private <T> T withConstructionReadLock(@NonNull final Supplier<T> operation) {
+        final var readLock = constructionLock.readLock();
         readLock.lock();
         try {
-            if (!requiresExclusiveAkCacheAccess(constructionId)) {
-                return operation.get();
-            }
+            return operation.get();
         } finally {
             readLock.unlock();
         }
-        return withExclusiveAkCacheAccess(constructionId, operation);
-    }
-
-    private <T> T withExclusiveAkCacheAccess(final long constructionId, @NonNull final Supplier<T> operation) {
-        requireNonNull(operation);
-        final var writeLock = akCacheLock.writeLock();
-        writeLock.lock();
-        try {
-            useAkCacheFor(constructionId);
-            return operation.get();
-        } finally {
-            writeLock.unlock();
-        }
-    }
-
-    private void useAkCacheFor(final long constructionId) {
-        if (lastAkCacheConstructionId != constructionId) {
-            resetAkCache();
-            lastAkCacheConstructionId = constructionId;
-        }
-    }
-
-    private void resetAkCache() {
-        library.resetCache();
-        lastAkCacheConstructionId = NO_CONSTRUCTION_ID;
     }
 
     /**

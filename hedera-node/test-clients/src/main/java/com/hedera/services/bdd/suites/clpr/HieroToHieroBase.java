@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.services.bdd.junit.extensions.MultiNetworkExtension;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -71,7 +72,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.rfc8032.Ed25519;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -910,10 +910,9 @@ public abstract class HieroToHieroBase implements LifecycleTest {
         return networkHapiTest(
                         "Install ledger config (" + ownChainId + ")",
                         network,
-                        // Block until the latest BlockProvenSnapshot's ledger_id is populated, so
-                        // ClprUpdateLedgerConfigurationHandler can read a non-empty
-                        // stateProofManager.latestLedgerId() and set initial_trust_anchor on the
-                        // config. Sequence:
+                        // Wait for the consensus history ledger id and signed snapshots to be ready.
+                        // The handler reads the trust anchor from consensus history; subsequent
+                        // captureConfigProof calls also need a snapshot carrying that identity. Sequence:
                         //   1. WRAPS-extensible — proving state is loaded.
                         //   2. [CLPR-SYNC-POINT] — the FIRST block proof embeds the WRAPS recursive
                         //      proof. On warm-cache this is block #0; the snapshot for that block is
@@ -922,8 +921,7 @@ public abstract class HieroToHieroBase implements LifecycleTest {
                         //   3. POST_SYNC_POINT_SETTLE — give the system time to sign at least one
                         //      MORE block, whose snapshot is captured strictly after the WRAPS-
                         //      embed, so latestSnapshot().ledgerId() is guaranteed non-empty.
-                        // Without this, captureConfigProof produces a StateProof with empty
-                        // initial_trust_anchor and VerifyConfigCall rejects it on the peer.
+                        // Without this, the peer's proof verification may run before TSS is ready.
                         withOpContext((spec, ignored) -> {
                             awaitWrapsExtensible(network);
                             awaitWrapsSyncPoint(network);
@@ -1190,6 +1188,24 @@ public abstract class HieroToHieroBase implements LifecycleTest {
     }
     // ── Polling helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Collapses a multi-network test's ordered steps into a <b>single</b> {@link DynamicTest} that runs
+     * them sequentially in one executable. Each {@code @MultiNetworkHapiTest} method wraps its returned
+     * stream in this so that, under {@code parallel.mode.default=concurrent}, the factory's steps do NOT
+     * get parallelized (which would run e.g. an await before its send); instead the whole test is one
+     * node, and only <em>different</em> test methods run concurrently (serialized per network by
+     * {@code ClprNetworkLocksProvider}). The trade-off is coarser reporting: one reported test per method
+     * rather than one per step (a failing step still surfaces via its spec name in the exception).
+     */
+    public static Stream<DynamicTest> multiNetworkHapiTest(final String name, final Stream<DynamicTest> steps) {
+        final var ordered = steps.toList();
+        return Stream.of(DynamicTest.dynamicTest(name, () -> {
+            for (final var step : ordered) {
+                step.getExecutable().execute();
+            }
+        }));
+    }
+
     static DynamicTest awaitReceivedMessage(
             final SubProcessNetwork network, final byte[] channelId, final long minCount) {
         return networkHapiTest(
@@ -1455,28 +1471,24 @@ public abstract class HieroToHieroBase implements LifecycleTest {
             Ed25519.generatePublicKey(TEST_PRIVATE_KEY, 0, publicKey, 0);
 
             final var seed = "hiero-e2e-test-conn-v1-" + INSTANCE_COUNTER.incrementAndGet();
-            channelId = keccak256(seed.getBytes(StandardCharsets.UTF_8));
+            channelId = MiscCryptoUtils.keccak256DigestOf(seed.getBytes(StandardCharsets.UTF_8));
 
             // Channel commitment: keccak256(channelId || pubKey)
-            channelCommitment = keccak256(concat(channelId, publicKey));
+            channelCommitment = MiscCryptoUtils.keccak256DigestOf(concat(channelId, publicKey));
 
             // Channel signature: Ed25519 over keccak256(channelId)
-            final var connSigMsg = keccak256(channelId);
+            final var connSigMsg = MiscCryptoUtils.keccak256DigestOf(channelId);
             Ed25519.sign(TEST_PRIVATE_KEY, 0, connSigMsg, 0, connSigMsg.length, channelSignature, 0);
 
             // connectorId = keccak256(channelId || pubKey || connectorSalt)
-            connectorId = keccak256(concat(channelId, concat(publicKey, connectorSalt)));
+            connectorId = MiscCryptoUtils.keccak256DigestOf(concat(channelId, concat(publicKey, connectorSalt)));
 
             // Connector commitment: keccak256(connectorId || pubKey)
-            connectorCommitment = keccak256(concat(connectorId, publicKey));
+            connectorCommitment = MiscCryptoUtils.keccak256DigestOf(concat(connectorId, publicKey));
 
             // Connector signature: Ed25519 over keccak256(connectorId || CLPR_SERVICE_ADDRESS)
-            final var connectorSigMsg = keccak256(concat(connectorId, CLPR_SERVICE_ADDRESS));
+            final var connectorSigMsg = MiscCryptoUtils.keccak256DigestOf(concat(connectorId, CLPR_SERVICE_ADDRESS));
             Ed25519.sign(TEST_PRIVATE_KEY, 0, connectorSigMsg, 0, connectorSigMsg.length, connectorSignature, 0);
-        }
-
-        private static byte[] keccak256(final byte[] input) {
-            return new Keccak.Digest256().digest(input);
         }
 
         private static byte[] concat(final byte[] a, final byte[] b) {

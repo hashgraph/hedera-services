@@ -79,7 +79,8 @@ public class TssCutoverTest implements LifecycleTest {
                                         new SpecOperation[] {randomStakerTransfer(), sleepFor(TRANSFER_PACING_MS)})
                         .loggingOff(),
                 prepareFakeUpgrade(),
-                upgradeToNextConfigVersion(Map.of("tss.hintsEnabled", "true", "tss.historyEnabled", "true")),
+                upgradeToNextConfigVersion(Map.of(
+                        "tss.hintsEnabled", "true", "tss.historyEnabled", "true", "tss.forceMockSignatures", "false")),
                 withExternalizedLedgerIdFromHgcaaLog(
                         byNodeId(0),
                         LEDGER_ID_TIMEOUT,

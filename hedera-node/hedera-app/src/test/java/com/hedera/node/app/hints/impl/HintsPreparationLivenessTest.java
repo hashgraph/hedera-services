@@ -9,7 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.hedera.cryptography.hints.AggregationAndVerificationKeys;
@@ -44,7 +46,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** Checks both Java routing and actual native cache isolation while ACTIVE signing remains live. */
+/** Checks Java scheduling and the shared native cache while ACTIVE signing remains live. */
 class HintsPreparationLivenessTest {
     private static final Bytes MESSAGE = Bytes.wrap("ACTIVE signing during NEXT preparation");
     private static final int ACTIVE_CAPACITY = 4;
@@ -67,29 +69,31 @@ class HintsPreparationLivenessTest {
             final Preparation operation, final boolean deterministicSignatures) throws Exception {
         final var realLibrary = new HintsLibraryImpl();
         final var active = activeScheme(realLibrary);
-        final var keyLibrary = mock(IsolatedHintsLibrary.class);
-        final var preprocessingLibrary = mock(IsolatedHintsLibrary.class);
-        final var library = new HintsLibraryImpl(() -> keyLibrary, () -> preprocessingLibrary);
+        final var library = spy(new HintsLibraryImpl());
         final var entered = new CountDownLatch(1);
         final var release = new CountDownLatch(1);
         switch (operation) {
             case PREPROCESS ->
-                when(preprocessingLibrary.preprocess(any(), any(), any(), any(), anyInt()))
-                        .thenAnswer(invocation -> {
+                doAnswer(invocation -> {
                             awaitRelease(entered, release);
                             return active.keys();
-                        });
+                        })
+                        .when(library)
+                        .preprocess(any(), any(), any(), anyInt());
             case COMPUTE_HINTS ->
-                when(keyLibrary.computeHints(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> {
-                    awaitRelease(entered, release);
-                    return active.hint().toByteArray();
-                });
+                doAnswer(invocation -> {
+                            awaitRelease(entered, release);
+                            return active.hint();
+                        })
+                        .when(library)
+                        .computeHints(any(), any(), anyInt(), anyInt());
             case VALIDATE_HINTS ->
-                when(keyLibrary.validateHintsKey(any(), any(), anyInt(), anyInt()))
-                        .thenAnswer(invocation -> {
+                doAnswer(invocation -> {
                             awaitRelease(entered, release);
                             return true;
-                        });
+                        })
+                        .when(library)
+                        .validateHintsKey(any(), any(), anyInt(), anyInt());
         }
         final var config = HederaTestConfigBuilder.create()
                 .withValue("tss.useDeterministicHintsSignatures", deterministicSignatures)

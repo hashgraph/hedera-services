@@ -3,6 +3,7 @@ package com.hedera.node.app.hints.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
@@ -385,6 +386,38 @@ class HintsContextTest {
         assertNotNull(signing);
         assertEquals(CONSTRUCTION.constructionId(), signing.constructionId());
         assertEquals(VERIFICATION_KEY, signing.verificationKey());
+    }
+
+    @Test
+    void oldAndNewConstructionVerificationCanOverlapWithoutCacheResets() throws Exception {
+        subject.setConstruction(CONSTRUCTION, CRS_STATE);
+        subject.onBlockStarted(10L);
+        final var next = nextConstruction();
+        subject.setConstruction(next, CRS_STATE);
+        final var entered = new java.util.concurrent.CountDownLatch(2);
+        final var release = new java.util.concurrent.CountDownLatch(1);
+        given(library.verifyBls(any(), any(), any(), any(), anyInt())).willAnswer(invocation -> {
+            entered.countDown();
+            assertTrue(release.await(10, java.util.concurrent.TimeUnit.SECONDS));
+            return true;
+        });
+        try (final var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            final var oldVerification = executor.submit(() ->
+                    subject.validate(A_NODE_PARTY_ID.nodeId(), CRS, partialSigBody(CONSTRUCTION.constructionId())));
+            final var newVerification = executor.submit(
+                    () -> subject.validate(A_NODE_PARTY_ID.nodeId(), CRS, partialSigBody(next.constructionId())));
+            try {
+                assertTrue(
+                        entered.await(5, java.util.concurrent.TimeUnit.SECONDS),
+                        "Both construction verifications must enter before either completes");
+            } finally {
+                release.countDown();
+            }
+            assertTrue(oldVerification.get(5, java.util.concurrent.TimeUnit.SECONDS));
+            assertTrue(newVerification.get(5, java.util.concurrent.TimeUnit.SECONDS));
+        }
+        subject.onBlockStarted(13L);
+        verify(library, never()).resetCache();
     }
 
     @Test

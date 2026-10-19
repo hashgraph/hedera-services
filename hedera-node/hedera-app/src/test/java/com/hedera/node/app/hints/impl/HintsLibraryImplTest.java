@@ -85,6 +85,46 @@ class HintsLibraryImplTest {
         assertSigns(first, message);
     }
 
+    @Test
+    void concurrentConstructionKeysRemainCorrectAcrossEvictionsAndResets() throws Exception {
+        final var message = Bytes.wrap("concurrent construction cache contexts");
+        final var sharedCrs = subject.newCrs((short) 4);
+        // More than the native capacity of four, including different AKs for one CRS.
+        final var schemes = new java.util.ArrayList<Scheme>();
+        for (int i = 0; i < 6; i++) {
+            final byte[] entropy = new byte[32];
+            entropy[0] = (byte) i;
+            final var crs = i < 2
+                    ? sharedCrs
+                    : decodeCrsUpdate(sharedCrs.length(), subject.updateCrs(sharedCrs, Bytes.wrap(entropy)))
+                            .crs();
+            schemes.add(schemeFor(crs, 4, message));
+        }
+        final var start = new java.util.concurrent.CountDownLatch(1);
+        try (final var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            final var tasks = new java.util.ArrayList<java.util.concurrent.Future<?>>();
+            for (final var scheme : schemes) {
+                tasks.add(executor.submit(() -> {
+                    assertTrue(start.await(10, java.util.concurrent.TimeUnit.SECONDS));
+                    for (int round = 0; round < 10; round++) {
+                        assertSigns(scheme, message);
+                        assertFalse(subject.verifyBls(
+                                scheme.crs(), scheme.signature(), Bytes.wrap("wrong message"), scheme.ak(), 0));
+                    }
+                    return null;
+                }));
+            }
+            tasks.add(executor.submit(() -> {
+                assertTrue(start.await(10, java.util.concurrent.TimeUnit.SECONDS));
+                for (int round = 0; round < 10; round++) subject.resetCache();
+                return null;
+            }));
+            start.countDown();
+            for (final var task : tasks) task.get(30, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        for (final var scheme : schemes) assertSigns(scheme, message);
+    }
+
     private record Scheme(Bytes crs, Bytes ak, Bytes vk, Bytes signature) {}
 
     private Scheme schemeFor(final Bytes crs, final int n, final Bytes message) {

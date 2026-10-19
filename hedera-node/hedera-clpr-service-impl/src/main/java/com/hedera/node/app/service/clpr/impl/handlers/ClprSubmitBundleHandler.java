@@ -655,6 +655,15 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
             currentStatus = ClprChannelStatus.CLOSING;
         }
 
+        // Nested application callbacks read the channel through the service API. Publish these
+        // changes before dispatch so they cannot send after closing or enqueue this config again.
+        // Use the latest queue state, including the config message just enqueued above.
+        channelStore.put(requireNonNull(channelStore.getChannel(channelId))
+                .copyBuilder()
+                .status(currentStatus)
+                .lastConfigTimestamp(lastConfigTimestamp)
+                .build());
+
         var peerConfigTimestamp = channel.peerConfigTimestamp();
         var peerThrottles = channel.peerThrottles();
         var receivedMessageId = channel.receivedMessageId();
@@ -1070,15 +1079,16 @@ public class ClprSubmitBundleHandler extends AbstractClprHandler {
                     // connector on our side accordingly.
                     final var replyStatus = reply.status();
                     final var sourceConnectorKey = new ClprConnectorKey(channelId, origDataMsg.connectorId());
-                    final var sourceConnector = connectorStore.getConnector(sourceConnectorKey);
+                    var sourceConnector = connectorStore.getConnector(sourceConnectorKey);
                     if (sourceConnector != null) {
                         // Decrement in-flight counter — this reply is a terminal event for the DATA message.
                         final long current = sourceConnector.inFlightMessageCount();
                         if (current > 0) {
-                            connectorStore.put(sourceConnector
+                            sourceConnector = sourceConnector
                                     .copyBuilder()
                                     .inFlightMessageCount(current - 1)
-                                    .build());
+                                    .build();
+                            connectorStore.put(sourceConnector);
                             log.debug(
                                     "[ClprSubmitBundle] step10 MESSAGE_REPLY decremented source connector in-flight "
                                             + "conn={} connectorId={} {}->{}",

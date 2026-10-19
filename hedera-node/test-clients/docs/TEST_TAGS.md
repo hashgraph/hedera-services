@@ -23,9 +23,10 @@ balanced; for example, `hapiTestCrypto` includes only `CRYPTO`-tagged tests.
 | `UPGRADE`          | `hapiTestRestart`                                                                 | NMT-upgrade tests (runs alongside `RESTART`) |
 | `ND_RECONNECT`     | `hapiTestNDReconnect`                                                             | Node-death reconnect tests                   |
 | `BLOCK_NODE`       | `hapiTestBlockNodeCommunication`                                                  | Block-node integration tests                 |
-| `WRAPS`            | `hapiTestWraps`                                                                   | TSS `wraps` / weighted re-signing tests      |
+| `WRAPS`            | `hapiTestWraps`, `hapiTestCutover`                                                | TSS `wraps` / weighted re-signing tests      |
 | `CUTOVER`          | `hapiTestCutover`                                                                 | TSS cutover scenarios                        |
 | `LONG_RUNNING`     | `hapiTestTimeConsuming`, `hapiTestTimeConsumingSerial`                            | Tests that take a long time                  |
+| `NODE_STAKING`     | `hapiTestNodeStaking`, `hapiTestNodeStakingSerial`                                | Node stake-weight-changing tests             |
 | `STATE_THROTTLING` | `hapiTestStateThrottling`                                                         | State-rate-limit tests                       |
 | `ISS`              | `hapiTestIss`                                                                     | Intentional Inconsistent State scenarios     |
 
