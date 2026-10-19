@@ -13,10 +13,14 @@ val bouncycastle = "1.85"
 val dagger = "2.59.2"
 val eclipseCollections = "13.0.0"
 val grpc = "1.81.0"
+
 val hederaCryptography = "3.15.0"
+// FUTURE WORK: Merge the two hederaCryptography versions when equal.
+val hederaCryptographySecurity = "3.20.0"
+
 val helidon = "4.5.0"
 val jackson = "2.22.2"
-val junit5 = "5.10.3!!" // no updates beyond 5.10.3 until #17125 is resolved
+val junit5 = "6.1.3"
 val log4j = "2.26.0"
 val mockito = "5.23.0"
 val pbj = pluginVersions.version("com.hedera.pbj.pbj-compiler")
@@ -96,7 +100,6 @@ dependencies.constraints {
     api("org.assertj:assertj-core:3.27.7") { because("org.assertj.core") }
     api("org.bouncycastle:bcpkix-jdk18on:$bouncycastle") { because("org.bouncycastle.pkix") }
     api("org.bouncycastle:bcprov-jdk18on:$bouncycastle") { because("org.bouncycastle.provider") }
-    api("org.bouncycastle:bctls-jdk18on:$bouncycastle") { because("org.bouncycastle.tls") }
     api("org.eclipse.collections:eclipse-collections-api:$eclipseCollections") {
         because("org.eclipse.collections.api")
     }
@@ -140,6 +143,9 @@ dependencies.constraints {
     }
     api("com.hedera.cryptography:libxkcp:$hederaCryptography") {
         because("com.hedera.cryptography.libxkcp")
+    }
+    api("com.hedera.cryptography:security:$hederaCryptographySecurity") {
+        because("com.hedera.cryptography.security")
     }
 
     // Versions of additional tools that are not part of the product or test module paths

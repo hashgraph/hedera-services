@@ -1,7 +1,7 @@
 # consensus-metrics
 
 Metrics collection and reporting for the consensus layer: counters, gauges, cycle statistics,
-and the Prometheus exposition endpoint.
+latency percentiles, and the Prometheus exposition endpoint.
 
 ## Architecture
 

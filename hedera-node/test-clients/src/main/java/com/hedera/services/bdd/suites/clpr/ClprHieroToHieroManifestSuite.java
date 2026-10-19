@@ -13,7 +13,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
-import com.hedera.services.bdd.junit.extensions.MultiNetworkExtension;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -49,56 +47,6 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     /** B's new base mtlsPort after a rotation (8.1.3 both-sides turnover). */
     private static final int MTLS_PORT_B_ROTATED = 44460;
 
-    /**
-     * Cold-path fixture generator for {@code ledgerA_manifest}/{@code ledgerB_manifest}. It brings the
-     * two networks up so the {@code @MultiNetworkHapiTest} extension's cold bootstrap harvests their
-     * per-node TSS/WRAPS preload assets into {@code tss-startup-assets/}, then asserts the per-node
-     * fixtures carry distinct keys. Its body exercises no rotation/propagation logic — just liveness.
-     *
-     * <p><b>Its {@code @Network} config must match {@link #partialRotationPropagatesToPeer} exactly</b>
-     * (size, {@code enableClprMtls}, setupOverrides). The extension shares a {@link SubProcessNetwork}
-     * by <em>name</em> (see {@code MultiNetworkExtension.allShared}), so if this generator declared a
-     * different (e.g. plaintext) config for {@code ledgerA_manifest}, the rotation test would reuse
-     * this generator's mis-configured network — with no mTLS CA provisioned — and fail. Keeping the
-     * configs identical means whichever runs first configures the shared network correctly for both.
-     *
-     * <p>Run it once to (re)generate the committed assets; thereafter it runs warm (preload hit).
-     * Deleting the committed {@code .gz} files and rerunning it regenerates them.
-     */
-    @MultiNetworkHapiTest({
-        @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
-        @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
-    })
-    @DisplayName("Fixture generator: brings up ledgerA_manifest (size 2) / ledgerB_manifest (mTLS) so their "
-            + "per-node TSS/WRAPS assets are harvested and asserted to carry distinct keys")
-    @Disabled("Fixture generator")
-    Stream<DynamicTest> generateManifestLedgerFixtures(
-            final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
-        return Stream.of(
-                networkHapiTest(
-                                "ledgerA_manifest liveness",
-                                ledgerA,
-                                cryptoCreate("livenessA").balance(ONE_HUNDRED_HBARS))
-                        .findFirst()
-                        .orElseThrow(),
-                networkHapiTest(
-                                "ledgerB_manifest liveness",
-                                ledgerB,
-                                cryptoCreate("livenessB").balance(ONE_HUNDRED_HBARS))
-                        .findFirst()
-                        .orElseThrow(),
-                // Prove the per-node harvest captured each node's OWN TSS key: the multi-node ledger's
-                // per-node fixtures must each carry exactly one, distinct, blsPrivateKey. (A shared node0
-                // fixture would duplicate one key and silently break node1's warm start.)
-                networkHapiTest(
-                                "Assert ledgerA_manifest per-node TSS fixtures carry distinct keys",
-                                ledgerA,
-                                withOpContext((spec, opLog) ->
-                                        MultiNetworkExtension.assertPerNodeFixturesHaveDistinctKeys(ledgerA.name(), 2)))
-                        .findFirst()
-                        .orElseThrow());
-    }
-
     @MultiNetworkHapiTest({
         @Network(name = LEDGER_A_MANIFEST, size = 2, enableClprMtls = true, firstMtlsPort = MTLS_PORT_A),
         @Network(name = LEDGER_B_MANIFEST, enableClprMtls = true, firstMtlsPort = MTLS_PORT_B)
@@ -110,11 +58,9 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
         // Reuse the shared size-2 mTLS ledgerA_manifest / ledgerB_manifest fixtures (the same @Network
         // definition the rotation tests use), so the endpoint-manifest feature is enabled at boot on
         // networks that no non-manifest suite shares — the boot-time flag cannot leak across suites.
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // A → B: send 2 messages, then verify both delivery and ack complete.
                         networkHapiTest(
@@ -188,14 +134,12 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
         // Each network's real ECDSA CLPR CA cert (advertised on-chain in tls_certificate). The endpoint
         // ports are each network's clpr.mtlsPort, so the channel completes over — and syncs across —
         // the dedicated mutual-TLS listener rather than the plaintext path.
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         // A's finalized manifest version captured just before the rotation; the propagation
         // assertions are all expressed relative to it (versionBeforeRotation -> +1).
         final AtomicLong versionBeforeRotation = new AtomicLong();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // Baseline: A's cold-start-derived manifest (version >= 2, three endpoints).
                         captureManifestVersion(ledgerA, versionBeforeRotation),
@@ -300,14 +244,12 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     Stream<DynamicTest> completeTurnoverOneSideRecoversViaSubmitBundle(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         // A's manifest version B cached at connection time; the recovery is expressed relative to it.
         final AtomicLong aVersionBaseline = new AtomicLong();
         final AtomicReference<ByteString> aManifestProof = new AtomicReference<>();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         // Baseline: A's manifest version B cached at connect (captured dynamically, so the
                         // scenario is order-independent even on the shared, possibly already-rotated network).
@@ -342,15 +284,13 @@ public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
     Stream<DynamicTest> simultaneousTurnoverBothSidesRecoverIndependently(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
-        final byte[] caDerA = MultiNetworkExtension.clprMtlsCaDer(ledgerA.name());
-        final byte[] caDerB = MultiNetworkExtension.clprMtlsCaDer(ledgerB.name());
         final AtomicLong aVersionBaseline = new AtomicLong();
         final AtomicLong bVersionBaseline = new AtomicLong();
         final AtomicReference<ByteString> aManifestProof = new AtomicReference<>();
         final AtomicReference<ByteString> bManifestProof = new AtomicReference<>();
 
         return Stream.concat(
-                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto, caDerA, caDerB),
+                setupBothNetworksWithManifestProof(ledgerA, ledgerB, MTLS_PORT_A, MTLS_PORT_B, crypto),
                 Stream.of(
                         captureManifestVersion(ledgerA, aVersionBaseline),
                         captureManifestVersion(ledgerB, bVersionBaseline),
