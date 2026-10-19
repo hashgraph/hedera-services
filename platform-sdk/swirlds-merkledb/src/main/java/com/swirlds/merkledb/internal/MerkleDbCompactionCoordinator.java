@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,8 +101,8 @@ class MerkleDbCompactionCoordinator {
         return compactionExecutor;
     }
 
-    // Written while synchronized on this. Volatile, so running scanner tasks can check it without locking
-    private volatile boolean compactionEnabled = false;
+    // Written while synchronized on this. Running scanner tasks read it without locking
+    private final AtomicBoolean compactionEnabled = new AtomicBoolean(false);
 
     ///
     /// Active compactors by task key (e.g. `IdToHashChunk_compact_0_1`). Synchronized on this.
@@ -147,7 +148,7 @@ class MerkleDbCompactionCoordinator {
      * Enables background compaction.
      */
     synchronized void enableBackgroundCompaction() {
-        compactionEnabled = true;
+        compactionEnabled.set(true);
     }
 
     /**
@@ -187,7 +188,7 @@ class MerkleDbCompactionCoordinator {
     ///     all current background compaction tasks, including scanner tasks, to complete
     ///
     synchronized void stopAndDisableBackgroundCompaction(final boolean waitForTasksToComplete) {
-        compactionEnabled = false;
+        compactionEnabled.set(false);
         for (final DataFileCompactor compactor : compactorsByName.values()) {
             compactor.interruptCompaction();
         }
@@ -231,7 +232,7 @@ class MerkleDbCompactionCoordinator {
      * @param scanner   the scanner to run
      */
     synchronized void submitScanIfNotRunning(final @NonNull String storeName, final @NonNull GarbageScanner scanner) {
-        if (!compactionEnabled) {
+        if (!compactionEnabled.get()) {
             return;
         }
 
@@ -277,7 +278,7 @@ class MerkleDbCompactionCoordinator {
             final @NonNull Supplier<DataFileCompactor> compactorFactory,
             final @NonNull MerkleDbConfig config,
             final @NonNull DataFileCollection fileCollection) {
-        if (!compactionEnabled) {
+        if (!compactionEnabled.get()) {
             return;
         }
 
@@ -412,7 +413,7 @@ class MerkleDbCompactionCoordinator {
     }
 
     synchronized boolean isCompactionEnabled() {
-        return compactionEnabled;
+        return compactionEnabled.get();
     }
 
     // ========================================================================
@@ -598,7 +599,7 @@ class MerkleDbCompactionCoordinator {
             try {
                 // The scan stops early, if compaction is disabled in the meantime. Such a scan has no
                 // results to publish
-                final IndexedGarbageFileStats stats = scanner.scan(() -> compactionEnabled);
+                final IndexedGarbageFileStats stats = scanner.scan(compactionEnabled::get);
                 if (stats != null) {
                     scanStatsByStore.put(storeName, stats);
                 }

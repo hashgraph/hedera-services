@@ -113,9 +113,12 @@ public class GarbageScanner {
      * <p>This method is intended to be called from a single background thread. It is read-only
      * with respect to both the index and the data files — no data is copied or modified.
      *
-     * <p>A scan of an index with billions of entries takes tens of seconds and doesn't react to
-     * thread interrupts. Instead, it checks {@code keepScanning} every {@link #STOP_CHECK_INTERVAL}
-     * entries and stops early, if it returns {@code false}.
+     * <p>A scan of an index with billions of entries takes tens of seconds. To stop early, it checks
+     * {@code keepScanning} every {@link #STOP_CHECK_INTERVAL} entries, and stops if it returns
+     * {@code false}. Thread interrupts aren't used on purpose: an interrupt during {@code index.get()}
+     * on a {@link com.swirlds.merkledb.collections.LongListDisk} closes the index's shared file channel,
+     * and nothing reopens it. Compactions are stopped with a flag for the same reason, see
+     * {@link com.swirlds.merkledb.files.DataFileCompactor#interruptCompaction()}.
      *
      * @param keepScanning checked periodically during the scan; the scan stops when it returns {@code false}
      * @return per-file statistics for all completed files, indexed by file index, or {@code null}
