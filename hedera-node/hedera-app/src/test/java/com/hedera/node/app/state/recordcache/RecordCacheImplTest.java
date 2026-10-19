@@ -7,6 +7,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.OTHER_NODE;
@@ -871,14 +872,65 @@ final class RecordCacheImplTest extends AppTestBase {
             assertThat(cache.getHistory(txnId)).isNull();
         }
 
+        @Test
+        @DisplayName("Purging a round keeps the history that later rounds still hold for the same id")
+        void purgingRoundKeepsHistoryThatLaterRoundsStillHold() {
+            given(nodeInfo.accountId()).willReturn(NODE_ACCOUNT_ID);
+            given(networkInfo.nodeInfo(2)).willReturn(nodeInfo);
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            // The valid start is after the first rounds, so they are purged while the id is still valid
+            final var validStart = FIRST_ROUND_TIME.plusSeconds(MAX_VALID_DURATION_SECS);
+            final var txnId = recordWith(validStart, SUCCESS).transactionIDOrThrow();
+
+            handleRound(cache, FIRST_ROUND_TIME, 1, recordWith(validStart, INVALID_TRANSACTION_START));
+            handleRound(cache, FIRST_ROUND_TIME, 2, recordWith(validStart, INVALID_TRANSACTION_START));
+            handleRound(cache, FIRST_ROUND_TIME, 2, recordWith(validStart, INVALID_NODE_ACCOUNT));
+            handleRound(cache, validStart, 2, recordWith(validStart, SUCCESS));
+            handleRound(cache, FIRST_ROUND_TIME.plusSeconds(MAX_VALID_DURATION_SECS + 1));
+            assertThat(receiptQueue()).hasSize(1);
+
+            final var rebuiltCache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            for (final var subject : List.of(cache, rebuiltCache)) {
+                assertThat(subject.hasDuplicate(txnId, 1)).isEqualTo(OTHER_NODE);
+                assertThat(subject.hasDuplicate(txnId, 2)).isEqualTo(SAME_NODE);
+                assertThat(getReceipt(subject, txnId).status()).isEqualTo(SUCCESS);
+            }
+        }
+
+        @Test
+        @DisplayName("An id handled again in every round keeps only the history of its queued rounds")
+        void idHandledInEveryRoundKeepsOnlyHistoryOfQueuedRounds() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            final var txnId = recordWith(FIRST_ROUND_TIME, SUCCESS).transactionIDOrThrow();
+
+            // After the first purge only the node failure is queued, which must still keep the history
+            var consensusTime = FIRST_ROUND_TIME.plusSeconds(MAX_VALID_DURATION_SECS);
+            for (final var status :
+                    List.of(TRANSACTION_EXPIRED, INVALID_NODE_ACCOUNT, TRANSACTION_EXPIRED, TRANSACTION_EXPIRED)) {
+                consensusTime = consensusTime.plusSeconds(1);
+                handleRound(cache, consensusTime, recordWith(FIRST_ROUND_TIME, status));
+            }
+            assertThat(receiptQueue()).hasSize(1);
+            assertThat(Objects.requireNonNull(cache.getHistory(txnId)).records())
+                    .hasSize(1);
+        }
+
         private void handleRound(
                 @NonNull final RecordCacheImpl cache,
                 @NonNull final Instant consensusTime,
                 @NonNull final TransactionRecord... records) {
+            handleRound(cache, consensusTime, 0, records);
+        }
+
+        private void handleRound(
+                @NonNull final RecordCacheImpl cache,
+                @NonNull final Instant consensusTime,
+                final long nodeId,
+                @NonNull final TransactionRecord... records) {
             cache.resetRoundReceipts();
             for (final var record : records) {
                 cache.addRecordSource(
-                        0, record.transactionIDOrThrow(), DueDiligenceFailure.NO, new PartialRecordSource(record));
+                        nodeId, record.transactionIDOrThrow(), DueDiligenceFailure.NO, new PartialRecordSource(record));
             }
             cache.commitReceipts(
                     Objects.requireNonNull(wsa.getState()),
