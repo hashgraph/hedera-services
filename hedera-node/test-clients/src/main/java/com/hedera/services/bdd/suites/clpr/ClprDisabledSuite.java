@@ -3,11 +3,11 @@ package com.hedera.services.bdd.suites.clpr;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.protoToPbj;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.CHANNELS_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.CONNECTORS_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
-import static com.hedera.node.app.service.clpr.impl.schemas.V0770ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.CHANNELS_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.CONNECTORS_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.ENDPOINT_MANIFEST_STATE_ID;
+import static com.hedera.node.app.service.clpr.impl.schemas.V0780ClprSchema.LEDGER_CONFIGURATION_STATE_ID;
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.TestTags.CLPR;
@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCloseChanne
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprCompleteConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprDeregisterConnector;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRedactMessage;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterChannel;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprRegisterConnector;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.clprSubmitBundle;
@@ -37,15 +36,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
-import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.VERIFY_CONFIG_WITH_SEED_ENDPOINTS;
+import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.VERIFY_CONFIG;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toBundleProofBytes;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toConfigProofBytes;
+import static com.hedera.services.bdd.suites.interledger.ClprTestHelpers.CLPR_SERVICE_ADDRESS_20;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CLPR_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
@@ -83,7 +83,6 @@ import com.hederahashgraph.service.proto.java.ClprServiceGrpc;
 import io.grpc.CallOptions;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.StreamObserver;
@@ -124,18 +123,15 @@ public class ClprDisabledSuite {
     private static final String CONNECTOR_CONTRACT = "PassThroughAuth";
     private static final long GAS_TO_OFFER = 500_000L;
     private static final String INGEST_BYPASS_NODE = "4";
+    // ClprMaintenance is never submitted, only externalized by nodes in the block stream
     private static final EnumSet<HederaFunctionality> NODE_INTERNAL_CLPR_FUNCTIONS =
-            EnumSet.of(HederaFunctionality.ClprEndpointPublication);
+            EnumSet.of(HederaFunctionality.ClprEndpointPublication, HederaFunctionality.ClprMaintenance);
     private static final List<String> CLPR_SYSTEM_CONTRACT_NUMS =
             List.of(String.valueOf(0x16eL), String.valueOf(0x16fL), String.valueOf(0x170L), String.valueOf(0x171L));
 
     @BeforeAll
     static void beforeAll(final TestLifecycle lifecycle) {
-        lifecycle.overrideInClass(Map.of(
-                "clpr.enabled",
-                System.getProperty("clpr.test.enabled", "false"),
-                "clpr.endpointManifestEnabled",
-                "false"));
+        lifecycle.overrideInClass(Map.of("clpr.enabled", System.getProperty("clpr.test.enabled", "false")));
     }
 
     @HapiTest
@@ -176,17 +172,18 @@ public class ClprDisabledSuite {
     }
 
     @HapiTest
-    @DisplayName("Every native CLPR contract halts with CLPR_NOT_ENABLED when disabled")
-    final Stream<DynamicTest> nativeClprContractsAreRejected() {
-        // A direct call exposes the native halt reason, rather than a wrapper's generic revert.
-        // Enabled execution reaches selector/proof validation and cannot satisfy this assertion.
+    @DisplayName("Every native CLPR contract address behaves as a plain system account when disabled")
+    final Stream<DynamicTest> nativeClprContractsAreInactive() {
+        // While disabled, the EVM treats these addresses exactly as it did before the native contracts
+        // existed, so a direct call succeeds without executing anything. Enabled execution reaches
+        // selector/proof validation and cannot satisfy this assertion.
         return hapiTest(CLPR_SYSTEM_CONTRACT_NUMS.stream()
                 .map(num -> contractCallWithFunctionAbi(
-                                num, VERIFY_CONFIG_WITH_SEED_ENDPOINTS.toJson(false), new byte[] {1}, new byte[32])
+                                num, VERIFY_CONFIG.toJson(false), new byte[] {1}, new byte[32], new byte[0])
                         .payingWith(GENESIS)
                         .gas(GAS_TO_OFFER)
                         .refusingEthConversion()
-                        .hasKnownStatus(CLPR_NOT_ENABLED))
+                        .hasKnownStatus(SUCCESS))
                 .toArray(SpecOperation[]::new));
     }
 
@@ -215,7 +212,7 @@ public class ClprDisabledSuite {
 
     @Tag(ONLY_SUBPROCESS)
     @HapiTest
-    @DisplayName("Every node rejects peer sync, discovery and streaming while CLPR is disabled")
+    @DisplayName("Every node rejects streaming sync while CLPR is disabled")
     final Stream<DynamicTest> peerRpcCallsAreRejected() {
         return hapiTest(withOpContext((spec, opLog) -> {
             for (final var node : spec.targetNetworkOrThrow().nodes()) {
@@ -223,20 +220,10 @@ public class ClprDisabledSuite {
                         .usePlaintext()
                         .build();
                 try {
-                    for (final var method : List.of("sync", "discoverEndpoints")) {
-                        final var error = assertThrows(
-                                StatusRuntimeException.class,
-                                () -> ClientCalls.blockingUnaryCall(
-                                        channel,
-                                        peerMethod(method, MethodDescriptor.MethodType.UNARY),
-                                        CallOptions.DEFAULT.withDeadlineAfter(5, TimeUnit.SECONDS),
-                                        new byte[0]));
-                        assertPeerServiceDisabled(error.getStatus());
-                    }
                     final var status = new CompletableFuture<Status>();
                     final var stream = ClientCalls.asyncBidiStreamingCall(
                             channel.newCall(
-                                    peerMethod("streamingSync", MethodDescriptor.MethodType.BIDI_STREAMING),
+                                    peerMethod("sync", MethodDescriptor.MethodType.BIDI_STREAMING),
                                     CallOptions.DEFAULT.withDeadlineAfter(5, TimeUnit.SECONDS)),
                             new StreamObserver<byte[]>() {
                                 @Override
@@ -269,12 +256,6 @@ public class ClprDisabledSuite {
     @Nested
     @DisplayName("Endpoint manifest lifecycle")
     class ManifestTests {
-        @BeforeAll
-        static void enableManifestLifecycle(final TestLifecycle lifecycle) {
-            // Only the manifest sub-feature changes for this group; the master flag is inherited.
-            lifecycle.overrideInClass(Map.of("clpr.endpointManifestEnabled", "true"));
-        }
-
         @LeakyEmbeddedHapiTest(reason = {MUST_SKIP_INGEST, NEEDS_STATE_ACCESS})
         @DisplayName("The manifest sub-feature cannot admit a publication while CLPR is disabled")
         final Stream<DynamicTest> publicationIsRejectedAtConsensus() {
@@ -501,9 +482,6 @@ public class ClprDisabledSuite {
                         .connectorId(crypto.connectorId())
                         .adminKey(GENESIS)
                         .stakeRecipient(GENESIS));
-        txns.put(
-                "redactMessage",
-                clprRedactMessage().channelId(crypto.channelId()).messageId(1L));
         // A verified message referencing an unknown remote connector produces CONNECTOR_NOT_FOUND
         // in the outbound reply. The bundle itself must still be accepted successfully.
         final var payload = ClprMessagePayload.newBuilder()
@@ -527,13 +505,8 @@ public class ClprDisabledSuite {
     private static ClprLedgerConfiguration ledgerConfig() {
         return ClprLedgerConfiguration.newBuilder()
                 .setChainId("hiero:testing")
-                .setServiceAddress(ByteString.copyFrom(new byte[] {0, 0, 1}))
+                .setServiceAddress(ByteString.copyFrom(CLPR_SERVICE_ADDRESS_20))
                 .setThrottles(HapiClprUpdateLedgerConfiguration.defaultThrottles())
-                .addEndpoints(ClprEndpoint.newBuilder()
-                        .setServiceEndpoint(ClprServiceEndpoint.newBuilder()
-                                .setIpAddress("127.0.0.1")
-                                .setPort(50211))
-                        .setTlsCertificate(ByteString.copyFrom(new byte[] {1})))
                 .build();
     }
 

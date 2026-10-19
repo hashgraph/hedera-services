@@ -18,7 +18,6 @@ import com.swirlds.platform.builder.ExecutionLayer;
 import com.swirlds.platform.builder.ModulesConfig;
 import com.swirlds.platform.components.AppNotifier;
 import com.swirlds.platform.components.DefaultAppNotifier;
-import com.swirlds.platform.metrics.PlatformMetricsConfig;
 import com.swirlds.platform.reconnect.ReconnectModule;
 import com.swirlds.platform.state.ConsensusStateEventHandler;
 import com.swirlds.platform.system.Platform;
@@ -169,8 +168,7 @@ public class ConsensusLayerFactory {
         modulesConfig = configuration.getConfigData(ModulesConfig.class);
         metrics = inputs.metrics();
         time = inputs.time();
-        rosterHistory = RosterWrapperHistory.of(
-                inputs.rosterHistory().history(), inputs.rosterHistory().rosters());
+        rosterHistory = RosterWrapperHistory.of(inputs.rosterInputs());
         keysAndCerts = inputs.keysAndCerts();
         selfId = inputs.selfId();
         recycleBin = inputs.recycleBin();
@@ -250,6 +248,7 @@ public class ConsensusLayerFactory {
         return new ConsensusLayerBuildingBlocks(
                 wiringModel,
                 configuration,
+                rosterHistory,
                 eventCreatorModule,
                 eventIntakeModule,
                 pcesModule,
@@ -456,10 +455,7 @@ public class ConsensusLayerFactory {
 
     @Nullable
     private EventPipelineTracker createEventPipelineTracker(@NonNull final EventCreatorModule eventCreatorModule) {
-        final boolean eventPipelineMetricsEnabled =
-                configuration.getConfigData(PlatformMetricsConfig.class).eventPipelineMetricsEnabled();
-        final EventPipelineTracker eventPipelineTracker =
-                eventPipelineMetricsEnabled ? new EventPipelineTracker(metrics) : null;
+        final EventPipelineTracker eventPipelineTracker = EventPipelineTracker.create(metrics, configuration, time);
 
         // Register the event creation stage (self-only, step 1) and wire monitoring
         // before intake initialization so step numbers are sequentially.
