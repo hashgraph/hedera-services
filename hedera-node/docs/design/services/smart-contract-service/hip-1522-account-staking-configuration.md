@@ -165,8 +165,9 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
 
 ### Feature flags
 
-- `contracts.systemContract.accountService.stakingEnabled` — gates all twelve selectors. Ships
-  `false`; flipped in a separate activation change.
+- `contracts.systemContract.accountService.stakingEnabled` — gates all twelve selectors, and the six
+  `IHRC632` selectors' entry in the HAS proxy redirect allowlist. Ships `false`; flipped in a separate
+  activation change.
 - `contracts.systemContract.accountService.enabled` — the pre-existing master switch for `0x16a`
   still gates everything.
 
@@ -181,11 +182,12 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
   *meaningful sentinel*, so accepting it would fail **open**: "stake to Alice" would silently become
   "unstake" and return `SUCCESS`. The translator therefore reserves the sentinel for the literal zero
   address and returns `INVALID_STAKING_ID` for the other route.
-- Adding the six `IHRC632` selectors to `HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES` widens that allowlist
-  from three Hedera-specific names to nine, and three of the new ones — `unstake()`,
+- The six `IHRC632` selectors join the HAS proxy redirect allowlist, and three of them — `unstake()`,
   `stakeToNode(int64)`, `setDeclineReward(bool)` — are generic enough to collide with ordinary DeFi
-  vocabulary. Two consequences follow from the allowlist being a static set consulted by
-  `CustomMessageCallProcessor` *before* any configuration is read:
+  vocabulary. They are kept in their own set, `HAS_STAKING_PROXY_ELIGIBLE_CALL_DATA_PREFIXES`, which
+  `HasSystemContract#isPayloadEligibleForHasProxyRedirect` admits only while `stakingEnabled` is on;
+  the three pre-existing selectors never consult the flag. This matters because the allowlist is
+  consulted by `CustomMessageCallProcessor` before any translator runs:
   - `createProxyOrCodeDelegationContext` gives the HAS redirect priority over EIP-7702 code
     delegation, so for an account with a delegation set, calldata carrying one of these selectors
     reaches HAS instead of the delegate.
@@ -194,8 +196,10 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
     sent to a code-less account was simply a successful no-op call.
 
   Neither behaviour is introduced by this change — the precedence rule and the halt both predate it,
-  and the facade is unimplementable without the allowlist entries — but both now apply to six more
-  selectors, and neither is gated by `stakingEnabled`.
+  and the facade is unimplementable without the allowlist entries. With `stakingEnabled` off, neither
+  applies to the new selectors, so the change ships with routing exactly as it was; with it on, they
+  apply to six more selectors, as HIP-906's precedent already does for `hbarAllowance` and
+  `hbarApprove`.
 
 - The contract-account narrowing does not widen who may change an account's staking. The dispatched
   update is still subject to the same key requirements and the same `StakingValidator` checks, and
@@ -270,7 +274,8 @@ Two properties make the assertions meaningful and are easy to lose:
 - `stakeToNodeAndDeclineReward(-1, …)` returns `INVALID_STAKING_ID` and leaves a previously staked
   account exactly as it was.
 - `IHRC632` calldata sent to a contract address reverts and changes nothing.
-- With the flag off, the calls are unavailable.
+- With the flag off, the calls are unavailable, and an EIP-7702-delegated EOA's own `unstake()`
+  reaches its delegate rather than HAS; with it on, the facade takes priority.
 
 #### Backwards compatibility
 

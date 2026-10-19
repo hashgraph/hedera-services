@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -66,10 +67,16 @@ import org.junit.jupiter.api.Tag;
 @Tag(SMART_CONTRACT)
 public class AccountStakingConfigurationTest {
     private static final String STAKING_FLAG = "contracts.systemContract.accountService.stakingEnabled";
+    private static final String CODE_DELEGATIONS_FLAG = "contracts.codeDelegations.enabled";
+    private static final String SELECTOR_COLLISION = "StakingSelectorCollision";
+    /** What every StakingSelectorCollision function returns; a value HAS never would. */
+    private static final long DELEGATE_MARKER = 4242L;
+
     private static final String HRC1522_CONTRACT = "HRC1522Contract";
     private static final String IHRC632 = "IHRC632";
     private static final String ACCOUNT = "account";
     private static final String OTHER = "other";
+    private static final String DELEGATING = "delegating";
 
     /**
      * Deliberately non-zero. HAPI reports a cleared staking target as an unset {@code staked_id} oneof, so the
@@ -439,6 +446,35 @@ public class AccountStakingConfigurationTest {
                 getContractInfo(HRC1522_CONTRACT).has(contractWith().noStakingNodeId()));
     }
 
+    @LeakyHapiTest(overrides = {STAKING_FLAG, CODE_DELEGATIONS_FLAG})
+    @DisplayName("with the flag off, an EIP-7702 delegate's same-named functions are not diverted to HAS")
+    final Stream<DynamicTest> flagOffLeavesDelegatedAccountsToTheirDelegate() {
+        final AtomicReference<Address> delegateAddress = new AtomicReference<>();
+        final AtomicReference<AccountID> delegatingId = new AtomicReference<>();
+        return hapiTest(
+                overriding(CODE_DELEGATIONS_FLAG, "true"),
+                overriding(STAKING_FLAG, "false"),
+                uploadInitCode(SELECTOR_COLLISION),
+                contractCreate(SELECTOR_COLLISION).exposingAddressTo(delegateAddress::set),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        cryptoCreate(DELEGATING)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .delegationAddress(ByteString.fromHex(
+                                        delegateAddress.get().toString().substring(2)))
+                                .exposingCreatedIdTo(delegatingId::set))),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // The HAS redirect takes priority over a code delegation, so were the facade selectors
+                        // ungated this unstake() would reach HAS rather than the delegate the account chose
+                        delegatedUnstake(delegatingId.get(), "flagOff"),
+                        returned("flagOff", "unstake", SELECTOR_COLLISION, DELEGATE_MARKER),
+                        // With the feature on, the facade takes priority, exactly as it already does for HIP-906
+                        overriding(STAKING_FLAG, "true"),
+                        delegatedUnstake(delegatingId.get(), "flagOn"),
+                        returned("flagOn", "unstake", IHRC632, SUCCESS.getNumber()))));
+    }
+
     // --- Helpers -----------------------------------------------------------------------------------
 
     /** Stakes the contract to {@link #NODE_ID}; pair with {@link #succeeded} to assert the response code. */
@@ -447,6 +483,27 @@ public class AccountStakingConfigurationTest {
                 .payingWith(ACCOUNT)
                 .gas(1_000_000)
                 .via(txn);
+    }
+
+    /** Calls {@code unstake()} on the given account, paid and signed by that account. */
+    private static SpecOperation delegatedUnstake(final AccountID account, final String txn) {
+        return contractCallWithFunctionAbi(
+                        String.valueOf(account.getAccountNum()), getABIFor(FUNCTION, "unstake", SELECTOR_COLLISION))
+                .payingWith(DELEGATING)
+                .gas(1_000_000)
+                .via(txn);
+    }
+
+    /** Asserts the named call returned the given {@code int64}, decoded with the given contract's ABI. */
+    private static SpecOperation returned(
+            final String txn, final String function, final String abiContract, final long expected) {
+        return getTxnRecord(txn)
+                .hasPriority(recordWith()
+                        .status(SUCCESS)
+                        .contractCallResult(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, function, abiContract),
+                                        isLiteralResult(new Object[] {expected}))));
     }
 
     /**

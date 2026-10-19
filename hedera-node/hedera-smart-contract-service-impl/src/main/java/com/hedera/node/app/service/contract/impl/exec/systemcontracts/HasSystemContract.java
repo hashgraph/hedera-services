@@ -15,6 +15,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.EntityType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,7 +40,16 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
     private static final Set<Integer> HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES = Set.of(
             0xbbee989e, // hbarAllowance(address spender)
             0x86aff07c, // hbarApprove(address spender, int256 amount)
-            0xf5677e99, // setUnlimitedAutomaticAssociations(bool enableAutoAssociations)
+            0xf5677e99); // setUnlimitedAutomaticAssociations(bool enableAutoAssociations)
+
+    /**
+     * The {@code IHRC632} staking facade selectors of HIP-1522, eligible for proxy redirection only while
+     * {@code contracts.systemContract.accountService.stakingEnabled} is on. The redirect takes priority over an
+     * EIP-7702 code delegation, and several of these names ({@code unstake()}, {@code stakeToNode(int64)},
+     * {@code setDeclineReward(bool)}) are ordinary DeFi vocabulary; so with the feature off, calldata carrying
+     * them must still reach a delegated account's own code exactly as it did before the feature existed.
+     */
+    private static final Set<Integer> HAS_STAKING_PROXY_ELIGIBLE_CALL_DATA_PREFIXES = Set.of(
             0x5fbd84d5, // stakeToNode(int64 nodeId)
             0xa69431fe, // stakeToAccount(address account)
             0x2def6620, // unstake()
@@ -47,9 +57,18 @@ public class HasSystemContract extends AbstractNativeSystemContract implements H
             0xfad3a941, // stakeToNodeAndDeclineReward(int64 nodeId, bool decline)
             0xb40cd21d); // getStakingInfo()
 
-    public static boolean isPayloadEligibleForHasProxyRedirect(Bytes payload) {
+    /**
+     * Returns whether the given payload is eligible for proxy redirection to the Hedera Account Service.
+     *
+     * @param payload the call data
+     * @param stakingEnabled whether the HIP-1522 staking functions are enabled; consulted only for their selectors
+     * @return whether the payload is eligible for the redirect
+     */
+    public static boolean isPayloadEligibleForHasProxyRedirect(
+            @NonNull final Bytes payload, @NonNull final BooleanSupplier stakingEnabled) {
         final int prefix = payload.size() >= FUNCTION_SELECTOR_LENGTH ? payload.getInt(0) : 0;
-        return HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES.contains(prefix);
+        return HAS_PROXY_ELIGIBLE_CALL_DATA_PREFIXES.contains(prefix)
+                || (HAS_STAKING_PROXY_ELIGIBLE_CALL_DATA_PREFIXES.contains(prefix) && stakingEnabled.getAsBoolean());
     }
 
     @Inject

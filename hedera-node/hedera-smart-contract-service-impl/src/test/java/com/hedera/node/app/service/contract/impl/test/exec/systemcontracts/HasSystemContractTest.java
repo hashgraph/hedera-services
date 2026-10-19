@@ -40,6 +40,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HasSystemContractTest {
+    private static final SystemContractMethod[] STAKING_FACADE_METHODS = {
+        StakingTranslator.STAKE_TO_NODE_PROXY,
+        StakingTranslator.STAKE_TO_ACCOUNT_PROXY,
+        StakingTranslator.UNSTAKE_PROXY,
+        StakingTranslator.SET_DECLINE_REWARD_PROXY,
+        StakingTranslator.STAKE_TO_NODE_AND_DECLINE_REWARD_PROXY,
+        StakingTranslator.GET_STAKING_INFO_PROXY
+    };
 
     @Mock
     private MessageFrame frame;
@@ -114,16 +122,9 @@ class HasSystemContractTest {
         // together, and a drifted literal fails silently: the redirect never fires, so an EOA calling
         // IHRC632(self).setDeclineReward(true) is dispatched as a plain call to a codeless account, which
         // succeeds with empty output while changing nothing.
-        for (final var method : new SystemContractMethod[] {
-            StakingTranslator.STAKE_TO_NODE_PROXY,
-            StakingTranslator.STAKE_TO_ACCOUNT_PROXY,
-            StakingTranslator.UNSTAKE_PROXY,
-            StakingTranslator.SET_DECLINE_REWARD_PROXY,
-            StakingTranslator.STAKE_TO_NODE_AND_DECLINE_REWARD_PROXY,
-            StakingTranslator.GET_STAKING_INFO_PROXY
-        }) {
+        for (final var method : STAKING_FACADE_METHODS) {
             assertTrue(
-                    HasSystemContract.isPayloadEligibleForHasProxyRedirect(Bytes.of(method.selector())),
+                    HasSystemContract.isPayloadEligibleForHasProxyRedirect(Bytes.of(method.selector()), () -> true),
                     () -> "%s is declared CallVia.PROXY but its selector is not in the redirect allowlist"
                             .formatted(method.signature()));
         }
@@ -138,8 +139,30 @@ class HasSystemContractTest {
             StakingTranslator.STAKE_TO_NODE, StakingTranslator.UNSTAKE, StakingTranslator.GET_STAKING_INFO
         }) {
             assertFalse(
-                    HasSystemContract.isPayloadEligibleForHasProxyRedirect(Bytes.of(method.selector())),
+                    HasSystemContract.isPayloadEligibleForHasProxyRedirect(Bytes.of(method.selector()), () -> true),
                     () -> "%s should not be in the redirect allowlist".formatted(method.signature()));
         }
+    }
+
+    @Test
+    @DisplayName("no IHRC632 staking selector is redirect eligible while the staking flag is off")
+    void stakingFacadeSelectorsAreNotRedirectEligibleWhenDisabled() {
+        // The redirect takes priority over an EIP-7702 code delegation, so an ungated entry would divert a
+        // delegated EOA's own unstake() / stakeToNode(int64) / setDeclineReward(bool) to HAS even with the
+        // feature off. With the flag off, routing must be exactly what it was before HIP-1522.
+        for (final var method : STAKING_FACADE_METHODS) {
+            assertFalse(
+                    HasSystemContract.isPayloadEligibleForHasProxyRedirect(Bytes.of(method.selector()), () -> false),
+                    () -> "%s must not be redirected while staking is disabled".formatted(method.signature()));
+        }
+    }
+
+    @Test
+    @DisplayName("the staking flag does not gate the pre-existing redirect selectors")
+    void preExistingSelectorsDoNotConsultTheStakingFlag() {
+        final var hbarAllowance = Bytes.fromHexString("0xbbee989e");
+        assertTrue(HasSystemContract.isPayloadEligibleForHasProxyRedirect(hbarAllowance, () -> {
+            throw new AssertionError("the staking flag should not be consulted for hbarAllowance");
+        }));
     }
 }
