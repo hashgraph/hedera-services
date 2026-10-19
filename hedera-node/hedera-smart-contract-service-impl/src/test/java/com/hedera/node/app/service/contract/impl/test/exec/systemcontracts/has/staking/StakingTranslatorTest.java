@@ -3,6 +3,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.has.
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SELF_STAKING_IS_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.staking.StakingTranslator.GET_STAKING_INFO;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.staking.StakingTranslator.GET_STAKING_INFO_PROXY;
@@ -222,6 +223,34 @@ class StakingTranslatorTest extends CallAttemptTestBase {
                 .toArrayUnsafe());
         given(addressIdConverter.convert(evmAddress)).willReturn(SENTINEL_ACCOUNT_ID);
         assertReturnsWithoutDispatch(STAKE_TO_ACCOUNT, INVALID_STAKING_ID, evmAddress);
+    }
+
+    @Test
+    void stakeToAccountRejectsTheAccountItself() {
+        // HAPI would accept this; HIP-1522 specifies SELF_STAKING_IS_NOT_ALLOWED, so it never reaches dispatch
+        given(addressIdConverter.convert(STAKED_TO_ADDRESS)).willReturn(TARGET_ID);
+        assertReturnsWithoutDispatch(STAKE_TO_ACCOUNT, SELF_STAKING_IS_NOT_ALLOWED, STAKED_TO_ADDRESS);
+    }
+
+    @Test
+    void facadeStakeToAccountRejectsTheAccountItself() {
+        given(attempt.isSelector(STAKE_TO_ACCOUNT_PROXY)).willReturn(true);
+        given(attempt.isRedirect()).willReturn(true);
+        given(attempt.redirectAccountId()).willReturn(TARGET_ID);
+        given(attempt.inputBytes())
+                .willReturn(STAKE_TO_ACCOUNT_PROXY
+                        .encodeCallWithArgs(TARGET_ADDRESS)
+                        .array());
+        given(attempt.enhancement()).willReturn(mockEnhancement());
+        given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
+        given(attempt.addressIdConverter()).willReturn(addressIdConverter);
+        given(addressIdConverter.convert(TARGET_ADDRESS)).willReturn(TARGET_ID);
+
+        final var output =
+                subject.callFrom(attempt).execute(frame).fullResult().result().output();
+
+        assertThat(output).isEqualTo(encodedRc(SELF_STAKING_IS_NOT_ALLOWED.protoOrdinal()));
+        verify(systemContractOperations, never()).dispatch(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SELF_STAKING_IS_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -235,6 +236,61 @@ public class AccountStakingConfigurationTest {
                 // and the earlier staking is untouched
                 getContractInfo(HRC1522_CONTRACT)
                         .has(contractWith().stakedNodeId(NODE_ID).isDeclinedReward(false)));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("stakeToAccount naming the account itself returns SELF_STAKING_IS_NOT_ALLOWED")
+    final Stream<DynamicTest> contractCannotStakeToItself() {
+        final AtomicReference<Address> contractAddress = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                getContractInfo(HRC1522_CONTRACT).exposingEvmAddress(cb -> contractAddress.set(asHeadlongAddress(cb))),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Stake first, so "nothing changed" below is a real observation
+                        stakeToNode(contractAddress.get(), "stakeFirst"),
+                        contractCall(
+                                        HRC1522_CONTRACT,
+                                        "stakeToAccountCall",
+                                        contractAddress.get(),
+                                        contractAddress.get())
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("selfStake"),
+                        returned(
+                                "selfStake",
+                                "stakeToAccountCall",
+                                HRC1522_CONTRACT,
+                                SELF_STAKING_IS_NOT_ALLOWED.getNumber()))),
+                getContractInfo(HRC1522_CONTRACT)
+                        .has(contractWith().stakedNodeId(NODE_ID).noStakedAccountId()));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("an EOA cannot stake to itself through the IHRC632 facade")
+    final Stream<DynamicTest> eoaCannotStakeToItselfThroughTheFacade() {
+        final AtomicReference<AccountID> accountId = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountId::set),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallWithFunctionAbi(
+                                        String.valueOf(accountId.get().getAccountNum()),
+                                        getABIFor(FUNCTION, "stakeToAccount", IHRC632),
+                                        idAsHeadlongAddress(accountId.get()))
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("facadeSelfStake"),
+                        returned(
+                                "facadeSelfStake",
+                                "stakeToAccount",
+                                IHRC632,
+                                SELF_STAKING_IS_NOT_ALLOWED.getNumber()))),
+                getAccountInfo(ACCOUNT).has(accountWith().noStakedAccountId()));
     }
 
     // --- Staking to an account ---------------------------------------------------------------------

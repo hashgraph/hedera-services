@@ -109,6 +109,15 @@ than treating it as a clear — see Security Implications.
 non-negative `nodeId` and returns `INVALID_STAKING_ID` otherwise. A function whose name says "stake
 to node" should not also be the way to stop staking.
 
+### Staking to oneself
+
+HAPI lets an account stake to itself — `StakingValidator` has no self-staking check — but HIP-1522
+specifies `SELF_STAKING_IS_NOT_ALLOWED (321)` when `stakeToAccount` names the account itself. The
+translator rejects that case before dispatch rather than adding the check to `StakingValidator`, so
+the HAPI behavior of `CryptoUpdate` is left exactly as it was. Both ids come from the same resolution,
+so an account named by its alias in one argument and its long-zero address in the other still
+compares equal.
+
 ### System contract module
 
 `.../exec/systemcontracts/has/staking/`
@@ -275,6 +284,8 @@ Two properties make the assertions meaningful and are easy to lose:
 
 - A cross-account call without the target's signature returns
   `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` and leaves the target's staking untouched.
+- `stakeToAccount` naming the account itself returns `SELF_STAKING_IS_NOT_ALLOWED`, from a contract
+  and through the `IHRC632` facade, and leaves the account's staking untouched.
 - `stakeToNodeAndDeclineReward(-1, …)` returns `INVALID_STAKING_ID` and leaves a previously staked
   account exactly as it was.
 - `IHRC632` calldata sent to a contract address reverts and changes nothing.

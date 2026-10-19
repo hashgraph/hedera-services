@@ -3,6 +3,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.staki
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SELF_STAKING_IS_NOT_ALLOWED;
 import static com.hedera.node.app.service.contract.impl.utils.ConstantUtils.ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -244,6 +245,12 @@ public class StakingTranslator extends AbstractCallTranslator<HasCallAttempt> {
             stakedToId = attempt.nativeOperations()
                     .entityIdFactory()
                     .newAccountId(numberOfLongZero(explicitFromHeadlong(stakedTo)));
+        }
+        // HAPI lets an account stake to itself, but HIP-1522 does not: an account naming itself is rejected
+        // here, before dispatch, so the HAPI behavior of CryptoUpdate is left exactly as it was. (Both ids come
+        // from the same resolution, so an alias and a long-zero spelling of one account compare equal.)
+        if (stakedToId.equals(target) && !SENTINEL_ACCOUNT_ID.equals(stakedToId)) {
+            return new StakingUpdateCall(attempt, SELF_STAKING_IS_NOT_ALLOWED);
         }
         return callFor(attempt, target, CryptoUpdateTransactionBody.newBuilder().stakedAccountId(stakedToId));
     }

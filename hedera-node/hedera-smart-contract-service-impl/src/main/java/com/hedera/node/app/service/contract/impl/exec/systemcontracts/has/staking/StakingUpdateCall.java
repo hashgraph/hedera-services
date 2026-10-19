@@ -69,7 +69,8 @@ public class StakingUpdateCall extends AbstractCall {
 
     /**
      * A call that fails before dispatching anything, for input the translator can reject on its own — an
-     * unresolvable target account, or a negative node id passed to {@code stakeToNodeAndDeclineReward}.
+     * unresolvable target account, a negative node id passed to {@code stakeToNodeAndDeclineReward}, or an
+     * account staking to itself.
      *
      * @param attempt the call attempt
      * @param preDispatchFailure the response code to return
