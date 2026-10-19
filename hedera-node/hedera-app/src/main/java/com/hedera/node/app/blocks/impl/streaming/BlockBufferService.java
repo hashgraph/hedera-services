@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -557,10 +556,7 @@ public class BlockBufferService extends BlockStreamingBase {
         // acknowledgements required
         final List<Long> orderedBlockAcks = new ArrayList<>(highestAcknowledgementByBlockNode.size());
         final Instant now = Instant.now();
-        for (final Map.Entry<BlockNodeEndpoint, BlockNodeAckWatermark> entry :
-                highestAcknowledgementByBlockNode.entrySet()) {
-            final BlockNodeEndpoint endpoint = entry.getKey();
-            final BlockNodeAckWatermark ackWatermark = entry.getValue();
+        highestAcknowledgementByBlockNode.forEach((endpoint, ackWatermark) -> {
             final Instant expirationTimestamp = ackWatermark.expirationTimestamp.get();
             if (expirationTimestamp != null && expirationTimestamp.isBefore(now)) {
                 logger.trace(
@@ -568,11 +564,10 @@ public class BlockBufferService extends BlockStreamingBase {
                         ackWatermark.watermark.get(),
                         endpoint,
                         expirationTimestamp);
-                continue;
+            } else {
+                orderedBlockAcks.add(ackWatermark.watermark.get());
             }
-
-            orderedBlockAcks.add(ackWatermark.watermark.get());
-        }
+        });
         orderedBlockAcks.sort(Collections.reverseOrder()); // sort by descending order
 
         if (orderedBlockAcks.size() < minAcknowledgementsRequired) {
