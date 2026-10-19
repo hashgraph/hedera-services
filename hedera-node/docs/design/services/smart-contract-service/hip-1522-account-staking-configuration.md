@@ -285,7 +285,9 @@ Two properties make the assertions meaningful and are easy to lose:
 - `getStakingInfo` leaves no child record, whether it succeeds or names a missing account.
 - A contract stakes to another account, and `setDeclineReward` toggles the flag without disturbing
   the node target.
-- An EOA configures its own staking, and declines rewards, through the `IHRC632` facade.
+- An EOA configures its own staking, and declines rewards, through the `IHRC632` facade, and uses
+  every other facade form too: `stakeToNodeAndDeclineReward`, `getStakingInfo`, `stakeToAccount`
+  and `unstake`.
 - A contract stakes another account whose key delegates to that contract, the cross-account case the
   smart-contract security model authorizes.
 - `stakeToAccount` names an aliased account by its long-zero form and by its alias alike, and

@@ -631,6 +631,68 @@ public class AccountStakingConfigurationTest {
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("an EOA uses every remaining IHRC632 facade form on its own address")
+    final Stream<DynamicTest> eoaUsesTheRemainingFacadeForms() {
+        final AtomicReference<AccountID> accountId = new AtomicReference<>();
+        final AtomicReference<AccountID> otherId = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS).exposingCreatedIdTo(accountId::set),
+                cryptoCreate(OTHER).exposingCreatedIdTo(otherId::set),
+                withOpContext((spec, opLog) -> {
+                    final var self = String.valueOf(accountId.get().getAccountNum());
+                    allRunFor(
+                            spec,
+                            // stakeToNodeAndDeclineReward(int64,bool)
+                            contractCallWithFunctionAbi(
+                                            self,
+                                            getABIFor(FUNCTION, "stakeToNodeAndDeclineReward", IHRC632),
+                                            NODE_ID,
+                                            true)
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via("facadeCombined"),
+                            returned("facadeCombined", "stakeToNodeAndDeclineReward", IHRC632, SUCCESS.getNumber()),
+                            getAccountInfo(ACCOUNT)
+                                    .has(accountWith().stakedNodeId(NODE_ID).isDeclinedReward(true)),
+                            // getStakingInfo(). (A HAPI ContractCallLocal cannot target an EOA - it fails precheck with
+                            // INVALID_CONTRACT_ID - so the facade's read is only reachable here from a transaction.)
+                            contractCallWithFunctionAbi(self, getABIFor(FUNCTION, "getStakingInfo", IHRC632))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via("facadeRead"),
+                            getTxnRecord("facadeRead")
+                                    .hasPriority(recordWith()
+                                            .status(SUCCESS)
+                                            .contractCallResult(resultWith()
+                                                    .resultThruAbi(
+                                                            getABIFor(FUNCTION, "getStakingInfo", IHRC632),
+                                                            stakingInfoWith(true, 0L, 0L, NODE_ID, ZERO_ADDRESS)))),
+                            // stakeToAccount(address)
+                            contractCallWithFunctionAbi(
+                                            self,
+                                            getABIFor(FUNCTION, "stakeToAccount", IHRC632),
+                                            idAsHeadlongAddress(otherId.get()))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via("facadeStakeToAccount"),
+                            returned("facadeStakeToAccount", "stakeToAccount", IHRC632, SUCCESS.getNumber()),
+                            getAccountInfo(ACCOUNT)
+                                    .has(accountWith()
+                                            .stakedAccountId(otherId.get().getAccountNum())
+                                            .noStakingNodeId()),
+                            // unstake()
+                            contractCallWithFunctionAbi(self, getABIFor(FUNCTION, "unstake", IHRC632))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via("facadeUnstake"),
+                            returned("facadeUnstake", "unstake", IHRC632, SUCCESS.getNumber()),
+                            getAccountInfo(ACCOUNT)
+                                    .has(accountWith().noStakedAccountId().noStakingNodeId()));
+                }));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
     @DisplayName("the IHRC632 facade is unreachable on a contract address")
     final Stream<DynamicTest> facadeIsUnreachableOnAContractAddress() {
         return hapiTest(
