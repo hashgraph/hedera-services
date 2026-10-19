@@ -303,6 +303,8 @@ val hapiTestConfigProfile =
 val cutoverConfigValues =
     mapOf(
         "blockStream.streamMode" to "BLOCKS",
+        // Explicit so XTS exercises partial state changes regardless of the production default
+        "blockStream.enableStateChangeDeltas" to "true",
         "blockStream.writerMode" to "GRPC",
         "blockStream.enableCutover" to "true",
         "blockStream.streamWrappedRecordBlocks" to "false",

@@ -88,7 +88,7 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "false") @NodeProperty
         boolean enhancedObservabilityEnabled,
 
-        @ConfigProperty(defaultValue = "true") @NetworkProperty
+        @ConfigProperty(defaultValue = "false") @NetworkProperty
         boolean enableStateChangeDeltas,
 
         @ConfigProperty(defaultValue = "64") @Min(0) @NetworkProperty
