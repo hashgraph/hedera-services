@@ -25,9 +25,13 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordedChildBodyWithId;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludePassFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilNextBlocks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
@@ -41,15 +45,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SELF_STAKING_IS_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -129,6 +137,43 @@ public class AccountStakingConfigurationTest {
                 // The contract account really is staked now
                 getContractInfo(HRC1522_CONTRACT)
                         .has(contractWith().stakedNodeId(NODE_ID).isDeclinedReward(true)));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("a staking call externalizes a staking-only CryptoUpdate child record")
+    final Stream<DynamicTest> stakingCallExternalizesAStakingOnlyCryptoUpdate() {
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                // The mirror node learns of the change only through this child, so pin its body exactly: a
+                // CryptoUpdate (never a ContractUpdate) naming the contract and carrying the staking fields alone
+                streamMustIncludePassFrom(
+                        recordedChildBodyWithId("stakeSelfForRecord", 1, (spec, txn) -> {
+                            final var contractId = spec.registry().getContractId(HRC1522_CONTRACT);
+                            assertEquals(
+                                    CryptoUpdateTransactionBody.newBuilder()
+                                            .setAccountIDToUpdate(AccountID.newBuilder()
+                                                    .setShardNum(contractId.getShardNum())
+                                                    .setRealmNum(contractId.getRealmNum())
+                                                    .setAccountNum(contractId.getContractNum()))
+                                            .setStakedNodeId(NODE_ID)
+                                            .setDeclineReward(BoolValue.of(true))
+                                            .build(),
+                                    txn.getCryptoUpdateAccount());
+                        }),
+                        Duration.ofSeconds(30)),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                // The stream watcher ignores a file that already exists when it starts, so let a couple of blocks
+                // pass first; otherwise the call can land in a file the assertion never sees
+                waitUntilNextBlocks(2).withBackgroundTraffic(true),
+                contractCall(HRC1522_CONTRACT, "stakeSelfToNodeCall", NODE_ID, true)
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000)
+                        .via("stakeSelfForRecord"),
+                childRecordsCheck("stakeSelfForRecord", SUCCESS, recordWith().status(SUCCESS)),
+                // A leaky spec runs alone, so nothing else would close the block holding the child
+                waitUntilNextBlocks(2).withBackgroundTraffic(true));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})

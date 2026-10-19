@@ -280,6 +280,8 @@ Two properties make the assertions meaningful and are easy to lose:
 - A contract created with **no admin key** stakes its own balance to a node and declines rewards;
   `getContractInfo` confirms it.
 - A contract reads its own staking state back, asserting every field of the returned struct.
+- A staking call externalizes exactly one child, whose body in the record stream is a `CryptoUpdate`
+  naming the contract and carrying the staking fields alone.
 - `getStakingInfo` leaves no child record, whether it succeeds or names a missing account.
 - A contract stakes to another account, and `setDeclineReward` toggles the flag without disturbing
   the node target.
