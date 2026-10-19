@@ -13,8 +13,10 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -109,37 +111,6 @@ final class DeduplicationCacheTest {
     }
 
     @Test
-    @DisplayName("TransactionIDs are sorted by earliest date first")
-    void transactionIDsAreSortedByEarliestDateFirst() {
-        // Given some transaction IDs with different valid start times
-        final var now = Instant.now();
-        final var txIds = Stream.of(17, 16, 10, 13, 19, 14, 11, 18, 12, 15)
-                .map(i -> TransactionID.newBuilder()
-                        .transactionValidStart(Timestamp.newBuilder()
-                                .seconds(now.getEpochSecond() + i)
-                                .build())
-                        .build())
-                .toList();
-
-        // When we add them to the cache
-        txIds.forEach(cache::add);
-
-        // Then they are added in order
-        assertThat(internalSet())
-                .containsExactly(
-                        txIds.get(2),
-                        txIds.get(6),
-                        txIds.get(8),
-                        txIds.get(3),
-                        txIds.get(5),
-                        txIds.get(9),
-                        txIds.get(1),
-                        txIds.get(0),
-                        txIds.get(7),
-                        txIds.get(4));
-    }
-
-    @Test
     @DisplayName("TransactionIDs that expire are removed during add")
     void expungeDuringAdd() {
         // Given a transaction ID that has expired but is still in the cache
@@ -149,7 +120,7 @@ final class DeduplicationCacheTest {
                         .seconds(now.getEpochSecond() - MAX_TXN_DURATION - 1)
                         .build())
                 .build();
-        internalSet().add(txId);
+        addDirectly(txId);
 
         // When we add a new transaction ID that is in the right time window
         final var txId2 = TransactionID.newBuilder()
@@ -173,7 +144,7 @@ final class DeduplicationCacheTest {
                         .seconds(now.getEpochSecond() - MAX_TXN_DURATION - 1)
                         .build())
                 .build();
-        internalSet().add(txId);
+        addDirectly(txId);
 
         // When we check to see if it is in the cache
         final var result = cache.contains(txId);
@@ -204,19 +175,34 @@ final class DeduplicationCacheTest {
     }
 
     /**
-     * Utility method for testing purposes that gets at the internal Set used by the cache. This makes it possible to
-     * test more completely without having to open the access permissions on the cache itself.
+     * Utility method for testing purposes that gets at the internal buckets used by the cache. This makes it possible
+     * to test more completely without having to open the access permissions on the cache itself.
      *
-     * @return The internal Set of the cache.
+     * @return The internal map of valid-start epoch second to the transaction IDs in that bucket.
      */
-    private Set<TransactionID> internalSet() {
+    private ConcurrentHashMap<Long, Set<TransactionID>> internalBuckets() {
         try {
             final var field = DeduplicationCacheImpl.class.getDeclaredField("submittedTxns");
             field.setAccessible(true);
             //noinspection unchecked
-            return (Set<TransactionID>) field.get(cache);
+            return (ConcurrentHashMap<Long, Set<TransactionID>>) field.get(cache);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** Returns every cached transaction ID, ordered by valid-start second (earliest first). */
+    private List<TransactionID> internalSet() {
+        return internalBuckets().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .flatMap(entry -> entry.getValue().stream())
+                .toList();
+    }
+
+    /** Puts a transaction ID straight into the cache's internal bucket, bypassing {@code add}'s pruning. */
+    private void addDirectly(final TransactionID txId) {
+        internalBuckets()
+                .computeIfAbsent(txId.transactionValidStartOrThrow().seconds(), second -> ConcurrentHashMap.newKeySet())
+                .add(txId);
     }
 }
