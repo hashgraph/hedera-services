@@ -72,7 +72,7 @@ echo "exit $?"     # 1
   ([heap](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#heap)).
 - `alloc.norm` matches what the production code should allocate per call.
 - `latency.samples` divided by the iterations shows how long an iteration must be for p99.99, about 10⁶ calls
-  ([reporting](/platform-sdk/docs/consensus-layer/benchmarks/writing.md#reporting)); step 7 sets it.
+  ([reporting](/platform-sdk/docs/consensus-layer/benchmarks/writing.md#reporting)); step 6 sets it.
 
 ## Step 3: profile
 
@@ -104,8 +104,8 @@ and teardown methods.
   about 1,000 samples each, so about 0.1% per sample);
 - the hot frames of the code under test are the methods the benchmark is meant to measure, with no lock, park, or
   wait frames and no work handed to another thread;
-- clock reads, logging, or locks inside the code under test are production cost, measured rightly; note them in the
-  pull request.
+- clock reads, logging, or locks inside the code under test are production cost, measured rightly; mention them in the
+  suggested description.
 
 If `alloc.norm` takes a few distinct values that differ between forks, the forks run differently compiled code:
 [fork modes](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#fork-modes). Stop and tell the developer;

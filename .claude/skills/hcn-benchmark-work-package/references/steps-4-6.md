@@ -1,8 +1,10 @@
-# Steps 4–6: Tracking, Smoke Run, Pull Request
+# Steps 4–6: Tracking, Smoke Run, Calibration
 
 Rules: [operations.md](/platform-sdk/docs/consensus-layer/benchmarks/operations.md), sections "Tracking a benchmark",
-"The smoke run", and "The nightly run". Variables as in [steps-1-3.md](steps-1-3.md). The driver needs Python 3.10 or
-newer (macOS ships 3.9) and `JAVA_HOME` set to the build's JDK.
+"The smoke run", "The nightly run", and "The benchmark machine", and
+[calibration.md](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md). Variables as in
+[steps-1-3.md](steps-1-3.md). The scripts need Python 3.10 or newer (macOS ships 3.9) and `JAVA_HOME` set to the
+build's JDK.
 
 ## Step 4: track
 
@@ -60,19 +62,63 @@ jq -r '.[] | "\(.benchmark) \(.params) " + (.secondaryMetrics | keys | join(",")
 The results hold the benchmark's metrics for every parameter set it ran with. A smoke run checks only what the output
 check of step 1 checks.
 
-## Step 6: pull request
+## Step 6: calibrate
 
-- **One pull request for the work package**, on a branch named after the issue, from `origin/main`:
-  `git switch --no-track -c <issue>-<slug> origin/main`. The developer commits and pushes.
-- **Open it as a draft.** Its description holds the decisions from the issue, what each "thing to check" turned out to
-  be, and the output of every check so far. It goes to review once step 7 has calibrated the branch.
-- **On merge, the nightly job picks the benchmark up:** it finds every module that applies the plugin
-  ([the nightly run](/platform-sdk/docs/consensus-layer/benchmarks/operations.md#the-nightly-run)). No workflow
-  changes.
+Apply [the calibration run](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#the-calibration-run). The
+workflow checks out `ref` and takes its scripts from there too. So the developer pushes the work package's branch
+first, named after the issue and created from `origin/main` (`git switch --no-track -c <issue>-<slug> origin/main`);
+no pull request yet.
 
-**Check:** the smoke job passes on the pull request. It runs when the pull request changes code, not for documentation
-only.
+The benchmark machine is one shared machine, `hl-cn-benchmark-lin`. A run can wait in GitHub's queue for hours, and
+the nightly job runs there from 17:00 UTC. Ask the developer before starting a run.
 
 ```bash
-gh pr checks <pr> | grep "Benchmark Smoke"      # MATS / Benchmark Smoke / Benchmark Smoke Run  pass
+BRANCH=<the pushed branch>
+gh workflow run 007-user-benchmark-calibration.yaml --ref main \
+  -f module="$MODULE" -f benchmark="$BENCH" -f ref="$BRANCH" -f jmh-args="-f 10 -wi 0 -i 20 -r 5s"
+gh run list --workflow 007-user-benchmark-calibration.yaml --limit 1     # the run's id
+gh run download <run id> -n benchmark-calibration -D "$OUT/calibration/<run id>"   # once the run is done
 ```
+
+- **The default arguments** take about 40 minutes for the example's two parameter sets, after the queue. The other
+  inputs (`profilers`, `max-load`, `attempts`, `deadline-minutes`) rarely change.
+- **Repeat with a new workflow run,** never `gh run rerun`. Analyze several runs together; the pilot used three to four
+  quiet runs. The noise between runs comes from the nightly history later, not from calibration
+  ([the noise between runs](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#the-noise-between-runs)).
+- **Keep the downloaded runs:** the artifacts expire after 90 days, and the block links them.
+
+**Analyze** all runs together
+([the analysis](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#the-analysis)):
+
+```bash
+python3 .github/workflows/support/scripts/benchmarks/analyze_calibration.py "$OUT"/calibration/*
+```
+
+The output has, per parameter set, the warmup, the noise of iterations, forks, and runs, the alloc.norm modes, and a
+recommendation; then one configuration for all parameter sets with its runtime and the calibration block.
+
+- **Choose the configuration** with the developer
+  ([choosing the configuration](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#choosing-the-configuration)).
+  The recommendation trades noise for nightly time; the time agreed for the issue sets the limit. Argue for fewer or
+  more forks with the predicted noise and the runtime only.
+- **Fork modes** (more than one alloc.norm mode): stop and tell the developer
+  ([fork modes](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#fork-modes)).
+- **Discarded passes:** raise the heap and calibrate again
+  ([heap](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#heap)).
+
+**Record** the choice ([the calibration record](/platform-sdk/docs/consensus-layer/benchmarks/calibration.md#the-calibration-record)):
+print the block for it and paste it unchanged into the class Javadoc; set the annotations to the same values.
+
+```bash
+python3 .github/workflows/support/scripts/benchmarks/analyze_calibration.py \
+  --forks 5 --iterations 2 --length 15 --warmup-iterations 1 "$OUT"/calibration/*
+```
+
+```java
+@Fork(value = 5, jvmArgsAppend = {"-Xms2g", "-Xmx2g", "-XX:+AlwaysPreTouch"})
+@Warmup(iterations = 1, time = 15)
+@Measurement(iterations = 2, time = 15)
+```
+
+**Check:** the annotations and the block equal the script's output for the chosen configuration, and the smoke run
+passes again ([step 5](#step-5-smoke-run)).

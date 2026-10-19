@@ -1,6 +1,6 @@
 ---
 name: hcn-benchmark-work-package
-description: Carries one work package of the consensus-layer benchmark backlog (fix, replace, or add a JMH benchmark in a platform-sdk module) from its GitHub issue to a tracked, calibrated benchmark that meets the definition of done. Eleven steps in order: fix, latency, profile, tracking, smoke run, pull request, calibration on the benchmark machine, first nightly result, dashboard, review, alert. Each step names its commands and the check that ends it; the rules live in the benchmark guide, platform-sdk/docs/consensus-layer/benchmarks/. Load this when asked to work on a benchmark issue, to fix, write, calibrate, or track a JMH benchmark of a consensus module, or to bring one to its definition of done.
+description: Carries one work package of the consensus-layer benchmark backlog (fix, replace, or add a JMH benchmark in a platform-sdk module) from its GitHub issue to a tracked, calibrated benchmark that meets the definition of done. Eleven steps in order: fix, latency, profile, tracking, smoke run, calibration on the benchmark machine, pull request, first nightly result, dashboard, review, alert. Each step names its commands and the check that ends it; the rules live in the benchmark guide, platform-sdk/docs/consensus-layer/benchmarks/. Load this when asked to work on a benchmark issue, to fix, write, calibrate, or track a JMH benchmark of a consensus module, or to bring one to its definition of done.
 ---
 
 # Benchmark Work Package
@@ -10,7 +10,7 @@ One work package takes one JMH benchmark of a consensus-layer module to the
 procedure: the order of the steps, their commands, and the check that ends each one. The
 [benchmark guide](/platform-sdk/docs/consensus-layer/benchmarks/README.md) holds the rules; each step links the
 sections it applies. Read the guide's README and `writing.md` before step 1, `operations.md` before step 4, and
-`calibration.md` before step 7.
+`calibration.md` before step 6.
 
 ## Input: the issue
 
@@ -27,14 +27,15 @@ Before step 1, settle with the developer what the issue leaves open. Only the te
 - **The nightly time it may take.** About 10 minutes per benchmark on average; calibration decides, and some take
   longer than others.
 
-Record the answers in the pull request's description, together with each step's check and its output.
+Note the answers; they go into the description suggested in step 7.
 
 ## How to work
 
-- **Prove each step with its check and show the output;** don't argue that a step is done. A check that cannot run
-  yet stays open in the pull request's description.
-- **Ask before anything that leaves this machine:** a push, a workflow run (it occupies the shared benchmark machine),
-  a comment on GitHub. The developer commits and pushes; never commit, merge, or rebase their branches.
+- **Prove each step with its check and show the output;** don't argue that a step is done. Name a check that cannot
+  run yet as open.
+- **Ask before anything that leaves this machine:** a workflow run (it occupies the shared benchmark machine), a
+  comment on GitHub. The developer commits, pushes, and creates the pull request; never commit, merge, or rebase their
+  branches, and never create or edit a pull request.
 - **Ask, don't decide,** when a choice belongs to the team: the inputs above, a change to production code, the fork
   count when calibration offers a trade, a change to shared tooling, the processor pin, or the nightly schedule.
   Present the options with their costs and a recommendation.
@@ -51,13 +52,13 @@ Record the answers in the pull request's description, together with each step's 
 - **Keep to the work package.** A finding outside it, such as a production bug or a CI problem, is reported with its
   evidence and handed off, not investigated. A fix to production code, such as one for fork modes, and a change to
   shared tooling each get a pull request of their own.
-- **Keep the pull request's description current:** decisions, checks with their output, open points. It carries the
-  work into the next session.
+- **When a session ends before the work package does,** say which step is done, which check is open, and which
+  decisions were made, so that the next session can continue.
 
 ## The steps
 
-Do steps 1–5 locally, then open the pull request as a draft (step 6), calibrate its branch on the benchmark machine
-(step 7), and only then ask for review and merge. Once merged, the module tracks the benchmark and every night
+Do steps 1–5 locally. Then the developer pushes the branch, step 6 calibrates it on the benchmark machine, and only
+then does the developer create the pull request (step 7). Once merged, the module tracks the benchmark and every night
 publishes its results; calibrating first keeps an uncalibrated configuration out of the nightly history. Steps 8 and 9
 check the first night after the merge.
 
@@ -68,8 +69,8 @@ check the first night after the merge.
 | 3 | **Profile** a run with async-profiler. | `profile-regions.sh`: the code under test takes nearly all of the measured region, the timing under 1%, and the measured region shows no locks, waiting, or handoffs. | [steps-1-3.md](references/steps-1-3.md#step-3-profile) |
 | 4 | **Track:** the module applies the tracking plugin and names the benchmark. | `jmhTracked` writes a manifest that names it, and the driver runs every parameter set from it. | [steps-4-6.md](references/steps-4-6.md#step-4-track) |
 | 5 | **Smoke run.** | `jmhSmoke` passes, a rerun is up to date, and after deleting its output it comes from the cache. | [steps-4-6.md](references/steps-4-6.md#step-5-smoke-run) |
-| 6 | **Pull request** as a draft; review after step 7; merge. | The pull request's "Benchmark Smoke" check passes. | [steps-4-6.md](references/steps-4-6.md#step-6-pull-request) |
-| 7 | **Calibrate** the pull request's branch on the benchmark machine. | The annotations and the Javadoc block equal what `analyze_calibration.py` prints for the chosen configuration, and the pull request's checks pass again. | [steps-7-9.md](references/steps-7-9.md#step-7-calibrate) |
+| 6 | **Calibrate** the pushed branch on the benchmark machine. | The annotations and the Javadoc block equal what `analyze_calibration.py` prints for the chosen configuration, and the smoke run passes again. | [steps-4-6.md](references/steps-4-6.md#step-6-calibrate) |
+| 7 | **Pull request:** suggest a concise title and description; the developer creates it. | The pull request's "Benchmark Smoke" check passes. | [steps-7-9.md](references/steps-7-9.md#step-7-pull-request) |
 | 8 | **First nightly result** after the merge. | Every parameter set has a quiet result, and the dry run of the converter shows its series. | [steps-7-9.md](references/steps-7-9.md#step-8-first-nightly-result) |
 | 9 | **Dashboard.** | The developer sees the night in every panel of the benchmark on the dashboard. | [steps-7-9.md](references/steps-7-9.md#step-9-dashboard) |
 | 10 | **Review:** general lessons into the guide, reusable code into `consensus-benchmark-tools`, open points into the issue. | `./gradlew qualityGate` passes on the changed files, every link resolves, and the issue lists what is left. | below |
