@@ -111,6 +111,8 @@ public class AccountStakingConfigurationTest {
     private static final long NODE_ID = 1L;
     /** The staked_node_id sentinel meaning "no node"; what unstake() leaves behind. */
     private static final long SENTINEL_NODE_ID = -1L;
+    /** A non-negative node id no test network has. */
+    private static final long NO_SUCH_NODE_ID = 999L;
 
     private static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
     /** A long-zero address far beyond any entity a test network creates. */
@@ -426,6 +428,71 @@ public class AccountStakingConfigurationTest {
                                 IHRC632,
                                 SELF_STAKING_IS_NOT_ALLOWED.getNumber()))),
                 getAccountInfo(ACCOUNT).has(accountWith().noStakedAccountId()));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("invalid staking ids and missing accounts return the HIP's response codes")
+    final Stream<DynamicTest> invalidInputsReturnTheSpecifiedResponseCodes() {
+        final AtomicReference<Address> contractAddress = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                getContractInfo(HRC1522_CONTRACT).exposingEvmAddress(cb -> contractAddress.set(asHeadlongAddress(cb))),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Stake first, so "nothing changed" below is a real observation
+                        stakeToNode(contractAddress.get(), "stakeFirst"),
+                        // A node id that names no node
+                        contractCall(HRC1522_CONTRACT, "stakeToNodeCall", contractAddress.get(), NO_SUCH_NODE_ID)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("noSuchNode"),
+                        returned("noSuchNode", "stakeToNodeCall", HRC1522_CONTRACT, INVALID_STAKING_ID.getNumber()),
+                        // -1 is the only sentinel; any other negative id is invalid, not a request to clear
+                        contractCall(HRC1522_CONTRACT, "stakeToNodeCall", contractAddress.get(), -2L)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("minusTwo"),
+                        returned("minusTwo", "stakeToNodeCall", HRC1522_CONTRACT, INVALID_STAKING_ID.getNumber()),
+                        // A staked-to account that does not exist
+                        contractCall(
+                                        HRC1522_CONTRACT,
+                                        "stakeToAccountCall",
+                                        contractAddress.get(),
+                                        MISSING_ACCOUNT_ADDRESS)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("noSuchStakedTo"),
+                        returned(
+                                "noSuchStakedTo",
+                                "stakeToAccountCall",
+                                HRC1522_CONTRACT,
+                                INVALID_STAKING_ID.getNumber()),
+                        // A target account that does not exist
+                        contractCall(HRC1522_CONTRACT, "stakeToNodeCall", MISSING_ACCOUNT_ADDRESS, NODE_ID)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("noSuchTarget"),
+                        returned("noSuchTarget", "stakeToNodeCall", HRC1522_CONTRACT, INVALID_ACCOUNT_ID.getNumber()),
+                        // ...and reading one returns INVALID_ACCOUNT_ID with a zeroed struct, rather than reverting
+                        contractCall(HRC1522_CONTRACT, "getStakingInfoCall", MISSING_ACCOUNT_ADDRESS)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("readNoSuchAccount"),
+                        getTxnRecord("readNoSuchAccount")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .resultThruAbi(
+                                                        getABIFor(FUNCTION, "getStakingInfoCall", HRC1522_CONTRACT),
+                                                        isLiteralResult(new Object[] {
+                                                            (long) INVALID_ACCOUNT_ID.getNumber(),
+                                                            Tuple.of(false, 0L, 0L, 0L, SENTINEL_NODE_ID, ZERO_ADDRESS)
+                                                        })))))),
+                // None of the rejected calls disturbed the staking already in place
+                getContractInfo(HRC1522_CONTRACT).has(contractWith().stakedNodeId(NODE_ID)));
     }
 
     // --- Staking to an account ---------------------------------------------------------------------

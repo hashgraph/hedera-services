@@ -303,6 +303,9 @@ Two properties make the assertions meaningful and are easy to lose:
   `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` and leaves the target's staking untouched.
 - `stakeToAccount` naming the account itself returns `SELF_STAKING_IS_NOT_ALLOWED`, from a contract
   and through the `IHRC632` facade, and leaves the account's staking untouched.
+- A node id naming no node, `stakeToNode(-2)` and a missing staked-to account each return
+  `INVALID_STAKING_ID`; a missing target returns `INVALID_ACCOUNT_ID`; reading a missing account
+  returns `INVALID_ACCOUNT_ID` and a zeroed struct. None of them disturbs existing staking.
 - `stakeToNodeAndDeclineReward(-1, …)` returns `INVALID_STAKING_ID` and leaves a previously staked
   account exactly as it was.
 - `IHRC632` calldata sent to a contract address reverts and changes nothing.
