@@ -7,7 +7,7 @@
 # different HAPI wire definitions (including BlockHashAlgorithm enum numbers), changing
 # every wrapped-block hash. Never switch or reset the caller's BN working tree.
 prepare_block_node_tools_checkout() {
-  local tools_ref="${BLOCK_NODE_TOOLS_REF:-v0.44.2}"
+  local tools_ref="${BLOCK_NODE_TOOLS_REF:-v0.45.0-sha256.1}"
   local source_repo="${BLOCK_NODE_REPO_PATH}" revision current checkout
   require_cmd git
   revision="$(git -C "${source_repo}" rev-parse --verify "${tools_ref}^{commit}")" || {

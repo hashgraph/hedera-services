@@ -89,7 +89,7 @@ Build CN artifacts with `./gradlew assemble`. Install Solo (the CI-selected vers
 Docker, kubectl, Helm, curl, unzip, Node/npm, jq, OpenSSL, grpcurl, Python 3, Git, and the JDK
 required by the CN and Block Node builds. SDK TCK also needs lsof, pgrep and pnpm; the script installs pnpm
 with `npm install -g pnpm` if missing. Clone `hiero-block-node` next to this repository,
-or set `BLOCK_NODE_REPO_PATH`. Its Git history must include the pinned `v0.44.2` tag.
+or set `BLOCK_NODE_REPO_PATH`. Its Git history must include the pinned `v0.45.0-sha256.1` tag.
 The script uses that tools revision in both CI and local runs. If your checkout is on another
 revision or has changes, it creates an isolated Git worktree under
 `~/.cache/hiero-solo/block-node-tools/`, preserving your original branch and files. Set
@@ -97,9 +97,12 @@ revision or has changes, it creates an isolated Git worktree under
 select another compatible tools revision. Install `zstd` or allow the shared helper to use
 the Gradle-cached `zstd-jni` fallback.
 
-The tools' HAPI wire definitions must agree with the CN's. For example, newer BN `main` sources
-encode `BlockHashAlgorithm.SHA2_384` as `1`, whereas this CN uses `0`. That changes the serialized
-block header and every wrapped-block root. A completed hash mismatch fails immediately with
+The tools' HAPI wire definitions and hash algorithm must agree with the CN's. The CN encodes
+`BlockHashAlgorithm.SHA2_256` as `0` and `SHA2_384` as `1`, and still hashes with SHA-384
+(`blockStream.digestType` defaults to `SHA_384`). Block Node tools older than the enum change
+omit the SHA-384 header field, and tools that hash with SHA-256 produce 32-byte hashes; either
+changes the serialized block header or every wrapped-block root. `v0.45.0-sha256.1` has the new
+enum and keeps the wrap CLI on SHA-384. A completed hash mismatch fails immediately with
 both hashes; only unfinished CN file snapshots are retried.
 
 Allocate **32 GiB RAM to Docker Desktop** for the four CNs, BN and MN. A 16 GiB VM has
