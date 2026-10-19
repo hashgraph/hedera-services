@@ -51,7 +51,7 @@ module.exports = async ({ github, context, core }) => {
   const isWorkflowFile = (filename) => /^\.github\/workflows\//.test(filename);
 
   // Smart-contract service modules whose changes run the EVM functional tests (871). Only non-doc files count,
-  // so a README change under these modules does not deploy 18 solo networks. Other modules that influence EVM
+  // so a README change under these modules does not deploy a solo network per shard. Other modules that influence EVM
   // behaviour (ContractsConfig in hedera-config, the HTS system-contract handlers in hedera-token-service-impl,
   // hedera-node/configuration, hapi) rely on the "Run EVM Tests" label.
   const isSmartContractFile = (filename) =>

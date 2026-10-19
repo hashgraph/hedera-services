@@ -34,15 +34,16 @@ on:
         required: true
         type: string
       json-rpc-relay-version:
-        description: "The version of the JSON-RPC relay to deploy with solo. Must be >= 0.79.0-rc1, the first release with TX_TYPE_4_ENABLED, which the HIP-1340 shards need:"
-        required: false
+        description: "The version of the JSON-RPC relay to deploy with solo, with or without a leading v. Must be >= 0.79.0-rc1, the first release with TX_TYPE_4_ENABLED, which the HIP-1340 shards need:"
+        required: true
         type: string
-        default: "0.79.0-rc1"
       evm-testing-ref:
-        description: "The hashgraph/hedera-evm-testing branch or commit SHA to test with (pass a SHA to pin a known-good revision):"
+        # Pinned to a hashgraph/hedera-evm-testing commit SHA for now because that repository has no tags yet; this
+        # will be resolved back to a release tag once that is sorted out.
+        description: "The hashgraph/hedera-evm-testing commit SHA to test with:"
         required: false
         type: string
-        default: "main"
+        default: "032bfbea51ce14cdb0c1567dbec191769642545b"
     secrets:
       access-token:
         description: "The GitHub access token used to checkout the repository, submodules, and make GitHub API calls."
@@ -65,8 +66,8 @@ defaults:
   run:
     shell: bash
 
-# Must stay a subset of the caller's permissions (600 grants id-token, actions: read, issues, pull-requests,
-# statuses, checks and contents: read); a called workflow that asks for more fails at run time.
+# Must stay a subset of every caller's permissions (800 for MATS, 815 for XTS; both grant contents: read);
+# a called workflow that asks for more fails at run time.
 permissions:
   contents: read
 
@@ -94,7 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       # Placeholder until the first runs show how the shared hl-cn-rpc-relay-lin-lg pool copes; it also serves
-      # 818 (XTS, every 3 hours) and 103 (adhoc solo tests).
+      # 818 (XTS, every 3 hours, in the same 815 run as this suite's XTS panel) and 103 (adhoc solo tests).
       max-parallel: 6
       matrix:
         include:
@@ -255,7 +256,8 @@ jobs:
           # A fresh kind cluster pulls every container image; solo's default pod-Running gate (900 x 1s) can
           # expire on slow pulls, so widen it (same as 819).
           PODS_RUNNING_MAX_ATTEMPTS: "2700"
-          # Pins the web3 image and enables the mirror REST delegation-address field the HIP-1340 tests need.
+          # Enables the mirror REST delegation-address field the HIP-1340 tests need. Its web3 image tag has no effect:
+          # with --mirror-node-version, solo sets every mirror node image tag (web3 included) to that version.
           MIRROR_NODE_VALUES_PATH: ${{ env.EVM_TESTING_DIR }}/local/mn-values.yaml
           # Empty when the shard sets no relay_values -> relay deployed with default config.
           RELAY_VALUES_PATH: ${{ matrix.relay_values }}
@@ -295,7 +297,8 @@ jobs:
           if [[ -n "${RELAY_VALUES_PATH}" ]]; then
             relay_values_arg=(--values-file "${RELAY_VALUES_PATH}")
           fi
-          solo relay node add --relay-version "${INPUT_JSON_RPC_RELAY_VERSION}" --deployment "${SOLO_DEPLOYMENT}" -i node1 "${relay_values_arg[@]}"
+          # .citr-env keeps the relay as its git tag (v-prefixed, which 818 checks out); solo gets the bare version.
+          solo relay node add --relay-version "${INPUT_JSON_RPC_RELAY_VERSION#v}" --deployment "${SOLO_DEPLOYMENT}" -i node1 "${relay_values_arg[@]}"
           # accounts pre-setup; the first one becomes 0.0.1001, the SDK operator in hardhat.config.js
           for private_key in "${TEST_ACCOUNT_ECDSA_PRIVATE_KEY_DER_1}" "${TEST_ACCOUNT_ECDSA_PRIVATE_KEY_DER_2}" "${TEST_ACCOUNT_ECDSA_PRIVATE_KEY_DER_3}"; do
             solo ledger account create --deployment "${SOLO_DEPLOYMENT}" --hbar-amount "${TEST_ACCOUNT_HBAR_AMOUNT}" --private-key --set-alias --ecdsa-private-key "${private_key}"
