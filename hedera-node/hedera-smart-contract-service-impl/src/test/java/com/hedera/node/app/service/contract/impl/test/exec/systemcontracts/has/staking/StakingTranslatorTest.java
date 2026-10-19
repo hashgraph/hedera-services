@@ -201,13 +201,27 @@ class StakingTranslatorTest extends CallAttemptTestBase {
     }
 
     @Test
-    void stakeToAccountRejectsANonCanonicalReference() {
-        // The long-zero form of an account whose priority address is an EVM alias resolves to 0.0.0 - the
-        // same id the zero address gives. Elsewhere 0.0.0 is an id built to fail downstream; for staking it
-        // is the "clear the target" sentinel, so accepting it here would turn "stake to X" into a silent
-        // unstake that reports SUCCESS.
+    void stakeToAccountResolvesANonCanonicalReferenceByItsNumber() {
+        // The long-zero form of an account whose priority address is an EVM alias converts to 0.0.0 - the
+        // same id the zero address gives, and for staking the "clear the target" sentinel. HIP-1522 requires
+        // stakeToAccount to accept either form of an account, so the number the address encodes is used
+        // instead, rather than turning "stake to X" into a silent unstake.
         given(addressIdConverter.convert(STAKED_TO_ADDRESS)).willReturn(SENTINEL_ACCOUNT_ID);
-        assertReturnsWithoutDispatch(STAKE_TO_ACCOUNT, INVALID_STAKING_ID, STAKED_TO_ADDRESS);
+        given(attempt.nativeOperations()).willReturn(nativeOperations);
+        given(nativeOperations.entityIdFactory()).willReturn(entityIdFactory);
+        final var body = bodyDispatchedBy(STAKE_TO_ACCOUNT, STAKED_TO_ADDRESS).cryptoUpdateAccountOrThrow();
+        assertThat(body.stakedAccountIdOrThrow()).isEqualTo(STAKED_TO_ID);
+        assertThat(body.hasStakedNodeId()).isFalse();
+    }
+
+    @Test
+    void stakeToAccountFailsClosedIfAnEvmAddressConvertsToTheSentinel() {
+        // Only a long-zero address can be a non-canonical reference, so an EVM address converting to 0.0.0 has
+        // no number to fall back to; it must never reach the handler as a silent unstake
+        final var evmAddress = asHeadlongAddress(Bytes.fromHexString("0x1234567890abcdef1234567890abcdef12345678")
+                .toArrayUnsafe());
+        given(addressIdConverter.convert(evmAddress)).willReturn(SENTINEL_ACCOUNT_ID);
+        assertReturnsWithoutDispatch(STAKE_TO_ACCOUNT, INVALID_STAKING_ID, evmAddress);
     }
 
     @Test

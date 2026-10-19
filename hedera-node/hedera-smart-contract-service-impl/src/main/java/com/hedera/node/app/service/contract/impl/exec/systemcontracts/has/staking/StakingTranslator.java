@@ -4,6 +4,9 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.staki
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConstantUtils.ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_ACCOUNT_ID;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static java.util.Objects.requireNonNull;
@@ -229,11 +232,18 @@ public class StakingTranslator extends AbstractCallTranslator<HasCallAttempt> {
         // non-canonical reference - the long-zero form of an account whose priority address is an EVM alias,
         // which is exactly the form getHederaAccountNumAlias hands back. Everywhere else in the system
         // contracts 0.0.0 is an id deliberately built to fail downstream; staking is the one place it is a
-        // *valid sentinel*, so there it would fail open: "stake to Alice" would silently mean "unstake" and
-        // return SUCCESS. Reserve the sentinel for the literal zero address and reject the other route.
-        final var stakedToId = attempt.addressIdConverter().convert(stakedTo);
+        // *valid sentinel*, so passing it through would fail open: "stake to Alice" would silently mean
+        // "unstake". HIP-1522 instead requires stakeToAccount to accept either form of an account, so resolve
+        // a non-canonical reference by the number it encodes - the same account its alias resolves to.
+        var stakedToId = attempt.addressIdConverter().convert(stakedTo);
         if (SENTINEL_ACCOUNT_ID.equals(stakedToId) && !ZERO_ADDRESS.equals(stakedTo)) {
-            return new StakingUpdateCall(attempt, INVALID_STAKING_ID);
+            if (!isLongZero(stakedTo)) {
+                // Only a long-zero address can be a non-canonical reference; fail closed on anything else
+                return new StakingUpdateCall(attempt, INVALID_STAKING_ID);
+            }
+            stakedToId = attempt.nativeOperations()
+                    .entityIdFactory()
+                    .newAccountId(numberOfLongZero(explicitFromHeadlong(stakedTo)));
         }
         return callFor(attempt, target, CryptoUpdateTransactionBody.newBuilder().stakedAccountId(stakedToId));
     }

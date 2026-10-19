@@ -102,8 +102,8 @@ Three spellings reach the same state and produce the same child record:
 | `stakeToAccount(address(0))` | The zero address resolves to account `0.0.0`, the HAPI `staked_account_id` sentinel. |
 
 Only the **literal** zero address spells the third form. `AddressIdConverter` also yields `0.0.0` for a
-non-canonical reference, and `stakeToAccount` rejects that with `INVALID_STAKING_ID` rather than
-treating it as a clear — see Security Implications.
+non-canonical reference, and `stakeToAccount` resolves that by the account number it encodes rather
+than treating it as a clear — see Security Implications.
 
 `stakeToNodeAndDeclineReward` deliberately does **not** accept the sentinel: it requires a
 non-negative `nodeId` and returns `INVALID_STAKING_ID` otherwise. A function whose name says "stake
@@ -175,13 +175,14 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
 
 - Staking configuration moves no balances. The maximum effect of an authorized call is to redirect
   or decline the caller's own staking rewards.
-- `stakeToAccount` will not accept a **non-canonical reference** — the long-zero form of an account
-  whose priority address is an EVM alias, which is what `getHederaAccountNumAlias` returns.
-  `AddressIdConverter` resolves such a reference to `0.0.0`, and everywhere else in the system
-  contracts that id is deliberately built to fail downstream. Staking is the one place `0.0.0` is a
-  *meaningful sentinel*, so accepting it would fail **open**: "stake to Alice" would silently become
-  "unstake" and return `SUCCESS`. The translator therefore reserves the sentinel for the literal zero
-  address and returns `INVALID_STAKING_ID` for the other route.
+- `stakeToAccount` accepts a **non-canonical reference** — the long-zero form of an account whose
+  priority address is an EVM alias, which is what `getHederaAccountNumAlias` returns — because the HIP
+  requires either form of an account to name it. `AddressIdConverter` resolves such a reference to
+  `0.0.0`, and everywhere else in the system contracts that id is deliberately built to fail
+  downstream. Staking is the one place `0.0.0` is a *meaningful sentinel*, so passing it through would
+  fail **open**: "stake to Alice" would silently become "unstake" and return `SUCCESS`. The translator
+  therefore reserves the sentinel for the literal zero address and resolves a non-canonical reference
+  by the account number it encodes.
 - The six `IHRC632` selectors join the HAS proxy redirect allowlist, and three of them — `unstake()`,
   `stakeToNode(int64)`, `setDeclineReward(bool)` — are generic enough to collide with ordinary DeFi
   vocabulary. They are kept in their own set, `HAS_STAKING_PROXY_ELIGIBLE_CALL_DATA_PREFIXES`, which
@@ -220,8 +221,9 @@ EVM caller observes `INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE` (326).
   including that `decline_reward` is *unset* on the pure-stake forms and the two `staked_*` fields
   are never both set. Both call shapes are covered: the explicit forms via `bodyDispatchedBy` and
   each facade form via `facadeBodyDispatchedBy`, since the two are near-identical pairs and a
-  copy-paste slip between them would otherwise go unnoticed. `stakeToAccount` rejects a
-  non-canonical reference with `INVALID_STAKING_ID`.
+  copy-paste slip between them would otherwise go unnoticed. `stakeToAccount` resolves a
+  non-canonical reference by its account number, and fails closed if a non-long-zero address ever
+  converts to the sentinel.
 - `StakingUpdateCallTest` — the dispatch carries the metadata marker; `CRYPTO_UPDATE` gas; a
   business failure is returned, never reverted.
 - `GetStakingInfoCallTest` — every field and sentinel; the priority-EVM-address rendering for an
@@ -264,6 +266,8 @@ Two properties make the assertions meaningful and are easy to lose:
 - A contract stakes to another account, and `setDeclineReward` toggles the flag without disturbing
   the node target.
 - An EOA configures its own staking, and declines rewards, through the `IHRC632` facade.
+- `stakeToAccount` names an aliased account by its long-zero form and by its alias alike, and
+  `getStakingInfo` reads the target back in its alias form either way.
 - `unstake()`, `stakeToNode(-1)` and `stakeToAccount(address(0))` all clear the target — each from a
   confirmed staked state, so the transition is observable in both directions.
 

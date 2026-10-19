@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.contract.hip1522;
 
+import static com.hedera.node.app.hapi.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -22,9 +23,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.idAsHeadlongAddress;
@@ -77,6 +81,8 @@ public class AccountStakingConfigurationTest {
     private static final String ACCOUNT = "account";
     private static final String OTHER = "other";
     private static final String DELEGATING = "delegating";
+    private static final String ALIASED = "aliased";
+    private static final String ALIASED_KEY = "aliasedKey";
 
     /**
      * Deliberately non-zero. HAPI reports a cleared staking target as an unset {@code staked_id} oneof, so the
@@ -258,6 +264,63 @@ public class AccountStakingConfigurationTest {
                         succeeded("stakeToAccount", "stakeToAccountCall"),
                         getContractInfo(HRC1522_CONTRACT)
                                 .has(contractWith().stakedAccountId(OTHER).noStakingNodeId()))));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("stakeToAccount accepts both the alias and the long-zero form of an aliased account")
+    final Stream<DynamicTest> stakeToAccountAcceptsEitherFormOfAnAliasedAccount() {
+        final AtomicReference<Address> contractAddress = new AtomicReference<>();
+        final AtomicReference<Address> aliasAddress = new AtomicReference<>();
+        final AtomicReference<Address> longZeroAddress = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                newKeyNamed(ALIASED_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var key = spec.registry().getKey(ALIASED_KEY);
+                    final var evmAddress =
+                            recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray());
+                    aliasAddress.set(asHeadlongAddress(evmAddress));
+                    allRunFor(
+                            spec,
+                            cryptoCreate(ALIASED)
+                                    .key(ALIASED_KEY)
+                                    .alias(ByteString.copyFrom(evmAddress))
+                                    .exposingCreatedIdTo(id -> longZeroAddress.set(idAsHeadlongAddress(id))));
+                }),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                getContractInfo(HRC1522_CONTRACT).exposingEvmAddress(cb -> contractAddress.set(asHeadlongAddress(cb))),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // 1. The long-zero form, which is what getHederaAccountNumAlias hands back. It is a
+                        // non-canonical reference, but HIP-1522 requires either form to name the same account
+                        contractCall(
+                                        HRC1522_CONTRACT,
+                                        "stakeToAccountCall",
+                                        contractAddress.get(),
+                                        longZeroAddress.get())
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("viaLongZero"),
+                        succeeded("viaLongZero", "stakeToAccountCall"),
+                        getContractInfo(HRC1522_CONTRACT)
+                                .has(contractWith().stakedAccountId(ALIASED).noStakingNodeId()),
+                        // ...and it reads back in the account's priority form, its alias
+                        readsOwnStakingInfo("readViaLongZero", false, SENTINEL_NODE_ID, aliasAddress.get()),
+                        // 2. The alias form names the very same account, so the value read back round-trips
+                        contractCall(HRC1522_CONTRACT, "unstakeCall", contractAddress.get())
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000),
+                        getContractInfo(HRC1522_CONTRACT).has(contractWith().noStakedAccountId()),
+                        contractCall(HRC1522_CONTRACT, "stakeToAccountCall", contractAddress.get(), aliasAddress.get())
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("viaAlias"),
+                        succeeded("viaAlias", "stakeToAccountCall"),
+                        getContractInfo(HRC1522_CONTRACT)
+                                .has(contractWith().stakedAccountId(ALIASED).noStakingNodeId()),
+                        readsOwnStakingInfo("readViaAlias", false, SENTINEL_NODE_ID, aliasAddress.get()))));
     }
 
     @LeakyHapiTest(overrides = {STAKING_FLAG})
@@ -483,6 +546,27 @@ public class AccountStakingConfigurationTest {
                 .payingWith(ACCOUNT)
                 .gas(1_000_000)
                 .via(txn);
+    }
+
+    /**
+     * Calls {@code getOwnStakingInfoCall()} and asserts the target fields of the struct it returns; the
+     * contract has nothing staked to it and, unless staked to a node, no pending reward.
+     */
+    private static SpecOperation readsOwnStakingInfo(
+            final String txn, final boolean declineReward, final long stakedNodeId, final Address stakedAccountId) {
+        return blockingOrder(
+                contractCall(HRC1522_CONTRACT, "getOwnStakingInfoCall")
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000)
+                        .via(txn),
+                getTxnRecord(txn)
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "getOwnStakingInfoCall", HRC1522_CONTRACT),
+                                                stakingInfoWith(
+                                                        declineReward, 0L, 0L, stakedNodeId, stakedAccountId)))));
     }
 
     /** Calls {@code unstake()} on the given account, paid and signed by that account. */
