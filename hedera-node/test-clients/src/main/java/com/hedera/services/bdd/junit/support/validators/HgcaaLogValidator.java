@@ -132,6 +132,8 @@ public class HgcaaLogValidator {
                 // Multi-network tests warm-start their networks from TSS fixtures in the startup network JSON
                 List.of("dev-only", "from startup network JSON"),
                 List.of("WRAPS enabled but this node cannot build recursive proofs", "TSS_LIB_WRAPS_ARTIFACTS_PATH=''"),
+                // When warm-started, the WRAPS artifacts dir mapped for cold bootstraps is never provisioned
+                List.of("WRAPS enabled but this node cannot build recursive proofs", "contents=<path does not exist>"),
                 // Multi-network tests restart CLPR peer networks and rotate their mTLS ports, so syncs to a peer
                 // fail while it is unreachable. (The cause is only on the following exception line, so this
                 // ignores every streaming sync failure, not just unreachable peers.)
