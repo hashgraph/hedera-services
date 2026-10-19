@@ -306,9 +306,15 @@ val profileExemptTasks =
         "hapiTestBlockNodeCommunication",
     )
 // Under the profile these keep a FILE writer: genesis and multi-network nets get no block node,
-// and hapiTestClpr's mock signatures stalled its network against a real block node
+// hapiTestClpr's mock signatures stalled its network against a real block node, and the block
+// node still rejects SHA-256 hashes (it requires 48-byte SHA-384)
 val profileFileWriterTasks =
-    setOf("hapiTestGenesisSubProcess", "hapiTestClpr", "hapiTestClprMultinetwork")
+    setOf(
+        "hapiTestGenesisSubProcess",
+        "hapiTestClpr",
+        "hapiTestClprMultinetwork",
+        "hapiTestBlockHashingSha256",
+    )
 
 fun profileAppliesTo(name: String, remote: Boolean) =
     profileOverrides.isNotEmpty() && !remote && name !in profileExemptTasks
