@@ -147,6 +147,7 @@ public class BlockTransactionalUnitTranslator {
                     put(CONSENSUS_CREATE_TOPIC, new TopicCreateTranslator());
                     put(CONSENSUS_DELETE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONSENSUS_SUBMIT_MESSAGE, new SubmitMessageTranslator());
+                    put(CLPR_ENDPOINT_PUBLICATION, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONSENSUS_UPDATE_TOPIC, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CONTRACT_CALL, new ContractCallTranslator());
                     put(CONTRACT_CREATE, new ContractCreateTranslator());
@@ -218,7 +219,6 @@ public class BlockTransactionalUnitTranslator {
                     put(CLPR_REGISTER_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_DEREGISTER_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                     put(CLPR_COMPLETE_CONNECTOR, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
-                    put(CLPR_ENDPOINT_PUBLICATION, NO_EXPLICIT_SIDE_EFFECTS_TRANSLATOR);
                 }
             };
 

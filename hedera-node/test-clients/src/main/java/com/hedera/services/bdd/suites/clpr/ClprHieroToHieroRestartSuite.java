@@ -77,11 +77,8 @@ public class ClprHieroToHieroRestartSuite extends HieroToHieroBase implements Li
     private static final Duration RESTART_TIMEOUT = Duration.ofMinutes(5);
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = "ledgerA",
-                firstGrpcPort = 35400,
-                setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
+        @Network(name = "ledgerA", setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
+        @Network("ledgerB")
     })
     @DisplayName("Graceful restart of B mid-bundle → B resumes and delivers all 3 messages")
     Stream<DynamicTest> restartBMidBundleGraceful(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -114,11 +111,8 @@ public class ClprHieroToHieroRestartSuite extends HieroToHieroBase implements Li
     }
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = "ledgerA",
-                firstGrpcPort = 35400,
-                setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
+        @Network(name = "ledgerA", setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
+        @Network("ledgerB")
     })
     @DisplayName("Restart of B, then A sends first: bidirectional messaging resumes")
     Stream<DynamicTest> channelSurvivesFreezeUpgradeRestartOfBASendsFirst(
@@ -162,11 +156,8 @@ public class ClprHieroToHieroRestartSuite extends HieroToHieroBase implements Li
     }
 
     @MultiNetworkHapiTest({
-        @Network(
-                name = "ledgerA",
-                firstGrpcPort = 35400,
-                setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
+        @Network(name = "ledgerA", setupOverrides = @ConfigOverride(key = "clpr.retryMaxAttempts", value = "100")),
+        @Network("ledgerB")
     })
     @DisplayName("Restart of B, then B sends first: bidirectional messaging resumes")
     Stream<DynamicTest> channelSurvivesFreezeUpgradeRestartOfBBSendsFirst(

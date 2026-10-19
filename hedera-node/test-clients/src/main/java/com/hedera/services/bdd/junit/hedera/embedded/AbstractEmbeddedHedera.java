@@ -173,10 +173,8 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
             // Trigger creation of system entities
             handleRoundWith(mockStateSignatureTxn());
         }
-        // Start the platform only after the genesis round. A concurrent platform handles rounds on its own
-        // thread, so a node transaction submitted during genesis (e.g. a CLPR endpoint publication) made both
-        // threads commit the same FakeState at once (NPE in the state change listeners). Safe for all embedded
-        // modes: genesis does not need the platform's round thread, and the repeatable platform's start() is a no-op.
+        // Start the platform only after the genesis round, since a transaction submitted during it (e.g., a CLPR
+        // endpoint publication) would otherwise be handled in a round concurrent with it
         fakePlatform().start();
     }
 
