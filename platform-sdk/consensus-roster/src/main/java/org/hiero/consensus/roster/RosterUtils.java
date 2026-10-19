@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.hiero.base.crypto.CryptoUtils;
 import org.hiero.base.crypto.CryptographyException;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.node.NodeId;
 import org.hiero.consensus.model.roster.ConsensusLayerRosterInputs;
@@ -31,7 +32,6 @@ import org.hiero.consensus.roster.internal.PbjRecordHasher;
  * A utility class to help use Rooster and RosterEntry instances.
  */
 public final class RosterUtils {
-    private static final PbjRecordHasher PBJ_RECORD_HASHER = new PbjRecordHasher();
 
     private RosterUtils() {}
 
@@ -114,14 +114,28 @@ public final class RosterUtils {
     }
 
     /**
-     * Create a Hash object for a given Roster instance.
+     * Create a Hash object for a given Roster instance, using the platform's default digest type. This method is
+     * thread-safe.
      *
      * @param roster a roster
      * @return its Hash
      */
     @NonNull
     public static Hash hash(@NonNull final Roster roster) {
-        return PBJ_RECORD_HASHER.hash(roster, Roster.PROTOBUF);
+        // PbjRecordHasher is not thread-safe, therefore a new instance is used for each call
+        return new PbjRecordHasher().hash(roster, Roster.PROTOBUF);
+    }
+
+    /**
+     * Create a Hash object for a given Roster instance, using the given digest type. This method is thread-safe.
+     *
+     * @param roster a roster
+     * @param digestType the digest type to hash the roster with
+     * @return its Hash
+     */
+    @NonNull
+    public static Hash hash(@NonNull final Roster roster, @NonNull final DigestType digestType) {
+        return new PbjRecordHasher(digestType).hash(roster, Roster.PROTOBUF);
     }
 
     /**

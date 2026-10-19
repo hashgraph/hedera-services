@@ -6,7 +6,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.state.clpr.ClprDiscoverEndpointsRequest;
 import com.hedera.hapi.node.state.clpr.ClprStreamingSyncPayload;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.grpc.GrpcServerManager;
@@ -286,7 +285,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
     /**
      * Whether {@code m} is the CLPR {@code sync} method. A pure, config-independent fact about the method
      * (kept {@code static} so the routing split can be unit-tested directly without a manager instance).
-     * Every other method — including CLPR {@code discoverEndpoints} — is not sync.
+     * Every other method is not sync.
      */
     static boolean isClprSyncMethod(@NonNull final RpcMethodDefinition<?, ?> m) {
         return ClprStreamingSyncPayload.class.equals(m.requestType());
@@ -581,8 +580,6 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
             @NonNull final ClprLeafCredentials leafCredentials,
             @NonNull final Supplier<Map<X500Principal, List<X509Certificate>>> peerCasByIssuer)
             throws SSLException {
-        // Built on the BouncyCastle JSSE provider because the CLPR leaf is Ed25519, which SunJSSE
-        // cannot use as a local TLS identity and netty-tcnative/BoringSSL rejects. See ClprMtlsContexts.
         builder.sslContext(ClprMtlsContexts.serverContext(leafCredentials, peerCasByIssuer));
     }
 
@@ -620,12 +617,7 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                     final var containsSyncEndpoint = new AtomicBoolean(false);
                     // create builder
                     final var builder = new GrpcServiceBuilder(
-                            d.basePath(),
-                            ingestWorkflow,
-                            queryWorkflow,
-                            clprSyncWorkflow,
-                            dataBufferMarshaller,
-                            jumboBufferMarshaller);
+                            d.basePath(), ingestWorkflow, queryWorkflow, dataBufferMarshaller, jumboBufferMarshaller);
                     // add methods to builder
                     d.methods().stream().filter(methodFilter).forEach(m -> {
                         if (Transaction.class.equals(m.requestType())) {
@@ -633,8 +625,6 @@ public final class NettyGrpcServerManager implements GrpcServerManager {
                         } else if (ClprStreamingSyncPayload.class.equals(m.requestType())) {
                             // The bidi-streaming sync is registered by hand below, not through the builder.
                             containsSyncEndpoint.set(true);
-                        } else if (ClprDiscoverEndpointsRequest.class.equals(m.requestType())) {
-                            builder.clprDiscovery(m.path());
                         } else {
                             builder.query(m.path());
                         }
