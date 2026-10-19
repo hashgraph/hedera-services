@@ -59,7 +59,7 @@ class BinaryStateChangeParserTest {
     void everyMapAndSingletonPayloadReplaysThroughTheBinaryStateApi() {
         for (var kind : MapChangeValue.ValueChoiceOneOfType.values()) {
             if (kind.protoOrdinal() <= 0) continue;
-            final var type = StateChangeDeltas.mapType(ID, kind.protoOrdinal());
+            final var type = StateChangeDeltas.mapType(kind.protoOrdinal());
             final var value = type.wireValue(type.defaultValue());
             final var state = mock(BinaryState.class);
             when(state.getKv(ID, Bytes.EMPTY)).thenReturn(Bytes.EMPTY);
@@ -73,7 +73,7 @@ class BinaryStateChangeParserTest {
         }
         for (var kind : SingletonUpdateChange.NewValueOneOfType.values()) {
             if (kind.protoOrdinal() <= 0) continue;
-            final var type = StateChangeDeltas.singletonType(ID, kind.protoOrdinal());
+            final var type = StateChangeDeltas.singletonType(kind.protoOrdinal());
             final var state = mock(BinaryState.class);
             when(state.getSingleton(ID)).thenReturn(Bytes.EMPTY);
             final var update =

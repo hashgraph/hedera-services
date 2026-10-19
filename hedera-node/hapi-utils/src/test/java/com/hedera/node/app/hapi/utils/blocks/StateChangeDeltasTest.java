@@ -117,11 +117,11 @@ class StateChangeDeltasTest {
     static Descriptor descriptor(ValueType type) {
         for (var field : com.hedera.hapi.block.stream.output.protoc.MapChangeValue.getDescriptor()
                 .getFields()) {
-            if (StateChangeDeltas.mapType(0, field.getNumber()) == type) return field.getMessageType();
+            if (StateChangeDeltas.mapType(field.getNumber()) == type) return field.getMessageType();
         }
         for (var field : com.hedera.hapi.block.stream.output.protoc.SingletonUpdateChange.getDescriptor()
                 .getFields()) {
-            if (field.getContainingOneof() != null && StateChangeDeltas.singletonType(0, field.getNumber()) == type)
+            if (field.getContainingOneof() != null && StateChangeDeltas.singletonType(field.getNumber()) == type)
                 return field.getMessageType();
         }
         throw new AssertionError(type);

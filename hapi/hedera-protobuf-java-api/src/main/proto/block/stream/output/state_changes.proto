@@ -815,7 +815,11 @@ message SingletonUpdateChange {
          * absent between constructions (deleted on close).
          */
         com.hedera.hapi.node.state.clpr.ClprEndpointManifestConstruction clpr_endpoint_manifest_construction_value = 23;
+
+        // Field numbers 24 and 25 are taken by `partial` and `cleared_fields`;
+        // the next singleton type MUST use 26.
     }
+
     /**
      * Whether new_value is a canonical delta, as defined for
      * MapUpdateChange.partial. The baseline is the last emitted singleton
@@ -823,8 +827,8 @@ message SingletonUpdateChange {
      * <p>
      * The same reader rules apply as for MapUpdateChange.partial.
      * <p>
-     * Update metadata takes the lowest field numbers so that new singleton
-     * types can keep appending to `new_value` without colliding with it.
+     * Field numbers 24 and 25 follow the last `new_value` member at the time
+     * they were added; new singleton types MUST skip them and start at 26.
      */
     bool partial = 24;
 

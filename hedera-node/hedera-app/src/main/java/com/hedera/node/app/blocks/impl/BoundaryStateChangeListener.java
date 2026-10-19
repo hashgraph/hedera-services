@@ -52,8 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that accumulates state changes that are only reported at a block boundary; either
@@ -61,8 +59,6 @@ import org.apache.logging.log4j.Logger;
  * them in bulk. In the current system, these are the singleton and queue updates.
  */
 public class BoundaryStateChangeListener implements StateChangeListener {
-    private static final Logger log = LogManager.getLogger(BoundaryStateChangeListener.class);
-
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(SINGLETON);
 
     /**
@@ -187,27 +183,13 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         final var allStateChanges = new LinkedList<StateChange>();
         for (final var entry : singletonUpdates.entrySet()) {
             final var full = entry.getValue();
-            final var update = full.singletonUpdateOrThrow();
-            var encoded = update;
-            if (allowPartial && deltasEnabled) {
-                final var prior = singletonBaselines.get(entry.getKey());
-                try {
-                    encoded = StateChangeDeltas.encodeSingleton(entry.getKey(), prior, update, deltaMinSaving);
-                } catch (final RuntimeException e) {
-                    // A full replacement is always valid, and the same inputs fail the same way on every node.
-                    log.error(
-                            "Failed to encode a partial update for singleton {}; emitting the full value",
-                            entry.getKey(),
-                            e);
-                }
-            }
             // Keep provenance until diff selection, then retain only the selected wire payload.
-            final var choice = encoded.newValue();
-            final var wireUpdate = new SingletonUpdateChange(
-                    new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
-                    encoded.partial(),
-                    encoded.clearedFields(),
-                    encoded.getUnknownFields());
+            final var wireUpdate = StateChangeDeltas.encodeSingletonOrFull(
+                    entry.getKey(),
+                    singletonBaselines.get(entry.getKey()),
+                    full.singletonUpdateOrThrow(),
+                    allowPartial && deltasEnabled,
+                    deltaMinSaving);
             allStateChanges.add(CopyBuilderTracking.untracked(
                     full.copyBuilder().singletonUpdate(wireUpdate).build()));
         }
@@ -227,12 +209,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
         final var stateChange = StateChange.newBuilder()
                 .stateId(stateId)
-                .singletonUpdate(new SingletonUpdateChange(
-                        new OneOf<>(
-                                singletonUpdateChangeValueFor(value).kind(),
-                                singletonUpdateChangeValueFor(value).value()),
-                        false,
-                        List.of()))
+                .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of()))
                 .build();
         singletonUpdates.put(stateId, stateChange);
         if (stateId == ENTITY_COUNTS_STATE_ID) {

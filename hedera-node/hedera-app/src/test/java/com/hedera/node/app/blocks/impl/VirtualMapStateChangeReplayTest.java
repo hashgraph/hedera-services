@@ -139,7 +139,6 @@ class VirtualMapStateChangeReplayTest extends MerkleTestBase {
             if (change.hasMapUpdate()) {
                 final var update = change.mapUpdateOrThrow();
                 final var type = StateChangeDeltas.mapType(
-                        change.stateId(),
                         update.valueOrThrow().valueChoice().kind().protoOrdinal());
                 final var key = AccountID.PROTOBUF.toBytes(update.keyOrThrow().accountIdKeyOrThrow());
                 state.updateKv(
@@ -152,8 +151,8 @@ class VirtualMapStateChangeReplayTest extends MerkleTestBase {
                                 update.clearedFields()));
             } else {
                 final var update = change.singletonUpdateOrThrow();
-                final var type = StateChangeDeltas.singletonType(
-                        change.stateId(), update.newValue().kind().protoOrdinal());
+                final var type =
+                        StateChangeDeltas.singletonType(update.newValue().kind().protoOrdinal());
                 state.updateSingleton(
                         change.stateId(),
                         StateChangeDeltas.applyBytes(

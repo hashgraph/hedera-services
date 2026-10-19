@@ -13,6 +13,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.CopyBuilderTracked;
 import com.hedera.pbj.runtime.DiffCodec;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.OneOf;
@@ -23,9 +24,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Universal top-level replacements and explicit clears. No recursive patches or appends. */
 public final class StateChangeDeltas {
+    private static final Logger log = LogManager.getLogger(StateChangeDeltas.class);
+
     public static final int DEFAULT_MIN_SAVING = 64;
 
     private StateChangeDeltas() {}
@@ -151,11 +156,11 @@ public final class StateChangeDeltas {
         return StateChangeTypes.forValue(value);
     }
 
-    public static ValueType mapType(int stateId, int valueField) {
+    public static ValueType mapType(int valueField) {
         return StateChangeTypes.mapType(valueField);
     }
 
-    public static ValueType singletonType(int stateId, int valueField) {
+    public static ValueType singletonType(int valueField) {
         return StateChangeTypes.singletonType(valueField);
     }
 
@@ -196,7 +201,7 @@ public final class StateChangeDeltas {
     public static MapUpdateChange encodeMap(int stateId, @Nullable Object prior, MapUpdateChange full, int minSaving) {
         requireProducerFull(full.partial(), full.clearedFields());
         final var choice = full.valueOrThrow().valueChoice();
-        final var type = mapType(stateId, choice.kind().protoOrdinal());
+        final var type = mapType(choice.kind().protoOrdinal());
         if (type == null || type.diffCodec == null) return full;
         final var next = type.stateValue(choice.value());
         final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
@@ -225,7 +230,7 @@ public final class StateChangeDeltas {
             int stateId, @Nullable Object prior, SingletonUpdateChange full, int minSaving) {
         requireProducerFull(full.partial(), full.clearedFields());
         final var choice = full.newValue();
-        final var type = singletonType(stateId, choice.kind().protoOrdinal());
+        final var type = singletonType(choice.kind().protoOrdinal());
         if (type == null || type.diffCodec == null) return full;
         final var next = type.stateValue(choice.value());
         final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
@@ -244,12 +249,56 @@ public final class StateChangeDeltas {
                 full.getUnknownFields());
     }
 
+    /**
+     * Producer entry point: the selected wire update, without copy-builder provenance. Encoding runs mid-commit,
+     * after the value is stored, so a failure falls back to the full value; full is always valid, and the same
+     * inputs fail the same way on every node, which keeps the stream deterministic.
+     */
+    public static MapUpdateChange encodeMapOrFull(
+            int stateId, @Nullable Object prior, MapUpdateChange full, boolean deltasEnabled, int minSaving) {
+        var change = full;
+        if (deltasEnabled) {
+            try {
+                change = encodeMap(stateId, prior, full, minSaving);
+            } catch (RuntimeException e) {
+                log.error("Failed to encode a partial update for state {}; emitting the full value", stateId, e);
+            }
+        }
+        final var choice = change.valueOrThrow().valueChoice();
+        final var wireValue = CopyBuilderTracked.untracked(choice.value());
+        if (wireValue != choice.value()) {
+            change = change.copyBuilder()
+                    .value(new MapChangeValue(new OneOf<>(choice.kind(), wireValue)))
+                    .build();
+        }
+        return CopyBuilderTracked.untracked(change);
+    }
+
+    /** Singleton counterpart of {@link #encodeMapOrFull}. */
+    public static SingletonUpdateChange encodeSingletonOrFull(
+            int stateId, @Nullable Object prior, SingletonUpdateChange full, boolean deltasEnabled, int minSaving) {
+        var change = full;
+        if (deltasEnabled) {
+            try {
+                change = encodeSingleton(stateId, prior, full, minSaving);
+            } catch (RuntimeException e) {
+                log.error("Failed to encode a partial update for singleton {}; emitting the full value", stateId, e);
+            }
+        }
+        final var choice = change.newValue();
+        return new SingletonUpdateChange(
+                new OneOf<>(choice.kind(), CopyBuilderTracked.untracked(choice.value())),
+                change.partial(),
+                change.clearedFields(),
+                change.getUnknownFields());
+    }
+
     public static Object applyMap(int stateId, @Nullable Object prior, MapUpdateChange update) {
         requireMetadata(update.partial(), update.clearedFields());
         if (!update.partial()) return BlockStreamUtils.mapValueFor(update.valueOrThrow());
         if (!update.getUnknownFields().isEmpty()) throw new IllegalArgumentException("Unknown partial metadata");
         final var choice = update.valueOrThrow().valueChoice();
-        final var type = requireType(mapType(stateId, choice.kind().protoOrdinal()));
+        final var type = requireType(mapType(choice.kind().protoOrdinal()));
         return applyObject(type, prior, choice.value(), update.clearedFields());
     }
 
@@ -257,8 +306,7 @@ public final class StateChangeDeltas {
         requireMetadata(update.partial(), update.clearedFields());
         if (!update.partial()) return BlockStreamUtils.singletonPutFor(update);
         if (!update.getUnknownFields().isEmpty()) throw new IllegalArgumentException("Unknown partial metadata");
-        final var type =
-                requireType(singletonType(stateId, update.newValue().kind().protoOrdinal()));
+        final var type = requireType(singletonType(update.newValue().kind().protoOrdinal()));
         return applyObject(type, prior, update.newValue().value(), update.clearedFields());
     }
 
@@ -309,7 +357,6 @@ public final class StateChangeDeltas {
                     requireMetadata(update.partial(), update.clearedFields());
                     if (update.partial()) {
                         requireType(mapType(
-                                change.stateId(),
                                 update.valueOrThrow().valueChoice().kind().protoOrdinal()));
                         if (!update.getUnknownFields().isEmpty())
                             throw new IllegalArgumentException("Unknown partial metadata");
@@ -318,8 +365,7 @@ public final class StateChangeDeltas {
                     var update = change.singletonUpdateOrThrow();
                     requireMetadata(update.partial(), update.clearedFields());
                     if (update.partial()) {
-                        requireType(singletonType(
-                                change.stateId(), update.newValue().kind().protoOrdinal()));
+                        requireType(singletonType(update.newValue().kind().protoOrdinal()));
                         if (!update.getUnknownFields().isEmpty())
                             throw new IllegalArgumentException("Unknown partial metadata");
                     }

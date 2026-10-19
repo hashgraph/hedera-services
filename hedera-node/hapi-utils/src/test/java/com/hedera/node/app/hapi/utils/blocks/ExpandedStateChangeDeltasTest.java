@@ -20,7 +20,7 @@ class ExpandedStateChangeDeltasTest {
     void everyPayloadAlternativeHasAnAdapterWithoutAStateIdAllowlist() {
         for (var kind : MapChangeValue.ValueChoiceOneOfType.values()) {
             if (kind.protoOrdinal() <= 0) continue;
-            var type = StateChangeDeltas.mapType(9999, kind.protoOrdinal());
+            var type = StateChangeDeltas.mapType(kind.protoOrdinal());
             assertThat(type).as(kind.name()).isNotNull();
             var value = type.defaultValue();
             var full = MapUpdateChange.newBuilder()
@@ -34,7 +34,7 @@ class ExpandedStateChangeDeltasTest {
         }
         for (var kind : SingletonUpdateChange.NewValueOneOfType.values()) {
             if (kind.protoOrdinal() <= 0) continue;
-            var type = StateChangeDeltas.singletonType(9999, kind.protoOrdinal());
+            var type = StateChangeDeltas.singletonType(kind.protoOrdinal());
             assertThat(type).as(kind.name()).isNotNull();
             var value = type.defaultValue();
             var full = new SingletonUpdateChange(new OneOf<>(kind, type.wireValue(value)), false, List.of());

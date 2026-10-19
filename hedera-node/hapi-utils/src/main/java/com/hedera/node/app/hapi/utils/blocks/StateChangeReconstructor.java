@@ -53,10 +53,7 @@ public final class StateChangeReconstructor {
                 final var update = change.mapUpdateOrThrow();
                 final var choice = update.valueOrThrow().valueChoice();
                 final var entry = new Entry(change.stateId(), update.keyOrThrow());
-                if (update.partial()
-                        || StateChangeDeltas.mapType(
-                                        change.stateId(), choice.kind().protoOrdinal())
-                                != null) {
+                if (update.partial() || StateChangeDeltas.mapType(choice.kind().protoOrdinal()) != null) {
                     final var value = StateChangeDeltas.applyMap(change.stateId(), maps.get(entry), update);
                     maps.put(entry, value);
                     full = change.copyBuilder()
@@ -64,7 +61,6 @@ public final class StateChangeReconstructor {
                                     .value(new MapChangeValue(new OneOf<>(
                                             choice.kind(),
                                             StateChangeDeltas.mapType(
-                                                            change.stateId(),
                                                             choice.kind().protoOrdinal())
                                                     .wireValue(value))))
                                     .partial(false)
@@ -80,7 +76,6 @@ public final class StateChangeReconstructor {
                 final var update = change.singletonUpdateOrThrow();
                 if (update.partial()
                         || StateChangeDeltas.singletonType(
-                                        change.stateId(),
                                         update.newValue().kind().protoOrdinal())
                                 != null) {
                     final var reconstructed =
@@ -106,8 +101,8 @@ public final class StateChangeReconstructor {
         if (!update.partial()) {
             return update;
         }
-        final var type = StateChangeDeltas.singletonType(
-                stateId, update.newValue().kind().protoOrdinal());
+        final var type =
+                StateChangeDeltas.singletonType(update.newValue().kind().protoOrdinal());
         return new SingletonUpdateChange(
                 new OneOf<>(update.newValue().kind(), type.wireValue(value)),
                 false,

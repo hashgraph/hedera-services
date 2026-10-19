@@ -439,6 +439,35 @@ class BlockStreamManagerImplTest {
         verify(aWriter).writePbjItemAndBytes(item, BlockItem.PROTOBUF.toBytes(item));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void onOpenBlockCommitsUseTheNewBlocksDeltaMode(final boolean enableDeltas) {
+        stateChangeDeltasEnabled = enableDeltas;
+        givenSubjectWith(
+                1,
+                0,
+                StreamMode.BLOCKS,
+                0,
+                blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION),
+                platformStateWithFreezeTime(null),
+                aWriter);
+        givenEndOfRoundSetup();
+        // The previous block ran in the opposite mode; commits made while opening this block must not inherit it.
+        deltaListener.beginBlock(!enableDeltas);
+        final var deltasAtOpen = new AtomicReference<Boolean>();
+        doAnswer(invocation -> {
+                    deltasAtOpen.set(deltaListener.requiresPreviousValue());
+                    return null;
+                })
+                .when(lifecycle)
+                .onOpenBlock(any());
+
+        subject.init(state, FAKE_RESTART_BLOCK_HASH);
+        subject.startRound(round, state);
+
+        assertEquals(enableDeltas, deltasAtOpen.get());
+    }
+
     @Test
     void commitEncodedDeltasReachWriterWithMatchingBytes() {
         stateChangeDeltasEnabled = true;

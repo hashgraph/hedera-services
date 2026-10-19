@@ -80,7 +80,6 @@ import com.hedera.hapi.services.auxiliary.tss.TssVoteTransactionBody;
 import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.spi.CopyBuilderTracking;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -89,16 +88,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A state change listener that tracks an entire sequence of changes, even if this sequence
  * repeats changes to the same key multiple times in a block boundary.
  */
 public class ImmediateStateChangeListener implements StateChangeListener {
-    private static final Logger log = LogManager.getLogger(ImmediateStateChangeListener.class);
-
     private static final Set<StateType> TARGET_DATA_TYPES = EnumSet.of(MAP, QUEUE, SINGLETON);
 
     /** All callbacks in terminal commit order, including across state types and services. */
@@ -145,21 +140,9 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         if (!isImmediateSingleton(stateId)) {
             return;
         }
-        var change = new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of());
-        if (deltasEnabled) {
-            try {
-                change = StateChangeDeltas.encodeSingleton(stateId, previousValue, change, deltaMinSaving);
-            } catch (final RuntimeException e) {
-                // A listener runs after storage has changed; keep the remaining commit safe and deterministic.
-                log.error("Failed to encode a partial update for singleton {}; emitting the full value", stateId, e);
-            }
-        }
-        final var choice = change.newValue();
-        final var wireChange = new SingletonUpdateChange(
-                new OneOf<>(choice.kind(), CopyBuilderTracking.untracked(choice.value())),
-                change.partial(),
-                change.clearedFields(),
-                change.getUnknownFields());
+        final var full = new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of());
+        final var wireChange =
+                StateChangeDeltas.encodeSingletonOrFull(stateId, previousValue, full, deltasEnabled, deltaMinSaving);
         stateChanges.add(StateChange.newBuilder()
                 .stateId(stateId)
                 .singletonUpdate(wireChange)
@@ -217,32 +200,15 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         Objects.requireNonNull(value, "value must not be null");
         final boolean identical = logicallyIdenticalMapping != null && logicallyIdenticalMapping.test(key);
 
-        var change = MapUpdateChange.newBuilder()
+        final var full = MapUpdateChange.newBuilder()
                 .key(mapChangeKeyFor(key))
                 .value(mapChangeValueFor(value))
                 .identical(identical)
                 .build();
-        if (deltasEnabled) {
-            try {
-                change = StateChangeDeltas.encodeMap(stateId, previousValue, change, deltaMinSaving);
-            } catch (final RuntimeException e) {
-                // This runs mid-commit, after the value is already stored; throwing would abandon the rest of
-                // the commit. A full replacement is always valid, and the same inputs fail the same way on
-                // every node, so falling back keeps the stream deterministic.
-                log.error("Failed to encode a partial update for state {}; emitting the full value", stateId, e);
-            }
-        }
-        // Wire values need no copy-builder provenance after the diff has been selected.
-        final var encodedChoice = change.valueOrThrow().valueChoice();
-        final var wireValue = CopyBuilderTracking.untracked(encodedChoice.value());
-        if (wireValue != encodedChoice.value()) {
-            change = change.copyBuilder()
-                    .value(new MapChangeValue(new OneOf<>(encodedChoice.kind(), wireValue)))
-                    .build();
-        }
         final var stateChange = StateChange.newBuilder()
                 .stateId(stateId)
-                .mapUpdate(CopyBuilderTracking.untracked(change))
+                .mapUpdate(
+                        StateChangeDeltas.encodeMapOrFull(stateId, previousValue, full, deltasEnabled, deltaMinSaving))
                 .build();
         stateChanges.add(stateChange);
     }

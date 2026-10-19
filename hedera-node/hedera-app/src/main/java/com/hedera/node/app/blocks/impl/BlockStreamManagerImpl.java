@@ -527,18 +527,20 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             blockHashManager.startBlock(blockStreamInfo, trailingHash);
             runningHashManager.startBlock(blockStreamInfo);
 
-            lifecycle.onOpenBlock(state);
-
-            resetSubtrees();
-
-            blockNumber = blockStreamInfo.blockNumber() + 1;
             // Genesis externalizes values already initialized in the node (including an unchanged
             // PlatformState). Readers have no baseline yet, so the entire genesis block must stay full.
+            // Fix the encoding mode before onOpenBlock, whose commits belong to this block.
             final boolean hasReplayBaseline = pendingWork != GENESIS_WORK;
             final boolean stateChangeDeltasEnabled = hasReplayBaseline && blockStreamConfig.stateChangeDeltasEnabled();
             final int deltaMinSaving = blockStreamConfig.stateChangeDeltaMinSaving();
             immediateStateChangeListener.beginBlock(stateChangeDeltasEnabled, deltaMinSaving);
             boundaryStateChangeListener.beginBlock(stateChangeDeltasEnabled, deltaMinSaving);
+
+            lifecycle.onOpenBlock(state);
+
+            resetSubtrees();
+
+            blockNumber = blockStreamInfo.blockNumber() + 1;
             blockHashSigner.onBlockStarted(blockNumber);
             if (hintsEnabled && !hasCheckedForPendingBlocks) {
                 final var platformState = state.getReadableStates(PlatformStateService.NAME)
