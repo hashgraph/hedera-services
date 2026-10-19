@@ -180,7 +180,7 @@ runs these steps **one after another**:
       (`DataFileMetadata.readFromFile()`,
       [`DataFileMetadata.java:86`](../../../../platform-sdk/swirlds-merkledb/src/main/java/com/swirlds/merkledb/files/DataFileMetadata.java#L86)),
       which is cold I/O for most of the 35.8K files.
-    - The disk test in section 7 measures both rates directly.
+    - The disk test in section 8 measures both rates directly.
 - **The state write's rebuild into disk-based indexes**, measured the same way: stage 1 took 13.8 s, stage 2
   42.6 s and stage 3 3.9 s.
 
@@ -473,9 +473,49 @@ Points to get right:
 That is close to the roughly 150 s budget, but not safely under it. The transfer is the next target. In short
 cycles the learner's in-flight leaf count is mostly 0, so the transfer is limited by round trips while walking the
 internal nodes top-down, not by bandwidth, hashing or disk. Until that improves, a larger `consensus.roundsExpired`
-on all nodes would give the margin needed to converge, at the cost of keeping more events.
+on all nodes gives the margin needed to converge, at the cost of keeping more events (section 7).
 
-## 7. Before implementing: measurements
+## 7. Result: convergence with `roundsExpired = 4000`
+
+With `consensus.roundsExpired = 4000` on all nodes, under the same 10K TPS load, the learner converged on its second
+reconnect:
+
+| | Reconnect 1 | Reconnect 2 |
+|---|---|---|
+| Lag when the reconnect started | 21,399 rounds | 4,743 rounds |
+| Waiting for the teacher | 62 s | 89 s |
+| Learner copy | 62 s | 73 s |
+| Transfer | 375 s, 5.1 GB | 148 s, 1.4 GB |
+| **Cycle** | **8.3 min** | **5.2 min** |
+| Lag after the reconnect | 4,743 rounds: fell behind again | about 3,240 rounds (estimated): converged |
+
+- **Margin:**
+    - With a 4,000-round window, the node falls behind again when its lag exceeds about 3,973 rounds: the window
+      minus the node's own 27-round ancient window.
+    - Reconnect 2 ended about 730 rounds, or about 70 s, under that.
+    - With a 3,000-round window the threshold is about 2,973 rounds, and the same cycle would have failed.
+- **Catch-up:**
+    - After reconnect 2, the node spent 2.8 min in `RECONNECT_COMPLETE`, until the reconnect state was written to
+      disk. Then it spent 11.5 min in `CHECKING`, and became `ACTIVE` 14.3 min after the reconnect ended.
+    - During catch-up it handled about 14 rounds/s, against about 10.4 rounds/s produced by the network, so about
+      1.35 times faster. Each round of lag left after a reconnect costs about 0.3 s of catch-up.
+- **Stability:** the node stayed `ACTIVE` for about 21 hours afterwards, with no errors and no ISS.
+- **Also required:** `MALLOC_MMAP_THRESHOLD_=4194304` in the node's environment.
+    - Without it, earlier runs were killed by the cgroup OOM killer after 4–17 reconnect cycles.
+    - Index memory freed by each data source copy stayed in glibc's malloc arenas: process memory grew up to
+      108 GiB above the live off-heap memory reported by NMT.
+    - With a fixed threshold, the 8 MB index chunks are always mmap-ed and returned to the OS when freed. Process
+      memory then followed NMT within 1–2 GiB.
+- **Related fix:** [#27736](https://github.com/hiero-ledger/hiero-consensus-node/pull/27736) removes a 20–25 s wait
+  at the start of the learner's copy. Disabling compaction on the learner's original data source waited for running
+  garbage scans to finish a full pass over the index.
+
+**This is a stopgap, not a fix.**
+- Every node keeps 4,000 rounds of events, instead of 1,500 on this network (the default is 1,000).
+- A cycle longer than about 6.4 min, 3,973 rounds at 10.4 rounds/s, still fails to converge.
+- Steps 1–3 shorten the cycle itself.
+
+## 8. Before implementing: measurements
 
 These need no review input, only data from the test host. [`measure_merkledb.sh`](measure_merkledb.sh) collects all
 of them.
@@ -498,3 +538,5 @@ of them.
    and buffered write rates.
 4. **Off-heap headroom for option B,** if it's chosen: the NMT and cgroup peak during a state write that overlaps
    the next reconnect.
+5. **Memory cost of `roundsExpired = 4000`** (section 7): heap and off-heap on the learner and the teachers, which
+   now keep 4,000 rounds of events.
