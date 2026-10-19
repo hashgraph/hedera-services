@@ -9,6 +9,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -150,6 +151,33 @@ public class AccountStakingConfigurationTest {
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, "getOwnStakingInfoCall", HRC1522_CONTRACT),
                                                 stakingInfoWith(true, 0L, 0L, NODE_ID, ZERO_ADDRESS)))));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("getStakingInfo answers an eth_call as well as a transaction")
+    final Stream<DynamicTest> getStakingInfoAnswersAQuery() {
+        final AtomicReference<Address> contractAddress = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                getContractInfo(HRC1522_CONTRACT).exposingEvmAddress(cb -> contractAddress.set(asHeadlongAddress(cb))),
+                contractCall(HRC1522_CONTRACT, "stakeSelfToNodeCall", NODE_ID, true)
+                        .payingWith(ACCOUNT)
+                        .gas(1_000_000),
+                // A ContractCallLocal - what the JSON-RPC relay serves eth_call with - runs in query scope, where
+                // there is no consensus time and the stores come from the query context rather than a handle
+                // context; none of that is reached by a contract call made in a transaction
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCallLocal(HRC1522_CONTRACT, "getStakingInfoCall", contractAddress.get())
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "getStakingInfoCall", HRC1522_CONTRACT),
+                                                stakingInfoWith(true, 0L, 0L, NODE_ID, ZERO_ADDRESS))))));
     }
 
     // --- Unstaking: three spellings, one outcome ---------------------------------------------------
