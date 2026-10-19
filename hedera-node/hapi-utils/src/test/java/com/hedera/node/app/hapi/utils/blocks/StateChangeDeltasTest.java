@@ -60,14 +60,11 @@ class StateChangeDeltasTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void registeredCodecWithoutDiffCapabilityEmitsAFullValue() {
+    void adapterWithoutDiffCapabilityCanReplayPartials() {
         final Codec<Account> plain = mock(Codec.class, delegatesTo(Account.PROTOBUF));
         final var prior =
                 Account.newBuilder().memo("x".repeat(200)).tinybarBalance(1).build();
         final var next = prior.copyBuilder().tinybarBalance(2).build();
-        final var full = full(next);
-        assertThat(StateChangeDeltas.encodeMap(2, prior, full, 0, plain)).isSameAs(full);
-        assertThat(StateChangeDeltas.encodeMap(2, prior, full, 0, null)).isSameAs(full);
         final var adapter = new ValueType(
                 "account",
                 Account.class,

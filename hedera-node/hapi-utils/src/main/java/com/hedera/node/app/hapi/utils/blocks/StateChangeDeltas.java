@@ -93,13 +93,6 @@ public final class StateChangeDeltas {
             return codec;
         }
 
-        @SuppressWarnings("unchecked")
-        private ValueType withCodec(Codec<?> registeredCodec) {
-            return registeredCodec == codec
-                    ? this
-                    : new ValueType(name, (Class<Object>) javaType, (Codec<Object>) registeredCodec, fields, oneof);
-        }
-
         /** Missing capability or top-level unknown fields require a full replacement. */
         public boolean canDiff(Object value) {
             return diffCodec != null && value != null && diffCodec.canDiff(stateValue(value));
@@ -210,25 +203,12 @@ public final class StateChangeDeltas {
         return encodeMap(stateId, prior, full, DEFAULT_MIN_SAVING);
     }
 
+    /** Emit a partial only when the payload's generated codec supports it. */
     public static MapUpdateChange encodeMap(int stateId, @Nullable Object prior, MapUpdateChange full, int minSaving) {
-        final var type =
-                mapType(stateId, full.valueOrThrow().valueChoice().kind().protoOrdinal());
-        return encodeMap(stateId, prior, full, minSaving, type == null ? null : type.codec);
-    }
-
-    /** Emit a partial only when the codec from the actual state registration supports it. */
-    public static MapUpdateChange encodeMap(
-            int stateId,
-            @Nullable Object prior,
-            MapUpdateChange full,
-            int minSaving,
-            @Nullable Codec<?> registeredCodec) {
         requireProducerFull(full.partial(), full.clearedFields());
-        if (!(registeredCodec instanceof DiffCodec<?>)) return full;
         final var choice = full.valueOrThrow().valueChoice();
-        final var adapter = mapType(stateId, choice.kind().protoOrdinal());
-        if (adapter == null) return full;
-        final var type = adapter.withCodec(registeredCodec);
+        final var type = mapType(stateId, choice.kind().protoOrdinal());
+        if (type == null || type.diffCodec == null) return full;
         final var next = type.stateValue(choice.value());
         final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
         if (delta == null
@@ -251,25 +231,13 @@ public final class StateChangeDeltas {
         return encodeSingleton(stateId, prior, full, DEFAULT_MIN_SAVING);
     }
 
+    /** Emit a partial only when the payload's generated codec supports it. */
     public static SingletonUpdateChange encodeSingleton(
             int stateId, @Nullable Object prior, SingletonUpdateChange full, int minSaving) {
-        final var type = singletonType(stateId, full.newValue().kind().protoOrdinal());
-        return encodeSingleton(stateId, prior, full, minSaving, type == null ? null : type.codec);
-    }
-
-    /** Emit a partial only when the codec from the actual state registration supports it. */
-    public static SingletonUpdateChange encodeSingleton(
-            int stateId,
-            @Nullable Object prior,
-            SingletonUpdateChange full,
-            int minSaving,
-            @Nullable Codec<?> registeredCodec) {
         requireProducerFull(full.partial(), full.clearedFields());
-        if (!(registeredCodec instanceof DiffCodec<?>)) return full;
         final var choice = full.newValue();
-        final var adapter = singletonType(stateId, choice.kind().protoOrdinal());
-        if (adapter == null) return full;
-        final var type = adapter.withCodec(registeredCodec);
+        final var type = singletonType(stateId, choice.kind().protoOrdinal());
+        if (type == null || type.diffCodec == null) return full;
         final var next = type.stateValue(choice.value());
         final var delta = type.diff(prior == null ? null : type.stateValue(prior), next);
         if (delta == null

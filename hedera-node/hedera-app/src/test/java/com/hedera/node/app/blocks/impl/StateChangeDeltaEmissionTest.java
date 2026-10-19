@@ -39,9 +39,6 @@ class StateChangeDeltaEmissionTest {
         listener.beginBlock(true, 0);
         final var prior = new com.hedera.hapi.node.state.primitives.ProtoString("old");
         final var next = new com.hedera.hapi.node.state.primitives.ProtoString("new");
-        listener.stateRegistered(com.swirlds.state.lifecycle.StateDefinition.keyValue(
-                0, "STRING_TEST", AccountID.PROTOBUF, com.hedera.hapi.node.state.primitives.ProtoString.PROTOBUF));
-        assertThat(listener.requiresPreviousValue(0)).isFalse();
         listener.mapUpdateChange(0, KEY, prior, next);
         final var change = listener.getKvStateChanges().getFirst();
         assertThat(change.mapUpdateOrThrow().partial()).isFalse();
@@ -51,24 +48,14 @@ class StateChangeDeltaEmissionTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void schemaRegisteredCodecControlsWhetherMapUpdatesCanBePartial() {
+    void generatedCodecEnablesMapDeltas() {
         final var listener = new ImmediateStateChangeListener();
         listener.beginBlock(true, 0);
-        final com.hedera.pbj.runtime.Codec<Account> plain = org.mockito.Mockito.mock(
-                com.hedera.pbj.runtime.Codec.class, org.mockito.AdditionalAnswers.delegatesTo(Account.PROTOBUF));
-        listener.stateRegistered(
-                com.swirlds.state.lifecycle.StateDefinition.keyValue(ACCOUNTS, "ACCOUNTS", AccountID.PROTOBUF, plain));
-        assertThat(listener.requiresPreviousValue(ACCOUNTS)).isFalse();
-        listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
-        assertThat(listener.getKvStateChanges().getFirst().mapUpdateOrThrow().partial())
-                .isFalse();
-        listener.stateRegistered(com.swirlds.state.lifecycle.StateDefinition.keyValue(
-                ACCOUNTS, "ACCOUNTS", AccountID.PROTOBUF, Account.PROTOBUF));
         assertThat(listener.requiresPreviousValue(ACCOUNTS)).isTrue();
         listener.mapUpdateChange(ACCOUNTS, KEY, A, B);
-        assertThat(listener.getKvStateChanges().getLast().mapUpdateOrThrow().partial())
-                .isTrue();
+        final var update = listener.getKvStateChanges().getFirst().mapUpdateOrThrow();
+        assertThat(update.partial()).isTrue();
+        assertThat(StateChangeDeltas.applyMap(ACCOUNTS, A, update)).isEqualTo(B);
     }
 
     @Test

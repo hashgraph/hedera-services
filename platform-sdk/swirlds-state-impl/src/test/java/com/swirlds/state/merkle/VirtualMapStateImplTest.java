@@ -73,18 +73,6 @@ public class VirtualMapStateImplTest extends MerkleTestBase {
         virtualMapState = createTestState();
     }
 
-    @Test
-    void listenersReceiveExistingAndMigratedStateDefinitions() {
-        setupFruitVirtualMap();
-        virtualMapState.initializeState(fruitMetadata);
-        final var listener = org.mockito.Mockito.mock(StateChangeListener.class);
-        virtualMapState.registerCommitListener(listener);
-        verify(listener).stateRegistered(fruitMetadata.stateDefinition());
-        setupSingletonCountry();
-        virtualMapState.initializeState(countryMetadata);
-        verify(listener).stateRegistered(countryMetadata.stateDefinition());
-    }
-
     @Nested
     @DisplayName("Service Registration Tests")
     final class RegistrationTest {
@@ -764,11 +752,6 @@ public class VirtualMapStateImplTest extends MerkleTestBase {
             verify(kvListener, org.mockito.Mockito.atLeastOnce()).requiresPreviousValue(FRUIT_STATE_ID);
             verify(singletonListener, org.mockito.Mockito.atLeastOnce()).requiresPreviousValue(COUNTRY_STATE_ID);
 
-            for (var listener : List.of(kvListener, singletonListener, queueListener)) {
-                verify(listener).stateRegistered(fruitMetadata.stateDefinition());
-                verify(listener).stateRegistered(countryMetadata.stateDefinition());
-                verify(listener).stateRegistered(steamMetadata.stateDefinition());
-            }
             verifyNoMoreInteractions(kvListener);
             verifyNoMoreInteractions(singletonListener);
             verifyNoMoreInteractions(queueListener);

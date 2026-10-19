@@ -39,11 +39,9 @@ import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
-import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.StateChangeListener;
-import com.swirlds.state.lifecycle.StateDefinition;
 import com.swirlds.state.spi.CopyBuilderTracking;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -73,12 +71,6 @@ public class BoundaryStateChangeListener implements StateChangeListener {
     private final Map<Integer, StateChange> singletonUpdates = new LinkedHashMap<>();
 
     private final Map<Integer, Object> singletonBaselines = new LinkedHashMap<>();
-    private final java.util.Map<Integer, Codec<?>> registeredCodecs = new java.util.HashMap<>();
-
-    @Override
-    public void stateRegistered(final StateDefinition<?, ?> definition) {
-        registeredCodecs.put(definition.stateId(), definition.valueCodec());
-    }
 
     private int deltaMinSaving = StateChangeDeltas.DEFAULT_MIN_SAVING;
     private boolean deltasEnabled;
@@ -102,10 +94,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
 
     @Override
     public boolean requiresPreviousValue(final int stateId) {
-        return deltasEnabled
-                && !ImmediateStateChangeListener.isImmediateSingleton(stateId)
-                && (!registeredCodecs.containsKey(stateId)
-                        || registeredCodecs.get(stateId) instanceof com.hedera.pbj.runtime.DiffCodec<?>);
+        return deltasEnabled && !ImmediateStateChangeListener.isImmediateSingleton(stateId);
     }
 
     @Override
@@ -199,18 +188,11 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         for (final var entry : singletonUpdates.entrySet()) {
             final var full = entry.getValue();
             final var update = full.singletonUpdateOrThrow();
-            final var type = StateChangeDeltas.singletonType(
-                    entry.getKey(), update.newValue().kind().protoOrdinal());
             var encoded = update;
-            if (allowPartial && deltasEnabled && type != null) {
+            if (allowPartial && deltasEnabled) {
                 final var prior = singletonBaselines.get(entry.getKey());
                 try {
-                    encoded = StateChangeDeltas.encodeSingleton(
-                            entry.getKey(),
-                            prior,
-                            update,
-                            deltaMinSaving,
-                            registeredCodecs.getOrDefault(entry.getKey(), type.codec()));
+                    encoded = StateChangeDeltas.encodeSingleton(entry.getKey(), prior, update, deltaMinSaving);
                 } catch (final RuntimeException e) {
                     // A full replacement is always valid, and the same inputs fail the same way on every node.
                     log.error(
