@@ -82,22 +82,23 @@ public final class FeeManager {
     }
 
     /**
-     * Updates the simple fee schedule based on the given file content. This is called on genesis and whenever
-     * the simple fee schedule file is updated. The schedule must be well-formed, must price every transaction
-     * and query type that has a registered fee calculator, and must define every extra those calculators and the
-     * handlers charge; otherwise it is rejected and the current schedule is kept.
+     * Updates the simple fee schedule based on the given file content. This is called on restart and whenever
+     * the simple fee schedule file is updated. Any well-formed schedule is installed, so the schedule in use always
+     * matches the file in state on every node; registered types it leaves unpriced are logged.
      *
      * @param bytes The new simple fee schedule file content.
      * @return {@link ResponseCodeEnum#SUCCESS} if the schedule was installed, otherwise a failure status
      */
     public ResponseCodeEnum updateSimpleFees(@NonNull final Bytes bytes) {
-        return updateSimpleFees(bytes, true);
+        return updateSimpleFees(bytes, false);
     }
 
     /**
      * Updates the simple fee schedule based on the given file content. A well-formed schedule that leaves some
      * registered transaction or query type unpriced, or lacks an extra that a calculator or handler charges, is
-     * rejected when {@code requireFullCoverage} is true; otherwise it is installed and the gaps are logged.
+     * rejected when {@code requireFullCoverage} is true; otherwise it is installed and the gaps are logged. Only
+     * genesis requires full coverage for an unpriced type, since a rejected update there would otherwise leave the
+     * file in state different from the schedule in use.
      *
      * <p>Two different kinds of rejection are distinguished so a caller can tell a schedule that still coherently
      * parses from one that may simply be an in-progress chunked upload:
@@ -107,7 +108,10 @@ public final class FeeManager {
      *   otherwise structurally incomplete content) — consistent with an intermediate upload chunk.
      *   <li>{@link ResponseCodeEnum#INVALID_FEE_FILE} for content that passes {@code isValid} (so it is internally
      *   consistent on its own terms) but still cannot be evaluated by the registered calculators, treated as a
-     *   hard failure the caller may roll back.
+     *   hard failure the caller may roll back — unlike an unpriced type, this is always rejected when
+     *   {@code requireFullCoverage} is true, not only at genesis, since the file write itself is rolled back with
+     *   it (see {@link com.hedera.node.app.workflows.handle.steps.SystemFileUpdates}), so no state/memory
+     *   divergence can result.
      * </ul>
      *
      * <p>{@code isValid} can accept a prefix of a larger, well-formed schedule (for example one that already has a

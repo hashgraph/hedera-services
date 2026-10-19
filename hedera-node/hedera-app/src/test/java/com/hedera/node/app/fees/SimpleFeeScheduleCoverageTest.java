@@ -82,7 +82,7 @@ class SimpleFeeScheduleCoverageTest {
 
         assertThat(feeManager.unpricedFunctions(genesis)).isEmpty();
         assertThat(feeManager.missingExtras(genesis)).isEmpty();
-        assertEquals(SUCCESS, feeManager.updateSimpleFees(genesisBytes));
+        assertEquals(SUCCESS, feeManager.updateSimpleFees(genesisBytes, true));
     }
 
     @ParameterizedTest
