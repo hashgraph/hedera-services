@@ -348,20 +348,18 @@ public class BlockNodeStreamingConnection extends AbstractBlockNodeConnection
         }
     }
 
-    private void updateAcknowledgementMetrics(final long acknowledgedBlockNumber) {
-        if (acknowledgedBlockNumber == Long.MAX_VALUE) {
+    private void updateAcknowledgementMetrics(
+            final long previousAcknowledgedBlockNumber, final long latestAcknowledgedBlockNumber) {
+        if (latestAcknowledgedBlockNumber == Long.MAX_VALUE
+                || previousAcknowledgedBlockNumber == latestAcknowledgedBlockNumber) {
             return;
         }
 
         final long currentBlockProducing = blockBufferService.getLastBlockNumberProduced();
-        // Record latencies for all acknowledged blocks
-        final long nowNanos = System.nanoTime();
-
-        final long previousAcknowledgedBlockNumber = blockBufferService.getHighestAckedBlockNumber();
         final long lowestAvailableBlockInBuffer = blockBufferService.getEarliestAvailableBlockNumber();
-
+        final long nowNanos = System.nanoTime();
         final long start = Math.max(previousAcknowledgedBlockNumber + 1, lowestAvailableBlockInBuffer);
-        final long end = Math.min(acknowledgedBlockNumber, currentBlockProducing);
+        final long end = Math.min(latestAcknowledgedBlockNumber, currentBlockProducing);
 
         if (start <= end) {
             for (long blkNum = start; blkNum <= end; blkNum++) {
@@ -395,6 +393,7 @@ public class BlockNodeStreamingConnection extends AbstractBlockNodeConnection
     private void acknowledgeBlocks(final long acknowledgedBlockNumber, final boolean maybeJumpToBlock) {
         final long currentBlockStreaming = streamingBlockNumber.get();
         final long currentBlockProducing = blockBufferService.getLastBlockNumberProduced();
+        final long previousAcknowledgedBlockNumber = blockBufferService.getHighestAckedBlockNumber();
 
         /*
         Record the acknowledgement in the block buffer. Depending on the minimum number of required acknowledgements,
@@ -402,9 +401,16 @@ public class BlockNodeStreamingConnection extends AbstractBlockNodeConnection
         this outcome, we want to treat the acknowledgement received over this connection as the decision maker for
         whether we should jump ahead, and not use the real acknowledgement level tracked by the block buffer.
          */
-        blockBufferService.acknowledgeBlock(acknowledgedBlockNumber, blockNode);
+        blockBufferService.acknowledgeBlock(
+                acknowledgedBlockNumber, blockNode.configuration().streamingEndpoint());
 
-        updateAcknowledgementMetrics(acknowledgedBlockNumber);
+        final long latestAcknowledgedBlockNumber = blockBufferService.getHighestAckedBlockNumber();
+
+        if (previousAcknowledgedBlockNumber != latestAcknowledgedBlockNumber) {
+            // this acknowledgement raised the acknowledgement high watermark, thus publish metrics recording it
+            updateAcknowledgementMetrics(previousAcknowledgedBlockNumber, latestAcknowledgedBlockNumber);
+        }
+
         connStats.recordAcknowledgement(acknowledgedBlockNumber);
 
         if (maybeJumpToBlock

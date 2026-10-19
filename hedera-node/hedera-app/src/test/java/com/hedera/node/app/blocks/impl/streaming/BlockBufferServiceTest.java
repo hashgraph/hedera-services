@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -28,7 +27,6 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockItem.ItemOneOfType;
 import com.hedera.hapi.block.stream.output.BlockHeader;
 import com.hedera.node.app.blocks.impl.streaming.BlockBufferService.PruneResult;
-import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeConfiguration;
 import com.hedera.node.app.blocks.impl.streaming.config.BlockNodeEndpoint;
 import com.hedera.node.app.blocks.impl.streaming.obs.BlockStreamingObs;
 import com.hedera.node.app.metrics.BlockStreamMetrics;
@@ -86,6 +84,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
     private static final String testDir = "testDir";
     private static final File testDirFile = new File(testDir);
+    private static final int ACK_EXPIRATION_SECONDS = 3;
 
     private static final VarHandle execSvcHandle;
     private static final VarHandle blockBufferHandle;
@@ -145,10 +144,10 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
     @Mock
     private BlockStreamingObs streamingObs;
 
-    private BlockNode blockNode1;
-    private BlockNode blockNode2;
-    private BlockNode blockNode3;
-    private BlockNode blockNode4;
+    private BlockNodeEndpoint bn1StreamingEndpoint;
+    private BlockNodeEndpoint bn2StreamingEndpoint;
+    private BlockNodeEndpoint bn3StreamingEndpoint;
+    private BlockNodeEndpoint bn4StreamingEndpoint;
 
     private BlockBufferService blockBufferService;
 
@@ -166,22 +165,10 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         lenient().when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1));
 
-        blockNode1 = mock(BlockNode.class);
-        final BlockNodeConfiguration bn1Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn1Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.1", 10));
-        lenient().when(blockNode1.configuration()).thenReturn(bn1Config);
-        blockNode2 = mock(BlockNode.class);
-        final BlockNodeConfiguration bn2Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn2Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.1", 11));
-        lenient().when(blockNode2.configuration()).thenReturn(bn2Config);
-        blockNode3 = mock(BlockNode.class);
-        final BlockNodeConfiguration bn3Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn3Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.2", 10));
-        lenient().when(blockNode3.configuration()).thenReturn(bn3Config);
-        blockNode4 = mock(BlockNode.class);
-        final BlockNodeConfiguration bn4Config = mock(BlockNodeConfiguration.class);
-        lenient().when(bn4Config.streamingEndpoint()).thenReturn(new BlockNodeEndpoint("10.0.0.3", 10));
-        lenient().when(blockNode4.configuration()).thenReturn(bn4Config);
+        bn1StreamingEndpoint = new BlockNodeEndpoint("10.0.0.1", 10);
+        bn2StreamingEndpoint = new BlockNodeEndpoint("10.0.0.1", 11);
+        bn3StreamingEndpoint = new BlockNodeEndpoint("10.0.0.2", 10);
+        bn4StreamingEndpoint = new BlockNodeEndpoint("10.0.0.3", 10);
     }
 
     @AfterEach
@@ -216,7 +203,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         // BN1 ACKs block 5, but since there is just 1 ACK, nothing is truly ACKed yet
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(5, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(5, bn1StreamingEndpoint)).isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
 
         /*
@@ -231,7 +218,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         // BN2 ACKs block 7, but since there is just 2 ACKs, nothing is truly ACKed yet
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(7, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(7, bn2StreamingEndpoint)).isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
 
         /*
@@ -249,7 +236,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         // BN3 ACKs block 9, there are now 3 ACKs, with the lowest common block being block 5... which is the new
         // highest ACKed block
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(9, blockNode3)).isEqualTo(5L);
+        assertThat(blockBufferService.acknowledgeBlock(9, bn3StreamingEndpoint)).isEqualTo(5L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(5L);
 
         /*
@@ -269,7 +256,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         // BN4 ACKs block 8, since there are now 4 ACKs, the third-highest ACK will be the newest high watermark,
         // which in this case is bock 7
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(5L);
-        assertThat(blockBufferService.acknowledgeBlock(8, blockNode4)).isEqualTo(7L);
+        assertThat(blockBufferService.acknowledgeBlock(8, bn4StreamingEndpoint)).isEqualTo(7L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(7L);
 
         /*
@@ -298,11 +285,40 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         final long blockNumber = 1L;
 
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode3)).isEqualTo(blockNumber);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn3StreamingEndpoint))
+                .isEqualTo(blockNumber);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(blockNumber);
+
+        verify(blockStreamMetrics).recordLatestBlockAcked(blockNumber);
+        verifyNoMoreInteractions(blockStreamMetrics);
+    }
+
+    @Test
+    void testAcknowledgeBlock_outOfOrderAcks() throws Throwable {
+        // set up the buffer with 1 unacked block and requiring 3 ACKs
+        setupState(1, false, 3);
+        final long blockNumber = 1L;
+
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+        // make BN2 send an acknowledgement for block 0 after it has already acknowledged block 1
+        // the older acknowledgement should be ignored
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber - 1, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn3StreamingEndpoint))
+                .isEqualTo(blockNumber);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(blockNumber);
 
         verify(blockStreamMetrics).recordLatestBlockAcked(blockNumber);
@@ -316,14 +332,18 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         final long blockNumber = 1L;
 
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
         // re-acknowledge from BN2... this should not be counted again since an ack from the node was already received
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode3)).isEqualTo(blockNumber);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn3StreamingEndpoint))
+                .isEqualTo(blockNumber);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(blockNumber);
 
         verify(blockStreamMetrics).recordLatestBlockAcked(blockNumber);
@@ -345,11 +365,14 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         final long blockNumber = 1L;
 
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode3)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn3StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
 
         // even though there were three ACKs from different BNs, since the streaming is disabled, nothing should happen
@@ -365,16 +388,115 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         isStarted(blockBufferService).set(false);
 
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode2)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(blockNumber, blockNode3)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(blockNumber, bn3StreamingEndpoint))
+                .isEqualTo(-1L);
         assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
 
         // even though there were three ACKs from different BNs, since the service is not running, nothing should happen
 
         verifyNoInteractions(blockStreamMetrics);
+    }
+
+    @Test
+    void testNotifyBlockNodeDisconnected_untrackedBlockNode() throws Throwable {
+        setupState(2, false, 2);
+
+        // "disconnect" BN1 and then wait a few seconds
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+        Thread.sleep((ACK_EXPIRATION_SECONDS + 1) * 1_000);
+        // now submit an ACK for the block from a different node
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+        // submit another ACK from a different block node... there are now two valid ACKs
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn3StreamingEndpoint))
+                .isEqualTo(1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(1L);
+
+        verify(blockStreamMetrics).recordLatestBlockAcked(1L);
+        verifyNoMoreInteractions(blockStreamMetrics);
+    }
+
+    @Test
+    void testNotifyBlockNodeDisconnected_validBlockNode() throws Throwable {
+        setupState(2, false, 2);
+
+        // submit an acknowledgement from BN1
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
+        // "disconnect" BN1 and then wait a few seconds
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+        Thread.sleep((ACK_EXPIRATION_SECONDS + 1) * 1_000);
+        // now submit a second ACK for the block from a different node
+        // since the first ACK is now expired, it should not be truly ACKed
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+        // submit another ACK from a different block node... there are now two valid ACKs
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn3StreamingEndpoint))
+                .isEqualTo(1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(1L);
+
+        verify(blockStreamMetrics).recordLatestBlockAcked(1L);
+        verifyNoMoreInteractions(blockStreamMetrics);
+    }
+
+    @Test
+    void testNotifyBlockNodeDisconnected_expirationClearedOnNewAck() throws Throwable {
+        setupState(2, false, 2);
+
+        // submit an acknowledgement from BN1
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
+        // "disconnect" BN1 and then wait a few seconds
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+        Thread.sleep((ACK_EXPIRATION_SECONDS + 1) * 1_000);
+        // now submit a second ACK for the block from a different node
+        // since the first ACK is now expired, it should not be truly ACKed
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+        // submit another ACK from the first block node
+        // the BN should be counted again towards the minimum required ACKs
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint))
+                .isEqualTo(1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(1L);
+
+        verify(blockStreamMetrics).recordLatestBlockAcked(1L);
+        verifyNoMoreInteractions(blockStreamMetrics);
+    }
+
+    @Test
+    void testNotifyBlockNodeDisconnected_expirationSetButNotYetElapsed() throws Throwable {
+        setupState(2, false, 2);
+
+        // submit an acknowledgement from BN1
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
+        // "disconnect" BN1 and then wait a second... not long enough for the expiration to fully kick in though
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+        Thread.sleep(1_000);
+        // now submit a second ACK for the block from a different node
+        // since the first ACK is still pending expiration, it should still be truly ACKed
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(1L);
+        assertThat(blockBufferService.getHighestAckedBlockNumber()).isEqualTo(1L);
+
+        verify(blockStreamMetrics).recordLatestBlockAcked(1L);
+        verifyNoMoreInteractions(blockStreamMetrics);
     }
 
     @Test
@@ -403,7 +525,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         blockBufferService.openBlock(TEST_BLOCK_NUMBER);
 
         // when
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
 
         // then
         // not completed states should not be removed
@@ -429,7 +551,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         block.closeBlock();
 
         // when
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
 
         // then
         // completed states should be removed
@@ -501,7 +623,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         block2.closeBlock();
 
         // when
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
 
         // then
         assertThat(blockBufferService.isAcked(TEST_BLOCK_NUMBER)).isTrue();
@@ -532,7 +654,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         // given
         blockBufferService = initBufferService(configProvider);
         blockBufferService.openBlock(TEST_BLOCK_NUMBER);
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
         reset(blockStreamMetrics);
 
         // when
@@ -557,10 +679,10 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         // then
         assertThat(future).isNotCompleted();
 
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
         assertThat(future).isNotCompleted();
 
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2, bn1StreamingEndpoint);
         assertThat(future).isCompleted();
 
         verify(blockStreamMetrics).recordLatestBlockAcked(TEST_BLOCK_NUMBER);
@@ -585,12 +707,12 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(blockBufferService.getLastBlockNumberProduced()).isEqualTo(TEST_BLOCK_NUMBER);
         assertThat(future).isNotCompleted();
 
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER, bn1StreamingEndpoint);
         assertThat(future).isNotCompleted();
 
         // the lagging block reaches the buffer and is acknowledged
         blockBufferService.openBlock(TEST_BLOCK_NUMBER2);
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2, bn1StreamingEndpoint);
         assertThat(future).isCompleted();
     }
 
@@ -601,19 +723,19 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         final CompletableFuture<Void> future = blockBufferService.acknowledgedThroughFuture(3);
 
-        assertThat(blockBufferService.acknowledgeBlock(1, blockNode1)).isEqualTo(-1L);
-        assertThat(blockBufferService.acknowledgeBlock(4, blockNode2)).isEqualTo(1L);
+        assertThat(blockBufferService.acknowledgeBlock(1, bn1StreamingEndpoint)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(4, bn2StreamingEndpoint)).isEqualTo(1L);
 
         // there has been 1 ACK received for block 3, but since we require 2 ACKs, the future should not yet complete
         assertThat(future).isNotCompleted();
 
         // include another acknowledgement from a different BN, but still waiting for enough ACKs for block 3
-        assertThat(blockBufferService.acknowledgeBlock(2, blockNode3)).isEqualTo(2L);
+        assertThat(blockBufferService.acknowledgeBlock(2, bn3StreamingEndpoint)).isEqualTo(2L);
         assertThat(future).isNotCompleted();
 
         // now add another ACK from BN3 for block 3 - this will cause block 3 to now be fully ACKed since we've
         // received 2 ACKs for it
-        assertThat(blockBufferService.acknowledgeBlock(3, blockNode3)).isEqualTo(3L);
+        assertThat(blockBufferService.acknowledgeBlock(3, bn3StreamingEndpoint)).isEqualTo(3L);
         assertThat(future).isCompleted();
     }
 
@@ -635,7 +757,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(firstBlockFuture).isNotCompleted();
         assertThat(secondBlockFuture).isNotCompleted();
 
-        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2 + 1, blockNode1);
+        blockBufferService.acknowledgeBlock(TEST_BLOCK_NUMBER2 + 1, bn1StreamingEndpoint);
 
         assertThat(firstBlockFuture).isCompleted();
         assertThat(secondBlockFuture).isCompleted();
@@ -835,7 +957,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         assertThat(blockBufferService.getEarliestAvailableBlockNumber()).isEqualTo(1L);
         // ack up to block 3
-        blockBufferService.acknowledgeBlock(3L, blockNode1);
+        blockBufferService.acknowledgeBlock(3L, bn1StreamingEndpoint);
         verify(blockStreamMetrics).recordLatestBlockAcked(3L);
 
         // now blocks 1-3 are acked
@@ -865,7 +987,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(blockBufferService.getEarliestAvailableBlockNumber()).isEqualTo(2L);
 
         // ack up to block 6, run pruning, and verify the buffer is not saturated
-        blockBufferService.acknowledgeBlock(6L, blockNode1);
+        blockBufferService.acknowledgeBlock(6L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
         lastPruningResult = lastPruningResultRef(blockBufferService).get();
         assertThat(lastPruningResult).isNotNull();
@@ -940,13 +1062,13 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // Step 2: acknowledge through block 2 (BlockAcknowledgement) -> outstanding drops to 4.
-        blockBufferService.acknowledgeBlock(2L, blockNode1);
+        blockBufferService.acknowledgeBlock(2L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
         verify(blockStreamMetrics).recordBufferedBlocksPendingAck(4);
         reset(blockStreamMetrics);
 
         // Step 3: acknowledge through block 4 -> outstanding drops to 2 (blocks 5, 6).
-        blockBufferService.acknowledgeBlock(4L, blockNode1);
+        blockBufferService.acknowledgeBlock(4L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
         verify(blockStreamMetrics).recordBufferedBlocksPendingAck(2);
         reset(blockStreamMetrics);
@@ -968,7 +1090,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // Step 6: acknowledge through block 8 (catch-up) -> nothing outstanding.
-        blockBufferService.acknowledgeBlock(8L, blockNode1);
+        blockBufferService.acknowledgeBlock(8L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
         verify(blockStreamMetrics).recordBufferedBlocksPendingAck(0);
         reset(blockStreamMetrics);
@@ -979,7 +1101,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         blockBufferService.closeBlock(9L);
         blockBufferService.openBlock(10L);
         blockBufferService.closeBlock(10L);
-        blockBufferService.acknowledgeBlock(15L, blockNode1);
+        blockBufferService.acknowledgeBlock(15L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
         verify(blockStreamMetrics).recordBufferedBlocksPendingAck(0);
         assertThat(lastPruningResultRef(blockBufferService).get().checkInfo().blocksPendingAck())
@@ -1013,7 +1135,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         blockBufferService.openBlock(1L);
 
         // Block 1 has been added. Now lets ack up to block 5
-        blockBufferService.acknowledgeBlock(5L, blockNode1);
+        blockBufferService.acknowledgeBlock(5L, bn1StreamingEndpoint);
 
         // Since we've acked up to block 5, the block we opened _and_ any blocks we've yet to process up to 5 should
         // be considered acked
@@ -1113,7 +1235,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         startLatch.countDown();
         Thread.sleep(2_000);
         // ack the blocks and wait for some more time... this should allow the
-        blockBufferService.acknowledgeBlock(3L, blockNode1);
+        blockBufferService.acknowledgeBlock(3L, bn1StreamingEndpoint);
         Thread.sleep(1_000);
         // wait for the spawned thread to complete
         assertThat(doneLatch.await(3, TimeUnit.SECONDS)).isTrue();
@@ -1617,7 +1739,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(bufferStatus.saturationPercent()).isEqualTo(70.0D);
 
         // 7 blocks are unacked, ack up to block 5 so we will fall below the action stage
-        blockBufferService.acknowledgeBlock(5L, blockNode1);
+        blockBufferService.acknowledgeBlock(5L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1710,7 +1832,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(bufferStatus.saturationPercent()).isEqualTo(100.0D);
 
         // ack block 4 to be between the action stage and being saturated
-        blockBufferService.acknowledgeBlock(4L, blockNode1);
+        blockBufferService.acknowledgeBlock(4L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1761,7 +1883,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(bufferStatus.saturationPercent()).isEqualTo(100.0D);
 
         // ack block 10 to allow the buffer to fall below the action stage
-        blockBufferService.acknowledgeBlock(10L, blockNode1);
+        blockBufferService.acknowledgeBlock(10L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1854,7 +1976,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         // ACK two blocks, which should bring us to 80% saturation... still above the recovery threshold
         // Note: we require 2 ACKs per block, so after the first ACK backpressure should still be active
-        assertThat(blockBufferService.acknowledgeBlock(1L, blockNode1)).isEqualTo(-1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint))
+                .isEqualTo(-1L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1866,7 +1989,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // add the second ACK to advance the acknowledgement high watermark
-        assertThat(blockBufferService.acknowledgeBlock(1L, blockNode2)).isEqualTo(1L);
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(1L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1899,7 +2023,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // ACK one more block to get to the recovery threshold
-        assertThat(blockBufferService.acknowledgeBlock(2L, blockNode1)).isEqualTo(1L);
+        assertThat(blockBufferService.acknowledgeBlock(2L, bn1StreamingEndpoint))
+                .isEqualTo(1L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1911,7 +2036,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // add another ACK to advance the acknowledgement high watermark
-        assertThat(blockBufferService.acknowledgeBlock(2L, blockNode2)).isEqualTo(2L);
+        assertThat(blockBufferService.acknowledgeBlock(2L, bn2StreamingEndpoint))
+                .isEqualTo(2L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1944,7 +2070,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         reset(blockStreamMetrics);
 
         // ACK remaining blocks
-        assertThat(blockBufferService.acknowledgeBlock(10L, blockNode1)).isEqualTo(2L);
+        assertThat(blockBufferService.acknowledgeBlock(10L, bn1StreamingEndpoint))
+                .isEqualTo(2L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -1957,7 +2084,8 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         // add another ACK to advance the acknowledgement high watermark
 
-        assertThat(blockBufferService.acknowledgeBlock(10L, blockNode2)).isEqualTo(10L);
+        assertThat(blockBufferService.acknowledgeBlock(10L, bn2StreamingEndpoint))
+                .isEqualTo(10L);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -2365,7 +2493,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
             blockBufferService.openBlock(b);
             blockBufferService.closeBlock(b);
         }
-        blockBufferService.acknowledgeBlock(10L, blockNode1);
+        blockBufferService.acknowledgeBlock(10L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -2421,7 +2549,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
             blockBufferService.openBlock(b);
             blockBufferService.closeBlock(b);
         }
-        blockBufferService.acknowledgeBlock(3L, blockNode1);
+        blockBufferService.acknowledgeBlock(3L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -2471,7 +2599,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
             blockBufferService.closeBlock(b);
         }
         // ack blocks 1..4, leave 5 unacked
-        blockBufferService.acknowledgeBlock(4L, blockNode1);
+        blockBufferService.acknowledgeBlock(4L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -2723,7 +2851,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(backPressureFutureRef.get()).isNotCompleted();
 
         // now acknowledge all the blocks... saturation should drop and back pressure should disengage
-        blockBufferService.acknowledgeBlock(11L, blockNode1);
+        blockBufferService.acknowledgeBlock(11L, bn1StreamingEndpoint);
 
         /*
         Given a transaction payload of 10 MB, the serialized size of a block is 10485765 bytes.
@@ -3023,7 +3151,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
 
         // acknowledge the block and check the buffer again
         // now the block should be pruned immediately
-        blockBufferService.acknowledgeBlock(0L, blockNode1);
+        blockBufferService.acknowledgeBlock(0L, bn1StreamingEndpoint);
         checkBufferHandle.invoke(blockBufferService);
 
         final PruneResult pruneResultC =
@@ -3299,7 +3427,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
         assertThat(backPressureFutureRef3.get()).isCompleted();
 
         // now for fun, acknowledge all the blocks...
-        blockBufferService.acknowledgeBlock(5L, blockNode1);
+        blockBufferService.acknowledgeBlock(5L, bn1StreamingEndpoint);
 
         checkBufferHandle.invoke(blockBufferService);
 
@@ -3368,6 +3496,7 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
                 .withValue("blockStream.buffer.recoveryThreshold", 100.0)
                 .withValue("blockStream.buffer.isBufferPersistenceEnabled", false)
                 .withValue("blockStream.buffer.minAcksRequiredPerBlock", minAcksRequired)
+                .withValue("blockStream.buffer.disconnectedBlockNodeAckExpirationSeconds", ACK_EXPIRATION_SECONDS)
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1));
 

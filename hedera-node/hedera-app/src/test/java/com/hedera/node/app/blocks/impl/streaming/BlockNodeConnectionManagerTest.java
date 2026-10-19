@@ -509,13 +509,16 @@ class BlockNodeConnectionManagerTest extends BlockNodeCommunicationTestBase {
     @Test
     void testNotifyConnectionClosed_untrackedNode() {
         final BlockNodeStreamingConnection connection = mock(BlockNodeStreamingConnection.class);
-        when(connection.configuration()).thenReturn(newBlockNodeConfig("localhost", 1234, 1));
+        final BlockNodeConfiguration config = newBlockNodeConfig("localhost", 1234, 1);
+        when(connection.configuration()).thenReturn(config);
         blockNodes().clear();
 
         connectionManager.notifyConnectionClosed(connection);
 
         verify(connection).configuration();
+        verify(bufferService).notifyBlockNodeDisconnected(config.streamingEndpoint());
         verifyNoMoreInteractions(connection);
+        verifyNoMoreInteractions(bufferService);
     }
 
     @Test
@@ -523,7 +526,8 @@ class BlockNodeConnectionManagerTest extends BlockNodeCommunicationTestBase {
         final BlockNodeStreamingConnection activeConnection = mock(BlockNodeStreamingConnection.class);
         activeConnectionRef().set(activeConnection);
         final BlockNodeStreamingConnection connection = mock(BlockNodeStreamingConnection.class);
-        when(connection.configuration()).thenReturn(newBlockNodeConfig("localhost", 1234, 1));
+        final BlockNodeConfiguration config = newBlockNodeConfig("localhost", 1234, 1);
+        when(connection.configuration()).thenReturn(config);
         blockNodes().clear();
 
         connectionManager.notifyConnectionClosed(connection);
@@ -531,7 +535,9 @@ class BlockNodeConnectionManagerTest extends BlockNodeCommunicationTestBase {
         assertThat(activeConnectionRef()).hasValue(activeConnection);
 
         verify(connection).configuration();
+        verify(bufferService).notifyBlockNodeDisconnected(config.streamingEndpoint());
         verifyNoMoreInteractions(connection);
+        verifyNoMoreInteractions(bufferService);
     }
 
     @Test
@@ -549,8 +555,10 @@ class BlockNodeConnectionManagerTest extends BlockNodeCommunicationTestBase {
 
         verify(activeConnection).configuration();
         verify(blockNode).onClose(activeConnection);
+        verify(bufferService).notifyBlockNodeDisconnected(config.streamingEndpoint());
         verifyNoMoreInteractions(activeConnection);
         verifyNoMoreInteractions(blockNode);
+        verifyNoMoreInteractions(bufferService);
     }
 
     @Test

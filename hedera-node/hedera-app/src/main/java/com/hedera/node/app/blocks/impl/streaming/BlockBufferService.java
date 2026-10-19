@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -150,8 +151,14 @@ public class BlockBufferService extends BlockStreamingBase {
     /**
      * Tracks the highest block acknowledged by each block node.
      */
-    private final ConcurrentMap<BlockNodeEndpoint, AtomicLong> highestAcknowledgementByBlockNode =
+    private final ConcurrentMap<BlockNodeEndpoint, BlockNodeAckWatermark> highestAcknowledgementByBlockNode =
             new ConcurrentHashMap<>();
+
+    private record BlockNodeAckWatermark(AtomicLong watermark, AtomicReference<Instant> expirationTimestamp) {
+        BlockNodeAckWatermark() {
+            this(new AtomicLong(-1), new AtomicReference<>());
+        }
+    }
 
     /**
      * Creates a new BlockBufferService with the given configuration.
@@ -457,7 +464,7 @@ public class BlockBufferService extends BlockStreamingBase {
             return CompletableFuture.completedFuture(null);
         }
 
-        final CompletableFuture<Void> future = new CompletableFuture<Void>();
+        final CompletableFuture<Void> future = new CompletableFuture<>();
         synchronized (acknowledgementFuturesLock) {
             if (getHighestAckedBlockNumber() >= blockNumber) {
                 return CompletableFuture.completedFuture(null);
@@ -470,24 +477,50 @@ public class BlockBufferService extends BlockStreamingBase {
     }
 
     /**
+     * Notifies the block buffer that the specified block node has disconnected.
+     *
+     * @param blockNodeEndpoint the block node that disconnected
+     */
+    public void notifyBlockNodeDisconnected(@NonNull final BlockNodeEndpoint blockNodeEndpoint) {
+        requireNonNull(blockNodeEndpoint);
+
+        final BlockNodeAckWatermark blockNodeAckWatermark = highestAcknowledgementByBlockNode.get(blockNodeEndpoint);
+        if (blockNodeAckWatermark == null) {
+            return;
+        }
+
+        // set the acknowledgement expiration to be N seconds into the future
+        final int expirationSeconds = bufferConfig().disconnectedBlockNodeAckExpirationSeconds();
+        final Instant expiration = Instant.now().plusSeconds(expirationSeconds);
+        logger.info(
+                "Block node ({}) disconnected; acknowledgements will expire after {} unless the node reconnects and acknowledges another block",
+                blockNodeEndpoint,
+                expiration);
+        blockNodeAckWatermark.expirationTimestamp.set(Instant.now().plusSeconds(expirationSeconds));
+    }
+
+    /**
      * Records an acknowledgement for the given block, from the specified block node. A block will only be considered
      * truly acknowledged if the number of unique block nodes that have acknowledged the block meets the minimum
      * threshold.
      *
      * @param blockNumber the block being acknowledged
-     * @param acknowledgementOrigin the origin (i.e. block node) of the acknowledgement
+     * @param blockNodeEndpoint the origin (i.e. block node) of the acknowledgement
      * @return the latest highest acknowledged block, which may or may not be the block being acknowledged when this
      * method was invoked
      */
-    public long acknowledgeBlock(final long blockNumber, final BlockNode acknowledgementOrigin) {
+    public long acknowledgeBlock(final long blockNumber, @NonNull final BlockNodeEndpoint blockNodeEndpoint) {
+        requireNonNull(blockNodeEndpoint);
+
         if (!isStreamingEnabled() || !isStarted.get()) {
             return getHighestAckedBlockNumber();
         }
 
-        final BlockNodeEndpoint origin = acknowledgementOrigin.configuration().streamingEndpoint();
-        highestAcknowledgementByBlockNode
-                .computeIfAbsent(origin, _ -> new AtomicLong())
-                .updateAndGet(current -> Math.max(current, blockNumber));
+        final BlockNodeAckWatermark blockNodeAckWatermark =
+                highestAcknowledgementByBlockNode.computeIfAbsent(blockNodeEndpoint, _ -> new BlockNodeAckWatermark());
+        blockNodeAckWatermark.watermark.updateAndGet(current -> Math.max(current, blockNumber));
+        blockNodeAckWatermark.expirationTimestamp.set(null); // clear any expiration for this block node
+
         final int minAcknowledgementsRequired = bufferConfig().minAcksRequiredPerBlock();
 
         if (minAcknowledgementsRequired == 1) {
@@ -523,7 +556,23 @@ public class BlockBufferService extends BlockStreamingBase {
         // to determine the new watermark, fetch the highest N acknowledgement received where N is the minimum number of
         // acknowledgements required
         final List<Long> orderedBlockAcks = new ArrayList<>(highestAcknowledgementByBlockNode.size());
-        highestAcknowledgementByBlockNode.values().forEach(block -> orderedBlockAcks.add(block.get()));
+        final Instant now = Instant.now();
+        for (final Map.Entry<BlockNodeEndpoint, BlockNodeAckWatermark> entry :
+                highestAcknowledgementByBlockNode.entrySet()) {
+            final BlockNodeEndpoint endpoint = entry.getKey();
+            final BlockNodeAckWatermark ackWatermark = entry.getValue();
+            final Instant expirationTimestamp = ackWatermark.expirationTimestamp.get();
+            if (expirationTimestamp != null && expirationTimestamp.isBefore(now)) {
+                logger.trace(
+                        "Latest acknowledgement ({}) from block node ({}) has expired at {}; ignoring",
+                        ackWatermark.watermark.get(),
+                        endpoint,
+                        expirationTimestamp);
+                continue;
+            }
+
+            orderedBlockAcks.add(ackWatermark.watermark.get());
+        }
         orderedBlockAcks.sort(Collections.reverseOrder()); // sort by descending order
 
         if (orderedBlockAcks.size() < minAcknowledgementsRequired) {
