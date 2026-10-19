@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
+import com.hedera.services.bdd.junit.MultiNetworkLeakyHapiTest;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
@@ -28,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Multi-network restart regression for the outbound-sync orchestrator.
@@ -69,8 +69,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  * than tripping the CircuitBreaker's default 120-second cooldown.
  */
 @Tag(MULTINETWORK)
-@ResourceLock("ledgerA_restart")
-@ResourceLock("ledgerB_restart")
+@MultiNetworkLeakyHapiTest
 public class ClprHieroToHieroRestartSuite extends HieroToHieroBase implements LifecycleTest {
 
     private static final Duration FREEZE_WAIT_TIMEOUT = Duration.ofMinutes(2);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.junit;
 
+import com.hedera.services.bdd.junit.extensions.ClprNetworkLocksProvider;
 import com.hedera.services.bdd.junit.extensions.MultiNetworkExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
 import java.lang.annotation.ElementType;
@@ -9,6 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Marks a HAPI test factory that provisions multiple isolated subprocess networks and injects them
@@ -23,15 +25,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * {@code MultiNetworkGroupQueue}).
  *
  * <p><b>Concurrency.</b> These tests share real subprocess networks (by name, across the JVM), so two
- * tests that touch the same network must be coordinated. Each multi-network suite declares a class-level
- * {@code @ResourceLock} per network it uses (keyed by network name, {@code READ_WRITE}): suites that share a
- * network run one after another, suites on disjoint networks (e.g. general vs. mtls vs. manifest) run in
- * parallel, and the methods of a locked suite run sequentially.
+ * tests that touch the same network must be coordinated. Serialization is done by JUnit via
+ * {@link ClprNetworkLocksProvider} (the {@code @ResourceLock} provider below), which derives one lock per
+ * network from this test's {@link Network} set: {@code READ} by default (readers on a network run
+ * concurrently) or {@code READ_WRITE} when the test is {@link MultiNetworkLeakyHapiTest} (it mutates shared state, so it runs
+ * alone). Tests on disjoint networks (e.g. general vs. mtls vs. manifest) run in parallel. A new suite is
+ * scheduled correctly just by declaring its {@link Network}s; mark it {@link MultiNetworkLeakyHapiTest} if it changes ledger
+ * throttles/config, overrides a network property, or restarts a network.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith({MultiNetworkExtension.class, SpecNamingExtension.class})
+@ResourceLock(providers = ClprNetworkLocksProvider.class)
 public @interface MultiNetworkHapiTest {
     Network[] value() default {
         @Network(name = "PRIMARY"), @Network(name = "PEER"),

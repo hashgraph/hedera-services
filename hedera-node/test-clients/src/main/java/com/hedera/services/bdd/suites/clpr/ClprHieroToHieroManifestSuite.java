@@ -14,6 +14,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
+import com.hedera.services.bdd.junit.MultiNetworkLeakyHapiTest;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
@@ -25,14 +26,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Multi-network HAPI suite exercising the manifest-enabled path end-to-end (#337 + #343):
  */
 @Tag(MULTINETWORK)
-@ResourceLock("ledgerA_manifest")
-@ResourceLock("ledgerB_manifest")
+@MultiNetworkLeakyHapiTest
 public class ClprHieroToHieroManifestSuite extends HieroToHieroBase {
 
     // Network names as constants so the (typo-prone) fixture keys are defined once. Every test in this

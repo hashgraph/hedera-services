@@ -6,14 +6,15 @@ regeneration) see [`../tss-startup-assets/README.md`](../tss-startup-assets/READ
 
 The main classes:
 
-|                    Class                    |                                                                 Role                                                                |
-|---------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `MultiNetworkHapiTest` / `@Network`         | Declares the networks a test needs (name, size, setup overrides, mTLS, `tssPreload`).                                               |
-| `SharedMultiNetworkLauncherSessionListener` | Collects the declared networks and their groups at test-plan start and reserves their ports; stops any still running at plan end.   |
-| `MultiNetworkGroupQueue` / `NetworkGroup`   | Admits network groups under a node budget, so only as many groups run at once as the budget allows.                                 |
-| `MultiNetworkExtension`                     | Boots a group's networks on its first test and tears them down after its last, runs the cold/warm TSS path, applies test overrides. |
-| `TssFixtures`                               | Resolves, merges, writes and installs the per-network genesis TSS fixtures.                                                         |
-| `ClprWrapsProvingKeyInstaller`              | Extracts the WRAPS proving-key archive for cold starts.                                                                             |
+|                           Class                           |                                                                Role                                                                 |
+|-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `MultiNetworkHapiTest` / `@Network`                       | Declares the networks a test needs (name, size, setup overrides, mTLS, `tssPreload`).                                               |
+| `SharedMultiNetworkLauncherSessionListener`               | Collects the declared networks and their groups at test-plan start and reserves their ports; stops any still running at plan end.   |
+| `MultiNetworkGroupQueue` / `NetworkGroup`                 | Admits network groups under a node budget, so only as many groups run at once as the budget allows.                                 |
+| `ClprNetworkLocksProvider` / `@MultiNetworkLeakyHapiTest` | Locks each test's networks: `READ` by default (tests on a network run concurrently), `READ_WRITE` for leaky tests (run alone).      |
+| `MultiNetworkExtension`                                   | Boots a group's networks on its first test and tears them down after its last, runs the cold/warm TSS path, applies test overrides. |
+| `TssFixtures`                                             | Resolves, merges, writes and installs the per-network genesis TSS fixtures.                                                         |
+| `ClprWrapsProvingKeyInstaller`                            | Extracts the WRAPS proving-key archive for cold starts.                                                                             |
 
 ## Phase 0 — test-plan start
 
@@ -66,6 +67,13 @@ Typical cost: well under a minute per network.
 
 ## Phase 2 — each test
 
+Before a test runs, JUnit takes one lock per network it declares, through `ClprNetworkLocksProvider` (the
+`@ResourceLock` provider on `@MultiNetworkHapiTest`). The lock is `READ` by default, so tests that only use
+their own channel run concurrently on the same networks. A test, or a whole class, marked
+`@MultiNetworkLeakyHapiTest` takes `READ_WRITE` and runs alone on its networks: mark any test that changes
+ledger throttles or config, overrides a network property, or restarts a network. Tests on different
+networks never share a lock.
+
 `MultiNetworkExtension.beforeEach`:
 
 - Fails the test if any of its networks was not declared by the listener (e.g. the test is `@Disabled`);
@@ -74,7 +82,8 @@ Typical cost: well under a minute per network.
   while their total node count fits the budget, lighter groups first.
 - Boots the group's networks on its first test (Phase 1) and keeps them in `SHARED_NETWORKS`; later tests
   reuse them and re-check each node is `ACTIVE` (an earlier test may have frozen or restarted it). If the
-  boot fails, the group's nodes are freed and its remaining tests fail fast.
+  boot fails, the group's nodes are freed and its remaining tests fail fast. Concurrent tests of a group
+  boot or reuse its networks one at a time, under a per-group lock.
 - Applies the test's `setupOverrides` at runtime through a `0.0.121` file update, after snapshotting the
   previous values. Startup-only node settings (`clpr.mtlsPort`, CA paths) are skipped here — they only take
   effect from `application.properties`.

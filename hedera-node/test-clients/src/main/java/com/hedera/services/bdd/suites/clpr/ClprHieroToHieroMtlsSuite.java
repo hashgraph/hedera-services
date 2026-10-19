@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * End-to-end coverage of CLPR sync over the dedicated mutual-TLS listener. Unlike the plaintext
@@ -30,8 +29,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  * the peer pinning the on-chain CA, and bytes actually crossing the {@code mtlsPort} listener.
  */
 @Tag(MULTINETWORK)
-@ResourceLock("ledgerA_mtls")
-@ResourceLock("ledgerB_mtls")
 public class ClprHieroToHieroMtlsSuite extends HieroToHieroBase {
 
     private static final int MTLS_PORT_A = 41450;

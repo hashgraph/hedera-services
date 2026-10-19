@@ -48,6 +48,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
+import com.hedera.services.bdd.junit.MultiNetworkLeakyHapiTest;
 import com.hedera.services.bdd.junit.TestTags;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -64,7 +65,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Two-network CLPR multi-message round-trip test.
@@ -95,8 +95,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  * manifest, supplied to the pass-through verifier as a synthetic proof.
  */
 @Tag(TestTags.MULTINETWORK)
-@ResourceLock("ledgerA")
-@ResourceLock("ledgerB")
+@MultiNetworkLeakyHapiTest
 public class ClprMessagesSuite {
 
     private static final String NET_A_CHAIN_ID = "hiero:msgs-a";

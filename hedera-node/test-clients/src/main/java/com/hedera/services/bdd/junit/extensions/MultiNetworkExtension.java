@@ -51,8 +51,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -264,9 +266,9 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
         findAnnotation(ctx).ifPresent(annotation -> {
             store(ctx).put(ANNOTATION_KEY, annotation);
             final var configs = annotation.value();
-            // Per-network serialization is done by JUnit via each suite's class-level @ResourceLock per
-            // network: same-network suites take turns, different groups run in parallel. So there is no
-            // lock to take here.
+            // Per-network serialization is done by JUnit via ClprNetworkLocksProvider (a @ResourceLock
+            // provider on @MultiNetworkHapiTest): same-network tests take turns (READ overlaps, a @Leaky
+            // WRITE runs alone), different groups run in parallel. So there is no lock to take here.
             final var names = Arrays.stream(configs)
                     .map(MultiNetworkExtension::resolveName)
                     .toList();
@@ -287,15 +289,26 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
             store(ctx).put(TEST_ID_KEY, testId);
             final var group = NETWORK_GROUP_QUEUE.awaitTurn(testId);
             final var networks = new SubProcessNetwork[configs.length];
+            // READ tests of one group can get here together. Boot (or reuse) under a per-group lock, so a
+            // failed boot is torn down and marked failed before another test of the group can see the
+            // networks missing and boot them again outside the node budget.
+            final var bootLock = GROUP_BOOT_LOCKS.computeIfAbsent(group.id(), id -> new ReentrantLock());
+            lockManaged(bootLock);
             try {
-                startSharedNetworks(configs, networks);
-            } catch (final RuntimeException | Error e) {
-                // Tear down whatever started and free the group's nodes right away; its remaining tests
-                // then fail fast instead of retrying the boot
-                log.warn("[MultiNetworkExtension] Networks of network group [{}] failed to start", group.id(), e);
-                tearDownSharedGroup(group);
-                NETWORK_GROUP_QUEUE.bootFailed(testId);
-                throw e;
+                // Throws if an earlier test of the group failed to boot; returns at once while it runs
+                NETWORK_GROUP_QUEUE.awaitTurn(testId);
+                try {
+                    startSharedNetworks(configs, networks);
+                } catch (final RuntimeException | Error e) {
+                    // Tear down whatever started and free the group's nodes right away; its remaining
+                    // tests then fail fast instead of retrying the boot
+                    log.warn("[MultiNetworkExtension] Networks of network group [{}] failed to start", group.id(), e);
+                    tearDownSharedGroup(group);
+                    NETWORK_GROUP_QUEUE.bootFailed(testId);
+                    throw e;
+                }
+            } finally {
+                bootLock.unlock();
             }
             log.info("[MultiNetworkExtension] Using shared networks {} for test {}", names, ctx.getDisplayName());
             store(ctx).put(NETWORKS_KEY, networks);
@@ -472,6 +485,33 @@ public class MultiNetworkExtension implements BeforeEachCallback, AfterEachCallb
             }
             SHARED_NETWORKS.put(name, network);
             return network;
+        }
+    }
+
+    /** Per-network-group locks, so the tests of a group boot (or reuse) its networks one at a time. */
+    private static final Map<String, ReentrantLock> GROUP_BOOT_LOCKS = new ConcurrentHashMap<>();
+
+    /**
+     * Acquires {@code lock} through {@link ForkJoinPool#managedBlock}, so a JUnit worker waiting for another test
+     * of its group to finish booting is compensated for instead of starving the pool.
+     */
+    private static void lockManaged(@NonNull final ReentrantLock lock) {
+        try {
+            ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker() {
+                @Override
+                public boolean block() throws InterruptedException {
+                    lock.lockInterruptibly();
+                    return true;
+                }
+
+                @Override
+                public boolean isReleasable() {
+                    return lock.isHeldByCurrentThread() || lock.tryLock();
+                }
+            });
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting to boot a network group", e);
         }
     }
 

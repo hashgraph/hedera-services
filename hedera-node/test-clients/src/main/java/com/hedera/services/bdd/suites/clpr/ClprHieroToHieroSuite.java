@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import com.hedera.services.bdd.junit.ConfigOverride;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest;
 import com.hedera.services.bdd.junit.MultiNetworkHapiTest.Network;
+import com.hedera.services.bdd.junit.MultiNetworkLeakyHapiTest;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -40,11 +41,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.parallel.ResourceLock;
 
 @Tag(MULTINETWORK)
-@ResourceLock("ledgerA")
-@ResourceLock("ledgerB")
 public class ClprHieroToHieroSuite extends HieroToHieroBase {
 
     /**
@@ -400,6 +398,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                                 awaitAckedMessage(ledgerB, crypto.channelId, messagesPerSide))));
     }
 
+    @MultiNetworkLeakyHapiTest
     @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName(
             "given both ledgers with a backlog larger than one bundle, then traffic both ways is delivered and acked")
@@ -543,6 +542,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                                 awaitChannelNonActive(ledgerB, crypto))));
     }
 
+    @MultiNetworkLeakyHapiTest
     @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Bundle at exactly maxMessagesPerBundle: 9 messages across multiple capped bundles all delivered")
     Stream<DynamicTest> bundleAtMaxMessagesPerBundle(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -589,6 +589,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                                 awaitAckedMessage(ledgerA, crypto.channelId, totalMessages))));
     }
 
+    @MultiNetworkLeakyHapiTest
     @MultiNetworkHapiTest({
         @Network(
                 name = "ledgerA",
@@ -703,6 +704,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                                 awaitChannelNonActive(ledgerB, crypto))));
     }
 
+    @MultiNetworkLeakyHapiTest
     @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Config update mid-stream: bump maxMessagesPerBundle; bundles after the update ship larger")
     Stream<DynamicTest> configUpdateMidStreamBumpsBundleCap(
