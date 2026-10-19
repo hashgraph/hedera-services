@@ -286,6 +286,8 @@ Two properties make the assertions meaningful and are easy to lose:
 - A contract stakes to another account, and `setDeclineReward` toggles the flag without disturbing
   the node target.
 - An EOA configures its own staking, and declines rewards, through the `IHRC632` facade.
+- A contract stakes another account whose key delegates to that contract, the cross-account case the
+  smart-contract security model authorizes.
 - `stakeToAccount` names an aliased account by its long-zero form and by its alias alike, and
   `getStakingInfo` reads the target back in its alias form either way.
 - `unstake()`, `stakeToNode(-1)` and `stakeToAccount(address(0))` all clear the target — each from a

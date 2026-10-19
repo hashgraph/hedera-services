@@ -9,6 +9,11 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -94,6 +99,7 @@ public class AccountStakingConfigurationTest {
     private static final String DELEGATING = "delegating";
     private static final String ALIASED = "aliased";
     private static final String ALIASED_KEY = "aliasedKey";
+    private static final String DELEGATE_KEY = "delegateKey";
 
     /**
      * Deliberately non-zero. HAPI reports a cleared staking target as an unset {@code staked_id} oneof, so the
@@ -543,6 +549,31 @@ public class AccountStakingConfigurationTest {
                 // ...and the target's staking really is untouched. The call named a *node*, so this is the
                 // field that would have changed had authorization been skipped.
                 getAccountInfo(OTHER).has(accountWith().noStakingNodeId().noStakedAccountId()));
+    }
+
+    @LeakyHapiTest(overrides = {STAKING_FLAG})
+    @DisplayName("a contract stakes another account whose key delegates to that contract")
+    final Stream<DynamicTest> crossAccountCallAuthorizedByTheSecurityModelSucceeds() {
+        final AtomicReference<Address> otherAddress = new AtomicReference<>();
+        return hapiTest(
+                overriding(STAKING_FLAG, "true"),
+                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(OTHER).exposingCreatedIdTo(id -> otherAddress.set(idAsHeadlongAddress(id))),
+                uploadInitCode(HRC1522_CONTRACT),
+                contractCreate(HRC1522_CONTRACT).omitAdminKey(),
+                // Under the smart-contract security model a contract is authorized for another account when that
+                // account's key activates for the calling contract; the mirror image of the rejected case above
+                newKeyNamed(DELEGATE_KEY)
+                        .shape(threshOf(1, SIMPLE, DELEGATE_CONTRACT).signedWith(sigs(ON, HRC1522_CONTRACT))),
+                cryptoUpdate(OTHER).key(DELEGATE_KEY),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(HRC1522_CONTRACT, "stakeToNodeCall", otherAddress.get(), NODE_ID)
+                                .payingWith(ACCOUNT)
+                                .gas(1_000_000)
+                                .via("delegatedCrossAccount"),
+                        succeeded("delegatedCrossAccount", "stakeToNodeCall"))),
+                getAccountInfo(OTHER).has(accountWith().stakedNodeId(NODE_ID)));
     }
 
     // --- The IHRC632 facade, and its limit ---------------------------------------------------------
