@@ -39,15 +39,16 @@ message LedgerIdPublicationTransactionBody {
    */
   bytes ledger_id = 1;
 
-  /**
-   * No longer set, since the TSS library derives the key to use when
-   * verifying recursive chain-of-trust proofs from public parameters
-   * it embeds.
-   */
-  bytes history_proof_verification_key = 2;
+  // WRAPS verification parameters are supplied by the cryptography library.
+  reserved 2;
+  reserved "history_proof_verification_key";
 
   /**
-   * The node-specific contributions made to the new ledger id.
+   * The published Schnorr keys, node IDs, and weights underlying this ledger id.
+   * Together with the genesis roster (including its missing-key convention) and
+   * genesis hinTS verification key, these provide provenance for recomputing the
+   * ledger id. They are not required for routine WRAPS proof verification and do
+   * not independently authenticate the ledger id as a trust root.
    */
   repeated LedgerIdNodeContribution node_contributions = 3;
 }

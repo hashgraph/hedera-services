@@ -175,9 +175,17 @@ public class ProofControllerImpl implements ProofController {
         this.schnorrKeyPair = requireNonNull(schnorrKeyPair);
         replayPersistedVotes(votes);
         if (!isCompleted(construction)) {
-            final var cutoffTime = construction.hasGracePeriodEndTime()
-                    ? asInstant(construction.gracePeriodEndTimeOrThrow())
-                    : Instant.MAX;
+            // Collection remains open until assembly actually starts, even if metadata arrived
+            // after the grace deadline. The frozen cutoff survives every WRAPS phase and retry.
+            if ((construction.hasWrapsSigningState() || construction.hasFailureReason())
+                    && !construction.hasProofKeyCutoffTime()) {
+                throw new IllegalArgumentException("Legacy WRAPS construction must be replaced before replay");
+            }
+            final var cutoffTime = construction.hasProofKeyCutoffTime()
+                    ? asInstant(construction.proofKeyCutoffTimeOrThrow())
+                    : construction.hasAssemblyStartTime()
+                            ? asInstant(construction.assemblyStartTimeOrThrow())
+                            : Instant.MAX;
             keyPublications.forEach(publication -> {
                 if (!publication.adoptionTime().isAfter(cutoffTime)) {
                     maybeUpdateForProofKey(publication);

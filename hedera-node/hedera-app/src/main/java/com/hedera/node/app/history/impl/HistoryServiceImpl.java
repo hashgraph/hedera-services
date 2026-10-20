@@ -191,7 +191,7 @@ public class HistoryServiceImpl implements HistoryService {
         requireNonNull(registry);
         registry.register(new V071HistorySchema(this));
         registry.register(new V0730HistorySchema(this));
-        registry.register(new V0790HistorySchema());
+        registry.register(new V0790HistorySchema(this));
     }
 
     @Override

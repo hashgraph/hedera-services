@@ -6,10 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -107,7 +105,6 @@ public class CrsPublicationHandlerTest {
     void testHandle() {
         when(controllers.getAnyInProgress()).thenReturn(Optional.of(controller));
         assertDoesNotThrow(() -> subject.handle(handleContext));
-        verify(hintsStore, never()).addCrsPublication(anyLong(), any());
         verify(controller).addCrsPublication(any(), any(), any(), anyLong());
     }
 
@@ -115,7 +112,6 @@ public class CrsPublicationHandlerTest {
     void testHandleNoInProgressController() {
         when(controllers.getAnyInProgress()).thenReturn(Optional.empty());
         assertDoesNotThrow(() -> subject.handle(handleContext));
-        verify(hintsStore, never()).addCrsPublication(anyInt(), any());
     }
 
     @Test

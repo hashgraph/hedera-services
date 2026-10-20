@@ -582,8 +582,11 @@ public class BlockNodeConnectionManager {
         // Remove from active connection if it is the current active
         activeConnectionRef.compareAndSet(connection, null);
 
-        final BlockNodeConfiguration config = connection.configuration();
-        final BlockNode node = nodes.get(config.streamingEndpoint());
+        final BlockNodeEndpoint streamingEndpoint = connection.configuration().streamingEndpoint();
+        final BlockNode node = nodes.get(streamingEndpoint);
+
+        // regardless of whether the node is in the local node map, always notify the block buffer of the disconnect
+        blockBufferService.notifyBlockNodeDisconnected(streamingEndpoint);
 
         if (node == null) {
             logger.warn(

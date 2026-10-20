@@ -160,6 +160,13 @@ message HistoryProofConstruction {
    * key when the same roster transition receives a replacement hinTS construction.
    */
   google.protobuf.BytesValue target_metadata = 11;
+
+  /**
+   * The consensus cutoff for proof-key selection, frozen when assembly begins.
+   * Unlike assembly_start_time in proof_state, this survives WRAPS phases and
+   * retries so a restarted controller reconstructs the same address book.
+   */
+  proto.Timestamp proof_key_cutoff_time = 12;
 }
 
 /**

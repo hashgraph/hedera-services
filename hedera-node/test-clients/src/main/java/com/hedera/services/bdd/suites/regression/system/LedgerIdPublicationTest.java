@@ -89,11 +89,6 @@ public class LedgerIdPublicationTest {
             final var publication = body.ledgerIdPublicationOrThrow();
             // The hash of the genesis address book followed by the hash of its hinTS verification key
             assertEquals(64, publication.ledgerId().length(), "Ledger id must be 64 bytes");
-            // The TSS library derives the key that verifies WRAPS proofs from public parameters it embeds
-            assertEquals(
-                    0,
-                    publication.historyProofVerificationKey().length(),
-                    "History proof verification key should no longer be published");
             assertEquals(
                     NETWORK_SIZE,
                     publication.nodeContributions().size(),

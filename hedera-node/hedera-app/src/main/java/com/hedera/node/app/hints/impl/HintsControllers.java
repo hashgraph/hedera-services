@@ -113,16 +113,6 @@ public class HintsControllers {
     /**
      * Returns the in-progress controller for the hinTS construction with the given party size.
      *
-     * @param m the number of parties
-     * @return the controller, if it exists
-     */
-    public Optional<HintsController> getInProgressForNumParties(final int m) {
-        return Optional.ofNullable(controller).filter(c -> c.hasNumParties(m));
-    }
-
-    /**
-     * Returns the in-progress controller for the hinTS construction with the given party size.
-     *
      * @return the controller, if it exists
      */
     public Optional<HintsController> getAnyInProgress() {

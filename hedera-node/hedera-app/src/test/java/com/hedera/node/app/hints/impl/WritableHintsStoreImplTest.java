@@ -39,7 +39,6 @@ import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
 import com.hedera.hapi.node.state.roster.RosterEntry;
 import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.hints.HintsLibrary;
@@ -460,26 +459,6 @@ class WritableHintsStoreImplTest {
     }
 
     @Test
-    void movesToNextNode() {
-        setInitialCrsState();
-
-        subject.moveToNextNode(1L, Instant.ofEpochSecond(1_234_567L));
-        assertEquals(1L, subject.getCrsState().nextContributingNodeId());
-        assertEquals(
-                asTimestamp(Instant.ofEpochSecond(1_234_567L)),
-                subject.getCrsState().contributionEndTime());
-    }
-
-    @Test
-    void addsCrsPublications() {
-        subject.addCrsPublication(0L, CrsPublicationTransactionBody.DEFAULT);
-        assertEquals(1, subject.getCrsPublications().size());
-        assertEquals(
-                CrsPublicationTransactionBody.DEFAULT,
-                subject.getCrsPublications().get(0));
-    }
-
-    @Test
     void ceremonyAllocationSurvivesDiscardAndStaleActiveSnapshots() {
         final var original = completedCrs(3, 4);
         subject.setCrsState(original);
@@ -515,9 +494,6 @@ class WritableHintsStoreImplTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.setHintsKey(2, 7, 8, 1, Bytes.wrap("reserved-key"), CONSENSUS_NOW));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.setHintsKey(2, 7, 8, Bytes.wrap("legacy-reserved-key"), CONSENSUS_NOW));
         // Old state may contain the reserved slot even though new publications cannot write it.
         state.getWritableStates(HintsService.NAME)
                 .<HintsPartyId, HintsKeySet>get(V059HintsSchema.HINTS_KEY_SETS_STATE_ID)

@@ -28,7 +28,6 @@ import com.hedera.node.app.hints.schemas.V079HintsSchema;
 import com.hedera.node.app.info.TssStartupNetworks;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.node.config.data.TssConfig;
 import com.hedera.node.internal.network.Network;
@@ -253,7 +252,7 @@ public class HintsServiceImpl implements HintsService, OnHintsFinished {
                 construction = startKeyCollectionIfReady(activeRosters, hintsStore, construction, now, tssConfig);
                 final var controller = component
                         .controllers()
-                        .getOrCreateFor(activeRosters, construction, hintsStore, activeConstruction());
+                        .getOrCreateFor(activeRosters, construction, hintsStore, hintsStore.getActiveConstruction());
                 controller.advanceCrsWork(crsWorkTime, hintsStore, isActive);
                 if (hintsStore.getCrsStateFor(construction).stage() != COMPLETED) {
                     return;
@@ -307,7 +306,7 @@ public class HintsServiceImpl implements HintsService, OnHintsFinished {
             hintsStore.setNextCrsState(CRSState.DEFAULT);
             return hintsStore.bindConstructionToCrs(construction.constructionId(), activeCrs.ceremonyId(), numParties);
         }
-        final var weights = activeRosters.transitionWeights(maybeWeightsFrom(activeConstruction()));
+        final var weights = activeRosters.transitionWeights(maybeWeightsFrom(hintsStore.getActiveConstruction()));
         final var contributors = weights.sourceNodeWeights().entrySet().stream()
                 .map(e -> new CrsContributor(e.getKey(), e.getValue()))
                 .sorted(Comparator.comparingLong(CrsContributor::nodeId))
@@ -337,21 +336,6 @@ public class HintsServiceImpl implements HintsService, OnHintsFinished {
             hintsStore.setNextCrsState(crs);
         }
         return hintsStore.bindConstructionToCrs(construction.constructionId(), ceremonyId, numParties);
-    }
-
-    @Override
-    public void executeCrsWork(
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now,
-            final boolean isActive,
-            @NonNull final NetworkInfo networkInfo) {
-        requireNonNull(hintsStore);
-        requireNonNull(now);
-        requireNonNull(networkInfo);
-        component
-                .controllers()
-                .getAnyInProgress()
-                .ifPresent(controller -> controller.advanceCrsWork(now, hintsStore, isActive));
     }
 
     @Override

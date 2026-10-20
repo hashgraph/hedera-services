@@ -29,7 +29,6 @@ import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.HintsScheme;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.ReadableHintsStore.HintsKeyPublication;
 import com.hedera.node.app.hints.WritableHintsStore;
@@ -141,14 +140,6 @@ class HintsControllerImplTest {
         subject.advanceConstruction(CONSENSUS_NOW, store, true);
 
         assertTrue(scheduledTasks.isEmpty());
-    }
-
-    @Test
-    void onlyMatchesExpectedNumParties() {
-        setupWith(UNFINISHED_CONSTRUCTION);
-
-        assertFalse(subject.hasNumParties(EXPECTED_PARTY_SIZE - 1));
-        assertTrue(subject.hasNumParties(EXPECTED_PARTY_SIZE));
     }
 
     @Test
@@ -960,13 +951,6 @@ class HintsControllerImplTest {
             @NonNull CRSState crsState) {
 
         lenient().when(store.getCrsStateFor(any())).thenReturn(crsState);
-        lenient()
-                .when(store.getCrsPublications())
-                .thenReturn(List.of(CrsPublicationTransactionBody.newBuilder().build()));
-        lenient()
-                .when(store.getOrderedCrsPublications(any()))
-                .thenReturn(new TreeMap<>(
-                        Map.of(0L, CrsPublicationTransactionBody.DEFAULT, 1L, CrsPublicationTransactionBody.DEFAULT)));
         subject = new HintsControllerImpl(
                 SELF_ID,
                 BLS_KEY_PAIR.privateKey(),

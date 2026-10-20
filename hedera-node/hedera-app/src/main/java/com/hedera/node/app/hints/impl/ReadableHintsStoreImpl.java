@@ -7,7 +7,6 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CON
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_STATE_ID;
-import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_PUBLICATIONS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V079HintsSchema.NEXT_CRS_STATE_ID;
 import static java.util.Objects.requireNonNull;
@@ -18,8 +17,6 @@ import com.hedera.hapi.node.state.hints.HintsKeySet;
 import com.hedera.hapi.node.state.hints.HintsPartyId;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
-import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.ReadableHintsStore;
 import com.hedera.node.app.service.entityid.ReadableEntityIdStore;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
@@ -34,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Provides read access to the {@link HintsConstruction} and {@link PreprocessingVote} instances in state.
@@ -48,8 +43,6 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     private final ReadableKVState<PreprocessingVoteId, PreprocessingVote> votes;
     private final ReadableSingletonState<CRSState> crs;
     private final ReadableSingletonState<CRSState> nextCrs;
-    private final ReadableKVState<NodeId, CrsPublicationTransactionBody> crsPublications;
-    private final ReadableEntityIdStore readableEntityIdStore;
 
     public ReadableHintsStoreImpl(
             @NonNull final ReadableStates states, final ReadableEntityIdStore readableEntityIdStore) {
@@ -60,8 +53,7 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
         this.votes = states.get(PREPROCESSING_VOTES_STATE_ID);
         this.crs = states.getSingleton(CRS_STATE_STATE_ID);
         this.nextCrs = states.getSingleton(NEXT_CRS_STATE_ID);
-        this.crsPublications = states.get(CRS_PUBLICATIONS_STATE_ID);
-        this.readableEntityIdStore = requireNonNull(readableEntityIdStore);
+        requireNonNull(readableEntityIdStore);
     }
 
     @Override
@@ -115,12 +107,6 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
 
     @Override
     public @NonNull List<HintsKeyPublication> getHintsKeyPublications(
-            @NonNull final Set<Long> nodeIds, final int numParties) {
-        return getHintsKeyPublications(nodeIds, numParties, 0);
-    }
-
-    @Override
-    public @NonNull List<HintsKeyPublication> getHintsKeyPublications(
             @NonNull final Set<Long> nodeIds, final int numParties, final long crsId) {
         requireNonNull(nodeIds);
         if (!isSupportedPartySize(numParties)) {
@@ -147,32 +133,6 @@ public class ReadableHintsStoreImpl implements ReadableHintsStore {
     @Override
     public @NonNull CRSState getNextCrsState() {
         return requireNonNull(nextCrs.get());
-    }
-
-    @Override
-    public List<CrsPublicationTransactionBody> getCrsPublications() {
-        final var nextNodeId = readableEntityIdStore.peekAtNextNodeId();
-        final var publications = new ArrayList<CrsPublicationTransactionBody>();
-        for (int i = 0; i < nextNodeId; i++) {
-            final var nodeId = new NodeId(i);
-            final var publication = crsPublications.get(nodeId);
-            if (publication != null) {
-                publications.add(publication);
-            }
-        }
-        return publications;
-    }
-
-    @Override
-    public SortedMap<Long, CrsPublicationTransactionBody> getOrderedCrsPublications(@NonNull final Set<Long> nodeIds) {
-        final SortedMap<Long, CrsPublicationTransactionBody> publications = new TreeMap<>();
-        for (final var nodeId : nodeIds) {
-            final var publication = crsPublications.get(new NodeId(nodeId));
-            if (publication != null) {
-                publications.put(nodeId, publication);
-            }
-        }
-        return publications;
     }
 
     private boolean constructionIsFor(

@@ -10,7 +10,6 @@ import static com.hedera.node.app.hints.schemas.V059HintsSchema.ACTIVE_HINTS_CON
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.HINTS_KEY_SETS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.NEXT_HINTS_CONSTRUCTION_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V059HintsSchema.PREPROCESSING_VOTES_STATE_ID;
-import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_PUBLICATIONS_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V060HintsSchema.CRS_STATE_STATE_ID;
 import static com.hedera.node.app.hints.schemas.V079HintsSchema.NEXT_CRS_STATE_ID;
 import static com.hedera.node.app.service.roster.impl.ActiveRosters.Phase.HANDOFF;
@@ -26,8 +25,6 @@ import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
 import com.hedera.hapi.node.state.hints.PreprocessingVoteId;
 import com.hedera.hapi.node.state.roster.Roster;
-import com.hedera.hapi.platform.state.NodeId;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.hints.WritableHintsStore;
 import com.hedera.node.app.service.entityid.WritableEntityIdStore;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
@@ -37,7 +34,6 @@ import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -58,7 +54,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
     private final WritableSingletonState<HintsConstruction> nextConstruction;
     private final WritableSingletonState<HintsConstruction> activeConstruction;
     private final WritableKVState<PreprocessingVoteId, PreprocessingVote> votes;
-    private final WritableKVState<NodeId, CrsPublicationTransactionBody> crsPublications;
     private final WritableSingletonState<CRSState> crsState;
     private final WritableSingletonState<CRSState> nextCrsState;
     private final WritableEntityIdStore entityIdStore;
@@ -73,7 +68,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
         this.votes = states.get(PREPROCESSING_VOTES_STATE_ID);
         this.crsState = states.getSingleton(CRS_STATE_STATE_ID);
         this.nextCrsState = states.getSingleton(NEXT_CRS_STATE_ID);
-        this.crsPublications = states.get(CRS_PUBLICATIONS_STATE_ID);
     }
 
     @NonNull
@@ -97,31 +91,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
                     activeRosters::findRelatedRoster);
         }
         return construction;
-    }
-
-    @Override
-    public boolean setHintsKey(
-            final long nodeId,
-            final int partyId,
-            final int numParties,
-            @NonNull final Bytes hintsKey,
-            @NonNull final Instant now) {
-        requireValidPartyId(partyId, numParties);
-        final var id = new HintsPartyId(partyId, numParties, 0);
-        var keySet = hintsKeys.get(id);
-        boolean inUse = false;
-        if (keySet == null) {
-            inUse = true;
-            keySet = HintsKeySet.newBuilder()
-                    .key(hintsKey)
-                    .nodeId(nodeId)
-                    .adoptionTime(asTimestamp(now))
-                    .build();
-        } else {
-            keySet = keySet.copyBuilder().nodeId(nodeId).nextKey(hintsKey).build();
-        }
-        hintsKeys.put(id, keySet);
-        return inUse;
     }
 
     @Override
@@ -346,22 +315,6 @@ public class WritableHintsStoreImpl extends ReadableHintsStoreImpl implements Wr
             }
             return b.gracePeriodEndTime(asTimestamp(end));
         });
-    }
-
-    @Override
-    public void moveToNextNode(
-            @Nullable final Long nextNodeIdFromRoster, @NonNull final Instant nextContributionTimeEnd) {
-        final var crsState = requireNonNull(this.crsState.get());
-        final var newCrsState = crsState.copyBuilder()
-                .nextContributingNodeId(nextNodeIdFromRoster)
-                .contributionEndTime(asTimestamp(nextContributionTimeEnd))
-                .build();
-        setCrsState(newCrsState);
-    }
-
-    @Override
-    public void addCrsPublication(final long nodeId, @NonNull final CrsPublicationTransactionBody crsPublication) {
-        crsPublications.put(new NodeId(nodeId), crsPublication);
     }
 
     /**

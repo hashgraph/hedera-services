@@ -181,11 +181,6 @@ public class HintsControllerImpl implements HintsController {
     }
 
     @Override
-    public boolean hasNumParties(final int numParties) {
-        return this.numParties == numParties;
-    }
-
-    @Override
     public void advanceConstruction(
             @NonNull final Instant now, @NonNull final WritableHintsStore hintsStore, final boolean isActive) {
         requireNonNull(now);

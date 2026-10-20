@@ -221,6 +221,27 @@ old/new construction verification.
 The published 3.23.0 hinTS and WRAPS JARs include native binaries for macOS and Linux on AMD64 and ARM64,
 and Windows on AMD64. CN uses the full WRAPS JAR, including proving parameters, because it generates proofs.
 
+### Upgrading pre-Nova TSS state
+
+This release supports an empty TSS state at a non-genesis upgrade: the latest schema restart hooks
+initialize missing singletons to their empty defaults. They do not invent a construction or roster identity.
+These hooks also run on restart and reconnect, so initialization is idempotent and completed, compatible
+signing material is restored from state.
+
+Populated legacy hinTS state without CRS generation bindings, and history state with a pre-Nova
+32-byte ledger ID, are rejected at startup with a diagnostic requiring a coordinated hinTS/history reset
+and rebootstrap. Even a correctly sized old CRS is not evidence that its keys and proofs are compatible.
+The checks also apply when TSS is disabled; disabling TSS or using mock block signatures does not erase
+previously populated state. This PR does not reset that state or replace an established ledger trust root.
+Operators must coordinate the reset separately, including the downstream verifier trust configuration,
+before upgrading such a network. The `tss.needsFreshGenesisWrapsProof` flag below is not a bypass for
+incompatible persisted state.
+
+History constructions persist the consensus-time proof-key cutoff independently of the WRAPS phase.
+Rebuilds use that same cutoff through signing and retries. An older unfinished signing attempt without
+this cutoff is replaced with a fresh construction ID before replay, discarding its obsolete votes and
+messages while preserving any completed active proof.
+
 ### Integration with protocol components
 
 The TSS system is then just the combination of the `HintsService` and `HistoryService` with the `RosterService`; with

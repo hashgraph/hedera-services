@@ -530,7 +530,8 @@ class WritableHistoryStoreImplTest {
                 .constructionId(2L)
                 .sourceRosterHash(A_ROSTER_HASH)
                 .targetRosterHash(C_ROSTER_HASH)
-                .targetMetadata(oldMetadata);
+                .targetMetadata(oldMetadata)
+                .proofKeyCutoffTime(asTimestamp(CONSENSUS_NOW));
         switch (stage) {
             case "keys" -> obsoleteBuilder.gracePeriodEndTime(asTimestamp(CONSENSUS_NOW));
             case "assembly" -> obsoleteBuilder.assemblyStartTime(asTimestamp(CONSENSUS_NOW));
@@ -667,5 +668,44 @@ class WritableHistoryStoreImplTest {
                 restartedStore.getOrCreateConstruction(
                         activeRosters, CONSENSUS_NOW.plusSeconds(3), TSS_CONFIG, false, null));
         assertEquals(HistoryProofConstruction.DEFAULT, restartedStore.getNextConstruction());
+    }
+
+    @Test
+    void proofKeyCutoffSurvivesSigningFailureAndRetry() {
+        setConstructions(
+                HistoryProofConstruction.newBuilder().constructionId(123L).build(), HistoryProofConstruction.DEFAULT);
+        subject.setAssemblyTime(123L, CONSENSUS_NOW);
+        subject.updateWrapsSigningState(123L, b -> b.phase(R1));
+        assertFalse(subject.getActiveConstruction().hasAssemblyStartTime());
+        assertEquals(asTimestamp(CONSENSUS_NOW), subject.getActiveConstruction().proofKeyCutoffTime());
+        subject.failForReason(123L, "missing messages");
+        final var restarted = subject.restartWrapsSigning(123L, new TreeSet<>());
+        assertEquals(asTimestamp(CONSENSUS_NOW), restarted.proofKeyCutoffTime());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void legacyAttemptWithoutACutoffGetsANewConstructionBeforeReplay(final boolean failed) {
+        given(activeRosters.phase()).willReturn(BOOTSTRAP);
+        given(activeRosters.sourceRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.targetRosterHash()).willReturn(A_ROSTER_HASH);
+        given(activeRosters.findRelatedRoster(A_ROSTER_HASH)).willReturn(A_ROSTER);
+        final var old = HistoryProofConstruction.newBuilder()
+                .constructionId(123)
+                .sourceRosterHash(A_ROSTER_HASH)
+                .targetRosterHash(A_ROSTER_HASH)
+                .targetMetadata(Bytes.wrap("metadata"))
+                .wrapsSigningState(WrapsSigningState.newBuilder().phase(R1))
+                .build();
+        setConstructions(
+                failed ? old.copyBuilder().failureReason("retry").build() : old, HistoryProofConstruction.DEFAULT);
+        subject.addProofVote(0, 123, DEFAULT_VOTE);
+        final var restarted = subject.getOrCreateConstruction(
+                activeRosters, CONSENSUS_NOW, TSS_CONFIG, false, Bytes.wrap("metadata"));
+        assertEquals(124, restarted.constructionId());
+        assertTrue(restarted.hasGracePeriodEndTime());
+        assertFalse(restarted.hasWrapsSigningState());
+        assertTrue(subject.getVotes(123, Set.of(0L)).isEmpty());
+        assertEquals(restarted, subject.getActiveConstruction());
     }
 }

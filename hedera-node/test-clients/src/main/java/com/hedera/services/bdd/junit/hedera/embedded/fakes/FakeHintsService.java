@@ -14,7 +14,6 @@ import com.hedera.node.app.hints.impl.OnHintsFinished;
 import com.hedera.node.app.hints.impl.RsaContext;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.node.app.spi.AppContext;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.tss.TssSubmissions;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.TssConfig;
@@ -121,15 +120,6 @@ public class FakeHintsService implements HintsService {
             @NonNull final TssConfig tssConfig,
             final boolean isActive) {
         delegate.reconcile(activeRosters, hintsStore, now, crsWorkTime, tssConfig, isActive);
-    }
-
-    @Override
-    public void executeCrsWork(
-            @NonNull final WritableHintsStore hintsStore,
-            @NonNull final Instant now,
-            final boolean isActive,
-            @NonNull final NetworkInfo networkInfo) {
-        delegate.executeCrsWork(hintsStore, now, isActive, networkInfo);
     }
 
     @Override

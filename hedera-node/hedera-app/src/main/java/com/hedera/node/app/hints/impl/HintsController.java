@@ -25,11 +25,6 @@ public interface HintsController {
     boolean isStillInProgress();
 
     /**
-     * Returns whether the construction has the given party size.
-     */
-    boolean hasNumParties(int numParties);
-
-    /**
      * Acts relative to the given state to let this node help advance the ongoing hinTS construction toward a
      * deterministic completion, if possible.
      *

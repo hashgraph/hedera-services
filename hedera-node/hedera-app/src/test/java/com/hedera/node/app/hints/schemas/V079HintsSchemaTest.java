@@ -9,6 +9,7 @@ import static com.hedera.node.app.hints.schemas.V079HintsSchema.NEXT_CRS_STATE_I
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -22,7 +23,10 @@ import com.hedera.hapi.node.state.hints.NodePartyId;
 import com.hedera.hapi.node.state.hints.PreprocessedKeys;
 import com.hedera.node.app.hints.HintsLibrary;
 import com.hedera.node.app.hints.impl.HintsContext;
+import com.hedera.node.app.hints.impl.HintsLibraryImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.internal.network.Network;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.lifecycle.MigrationContext;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -35,6 +39,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,8 +70,10 @@ class V079HintsSchemaTest {
     @BeforeEach
     void setUp() {
         subject = new V079HintsSchema(library, signingContext);
-        given(ctx.newStates())
-                .willReturn(new MapWritableStates(Map.of(
+        lenient().when(ctx.appConfig()).thenReturn(HederaTestConfigBuilder.createConfig());
+        lenient()
+                .when(ctx.newStates())
+                .thenReturn(new MapWritableStates(Map.of(
                         CRS_STATE_STATE_ID, activeCrs,
                         NEXT_CRS_STATE_ID, nextCrs,
                         ACTIVE_HINTS_CONSTRUCTION_STATE_ID, active,
@@ -76,7 +84,7 @@ class V079HintsSchemaTest {
     @Test
     void genesisLeavesSingletonsUnmodifiedUntilConsensusSetup() {
         given(ctx.isGenesis()).willReturn(true);
-        subject.migrate(ctx);
+        subject.restart(ctx);
         assertNull(nextCrs.get());
         assertFalse(nextCrs.isModified());
         assertFalse(activeCrs.isModified());
@@ -86,114 +94,88 @@ class V079HintsSchemaTest {
     }
 
     @Test
-    void preservesLegacyCompletedCryptoAndNamespacesItsKeys() {
-        givenLegacyScheme(4);
-        given(library.crsPartySize(CRS)).willReturn(4);
-        next.put(HintsConstruction.newBuilder()
-                .constructionId(8)
-                .sourceRosterHash(Bytes.wrap("source"))
-                .targetRosterHash(Bytes.wrap("candidate"))
-                .hintsScheme(HintsScheme.DEFAULT)
-                .build());
-        final var legacyScheme = active.get().hintsScheme();
-        subject.migrate(ctx);
-        assertEquals(CRS, activeCrs.get().crs());
-        assertEquals(4, activeCrs.get().numParties());
-        assertEquals(1, activeCrs.get().ceremonyId());
-        assertEquals(1, activeCrs.get().lastUsedCeremonyId());
-        assertEquals(legacyScheme, active.get().hintsScheme());
-        assertEquals(7, active.get().constructionId());
-        assertEquals(1, active.get().crsId());
-        assertEquals(4, active.get().numParties());
-        assertNotNull(keys.get(new HintsPartyId(0, 4, 1)));
-        assertNull(keys.get(new HintsPartyId(0, 4, 0)));
-        assertEquals(9, next.get().constructionId());
-        assertFalse(next.get().hasHintsScheme());
-        assertFalse(next.get().hasGracePeriodEndTime());
-        assertEquals(Bytes.wrap("candidate"), next.get().targetRosterHash());
+    void emptyNonGenesisStateStaysEmptyAcrossRestarts() {
+        subject.restart(ctx);
+        subject.restart(ctx);
+        assertEquals(HintsConstruction.DEFAULT, active.get());
+        assertEquals(HintsConstruction.DEFAULT, next.get());
+        assertEquals(CRSState.DEFAULT, activeCrs.get());
         assertEquals(CRSState.DEFAULT, nextCrs.get());
+        verifyNoInteractions(library, signingContext);
     }
 
     @Test
-    void refusesToReinterpretLegacySchemeAtADifferentCapacity() {
-        givenLegacyScheme(4);
-        given(library.crsPartySize(CRS)).willReturn(8);
-        assertThrows(IllegalStateException.class, () -> subject.migrate(ctx));
-        assertEquals(0, activeCrs.get().ceremonyId());
-        assertEquals(0, active.get().crsId());
-        assertNotNull(keys.get(new HintsPartyId(0, 4, 0)));
-    }
-
-    @Test
-    void rejectsOversizedLegacyCrsWithoutRebindingItsSchemeOrKeys() {
-        givenLegacyScheme(128);
-        given(library.crsPartySize(CRS)).willThrow(new IllegalArgumentException("Unsupported CRS capacity"));
-        final var originalCrs = activeCrs.get();
-        final var originalConstruction = active.get();
-
-        assertThrows(IllegalArgumentException.class, () -> subject.migrate(ctx));
-
-        assertEquals(originalCrs, activeCrs.get());
-        assertEquals(originalConstruction, active.get());
-        assertNotNull(keys.get(new HintsPartyId(0, 128, 0)));
+    void realPreNovaStateIsRejectedWithoutReinterpretingItsCrypto() throws Exception {
+        final Network fixture;
+        try (var input = getClass().getResourceAsStream("/tss/pre-nova-public-state.json")) {
+            fixture = Network.JSON.parse(BufferedData.wrap(input.readAllBytes()));
+        }
+        final var metadata = fixture.tssMetadataOrThrow();
+        activeCrs.put(metadata.crsStateOrThrow());
+        active.put(metadata.activeHintsConstructionOrThrow());
+        subject = new V079HintsSchema(new HintsLibraryImpl(), signingContext);
+        final var failure = assertThrows(IllegalStateException.class, () -> subject.restart(ctx));
+        assertTrue(failure.getMessage().contains("coordinated hinTS/history reset"));
+        assertEquals(metadata.crsStateOrThrow(), activeCrs.get());
+        assertEquals(metadata.activeHintsConstructionOrThrow(), active.get());
         verifyNoInteractions(signingContext);
     }
 
-    @Test
-    void refusesAmbiguousLegacyCapacity() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rejectsPopulatedLegacyStateEvenWithTssDisabled(final boolean completed) {
         givenLegacyScheme(4);
-        given(library.crsPartySize(CRS)).willReturn(4);
-        keys.put(
-                new HintsPartyId(0, 8, 0),
-                HintsKeySet.newBuilder().nodeId(1).key(Bytes.wrap("other")).build());
-        assertThrows(IllegalStateException.class, () -> subject.migrate(ctx));
+        if (!completed) {
+            activeCrs.put(activeCrs
+                    .get()
+                    .copyBuilder()
+                    .stage(CRSStage.GATHERING_CONTRIBUTIONS)
+                    .build());
+            active.put(HintsConstruction.newBuilder().constructionId(7).build());
+        }
+        lenient()
+                .when(ctx.appConfig())
+                .thenReturn(HederaTestConfigBuilder.create()
+                        .withValue("tss.hintsEnabled", false)
+                        .getOrCreateConfig());
+        final var originalCrs = activeCrs.get();
+        final var originalConstruction = active.get();
+        final var failure = assertThrows(IllegalStateException.class, () -> subject.restart(ctx));
+        assertTrue(failure.getMessage().contains("coordinated hinTS/history reset"));
+        assertEquals(originalCrs, activeCrs.get());
+        assertEquals(originalConstruction, active.get());
+        assertNotNull(keys.get(new HintsPartyId(0, 4, 0)));
+        verifyNoInteractions(library, signingContext);
     }
 
     @Test
-    void refusesMissingLegacyCapacityEvidence() {
-        givenLegacyScheme(4);
-        given(library.crsPartySize(CRS)).willReturn(4);
-        keys.remove(new HintsPartyId(0, 4, 0));
-        assertThrows(IllegalStateException.class, () -> subject.migrate(ctx));
-    }
-
-    @Test
-    void incompleteLegacyCeremonyStartsCleanWithAFreshHintsConstructionId() {
-        given(library.crsPartySize(CRS)).willReturn(4);
-        activeCrs.put(CRSState.newBuilder()
-                .crs(CRS)
-                .stage(CRSStage.WAITING_FOR_ADOPTING_FINAL_CRS)
-                .build());
-        active.put(HintsConstruction.newBuilder()
+    void restartPreservesUnboundModernConstructionWithoutAllocatingAnotherId() {
+        activeCrs.put(CRSState.newBuilder().lastUsedConstructionId(7).build());
+        final var construction = HintsConstruction.newBuilder()
                 .constructionId(7)
                 .sourceRosterHash(Bytes.wrap("source"))
                 .targetRosterHash(Bytes.wrap("target"))
-                .preprocessingStartTime(com.hedera.hapi.node.base.Timestamp.DEFAULT)
-                .build());
-        keys.put(new HintsPartyId(0, 4, 0), HintsKeySet.DEFAULT);
-        subject.migrate(ctx);
-        assertEquals(CRSState.newBuilder().lastUsedConstructionId(8).build(), activeCrs.get());
-        assertEquals(8, active.get().constructionId());
-        assertEquals(Bytes.wrap("target"), active.get().targetRosterHash());
-        assertFalse(active.get().hasPreprocessingStartTime());
-        assertFalse(active.get().hasGracePeriodEndTime());
-        assertEquals(0, active.get().crsId());
-        assertNull(keys.get(new HintsPartyId(0, 4, 0)));
-        verify(library).crsPartySize(CRS);
-        verifyNoInteractions(signingContext);
+                .build();
+        active.put(construction);
+        subject.restart(ctx);
+        subject.restart(ctx);
+        assertEquals(construction, active.get());
+        assertEquals(7, activeCrs.get().lastUsedConstructionId());
+        verifyNoInteractions(library, signingContext);
     }
 
     @Test
     void restartRestoresSigningOnlyWithTheBoundActiveCrs() {
-        givenLegacyScheme(4);
+        givenBoundActiveScheme(4);
         given(library.crsPartySize(CRS)).willReturn(4);
-        subject.migrate(ctx);
-        given(ctx.appConfig())
-                .willReturn(HederaTestConfigBuilder.create()
+        subject.restart(ctx);
+        lenient()
+                .when(ctx.appConfig())
+                .thenReturn(HederaTestConfigBuilder.create()
                         .withValue("tss.hintsEnabled", "true")
                         .getOrCreateConfig());
         subject.restart(ctx);
-        verify(signingContext).setConstruction(active.get(), activeCrs.get());
+        verify(signingContext, times(2)).setConstruction(active.get(), activeCrs.get());
     }
 
     @Test
@@ -263,8 +245,9 @@ class V079HintsSchemaTest {
     }
 
     private void givenRestartConfiguration() {
-        given(ctx.appConfig())
-                .willReturn(HederaTestConfigBuilder.create()
+        lenient()
+                .when(ctx.appConfig())
+                .thenReturn(HederaTestConfigBuilder.create()
                         .withValue("tss.hintsEnabled", "true")
                         .getOrCreateConfig());
     }

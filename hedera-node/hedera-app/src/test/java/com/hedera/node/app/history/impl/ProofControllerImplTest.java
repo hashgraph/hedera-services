@@ -191,6 +191,7 @@ class ProofControllerImplTest {
     void isStillInProgressFalseWhenHasFailureReason() {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH))
                 .failureReason("fail")
                 .build();
 
@@ -576,6 +577,7 @@ class ProofControllerImplTest {
 
         final var restarted = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().build())
                 .wrapsRetryCount(1)
                 .build();
@@ -622,6 +624,7 @@ class ProofControllerImplTest {
 
         final var restarted = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().build())
                 .wrapsRetryCount(1)
                 .build();
@@ -647,6 +650,7 @@ class ProofControllerImplTest {
     void advanceConstructionRecoversFailedConstructionAtStart() {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH))
                 .failureReason(RECOVERABLE_REASON)
                 .build();
 
@@ -670,6 +674,7 @@ class ProofControllerImplTest {
 
         final var restarted = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().build())
                 .wrapsRetryCount(1)
                 .build();
@@ -689,6 +694,7 @@ class ProofControllerImplTest {
     void advanceConstructionReturnsEarlyForIrrecoverableFailureAtStart() {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH))
                 .failureReason("irrecoverable")
                 .build();
 
@@ -720,6 +726,7 @@ class ProofControllerImplTest {
     void advanceConstructionReturnsEarlyWhenRetryBudgetExhausted() {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH))
                 .failureReason(RECOVERABLE_REASON)
                 .wrapsRetryCount(DEFAULT_TSS_CONFIG.maxWrapsRetries())
                 .build();
@@ -1165,6 +1172,7 @@ class ProofControllerImplTest {
         final var metadata = Bytes.wrap("metadata");
         final var restarted = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().build())
                 .wrapsRetryCount(1)
                 .build();
@@ -1307,6 +1315,11 @@ class ProofControllerImplTest {
 
     @Test
     void constructorReplaysWrapsMessagesAndSkipsLateProofKeyPublications() {
+        construction = construction
+                .copyBuilder()
+                .assemblyStartTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
+                .build();
         keyPublications.add(new ProofKeyPublication(SELF_ID, PROOF_KEY_1, Instant.EPOCH));
         keyPublications.add(new ProofKeyPublication(OTHER_NODE_ID, Bytes.wrap("late"), Instant.EPOCH.plusSeconds(11)));
         wrapsMessagePublications.add(
@@ -1332,9 +1345,11 @@ class ProofControllerImplTest {
                 historyProofMetrics,
                 DEFAULT_TSS_CONFIG);
 
-        given(weights.numTargetNodesInSource()).willReturn(2);
+        given(prover.advance(any(), any(), any(), any(), any(), any(), anyBoolean()))
+                .willReturn(HistoryProver.Outcome.InProgress.INSTANCE);
+        given(writableHistoryStore.getConstructionOrThrow(CONSTRUCTION_ID)).willReturn(construction);
 
-        subject.advanceConstruction(Instant.EPOCH.plusSeconds(5), METADATA, writableHistoryStore, true, tssConfig);
+        subject.advanceConstruction(Instant.EPOCH.plusSeconds(12), METADATA, writableHistoryStore, true, tssConfig);
 
         verify(prover).replayWrapsSigningMessage(eq(CONSTRUCTION_ID), eq(wrapsMessagePublications.getFirst()));
         verify(writableHistoryStore, never()).setAssemblyTime(anyLong(), any());
@@ -1488,11 +1503,70 @@ class ProofControllerImplTest {
     /**
      * Uses a subject whose construction grounds a chain of trust; i.e., has the same source and target roster.
      */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void restartKeepsExactlyTheKeysSelectedByTheLiveController(final boolean duringSigning) {
+        final var cutoff = Instant.EPOCH.plusSeconds(20);
+        final var secondKey = Bytes.wrap("second");
+        final var accepted = Map.of(SELF_ID, PROOF_KEY_1, OTHER_NODE_ID, secondKey);
+        final var first = new ProofKeyPublication(SELF_ID, PROOF_KEY_1, Instant.EPOCH);
+        // This key arrives after the grace deadline, while the live controller still waits for metadata.
+        final var atCutoff = new ProofKeyPublication(OTHER_NODE_ID, secondKey, cutoff);
+        final var late = new ProofKeyPublication(99L, Bytes.wrap("late"), cutoff.plusNanos(1));
+        given(weights.targetIncludes(anyLong())).willReturn(true);
+        given(weights.numTargetNodesInSource()).willReturn(3);
+        given(weights.targetWeightOf(anyLong())).willReturn(1L);
+        given(weights.targetWeightThreshold()).willReturn(2L);
+        var assembled = construction
+                .copyBuilder()
+                .assemblyStartTime(asTimestamp(cutoff))
+                .proofKeyCutoffTime(asTimestamp(cutoff))
+                .build();
+        given(writableHistoryStore.setAssemblyTime(CONSTRUCTION_ID, cutoff)).willReturn(assembled);
+        subject.addProofKeyPublication(first);
+        subject.addProofKeyPublication(atCutoff);
+        subject.advanceConstruction(cutoff, METADATA, writableHistoryStore, true, DEFAULT_TSS_CONFIG);
+        subject.addProofKeyPublication(late);
+        given(prover.advance(any(), any(), any(), any(), any(), any(), anyBoolean()))
+                .willReturn(HistoryProver.Outcome.InProgress.INSTANCE);
+        given(writableHistoryStore.getConstructionOrThrow(CONSTRUCTION_ID)).willReturn(assembled);
+        subject.advanceConstruction(cutoff.plusSeconds(1), METADATA, writableHistoryStore, true, DEFAULT_TSS_CONFIG);
+        verify(prover).advance(any(), any(), eq(METADATA), eq(accepted), any(), any(), eq(true));
+        org.mockito.Mockito.clearInvocations(prover);
+        if (duringSigning) {
+            assembled = assembled
+                    .copyBuilder()
+                    .wrapsSigningState(WrapsSigningState.newBuilder().phase(R2))
+                    .build();
+            assertFalse(assembled.hasAssemblyStartTime());
+        }
+        final var rebuilt = new ProofControllerImpl(
+                SELF_ID,
+                keyPair,
+                assembled,
+                weights,
+                executor,
+                submissions,
+                machine,
+                List.of(first, atCutoff, late),
+                List.of(),
+                Map.of(),
+                historyService,
+                historyLibrary,
+                proverFactory,
+                null,
+                historyProofMetrics,
+                DEFAULT_TSS_CONFIG);
+        rebuilt.advanceConstruction(cutoff.plusSeconds(1), METADATA, writableHistoryStore, true, DEFAULT_TSS_CONFIG);
+        verify(prover).advance(any(), any(), eq(METADATA), eq(accepted), any(), any(), eq(true));
+    }
+
     private void givenGroundingSubject() {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
                 .sourceRosterHash(ROSTER_HASH)
                 .targetRosterHash(ROSTER_HASH)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().phase(AGGREGATE))
                 .build();
         subject = new ProofControllerImpl(
@@ -1518,6 +1592,7 @@ class ProofControllerImplTest {
             final com.hedera.hapi.node.state.history.WrapsPhase phase, final HistoryProofMetrics.Stage stage) {
         construction = HistoryProofConstruction.newBuilder()
                 .constructionId(CONSTRUCTION_ID)
+                .proofKeyCutoffTime(asTimestamp(Instant.EPOCH.plusSeconds(10)))
                 .wrapsSigningState(WrapsSigningState.newBuilder().phase(phase).build())
                 .build();
 

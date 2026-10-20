@@ -97,17 +97,19 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
             throw new IllegalArgumentException("Handoff phase has no construction");
         }
         var construction = getConstructionFor(activeRosters);
-        final boolean metadataChanged =
-                construction != null && metadata != null && requiresNewMetadataBinding(construction, metadata);
+        final boolean requiresReplacement = construction != null
+                && ((metadata != null && requiresNewMetadataBinding(construction, metadata))
+                        || ((construction.hasWrapsSigningState() || construction.hasFailureReason())
+                                && !construction.hasProofKeyCutoffTime()));
         // An unfinished bootstrap construction has no active proof to preserve. Replace it in place,
         // allocating its successor's ID before overwriting the old state.
-        final boolean replaceActive = metadataChanged
+        final boolean replaceActive = requiresReplacement
                 && !isCompleted(construction)
                 && construction.constructionId() == getActiveConstruction().constructionId();
         // Constructions are matched by roster hashes alone, so when a fresh genesis proof is requested the
         // completed construction that already grounds the chain of trust for this roster is matched again;
         // it holds the very proof to be replaced, so a new construction is needed
-        if (metadataChanged || (construction != null && freshGenesisRequested && isCompleted(construction))) {
+        if (requiresReplacement || (construction != null && freshGenesisRequested && isCompleted(construction))) {
             construction = null;
         }
         if (construction == null) {
@@ -172,7 +174,8 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
     @Override
     public HistoryProofConstruction setAssemblyTime(final long constructionId, @NonNull final Instant now) {
         requireNonNull(now);
-        return updateOrThrow(constructionId, (c, b) -> b.assemblyStartTime(asTimestamp(now)));
+        return updateOrThrow(
+                constructionId, (c, b) -> b.assemblyStartTime(asTimestamp(now)).proofKeyCutoffTime(asTimestamp(now)));
     }
 
     @Override
@@ -204,6 +207,9 @@ public class WritableHistoryStoreImpl extends ReadableHistoryStoreImpl implement
         updateOrThrow(constructionId, (c, b) -> {
             final var sb = c.wrapsSigningStateOrElse(WrapsSigningState.DEFAULT).copyBuilder();
             spec.accept(sb);
+            if (!c.hasProofKeyCutoffTime() && c.hasAssemblyStartTime()) {
+                b.proofKeyCutoffTime(c.assemblyStartTimeOrThrow());
+            }
             return b.wrapsSigningState(sb.build());
         });
     }

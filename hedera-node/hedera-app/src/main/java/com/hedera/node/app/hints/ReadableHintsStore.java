@@ -9,7 +9,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.hints.CRSState;
 import com.hedera.hapi.node.state.hints.HintsConstruction;
 import com.hedera.hapi.node.state.hints.PreprocessingVote;
-import com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody;
 import com.hedera.node.app.service.roster.impl.ActiveRosters;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -18,7 +17,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 
 /**
  * Gives read access to the primary and secondary hinTS service states.
@@ -103,16 +101,6 @@ public interface ReadableHintsStore {
     @NonNull
     Map<Long, PreprocessingVote> getVotes(long constructionId, @NonNull Set<Long> nodeIds);
 
-    /**
-     * Returns the hinTS keys published by the given set of nodes for the given party size.
-     *
-     * @param nodeIds    the node ids
-     * @param numParties the number of parties in the scheme
-     * @return the {@link HintsKeyPublication}s
-     */
-    @NonNull
-    List<HintsKeyPublication> getHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties);
-
     /** Returns publications bound to exactly the requested CRS generation and party capacity. */
     @NonNull
     List<HintsKeyPublication> getHintsKeyPublications(@NonNull Set<Long> nodeIds, int numParties, long crsId);
@@ -147,26 +135,4 @@ public interface ReadableHintsStore {
         }
         return CRSState.DEFAULT;
     }
-
-    /**
-     * Returns the current CRS, if known; or null otherwise;
-     */
-    default @Nullable Bytes crsIfKnown() {
-        final var active = getCrsState();
-        return active.stage() == COMPLETED && active.crs().length() > 0 && isSupportedPartySize(active.numParties())
-                ? active.crs()
-                : null;
-    }
-
-    /**
-     * Returns the current CRS publications submitted by the nodes.
-     *
-     * @return the current CRS publications
-     */
-    List<CrsPublicationTransactionBody> getCrsPublications();
-
-    /**
-     * Returns the current CRS publication for all nodes.
-     */
-    SortedMap<Long, CrsPublicationTransactionBody> getOrderedCrsPublications(@NonNull Set<Long> nodeIds);
 }
