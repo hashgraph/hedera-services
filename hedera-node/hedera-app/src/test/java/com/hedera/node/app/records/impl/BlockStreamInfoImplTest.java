@@ -245,6 +245,50 @@ class BlockStreamInfoImplTest {
     }
 
     @Test
+    void blockHashByBlockNumberHandlesPostV0740TransientWindow() {
+        // V0740 writes "all but the final record hash": 255 genuine 48-byte entries while blockNumber is large, so
+        // min(blockNumber, 256) = 256 overstates the entry count and a raw length/count division yields stride 47.
+        final long blockNumber = 1000L;
+        final var entries = new Bytes[255];
+        for (int i = 0; i < entries.length; i++) {
+            entries[i] = hash(i + 1);
+        }
+        final var trailing = concat(entries);
+        assertEquals(255L * 48, trailing.length(), "post-V0740 shape: 255 entries of 48 bytes");
+        final var blockStreamInfo = info(blockNumber, trailing);
+        final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
+        final var reconstructedLast =
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+
+        // The extended window has 256 entries covering blocks 745..1000
+        assertEquals(reconstructedLast, subject.blockHashByBlockNumber(blockNumber));
+        assertEquals(32, (int) subject.blockHashByBlockNumber(blockNumber).length());
+        assertEquals(hash(255), subject.blockHashByBlockNumber(blockNumber - 1), "genuine 48-byte entry intact");
+        assertEquals(hash(254), subject.blockHashByBlockNumber(blockNumber - 2));
+        assertEquals(hash(1), subject.blockHashByBlockNumber(blockNumber - 255), "oldest entry intact");
+        assertNull(subject.blockHashByBlockNumber(blockNumber - 256), "older than the extended window");
+    }
+
+    @Test
+    void blockHashByBlockNumberUnchangedForUniformWindows() {
+        // Uniform 48-byte window with entries == count
+        final var wide = new BlockStreamInfoImpl(info(3L, concat(hash(1), hash(2), hash(3))), DigestType.SHA_384);
+        assertEquals(hash(1), wide.blockHashByBlockNumber(0L));
+        assertEquals(hash(2), wide.blockHashByBlockNumber(1L));
+        assertEquals(hash(3), wide.blockHashByBlockNumber(2L));
+        assertEquals(48, (int) wide.blockHashByBlockNumber(3L).length());
+
+        // Uniform 32-byte window with entries == count
+        final var sha256 = DigestType.SHA_256;
+        final var narrow = new BlockStreamInfoImpl(
+                info(3L, concat(runningHash(1, sha256), runningHash(2, sha256), runningHash(3, sha256))), sha256);
+        assertEquals(runningHash(1, sha256), narrow.blockHashByBlockNumber(0L));
+        assertEquals(runningHash(2, sha256), narrow.blockHashByBlockNumber(1L));
+        assertEquals(runningHash(3, sha256), narrow.blockHashByBlockNumber(2L));
+        assertEquals(32, (int) narrow.blockHashByBlockNumber(3L).length());
+    }
+
+    @Test
     void blockHashByBlockNumberIsNullAtGenesis() {
         final var subject = new BlockStreamInfoImpl(info(-1L, Bytes.EMPTY), DigestType.SHA_384);
         assertNull(subject.blockHashByBlockNumber(0L));

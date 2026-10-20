@@ -123,8 +123,9 @@ public class BlockImplUtils {
         if (storedLen <= realSize) {
             return stored;
         }
-        // A genuine full-size hash (e.g. pre-cutover SHA-384) effectively never begins with a full run of zero bytes,
-        // so an all-zero leading region reliably identifies a padded shorter hash.
+        // LOAD-BEARING INVARIANT - do not optimize away: a genuine full-size hash (e.g. pre-cutover SHA-384)
+        // effectively never begins with a full run of zero bytes (2^-128 for 48->32), so an all-zero leading region
+        // reliably identifies a padded shorter hash.
         for (int i = 0; i < storedLen - realSize; i++) {
             if (stored.getByte(i) != 0) {
                 return stored;
@@ -161,8 +162,8 @@ public class BlockImplUtils {
     /**
      * Appends a new native block hash to the trailing window, keeping all entries a uniform size. While a genuine
      * full-size (pre-cutover) hash remains, shorter hashes are left-padded to {@code preSize}. Once the oldest entry is
-     * itself padded (no genuine hashes remain), the window is compacted to {@code activeSize} and subsequent hashes are
-     * stored natively.
+     * itself padded (no genuine hashes remain) <b>and the block stream has cut over</b>, the window is compacted to
+     * {@code activeSize} and subsequent hashes are stored natively. Before cutover the window is never compacted.
      *
      * @param newHash the new native block hash to append
      * @param window the current trailing block hashes
@@ -170,6 +171,7 @@ public class BlockImplUtils {
      * @param newBlockNo the block number of {@code newHash}
      * @param preSize the pre-cutover (full-size) stored entry length
      * @param activeSize the byte length of the active digest's hashes
+     * @param postCutover whether the block stream has cut over to the active digest; compaction only occurs if true
      * @return the updated trailing block hashes
      */
     public static Bytes appendTrailingBlockHash(
@@ -178,10 +180,12 @@ public class BlockImplUtils {
             final int maxHashes,
             final long newBlockNo,
             final int preSize,
-            final int activeSize) {
+            final int activeSize,
+            final boolean postCutover) {
         final long countExisting = Math.min(newBlockNo, maxHashes);
         final int existingStride = storedStride(window.length(), countExisting, preSize, activeSize);
-        if (preSize != activeSize
+        if (postCutover
+                && preSize != activeSize
                 && existingStride == preSize
                 && countExisting > 0
                 && isLeftmostPadded(window, preSize - activeSize)) {
@@ -194,13 +198,15 @@ public class BlockImplUtils {
     }
 
     /**
-     * Determines the uniform per-entry byte length of a trailing window that is either in {@code preSize}-byte padded
-     * mode or {@code activeSize}-byte native (post-compaction) mode. Uses length divisibility first — a window compacts
-     * only once it has been full of padded entries, so any length that divides evenly by exactly one of the two sizes
-     * is unambiguous. Only when the length is compatible with both strides (a multiple of their least common multiple)
-     * does it fall back to the entry {@code count}, which the design pins to the block number.
+     * Public decoder for the uniform per-entry byte length of a trailing window that is either in {@code preSize}-byte
+     * padded mode or {@code activeSize}-byte native (post-compaction) mode. Uses length divisibility first — a window
+     * compacts only once it has been full of padded entries, so any length that divides evenly by exactly one of the
+     * two sizes is unambiguous. Only when the length is compatible with both strides (a multiple of their least common
+     * multiple) does it fall back to the entry {@code count}, which the design pins to the block number.
+     * That fallback ({@code length / count}) requires {@code count} to be the exact entry count; callers satisfy this
+     * via {@code min(blockNumber[+1], maxHashes)}.
      */
-    private static int storedStride(final long length, final long count, final int preSize, final int activeSize) {
+    public static int storedStride(final long length, final long count, final int preSize, final int activeSize) {
         if (preSize == activeSize || length == 0) {
             return activeSize;
         }

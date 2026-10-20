@@ -529,7 +529,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final boolean isCutoverBlock = cutoverTrailingBlockHash != null;
             final var trailingHash = isCutoverBlock ? cutoverTrailingBlockHash : lastBlockHash;
             cutoverTrailingBlockHash = null;
-            blockHashManager.startBlock(blockStreamInfo, trailingHash);
+            final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                    .<BlockInfo>getSingleton(BLOCKS_STATE_ID)
+                    .get();
+            final boolean postCutover = blockInfo != null && blockInfo.previewStreamOverwritten();
+            blockHashManager.startBlock(blockStreamInfo, trailingHash, postCutover);
             runningHashManager.startBlock(blockStreamInfo, isCutoverBlock);
 
             lifecycle.onOpenBlock(state);
@@ -1624,17 +1628,25 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          * Starts managing running hashes for a new round, with the given trailing block hashes.
          *
          * @param blockStreamInfo the trailing block hashes at the start of the round
+         * @param prevBlockHash the hash of the previous block, to append to the trailing block hashes
+         * @param postCutover whether the preview stream has been overwritten (from {@code BlockInfo}); only then may
+         * the trailing window be compacted to the active digest length
          */
-        void startBlock(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull Bytes prevBlockHash) {
+        void startBlock(
+                @NonNull final BlockStreamInfo blockStreamInfo,
+                @NonNull Bytes prevBlockHash,
+                final boolean postCutover) {
             // Keep all entries a uniform size: pad to RECORD_HASH_SIZE while any genuine pre-cutover hash remains,
-            // then compact the window to the active digest length once none do (one-time, derived purely from state).
+            // then compact the window to the active digest length once none do and the stream has cut over (i.e.
+            // the state's previewStreamOverwritten flag is set); before cutover the window is never compacted.
             blockHashes = BlockImplUtils.appendTrailingBlockHash(
                     prevBlockHash,
                     blockStreamInfo.trailingBlockHashes(),
                     numTrailingBlocks,
                     blockStreamInfo.blockNumber(),
                     RECORD_HASH_SIZE,
-                    digestOrThrow().getDigestLength());
+                    digestOrThrow().getDigestLength(),
+                    postCutover);
         }
 
         /**

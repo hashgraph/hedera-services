@@ -489,8 +489,8 @@ class BlockImplUtilsTest {
         final byte[] window = genuine48.clone(); // one entry, newBlockNo=1 so countExisting=1 matches one entry
         final byte[] newNative = seq(32, 200);
 
-        final var result =
-                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32);
+        final var result = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32, false);
         assertEquals(96L, result.length()); // grew by one 48-byte padded entry
         final byte[] out = result.toByteArray();
         // genuine entry unchanged
@@ -513,7 +513,7 @@ class BlockImplUtilsTest {
         final byte[] newNative = seq(32, 200);
 
         final var result =
-                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32);
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32, false);
         assertEquals(96L, result.length()); // stays maxHashes*48
         final byte[] out = result.toByteArray();
         // oldest genuine rolled off; previously-second entry now first
@@ -523,7 +523,7 @@ class BlockImplUtilsTest {
     }
 
     @Test
-    void appendTrailingBlockHashCompactsWhenNoGenuineRemain() {
+    void appendTrailingBlockHashCompactsOncePostCutoverWhenNoGenuineRemain() {
         // Full window of maxHashes=2 entries, both padded (no genuine) -> compact to 32-mode then native append.
         final byte[] r0 = seq(32, 50);
         final byte[] r1 = seq(32, 100);
@@ -533,7 +533,7 @@ class BlockImplUtilsTest {
         final byte[] newNative = seq(32, 200);
 
         final var result =
-                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32);
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32, true);
         assertEquals(64L, result.length()); // compacted to maxHashes*32
         final byte[] out = result.toByteArray();
         // oldest (r0) rolled off; r1 compacted to native, new entry rightmost native
@@ -548,8 +548,8 @@ class BlockImplUtilsTest {
         final byte[] window = r0.clone(); // one native entry, countExisting = min(1,256)=1
         final byte[] newNative = seq(32, 200);
 
-        final var result =
-                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32);
+        final var result = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(newNative), Bytes.wrap(window), 256, 1L, 48, 32, true);
         assertEquals(64L, result.length());
         final byte[] out = result.toByteArray();
         assertArrayEquals(r0, java.util.Arrays.copyOfRange(out, 0, 32));
@@ -564,10 +564,161 @@ class BlockImplUtilsTest {
         final byte[] newHash = seq(48, 100);
 
         final var result =
-                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newHash), Bytes.wrap(window), 256, 1L, 48, 48);
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newHash), Bytes.wrap(window), 256, 1L, 48, 48, true);
         assertEquals(96L, result.length());
         final byte[] out = result.toByteArray();
         assertArrayEquals(e0, java.util.Arrays.copyOfRange(out, 0, 48));
         assertArrayEquals(newHash, java.util.Arrays.copyOfRange(out, 48, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashDoesNotCompactPreCutoverWhileGenuineRemains() {
+        final byte[] genuine48 = seq(48, 0);
+        final byte[] newNative = seq(32, 200);
+
+        final var result = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(newNative), Bytes.wrap(genuine48), 256, 1L, 48, 32, false);
+        assertEquals(96L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(genuine48, java.util.Arrays.copyOfRange(out, 0, 48));
+        assertArrayEquals(padded48(newNative), java.util.Arrays.copyOfRange(out, 48, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashDoesNotCompactPreCutoverWhenFullyPadded() {
+        final byte[] r0 = seq(32, 50);
+        final byte[] r1 = seq(32, 100);
+        final byte[] window = new byte[96];
+        System.arraycopy(padded48(r0), 0, window, 0, 48);
+        System.arraycopy(padded48(r1), 0, window, 48, 48);
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32, false);
+        assertEquals(96L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(padded48(r1), java.util.Arrays.copyOfRange(out, 0, 48));
+        assertArrayEquals(padded48(newNative), java.util.Arrays.copyOfRange(out, 48, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashDefersCompactionPostCutoverWhileGenuineRemains() {
+        final byte[] genuine48 = seq(48, 0);
+        final byte[] padded = padded48(seq(32, 100));
+        final byte[] window = new byte[96];
+        System.arraycopy(genuine48, 0, window, 0, 48);
+        System.arraycopy(padded, 0, window, 48, 48);
+        final byte[] newNative = seq(32, 200);
+
+        final var result =
+                BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(newNative), Bytes.wrap(window), 2, 2L, 48, 32, true);
+        assertEquals(96L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(padded, java.util.Arrays.copyOfRange(out, 0, 48));
+        assertArrayEquals(padded48(newNative), java.util.Arrays.copyOfRange(out, 48, 96));
+    }
+
+    @Test
+    void appendTrailingBlockHashIsIdempotentAfterCompaction() {
+        final byte[] r0 = seq(32, 50);
+        final byte[] r1 = seq(32, 100);
+        final byte[] window = new byte[64];
+        System.arraycopy(r0, 0, window, 0, 32);
+        System.arraycopy(r1, 0, window, 32, 32);
+        final byte[] newNative = seq(32, 200);
+
+        final var result = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(newNative), Bytes.wrap(window), 2, 1000L, 48, 32, true);
+        assertEquals(64L, result.length());
+        final byte[] out = result.toByteArray();
+        assertArrayEquals(r1, java.util.Arrays.copyOfRange(out, 0, 32));
+        assertArrayEquals(newNative, java.util.Arrays.copyOfRange(out, 32, 64));
+    }
+
+    @Test
+    void storedStrideDecodesByDivisibilityThenCount() {
+        assertEquals(48, BlockImplUtils.storedStride(48L * 4, 4, 48, 32));
+        assertEquals(32, BlockImplUtils.storedStride(32L * 4, 4, 48, 32));
+        assertEquals(48, BlockImplUtils.storedStride(48L * 255, 256, 48, 32));
+    }
+
+    @Test
+    void appendTrailingBlockHashNeverCompactsAcrossRollOffPreCutover() {
+        final int max = 4;
+        Bytes window = Bytes.wrap(seq(48 * max, 0));
+        for (int n = max; n < max + 300; n++) {
+            window = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(seq(32, n)), window, max, n, 48, 32, false);
+            assertEquals(48L * max, window.length(), "stride must stay 48 at append " + n);
+        }
+    }
+
+    @Test
+    void appendTrailingBlockHashCompactsExactlyOncePostCutover() {
+        final int max = 4;
+        Bytes window = Bytes.wrap(seq(48 * max, 0)); // entries are genuine (non-zero leading bytes)
+        // Genuine entries are gone after `max` appends; compaction fires on append index `max`.
+        int firstCompact = -1;
+        for (int i = 0; i < 20; i++) {
+            final long n = max + i;
+            window = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(seq(32, (int) n)), window, max, n, 48, 32, true);
+            if (firstCompact < 0 && window.length() == 32L * max) {
+                firstCompact = i;
+            }
+            if (firstCompact < 0) {
+                assertEquals(48L * max, window.length());
+            } else {
+                assertEquals(32L * max, window.length(), "must stay native after compaction at append " + i);
+            }
+        }
+        assertEquals(max, firstCompact, "compacts on the append after the last genuine entry has rolled off");
+    }
+
+    @Test
+    void realBlockHashByBlockNumberStableAcrossEras() {
+        final byte[] genuine0 = seq(48, 0);
+        final byte[] r1 = seq(32, 100);
+        final byte[] r2 = seq(32, 150);
+        final byte[] r3 = seq(32, 200);
+
+        // pre-cutover: only genuine block 0
+        assertArrayEquals(
+                genuine0,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(genuine0), 0L, 0L, 256, 32)
+                        .toByteArray());
+
+        // cutover block: genuine block 0 followed directly by the first padded entry (block 1)
+        final byte[] cut = new byte[96];
+        System.arraycopy(genuine0, 0, cut, 0, 48);
+        System.arraycopy(padded48(r1), 0, cut, 48, 48);
+        assertArrayEquals(
+                genuine0,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(cut), 1L, 0L, 256, 32)
+                        .toByteArray());
+        assertArrayEquals(
+                r1,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(cut), 1L, 1L, 256, 32)
+                        .toByteArray());
+
+        // mid roll-off (maxHashes=2): genuine rolled off, two padded entries for blocks 2,3
+        final byte[] mid = new byte[96];
+        System.arraycopy(padded48(r2), 0, mid, 0, 48);
+        System.arraycopy(padded48(r3), 0, mid, 48, 48);
+        assertArrayEquals(
+                r2,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(mid), 3L, 2L, 2, 32)
+                        .toByteArray());
+
+        // post-compaction: native entries for blocks 2,3
+        final byte[] post = new byte[64];
+        System.arraycopy(r2, 0, post, 0, 32);
+        System.arraycopy(r3, 0, post, 32, 32);
+        assertArrayEquals(
+                r3,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(post), 3L, 3L, 2, 32)
+                        .toByteArray());
+        assertArrayEquals(
+                r2,
+                BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(post), 3L, 2L, 2, 32)
+                        .toByteArray());
     }
 }

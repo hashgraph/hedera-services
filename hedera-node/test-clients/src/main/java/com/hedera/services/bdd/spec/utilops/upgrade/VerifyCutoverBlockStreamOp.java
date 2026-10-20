@@ -133,9 +133,11 @@ public class VerifyCutoverBlockStreamOp extends UtilOp {
             }
         }
         log.info("Computed running hashes through {} TRANSACTION_RESULT items", resultCount);
-        assertTrue(resultCount > 0, "First post-cutover block should contain at least one transaction result");
-        // This expected-window construction assumes at least four post-cutover results, so all four slots are
-        // chained (uniform) under the configured digest.
+        // The expected-window construction below chains all four running-hash slots under the configured digest,
+        // which holds only if the first post-cutover block closed with at least four transaction results.
+        assertTrue(
+                resultCount >= 4,
+                "First post-cutover block should contain at least four transaction results, but had " + resultCount);
         Bytes expectedOutputHashes = BlockImplUtils.appendHash(Bytes.wrap(nMinus3), Bytes.EMPTY, 4);
         expectedOutputHashes = BlockImplUtils.appendHash(Bytes.wrap(nMinus2), expectedOutputHashes, 4);
         expectedOutputHashes = BlockImplUtils.appendHash(Bytes.wrap(nMinus1), expectedOutputHashes, 4);

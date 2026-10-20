@@ -331,6 +331,63 @@ class BlockStreamManagerImplTest {
     }
 
     @Test
+    void startBlockThreadsPostCutoverFalseWhenPreviewNotOverwritten() {
+        // previewStreamOverwritten=false => postCutover=false, so the padded window is NOT compacted
+        final var window = runSha256BlockOverPaddedWindowWith(
+                BlockInfo.newBuilder().previewStreamOverwritten(false).build());
+
+        assertEquals(2 * RECORD_HASH_SIZE, window.length());
+    }
+
+    @Test
+    void startBlockThreadsPostCutoverTrueWhenPreviewOverwritten() {
+        // previewStreamOverwritten=true => postCutover=true, so the all-padded window is compacted to 32-byte entries
+        final var window = runSha256BlockOverPaddedWindowWith(
+                BlockInfo.newBuilder().previewStreamOverwritten(true).build());
+
+        assertEquals(2 * DigestType.SHA_256.digestLength(), window.length());
+    }
+
+    @Test
+    void startBlockTreatsNullBlockInfoAsPreCutover() {
+        // A missing BlockInfo singleton must not throw and is treated as postCutover=false
+        final var window = runSha256BlockOverPaddedWindowWith(null);
+
+        assertEquals(2 * RECORD_HASH_SIZE, window.length());
+    }
+
+    /**
+     * Runs one SHA-256 block whose starting trailing window is a single fully padded 48-byte entry, with the given
+     * {@link BlockInfo} (possibly null) in the block record service state; returns the resulting trailing window.
+     */
+    private Bytes runSha256BlockOverPaddedWindowWith(@Nullable final BlockInfo blockInfo) {
+        digestType = DigestType.SHA_256;
+        // A single 48-byte entry whose leading 16 bytes are zero pad (no genuine pre-cutover hash remains)
+        final var paddedEntry = Bytes.wrap(new byte[RECORD_HASH_SIZE]);
+        final var startingInfo = blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION)
+                .copyBuilder()
+                .trailingBlockHashes(paddedEntry)
+                .build();
+        givenSubjectWith(1, 0, startingInfo, platformStateWithFreezeTime(null), aWriter);
+        givenEndOfRoundSetup();
+        given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(blockHashSigner.isReady()).willReturn(true);
+        lenient()
+                .when(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .thenReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+
+        subject.init(state, FAKE_RESTART_BLOCK_HASH);
+        subject.startRound(round, state);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        subject.endRound(state, ROUND_NO);
+
+        return infoRef.get().trailingBlockHashes();
+    }
+
+    @Test
     void suppressesOversizedSavepointBatchesAtomicallyInBothMode() {
         givenSubjectWith(
                 1,
@@ -2871,6 +2928,11 @@ class BlockStreamManagerImplTest {
                 .when(readableStates.<PlatformState>getSingleton(PLATFORM_STATE_STATE_ID))
                 .thenReturn(new FunctionWritableSingletonState<>(
                         PLATFORM_STATE_STATE_ID, PLATFORM_STATE_STATE_LABEL, stateRef::get, stateRef::set));
+        // startBlock reads previewStreamOverwritten from the block record service's BlockInfo; default to pre-cutover
+        lenient()
+                .when(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .thenReturn(new FunctionReadableSingletonState<>(
+                        BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> BlockInfo.DEFAULT));
         lenient()
                 .doAnswer(ignored -> {
                     blockStreamInfoState.commit();

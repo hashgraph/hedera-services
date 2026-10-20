@@ -3,6 +3,7 @@ package com.hedera.node.app.records.impl;
 
 import static com.hedera.node.app.blocks.impl.BlockImplUtils.appendHash;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_STATE_ID;
+import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.RECORD_HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
@@ -103,7 +104,8 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
         // hashes only reach blockNumber - 1. Reconstruct it and append so the set covers up to blockNumber, letting
         // queries resolve blockhash(block.number - 1) for the most recent block exactly as BlockRecordInfoImpl does.
         // The window may be in 48-byte padded mode or compacted 32-byte native mode; realBlockHashByBlockNumber
-        // derives the stride from the entry count and strips any left-padding to recover the real hash.
+        // derives the stride from the window length (falling back to the entry count only when ambiguous) and
+        // strips any left-padding to recover the real hash.
         return BlockImplUtils.realBlockHashByBlockNumber(
                 extendedBlockHashes(), lastCompleted, blockNo, NUM_TRAILING_BLOCKS, digestType.digestLength());
     }
@@ -113,11 +115,13 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
             final var lastBlockHash =
                     BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, NUM_TRAILING_BLOCKS);
             // Append the reconstructed last hash at the window's CURRENT stride (48 padded or 32 native) without
-            // compacting — this is a read-only extension for queries, never persisted. Derive the stride from the
-            // state window's entry count (pinned by the block number), then pad the native last hash to match.
+            // compacting — this is a read-only extension for queries, never persisted. Derive the stride with the
+            // same decoder the readers use (length divisibility first, entry count only if ambiguous); a raw
+            // length / count division mis-rounds in the transient post-V0740 window (255 entries, count 256).
             final var trailing = blockStreamInfo.trailingBlockHashes();
-            final long countState = Math.min(blockStreamInfo.blockNumber(), NUM_TRAILING_BLOCKS);
-            final int stride = countState <= 0 ? (int) lastBlockHash.length() : (int) (trailing.length() / countState);
+            final long count = Math.min(blockStreamInfo.blockNumber(), NUM_TRAILING_BLOCKS);
+            final int stride =
+                    BlockImplUtils.storedStride(trailing.length(), count, RECORD_HASH_SIZE, digestType.digestLength());
             extendedBlockHashes =
                     appendHash(BlockImplUtils.leftPadTo(lastBlockHash, stride), trailing, NUM_TRAILING_BLOCKS);
         }

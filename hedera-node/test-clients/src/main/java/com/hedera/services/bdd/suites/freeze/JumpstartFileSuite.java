@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.freeze;
 
+import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_STATE_ID;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.RECORD_HASH_SIZE;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
@@ -29,6 +30,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.config.data.BlockStreamJumpstartConfig;
@@ -236,8 +238,17 @@ class JumpstartFileSuite implements LifecycleTest {
                         "Jumpstart migration already applied \\(votingComplete=true\\) and no jumpstart config, skipping",
                         Duration.ofSeconds(30)),
                 sourcing(() -> verifyLiveWrappedHash(liveWrappedHash.get(), liveBlockNum.get())),
-                logIt("Phase 9: Ops burst prior to cutover"),
+                logIt("Phase 9: Ops burst prior to SHA-256"),
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
+                // Point 1: still SHA-384, so both windows hold full-size (48-byte) hashes
+                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "before SHA-256", 48)),
+                logIt("Phase 9b: Enable SHA-256 block hashing"),
+                prepareFakeUpgrade(),
+                upgradeToNextConfigVersion(Map.of("blockStream.digestType", "SHA_256")),
+                waitForActive(NodeSelector.allNodes(), Duration.ofSeconds(60)),
+                MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
+                // Point 2: output hashes are now 32-byte, but trailingBlockHashes must NOT have compacted yet
+                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "after SHA-256", 32)),
                 logIt("Phase 10: Execute cutover"),
                 prepareFakeUpgrade(),
                 upgradeToNextConfigVersion(
@@ -256,8 +267,11 @@ class JumpstartFileSuite implements LifecycleTest {
                                 "BOTH"),
                         // Pre-restart: capture the final BlockInfo before cutover, and save preview block stream files
                         // for later replay
-                        withOpContext((spec, opLog) ->
-                                capturePreCutoverLogged(spec, opLog, capturedBlockInfo, capturedRunningHashes))),
+                        withOpContext((spec, opLog) -> {
+                            // Point 3: immediately before cutover, same layout as right after SHA-256
+                            assertTrailingWindows(spec, opLog, "before cutover", 32);
+                            capturePreCutoverLogged(spec, opLog, capturedBlockInfo, capturedRunningHashes);
+                        })),
                 waitForActive(NodeSelector.allNodes(), Duration.ofSeconds(60)),
                 assertHgcaaLogContainsPattern(
                         NodeSelector.exceptNodeIds(LATER_NODE_IDS),
@@ -269,6 +283,9 @@ class JumpstartFileSuite implements LifecycleTest {
                 new VerifyCutoverBlockStreamOp(liveBlockNum, capturedBlockInfo, capturedRunningHashes),
                 logIt("Phase 10: First post-cutover burst"),
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
+                // Point 4: the 4x48 reseed itself is pinned via the log in verifyCutoverLogFields; by the end of
+                // the burst the output window has drained to 4x32 while block hashes remain 48-byte record hashes
+                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "after cutover", 32)),
                 logIt("Phase 11: Verify clean cutover with additional blocks"),
                 doingContextual(spec -> verifyPostCutoverBlocks(spec, liveBlockNum)),
                 // restart with cutover enabled one more time, to verify it doesn't do anything
@@ -292,6 +309,40 @@ class JumpstartFileSuite implements LifecycleTest {
                         Duration.ofSeconds(1)),
                 // Verify blocks are still produced after idempotent restart
                 cryptoCreate("postIdempotentRestart").payingWith(GENESIS));
+    }
+
+    /**
+     * Reads the latest {@link BlockStreamInfo} from node 0's block stream state changes and asserts that
+     * {@code trailingBlockHashes} is still stored at a 48-byte stride (compaction is deferred until well past
+     * cutover) and that {@code trailingOutputHashes} holds exactly four entries of the given size.
+     */
+    private static void assertTrailingWindows(
+            final HapiSpec spec, final Logger opLog, final String point, final int expectedOutputHashSize) {
+        final var node0 = spec.targetNetworkOrThrow().getRequiredNode(NodeSelector.byNodeId(0));
+        final var allBlocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocksIgnoringMarkers(
+                node0.getExternalPath(BLOCK_STREAMS_DIR));
+        final var bsi = BlockStreamAccess.computeSingletonValueFromUpdates(
+                allBlocks, SingletonUpdateChange::blockStreamInfoValue, BLOCK_STREAM_INFO_STATE_ID);
+        assertNotNull(bsi, "BlockStreamInfo should be present in block state changes " + point);
+        final long blockHashesLen = bsi.trailingBlockHashes().length();
+        final long count = Math.min(bsi.blockNumber(), 256);
+        final int stride = BlockImplUtils.storedStride(blockHashesLen, count, RECORD_HASH_SIZE, 32);
+        opLog.info(
+                "Trailing windows {}: blockNumber={}, trailingBlockHashesLen={}, stride={}, trailingOutputHashesLen={}",
+                point,
+                bsi.blockNumber(),
+                blockHashesLen,
+                stride,
+                bsi.trailingOutputHashes().length());
+        assertEquals(
+                RECORD_HASH_SIZE,
+                stride,
+                "trailingBlockHashes should keep a 48-byte stride " + point + " (len=" + blockHashesLen + ")");
+        assertEquals(0, blockHashesLen % RECORD_HASH_SIZE, "trailingBlockHashes length not a multiple of 48 " + point);
+        assertEquals(
+                4L * expectedOutputHashSize,
+                bsi.trailingOutputHashes().length(),
+                "trailingOutputHashes should be 4x" + expectedOutputHashSize + " bytes " + point);
     }
 
     private static void capturePreCutoverLogged(
