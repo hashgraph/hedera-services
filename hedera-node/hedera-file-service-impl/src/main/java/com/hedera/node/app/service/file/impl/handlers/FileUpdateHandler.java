@@ -9,11 +9,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.isMutable;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-<<<<<<< HEAD
-=======
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateWacl;
-import static com.hedera.node.app.spi.validation.AttributeValidator.isWithinNestedKeyLimit;
->>>>>>> 2ce5739 (fix: fail closed on structurally invalid keys (VLN-294) (#548))
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
