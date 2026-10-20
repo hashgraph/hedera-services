@@ -565,12 +565,14 @@ class BlockStreamManagerImplTest {
         subject.init(state, FAKE_RESTART_BLOCK_HASH);
 
         // Enable after construction: the first block must use the current flag.
-        given(configProvider.getConfiguration()).willReturn(versionedConfigWith(1, 0, StreamMode.BLOCKS, 1, true, false, 2L));
+        given(configProvider.getConfiguration())
+                .willReturn(versionedConfigWith(1, 0, StreamMode.BLOCKS, 1, true, false, 2L));
         subject.startRound(round, state);
         assertTrue(subject.hasReachedMaxBlockSize());
 
         // A mid-block update must not change the active block's snapshot.
-        given(configProvider.getConfiguration()).willReturn(versionedConfigWith(1, 0, StreamMode.BLOCKS, 1, false, false, 3L));
+        given(configProvider.getConfiguration())
+                .willReturn(versionedConfigWith(1, 0, StreamMode.BLOCKS, 1, false, false, 3L));
         subject.writeSavepointItems(List.of(FAKE_SIGNED_TRANSACTION), CONSENSUS_NOW.plusNanos(1));
         assertTrue(subject.hasReachedMaxBlockSize());
         subject.endRound(state, ROUND_NO);
