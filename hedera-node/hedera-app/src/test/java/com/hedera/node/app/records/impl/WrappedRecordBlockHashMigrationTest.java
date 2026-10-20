@@ -629,7 +629,7 @@ class WrappedRecordBlockHashMigrationTest {
         // Block 50 is not in the file, so the jumpstart fails and its data must be kept for a retry
         final var failingJumpstart = jumpstartConfig(50, 1, 1);
 
-        subject.execute(StreamMode.RECORDS, config, failingJumpstart, false);
+        subject.execute(StreamMode.RECORDS, config, failingJumpstart, false, DigestType.SHA_384);
         subject.truncateHashesFileOnUpgrade(config, failingJumpstart);
 
         assertNull(subject.result());
@@ -643,7 +643,7 @@ class WrappedRecordBlockHashMigrationTest {
         final var file = dir.resolve(WrappedRecordFileBlockHashesDiskWriter.DEFAULT_FILE_NAME);
         final var config = recordsConfigWithWriting(dir, true);
 
-        subject.execute(StreamMode.RECORDS, config, defaultJumpstartConfig(), true);
+        subject.execute(StreamMode.RECORDS, config, defaultJumpstartConfig(), true, DigestType.SHA_384);
         subject.truncateHashesFileOnUpgrade(config, defaultJumpstartConfig());
 
         assertNull(subject.result());

@@ -17,11 +17,7 @@ import static java.util.Objects.requireNonNull;
 import static org.hiero.base.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.hiero.base.file.FileUtils.getAbsolutePath;
 import static org.hiero.base.file.FileUtils.rethrowIO;
-<<<<<<< HEAD
-=======
-import static org.hiero.consensus.concurrent.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSemanticVersionOf;
->>>>>>> 06d42b4 (fix: (0.78) truncate `wrapped-record-hashes.pb` on upgrade without jumpstart (#593))
 import static org.hiero.consensus.system.SystemExitCode.NODE_ID_NOT_PROVIDED;
 import static org.hiero.consensus.system.SystemExitUtils.exitSystem;
 
@@ -243,15 +239,6 @@ public class ServicesMain {
         // On an upgrade, also truncate the wrapped record hashes file if no jumpstart will consume it.
         final var hederaConfig = hedera.configProvider().getConfiguration();
         final var migrationAlreadyApplied = isMigrationVotingComplete(state);
-<<<<<<< HEAD
-        hedera.wrappedRecordBlockHashMigration()
-                .execute(
-                        hederaConfig.getConfigData(BlockStreamConfig.class).streamMode(),
-                        hederaConfig.getConfigData(BlockRecordStreamConfig.class),
-                        hederaConfig.getConfigData(BlockStreamJumpstartConfig.class),
-                        migrationAlreadyApplied,
-                        hederaConfig.getConfigData(BlockStreamConfig.class).digestType());
-=======
         final var blockRecordConfig = hederaConfig.getConfigData(BlockRecordStreamConfig.class);
         final var jumpstartConfig = hederaConfig.getConfigData(BlockStreamJumpstartConfig.class);
         final var migration = hedera.wrappedRecordBlockHashMigration();
@@ -259,11 +246,11 @@ public class ServicesMain {
                 hederaConfig.getConfigData(BlockStreamConfig.class).streamMode(),
                 blockRecordConfig,
                 jumpstartConfig,
-                migrationAlreadyApplied);
+                migrationAlreadyApplied,
+                hederaConfig.getConfigData(BlockStreamConfig.class).digestType());
         if (isUpgrade) {
             migration.truncateHashesFileOnUpgrade(blockRecordConfig, jumpstartConfig);
         }
->>>>>>> 06d42b4 (fix: (0.78) truncate `wrapped-record-hashes.pb` on upgrade without jumpstart (#593))
 
         final var transactionOffsetNanos = transactionOffsetNanos(hederaConfig);
         hedera.setTxnOffsetNanos(transactionOffsetNanos);
