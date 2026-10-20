@@ -404,6 +404,26 @@ class BlockBufferServiceTest extends BlockNodeCommunicationTestBase {
     }
 
     @Test
+    void testNotifyBlockNodeDisconnected_repeatedDisconnectMustNotReviveExpiredAck() throws Throwable {
+        setupState(2, false, 2); // Require two distinct origins
+
+        blockBufferService.acknowledgeBlock(1L, bn1StreamingEndpoint);
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+        Thread.sleep((ACK_EXPIRATION_SECONDS + 1) * 1_000L);
+
+        // BN1's ACK expired, so BN2 alone cannot satisfy the threshold.
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(-1L);
+
+        // Another connection attempt closes without a fresh ACK from BN1.
+        blockBufferService.notifyBlockNodeDisconnected(bn1StreamingEndpoint);
+
+        // BN1's expired contribution must remain excluded.
+        assertThat(blockBufferService.acknowledgeBlock(1L, bn2StreamingEndpoint))
+                .isEqualTo(-1L); // Currently fails: actual watermark is 1
+    }
+
+    @Test
     void testNotifyBlockNodeDisconnected_untrackedBlockNode() throws Throwable {
         setupState(2, false, 2);
 

@@ -153,9 +153,10 @@ public class BlockBufferService extends BlockStreamingBase {
     private final ConcurrentMap<BlockNodeEndpoint, BlockNodeAckWatermark> highestAcknowledgementByBlockNode =
             new ConcurrentHashMap<>();
 
-    private record BlockNodeAckWatermark(AtomicLong watermark, AtomicReference<Instant> expirationTimestamp) {
+    private record BlockNodeAckWatermark(
+            AtomicLong watermark, AtomicReference<Instant> ackTimestamp, AtomicReference<Instant> expirationTimestamp) {
         BlockNodeAckWatermark() {
-            this(new AtomicLong(-1), new AtomicReference<>());
+            this(new AtomicLong(-1), new AtomicReference<>(), new AtomicReference<>());
         }
     }
 
@@ -491,11 +492,22 @@ public class BlockBufferService extends BlockStreamingBase {
         // set the acknowledgement expiration to be N seconds into the future
         final int expirationSeconds = bufferConfig().disconnectedBlockNodeAckExpirationSeconds();
         final Instant expiration = Instant.now().plusSeconds(expirationSeconds);
-        logger.info(
-                "Block node ({}) disconnected; acknowledgements will expire after {} unless the node reconnects and acknowledges another block",
-                blockNodeEndpoint,
-                expiration);
-        blockNodeAckWatermark.expirationTimestamp.set(Instant.now().plusSeconds(expirationSeconds));
+        final Instant preExistingExpiration = blockNodeAckWatermark.expirationTimestamp.get();
+        final Instant lastAckTimestamp = blockNodeAckWatermark.ackTimestamp.get();
+
+        if (lastAckTimestamp == null
+                || (preExistingExpiration != null && preExistingExpiration.isAfter(lastAckTimestamp))) {
+            // don't reset the expiration since there are no new ACKs since the last expiration
+            logger.trace(
+                    "Block node ({}) disconnected; no new acknowledgements received since last disconnect therefore acknowledgement expiration will not be extended",
+                    blockNodeEndpoint);
+        } else {
+            logger.info(
+                    "Block node ({}) disconnected; acknowledgements will expire after {} unless the node reconnects and acknowledges another block",
+                    blockNodeEndpoint,
+                    expiration);
+            blockNodeAckWatermark.expirationTimestamp.set(Instant.now().plusSeconds(expirationSeconds));
+        }
     }
 
     /**
@@ -518,6 +530,8 @@ public class BlockBufferService extends BlockStreamingBase {
         final BlockNodeAckWatermark blockNodeAckWatermark =
                 highestAcknowledgementByBlockNode.computeIfAbsent(blockNodeEndpoint, _ -> new BlockNodeAckWatermark());
         blockNodeAckWatermark.watermark.updateAndGet(current -> Math.max(current, blockNumber));
+        blockNodeAckWatermark.ackTimestamp.set(Instant.now());
+
         blockNodeAckWatermark.expirationTimestamp.set(null); // clear any expiration for this block node
 
         final int minAcknowledgementsRequired = bufferConfig().minAcksRequiredPerBlock();
@@ -607,8 +621,9 @@ public class BlockBufferService extends BlockStreamingBase {
         // ack for an already-pruned block still marks the rest of the range
         final long earliest = earliestBlockNumber.get();
         if (earliest != Long.MIN_VALUE) {
+            final long highestToMark = Math.min(latestHighestBlock, lastProducedBlockNumber.get());
             final long lowestToMark = Math.max(prevHighestBlock + 1, earliest);
-            for (long blockNum = latestHighestBlock; blockNum >= lowestToMark; --blockNum) {
+            for (long blockNum = highestToMark; blockNum >= lowestToMark; --blockNum) {
                 streamingObs.onBlockAcknowledge(blockNum);
             }
         }
