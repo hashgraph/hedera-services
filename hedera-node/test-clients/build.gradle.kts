@@ -670,6 +670,18 @@ fun TaskContainer.registerHapiTest(
                 systemProperty("junit.jupiter.execution.parallel.config.fixed.max-pool-size", it)
             }
         }
+        // MULTINETWORK groups run in parallel with both CLASSES and METHODS concurrent. Per-network
+        // serialization is JUnit's job via ClprNetworkLocksProvider (a @ResourceLock provider on
+        // @MultiNetworkHapiTest): same-network readers overlap, a @MultiNetworkLeakyHapiTest writer
+        // runs alone, and disjoint groups run in parallel. One worker per available processor; the
+        // node budget in MultiNetworkGroupQueue, not this, limits how many networks run at once.
+        if (name == "hapiTestClprMultinetwork") {
+            systemProperty("junit.jupiter.execution.parallel.enabled", true)
+            systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.config.strategy", "dynamic")
+            systemProperty("junit.jupiter.execution.parallel.config.dynamic.factor", "1")
+        }
         if (embeddedMode != null) {
             systemProperty("hapi.spec.embedded.mode", embeddedMode)
         }
