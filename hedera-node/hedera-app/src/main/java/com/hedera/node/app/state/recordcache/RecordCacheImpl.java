@@ -43,9 +43,11 @@ import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -53,7 +55,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -153,15 +154,15 @@ public class RecordCacheImpl implements HederaRecordCache {
      *
      * @param nodeIdCounts The number of queued receipts for a properly screened transaction, by node id
      * @param recordSources The sources of records for the relevant base {@link TransactionID}
-     * @param queuedReceipts The number of queued receipts for the relevant base {@link TransactionID}
+     * @param sourceReceiptCounts The number of queued receipts from each record source, in the same order
      */
     private record HistorySource(
             @NonNull Map<Long, Integer> nodeIdCounts,
             @NonNull List<RecordSource> recordSources,
-            @NonNull AtomicInteger queuedReceipts)
+            @NonNull Deque<Integer> sourceReceiptCounts)
             implements ReceiptSource {
         public HistorySource() {
-            this(new HashMap<>(), new CopyOnWriteArrayList<>(), new AtomicInteger());
+            this(new HashMap<>(), new CopyOnWriteArrayList<>(), new ArrayDeque<>());
         }
 
         /**
@@ -171,10 +172,19 @@ public class RecordCacheImpl implements HederaRecordCache {
             return nodeIdCounts.keySet();
         }
 
-        void addReceipt(final long nodeId, @NonNull final ResponseCodeEnum status) {
-            queuedReceipts.incrementAndGet();
+        /**
+         * Adds a queued receipt from the given record source.
+         */
+        void addReceipt(final long nodeId, @NonNull final ResponseCodeEnum status, @NonNull final RecordSource source) {
             if (!NODE_FAILURES.contains(status)) {
                 nodeIdCounts.merge(nodeId, 1, Integer::sum);
+            }
+            // All receipts from a source are added together, so a source already in this history is its last one
+            if (!recordSources.isEmpty() && recordSources.getLast() == source) {
+                sourceReceiptCounts.addLast(sourceReceiptCounts.removeLast() + 1);
+            } else {
+                recordSources.add(source);
+                sourceReceiptCounts.addLast(1);
             }
         }
 
@@ -185,12 +195,14 @@ public class RecordCacheImpl implements HederaRecordCache {
             if (!NODE_FAILURES.contains(status)) {
                 nodeIdCounts.computeIfPresent(nodeId, (ignore, count) -> count == 1 ? null : count - 1);
             }
-            final int remaining = queuedReceipts.decrementAndGet();
-            // Each source holds at least one queued receipt, and receipts are purged in the order sources were added
-            while (recordSources.size() > remaining) {
+            // Receipts are purged in the order they were added, so this one came from the first source
+            final int left = sourceReceiptCounts.removeFirst() - 1;
+            if (left > 0) {
+                sourceReceiptCounts.addFirst(left);
+            } else {
                 recordSources.removeFirst();
             }
-            return remaining == 0;
+            return recordSources.isEmpty();
         }
 
         @Override
@@ -293,6 +305,8 @@ public class RecordCacheImpl implements HederaRecordCache {
         final var iter = getReadableQueue(workingStateAccessor).iterator();
         while (iter.hasNext()) {
             final var roundReceipts = iter.next();
+            // Each queued entry gets its own record source per id, so purging the entry removes only its receipts
+            final Map<TransactionID, PartialRecordSource> entrySources = new HashMap<>();
             for (final var receipt : roundReceipts.entries()) {
                 final var txnId = receipt.transactionIdOrThrow();
                 // We group history by the base transaction ID, which is the transaction ID with a nonce of 0
@@ -303,16 +317,14 @@ public class RecordCacheImpl implements HederaRecordCache {
                 deduplicationCache.add(baseTxnId);
                 // Now update the history of this transaction id
                 final var historySource = historySources.computeIfAbsent(baseTxnId, ignore -> new HistorySource());
+                // These steps only make a partial transaction record available for answering queries, and are not
+                // of critical importance for the operation of the node
+                final var recordSource = entrySources.computeIfAbsent(baseTxnId, ignore -> new PartialRecordSource());
+                recordSource.incorporate(asTxnRecord(receipt));
                 // Honest nodes use the set of node ids that have submitted classifiable transactions with this id to
                 // classify user versus node duplicates; so reconstructing the set here is critical for deterministic
                 // transaction handling across all nodes in the network
-                historySource.addReceipt(receipt.nodeId(), receipt.status());
-                // These steps only make a partial transaction record available for answering queries, and are not
-                // of critical importance for the operation of the node
-                if (historySource.recordSources().isEmpty()) {
-                    historySource.recordSources().add(new PartialRecordSource());
-                }
-                ((PartialRecordSource) historySource.recordSources.getFirst()).incorporate(asTxnRecord(receipt));
+                historySource.addReceipt(receipt.nodeId(), receipt.status(), recordSource);
                 payerTxnIds
                         .computeIfAbsent(txnId.accountIDOrThrow(), ignored -> new HashSet<>())
                         .add(txnId);
@@ -339,13 +351,7 @@ public class RecordCacheImpl implements HederaRecordCache {
                     txnId.nonce() == 0 ? txnId : txnId.copyBuilder().nonce(0).build();
             final var historySource = historySources.computeIfAbsent(baseTxnId, ignore -> new HistorySource());
             // We don't let improperly submitted transactions keep properly submitted transactions from using an id
-            historySource.addReceipt(nodeId, status);
-            // Only add each record source once per history; since very few record sources contain more than one
-            // transaction id, and few transaction ids have duplicates, this is almost always an existence check
-            // in an empty list
-            if (!historySource.recordSources().contains(recordSource)) {
-                historySource.recordSources.add(recordSource);
-            }
+            historySource.addReceipt(nodeId, status, recordSource);
             final AccountID effectivePayerId;
             if (dueDiligenceFailure == DueDiligenceFailure.YES && matchesExceptNonce(txnId, userTxnId)) {
                 effectivePayerId = requireNonNull(networkInfo.nodeInfo(nodeId)).accountId();

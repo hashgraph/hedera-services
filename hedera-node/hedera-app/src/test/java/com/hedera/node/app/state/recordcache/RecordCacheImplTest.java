@@ -898,6 +898,33 @@ final class RecordCacheImplTest extends AppTestBase {
         }
 
         @Test
+        @DisplayName("A cache rebuilt before a purge drops only the purged round from the history")
+        void cacheRebuiltBeforePurgeDropsOnlyPurgedRoundFromHistory() {
+            final var cache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            // The valid start is after the first round, so it is purged while the id is still valid
+            final var validStart = FIRST_ROUND_TIME.plusSeconds(MAX_VALID_DURATION_SECS);
+            final var userRecord = recordWith(validStart, SUCCESS);
+            final var txnId = userRecord.transactionIDOrThrow();
+            final var childRecord = userRecord
+                    .copyBuilder()
+                    .transactionID(txnId.copyBuilder().nonce(1))
+                    .build();
+
+            handleRound(cache, FIRST_ROUND_TIME, 1, recordWith(validStart, INVALID_NODE_ACCOUNT));
+            handleRound(cache, validStart, 2, userRecord, childRecord);
+            final var rebuiltCache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
+            handleRound(rebuiltCache, FIRST_ROUND_TIME.plusSeconds(MAX_VALID_DURATION_SECS + 1));
+            assertThat(receiptQueue()).hasSize(1);
+
+            assertThat(Objects.requireNonNull(rebuiltCache.getReceipts(txnId))
+                            .priorityReceipt(txnId)
+                            .status())
+                    .isEqualTo(SUCCESS);
+            assertThat(getReceipt(rebuiltCache, txnId).status()).isEqualTo(SUCCESS);
+            assertThat(getRecords(rebuiltCache, txnId)).hasSize(2);
+        }
+
+        @Test
         @DisplayName("An id handled again in every round keeps only the history of its queued rounds")
         void idHandledInEveryRoundKeepsOnlyHistoryOfQueuedRounds() {
             final var cache = new RecordCacheImpl(dedupeCache, wsa, props, networkInfo);
