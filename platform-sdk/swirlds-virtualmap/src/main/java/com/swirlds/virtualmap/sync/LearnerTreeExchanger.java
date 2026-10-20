@@ -167,7 +167,9 @@ public final class LearnerTreeExchanger {
         } else {
             // The ordered hash-feed is performed by the dedicated applier thread (see applierLoop),
             // which drains this map in anticipatedLeafPaths FIFO order. Receiver threads stay free to
-            // keep draining the socket instead of blocking on a long contiguous-backlog drain.
+            // keep draining the socket instead of blocking on a long contiguous-backlog drain. The response
+            // is published before the store below, so the applier isn't stalled while this receiver is
+            // blocked on flusher backpressure.
             responses.put(responsePath, response);
             // Eager, order-independent store: stale-key tracking + leaf store, done in parallel on this
             // receiver the moment the leaf arrives. Only the ordered hash-feed (dirtyLeafReceived, on the

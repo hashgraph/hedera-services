@@ -507,7 +507,8 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
             throw e;
         } finally {
             // On success, all rehash tasks are already complete. On failure, a hash chunk flush that is still
-            // running is left to finish on its own in the flusher thread, which exits after that
+            // running is left to finish on its own: either in the flusher thread, which exits after that, or,
+            // if it's the final flush, in a rehash task, and the pool terminates after that
             rehashPool.shutdown();
         }
     }

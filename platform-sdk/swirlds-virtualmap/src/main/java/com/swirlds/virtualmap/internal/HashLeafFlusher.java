@@ -33,8 +33,8 @@ import org.hiero.base.concurrent.framework.config.ThreadConfiguration;
 /// The final flush runs in [#finish()] in the calling thread, after the flusher thread is stopped.
 ///
 /// [#init(long, long)] must be called before any producers start appending changes, and [#finish()] must be
-/// called in the end, after all producers are done. If the job is aborted instead, [#cancel()] must be called.
-/// Either of them stops the flusher thread.
+/// called in the end, after all producers are done. If the job is aborted instead, [#cancel()] must be called,
+/// possibly even before [#init(long, long)]. Either of them stops the flusher thread.
 ///
 /// Memory is bounded by backpressure: once the current batch is due for a flush, producers block until the
 /// flusher thread takes it, which happens as soon as the previous flush is complete. So at most about two
@@ -61,9 +61,10 @@ public class HashLeafFlusher {
 
     private static final Logger logger = LogManager.getLogger(HashLeafFlusher.class);
 
-    // Using 0 as a flag that the path range is not set, since -1,-1 is a valid (empty) range
-    private volatile long firstLeafPath = 0;
-    private volatile long lastLeafPath = 0;
+    // The leaf path range, set in init(). Visible to the flusher thread, since it's started after the range
+    // is set, and to the thread that calls finish(), since both methods are synchronized
+    private long firstLeafPath;
+    private long lastLeafPath;
 
     private final VirtualDataSource dataSource;
 
@@ -79,7 +80,8 @@ public class HashLeafFlusher {
     // once it's null. Guarded by this
     private Batch batch;
 
-    // The thread that runs all flushes, except the final one. Started in init()
+    // The thread that runs all flushes, except the final one. Started in init(), so not null once this flusher
+    // is initialized
     private Thread flusherThread;
 
     // Set by cancel(). Once set, all subsequent calls fail. Guarded by this
@@ -91,9 +93,9 @@ public class HashLeafFlusher {
     // When producers started blocking on backpressure, or 0 if none are blocked. Guarded by this
     private long backpressureStart = 0;
 
-    // Total time producers were blocked on backpressure, logged in finish(). A long total may indicate
-    // a slow disk, and it may make reconnect fail, since a blocked learner stops reading from the teacher,
-    // which times out. Guarded by this
+    // Total time producers were blocked on backpressure, logged in finish() or cancel(). A long total may
+    // indicate a slow disk, and it may make reconnect fail, since a blocked learner stops reading from the
+    // teacher, which times out. Guarded by this
     private long backpressureMs = 0;
 
     // Passed to the data source with every flush, see VirtualDataSource.saveRecords()
@@ -147,7 +149,8 @@ public class HashLeafFlusher {
     }
 
     /// Initializes this flusher with the leaf path range of the target tree, and starts the flusher thread.
-    /// Must be called once, before any other methods. The range is passed to the data source with every flush.
+    /// Must be called once, before any other methods, except [#cancel()]. The range is passed to the data source
+    /// with every flush.
     ///
     /// @param firstLeafPath the first leaf path, or [MerklePathUtils#INVALID_PATH] if the tree is empty
     /// @param lastLeafPath the last leaf path, or [MerklePathUtils#INVALID_PATH] if the tree is empty
@@ -161,7 +164,7 @@ public class HashLeafFlusher {
             throw new IllegalArgumentException(
                     "The last leaf path is invalid. firstLeafPath=" + firstLeafPath + ", lastLeafPath=" + lastLeafPath);
         }
-        if ((this.firstLeafPath != 0) && (this.lastLeafPath != 0)) {
+        if (flusherThread != null) {
             throw new IllegalArgumentException("Flusher was already initialized. firstLeafPath=" + this.firstLeafPath
                     + ", lastLeafPath=" + this.lastLeafPath);
         }
@@ -225,13 +228,19 @@ public class HashLeafFlusher {
     /// [#deleteLeaf(VirtualLeafBytes)], and [#finish()] throw an [IllegalStateException] with a
     /// [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
     /// flushes are started, and the flusher thread exits once the running flush is complete. May be called
-    /// multiple times, from any thread, at any moment. Never waits for a running flush.
+    /// multiple times, from any thread, at any moment, including before [#init(long, long)]. Never waits for
+    /// a running flush. If this flusher is initialized and not finished yet, the total time producers were
+    /// blocked on backpressure is logged.
     ///
     /// This method only affects calls into this flusher. It doesn't stop producers themselves, this is the
     /// caller's responsibility.
     public synchronized void cancel() {
         cancelled = true;
         notifyAll();
+        // Not initialized or already finished, nothing to log
+        if (batch != null) {
+            logBackpressureTotal();
+        }
     }
 
     /// Stops the flusher thread, waiting for a flush that is already running, if any, and then flushes all
@@ -250,8 +259,8 @@ public class HashLeafFlusher {
             if (batch == null) {
                 throw new IllegalStateException("Flusher is not initialized or already finished");
             }
-            // Log before throwIfCancelledOrFailed(), so the total is logged even if this flusher is cancelled
-            logger.info(logMarker, "Producers were blocked on backpressure for {} ms in total", backpressureMs);
+            // Log before throwIfCancelledOrFailed(), so the total is logged even if a flush has failed
+            logBackpressureTotal();
             throwIfCancelledOrFailed();
             last = batch;
             batch = null;
@@ -319,6 +328,17 @@ public class HashLeafFlusher {
             backpressureMs += System.currentTimeMillis() - backpressureStart;
             backpressureStart = 0;
         }
+    }
+
+    // Logs the total time producers were blocked on backpressure, in finish() or cancel(). If producers are
+    // still blocked, e.g. when cancelled, the ongoing stall is included. Must be called with the lock held
+    private void logBackpressureTotal() {
+        if (backpressureStart != 0) {
+            // Producers released after this see 0 and don't add the stall again
+            backpressureMs += System.currentTimeMillis() - backpressureStart;
+            backpressureStart = 0;
+        }
+        logger.info(logMarker, "Producers were blocked on backpressure for {} ms in total", backpressureMs);
     }
 
     // Must be called with the lock held

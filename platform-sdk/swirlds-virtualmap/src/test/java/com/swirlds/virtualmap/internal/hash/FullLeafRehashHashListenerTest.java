@@ -3,8 +3,10 @@ package com.swirlds.virtualmap.internal.hash;
 
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.hash;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.loadHash;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hiero.base.utility.test.fixtures.assertions.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -22,6 +24,10 @@ import com.swirlds.virtualmap.test.fixtures.datasource.InMemoryDataSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongFunction;
@@ -237,6 +243,86 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    @Test
+    @DisplayName("Cancel releases hashing threads blocked on backpressure")
+    void cancelReleasesBlockedHashingThreads() throws Exception {
+        final CountDownLatch saveStarted = new CountDownLatch(1);
+        final CountDownLatch gate = new CountDownLatch(1);
+        final InMemoryDataSource gatedDataSource = new InMemoryDataSource("gated") {
+            @Override
+            @SuppressWarnings("rawtypes")
+            public void saveRecords(
+                    final long firstLeafPath,
+                    final long lastLeafPath,
+                    final Stream<VirtualHashChunk> hashChunksToUpdate,
+                    final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
+                    final Stream<VirtualLeafBytes> leafRecordsToDelete,
+                    final boolean isReconnectContext)
+                    throws IOException {
+                saveStarted.countDown();
+                try {
+                    gate.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                super.saveRecords(
+                        firstLeafPath,
+                        lastLeafPath,
+                        hashChunksToUpdate,
+                        leafRecordsToAddOrUpdate,
+                        leafRecordsToDelete,
+                        isReconnectContext);
+            }
+        };
+        final int hashChunkHeight = gatedDataSource.getHashChunkHeight();
+        // A flush is due for every chunk
+        final FullLeafRehashHashListener chunkListener = new FullLeafRehashHashListener(
+                gatedDataSource, new VirtualMapStatistics("test"), VirtualHashChunk.getChunkSize(hashChunkHeight));
+        chunkListener.onHashingStarted(1, 1_000_000);
+        try {
+            // The first chunk is flushed, and the flush blocks in the data source. The second chunk fills the
+            // next batch
+            chunkListener.onHashChunkHashed(fullChunk(0, hashChunkHeight));
+            assertTrue(saveStarted.await(10, SECONDS), "The first flush must start");
+            chunkListener.onHashChunkHashed(fullChunk(1, hashChunkHeight));
+            // The third chunk blocks till the running flush is complete
+            final CompletableFuture<Void> result = new CompletableFuture<>();
+            final Thread hashingThread = new Thread(() -> {
+                try {
+                    chunkListener.onHashChunkHashed(fullChunk(2, hashChunkHeight));
+                    result.complete(null);
+                } catch (final Throwable t) {
+                    result.completeExceptionally(t);
+                }
+            });
+            hashingThread.setDaemon(true);
+            hashingThread.start();
+            assertEventuallyTrue(
+                    () -> result.isDone() || hashingThread.getState() == Thread.State.WAITING,
+                    Duration.ofSeconds(10),
+                    "Hashing thread didn't block in time");
+            assertFalse(result.isDone(), "Hashing thread must block");
+            chunkListener.cancel();
+            // Released without waiting for the running flush
+            final ExecutionException e = assertThrows(ExecutionException.class, () -> result.get(10, SECONDS));
+            assertInstanceOf(IllegalStateException.class, e.getCause());
+            assertInstanceOf(CancellationException.class, e.getCause().getCause());
+            assertThrows(IllegalStateException.class, chunkListener::onHashingCompleted);
+        } finally {
+            gate.countDown();
+        }
+    }
+
+    private VirtualHashChunk fullChunk(final long chunkId, final int hashChunkHeight) {
+        final long chunkPath = VirtualHashChunk.chunkIdToChunkPath(chunkId, hashChunkHeight);
+        final VirtualHashChunk chunk = new VirtualHashChunk(chunkPath, hashChunkHeight);
+        for (int j = 0; j < chunk.getChunkSize(); j++) {
+            final long path = chunk.getPath(j);
+            chunk.setHashAtPath(path, hash(leaf(path, path, path)));
+        }
+        return chunk;
     }
 
     private Hash loadHashUnchecked(final long path, final int hashChunkHeight) {

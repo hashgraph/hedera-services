@@ -7,6 +7,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hiero.base.utility.test.fixtures.assertions.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -60,10 +61,9 @@ public class HashLeafFlusherTest {
         assertThrows(NullPointerException.class, () -> new HashLeafFlusher(mock(VirtualDataSource.class), 100, null));
     }
 
-    @Test
-    void testInterruptedFlushFails() {
-        // Simulates MerkleDbDataSource, which restores the interrupted flag and returns normally
-        final InMemoryDataSource ds = new InMemoryDataSource("testInterruptedFlushFails") {
+    // Simulates MerkleDbDataSource, which restores the interrupted flag and returns normally
+    private static InMemoryDataSource interruptingDataSource(final String name) {
+        return new InMemoryDataSource(name) {
             @Override
             @SuppressWarnings("rawtypes")
             public void saveRecords(
@@ -73,7 +73,7 @@ public class HashLeafFlusherTest {
                     final Stream<VirtualLeafBytes> leafRecordsToAddOrUpdate,
                     final Stream<VirtualLeafBytes> leafRecordsToDelete,
                     final boolean isReconnectContext)
-                    throws java.io.IOException {
+                    throws IOException {
                 super.saveRecords(
                         firstLeafPath,
                         lastLeafPath,
@@ -84,8 +84,14 @@ public class HashLeafFlusherTest {
                 Thread.currentThread().interrupt();
             }
         };
-        final HashLeafFlusher flusher =
-                new HashLeafFlusher(ds, 0, new VirtualMapStatistics("testInterruptedFlushFails"));
+    }
+
+    @Test
+    void testInterruptedFlushFails() {
+        final HashLeafFlusher flusher = new HashLeafFlusher(
+                interruptingDataSource("testInterruptedFlushFails"),
+                0,
+                new VirtualMapStatistics("testInterruptedFlushFails"));
         flusher.init(1, 2);
         try {
             assertThrows(IllegalStateException.class, flusher::finish);
@@ -93,6 +99,27 @@ public class HashLeafFlusherTest {
         } finally {
             Thread.interrupted();
         }
+    }
+
+    @Test
+    void testInterruptedIntermediateFlushFails() throws InterruptedException {
+        final HashLeafFlusher flusher = new HashLeafFlusher(
+                interruptingDataSource("testInterruptedIntermediateFlushFails"),
+                1,
+                new VirtualMapStatistics("testInterruptedIntermediateFlushFails"));
+        flusher.init(1, 2);
+        // The batch is due, so it's flushed in the flusher thread, which is interrupted by the data source
+        flusher.updateLeaf(leaf(1, 1, 1));
+        final Thread thread = flusher.getFlusherThread();
+        thread.join(SECONDS.toMillis(10));
+        assertFalse(thread.isAlive(), "Flusher thread must exit after a failed flush");
+        // The flush must not be treated as a success, the failure is sticky
+        final IllegalStateException update =
+                assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(2, 2, 2)));
+        assertInstanceOf(IllegalStateException.class, update.getCause());
+        final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
+        assertSame(update.getCause(), finish.getCause());
+        assertFalse(Thread.currentThread().isInterrupted(), "Only the flusher thread must be interrupted");
     }
 
     @Test
@@ -121,6 +148,25 @@ public class HashLeafFlusherTest {
         flusher.cancel();
         thread.join(SECONDS.toMillis(10));
         assertFalse(thread.isAlive(), "Flusher thread must exit after cancel()");
+    }
+
+    @Test
+    void testCancelBeforeInit() throws InterruptedException {
+        final HashLeafFlusher flusher = new HashLeafFlusher(
+                new InMemoryDataSource("testCancelBeforeInit"),
+                DEFAULT_FLUSH_INTERVAL,
+                new VirtualMapStatistics("testCancelBeforeInit"));
+        // Reconnect may be aborted before the flusher is initialized
+        flusher.cancel();
+        flusher.init(1, 2);
+        final Thread thread = flusher.getFlusherThread();
+        thread.join(SECONDS.toMillis(10));
+        assertFalse(thread.isAlive(), "Flusher thread of a cancelled flusher must exit");
+        final IllegalStateException update =
+                assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
+        assertInstanceOf(CancellationException.class, update.getCause());
+        final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
+        assertInstanceOf(CancellationException.class, finish.getCause());
     }
 
     @ParameterizedTest
@@ -587,9 +633,42 @@ public class HashLeafFlusherTest {
             finish.awaitBlocked();
             ds.open();
             final ExecutionException e = assertThrows(ExecutionException.class, finish::await);
-            assertTrue(e.getCause() instanceof IllegalStateException);
+            assertInstanceOf(IllegalStateException.class, e.getCause());
             assertSame(failure, e.getCause().getCause());
             assertEquals(1, ds.saves.get());
+        }
+
+        @Test
+        void testInterruptWhileFinishWaitsForRunningFlush() throws Exception {
+            final GatedDataSource ds = gatedDataSource("interruptFinish");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            startBlockedFlush(flusher, ds);
+            // Not due, left for the final flush
+            flusher.updateLeaf(leaf(100, 100, 100));
+            final CompletableFuture<Boolean> interruptedFlag = new CompletableFuture<>();
+            final Producer finish = start(() -> {
+                try {
+                    flusher.finish();
+                } finally {
+                    interruptedFlag.complete(Thread.currentThread().isInterrupted());
+                }
+            });
+            // finish() waits for the running flush
+            finish.awaitBlocked();
+            finish.thread().interrupt();
+            final ExecutionException e = assertThrows(ExecutionException.class, finish::await);
+            assertInstanceOf(IllegalStateException.class, e.getCause());
+            assertInstanceOf(InterruptedException.class, e.getCause().getCause());
+            assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
+            // The running flush isn't interrupted and completes normally, then the flusher thread exits
+            ds.open();
+            final Thread flusherThread = flusher.getFlusherThread();
+            flusherThread.join(SECONDS.toMillis(10));
+            assertFalse(flusherThread.isAlive(), "Flusher thread must exit after finish()");
+            assertLeavesPresent(ds, 1, INTERVAL);
+            // The final flush is never run, and the flusher can't be finished again
+            assertEquals(1, ds.saves.get());
+            assertThrows(IllegalStateException.class, flusher::finish);
         }
 
         @Test
@@ -609,7 +688,7 @@ public class HashLeafFlusherTest {
             blocked.awaitBlocked();
             blocked.thread().interrupt();
             final ExecutionException e = assertThrows(ExecutionException.class, blocked::await);
-            assertTrue(e.getCause() instanceof IllegalStateException);
+            assertInstanceOf(IllegalStateException.class, e.getCause());
             assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
             // Interrupting a waiting producer isn't a flush failure, the flusher remains usable
             ds.open();
@@ -629,8 +708,8 @@ public class HashLeafFlusherTest {
             flusher.cancel();
             // Released without waiting for the running flush
             final ExecutionException released = assertThrows(ExecutionException.class, blocked::await);
-            assertTrue(released.getCause() instanceof IllegalStateException);
-            assertTrue(released.getCause().getCause() instanceof CancellationException);
+            assertInstanceOf(IllegalStateException.class, released.getCause());
+            assertInstanceOf(CancellationException.class, released.getCause().getCause());
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
             final Thread flusherThread = flusher.getFlusherThread();
@@ -640,7 +719,7 @@ public class HashLeafFlusherTest {
             // No new flushes are started, all subsequent calls fail
             assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(300, 300, 300)));
             final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
-            assertTrue(finish.getCause() instanceof CancellationException);
+            assertInstanceOf(CancellationException.class, finish.getCause());
             assertEquals(1, ds.saves.get());
         }
 

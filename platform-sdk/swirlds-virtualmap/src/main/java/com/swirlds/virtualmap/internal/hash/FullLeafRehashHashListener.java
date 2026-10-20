@@ -18,7 +18,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * <p>Flushes run on the flusher's dedicated thread. {@link #onHashChunkHashed(VirtualHashChunk)} may
  * block on backpressure, while {@link #onHashingCompleted()} returns only after all hashes are written
- * to the data source. If a flush fails, the next calls to these methods throw an exception.
+ * to the data source. If a flush on the flusher's thread fails, the next calls to these methods throw an
+ * exception. The final flush runs in {@link #onHashingCompleted()}, which throws, if it fails.
  */
 public class FullLeafRehashHashListener implements VirtualHashListener {
 
