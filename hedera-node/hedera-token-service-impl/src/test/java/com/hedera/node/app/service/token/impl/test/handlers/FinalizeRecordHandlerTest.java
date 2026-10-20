@@ -723,7 +723,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 nftTransfer321(1, ACCOUNT_1212_ID, asAccount(0L, 0L, 0)),
                 nftTransfer321(2, ACCOUNT_5656_ID, ACCOUNT_1212_ID));
 
-        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH);
+        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH, TransactionBody.DEFAULT);
 
         verify(recordBuilder, times(0)).tokenTransferLists(any());
     }
@@ -745,7 +745,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 nftTransfer321(2, asAccount(0L, 0L, 0), ACCOUNT_3434_ID),
                 nftTransfer321(1, ACCOUNT_3434_ID, ACCOUNT_1212_ID));
 
-        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH);
+        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH, TransactionBody.DEFAULT);
 
         verify(recordBuilder, times(0)).tokenTransferLists(any());
     }
@@ -767,7 +767,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 nftTransfer321(2, ACCOUNT_3434_ID, asAccount(0L, 0L, 0)),
                 nftTransfer321(1, ACCOUNT_1212_ID, ACCOUNT_3434_ID));
 
-        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH);
+        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH, TransactionBody.DEFAULT);
 
         verify(recordBuilder, times(0)).tokenTransferLists(any());
     }
@@ -784,7 +784,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         givenChildRecordsTransferring(
                 nftTransfer321(1, asAccount(0L, 0L, 0), ACCOUNT_3434_ID), fungibleTransfer321(ACCOUNT_3434_ID, -1));
 
-        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH);
+        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH, TransactionBody.DEFAULT);
 
         verify(recordBuilder, times(0)).tokenTransferLists(any());
     }
@@ -807,7 +807,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 nftTransfer321(1, ACCOUNT_3434_ID, ACCOUNT_1212_ID),
                 fungibleTransfer321(ACCOUNT_1212_ID, -1));
 
-        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH);
+        subject.finalizeNonStakingRecord(context, HederaFunctionality.ATOMIC_BATCH, TransactionBody.DEFAULT);
 
         verify(recordBuilder, times(0)).tokenTransferLists(any());
     }
