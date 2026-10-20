@@ -432,10 +432,26 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (blockStreamInfo.blockNumber() < 0L) {
             return BlockRootTreeHasher.emptySubtreeFor(digestType);
         }
-        final int hashSize = digestType.digestLength();
+        // Block N's subtree roots were persisted with the digest N was built with, which may differ from the active
+        // digest after a SHA-384 -> SHA-256 switch (the switch happens at a restart, after which init() runs this).
+        // Recompute N's root hash with N's OWN digest, inferred from the persisted consensus-header-root length, so
+        // the reconstructed value equals the real hash of block N and the first block under the new digest links to
+        // the correct parent (rather than a hash recomputed under the wrong digest). When that length is not a
+        // recognized digest size (e.g. an empty/absent root), fall back to the passed digest.
+        final long consensusHeaderRootLen =
+                blockStreamInfo.consensusHeaderRootHash().length();
+        final DigestType blockDigest;
+        if (consensusHeaderRootLen == DigestType.SHA_256.digestLength()) {
+            blockDigest = DigestType.SHA_256;
+        } else if (consensusHeaderRootLen == DigestType.SHA_384.digestLength()) {
+            blockDigest = DigestType.SHA_384;
+        } else {
+            blockDigest = digestType;
+        }
+        final int hashSize = blockDigest.digestLength();
         final Bytes prevBlockHash;
         if (blockStreamInfo.blockNumber() == 0L) {
-            prevBlockHash = BlockRootTreeHasher.emptySubtreeFor(digestType);
+            prevBlockHash = BlockRootTreeHasher.emptySubtreeFor(blockDigest);
         } else {
             // The trailing window may be in 48-byte padded mode (mixed era) or compacted 32-byte native mode;
             // realBlockHashByBlockNumber derives the stride and strips any left-padding to recover the true (unpadded)
@@ -448,7 +464,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     hashSize);
         }
         final var prevBlocksHasher = new IncrementalStreamingHasher(
-                digestType.buildDigest(),
+                blockDigest.buildDigest(),
                 blockStreamInfo.intermediatePreviousBlockRootHashes().stream()
                         .map(Bytes::toByteArray)
                         .toList(),
@@ -458,7 +474,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // The final state-changes subtree root isn't persisted directly (only the penultimate roots are), so
         // reconstruct the final state-change block item that wrote this very singleton and complete the subtree.
         final var stateChangesHasher = new IncrementalStreamingHasher(
-                digestType.buildDigest(),
+                blockDigest.buildDigest(),
                 blockStreamInfo.rightmostPrecedingStateChangesTreeHashes().stream()
                         .map(Bytes::toByteArray)
                         .toList(),
@@ -479,7 +495,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         // Straight to BlockRootTree rather than through combine(), which also derives the sibling hashes
         // that only a pending proof needs
         return BlockRootTree.computeBlockRootHash(
-                digestType,
+                blockDigest,
                 blockStreamInfo.blockTimeOrThrow(),
                 prevBlockHash,
                 allPrevBlocksHash,

@@ -35,6 +35,7 @@ import com.hedera.hapi.block.stream.output.BlockFooter;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.StateIdentifier;
+import com.hedera.hapi.node.base.BlockHashAlgorithm;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.entity.EntityCounts;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -141,7 +142,9 @@ public class StateChangesValidator implements BlockStreamValidator {
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
     private final long hintsThresholdDenominator;
-    private final DigestType digestType;
+    // The digest in effect for the block currently being validated. Starts at the configured value but switches
+    // when a block header declares a different hash algorithm (e.g. SHA-384 -> SHA-256), mirroring the node.
+    private DigestType digestType;
     private final boolean assertAtLeastOneWraps;
     private final Hash initializedGenesisStateHash;
     private final Path pathToNode0SwirldsLog;
@@ -395,6 +398,8 @@ public class StateChangesValidator implements BlockStreamValidator {
             logger.info("Read {} preview blocks", previewBlocks.size());
 
             for (final var block : previewBlocks) {
+                // A preview block may be the SHA-384 -> SHA-256 transition block; adopt its declared digest.
+                incrementalBlockHashes = withBlockDigest(block, incrementalBlockHashes);
                 // Apply state changes from preview blocks to build up state
                 long eventNodeId = -1;
                 for (final var item : block.items()) {
@@ -496,7 +501,9 @@ public class StateChangesValidator implements BlockStreamValidator {
                         blockInfo.wrappedIntermediatePreviousBlockRootHashes().size(),
                         blockInfo.wrappedIntermediateBlockRootsLeafCount());
                 previousBlockHash = blockInfo.previousWrappedRecordBlockRootHash();
-                // Rebuild the incremental block hashes tree from wrapped intermediate hashes
+                // Rebuild the incremental block hashes tree from wrapped intermediate hashes, using the digest the
+                // first post-cutover block declares (the digest may have changed during the preview blocks).
+                digestType = blockDigestOf(firstPostCutoverBlock);
                 incrementalBlockHashes = new IncrementalStreamingHasher(
                         digest(),
                         blockInfo.wrappedIntermediatePreviousBlockRootHashes().stream()
@@ -527,6 +534,8 @@ public class StateChangesValidator implements BlockStreamValidator {
         boolean hashChainBroken = false;
         for (int i = 0; i < n; i++) {
             final var block = blocks.get(i);
+            // Adopt the digest this block declares, in case its hash algorithm differs from the previous block's.
+            incrementalBlockHashes = withBlockDigest(block, incrementalBlockHashes);
             var shouldVerifyProof = i == 0
                     || i == lastVerifiableIndex
                     || indirectProofSeq != null
@@ -825,6 +834,42 @@ public class StateChangesValidator implements BlockStreamValidator {
 
     private MessageDigest digest() {
         return digestType == DigestType.SHA_256 ? sha256DigestOrThrow() : sha384DigestOrThrow();
+    }
+
+    /**
+     * Returns the digest declared by a block's header ({@code hash_algorithm}), defaulting to SHA-384 when the
+     * block has no header or an unrecognized algorithm.
+     */
+    private static DigestType blockDigestOf(@NonNull final Block block) {
+        return block.items().stream()
+                .filter(BlockItem::hasBlockHeader)
+                .findFirst()
+                .map(item -> item.blockHeaderOrThrow().hashAlgorithm() == BlockHashAlgorithm.SHA2_256
+                        ? DigestType.SHA_256
+                        : DigestType.SHA_384)
+                .orElse(DigestType.SHA_384);
+    }
+
+    /**
+     * Switches {@link #digestType} to the digest declared by {@code block}'s header when it differs from the digest
+     * currently in effect (e.g. at the SHA-384 -&gt; SHA-256 transition block). When it changes, the cross-block
+     * "all previous blocks" tree must continue under the new digest, so it is re-seeded from its current
+     * intermediate state — mirroring how the node rebuilds its previous-block hasher after the switch. Returns the
+     * hasher to use going forward (the same instance if nothing changed).
+     */
+    private IncrementalStreamingHasher withBlockDigest(
+            @NonNull final Block block, @NonNull final IncrementalStreamingHasher incrementalBlockHashes) {
+        final var blockDigestType = blockDigestOf(block);
+        if (blockDigestType == digestType) {
+            return incrementalBlockHashes;
+        }
+        digestType = blockDigestType;
+        return new IncrementalStreamingHasher(
+                digest(),
+                incrementalBlockHashes.intermediateHashingState().stream()
+                        .map(Bytes::toByteArray)
+                        .toList(),
+                incrementalBlockHashes.leafCount());
     }
 
     private Bytes hashLeaf(final Bytes leafData) {
