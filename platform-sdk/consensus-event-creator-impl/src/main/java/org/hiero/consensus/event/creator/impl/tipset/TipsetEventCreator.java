@@ -137,7 +137,7 @@ public class TipsetEventCreator implements EventCreator {
         final EventCreationConfig eventCreationConfig = configuration.getConfigData(EventCreationConfig.class);
 
         antiSelfishnessFactor = Math.max(1.0, eventCreationConfig.antiSelfishnessFactor());
-        tipsetMetrics = new TipsetMetrics(metrics, roster);
+        tipsetMetrics = new TipsetMetrics(configuration, metrics, time, roster);
         tipsetTracker = new TipsetTracker(time, selfId, roster);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
@@ -482,6 +482,15 @@ public class TipsetEventCreator implements EventCreator {
     private UnsignedEvent assembleEventObject(final PlatformEvent... otherParents) {
         final Instant timeTransactionsTaken = time.now();
         final List<TimestampedTransaction> transactions = transactionSupplier.getTransactionsForEvent();
+        // the transaction latency leaves out priority transactions: they overtake the others in the pool, and most of
+        // them are state signatures, which arrive at the rate of rounds rather than with the load
+        final List<Instant> transactionReceivedTimes = new ArrayList<>(transactions.size());
+        for (final TimestampedTransaction transaction : transactions) {
+            if (!transaction.priority()) {
+                transactionReceivedTimes.add(transaction.receivedTime());
+            }
+        }
+        tipsetMetrics.recordPoolWait(timeTransactionsTaken, transactionReceivedTimes);
         final List<PlatformEvent> allParents = new ArrayList<>(1 + otherParents.length);
         if (lastSelfEvent != null) {
             allParents.add(lastSelfEvent);
@@ -500,7 +509,8 @@ public class TipsetEventCreator implements EventCreator {
                 calculateNewEventCreationTime(lastSelfEvent, allParents, transactions),
                 ListUtils.mapToCopy(transactions, TimestampedTransaction::transaction),
                 random.nextLong(0, roster.size() + 1),
-                timeTransactionsTaken);
+                timeTransactionsTaken,
+                transactionReceivedTimes);
         eventHasher.hashUnsignedEvent(event);
 
         return event;

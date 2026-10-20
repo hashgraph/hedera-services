@@ -64,7 +64,6 @@
 				"ClprCloseChannel",
 				"ClprRegisterConnector",
 				"ClprDeregisterConnector",
-				"ClprRedactMessage",
 				"ClprGetLedgerConfiguration",
 				"ClprGetEndpointManifest"
 		  ]
@@ -176,7 +175,6 @@
 		{
 		  "opsPerSec": 1000000,
 		  "operations": [
-			"CryptoGetAccountBalance",
 			"TransactionGetReceipt"
 		  ]
 		}
