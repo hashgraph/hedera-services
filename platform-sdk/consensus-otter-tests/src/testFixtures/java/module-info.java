@@ -29,6 +29,8 @@ module org.hiero.otter.fixtures {
             org.hiero.consensus.otter.docker.app;
     exports org.hiero.otter.fixtures.container.utils to
             org.hiero.consensus.otter.docker.app;
+    exports org.hiero.otter.fixtures.falcon to
+            org.hiero.otter.fixtures.test;
     exports org.hiero.otter.fixtures.internal to
             com.swirlds.config.impl,
             org.hiero.consensus.otter.docker.app,
@@ -61,7 +63,9 @@ module org.hiero.otter.fixtures {
     requires transitive org.hiero.base.utility;
     requires transitive org.hiero.consensus.gossip.impl;
     requires transitive org.hiero.consensus.gossip;
+    requires transitive org.hiero.consensus.hashgraph.impl;
     requires transitive org.hiero.consensus.model;
+    requires transitive org.hiero.consensus.status.monitor;
     requires transitive org.hiero.consensus.utility.test.fixtures;
     requires transitive org.hiero.consensus.utility;
     requires transitive org.hiero.consensus.wiring.framework;
@@ -85,11 +89,11 @@ module org.hiero.otter.fixtures {
     requires org.hiero.base.crypto;
     requires org.hiero.consensus.event.creator.impl;
     requires org.hiero.consensus.event.creator;
+    requires org.hiero.consensus.event.intake.impl;
     requires org.hiero.consensus.event.intake;
     requires org.hiero.consensus.event.stream;
     requires org.hiero.consensus.fakes;
     requires org.hiero.consensus.hashgraph.impl.test.fixtures;
-    requires org.hiero.consensus.hashgraph.impl;
     requires org.hiero.consensus.hashgraph;
     requires org.hiero.consensus.iss.detection;
     requires org.hiero.consensus.metrics;
@@ -99,7 +103,6 @@ module org.hiero.otter.fixtures {
     requires org.hiero.consensus.reconnect;
     requires org.hiero.consensus.roster;
     requires org.hiero.consensus.state;
-    requires org.hiero.consensus.status.monitor;
     requires com.fasterxml.jackson.annotation;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
