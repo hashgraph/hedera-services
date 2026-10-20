@@ -12,11 +12,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-<<<<<<< HEAD
-=======
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
->>>>>>> ee6d020 (fix: reject allowance when spender is provided by alias (#608))
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_STATE_ID;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.NFTS_STATE_ID;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
@@ -33,6 +30,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
@@ -72,6 +70,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
+    /** The legacy alias form: a serialized ED25519 key, which is longer than an EVM address. */
+    private static final Bytes SPENDER_KEY_ALIAS = Key.PROTOBUF.toBytes(Key.newBuilder()
+            .ed25519(Bytes.wrap("spenderEd25519KeyBytes0123456789"))
+            .build());
+
+    private static final Bytes SPENDER_EVM_ADDRESS = Bytes.fromHex("a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3");
+    private static final Bytes UNKNOWN_EVM_ADDRESS = Bytes.fromHex("c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3");
 
     @Mock(strictness = Strictness.LENIENT)
     private HandleContext handleContext;
@@ -693,8 +698,6 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-<<<<<<< HEAD
-=======
     void amountZeroNamingSpenderByKeyAliasIsRejected() {
         writableAccountStore.putAlias(SPENDER_KEY_ALIAS, spenderId);
 
@@ -976,7 +979,6 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
->>>>>>> ee6d020 (fix: reject allowance when spender is provided by alias (#608))
     void handlePayerAccountNotFound() {
         given(handleContext.payer()).willReturn(AccountID.DEFAULT);
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
