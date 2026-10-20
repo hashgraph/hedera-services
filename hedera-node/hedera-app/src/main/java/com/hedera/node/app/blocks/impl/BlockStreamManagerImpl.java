@@ -182,6 +182,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     // Once open, no more output from savepoint stacks is accepted until the next block starts.
     private boolean savepointOutputSuppressed;
 
+    // Trailing-hash transition logging. We emit a decoded, human-readable dump of both trailing windows
+    // (trailingBlockHashes and trailingOutputHashes) at the two moments their layout changes: the block digest
+    // transition (e.g. SHA-384 -> SHA-256) and the block-stream cutover. Each moment is logged twice — a BEFORE
+    // snapshot (the window entering the transition block) and an AFTER snapshot (the window entering the next
+    // block, i.e. after the transition block committed) — so operators and tests can verify the exact values on
+    // both sides. The digest length of the previous block, seeded from state on the first block so a transition
+    // that coincides with a restart is still detected; -1 until seeded.
+    private int previousDigestLength = -1;
+    // When non-null, the next block start emits the AFTER snapshot for this transition label.
+    private String pendingTransitionLabel;
+
     // Block merkle subtrees and leaves
     private IncrementalStreamingHasher previousBlockHashes;
     private IncrementalStreamingHasher consensusHeaderHasher;
@@ -533,6 +544,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     .<BlockInfo>getSingleton(BLOCKS_STATE_ID)
                     .get();
             final boolean postCutover = blockInfo != null && blockInfo.previewStreamOverwritten();
+            logTrailingHashTransitions(blockStreamInfo);
             blockHashManager.startBlock(blockStreamInfo, trailingHash, postCutover);
             runningHashManager.startBlock(blockStreamInfo, isCutoverBlock);
 
@@ -1885,6 +1897,53 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         stateChangesHasher = new IncrementalStreamingHasher(digestOrThrow(), List.of(), 0);
         // Branch 8
         traceDataHasher = new IncrementalStreamingHasher(digestOrThrow(), List.of(), 0);
+    }
+
+    /**
+     * Emits a decoded dump of the trailing-hash windows at the block digest transition (e.g. SHA-384 -> SHA-256).
+     * Logs a BEFORE snapshot (the window entering the transition block) now, and an AFTER snapshot (the window
+     * entering the following block) on the next call. The previous block's digest length is seeded from the
+     * incoming window on the first block so a transition that coincides with a restart is still detected.
+     *
+     * <p>The block-stream cutover is logged separately, by {@code V0740BlockStreamSchema.restart}, which can see
+     * the genuine pre-cutover window before it overwrites it (this restarted node cannot).
+     *
+     * @param blockStreamInfo the trailing hashes as of the end of the previous block (i.e. entering this block)
+     */
+    private void logTrailingHashTransitions(@NonNull final BlockStreamInfo blockStreamInfo) {
+        final int activeDigestLength = digestOrThrow().getDigestLength();
+        if (pendingTransitionLabel != null) {
+            log.info(
+                    "{}",
+                    BlockImplUtils.describeTrailingWindows(
+                            pendingTransitionLabel,
+                            blockStreamInfo.trailingBlockHashes(),
+                            blockStreamInfo.trailingOutputHashes(),
+                            blockStreamInfo.blockNumber(),
+                            activeDigestLength));
+            pendingTransitionLabel = null;
+        }
+        if (previousDigestLength == -1) {
+            final int[] sizes = BlockImplUtils.outputEntrySizes(
+                    blockStreamInfo.trailingOutputHashes().length(), activeDigestLength);
+            previousDigestLength = sizes.length == 0 ? activeDigestLength : sizes[sizes.length - 1];
+        }
+        if (previousDigestLength != activeDigestLength) {
+            final String t =
+                    "SHA-" + (previousDigestLength * 8) + " -> SHA-" + (activeDigestLength * 8) + " transition";
+            // Decode the BEFORE snapshot in the prior era's digest length so it reads truthfully (e.g. a native
+            // 48-byte SHA-384 window), rather than as a "pre-compaction" window of the new, shorter digest.
+            log.info(
+                    "{}",
+                    BlockImplUtils.describeTrailingWindows(
+                            "BEFORE " + t,
+                            blockStreamInfo.trailingBlockHashes(),
+                            blockStreamInfo.trailingOutputHashes(),
+                            blockStreamInfo.blockNumber(),
+                            previousDigestLength));
+            pendingTransitionLabel = "AFTER " + t;
+        }
+        previousDigestLength = activeDigestLength;
     }
 
     private DigestType digestType() {

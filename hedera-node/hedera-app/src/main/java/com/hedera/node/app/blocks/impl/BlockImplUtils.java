@@ -241,6 +241,105 @@ public class BlockImplUtils {
         return Bytes.wrap(out);
     }
 
+    /**
+     * Decodes the per-entry native byte sizes of a {@code trailingOutputHashes} window. The window holds at most
+     * four running hashes; normally all are in the active digest's units, but across a block-stream cutover it
+     * transiently mixes leading full 48-byte SHA-384 seeds with {@code activeSize}-byte hashes. A length beyond
+     * {@code 4 * activeSize} encodes a leading run of {@code a = (len - 4*activeSize) / (48 - activeSize)} 48-byte
+     * entries followed by {@code 4 - a} {@code activeSize}-byte entries; any shorter length is a uniform
+     * {@code activeSize} window. Mirrors the decode in {@code RunningHashManager.startBlock}.
+     *
+     * @param length the byte length of the stored output window
+     * @param activeSize the byte length of the active digest's hashes
+     * @return the native byte size of each entry, oldest first
+     */
+    public static int[] outputEntrySizes(final long length, final int activeSize) {
+        if (length == 0) {
+            return new int[0];
+        }
+        final int sha384 = RECORD_HASH_SIZE;
+        if (length > 4L * activeSize) {
+            final int a = (int) ((length - 4L * activeSize) / (sha384 - activeSize));
+            final int[] sizes = new int[4];
+            for (int i = 0; i < 4; i++) {
+                sizes[i] = i < a ? sha384 : activeSize;
+            }
+            return sizes;
+        }
+        final int n = (int) (length / activeSize);
+        final int[] sizes = new int[n];
+        java.util.Arrays.fill(sizes, activeSize);
+        return sizes;
+    }
+
+    /**
+     * Renders both trailing-hash windows in a semi-human-readable form: per field, the entry count and
+     * stride/sizes, then one real (unpadded) hash per line. Used to log a decoded snapshot of the windows at the
+     * digest transition and the block-stream cutover, so the exact values on both sides are inspectable without a
+     * giant single-line hex blob.
+     *
+     * @param label a short description of the snapshot (e.g. {@code "BEFORE cutover"})
+     * @param trailingBlockHashes the stored block-hash window
+     * @param trailingOutputHashes the stored running-hash window
+     * @param lastBlockNo the block number of the rightmost block-hash entry
+     * @param activeSize the byte length of the active digest's hashes
+     * @return the formatted multi-line description
+     */
+    public static String describeTrailingWindows(
+            @NonNull final String label,
+            @NonNull final Bytes trailingBlockHashes,
+            @NonNull final Bytes trailingOutputHashes,
+            final long lastBlockNo,
+            final int activeSize) {
+        final var sb = new StringBuilder(256);
+        sb.append("Trailing hashes ")
+                .append(label)
+                .append(" [afterBlock=")
+                .append(lastBlockNo)
+                .append("]\n");
+
+        // These windows are only ever logged pre-compaction (at the digest transition or cutover; compaction
+        // happens ~256 blocks later), so a length divisible by the 48-byte stored size is a 48-byte window —
+        // genuine SHA-384 or shorter hashes left-padded to 48 — and anything else is native. Deciding by
+        // divisibility alone avoids the entry-count ambiguity that mis-rounds a length divisible by both 48 and the
+        // active size (e.g. 194 * 48 == 291 * 32).
+        final long blockLen = trailingBlockHashes.length();
+        final int blockStride = blockLen == 0 ? 0 : (blockLen % RECORD_HASH_SIZE == 0 ? RECORD_HASH_SIZE : activeSize);
+        final int blockCount = blockStride == 0 ? 0 : (int) (blockLen / blockStride);
+        // A 48-byte stride is the uncompacted form — entries are genuine 48-byte hashes or shorter hashes
+        // left-padded to 48. Compaction produces a shorter (active-size) stride. Decide purely on the stride, not
+        // the active digest length, which is unreliable at a config boundary (e.g. read during the cutover restart).
+        final boolean preCompaction = blockStride == RECORD_HASH_SIZE;
+        sb.append("  trailingBlockHashes: count=")
+                .append(blockCount)
+                .append(" stride=")
+                .append(blockStride)
+                .append("B ")
+                .append(preCompaction ? "(pre-compaction)" : "(native)")
+                .append('\n');
+        for (int i = 0; i < blockCount; i++) {
+            final long blockNo = lastBlockNo - blockCount + 1 + i;
+            final var real =
+                    stripLeadingPad(trailingBlockHashes.slice((long) i * blockStride, blockStride), activeSize);
+            sb.append("    block ")
+                    .append(blockNo)
+                    .append(": ")
+                    .append(real.toHex())
+                    .append('\n');
+        }
+
+        // The 4-entry running-hash window is small, and its per-entry byte sizes are ambiguous to decode from the
+        // blob alone (a 48-byte window could be one SHA-384 entry; the reseed may hold fewer than four when the
+        // record stream's older running hashes are empty). Log its exact length and raw hex — both human-checkable
+        // and the exact value — rather than guessing a per-entry split.
+        sb.append("  trailingOutputHashes: length=")
+                .append(trailingOutputHashes.length())
+                .append("B: ")
+                .append(trailingOutputHashes.toHex())
+                .append('\n');
+        return sb.toString();
+    }
+
     public static Bytes hashLeaf(@NonNull final MessageDigest digest, @NonNull final Bytes leafData) {
         return hashOfAll(digest, LEAF_PREFIX_BYTES, leafData);
     }

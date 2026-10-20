@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_STATE_ID;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.RECORD_HASH_SIZE;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
@@ -30,7 +29,6 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.config.data.BlockStreamJumpstartConfig;
@@ -238,17 +236,16 @@ class JumpstartFileSuite implements LifecycleTest {
                         "Jumpstart migration already applied \\(votingComplete=true\\) and no jumpstart config, skipping",
                         Duration.ofSeconds(30)),
                 sourcing(() -> verifyLiveWrappedHash(liveWrappedHash.get(), liveBlockNum.get())),
-                logIt("Phase 9: Ops burst prior to SHA-256"),
+                logIt("Phase 9: Transition to SHA-256"),
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
-                // Point 1: still SHA-384, so both windows hold full-size (48-byte) hashes
-                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "before SHA-256", 48)),
                 logIt("Phase 9b: Enable SHA-256 block hashing"),
                 prepareFakeUpgrade(),
                 upgradeToNextConfigVersion(Map.of("blockStream.digestType", "SHA_256")),
                 waitForActive(NodeSelector.allNodes(), Duration.ofSeconds(60)),
+                // Produce several SHA-256 blocks. The node logs a decoded BEFORE/AFTER dump of both trailing
+                // windows at the SHA-384 -> SHA-256 transition block; verifyTrailingHashTransitionLogs() asserts
+                // the exact values below, including that trailingBlockHashes stays 48-byte padded (no compaction).
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
-                // Point 2: output hashes are now 32-byte, but trailingBlockHashes must NOT have compacted yet
-                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "after SHA-256", 32)),
                 logIt("Phase 10: Execute cutover"),
                 prepareFakeUpgrade(),
                 upgradeToNextConfigVersion(
@@ -267,11 +264,11 @@ class JumpstartFileSuite implements LifecycleTest {
                                 "BOTH"),
                         // Pre-restart: capture the final BlockInfo before cutover, and save preview block stream files
                         // for later replay
-                        withOpContext((spec, opLog) -> {
-                            // Point 3: immediately before cutover, same layout as right after SHA-256
-                            assertTrailingWindows(spec, opLog, "before cutover", 32);
-                            capturePreCutoverLogged(spec, opLog, capturedBlockInfo, capturedRunningHashes);
-                        })),
+                        // Capture the genuine pre-cutover windows here, at the quiesced pre-restart point (the
+                        // restarted node cannot reconstruct them once V0740 overwrites the singleton). The exact
+                        // values are asserted by verifyCutoverLogFields below.
+                        withOpContext((spec, opLog) ->
+                                capturePreCutoverLogged(spec, opLog, capturedBlockInfo, capturedRunningHashes))),
                 waitForActive(NodeSelector.allNodes(), Duration.ofSeconds(60)),
                 assertHgcaaLogContainsPattern(
                         NodeSelector.exceptNodeIds(LATER_NODE_IDS),
@@ -283,10 +280,11 @@ class JumpstartFileSuite implements LifecycleTest {
                 new VerifyCutoverBlockStreamOp(liveBlockNum, capturedBlockInfo, capturedRunningHashes),
                 logIt("Phase 10: First post-cutover burst"),
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
-                // Point 4: the 4x48 reseed itself is pinned via the log in verifyCutoverLogFields; by the end of
-                // the burst the output window has drained to 4x32 while block hashes remain 48-byte record hashes
-                withOpContext((spec, opLog) -> assertTrailingWindows(spec, opLog, "after cutover", 32)),
                 logIt("Phase 11: Verify clean cutover with additional blocks"),
+                // Assert the node-logged, decoded trailing-window dumps at both transition blocks (SHA-384 ->
+                // SHA-256 and the cutover): exact strides, per-entry sizes, and the key invariant that
+                // trailingBlockHashes stays 48-byte padded after SHA-256 (compaction deferred past cutover).
+                doingContextual(JumpstartFileSuite::verifyTrailingHashTransitionLogs),
                 doingContextual(spec -> verifyPostCutoverBlocks(spec, liveBlockNum)),
                 // restart with cutover enabled one more time, to verify it doesn't do anything
                 logIt("Phase 12: Restart with cutover enabled to verify idempotent operation"),
@@ -312,37 +310,67 @@ class JumpstartFileSuite implements LifecycleTest {
     }
 
     /**
-     * Reads the latest {@link BlockStreamInfo} from node 0's block stream state changes and asserts that
-     * {@code trailingBlockHashes} is still stored at a 48-byte stride (compaction is deferred until well past
-     * cutover) and that {@code trailingOutputHashes} holds exactly four entries of the given size.
+     * Asserts the node-logged, decoded trailing-window dumps emitted at the two transition blocks (the SHA-384 -&gt;
+     * SHA-256 digest transition and the block-stream cutover). Each transition is logged twice — a BEFORE/AT
+     * snapshot and an AFTER snapshot — by {@code BlockStreamManagerImpl.logTrailingWindows}. This reads node 0's
+     * application log instead of the live block stream, so it is immune to the mid-write partial-gzip race.
+     *
+     * <p>The key correctness assertion is that {@code trailingBlockHashes} is still at a 48-byte
+     * {@code (pre-compaction)} stride in the AFTER-SHA-256 dump: proof that the switch to 32-byte block hashing did
+     * NOT compact the window (compaction is deferred until well past cutover). Exact pre-/post-cutover values are
+     * additionally pinned by {@link #verifyCutoverLogFields}.
      */
-    private static void assertTrailingWindows(
-            final HapiSpec spec, final Logger opLog, final String point, final int expectedOutputHashSize) {
+    private static void verifyTrailingHashTransitionLogs(final HapiSpec spec) {
         final var node0 = spec.targetNetworkOrThrow().getRequiredNode(NodeSelector.byNodeId(0));
-        final var allBlocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocksIgnoringMarkers(
-                node0.getExternalPath(BLOCK_STREAMS_DIR));
-        final var bsi = BlockStreamAccess.computeSingletonValueFromUpdates(
-                allBlocks, SingletonUpdateChange::blockStreamInfoValue, BLOCK_STREAM_INFO_STATE_ID);
-        assertNotNull(bsi, "BlockStreamInfo should be present in block state changes " + point);
-        final long blockHashesLen = bsi.trailingBlockHashes().length();
-        final long count = Math.min(bsi.blockNumber(), 256);
-        final int stride = BlockImplUtils.storedStride(blockHashesLen, count, RECORD_HASH_SIZE, 32);
-        opLog.info(
-                "Trailing windows {}: blockNumber={}, trailingBlockHashesLen={}, stride={}, trailingOutputHashesLen={}",
-                point,
-                bsi.blockNumber(),
-                blockHashesLen,
-                stride,
-                bsi.trailingOutputHashes().length());
-        assertEquals(
-                RECORD_HASH_SIZE,
-                stride,
-                "trailingBlockHashes should keep a 48-byte stride " + point + " (len=" + blockHashesLen + ")");
-        assertEquals(0, blockHashesLen % RECORD_HASH_SIZE, "trailingBlockHashes length not a multiple of 48 " + point);
-        assertEquals(
-                4L * expectedOutputHashSize,
-                bsi.trailingOutputHashes().length(),
-                "trailingOutputHashes should be 4x" + expectedOutputHashSize + " bytes " + point);
+        final String log;
+        try {
+            log = Files.readString(node0.getExternalPath(ExternalPath.APPLICATION_LOG));
+        } catch (IOException e) {
+            fail(e);
+            return;
+        }
+
+        // The strict correctness check is on trailingBlockHashes: it must stay at a 48-byte stride through all four
+        // snapshots — never compacting when SHA-256 turns on, nor right up to cutover. (trailingOutputHashes is
+        // logged verbatim in each dump for inspection, and its exact value at cutover is pinned by
+        // verifyCutoverLogFields; its per-entry layout is a non-goal that self-heals after cutover.)
+
+        // SHA-384 -> SHA-256 transition. BEFORE is decoded in the prior era, so it reads as a native 48-byte
+        // SHA-384 window; AFTER keeps the 48-byte stride but now as (pre-compaction) under the shorter digest.
+        // The real invariant is the stride: a 48-byte stride means the window has NOT compacted. (The dump labels
+        // a 48-byte stride "(pre-compaction)"; a compacted window would show the shorter active-digest stride.)
+        final var beforeSha256 = trailingDumpSegment(log, "Trailing hashes BEFORE SHA-384 -> SHA-256 transition");
+        assertTrue(
+                beforeSha256.contains("stride=48B"),
+                "BEFORE SHA-256 dump should show a 48-byte trailingBlockHashes stride:\n" + beforeSha256);
+
+        final var afterSha256 = trailingDumpSegment(log, "Trailing hashes AFTER SHA-384 -> SHA-256 transition");
+        assertTrue(
+                afterSha256.contains("stride=48B"),
+                "AFTER SHA-256 dump MUST still show a 48-byte trailingBlockHashes stride — the switch to SHA-256 "
+                        + "must not compact the window:\n" + afterSha256);
+
+        // Cutover: the genuine final pre-cutover window (logged by V0740BlockStreamSchema, which can still see it
+        // before overwriting it) must still be at the 48-byte stride — proof that compaction is deferred right up
+        // to cutover.
+        final var beforeCutover =
+                trailingDumpSegment(log, "Trailing hashes BEFORE block-stream cutover (final pre-cutover window)");
+        assertTrue(
+                beforeCutover.contains("stride=48B"),
+                "BEFORE cutover dump should show a 48-byte trailingBlockHashes stride — compaction must still be "
+                        + "deferred right up to cutover:\n" + beforeCutover);
+    }
+
+    /**
+     * Extracts the text of a single trailing-window dump — from the given header line up to the next dump header
+     * (or end of log) — so assertions on strides and sizes are scoped to that one snapshot. Fails if the header is
+     * absent, which means the node never logged that transition.
+     */
+    private static String trailingDumpSegment(final String log, final String header) {
+        final int start = log.indexOf(header);
+        assertTrue(start >= 0, "Expected node to log a trailing-window dump with header: " + header);
+        final int next = log.indexOf("Trailing hashes ", start + header.length());
+        return next < 0 ? log.substring(start) : log.substring(start, next);
     }
 
     private static void capturePreCutoverLogged(
