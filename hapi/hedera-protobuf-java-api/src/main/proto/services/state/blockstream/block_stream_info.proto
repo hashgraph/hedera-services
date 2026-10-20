@@ -198,7 +198,10 @@ message BlockStreamInfo {
      * </ul>
      * A genesis (empty-seeded) window grows natively and is {@code true} from its
      * first entry; a record-migration seed holds genuine 48-byte hashes and is
-     * {@code false} until it compacts.
+     * {@code false} until it compacts.<br/>
+     * This flag SHALL be set to {@code true} if and only if the trailing block hashes
+     * have been compacted to the active digest's native entry size.<br/>
+     * This flag SHALL NOT be set to {@code true} prior to block stream cutover.
      */
     bool trailing_block_hashes_compacted = 19;
 }
