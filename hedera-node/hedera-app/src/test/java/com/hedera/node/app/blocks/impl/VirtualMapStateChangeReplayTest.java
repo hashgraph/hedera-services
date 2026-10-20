@@ -31,7 +31,7 @@ class VirtualMapStateChangeReplayTest extends MerkleTestBase {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void mixedInsertionsAndLaterPartialsReproduceTheVirtualMapRoot(final boolean deltasEnabled) {
+    void initializedSingletonAndMapChangesReproduceTheVirtualMapRoot(final boolean deltasEnabled) {
         final var producer = createTestState(FILE_SYSTEM_MANAGER);
         final var replay = createTestState(FILE_SYSTEM_MANAGER);
         VirtualMap producerFork = null;
@@ -42,6 +42,21 @@ class VirtualMapStateChangeReplayTest extends MerkleTestBase {
             final var listener = new ImmediateStateChangeListener();
             producer.registerCommitListener(listener);
             listener.beginBlock(deltasEnabled, 0);
+            // Handle-time setup inserts the singleton in a separate transaction before ordinary map changes.
+            final var setup = new WrappedState(producer);
+            setup.getWritableStates(CLPR_SERVICE)
+                    .<ClprEndpointManifestConstruction>getSingleton(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID)
+                    .put(ClprEndpointManifestConstruction.DEFAULT);
+            setup.commit();
+            final var initialization = serialized(listener.getStateChanges());
+            assertThat(initialization)
+                    .extracting(StateChange::stateId)
+                    .containsExactly(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
+            assertThat(initialization.getFirst().singletonUpdateOrThrow().partial())
+                    .isFalse();
+            apply(replay, initialization);
+            listener.reset(null);
+
             final var account = Account.newBuilder()
                     .accountId(KEY)
                     .memo("m".repeat(200))
@@ -55,7 +70,7 @@ class VirtualMapStateChangeReplayTest extends MerkleTestBase {
             final var insertions = serialized(listener.getStateChanges());
             assertThat(insertions)
                     .extracting(StateChange::stateId)
-                    .containsExactly(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, ACCOUNTS);
+                    .containsExactly(ACCOUNTS, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
             apply(replay, insertions);
 
             // A later block uses values read back through real storage, not the producer's original objects.

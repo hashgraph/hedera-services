@@ -1092,9 +1092,8 @@ public class HandleWorkflow {
             ((CommittableWritableStates) entityIdWritableStates).commit();
         }
         if (streamMode != RECORDS) {
-            final var kvStateChanges = immediateStateChangeListener.getStateChanges().stream()
-                    .filter(change -> change.hasMapUpdate() || change.hasMapDelete() || change.hasSingletonUpdate())
-                    .toList();
+            final var kvStateChanges = new ArrayList<>(immediateStateChangeListener.getKvStateChanges());
+            kvStateChanges.addAll(immediateStateChangeListener.getSingletonStateChanges());
             if (!kvStateChanges.isEmpty()) {
                 blockStreamManager.writeItem((now) -> BlockItem.newBuilder()
                         .stateChanges(new StateChanges(now, new ArrayList<>(kvStateChanges)))

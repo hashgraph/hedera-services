@@ -82,16 +82,17 @@ class ClprConstructionFirstInsertionTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void firstInsertionPreservesPhysicalCommitOrderAlongsideMapChanges(final boolean deltasEnabled) {
+    void initializedSingletonChangesFollowMapChanges(final boolean deltasEnabled) {
         final var harness = new Harness(deltasEnabled);
+        harness.storedConstruction.set(ClprEndpointManifestConstruction.DEFAULT);
         harness.putConstruction(harness.root, INITIAL);
         harness.putAccount(harness.root);
         harness.root.commitFullStack();
 
         assertThat(harness.outputChanges())
                 .extracting(StateChange::stateId)
-                .containsExactly(ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID, ACCOUNTS);
-        assertThat(harness.physicalInsertions).containsExactly("construction", "account");
+                .containsExactly(ACCOUNTS, ENDPOINT_MANIFEST_CONSTRUCTION_STATE_ID);
+        assertThat(harness.physicalInsertions).containsExactly("account");
         assertThat(harness.boundary.allStateChanges()).isEmpty();
     }
 
