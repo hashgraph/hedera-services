@@ -119,7 +119,10 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
             // same decoder the readers use (length divisibility first, entry count only if ambiguous); a raw
             // length / count division mis-rounds in the transient post-V0740 window (255 entries, count 256).
             final var trailing = blockStreamInfo.trailingBlockHashes();
-            final long count = Math.min(blockStreamInfo.blockNumber(), NUM_TRAILING_BLOCKS);
+            // The state window holds one entry per block from the genesis "block -1" hash-of-zero through
+            // blockNumber-1, i.e. blockNumber+1 entries (capped). The exact count disambiguates a length divisible
+            // by both strides (e.g. a young born-SHA-256 window); an undercount would mis-derive the stride.
+            final long count = Math.min(blockStreamInfo.blockNumber() + 1, NUM_TRAILING_BLOCKS);
             final int stride =
                     BlockImplUtils.storedStride(trailing.length(), count, RECORD_HASH_SIZE, digestType.digestLength());
             extendedBlockHashes =

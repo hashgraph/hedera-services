@@ -108,7 +108,7 @@ public class BlockImplUtils {
     }
 
     /**
-     * Returns a record-stream running hash sized to the full {@link #RECORD_HASH_SIZE}, substituting a zero-filled
+     * Returns a record-stream running hash sized to the full {@code RECORD_HASH_SIZE}, substituting a zero-filled
      * value for an absent (empty) predecessor hash. Used when seeding the post-cutover {@code trailingOutputHashes}:
      * the record {@code RunningHashes} may have empty {@code n-1..n-3} slots (e.g. before four record blocks ever
      * existed). Zero-filling them keeps the reseeded window at exactly four entries, so the post-cutover
@@ -199,7 +199,11 @@ public class BlockImplUtils {
             final int preSize,
             final int activeSize,
             final boolean postCutover) {
-        final long countExisting = Math.min(newBlockNo, maxHashes);
+        // The existing window holds one entry per block from the genesis "block -1" hash-of-zero through block
+        // newBlockNo-1, i.e. newBlockNo+1 entries (capped at maxHashes). Using the exact count matters only when the
+        // length is divisible by both preSize and activeSize (e.g. a 96-byte window that is 3x32 vs 2x48); an
+        // undercount there would mis-derive the stride and corrupt a young (e.g. born-SHA-256) window.
+        final long countExisting = Math.min(newBlockNo + 1, maxHashes);
         final int existingStride = storedStride(window.length(), countExisting, preSize, activeSize);
         if (postCutover
                 && preSize != activeSize
