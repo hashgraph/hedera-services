@@ -294,6 +294,11 @@ public class TurtleNode extends AbstractNode implements Node, SimulatorTimeManag
 
             buildingBlocks = builder.buildingBlocks();
 
+            gossip.provideStatusActionSubmitter(action -> buildingBlocks
+                    .statusMonitorModule()
+                    .platformStatusActionInputWire()
+                    .put(action));
+
             buildingBlocks
                     .hashgraphModule()
                     .consensusRoundOutputWire()
