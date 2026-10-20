@@ -264,7 +264,7 @@ class BlockStreamManagerImplTest {
     @Test
     void reconstructLastBlockHashWithSha256DigestSupplierReturns32ByteHash() {
         final var blockStreamInfo = blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION);
-        final Bytes hash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+        final Bytes hash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256);
         assertEquals(32, hash.length());
     }
 

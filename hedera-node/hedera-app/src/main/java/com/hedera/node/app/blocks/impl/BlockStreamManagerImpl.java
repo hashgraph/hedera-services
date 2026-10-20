@@ -416,8 +416,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .map(Bytes::toByteArray)
                             .toList(),
                     blockStreamInfo.intermediateBlockRootsLeafCount());
-            effectiveLastBlockHash =
-                    reconstructLastBlockHash(blockStreamInfo, digestType(), blockHashManager.numTrailingBlocks);
+            effectiveLastBlockHash = reconstructLastBlockHash(blockStreamInfo, digestType());
         }
         this.lastBlockHash = effectiveLastBlockHash;
         if (!previousBlockHashesUpdated && !Objects.equals(effectiveLastBlockHash, hashOfZero())) {
@@ -426,7 +425,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     }
 
     public static Bytes reconstructLastBlockHash(
-            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType, final int maxHashes) {
+            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType) {
         requireNonNull(blockStreamInfo);
         requireNonNull(digestType);
         if (blockStreamInfo.blockNumber() < 0L) {

@@ -229,7 +229,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(3L, trailing, DigestType.SHA_256);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256);
 
         // Pre-cutover blocks keep their full 48-byte SHA-384 record hash.
         assertEquals(hash(1), subject.blockHashByBlockNumber(0L), "pre-cutover block 0 is a full 48-byte hash");
@@ -263,7 +263,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(3L, trailing, DigestType.SHA_256, true);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256);
 
         assertEquals(block0, subject.blockHashByBlockNumber(0L));
         assertEquals(32, (int) subject.blockHashByBlockNumber(0L).length());
@@ -289,7 +289,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(blockNumber, trailing, DigestType.SHA_256);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256);
 
         // The extended window has 256 entries covering blocks 745..1000
         assertEquals(reconstructedLast, subject.blockHashByBlockNumber(blockNumber));
@@ -339,7 +339,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(2L, trailing);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
 
         assertEquals(reconstructedLast, subject.blockHashByBlockNumber(2L), "last block hash is reconstructed");
         assertEquals(hash(2), subject.blockHashByBlockNumber(1L), "previous block comes from trailing hashes");
@@ -354,7 +354,7 @@ class BlockStreamInfoImplTest {
         final var blockStreamInfo = info(0L, Bytes.EMPTY);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
         final var reconstructedLast =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
+                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
 
         assertEquals(reconstructedLast, subject.blockHashByBlockNumber(0L));
         assertNull(subject.blockHashByBlockNumber(1L));
@@ -420,8 +420,7 @@ class BlockStreamInfoImplTest {
         final var trailing = concat(hash(1), hash(2));
         final var blockStreamInfo = info(2L, trailing);
         final var blocks = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_384);
-        final var lastBlockHash =
-                BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384, 256);
+        final var lastBlockHash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_384);
 
         // Equivalent records-mode view: lastBlockNumber = 2 and blockHashes include block 2's hash directly.
         final var records = new BlockRecordInfoImpl(

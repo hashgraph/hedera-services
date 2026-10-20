@@ -123,9 +123,8 @@ public class QueryContextImpl implements QueryContext {
             // must be sourced from BlockStreamInfo (mirrors the handle-path selection in ParentTxnFactory).
             final var blockStreamConfig = configuration.getConfigData(BlockStreamConfig.class);
             final var streamMode = blockStreamConfig.streamMode();
-            final var numTrailingBlocks = configuration
-                    .getConfigData(BlockRecordStreamConfig.class)
-                    .numOfBlockHashesInState();
+            final var numTrailingBlocks =
+                    configuration.getConfigData(BlockRecordStreamConfig.class).numOfBlockHashesInState();
             blockRecordInfo = streamMode == StreamMode.BLOCKS
                     ? BlockStreamInfoImpl.from(state, blockStreamConfig.digestType(), numTrailingBlocks)
                     : BlockRecordInfoImpl.from(state);

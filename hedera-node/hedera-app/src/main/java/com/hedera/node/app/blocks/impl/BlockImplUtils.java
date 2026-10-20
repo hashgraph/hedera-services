@@ -152,31 +152,6 @@ public class BlockImplUtils {
     }
 
     /**
-     * Reads the real (unpadded) hash of a block from a uniform trailing window that may be in {@code preSize}-byte
-     * padded mode (mixed era, still containing genuine pre-cutover hashes) or {@code activeSize}-byte native mode
-     * (post-compaction). The stored entry stride is derived from the window length (and, only when that is ambiguous,
-     * the entry count pinned by the block number), since blob length alone can be ambiguous.
-     *
-     * @param window the concatenated trailing block hashes
-     * @param lastBlockNo the block number of the rightmost entry in the window
-     * @param blockNo the block number of the hash to return
-     * @param maxHashes the maximum number of entries the window retains
-     * @param activeSize the byte length of the active digest's hashes
-     * @return the real hash of the requested block, or null if out of range
-     */
-    public static @Nullable Bytes realBlockHashByBlockNumber(
-            @NonNull final Bytes window,
-            final long lastBlockNo,
-            final long blockNo,
-            final int maxHashes,
-            final int activeSize) {
-        final int stride =
-                storedStride(window.length(), Math.min(lastBlockNo + 1, maxHashes), RECORD_HASH_SIZE, activeSize);
-        final var stored = blockHashByBlockNumber(window, lastBlockNo, blockNo, stride);
-        return stored == null ? null : stripLeadingPad(stored, activeSize);
-    }
-
-    /**
      * The result of appending to a trailing window: the updated window bytes and whether that window is now stored at
      * the active digest's native size (its {@code trailing_block_hashes_compacted} flag).
      *
@@ -209,48 +184,6 @@ public class BlockImplUtils {
         final int stride = compacted ? activeSize : RECORD_HASH_SIZE;
         final var stored = blockHashByBlockNumber(window, lastBlockNo, blockNo, stride);
         return stored == null ? null : stripLeadingPad(stored, activeSize);
-    }
-
-    /**
-     * Appends a new native block hash to the trailing window, keeping all entries a uniform size. While a genuine
-     * full-size (pre-cutover) hash remains, shorter hashes are left-padded to {@code preSize}. Once the oldest entry is
-     * itself padded (no genuine hashes remain) <b>and the block stream has cut over</b>, the window is compacted to
-     * {@code activeSize} and subsequent hashes are stored natively. Before cutover the window is never compacted.
-     *
-     * @param newHash the new native block hash to append
-     * @param window the current trailing block hashes
-     * @param maxHashes the maximum number of entries the window retains
-     * @param newBlockNo the block number of {@code newHash}
-     * @param preSize the pre-cutover (full-size) stored entry length
-     * @param activeSize the byte length of the active digest's hashes
-     * @param postCutover whether the block stream has cut over to the active digest; compaction only occurs if true
-     * @return the updated trailing block hashes
-     */
-    public static Bytes appendTrailingBlockHash(
-            @NonNull final Bytes newHash,
-            @NonNull final Bytes window,
-            final int maxHashes,
-            final long newBlockNo,
-            final int preSize,
-            final int activeSize,
-            final boolean postCutover) {
-        // The existing window holds one entry per block from the genesis "block -1" hash-of-zero through block
-        // newBlockNo-1, i.e. newBlockNo+1 entries (capped at maxHashes). Using the exact count matters only when the
-        // length is divisible by both preSize and activeSize (e.g. a 96-byte window that is 3x32 vs 2x48); an
-        // undercount there would mis-derive the stride and corrupt a young (e.g. born-SHA-256) window.
-        final long countExisting = Math.min(newBlockNo + 1, maxHashes);
-        final int existingStride = storedStride(window.length(), countExisting, preSize, activeSize);
-        if (postCutover
-                && preSize != activeSize
-                && existingStride == preSize
-                && countExisting > 0
-                && isLeftmostPadded(window, preSize - activeSize)) {
-            // No genuine (pre-cutover) hashes remain: compact to native size and store natively hereafter.
-            final var compacted = stripWindowPadding(window, preSize, activeSize);
-            return appendHash(newHash, compacted, maxHashes);
-        }
-        final int targetStride = (preSize != activeSize && existingStride == preSize) ? preSize : activeSize;
-        return appendHash(leftPadTo(newHash, targetStride), window, maxHashes);
     }
 
     /**
@@ -293,30 +226,6 @@ public class BlockImplUtils {
         }
         // Still padded: keep storing at the pre-cutover size (left-padding the new native hash).
         return new AppendResult(appendHash(leftPadTo(newHash, preSize), window, maxHashes), false);
-    }
-
-    /**
-     * Public decoder for the uniform per-entry byte length of a trailing window that is either in {@code preSize}-byte
-     * padded mode or {@code activeSize}-byte native (post-compaction) mode. Uses length divisibility first — a window
-     * compacts only once it has been full of padded entries, so any length that divides evenly by exactly one of the
-     * two sizes is unambiguous. Only when the length is compatible with both strides (a multiple of their least common
-     * multiple) does it fall back to the entry {@code count}, which the design pins to the block number.
-     * That fallback ({@code length / count}) requires {@code count} to be the exact entry count; callers satisfy this
-     * via {@code min(blockNumber[+1], maxHashes)}.
-     */
-    public static int storedStride(final long length, final long count, final int preSize, final int activeSize) {
-        if (preSize == activeSize || length == 0) {
-            return activeSize;
-        }
-        final boolean divPre = length % preSize == 0;
-        final boolean divActive = length % activeSize == 0;
-        if (divPre && !divActive) {
-            return preSize;
-        }
-        if (divActive && !divPre) {
-            return activeSize;
-        }
-        return count <= 0 ? activeSize : (int) (length / count);
     }
 
     /** Returns true if the leading {@code padLen} bytes of the window (the leftmost entry's pad region) are all zero. */

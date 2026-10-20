@@ -90,8 +90,7 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
      * only where the configured retention is immaterial to the decode; production paths must pass the configured
      * {@code BlockRecordStreamConfig.numOfBlockHashesInState()} via the three-argument constructor or {@link #from}.
      */
-    public BlockStreamInfoImpl(
-            @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType) {
+    public BlockStreamInfoImpl(@NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType) {
         this(blockStreamInfo, digestType, DEFAULT_NUM_TRAILING_BLOCKS);
     }
 
@@ -153,8 +152,7 @@ public final class BlockStreamInfoImpl implements BlockRecordInfo {
 
     private Bytes extendedBlockHashes() {
         if (extendedBlockHashes == null) {
-            final var lastBlockHash =
-                    BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, numTrailingBlocks);
+            final var lastBlockHash = BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
             // Append the reconstructed last hash at the window's CURRENT stride (48 padded or 32 native) without
             // compacting — this is a read-only extension for queries, never persisted. The persisted
             // trailing_block_hashes_compacted flag gives the stride directly.
