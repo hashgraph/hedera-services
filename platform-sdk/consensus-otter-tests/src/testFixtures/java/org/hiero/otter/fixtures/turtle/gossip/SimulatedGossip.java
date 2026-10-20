@@ -7,6 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.hiero.consensus.event.IntakeEventCounter;
 import org.hiero.consensus.gossip.impl.gossip.Gossip;
+import org.hiero.consensus.gossip.impl.gossip.sync.protocol.SyncStatusChecker;
 import org.hiero.consensus.model.event.PlatformEvent;
 import org.hiero.consensus.model.gossip.SyncProgress;
 import org.hiero.consensus.model.hashgraph.EventWindow;
@@ -33,6 +34,9 @@ public class SimulatedGossip implements Gossip, EventReceiver {
 
     /** The wiring model used for this node. Used to determine if the node is running or halted. */
     private DeterministicWiringModel deterministicWiringModel;
+
+    /** The latest platform status of this node. Gossip is only received in statuses that permit syncing. */
+    private volatile PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
 
     /**
      * Constructor.
@@ -88,7 +92,16 @@ public class SimulatedGossip implements Gossip, EventReceiver {
         pauseInput.bindConsumer(ignored -> {});
         resumeInput.bindConsumer(ignored -> {});
         systemHealthInput.bindConsumer(ignored -> {});
-        platformStatusInput.bindConsumer(ignored -> {});
+        // A restarted node starts from scratch, like in production
+        platformStatus = PlatformStatus.STARTING_UP;
+        platformStatusInput.bindConsumer(status -> platformStatus = status);
+    }
+
+    /**
+     * In production a node neither sends nor receives gossip in statuses that don't permit syncing.
+     */
+    private boolean canReceive() {
+        return deterministicWiringModel.isRunning() && SyncStatusChecker.doesStatusPermitSync(platformStatus);
     }
 
     /**
@@ -96,7 +109,7 @@ public class SimulatedGossip implements Gossip, EventReceiver {
      */
     @Override
     public boolean receiveEvent(@NonNull final PlatformEvent event) {
-        if (deterministicWiringModel.isRunning()) {
+        if (canReceive()) {
             forwardEvent(event);
             return true;
         }
@@ -119,7 +132,7 @@ public class SimulatedGossip implements Gossip, EventReceiver {
      */
     @Override
     public boolean receiveEventWindow(@NonNull final NodeId sender, @NonNull final EventWindow eventWindow) {
-        return deterministicWiringModel.isRunning();
+        return canReceive();
     }
 
     private void forwardEvent(@NonNull final PlatformEvent event) {
