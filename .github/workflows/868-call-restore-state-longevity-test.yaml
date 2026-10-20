@@ -1100,7 +1100,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Publish logs
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && always() }}
         env:
           REF: ${{ inputs.ref }}
         run: |
@@ -1368,7 +1368,7 @@ jobs:
                ls -l preconsensus-events/${node_id}/${dirdate}/"
 
             sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" exec network-node${i}-0 -- su - hedera -c bash -c \
-              "echo \"hedera.config.version=1\" >> ${{ env.APP_ROOT }}/data/config/application.properties"
+              "echo -e \"\nhedera.config.version=1\" >> ${{ env.APP_ROOT }}/data/config/application.properties"
           done
 
       - name: Start CNs with new state
@@ -1736,7 +1736,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Publish logs
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && always() }}
         env:
           REF: ${{ inputs.ref }}
         run: |
