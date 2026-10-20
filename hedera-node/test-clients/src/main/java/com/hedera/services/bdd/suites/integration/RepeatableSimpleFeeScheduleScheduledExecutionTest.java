@@ -30,6 +30,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.LeakyRepeatableHapiTest;
 import com.hedera.services.bdd.junit.TargetEmbeddedMode;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.stream.Stream;
 import org.hiero.hapi.support.fees.Extra;
@@ -42,7 +43,8 @@ import org.junit.jupiter.api.Tag;
  * Two schedules expire in the same interval: a CryptoTransfer and a ConsensusSubmitMessage. Both execute with the
  * shipped simple fee schedule, and both still execute after an attempt to install a schedule whose CRYPTO_TRANSFER
  * definition lacks the ACCOUNTS extra reference, since such a schedule is rejected atomically (the file write itself
- * rolls back, so there is nothing to restore afterward).
+ * rolls back). The second spec still carries a {@link SysFileOverrideOp} safety net in case that rollback itself
+ * regresses, so a failed assertion does not leave this network's fee schedule mutated for later tests.
  */
 @Tag(INTEGRATION)
 @TargetEmbeddedMode(REPEATABLE)
@@ -65,6 +67,7 @@ public class RepeatableSimpleFeeScheduleScheduledExecutionTest {
     @LeakyRepeatableHapiTest(NEEDS_VIRTUAL_TIME_FOR_FAST_EXECUTION)
     final Stream<DynamicTest> rejectedIncompleteScheduleLeavesBothScheduledTransactionsExecuting() {
         return hapiTest(flattened(
+                safetyNetRestore(),
                 setUp(),
                 getFileContents(SIMPLE_FEE_SCHEDULE).saveToRegistry(ORIGINAL),
                 withOpContext((spec, opLog) -> {
@@ -98,6 +101,16 @@ public class RepeatableSimpleFeeScheduleScheduledExecutionTest {
                 sleepForSeconds(1),
                 getAccountBalance(RECEIVER).hasTinyBars(1L),
                 getTopicInfo(TOPIC).hasSeqNo(1L)));
+    }
+
+    /**
+     * Snapshots the file's current contents and unconditionally restores them when the spec completes, even if an
+     * earlier op in the spec fails: {@code HapiSpec.exec} stops submitting ops on the first failure, so a failed
+     * {@code rejectedUpdate()} assertion (for example because the rollback this suite tests for has regressed)
+     * would otherwise leave the schedule mutated for every later test on this network.
+     */
+    private static SpecOperation safetyNetRestore() {
+        return new SysFileOverrideOp(SysFileOverrideOp.Target.SIMPLE_FEES, () -> null);
     }
 
     /**

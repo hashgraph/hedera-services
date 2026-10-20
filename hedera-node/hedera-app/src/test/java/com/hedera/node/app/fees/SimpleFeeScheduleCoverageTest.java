@@ -28,6 +28,7 @@ import com.hedera.node.app.spi.info.NodeInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerifier;
 import com.hedera.node.app.throttle.AppScheduleThrottleFactory;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,9 +50,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /** Pins the shipped genesis simple fee schedule to the fee calculators the services register. */
 @ExtendWith(MockitoExtension.class)
 class SimpleFeeScheduleCoverageTest {
-    /** {@link com.hedera.node.config.data.HederaConfig#transactionMaxBytes()}'s default: see the pins below. */
-    private static final int TRANSACTION_MAX_BYTES = 6144;
-
     /**
      * A generous reserve for what wraps the schedule bytes in an actual FileUpdate: the {@code TransactionBody}
      * envelope (transaction ID, node account ID, fee, valid duration, memo, the FileUpdate field tag) and the
@@ -97,6 +95,10 @@ class SimpleFeeScheduleCoverageTest {
 
         assertThat(feeManager.unpricedFunctions(schedule)).isEmpty();
         assertThat(feeManager.missingExtras(schedule)).isEmpty();
+        // The two checks above only prove the per-function/per-extra coverage this PR adds; they say nothing about
+        // whether every referenced extra is actually defined (isValid's own job). Driving the schedule through the
+        // real, strict update path proves the shipped file is accepted end to end, not just by these two helpers.
+        assertEquals(SUCCESS, feeManager.updateSimpleFees(FeeSchedule.PROTOBUF.toBytes(schedule), true));
     }
 
     /**
@@ -110,12 +112,13 @@ class SimpleFeeScheduleCoverageTest {
     @ParameterizedTest
     @ValueSource(strings = {"mainnet", "testnet", "previewnet"})
     void shippedUpgradeSchedulesFitInASingleTransaction(final String network) throws Exception {
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         final var json =
                 Files.readAllBytes(Path.of("..", "configuration", network, "upgrade", "simpleFeesSchedules.json"));
         final var schedule = V0490FileSchema.parseSimpleFeesSchedules(json);
         final var serializedSize = FeeSchedule.PROTOBUF.toBytes(schedule).length();
 
-        assertThat(serializedSize).isLessThan(TRANSACTION_MAX_BYTES - TRANSACTION_OVERHEAD_BUDGET);
+        assertThat(serializedSize).isLessThan(singleTransactionBudget(config));
     }
 
     @Test
@@ -123,7 +126,22 @@ class SimpleFeeScheduleCoverageTest {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         final var genesisBytes = new V0490FileSchema().genesisSimpleFeesSchedules(config);
 
-        assertThat(genesisBytes.length()).isLessThan(TRANSACTION_MAX_BYTES - TRANSACTION_OVERHEAD_BUDGET);
+        assertThat(genesisBytes.length()).isLessThan(singleTransactionBudget(config));
+    }
+
+    /**
+     * The configured {@link com.hedera.node.config.data.HederaConfig#transactionMaxBytes()}, less a generous
+     * reserve for what wraps the schedule bytes in an actual FileUpdate: the {@code TransactionBody} envelope
+     * (transaction ID, node account ID, fee, valid duration, memo, the FileUpdate field tag) and the
+     * {@code SignedTransaction}'s {@code SignatureMap} (comfortably covers a multi-key threshold signature). Reads
+     * the live configured limit, rather than a hardcoded copy of its default, so this pin does not silently go
+     * stale if that default ever changes. The reserve is still an approximation, not a measurement of a real signed
+     * transaction, since this module cannot construct one.
+     */
+    private static int singleTransactionBudget(final Configuration config) {
+        final var transactionMaxBytes = config.getConfigData(HederaConfig.class).transactionMaxBytes();
+        final var overheadBudget = 2_000;
+        return transactionMaxBytes - overheadBudget;
     }
 
     private FeeManager realFeeManager(final Configuration config) {

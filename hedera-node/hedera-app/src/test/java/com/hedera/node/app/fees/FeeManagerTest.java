@@ -239,12 +239,23 @@ class FeeManagerTest {
     @Test
     void missingExtrasLeavesUnpricedFunctionsToTheCoverageCheck() {
         given(cryptoTransferCalculator.getTransactionType()).willReturn(TransactionBody.DataOneOfType.CRYPTO_TRANSFER);
+        // Non-empty on purpose: if the unpriced-function skip were broken and this requirement were checked
+        // anyway, the empty result below would instead report CRYPTO_TRANSFER.ACCOUNTS as missing.
+        given(cryptoTransferCalculator.requiredExtras()).willReturn(Set.of(Extra.ACCOUNTS));
         subject =
                 new FeeManager(exchangeRateManager, congestionMultipliers, Set.of(cryptoTransferCalculator), Set.of());
-        final var schedule =
+        final var unpriced =
                 scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_CREATE, 100));
 
-        assertEquals(Set.of(), subject.missingExtras(schedule));
+        assertEquals(Set.of(), subject.missingExtras(unpriced));
+
+        // Control: the same requirement does surface once CRYPTO_TRANSFER is priced but still lacks the
+        // reference, proving the empty result above comes from the unpriced-function skip, not from the
+        // requirement being empty.
+        final var pricedButIncomplete =
+                scheduleWith(extraDefs(Extra.TOKEN_ASSOCIATE, Extra.AIRDROPS), makeServiceFee(CRYPTO_TRANSFER, 100));
+
+        assertEquals(Set.of("CRYPTO_TRANSFER.ACCOUNTS"), subject.missingExtras(pricedButIncomplete));
     }
 
     @Test

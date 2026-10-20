@@ -22,6 +22,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.utilops.SysFileOverrideOp;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -37,7 +38,9 @@ import org.junit.jupiter.api.DynamicTest;
  * complete, well-formed schedule the registered calculators still cannot evaluate: it omits a function definition,
  * an extra reference a fee calculator charges, or an extra that a handler reads directly. "Atomically" means the
  * file write itself rolls back with the dispatch, so the file content and the schedule in use are both left
- * exactly as they were — there is nothing to restore afterward.
+ * exactly as they were. Each spec still carries a {@link SysFileOverrideOp} safety net in case that rollback
+ * itself regresses, so a failed assertion here does not leave the shared network's fee schedule mutated for
+ * later tests.
  */
 public class SimpleFeeScheduleCoverageTest {
     private static final String ORIGINAL = "originalSimpleFeeSchedule";
@@ -57,6 +60,7 @@ public class SimpleFeeScheduleCoverageTest {
     @LeakyHapiTest(requirement = ContextRequirement.NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> scheduleWithoutAnExtraDefinitionAHandlerReadsIsRejected() {
         return hapiTest(
+                safetyNetRestore(),
                 cryptoCreate(PAYER).balance(100 * ONE_HBAR),
                 cryptoCreate("receiver").maxAutomaticTokenAssociations(0),
                 tokenCreate("token").treasury(PAYER).initialSupply(100L),
@@ -102,6 +106,7 @@ public class SimpleFeeScheduleCoverageTest {
 
     private static Stream<DynamicTest> transferAfterRejectedInstall(final UnaryOperator<FeeSchedule> mutation) {
         return hapiTest(
+                safetyNetRestore(),
                 cryptoCreate(PAYER).balance(10 * ONE_HBAR),
                 getFileContents(SIMPLE_FEE_SCHEDULE).saveToRegistry(ORIGINAL),
                 withOpContext((spec, opLog) -> {
@@ -115,6 +120,16 @@ public class SimpleFeeScheduleCoverageTest {
                 cryptoTransfer(tinyBarsFromTo(PAYER, GENESIS, 1L))
                         .payingWith(PAYER)
                         .hasKnownStatus(ResponseCodeEnum.SUCCESS));
+    }
+
+    /**
+     * Snapshots the file's current contents and unconditionally restores them when the spec completes, even if an
+     * earlier op in the spec fails: {@code HapiSpec.exec} stops submitting ops on the first failure, so a failed
+     * {@code rejectedUpdate()} assertion (for example because the rollback this suite tests for has regressed)
+     * would otherwise leave the shared network's fee schedule mutated for every later test.
+     */
+    private static SpecOperation safetyNetRestore() {
+        return new SysFileOverrideOp(SysFileOverrideOp.Target.SIMPLE_FEES, () -> null);
     }
 
     /**
