@@ -343,6 +343,18 @@ public class FrameUtils {
     }
 
     /**
+     * Returns true if the given address is the coinbase and is already warm in the given frame, as it is
+     * from the start of every transaction (EIP-3651).
+     *
+     * @param frame the current message frame
+     * @param address the address being accessed
+     * @return true if the address is the warm coinbase
+     */
+    public static boolean isWarmCoinbase(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        return address.equals(frame.getMiningBeneficiary()) && frame.isAddressWarm(address);
+    }
+
+    /**
      * Returns true if the given recipient address to the frame is of the expected entity type.
      * @param frame current message frame
      * @param expectedEntity expected entity type

@@ -379,6 +379,16 @@ class FrameUtilsTest {
     }
 
     @Test
+    void warmCoinbaseRequiresBothCoinbaseAndWarmth() {
+        final var coinbase = Address.fromHexString("0x62");
+        given(frame.getMiningBeneficiary()).willReturn(coinbase);
+        given(frame.isAddressWarm(coinbase)).willReturn(true, false);
+        assertTrue(FrameUtils.isWarmCoinbase(frame, coinbase));
+        assertFalse(FrameUtils.isWarmCoinbase(frame, coinbase));
+        assertFalse(FrameUtils.isWarmCoinbase(frame, NON_SYSTEM_LONG_ZERO_ADDRESS));
+    }
+
+    @Test
     void configuredPrecompileShouldBeDisabled() {
         Configuration DISABLED_PRECOMPILE_CONFIG = HederaTestConfigBuilder.create()
                 .withValue("contracts.precompile.disabled", "2,4")

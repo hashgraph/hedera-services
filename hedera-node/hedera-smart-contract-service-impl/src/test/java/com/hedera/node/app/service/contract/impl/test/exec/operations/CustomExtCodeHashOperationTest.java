@@ -6,6 +6,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertS
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -25,6 +26,8 @@ import org.hyperledger.besu.evm.operation.Operation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -101,6 +104,39 @@ class CustomExtCodeHashOperationTest {
         assertSameResult(expected, subject.execute(frame, evm));
         verify(frame).popStackItem();
         verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void coinbaseChargedAtWarmCostOnlyWhenWarm(final boolean coinbaseIsWarm) {
+        final var coinbase = Address.fromHexString("0x62");
+        given(frame.getStackItem(0)).willReturn(coinbase.getBytes());
+        given(addressChecks.isNonUserAccount(coinbase)).willReturn(true);
+        givenWellKnownFrameWith();
+        if (coinbaseIsWarm) {
+            given(gasCalculator.getWarmStorageReadCost()).willReturn(100L);
+        }
+        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
+        given(frame.getRemainingGas()).willReturn(2723L);
+        given(frame.getMiningBeneficiary()).willReturn(coinbase);
+        given(frame.isAddressWarm(coinbase)).willReturn(coinbaseIsWarm);
+        final var expected = new Operation.OperationResult(coinbaseIsWarm ? 223L : 2723L, null);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(frame).pushStackItem(UInt256.ZERO);
+    }
+
+    @Test
+    void nonUserAccountOtherThanCoinbaseChargedAtColdCost() {
+        final var address = Address.fromHexString("0x123");
+        given(frame.getStackItem(0)).willReturn(address.getBytes());
+        given(addressChecks.isNonUserAccount(address)).willReturn(true);
+        givenWellKnownFrameWith();
+        given(gasCalculator.getColdAccountAccessCost()).willReturn(2600L);
+        given(frame.getRemainingGas()).willReturn(2723L);
+        given(frame.getMiningBeneficiary()).willReturn(Address.fromHexString("0x62"));
+        final var expected = new Operation.OperationResult(2723L, null);
+        assertSameResult(expected, subject.execute(frame, evm));
+        verify(frame, never()).isAddressWarm(address);
     }
 
     @Test

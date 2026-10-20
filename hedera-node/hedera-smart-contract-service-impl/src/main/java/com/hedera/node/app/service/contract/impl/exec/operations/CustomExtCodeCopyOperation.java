@@ -2,6 +2,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isWarmCoinbase;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
@@ -62,7 +63,9 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             if (addressChecks.isNonUserAccount(address)) {
                 frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
                 frame.popStackItems(4);
-                return new OperationResult(cost, null);
+                // The coinbase is warm from the start of the transaction (EIP-3651)
+                return new OperationResult(
+                        isWarmCoinbase(frame, address) ? cost(frame, memOffset, numBytes, true) : cost, null);
             }
             // Otherwise the address must be present
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {

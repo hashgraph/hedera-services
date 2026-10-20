@@ -3,6 +3,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isWarmCoinbase;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
@@ -53,7 +54,8 @@ public class CustomBalanceOperation extends BalanceOperation {
             if (addressChecks.isSystemAccount(address)) {
                 frame.popStackItem();
                 frame.pushStackItem(UInt256.ZERO);
-                return new OperationResult(cost, null);
+                // The coinbase is warm from the start of the transaction (EIP-3651)
+                return new OperationResult(isWarmCoinbase(frame, address) ? cost(true) : cost, null);
             }
             // Otherwise continue to enforce existence checks for backward compatibility
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
