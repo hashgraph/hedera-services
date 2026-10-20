@@ -117,6 +117,8 @@ then their containing AtomicBatch transaction must be signed by both `batchKey` 
     allowed in an atomic batch. If the number of transactions in a batch exceeds this limit, the batch will be rejected.
   - ```blacklist``` This property is a HederaFunctionalitySet that contains a list of transaction types
     that are not allowed in an atomic batch. If an inner transaction type is in the blacklist, the batch will be rejected.
+    By default the blacklist contains `Freeze`, `AtomicBatch`, `ScheduleCreate`, `ScheduleSign` and every CLPR
+    functionality (all `Clpr*` transaction and query types).
 
 ## Network Response Messages
 
