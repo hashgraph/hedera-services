@@ -9,6 +9,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
+import com.hedera.hapi.block.stream.MerklePath;
+import com.hedera.hapi.block.stream.SiblingNode;
+import com.hedera.hapi.block.stream.StateProof;
+import com.hedera.hapi.block.stream.TssSignedBlockProof;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseHeader;
@@ -18,11 +22,19 @@ import com.hedera.hapi.node.state.clpr.ClprLedgerConfiguration;
 import com.hedera.hapi.node.state.clpr.ClprThrottles;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.hapi.utils.blocks.NativeTssVerifier;
+import com.hedera.node.app.hapi.utils.blocks.StateProofVerifier;
+import com.hedera.node.app.hapi.utils.blocks.TssVerifier;
 import com.hedera.node.app.service.clpr.ReadableLedgerConfigurationStore;
 import com.hedera.node.app.service.clpr.impl.ClprStateProofManager;
 import com.hedera.node.app.service.clpr.impl.handlers.ClprGetLedgerConfigurationHandler;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Arrays;
+import java.util.List;
+import org.hiero.base.crypto.DigestType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -165,5 +177,75 @@ class ClprGetLedgerConfigurationHandlerTest {
 
         assertThat(response.clprGetLedgerConfiguration()).isNotNull();
         assertThat(response.clprGetLedgerConfiguration().configuration()).isNull();
+    }
+
+    @Test
+    @DisplayName("verifies a SHA-384 proof even when the configured digest is SHA-256 (digest inferred from proof)")
+    void verifiesSha384ProofWhenConfiguredDigestIsSha256() {
+        assertProofVerifiedUnderMismatchedConfig(DigestType.SHA_384, "SHA_256");
+    }
+
+    @Test
+    @DisplayName("verifies a SHA-256 proof even when the configured digest is SHA-384 (digest inferred from proof)")
+    void verifiesSha256ProofWhenConfiguredDigestIsSha384() {
+        assertProofVerifiedUnderMismatchedConfig(DigestType.SHA_256, "SHA_384");
+    }
+
+    /**
+     * Builds a proof whose hashes are {@code proofDigest}-sized, configures the node with a different digest, and
+     * asserts the sender-side self-check still returns the proof bytes. A digest-sensitive {@link TssVerifier}
+     * accepts only the block root computed with the proof's own digest, so the proof survives the check only when
+     * the handler infers the digest from the proof rather than reading {@code configuredDigestName}.
+     */
+    private void assertProofVerifiedUnderMismatchedConfig(
+            final DigestType proofDigest, final String configuredDigestName) {
+        final var proof = proofWithHashLength(proofDigest.digestLength());
+        final var proofBytes = StateProof.PROTOBUF.toBytes(proof);
+        final byte[] expectedRoot = StateProofVerifier.computeBlockRootHash(proof, proofDigest.buildDigest());
+        final var ledgerId = Bytes.wrap(new byte[] {7, 7, 7, 7});
+
+        final TssVerifier digestSensitiveTss = (lid, sig, root) -> Arrays.equals(root.toByteArray(), expectedRoot);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("blockStream.digestType", configuredDigestName)
+                .getOrCreateConfig();
+        final ConfigProvider provider = () -> new VersionedConfigImpl(config, 0);
+        final var handler = new ClprGetLedgerConfigurationHandler(stateProofManager, digestSensitiveTss, provider);
+
+        given(stateProofManager.buildConfigStateProof()).willReturn(proofBytes);
+        given(stateProofManager.latestLedgerId()).willReturn(ledgerId);
+        given(queryContext.createStore(ReadableLedgerConfigurationStore.class)).willReturn(configStore);
+        given(configStore.getConfiguration()).willReturn(ClprLedgerConfiguration.DEFAULT);
+
+        final var header =
+                ResponseHeader.newBuilder().nodeTransactionPrecheckCode(OK).build();
+        final var response = handler.findResponse(queryContext, header);
+
+        assertThat(response.clprGetLedgerConfiguration().configurationStateProof())
+                .isEqualTo(proofBytes);
+    }
+
+    /** A single self-rooting path whose explicit base hash and sibling are {@code size} bytes, so the proof's
+     * digest is inferable from its hash length. */
+    private static StateProof proofWithHashLength(final int size) {
+        final var path = MerklePath.newBuilder()
+                .hash(Bytes.wrap(filled(1, size)))
+                .siblings(List.of(SiblingNode.newBuilder()
+                        .isLeft(false)
+                        .hash(Bytes.wrap(filled(2, size)))
+                        .build()))
+                .nextPathIndex(-1)
+                .build();
+        return StateProof.newBuilder()
+                .paths(path)
+                .signedBlockProof(TssSignedBlockProof.newBuilder()
+                        .blockSignature(Bytes.wrap(new byte[] {9, 9, 9, 9}))
+                        .build())
+                .build();
+    }
+
+    private static byte[] filled(final int value, final int size) {
+        final var bytes = new byte[size];
+        Arrays.fill(bytes, (byte) value);
+        return bytes;
     }
 }

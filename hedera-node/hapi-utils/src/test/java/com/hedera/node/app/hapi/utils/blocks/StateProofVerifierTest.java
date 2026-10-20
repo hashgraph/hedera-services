@@ -4,10 +4,12 @@ package com.hedera.node.app.hapi.utils.blocks;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.MerklePath;
 import com.hedera.hapi.block.stream.SiblingNode;
+import com.hedera.hapi.block.stream.StateProof;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -54,6 +56,51 @@ class StateProofVerifierTest {
         final var path = MerklePath.newBuilder().build();
 
         assertFalse(StateProofVerifier.verifyPath(path, new byte[32], DigestType.SHA_256.buildDigest()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = DigestType.class,
+            names = {"SHA_384", "SHA_256"})
+    void infersDigestTypeFromExplicitBaseHashLength(final DigestType digestType) {
+        final int size = digestType.digestLength();
+        final var proof = StateProof.newBuilder()
+                .paths(pathFrom(filled(1, size), filled(2, size), filled(3, size)))
+                .build();
+
+        assertEquals(digestType, StateProofVerifier.inferDigestType(proof));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = DigestType.class,
+            names = {"SHA_384", "SHA_256"})
+    void infersDigestTypeFromSiblingHashWhenLeafHasNoExplicitHash(final DigestType digestType) {
+        final int size = digestType.digestLength();
+        final var path = MerklePath.newBuilder()
+                .stateItemLeaf(Bytes.wrap(filled(9, 17)))
+                .siblings(List.of(
+                        SiblingNode.newBuilder().isLeft(false).hash(Bytes.EMPTY).build(),
+                        SiblingNode.newBuilder()
+                                .isLeft(true)
+                                .hash(Bytes.wrap(filled(4, size)))
+                                .build()))
+                .build();
+        final var proof = StateProof.newBuilder().paths(path).build();
+
+        assertEquals(digestType, StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeReturnsNullWithoutAnyHashLengthSignal() {
+        final var path = MerklePath.newBuilder()
+                .stateItemLeaf(Bytes.wrap(filled(9, 17)))
+                .siblings(List.of(
+                        SiblingNode.newBuilder().isLeft(false).hash(Bytes.EMPTY).build()))
+                .build();
+        final var proof = StateProof.newBuilder().paths(path).build();
+
+        assertNull(StateProofVerifier.inferDigestType(proof));
     }
 
     /** A path from an explicit base hash: a right sibling, then a left sibling, then a single-child level. */
