@@ -136,8 +136,8 @@ public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
     }
 
     private void initLocalMessageDigest384() {
-        assert localMessageDigest256 == null;
-        assert localWritableMessageDigest256 == null;
+        assert localMessageDigest384 == null;
+        assert localWritableMessageDigest384 == null;
         localMessageDigest384 = initLocalMessageDigest("SHA-384");
         localWritableMessageDigest384 = new WritableMessageDigest(localMessageDigest384);
     }
