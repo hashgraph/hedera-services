@@ -79,7 +79,8 @@ Runs the hardhat-based EVM functional suite of [hashgraph/hedera-evm-testing](ht
 [871: [CALL] EVM Functional Tests](/.github/workflows/871-call-evm-functional-tests.yaml): in MATS for PRs with
 smart-contract changes, so EVM and system-contract regressions block the merge, and as a panel of every XTS run, so a
 regression that does get merged blocks promotion. Each shard deploys the consensus node build under test with solo
-(1 consensus node, mirror node and JSON-RPC relay on kind) and runs one hardhat test file or glob.
+(1 consensus node, mirror node and JSON-RPC relay on kind) and runs a group of hardhat suites; the shards follow
+`hedera-evm-testing`'s own `evm-functional-testing.yaml` at the pinned `evm-testing-ref`.
 
 #### Environment
 
