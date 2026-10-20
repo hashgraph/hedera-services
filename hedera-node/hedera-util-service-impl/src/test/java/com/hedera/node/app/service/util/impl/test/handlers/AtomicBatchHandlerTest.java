@@ -203,7 +203,7 @@ class AtomicBatchHandlerTest {
     void defaultBlacklistContainsEveryClprFunctionality() {
         final var config = HederaTestConfigBuilder.createConfig().getConfigData(AtomicBatchConfig.class);
         final var clprFunctionalities = Arrays.stream(HederaFunctionality.values())
-                .filter(f -> f.protoName().startsWith("Clpr"))
+                .filter(f -> f.protoName().startsWith("Clpr") && !f.protoName().startsWith("ClprGet"))
                 .collect(Collectors.toSet());
         assertFalse(clprFunctionalities.isEmpty());
         assertTrue(config.blacklist().functionalitySet().containsAll(clprFunctionalities));

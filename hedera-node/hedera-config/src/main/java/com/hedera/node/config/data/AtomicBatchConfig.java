@@ -17,8 +17,8 @@ public record AtomicBatchConfig(
         @ConfigProperty(
                 defaultValue = "Freeze,AtomicBatch,ScheduleCreate,ScheduleSign,"
                         + "ClprUpdateLedgerConfiguration,ClprRegisterChannel,ClprCompleteChannel,"
-                        + "ClprCloseChannel,ClprGetLedgerConfiguration,ClprSubmitBundle,"
+                        + "ClprCloseChannel,ClprSubmitBundle,"
                         + "ClprRegisterConnector,ClprDeregisterConnector,ClprCompleteConnector,"
-                        + "ClprEndpointPublication,ClprGetEndpointManifest,ClprMaintenance")
+                        + "ClprEndpointPublication,ClprMaintenance")
         @NetworkProperty
         HederaFunctionalitySet blacklist) {}
