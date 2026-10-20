@@ -140,7 +140,7 @@ public class ImmediateStateChangeListener implements StateChangeListener {
         if (!isImmediateSingleton(stateId)) {
             return;
         }
-        final var full = new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of());
+        final var full = new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value));
         final var wireChange =
                 StateChangeDeltas.encodeSingletonOrFull(stateId, previousValue, full, deltasEnabled, deltaMinSaving);
         stateChanges.add(StateChange.newBuilder()

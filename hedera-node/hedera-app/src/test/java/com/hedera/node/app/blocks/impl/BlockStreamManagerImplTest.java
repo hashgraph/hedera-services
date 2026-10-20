@@ -148,13 +148,13 @@ class BlockStreamManagerImplTest {
     private static final Bytes FAKE_RESTART_BLOCK_HASH = Bytes.fromHex("abcd".repeat(24));
     // Effective last block hash computed by the restart path from blockStreamInfoWith(Bytes.EMPTY, patch(0))
     private static final Bytes FAKE_PATCH_RESTART_HASH = Bytes.fromHex(
-            "2de59a37a8dfd9099e6baf892c04452aa8df8f04e3fadb852087a08c54efe001a94dd97a27be310ac2eded4020740ef8");
+            "2d360a3a41d527f1349fb7d126dbc98c29a6afb596714f657d41bec93e1094612cb38f52bb445272fb136abec1851874");
     // Effective last block hash computed by the restart path from blockStreamInfoWith(resultHashes, CREATION_VERSION)
     private static final Bytes FAKE_NON_EMPTY_RESULTS_RESTART_HASH = Bytes.fromHex(
-            "8234622d520f27d04f8349244a19f3253b32e081685382669bb2003beed31de1a53422cbf585cbb7698b20b0161ec380");
+            "c61066af2eda0cd66177608d14171b3bd0179afd8d68ed094d32aca4d4703338676cd4ec337d22e2c5ecc7d93ef75733");
     // Effective last block hash computed by the restart path from blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION)
     private static final Bytes FAKE_EMPTY_RESULTS_RESTART_HASH = Bytes.fromHex(
-            "4ee4a6159b50ecf7a5de17d0bc9e088a2a756167cc237158ce1cf6d969a1c33b9c5d715ba808fac80a082280c6f90b1f");
+            "ac34680bd7447fd916f11507dc6b7b1451bc0dd43472c0319a6cfb4ba390c6c37846eec48c0d1a76035f82413cb04ed2");
     private static final Bytes N_MINUS_2_BLOCK_HASH =
             hashLeaf(sha384DigestOrThrow(), Bytes.wrap((new byte[] {(byte) 0xAB})));
     private static final Bytes NONZERO_PREV_BLOCK_HASH =

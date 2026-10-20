@@ -24,10 +24,10 @@ import org.junit.jupiter.api.io.TempDir;
 class FullStateValuesTest {
     private static final int ACCOUNTS = STATE_ID_ACCOUNTS.protoOrdinal();
     private static final AccountID KEY = AccountID.newBuilder().accountNum(2).build();
-    private static final Account FIRST =
+    static final Account FIRST =
             Account.newBuilder().memo("m".repeat(100)).tinybarBalance(1).build();
-    private static final Account SECOND = FIRST.copyBuilder().tinybarBalance(2).build();
-    private static final Account THIRD = SECOND.copyBuilder().tinybarBalance(3).build();
+    static final Account SECOND = FIRST.copyBuilder().tinybarBalance(2).build();
+    static final Account THIRD = SECOND.copyBuilder().tinybarBalance(3).build();
 
     @TempDir
     Path dir;
@@ -131,7 +131,7 @@ class FullStateValuesTest {
         return block;
     }
 
-    private static Block block(final long number, final MapUpdateChange update) {
+    static Block block(final long number, final MapUpdateChange update) {
         final var header = BlockItem.newBuilder()
                 .blockHeader(BlockHeader.newBuilder().number(number))
                 .build();
@@ -148,20 +148,20 @@ class FullStateValuesTest {
         return Block.newBuilder().items(header, changes).build();
     }
 
-    private static MapUpdateChange full(final Account account) {
+    static MapUpdateChange full(final Account account) {
         return MapUpdateChange.newBuilder()
                 .key(MapChangeKey.newBuilder().accountIdKey(KEY))
                 .value(MapChangeValue.newBuilder().accountValue(account))
                 .build();
     }
 
-    private static MapUpdateChange partial(final Account prior, final Account next) {
+    static MapUpdateChange partial(final Account prior, final Account next) {
         final var update = StateChangeDeltas.encodeMap(ACCOUNTS, prior, full(next));
         assertThat(update.partial()).isTrue();
         return update;
     }
 
-    private static MapUpdateChange accountIn(final Block block) {
+    static MapUpdateChange accountIn(final Block block) {
         return block.items()
                 .getLast()
                 .stateChangesOrThrow()

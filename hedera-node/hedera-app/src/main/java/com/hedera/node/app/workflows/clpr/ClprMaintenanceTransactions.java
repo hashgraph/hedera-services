@@ -85,10 +85,10 @@ public class ClprMaintenanceTransactions {
                 changes.add(StateChange.newBuilder()
                         .stateId(id)
                         .singletonUpdate(new SingletonUpdateChange(
-                                singletonUpdateChangeValueFor(Objects.requireNonNull(
-                                        updated, "CLPR singleton removal must use its empty value")),
                                 false,
-                                List.of()))
+                                List.of(),
+                                singletonUpdateChangeValueFor(Objects.requireNonNull(
+                                        updated, "CLPR singleton removal must use its empty value"))))
                         .build());
             }
         }

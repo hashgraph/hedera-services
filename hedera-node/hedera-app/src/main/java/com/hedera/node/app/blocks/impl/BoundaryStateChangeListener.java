@@ -209,7 +209,7 @@ public class BoundaryStateChangeListener implements StateChangeListener {
         }
         final var stateChange = StateChange.newBuilder()
                 .stateId(stateId)
-                .singletonUpdate(new SingletonUpdateChange(singletonUpdateChangeValueFor(value), false, List.of()))
+                .singletonUpdate(new SingletonUpdateChange(false, List.of(), singletonUpdateChangeValueFor(value)))
                 .build();
         singletonUpdates.put(stateId, stateChange);
         if (stateId == ENTITY_COUNTS_STATE_ID) {

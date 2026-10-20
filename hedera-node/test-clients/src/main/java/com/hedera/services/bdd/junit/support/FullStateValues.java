@@ -20,13 +20,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Expands partial state changes in the blocks of one directory, delivered in increasing order, for listeners that
+ * Expands partial state changes in the blocks of one stream, delivered in increasing order, for listeners that
  * translate state values. Stays idle until the first block with a partial update, then replays the completed
- * blocks before it from disk; later gaps are filled from disk the same way. An expansion failure is terminal
+ * blocks before it from the stream's source; later gaps are filled the same way. An expansion failure is terminal
  * and must be surfaced to consumers; sparse values must never be presented as complete state.
  */
 final class FullStateValues {
     private static final Logger log = LogManager.getLogger(FullStateValues.class);
+
+    /** Loads the completed blocks of a stream. */
+    @FunctionalInterface
+    interface EarlierBlocks {
+        /**
+         * Returns the completed blocks numbered from {@code from} (or the first available, if negative) up to,
+         * but excluding, {@code to}, in order; throws if any are missing.
+         */
+        List<Block> load(long from, long to);
+    }
 
     @Nullable
     private StateChangeReconstructor reconstructor;
@@ -42,6 +52,17 @@ final class FullStateValues {
      */
     synchronized Block expand(@NonNull final Path blockDir, @NonNull final Block block) {
         requireNonNull(blockDir);
+        return expand(blockDir.toString(), (from, to) -> completedBlocks(blockDir, from, to), block);
+    }
+
+    /**
+     * As {@link #expand(Path, Block)}, loading earlier blocks of the stream described by {@code source} from
+     * {@code earlierBlocks}.
+     */
+    synchronized Block expand(
+            @NonNull final String source, @NonNull final EarlierBlocks earlierBlocks, @NonNull final Block block) {
+        requireNonNull(source);
+        requireNonNull(earlierBlocks);
         requireNonNull(block);
         if (failure != null) throw failure;
         if (reconstructor == null && !StateChangeDeltas.hasPartialUpdates(block)) {
@@ -50,20 +71,20 @@ final class FullStateValues {
         try {
             final long number = numberOf(block);
             if (reconstructor == null) {
-                log.info("Expanding partial state changes in {} from block #{}", blockDir, number);
+                log.info("Expanding partial state changes in {} from block #{}", source, number);
                 reconstructor = new StateChangeReconstructor();
                 nextBlock = -1;
             } else if (number < nextBlock) {
                 throw new IllegalStateException("Out-of-order block #" + number + "; expected #" + nextBlock);
             }
-            for (final var earlier : completedBlocks(blockDir, nextBlock, number)) {
+            for (final var earlier : earlierBlocks.load(nextBlock, number)) {
                 reconstructor.fullValuesForTranslation(earlier);
             }
             final var expanded = reconstructor.fullValuesForTranslation(block);
             nextBlock = number + 1;
             return expanded;
         } catch (final RuntimeException e) {
-            failure = new IllegalStateException("Cannot expand partial state changes in " + blockDir, e);
+            failure = new IllegalStateException("Cannot expand partial state changes in " + source, e);
             throw failure;
         }
     }

@@ -1144,7 +1144,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     final var update = stateChange.singletonUpdateOrThrow();
                     // Decode the payload separately from its partial-update metadata.
                     final var value = BlockStreamUtils.singletonPutFor(
-                            new SingletonUpdateChange(update.newValue(), false, List.of()));
+                            new SingletonUpdateChange(false, List.of(), update.newValue()));
                     final var singleton = update.partial()
                             ? applyPartial(
                                     valueCodecFor(serviceName, stateId),

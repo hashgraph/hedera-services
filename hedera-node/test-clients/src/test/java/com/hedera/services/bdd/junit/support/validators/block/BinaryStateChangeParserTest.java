@@ -17,7 +17,7 @@ import com.swirlds.state.BinaryState;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class BinaryStateChangeParserTest {
     private static final int ID = 9999;
@@ -25,31 +25,32 @@ class BinaryStateChangeParserTest {
             MapChangeKey.newBuilder().accountIdKey(AccountID.DEFAULT).build();
 
     @Test
-    void fullBlockInfoUsesTheOriginalFieldOneWithoutReadingABaseline() {
+    void fullBlockInfoUsesFieldElevenWithoutReadingABaseline() {
         final var state = mock(BinaryState.class);
-        // StateChanges -> state_id=9999 -> singleton_update -> block_info_value (field 1), empty.
-        BinaryStateChangeParser.applyStateChanges(state, Bytes.fromHex("1207088f4e22020a00"));
+        // StateChanges -> state_id=9999 -> singleton_update -> block_info_value (field 11), empty.
+        BinaryStateChangeParser.applyStateChanges(state, Bytes.fromHex("1207088f4e22025a00"));
         verify(state).updateSingleton(ID, Bytes.EMPTY);
         verify(state, never()).getSingleton(anyInt());
     }
 
     @ParameterizedTest
-    @ValueSource(
-            strings = {
-                "120e088f4e22094a0412020802c00101",
-                "1212088f4e220d4a0412020802c00101ca010101",
-                "1211088f4e220c4a0412020802c00101c80101"
-            })
-    void singletonGoldenWireFixturesUseMetadataFields24And25(final String wire) {
+    @CsvSource({
+        // partial=1, throttle_usage_snapshots_value (field 19)
+        "120e088f4e220908019a010412020802, false",
+        // partial=1, packed cleared_fields=[1], throttle_usage_snapshots_value
+        "1211088f4e220c08011201019a010412020802, true",
+        // partial=1, unpacked cleared_fields=1, throttle_usage_snapshots_value
+        "1210088f4e220b080110019a010412020802, true"
+    })
+    void singletonGoldenWireFixturesUseMetadataFields1And2(final String wire, final boolean clearsTpsThrottles) {
         final var prior = ThrottleUsageSnapshots.newBuilder()
                 .tpsThrottles(List.of(new ThrottleUsageSnapshot(7, null)))
                 .gasThrottle(new ThrottleUsageSnapshot(1, null))
                 .build();
         final var state = mock(BinaryState.class);
         when(state.getSingleton(ID)).thenReturn(ThrottleUsageSnapshots.PROTOBUF.toBytes(prior));
-        // The first fixture has no clears; the others clear tps_throttles via packed/unpacked field 25.
         final var expected = prior.copyBuilder().gasThrottle(new ThrottleUsageSnapshot(2, null));
-        if (!wire.endsWith("c00101")) expected.tpsThrottles(List.of());
+        if (clearsTpsThrottles) expected.tpsThrottles(List.of());
         BinaryStateChangeParser.applyStateChanges(state, Bytes.fromHex(wire));
         verify(state).getSingleton(ID);
         verify(state).updateSingleton(ID, ThrottleUsageSnapshots.PROTOBUF.toBytes(expected.build()));
@@ -77,7 +78,7 @@ class BinaryStateChangeParserTest {
             final var state = mock(BinaryState.class);
             when(state.getSingleton(ID)).thenReturn(Bytes.EMPTY);
             final var update =
-                    new SingletonUpdateChange(new OneOf<>(kind, type.wireValue(type.defaultValue())), true, List.of());
+                    new SingletonUpdateChange(true, List.of(), new OneOf<>(kind, type.wireValue(type.defaultValue())));
             apply(
                     state,
                     StateChange.newBuilder().stateId(ID).singletonUpdate(update).build());
