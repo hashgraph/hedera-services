@@ -140,11 +140,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.math.BigInteger;
-<<<<<<< HEAD
 import java.nio.file.Files;
-=======
 import java.time.Duration;
->>>>>>> 1524cde (fix: Validate Ethereum Transaction Call Data if present (#586))
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
