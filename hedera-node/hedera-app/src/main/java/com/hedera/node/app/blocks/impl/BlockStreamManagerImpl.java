@@ -453,15 +453,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (blockStreamInfo.blockNumber() == 0L) {
             prevBlockHash = BlockRootTreeHasher.emptySubtreeFor(blockDigest);
         } else {
-            // The trailing window may be in 48-byte padded mode (mixed era) or compacted 32-byte native mode;
-            // realBlockHashByBlockNumber derives the stride and strips any left-padding to recover the true (unpadded)
-            // hash of block N-1, which feeds computeBlockRootHash.
+            // The trailing window may be in 48-byte padded mode (mixed era) or compacted 32-byte native mode; the
+            // persisted trailing_block_hashes_compacted flag gives the stride directly, so realBlockHashByBlockNumber
+            // strips any left-padding and recovers the true (unpadded) hash of block N-1, which feeds
+            // computeBlockRootHash.
             prevBlockHash = BlockImplUtils.realBlockHashByBlockNumber(
                     blockStreamInfo.trailingBlockHashes(),
                     blockStreamInfo.blockNumber() - 1,
                     blockStreamInfo.blockNumber() - 1,
-                    maxHashes,
-                    hashSize);
+                    hashSize,
+                    blockStreamInfo.trailingBlockHashesCompacted());
         }
         final var prevBlocksHasher = new IncrementalStreamingHasher(
                 blockDigest.buildDigest(),
@@ -851,7 +852,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     outputsHash,
                     traceDataHash,
                     previousBlockHashes.intermediateHashingState(),
-                    previousBlockHashes.leafCount());
+                    previousBlockHashes.leafCount(),
+                    blockHashManager.compacted());
             blockStreamInfoState.put(newBlockStreamInfo);
             ((CommittableWritableStates) writableState).commit();
 
@@ -1647,6 +1649,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
         private Bytes blockHashes;
 
+        /**
+         * Whether {@link #blockHashes} is stored at the active digest's native entry size (vs. 48-byte padded) — the
+         * window's {@code trailing_block_hashes_compacted} flag, carried forward from the previous block's
+         * {@link BlockStreamInfo} and flipped true once the window compacts.
+         */
+        private boolean compacted;
+
         BlockHashManager(@NonNull final Configuration config) {
             this.numTrailingBlocks =
                     config.getConfigData(BlockRecordStreamConfig.class).numOfBlockHashesInState();
@@ -1667,14 +1676,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             // Keep all entries a uniform size: pad to RECORD_HASH_SIZE while any genuine pre-cutover hash remains,
             // then compact the window to the active digest length once none do and the stream has cut over (i.e.
             // the state's previewStreamOverwritten flag is set); before cutover the window is never compacted.
-            blockHashes = BlockImplUtils.appendTrailingBlockHash(
+            final var appended = BlockImplUtils.appendTrailingBlockHash(
                     prevBlockHash,
                     blockStreamInfo.trailingBlockHashes(),
                     numTrailingBlocks,
-                    blockStreamInfo.blockNumber(),
                     RECORD_HASH_SIZE,
                     digestOrThrow().getDigestLength(),
-                    postCutover);
+                    postCutover,
+                    blockStreamInfo.trailingBlockHashesCompacted());
+            blockHashes = appended.window();
+            compacted = appended.compacted();
         }
 
         /**
@@ -1690,14 +1701,18 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
          */
         @Nullable
         Bytes hashOfBlock(final long blockNo) {
-            // The window may be in 48-byte padded mode or compacted 32-byte native mode; derive the stride from the
-            // entry count and strip any left-padding to recover the real hash.
+            // The window may be in 48-byte padded mode or compacted 32-byte native mode; the compacted flag gives the
+            // stride directly, and realBlockHashByBlockNumber strips any left-padding to recover the real hash.
             return BlockImplUtils.realBlockHashByBlockNumber(
-                    blockHashes,
-                    blockNumber - 1,
-                    blockNo,
-                    numTrailingBlocks,
-                    digestOrThrow().getDigestLength());
+                    blockHashes, blockNumber - 1, blockNo, digestOrThrow().getDigestLength(), compacted);
+        }
+
+        /**
+         * Returns whether the current trailing window is stored at the active digest's native entry size (its
+         * {@code trailing_block_hashes_compacted} flag), to persist into the block's {@link BlockStreamInfo}.
+         */
+        boolean compacted() {
+            return compacted;
         }
 
         /**

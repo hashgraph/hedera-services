@@ -4,10 +4,13 @@ package com.hedera.node.app.blocks.impl;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha256DigestOrThrow;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.MessageDigest;
@@ -720,5 +723,70 @@ class BlockImplUtilsTest {
                 r2,
                 BlockImplUtils.realBlockHashByBlockNumber(Bytes.wrap(post), 3L, 2L, 2, 32)
                         .toByteArray());
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // Failing tests for review comments from tinker-michaelj on PR 27696.
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /**
+     * [PR 27696 comment, P1] {@code realBlockHashByBlockNumber} undercounts the entries of a genesis-origin window by
+     * one. A young window built by the production writer holds one entry per block from the "block -1" hash-of-zero
+     * through {@code lastBlockNo}, i.e. {@code lastBlockNo + 2} entries — but the reader derives its count from
+     * {@code lastBlockNo + 1}. When the length is divisible by both strides (a 96-byte window that is 3x32 vs 2x48),
+     * the off-by-one mis-derives the stride and splices the wrong bytes.
+     *
+     * <p>Repro mirrors the comment: append three distinct 32-byte hashes for blocks -1, 0, 1 through the production
+     * writer, then read block 1 back. It should be the native 32-byte hash of block 1; today a 48-byte splice is
+     * returned instead.
+     */
+    @Test
+    void realBlockHashByBlockNumberIncludesGenesisEntryForYoungWindow() {
+        final byte[] bMinus1 = seq(32, 0);
+        final byte[] b0 = seq(32, 100);
+        final byte[] b1 = seq(32, 200);
+
+        // Born-SHA-256 history: no genuine pre-cutover hash ever existed, so the window is native (compacted) from its
+        // first entry and entries stay native 32 bytes.
+        var appended = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(bMinus1), Bytes.EMPTY, 256, 48, 32, false, true);
+        appended = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(b0), appended.window(), 256, 48, 32, false, true);
+        appended = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(b1), appended.window(), 256, 48, 32, false, true);
+        assertEquals(96L, appended.window().length(), "three native 32-byte entries for blocks -1, 0, 1");
+        assertTrue(appended.compacted(), "a born-native window is compacted (native-stride) throughout");
+
+        // The persisted compacted flag gives the stride directly — no count, no off-by-one.
+        final var got = BlockImplUtils.realBlockHashByBlockNumber(appended.window(), 1L, 1L, 32, true);
+        assertNotNull(got);
+        assertEquals(32L, got.length(), "block 1 is a native 32-byte SHA-256 hash");
+        assertArrayEquals(b1, got.toByteArray(), "must return block 1's hash, not a 48-byte cross-entry splice");
+    }
+
+    /**
+     * [PR 27696 comment, P2] {@code appendTrailingBlockHash} applies the genesis/preview count invariant
+     * ({@code newBlockNo + 1}) even to a cutover record-history seed, which has no "block -1" sentinel and begins at
+     * block 0. After {@code V0740BlockStreamSchema.restart()} removes the final record hash, three completed record
+     * blocks (0, 1, 2) leave a 2-entry (96-byte) 48-byte seed, but {@code newBlockNo == 2} makes {@code countExisting
+     * == 3}. The 96-byte seed is then decoded with stride 32, and appending the final 48-byte record hash throws
+     * {@code IllegalArgumentException: Hash of length 48 exceeds stored size 32} — preventing the first cutover block
+     * from starting.
+     */
+    @Test
+    void appendTrailingBlockHashHandlesRecordSeedWithoutGenesisSentinel() {
+        // Cutover seed: two genuine 48-byte SHA-384 record hashes for blocks 0 and 1 (block 2's final record hash was
+        // trimmed by the schema and is about to be appended here).
+        final byte[] recordBlock0 = seq(48, 0);
+        final byte[] recordBlock1 = seq(48, 100);
+        final byte[] seed = new byte[96];
+        System.arraycopy(recordBlock0, 0, seed, 0, 48);
+        System.arraycopy(recordBlock1, 0, seed, 48, 48);
+        final byte[] finalRecordHash = seq(48, 200);
+
+        // A record-migration seed is uncompacted (padded 48-byte); the flag — not an inferred count — fixes the stride.
+        final var result = assertDoesNotThrow(
+                () -> BlockImplUtils.appendTrailingBlockHash(
+                        Bytes.wrap(finalRecordHash), Bytes.wrap(seed), 256, 48, 32, true, false),
+                "appending the trimmed final record hash to a record-seed window must not throw");
+        assertEquals(144L, result.window().length(), "three genuine 48-byte record entries for blocks 0, 1, 2");
+        assertFalse(result.compacted(), "a record seed stays uncompacted until no genuine hash remains");
     }
 }

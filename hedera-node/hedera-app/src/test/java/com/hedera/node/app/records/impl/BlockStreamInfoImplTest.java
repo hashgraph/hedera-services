@@ -94,11 +94,24 @@ class BlockStreamInfoImplTest {
      */
     private static BlockStreamInfo info(
             final long blockNumber, final Bytes trailingBlockHashes, final DigestType blockDigest) {
+        return info(blockNumber, trailingBlockHashes, blockDigest, false);
+    }
+
+    /**
+     * As {@link #info(long, Bytes, DigestType)} but with an explicit {@code trailing_block_hashes_compacted} flag —
+     * {@code true} for a native (active-size) window, {@code false} for a padded 48-byte window.
+     */
+    private static BlockStreamInfo info(
+            final long blockNumber,
+            final Bytes trailingBlockHashes,
+            final DigestType blockDigest,
+            final boolean compacted) {
         return BlockStreamInfo.newBuilder()
                 .blockNumber(blockNumber)
                 .blockTime(BLOCK_TIME)
                 .blockEndTime(BLOCK_TIME)
                 .trailingBlockHashes(trailingBlockHashes)
+                .trailingBlockHashesCompacted(compacted)
                 .trailingOutputHashes(Bytes.EMPTY)
                 .intermediatePreviousBlockRootHashes(List.of())
                 .intermediateBlockRootsLeafCount(0L)
@@ -247,7 +260,7 @@ class BlockStreamInfoImplTest {
         final var block2 = runningHash(3, DigestType.SHA_256);
         final var trailing = concat(genesis(32), block0, block1, block2);
         assertEquals(128, (int) trailing.length(), "genesis entry + three native 32-byte entries");
-        final var blockStreamInfo = info(3L, trailing, DigestType.SHA_256);
+        final var blockStreamInfo = info(3L, trailing, DigestType.SHA_256, true);
         final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256);
         final var reconstructedLast =
                 BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, DigestType.SHA_256, 256);
@@ -303,7 +316,8 @@ class BlockStreamInfoImplTest {
                 info(
                         3L,
                         concat(genesis(32), runningHash(1, sha256), runningHash(2, sha256), runningHash(3, sha256)),
-                        sha256),
+                        sha256,
+                        true),
                 sha256);
         assertEquals(runningHash(1, sha256), narrow.blockHashByBlockNumber(0L));
         assertEquals(runningHash(2, sha256), narrow.blockHashByBlockNumber(1L));
@@ -425,5 +439,37 @@ class BlockStreamInfoImplTest {
                     "blockHashByBlockNumber parity at block " + n);
         }
         assertEquals(records.blockNo(), blocks.blockNo());
+    }
+
+    /**
+     * [PR 27696 comment, P2] The query path hard-codes {@code NUM_TRAILING_BLOCKS == 256} for the retention count,
+     * but the producer uses the configured {@code BlockRecordStreamConfig.numOfBlockHashesInState()} (range 1..4096).
+     * With a retention greater than 256, a mature native SHA-256 window becomes divisible by both strides, and the
+     * capped count mis-derives stride 48 for what the producer stored as 32-byte native entries.
+     *
+     * <p>Concretely: retention 384, block 1000, a mature native window of {@code 384 * 32 == 12288} bytes — which is
+     * also {@code 256 * 48}. The decoder caps the count at 256 and selects stride 48, so block 999 comes back as a
+     * 48-byte splice instead of its real 32-byte SHA-256 hash.
+     */
+    @Test
+    void blockHashByBlockNumberDecodesNativeWindowUnderLargerThan256Retention() {
+        final int retention = 384;
+        // A mature, fully-compacted native SHA-256 window: retention * 32 bytes, all genuine 32-byte entries. The
+        // rightmost entry is the hash of block 999 (the last completed block before the current block 1000).
+        final var entries = new Bytes[retention];
+        for (int i = 0; i < retention; i++) {
+            entries[i] = runningHash(i + 1, DigestType.SHA_256);
+        }
+        final var trailing = concat(entries);
+        assertEquals(retention * 32, (int) trailing.length(), "retention * 32-byte native entries");
+
+        final var blockStreamInfo = info(1000L, trailing, DigestType.SHA_256, true);
+        final var subject = new BlockStreamInfoImpl(blockStreamInfo, DigestType.SHA_256, retention);
+
+        final var block999 = subject.blockHashByBlockNumber(999L);
+        assertEquals(
+                32,
+                (int) block999.length(),
+                "block 999 is a native 32-byte SHA-256 hash; the persisted compacted flag fixes the stride directly");
     }
 }

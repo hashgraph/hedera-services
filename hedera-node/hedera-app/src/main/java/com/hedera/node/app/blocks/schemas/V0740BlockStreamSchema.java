@@ -204,6 +204,9 @@ public class V0740BlockStreamSchema extends Schema<SemanticVersion> {
                 .blockTime(blockInfo.firstConsTimeOfCurrentBlock())
                 .trailingOutputHashes(lastFourHashes)
                 .trailingBlockHashes(lastBlockHashes)
+                // The window is seeded with genuine 48-byte SHA2-384 record block hashes, i.e. padded (uncompacted)
+                // mode; it stays this way until no genuine hash remains and the post-cutover producer compacts it.
+                .trailingBlockHashesCompacted(false)
                 .inputTreeRootHash(emptySubtreeRoot)
                 .numPrecedingStateChangesItems(0)
                 .rightmostPrecedingStateChangesTreeHashes(List.of())

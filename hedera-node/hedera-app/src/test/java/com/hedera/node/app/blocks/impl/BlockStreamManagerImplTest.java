@@ -832,7 +832,9 @@ class BlockStreamManagerImplTest {
                         "c2973cea38b088de3996cf45ce5dbe339ae9b2c217204b40b7c6176c42a6000ed8619c487cd1db3509dc84bde58b18a2"),
                 HASH_OF_ZERO_384,
                 List.of(FAKE_PATCH_RESTART_HASH),
-                1);
+                1,
+                // Active digest is SHA-384, so preSize == activeSize (48): the window is "native" at 48 bytes.
+                true);
 
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
@@ -1274,7 +1276,9 @@ class BlockStreamManagerImplTest {
                         "b14cb3ba5c0610ba2c18c12540725aa65eac623190c37014123b371aa2aaa86506b687a1fec7f03de5c7dfb30934dc7e"),
                 HASH_OF_ZERO_384,
                 List.of(FAKE_NON_EMPTY_RESULTS_RESTART_HASH),
-                1);
+                1,
+                // Active digest is SHA-384, so preSize == activeSize (48): the window is "native" at 48 bytes.
+                true);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 

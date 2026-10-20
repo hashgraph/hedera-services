@@ -177,6 +177,41 @@ public class BlockImplUtils {
     }
 
     /**
+     * The result of appending to a trailing window: the updated window bytes and whether that window is now stored at
+     * the active digest's native size (its {@code trailing_block_hashes_compacted} flag).
+     *
+     * @param window the updated trailing block hashes
+     * @param compacted whether {@code window} is stored at {@code activeSize} native entries (vs. 48-byte padded)
+     */
+    public record AppendResult(@NonNull Bytes window, boolean compacted) {}
+
+    /**
+     * Reads the real (unpadded) hash of a block from a uniform trailing window whose stride is given directly by the
+     * persisted {@code compacted} flag — no entry count is needed. When {@code compacted} is true the window is stored
+     * at the active digest's native size; otherwise it is stored at the pre-cutover {@code RECORD_HASH_SIZE} (48-byte)
+     * padded size. This is the cold-read entry point (restart, reconnect, snapshot query), where the flag read from
+     * {@code BlockStreamInfo} is authoritative and length/count inference is both unnecessary and (for a window whose
+     * length divides evenly by both sizes) ambiguous.
+     *
+     * @param window the concatenated trailing block hashes
+     * @param lastBlockNo the block number of the rightmost entry in the window
+     * @param blockNo the block number of the hash to return
+     * @param activeSize the byte length of the active digest's hashes
+     * @param compacted whether the window is stored at {@code activeSize} native entries
+     * @return the real hash of the requested block, or null if out of range
+     */
+    public static @Nullable Bytes realBlockHashByBlockNumber(
+            @NonNull final Bytes window,
+            final long lastBlockNo,
+            final long blockNo,
+            final int activeSize,
+            final boolean compacted) {
+        final int stride = compacted ? activeSize : RECORD_HASH_SIZE;
+        final var stored = blockHashByBlockNumber(window, lastBlockNo, blockNo, stride);
+        return stored == null ? null : stripLeadingPad(stored, activeSize);
+    }
+
+    /**
      * Appends a new native block hash to the trailing window, keeping all entries a uniform size. While a genuine
      * full-size (pre-cutover) hash remains, shorter hashes are left-padded to {@code preSize}. Once the oldest entry is
      * itself padded (no genuine hashes remain) <b>and the block stream has cut over</b>, the window is compacted to
@@ -216,6 +251,48 @@ public class BlockImplUtils {
         }
         final int targetStride = (preSize != activeSize && existingStride == preSize) ? preSize : activeSize;
         return appendHash(leftPadTo(newHash, targetStride), window, maxHashes);
+    }
+
+    /**
+     * Appends a new native block hash to the trailing window, keeping all entries a uniform size, using the persisted
+     * {@code compacted} flag as the authoritative stride rather than re-inferring it from the entry count. While the
+     * window is padded ({@code compacted == false}) shorter hashes are left-padded to {@code preSize}; once the oldest
+     * entry is itself padded (no genuine hashes remain) <b>and the block stream has cut over</b>, the window is
+     * compacted once to {@code activeSize} and {@code compacted} flips to true for this and all subsequent appends.
+     * Before cutover the window is never compacted. A degenerate {@code preSize == activeSize} window is always native.
+     *
+     * @param newHash the new native block hash to append
+     * @param window the current trailing block hashes
+     * @param maxHashes the maximum number of entries the window retains
+     * @param preSize the pre-cutover (full-size) stored entry length
+     * @param activeSize the byte length of the active digest's hashes
+     * @param postCutover whether the block stream has cut over to the active digest; compaction only occurs if true
+     * @param compacted whether {@code window} is already stored at {@code activeSize} native entries
+     * @return the updated window and its new compacted flag
+     */
+    public static AppendResult appendTrailingBlockHash(
+            @NonNull final Bytes newHash,
+            @NonNull final Bytes window,
+            final int maxHashes,
+            final int preSize,
+            final int activeSize,
+            final boolean postCutover,
+            final boolean compacted) {
+        if (preSize == activeSize) {
+            // Pre-size and active size coincide: the window is "native" at that single size; nothing to compact.
+            return new AppendResult(appendHash(leftPadTo(newHash, activeSize), window, maxHashes), true);
+        }
+        if (compacted) {
+            // Already native: append the (native-size) hash directly and stay compacted.
+            return new AppendResult(appendHash(newHash, window, maxHashes), true);
+        }
+        if (postCutover && window.length() > 0 && isLeftmostPadded(window, preSize - activeSize)) {
+            // Padded, post-cutover, and no genuine (pre-cutover) hash remains: compact once to native and stay native.
+            final var stripped = stripWindowPadding(window, preSize, activeSize);
+            return new AppendResult(appendHash(newHash, stripped, maxHashes), true);
+        }
+        // Still padded: keep storing at the pre-cutover size (left-padding the new native hash).
+        return new AppendResult(appendHash(leftPadTo(newHash, preSize), window, maxHashes), false);
     }
 
     /**
