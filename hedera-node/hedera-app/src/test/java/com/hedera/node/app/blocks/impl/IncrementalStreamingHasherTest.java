@@ -127,6 +127,61 @@ class IncrementalStreamingHasherTest {
         assertThat(sha384.computeRootHash()).hasSize(48);
     }
 
+    /**
+     * [PR 27696 comment, P2] At a SHA-384 -> SHA-256 switch the node restores block N-1's <b>persisted</b> intermediate
+     * tree (which excludes N-1 itself) and then re-folds N-1's hash under the new digest
+     * ({@code BlockStreamManagerImpl.init}). Whenever that fold completes a sibling pair (the switch lands after an
+     * odd-numbered insertion), the fold must be computed under the NEW digest to match the producer.
+     *
+     * <p>A naive validator that reseeds its <b>already-folded</b> intermediate state under the new digest computes
+     * that sibling fold under the OLD digest and diverges — this test pins that divergence so the validator cannot
+     * silently regress to it. {@code StateChangesValidator.withBlockDigest} instead snapshots the pre-fold state and
+     * re-folds the last block's hash under the new digest; this asserts that fixed approach reproduces the node's root.
+     */
+    @Test
+    @DisplayName(
+            "digest switch after an odd insertion: snapshot-then-refold matches the node; reseed-after-fold does not")
+    void digestSwitchAfterOddInsertionMatchesNodeRestoreThenFold() {
+        final byte[] block0 = new byte[48];
+        final byte[] block1 = new byte[48];
+        java.util.Arrays.fill(block0, (byte) 0xA1);
+        java.util.Arrays.fill(block1, (byte) 0xB2);
+
+        // Node path: restore block 0's persisted intermediate state (block 1 not yet folded in), switch to the NEW
+        // digest, then append block 1 under the new digest — so the sibling fold is computed under SHA-256.
+        final var afterBlock0 = new IncrementalStreamingHasher(DigestType.SHA_384.buildDigest(), List.of(), 0);
+        afterBlock0.addNodeByHash(block0);
+        final var preFoldState = afterBlock0.intermediateHashingState().stream()
+                .map(hash -> hash.toByteArray())
+                .toList();
+        final var preFoldLeafCount = afterBlock0.leafCount();
+        final var node =
+                new IncrementalStreamingHasher(DigestType.SHA_256.buildDigest(), preFoldState, preFoldLeafCount);
+        node.addNodeByHash(block1);
+        final var nodeRoot = node.computeRootHash();
+
+        // Fixed validator path (withBlockDigest): reseed from the snapshot taken BEFORE block 1 was folded, then
+        // re-fold block 1 under the NEW digest — identical construction to the node, so the roots must match.
+        final var fixedValidator =
+                new IncrementalStreamingHasher(DigestType.SHA_256.buildDigest(), preFoldState, preFoldLeafCount);
+        fixedValidator.addNodeByHash(block1);
+        assertThat(fixedValidator.computeRootHash()).isEqualTo(nodeRoot);
+
+        // Naive validator path: add block 0 and block 1 under the OLD digest (folding the sibling pair under SHA-384),
+        // then reseed the already-folded state under the NEW digest. This must NOT equal the node's root — that
+        // divergence is the bug the fix avoids.
+        final var naive = new IncrementalStreamingHasher(DigestType.SHA_384.buildDigest(), List.of(), 0);
+        naive.addNodeByHash(block0);
+        naive.addNodeByHash(block1);
+        final var naiveReseeded = new IncrementalStreamingHasher(
+                DigestType.SHA_256.buildDigest(),
+                naive.intermediateHashingState().stream()
+                        .map(hash -> hash.toByteArray())
+                        .toList(),
+                naive.leafCount());
+        assertThat(naiveReseeded.computeRootHash()).isNotEqualTo(nodeRoot);
+    }
+
     private static IncrementalStreamingHasher newHasher(final DigestType digestType) {
         return new IncrementalStreamingHasher(digestType.buildDigest(), List.of(), 0);
     }

@@ -145,6 +145,16 @@ public class StateChangesValidator implements BlockStreamValidator {
     // The digest in effect for the block currently being validated. Starts at the configured value but switches
     // when a block header declares a different hash algorithm (e.g. SHA-384 -> SHA-256), mirroring the node.
     private DigestType digestType;
+
+    // Snapshot of the cross-block "all previous blocks" tree as it stood just before the most recent block hash was
+    // folded in, plus that hash. On a digest switch this lets the validator mirror the node: the node restores the
+    // persisted intermediate tree (which EXCLUDES the last block) and re-folds the last block's hash under the NEW
+    // digest (BlockStreamManagerImpl.init). Reseeding from the already-folded state instead would compute a
+    // sibling-pair fold at an odd insertion under the OLD digest and diverge from the producer.
+    private List<Bytes> preFoldIntermediateState = List.of();
+    private long preFoldLeafCount = 0;
+    private Bytes lastFoldedBlockHash = null;
+
     private final boolean assertAtLeastOneWraps;
     private final Hash initializedGenesisStateHash;
     private final Path pathToNode0SwirldsLog;
@@ -472,7 +482,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                 previewStateChangesHash,
                                 previewTraceDataHasher);
                         previousBlockHash = previewRootAndSiblings.blockRootHash();
-                        incrementalBlockHashes.addNodeByHash(previousBlockHash.toByteArray());
+                        foldBlockHash(incrementalBlockHashes, previousBlockHash);
                         logger.info("Preview block #{}: hash verified", blockNum);
                     }
                 }
@@ -510,8 +520,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                                 .map(Bytes::toByteArray)
                                 .toList(),
                         blockInfo.wrappedIntermediateBlockRootsLeafCount());
-                incrementalBlockHashes.addNodeByHash(
-                        blockInfo.previousWrappedRecordBlockRootHash().toByteArray());
+                foldBlockHash(incrementalBlockHashes, blockInfo.previousWrappedRecordBlockRootHash());
             } else {
                 throw new AssertionError(
                         "Cutover enabled but first post-cutover block has no BlockInfo with wrapped hashes");
@@ -622,7 +631,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     // hasher so the chain stays in sync for future proof verifications, and skip
                     // proof verification for this block since we don't have its expected predecessor.
                     final var skippedBlockHash = footer.blockFooterOrThrow().previousBlockRootHash();
-                    incrementalBlockHashes.addNodeByHash(skippedBlockHash.toByteArray());
+                    foldBlockHash(incrementalBlockHashes, skippedBlockHash);
                     shouldVerifyProof = false;
                     hashChainBroken = false;
                 } else {
@@ -685,7 +694,7 @@ public class StateChangesValidator implements BlockStreamValidator {
                     }
                 }
 
-                incrementalBlockHashes.addNodeByHash(previousBlockHash.toByteArray());
+                foldBlockHash(incrementalBlockHashes, previousBlockHash);
             } else if (i <= lastVerifiableIndex) {
                 logger.warn("Skipping proof verification for incomplete block #{} at index {}", blockNumber, i);
                 hashChainBroken = true;
@@ -864,12 +873,31 @@ public class StateChangesValidator implements BlockStreamValidator {
             return incrementalBlockHashes;
         }
         digestType = blockDigestType;
-        return new IncrementalStreamingHasher(
+        // Mirror the node (BlockStreamManagerImpl.init): restore the persisted intermediate tree, which EXCLUDES the
+        // last folded block, then re-fold the last block's hash under the NEW digest. Reseeding from the current
+        // (already-folded) state would compute a sibling-pair fold at an odd insertion under the OLD digest and
+        // diverge from the producer's stream.
+        final var reseeded = new IncrementalStreamingHasher(
                 digest(),
-                incrementalBlockHashes.intermediateHashingState().stream()
-                        .map(Bytes::toByteArray)
-                        .toList(),
-                incrementalBlockHashes.leafCount());
+                preFoldIntermediateState.stream().map(Bytes::toByteArray).toList(),
+                preFoldLeafCount);
+        if (lastFoldedBlockHash != null) {
+            reseeded.addNodeByHash(lastFoldedBlockHash.toByteArray());
+        }
+        return reseeded;
+    }
+
+    /**
+     * Folds {@code blockHash} into the cross-block "all previous blocks" tree, first snapshotting the tree's
+     * pre-fold intermediate state and the hash itself so a later digest switch can replay this fold under the new
+     * digest exactly as the node does. All block-hash folds must go through this method so the snapshot stays current.
+     */
+    private void foldBlockHash(
+            @NonNull final IncrementalStreamingHasher incrementalBlockHashes, @NonNull final Bytes blockHash) {
+        preFoldIntermediateState = incrementalBlockHashes.intermediateHashingState();
+        preFoldLeafCount = incrementalBlockHashes.leafCount();
+        lastFoldedBlockHash = blockHash;
+        incrementalBlockHashes.addNodeByHash(blockHash.toByteArray());
     }
 
     private Bytes hashLeaf(final Bytes leafData) {
