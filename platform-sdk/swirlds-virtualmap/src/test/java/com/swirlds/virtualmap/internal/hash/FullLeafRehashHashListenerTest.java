@@ -3,6 +3,7 @@ package com.swirlds.virtualmap.internal.hash;
 
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.hash;
 import static com.swirlds.virtualmap.test.fixtures.VirtualMapTestUtils.loadHash;
+import static org.hiero.base.utility.test.fixtures.assertions.AssertionUtils.assertEventuallyTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -20,6 +21,7 @@ import com.swirlds.virtualmap.test.fixtures.TestValue;
 import com.swirlds.virtualmap.test.fixtures.datasource.InMemoryDataSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongFunction;
@@ -107,11 +109,15 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
             listener.onHashChunkHashed(chunk);
         }
 
-        // At least one flush should have happened by now for the first 500,000 records.
-        assertNotNull(loadHash(dataSource, 1, hashChunkHeight), "First record should be flushed by interval");
+        // At least one flush should have happened for the first 500,000 records. Flushes run on the flusher
+        // thread, so wait for it
         final long toCheck = MerklePathUtils.getLeftChildPath(
                 VirtualHashChunk.chunkIdToChunkPath(chunksToFlush - 1, hashChunkHeight));
-        assertNotNull(loadHash(dataSource, toCheck, hashChunkHeight), "500,000th record should be flushed by interval");
+        assertEventuallyTrue(
+                () -> loadHashUnchecked(toCheck, hashChunkHeight) != null,
+                Duration.ofSeconds(10),
+                "500,000th record should be flushed by interval");
+        assertNotNull(loadHash(dataSource, 1, hashChunkHeight), "First record should be flushed by interval");
         assertNull(loadHash(dataSource, toCheck + 2, hashChunkHeight), "500,001st record should not be flushed yet");
         listener.onHashingCompleted();
         assertNotNull(
@@ -164,7 +170,13 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
             final RuntimeException e = assertThrows(
                     RuntimeException.class,
                     () -> TaskPerNodeFullRehasher.hash(pool, 999, 1998, reader, collector, 60_000));
-            assertInstanceOf(UncheckedIOException.class, e.getCause());
+            // Depending on timing, the failure is either thrown by the final flush directly, or by an earlier flush
+            // in the flusher thread, then rethrown to hashing threads and onHashingCompleted() as the cause
+            Throwable cause = e.getCause();
+            while ((cause != null) && !(cause instanceof UncheckedIOException)) {
+                cause = cause.getCause();
+            }
+            assertNotNull(cause, "The flush failure must be the cause");
         } finally {
             pool.shutdownNow();
         }
@@ -224,6 +236,14 @@ class FullLeafRehashHashListenerTest extends VirtualTestBase {
             assertEquals(1, interruptingDataSource.saveCount.get(), "Only the final flush must be started");
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    private Hash loadHashUnchecked(final long path, final int hashChunkHeight) {
+        try {
+            return loadHash(dataSource, path, hashChunkHeight);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

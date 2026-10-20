@@ -472,8 +472,8 @@ public final class VirtualMapLearner {
     public void abortOnException() {
         logger.info(RECONNECT.getMarker(), "Aborting reconnect and cleaning up resources");
 
-        // Release threads blocked on flusher backpressure. The hashing thread isn't interrupted by cancelling
-        // its future, so without this it would wait till the running flush completes
+        // Release threads blocked on flusher backpressure, and stop the flusher thread. The hashing thread isn't
+        // interrupted by cancelling its future, so without this it would wait till the running flush completes
         reconnectFlusher.cancel();
         reconnectIterator.close();
         if (leafDeletionTask != null) {
