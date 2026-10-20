@@ -17,10 +17,7 @@ import com.hedera.services.bdd.spec.SpecOperation;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
@@ -33,6 +30,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  */
 @Tag(MULTINETWORK)
 @Order(Integer.MAX_VALUE)
+@Disabled("Incompatible with per-group network teardown; to be replaced in a follow-up")
 public class MultiNetworkValidationTest {
     private static final Duration VALIDATION_DELAY = Duration.ofSeconds(1);
     private static final Duration ACTIVE_TIMEOUT = Duration.ofMinutes(5);
