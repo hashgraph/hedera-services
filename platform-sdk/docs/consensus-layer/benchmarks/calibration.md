@@ -31,6 +31,9 @@ which measures the consensus algorithm, `ConsensusImpl#addEvent`, and follows th
 - **Start a new workflow run for every repetition, not a GitHub rerun.** After a rerun, the GitHub API lists only the
   artifacts of the latest attempt. A rerun also measures the same code only if the checkout uses `github.sha`, not the
   branch.
+- **Start all repetitions at once.** The workflow never runs two calibrations at the same time: it queues up to 100
+  runs, of any benchmark, and runs them one after another. GitHub starts them in the order they began to wait, but does
+  not guarantee it.
 
 ## The analysis
 
