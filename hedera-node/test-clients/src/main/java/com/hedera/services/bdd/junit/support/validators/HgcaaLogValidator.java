@@ -125,6 +125,7 @@ public class HgcaaLogValidator {
                 List.of("QueryWorkflowImpl", "Unexpected ParseException while parsing protobuf"),
                 // HAPI networks run with CLPR enabled but without a CA, so CLPR sync runs without mTLS
                 List.of("ClprCaCertManager", "CLPR CA cert/key not configured"),
+                List.of("Timed out waiting for pending block proofs"),
                 // CLPR queries verify their own state proofs before returning them, which cannot succeed
                 // when a CLPR task runs with tss.forceMockSignatures=true
                 List.of("ClprGetLedgerConfigurationHandler", "TSS verification failed for ledgerId"),
