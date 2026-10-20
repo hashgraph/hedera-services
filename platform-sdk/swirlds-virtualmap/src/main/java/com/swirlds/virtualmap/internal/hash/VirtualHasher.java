@@ -255,7 +255,7 @@ public final class VirtualHasher {
                             left = hashChunk.getHashBytesAtPath(leftPath);
                         } else {
                             // Get left's left and right child hashes and hashInternal() them
-                            left = hashChunk.calcHashBytes(wmd, leftPath, firstLeafPath, lastLeafPath);
+                            left = hashChunk.calcHashBytes(leftPath, firstLeafPath, lastLeafPath, wmd);
                         }
                     } else {
                         // Hash is provided / computed, need to update it in hashChunk
@@ -278,7 +278,7 @@ public final class VirtualHasher {
                             right = hashChunk.getHashBytesAtPath(rightPath);
                         } else {
                             // Get right's left and right child hashes and hashInternal() them
-                            right = hashChunk.calcHashBytes(wmd, rightPath, firstLeafPath, lastLeafPath);
+                            right = hashChunk.calcHashBytes(rightPath, firstLeafPath, lastLeafPath, wmd);
                         }
                     } else {
                         // Hash is provided / computed, need to update it in hashChunk
@@ -287,7 +287,7 @@ public final class VirtualHasher {
                         }
                     }
 
-                    ins[i] = MerkleHasher.internalNodeHashBytes(wmd, left, right);
+                    ins[i] = MerkleHasher.internalNodeHashBytes(left, right, wmd);
                 }
                 rankPath = MerklePathUtils.getParentPath(rankPath);
                 currentRank--;
@@ -327,7 +327,7 @@ public final class VirtualHasher {
         @Override
         protected boolean onExecute() {
             final WritableMessageDigest wmd = getWritableMessageDigest();
-            out.setHash(path, MerkleHasher.leafNodeHashBytes(wmd, leaf));
+            out.setHash(path, MerkleHasher.leafNodeHashBytes(leaf, wmd));
             return true;
         }
     }

@@ -8,6 +8,7 @@ import static com.swirlds.virtualmap.MerklePathUtils.isLeft;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -17,6 +18,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.function.LongFunction;
 import org.hiero.base.concurrent.AbstractTask;
+import org.hiero.base.concurrent.ThreadLocalStorage;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 
@@ -207,7 +209,9 @@ public final class TaskPerNodeFullRehasher {
             if (leaf == null) {
                 throw new IllegalStateException("Leaf record not found, path = " + nodePath);
             }
-            final byte[] hash = MerkleHasher.threadSafeDefault().leafNodeHashBytes(leaf);
+            final WritableMessageDigest digestWriter =
+                    ThreadLocalStorage.getWritableMessageDigest(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+            final byte[] hash = MerkleHasher.leafNodeHashBytes(leaf, digestWriter);
             // one more check to avoid notifying the listener and setting the hash to the parent if the result is
             // already completed exceptionally
             if (result.isCompletedExceptionally()) {
@@ -244,7 +248,9 @@ public final class TaskPerNodeFullRehasher {
             if (result.isCompletedExceptionally()) {
                 return true;
             }
-            final byte[] hash = MerkleHasher.threadSafeDefault().internalNodeHashBytes(leftHash, rightHash);
+            final WritableMessageDigest digestWriter =
+                    ThreadLocalStorage.getWritableMessageDigest(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+            final byte[] hash = MerkleHasher.internalNodeHashBytes(leftHash, rightHash, digestWriter);
             // Must be called before the hash is passed to the parent node, see class javadoc
             listener.onHashed(path, hash);
             if (parent != null) {

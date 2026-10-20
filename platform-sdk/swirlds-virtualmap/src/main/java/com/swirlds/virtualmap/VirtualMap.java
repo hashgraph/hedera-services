@@ -20,6 +20,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.hashing.WritableMessageDigest;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.utility.Labeled;
@@ -60,6 +61,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hiero.base.ValueReference;
 import org.hiero.base.concurrent.ExecutorFactory;
+import org.hiero.base.concurrent.ThreadLocalStorage;
 import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.Hash;
 import org.hiero.base.file.FileUtils;
@@ -452,7 +454,10 @@ public final class VirtualMap extends AbstractVirtualRoot implements Labeled, Vi
                             firstLeafPath);
                     return;
                 }
-                final Hash recaclulatedHash = new MerkleHasher().leafNodeHash(virtualLeafBytes);
+                final WritableMessageDigest digestWriter =
+                        ThreadLocalStorage.getWritableMessageDigest(Cryptography.DEFAULT_DIGEST_TYPE.algorithmName());
+                final Hash recaclulatedHash =
+                        MerkleHasher.leafNodeHash(virtualLeafBytes, digestWriter, Cryptography.DEFAULT_DIGEST_TYPE);
                 if (loadedHash.equals(recaclulatedHash)) {
                     logger.info(
                             STARTUP.getMarker(),
