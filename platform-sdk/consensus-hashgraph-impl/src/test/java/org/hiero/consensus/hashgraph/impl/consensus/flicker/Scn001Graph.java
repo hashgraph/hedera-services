@@ -171,7 +171,7 @@ public final class Scn001Graph {
         final RosterWrapper old = rosterOld();
         final List<RosterEntry> entries = new ArrayList<>();
         for (int i = 0; i < old.size(); i++) {
-            entries.add(old.rosterEntry(i)
+            entries.add(old.rosterEntryAtIndex(i)
                     .toPbj()
                     .copyBuilder()
                     .weight(NEW_WEIGHTS[i])

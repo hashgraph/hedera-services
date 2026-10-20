@@ -10,6 +10,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.util.List;
 import java.util.Objects;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.hashgraph.impl.EventImpl;
 import org.hiero.consensus.hashgraph.impl.test.fixtures.flicker.Change.MetadataCleared;
@@ -116,7 +117,7 @@ class Scn001Test {
     /** The snapshot's judges, resolved back to the graph's names. */
     private static List<String> judgeNames(final ConsensusSnapshot snapshot, final List<NamedEvent> graph) {
         return snapshot.judgeIds().stream()
-                .map(judgeId -> new Hash(judgeId.judgeHash()))
+                .map(judgeId -> new Hash(judgeId.judgeHash(), DigestType.SHA_384))
                 .map(hash -> graph.stream()
                         .filter(named -> Objects.equals(named.event().getHash(), hash))
                         .map(NamedEvent::name)

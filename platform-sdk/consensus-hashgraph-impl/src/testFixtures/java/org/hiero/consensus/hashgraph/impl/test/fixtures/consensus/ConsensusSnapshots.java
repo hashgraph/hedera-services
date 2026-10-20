@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 import org.hiero.consensus.model.hashgraph.ConsensusRound;
 
@@ -63,7 +64,7 @@ public final class ConsensusSnapshots {
 
         final Set<Hash> supplied = Set.copyOf(suppliedEventHashes);
         final List<Hash> missing = snapshot.judgeIds().stream()
-                .map(judgeId -> new Hash(judgeId.judgeHash()))
+                .map(judgeId -> new Hash(judgeId.judgeHash(), DigestType.SHA_384))
                 .filter(judgeHash -> !supplied.contains(judgeHash))
                 .toList();
 
