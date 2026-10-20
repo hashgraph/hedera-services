@@ -55,14 +55,9 @@ public class RecordFinalizer {
         if (dispatch.stack().permitsStakingRewards()) {
             recordFinalizer.finalizeStakingRecord(
                     dispatch.finalizeContext(),
-<<<<<<< HEAD
                     txnInfo.functionality(),
                     txnInfo.txBody(),
-                    extraRewardReceivers(txnInfo.txBody(), txnInfo.functionality(), dispatch.streamBuilder()),
-=======
-                    dispatch.txnInfo().functionality(),
                     extraRewardReceivers(dispatch),
->>>>>>> 8f26954 (fix: stop a scheduled delete from paying a staking reward twice (#573))
                     dispatch.handleContext().dispatchPaidRewards());
         } else {
             recordFinalizer.finalizeNonStakingRecord(
