@@ -25,17 +25,17 @@ Today, the boundary between the layers is wide. The execution layer gives `Platf
 
 In the new API, the consensus layer is a library. The execution layer creates it, drives it, and destroys it. The consensus layer never sees the state.
 
-| Responsibility | Today | New API |
-| --- | --- | --- |
-| Creating the layer | `PlatformBuilder` builds the platform. | Execution builds the consensus layer with `ConsensusLayerFactory`. |
-| State | The platform holds, copies, hashes, signs, and saves the state. | Execution owns the state. Consensus only needs a `ConsensusSnapshot`,Rosters, and `legacyEventHashOverride`. |
-| Producing rounds | The platform produces rounds as fast as it can. | Execution requests each round. Consensus produces only the rounds that are requested. |
+| Responsibility | Today | New API                                                                                                              |
+| --- | --- |----------------------------------------------------------------------------------------------------------------------|
+| Creating the layer | `PlatformBuilder` builds the platform. | Execution builds the consensus layer with `ConsensusLayerFactory`.                                                   |
+| State | The platform holds, copies, hashes, signs, and saves the state. | Execution owns the state. Consensus only needs a `ConsensusSnapshot`, Rosters, and `runningEventHashOverride`.        |
+| Producing rounds | The platform produces rounds as fast as it can. | Execution requests each round. Consensus produces only the rounds that are requested.                                |
 | Reconnect | The platform detects the need, runs reconnect, and swaps the state. | Consensus reports that it is behind. Execution drives the reconnect and replaces the consensus layer with a new one. |
-| Freeze time | The platform reads the freeze time from the state. | Execution passes the freeze time (if applicable) with each round request. |
-| State signature transactions | Passed between the layers, collected by the platform. | Not part of the API. Signature collection is done by the Execution Layer. |
-| ISS detection | Done by the platform | Done by the Execution Layer. |
-| Status | `PlatformStatus` includes `RECONNECT_COMPLETE`, a reconnect status. | `ConsensusLayerStatus` covers only the consensus layer. It adds `IDLE` for when no round is requested. |
-| Pre-handle before Handle contract | Enforced by the platform. | Enforced by the Execution Layer, enabled by the API. |
+| Freeze time | The platform reads the freeze time from the state. | Execution passes the freeze time (if applicable) with each round request.                                            |
+| State signature transactions | Passed between the layers, collected by the platform. | Not part of the API. Signature collection is done by the Execution Layer.                                            |
+| ISS detection | Done by the platform | Done by the Execution Layer.                                                                                         |
+| Status | `PlatformStatus` includes `RECONNECT_COMPLETE`, a reconnect status. | `ConsensusLayerStatus` covers only the consensus layer. It adds `IDLE` for when no round is requested.               |
+| Pre-handle before Handle contract | Enforced by the platform. | Enforced by the Execution Layer, enabled by the API.                                                                 |
 
 ## 3. API at a Glance
 

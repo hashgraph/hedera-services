@@ -6,9 +6,9 @@ import com.hedera.hapi.platform.state.ConsensusSnapshot;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import org.hiero.consensus.main.model.Round;
-import org.hiero.consensus.main.model.reconnect.PeerProtocolFactory;
+import org.hiero.consensus.model.hashgraph.Round;
 import org.hiero.consensus.model.quiescence.QuiescenceCommand;
+import org.hiero.consensus.model.reconnect.PeerProtocolFactory;
 
 /**
  * The public API of the consensus layer. The consensus layer is responsible for producing rounds consisting of

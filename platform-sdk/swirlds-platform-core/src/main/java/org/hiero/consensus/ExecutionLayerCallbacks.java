@@ -6,9 +6,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import org.hiero.consensus.model.event.Event;
-import org.hiero.consensus.main.model.TimestampedTransaction;
 import org.hiero.consensus.model.hashgraph.Round;
 import org.hiero.consensus.model.status.ConsensusLayerStatus;
+import org.hiero.consensus.model.transaction.TimestampedTransaction;
 
 /**
  * The API of the Execution Layer exposed to the Consensus Layer. All methods are blocking; therefore they must
