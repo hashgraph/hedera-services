@@ -106,10 +106,14 @@ public class ConsensusLinker {
             return null;
         }
 
-        final List<EventImpl> parents = event.getAllParents().stream()
-                .map(ed -> getParentToLink(event, ed))
-                .filter(Objects::nonNull)
-                .toList();
+        final List<EventDescriptorWrapper> allParents = event.getAllParents();
+        final List<EventImpl> parents = new ArrayList<>(allParents.size());
+        for (final EventDescriptorWrapper parentWrapper : allParents) {
+            final EventImpl parent = getParentToLink(event, parentWrapper);
+            if (parent != null) {
+                parents.add(parent);
+            }
+        }
         final EventImpl linkedEvent = eventFactory.apply(event, parents);
         logsAndMetrics.eventLinked();
 

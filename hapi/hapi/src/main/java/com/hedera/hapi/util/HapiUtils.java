@@ -183,7 +183,19 @@ public class HapiUtils {
             HederaFunctionality.CLPR_GET_ENDPOINT_MANIFEST);
 
     public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
-        return switch (txn.data().kind()) {
+        return functionOf(txn.data().kind());
+    }
+
+    /**
+     * Returns the {@link HederaFunctionality} for the given transaction body kind.
+     *
+     * @param kind the transaction body kind
+     * @return the functionality
+     * @throws UnknownHederaFunctionality if the kind is {@code UNSET}
+     */
+    public static HederaFunctionality functionOf(final TransactionBody.DataOneOfType kind)
+            throws UnknownHederaFunctionality {
+        return switch (kind) {
             case ATOMIC_BATCH -> HederaFunctionality.ATOMIC_BATCH;
             case CONSENSUS_CREATE_TOPIC -> HederaFunctionality.CONSENSUS_CREATE_TOPIC;
             case CONSENSUS_UPDATE_TOPIC -> HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
@@ -258,17 +270,28 @@ public class HapiUtils {
             case CLPR_CLOSE_CHANNEL -> HederaFunctionality.CLPR_CLOSE_CHANNEL;
             case CLPR_COMPLETE_CHANNEL -> HederaFunctionality.CLPR_COMPLETE_CHANNEL;
             case CLPR_SUBMIT_BUNDLE -> HederaFunctionality.CLPR_SUBMIT_BUNDLE;
-            case CLPR_REDACT_MESSAGE -> HederaFunctionality.CLPR_REDACT_MESSAGE;
             case CLPR_REGISTER_CONNECTOR -> HederaFunctionality.CLPR_REGISTER_CONNECTOR;
             case CLPR_COMPLETE_CONNECTOR -> HederaFunctionality.CLPR_COMPLETE_CONNECTOR;
             case CLPR_DEREGISTER_CONNECTOR -> HederaFunctionality.CLPR_DEREGISTER_CONNECTOR;
             case CLPR_ENDPOINT_PUBLICATION -> HederaFunctionality.CLPR_ENDPOINT_PUBLICATION;
+            case CLPR_MAINTENANCE -> HederaFunctionality.CLPR_MAINTENANCE;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
 
     public static HederaFunctionality functionOf(final Query txn) throws UnknownHederaFunctionality {
-        return switch (txn.query().kind()) {
+        return functionOf(txn.query().kind());
+    }
+
+    /**
+     * Returns the {@link HederaFunctionality} for the given query kind.
+     *
+     * @param kind the query kind
+     * @return the functionality
+     * @throws UnknownHederaFunctionality if the kind is {@code UNSET}
+     */
+    public static HederaFunctionality functionOf(final Query.QueryOneOfType kind) throws UnknownHederaFunctionality {
+        return switch (kind) {
             case TOKEN_GET_ACCOUNT_NFT_INFOS -> HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
             case TOKEN_GET_NFT_INFOS -> HederaFunctionality.TOKEN_GET_NFT_INFOS;
             case ACCOUNT_DETAILS -> HederaFunctionality.GET_ACCOUNT_DETAILS;
