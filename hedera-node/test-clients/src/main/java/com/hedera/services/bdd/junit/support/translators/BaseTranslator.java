@@ -631,7 +631,7 @@ public class BaseTranslator {
         } else {
             receiptBuilder.exchangeRate(activeRates);
         }
-        final boolean followsUserRecord = asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
+        final boolean followsUserRecord = userTimestamp != null && asInstant(parts.consensusTimestamp()).isAfter(userTimestamp);
         if ((!followsUserRecord
                         || parts.transactionIdOrThrow().scheduled()
                         || NODE_TSS_FUNCTIONS.contains(parts.functionality()))
