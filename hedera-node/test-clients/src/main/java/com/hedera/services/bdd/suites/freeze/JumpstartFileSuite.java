@@ -447,14 +447,15 @@ class JumpstartFileSuite implements LifecycleTest {
         assertLogContains(log, "trailingBlockHashes", expectedTrailingBlockHashes.toHex());
         // trailingOutputHashes must be exactly the final four record stream running hashes (SHA-384)
         final var rh = capturedRunningHashes.get();
-        Bytes expectedOutputHashes =
-                BlockImplUtils.appendHash(Bytes.wrap(rh.nMinus3RunningHash().toByteArray()), Bytes.EMPTY, 4);
-        expectedOutputHashes =
-                BlockImplUtils.appendHash(Bytes.wrap(rh.nMinus2RunningHash().toByteArray()), expectedOutputHashes, 4);
-        expectedOutputHashes =
-                BlockImplUtils.appendHash(Bytes.wrap(rh.nMinus1RunningHash().toByteArray()), expectedOutputHashes, 4);
-        expectedOutputHashes =
-                BlockImplUtils.appendHash(Bytes.wrap(rh.runningHash().toByteArray()), expectedOutputHashes, 4);
+        // Mirror V0740's zero-fill of empty predecessor running hashes so the expected window matches (four entries).
+        Bytes expectedOutputHashes = BlockImplUtils.appendHash(
+                BlockImplUtils.fullRecordRunningHash(rh.nMinus3RunningHash()), Bytes.EMPTY, 4);
+        expectedOutputHashes = BlockImplUtils.appendHash(
+                BlockImplUtils.fullRecordRunningHash(rh.nMinus2RunningHash()), expectedOutputHashes, 4);
+        expectedOutputHashes = BlockImplUtils.appendHash(
+                BlockImplUtils.fullRecordRunningHash(rh.nMinus1RunningHash()), expectedOutputHashes, 4);
+        expectedOutputHashes = BlockImplUtils.appendHash(
+                BlockImplUtils.fullRecordRunningHash(rh.runningHash()), expectedOutputHashes, 4);
         assertLogContains(log, "trailingOutputHashes", expectedOutputHashes.toHex());
 
         // Verify the logged RunningHashes hex values match what we captured

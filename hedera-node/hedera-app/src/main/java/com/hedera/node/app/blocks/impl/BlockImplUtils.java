@@ -108,6 +108,23 @@ public class BlockImplUtils {
     }
 
     /**
+     * Returns a record-stream running hash sized to the full {@link #RECORD_HASH_SIZE}, substituting a zero-filled
+     * value for an absent (empty) predecessor hash. Used when seeding the post-cutover {@code trailingOutputHashes}:
+     * the record {@code RunningHashes} may have empty {@code n-1..n-3} slots (e.g. before four record blocks ever
+     * existed). Zero-filling them keeps the reseeded window at exactly four entries, so the post-cutover
+     * length-decode (which assumes a mixed window is exactly four entries) stays unambiguous even when the first
+     * post-cutover block produces fewer than four results. A zero predecessor reads as zeros downstream (e.g. the
+     * PRNG seed), matching existing behavior.
+     *
+     * @param runningHash a record-stream running hash, possibly empty
+     * @return the hash itself if non-empty, otherwise {@code RECORD_HASH_SIZE} zero bytes
+     */
+    public static Bytes fullRecordRunningHash(@NonNull final Bytes runningHash) {
+        requireNonNull(runningHash);
+        return runningHash.length() == 0 ? Bytes.wrap(new byte[RECORD_HASH_SIZE]) : runningHash;
+    }
+
+    /**
      * Reverses {@link #leftPadTo(Bytes, int)} for a single stored entry. If the leading {@code stored.length() -
      * realSize} bytes are all zero, the entry was a padded shorter hash and its real {@code realSize}-byte value is
      * returned; otherwise the entry is a genuine full-size hash (e.g. a pre-cutover SHA-384 record hash) and is returned

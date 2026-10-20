@@ -137,13 +137,16 @@ public class V0740BlockStreamSchema extends Schema<SemanticVersion> {
                             + fullBlockHashes.length + " bytes (need >= " + RECORD_HASH_SIZE + ")");
         }
         final Bytes lastBlockHashes = Bytes.wrap(fullBlockHashes, 0, fullBlockHashes.length - RECORD_HASH_SIZE);
+        // Zero-fill any empty predecessor running hashes so the reseeded window always holds four entries; this
+        // keeps the post-cutover length-decode unambiguous even when the first post-cutover block has <4 results.
         Bytes lastFourHashes =
-                appendHash(Bytes.wrap(runningHashes.nMinus3RunningHash().toByteArray()), Bytes.EMPTY, 4);
+                appendHash(BlockImplUtils.fullRecordRunningHash(runningHashes.nMinus3RunningHash()), Bytes.EMPTY, 4);
         lastFourHashes =
-                appendHash(Bytes.wrap(runningHashes.nMinus2RunningHash().toByteArray()), lastFourHashes, 4);
+                appendHash(BlockImplUtils.fullRecordRunningHash(runningHashes.nMinus2RunningHash()), lastFourHashes, 4);
         lastFourHashes =
-                appendHash(Bytes.wrap(runningHashes.nMinus1RunningHash().toByteArray()), lastFourHashes, 4);
-        lastFourHashes = appendHash(Bytes.wrap(runningHashes.runningHash().toByteArray()), lastFourHashes, 4);
+                appendHash(BlockImplUtils.fullRecordRunningHash(runningHashes.nMinus1RunningHash()), lastFourHashes, 4);
+        lastFourHashes =
+                appendHash(BlockImplUtils.fullRecordRunningHash(runningHashes.runningHash()), lastFourHashes, 4);
         // 2.3. Wrapped prev record block root hashes
         final List<Bytes> wrappedPrevRecordBlockRootHashes = blockInfo.wrappedIntermediatePreviousBlockRootHashes();
 
