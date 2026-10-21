@@ -495,11 +495,11 @@ public abstract class AbstractLongList<C> implements LongList {
         final long endIndex = size();
         try (final FileChannel fc = FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             writeHeader(fc);
-            // Moving the valid range beyond populated data leaves only the header to write.
             final long longsToWrite =
                     endIndex > 0 && firstIndex < endIndex ? Math.subtractExact(endIndex, firstIndex) : 0;
             final long fileLength = Math.addExact(FILE_HEADER_SIZE_V3, Math.multiplyExact(longsToWrite, Long.BYTES));
-            // Set the logical length before any writer starts. This does not reserve physical storage.
+            // Pre-size the file to reduce snapshot time by avoiding file growth during parallel writes.
+            // This sets the logical length; it does not guarantee that disk space is reserved.
             try (final RandomAccessFile sizedFile = new RandomAccessFile(file.toFile(), "rw")) {
                 sizedFile.setLength(fileLength);
             }
@@ -539,17 +539,23 @@ public abstract class AbstractLongList<C> implements LongList {
         final int chunksPerRange = activeChunkCount / taskCount;
         // Leading ranges (or tasks) that receive one extra chunk.
         final int rangesWithOneMoreChunk = activeChunkCount % taskCount;
+        // Keep the submitted tasks so we can wait for them before closing the file.
         final List<CompletableFuture<Void>> tasks = new ArrayList<>(taskCount);
 
+        // First chunk of the next writer range.
         int rangeFirstChunkInclusive = firstValidChunkIndex;
         Throwable failure = null;
         try {
             // Balanced contiguous ranges keep each writer moving forward through the file.
             for (int rangeIndex = 0; rangeIndex < taskCount; rangeIndex++) {
+                // Give the first few tasks one extra chunk when the division is uneven.
                 final int rangeChunkCount = chunksPerRange + (rangeIndex < rangesWithOneMoreChunk ? 1 : 0);
+                // This range ends where the next range begins.
                 final int rangeLastChunkExclusive = rangeFirstChunkInclusive + rangeChunkCount;
+                // Limit the first and last ranges to the actual list boundaries.
                 final long rangeStartIndex = max(firstIndex, (long) rangeFirstChunkInclusive * longsPerChunk);
                 final long rangeEndIndex = min(endIndex, (long) rangeLastChunkExclusive * longsPerChunk);
+                // The first valid list entry is stored immediately after the header.
                 final long fileOffset = FILE_HEADER_SIZE_V3 + (rangeStartIndex - firstIndex) * Long.BYTES;
                 tasks.add(CompletableFuture.runAsync(
                         () -> {
@@ -563,12 +569,14 @@ public abstract class AbstractLongList<C> implements LongList {
                 rangeFirstChunkInclusive = rangeLastChunkExclusive;
             }
         } catch (final RuntimeException | Error e) {
+            // Remember the submission failure, but still wait for writers already submitted.
             failure = e;
         }
         try {
             // Accepted writes must finish before the shared channel closes, even after a failure.
             CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new)).join();
         } catch (final CompletionException e) {
+            // Unwrap the IOException so callers receive the original checked exception.
             final Throwable writeFailure =
                     e.getCause() instanceof UncheckedIOException ioException ? ioException.getCause() : e;
             if (failure == null) {
