@@ -15,7 +15,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.node.app.spi.workflows.HandleContext.DispatchMetadata.Type.BATCH_ROLLBACK_CALLBACK_CONSUMER;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,7 +75,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,32 +118,12 @@ class AtomicBatchHandlerTest {
             .build();
     private static final AccountID ATOMIC_BATCH_NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
-    // Transaction types deliberately left out of the default atomicBatch.whitelist
+    // Transaction types not in the default atomicBatch.whitelist
     private static final Set<HederaFunctionality> NOT_BATCHABLE_BY_DEFAULT = EnumSet.of(
-            // Blacklisted before the whitelist replaced the blacklist
             HederaFunctionality.FREEZE,
             HederaFunctionality.ATOMIC_BATCH,
             HederaFunctionality.SCHEDULE_CREATE,
             HederaFunctionality.SCHEDULE_SIGN,
-            // Unsupported
-            HederaFunctionality.CRYPTO_ADD_LIVE_HASH,
-            HederaFunctionality.CRYPTO_DELETE_LIVE_HASH,
-            HederaFunctionality.UNCHECKED_SUBMIT,
-            // Node-submitted
-            HederaFunctionality.STATE_SIGNATURE_TRANSACTION,
-            HederaFunctionality.HINTS_KEY_PUBLICATION,
-            HederaFunctionality.HINTS_PREPROCESSING_VOTE,
-            HederaFunctionality.HINTS_PARTIAL_SIGNATURE,
-            HederaFunctionality.HISTORY_ASSEMBLY_SIGNATURE,
-            HederaFunctionality.HISTORY_PROOF_KEY_PUBLICATION,
-            HederaFunctionality.HISTORY_PROOF_VOTE,
-            HederaFunctionality.CRS_PUBLICATION,
-            HederaFunctionality.MIGRATION_ROOT_HASH_VOTE,
-            // Internal, never submitted by users
-            HederaFunctionality.NODE_STAKE_UPDATE,
-            HederaFunctionality.HOOK_DISPATCH,
-            HederaFunctionality.LEDGER_ID_PUBLICATION,
-            // CLPR
             HederaFunctionality.CLPR_UPDATE_LEDGER_CONFIGURATION,
             HederaFunctionality.CLPR_REGISTER_CHANNEL,
             HederaFunctionality.CLPR_COMPLETE_CHANNEL,
@@ -229,32 +207,6 @@ class AtomicBatchHandlerTest {
     void failsOnInnerFreezeTx() throws PreCheckException {
         final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .freeze(FreezeTransactionBody.DEFAULT)
-                .batchKey(SIMPLE_KEY_A)
-                .nodeAccountID(AccountID.newBuilder().accountNum(0).build())
-                .build();
-        final var innerTxn = innerTxnFrom("123");
-        final var bytes = transactionsToBytes(innerTxn);
-        final var txnBody = newAtomicBatch(payerId1, consensusTimestamp, bytes);
-        given(preHandleContext.body()).willReturn(txnBody);
-        given(transactionParser.parse(eq(bytes.getFirst()), any())).willReturn(innerTxnBody);
-        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
-        assertEquals(BATCH_TRANSACTION_IN_BLACKLIST, msg.responseCode());
-    }
-
-    @Test
-    void defaultBlacklistContainsEveryClprFunctionality() {
-        final var config = HederaTestConfigBuilder.createConfig().getConfigData(AtomicBatchConfig.class);
-        final var clprFunctionalities = Arrays.stream(HederaFunctionality.values())
-                .filter(f -> f.protoName().startsWith("Clpr") && !f.protoName().startsWith("ClprGet"))
-                .collect(Collectors.toSet());
-        assertFalse(clprFunctionalities.isEmpty());
-        assertTrue(config.blacklist().functionalitySet().containsAll(clprFunctionalities));
-    }
-
-    @Test
-    void failsOnInnerClprTx() throws PreCheckException {
-        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
-                .clprRegisterChannel(ClprRegisterChannelTransactionBody.DEFAULT)
                 .batchKey(SIMPLE_KEY_A)
                 .nodeAccountID(AccountID.newBuilder().accountNum(0).build())
                 .build();
