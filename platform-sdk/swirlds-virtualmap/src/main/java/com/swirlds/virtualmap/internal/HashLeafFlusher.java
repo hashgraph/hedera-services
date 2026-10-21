@@ -317,18 +317,9 @@ public class HashLeafFlusher {
                 running = flushTask;
                 assert running != null : "A due batch must have a running flush";
             }
-            // Waits till the given flush task is complete or cancelled (outside of the synchronized block,
-            // so other producers block the same way, and cancel() isn't blocked).
-            // Flush failures aren't reported here, they are recorded by the task itself,
-            // so callers must check them under the lock afterwards
-            try {
-                running.get();
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while waiting for a flush", e);
-            } catch (final CancellationException | ExecutionException e) {
-                // Cancelled by cancel(). ExecutionException is never thrown, since runFlush() catches everything
-            }
+            // Wait outside of the synchronized block, so other producers block the same way, and cancel()
+            // isn't blocked
+            awaitFlush(running);
         }
     }
 
