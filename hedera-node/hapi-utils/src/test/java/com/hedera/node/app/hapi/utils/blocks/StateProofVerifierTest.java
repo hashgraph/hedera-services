@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.block.stream.MerklePath;
@@ -101,6 +102,72 @@ class StateProofVerifierTest {
         final var proof = StateProof.newBuilder().paths(path).build();
 
         assertNull(StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeSkipsHashesOfUnrecognizedLength() {
+        final var path = MerklePath.newBuilder()
+                .hash(Bytes.wrap(filled(1, 20)))
+                .siblings(List.of(
+                        SiblingNode.newBuilder()
+                                .isLeft(false)
+                                .hash(Bytes.wrap(filled(2, 64)))
+                                .build(),
+                        SiblingNode.newBuilder()
+                                .isLeft(true)
+                                .hash(Bytes.wrap(filled(3, 48)))
+                                .build()))
+                .build();
+        final var proof = StateProof.newBuilder().paths(path).build();
+
+        assertEquals(DigestType.SHA_384, StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeIgnoresAnEmptyExplicitBaseHash() {
+        final var path = MerklePath.newBuilder()
+                .hash(Bytes.EMPTY)
+                .siblings(List.of(SiblingNode.newBuilder()
+                        .isLeft(false)
+                        .hash(Bytes.wrap(filled(2, 32)))
+                        .build()))
+                .build();
+        final var proof = StateProof.newBuilder().paths(path).build();
+
+        assertEquals(DigestType.SHA_256, StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeReadsLaterPathsWhenEarlierPathsCarryNoSignal() {
+        final var leafOnly = MerklePath.newBuilder()
+                .stateItemLeaf(Bytes.wrap(filled(9, 17)))
+                .siblings(List.of(
+                        SiblingNode.newBuilder().isLeft(false).hash(Bytes.EMPTY).build()))
+                .build();
+        final var withHash =
+                MerklePath.newBuilder().hash(Bytes.wrap(filled(1, 48))).build();
+        final var proof = StateProof.newBuilder().paths(leafOnly, withHash).build();
+
+        assertEquals(DigestType.SHA_384, StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeReturnsNullWhenNoHashHasARecognizedLength() {
+        final var path = MerklePath.newBuilder()
+                .hash(Bytes.wrap(filled(1, 20)))
+                .siblings(List.of(SiblingNode.newBuilder()
+                        .isLeft(false)
+                        .hash(Bytes.wrap(filled(2, 64)))
+                        .build()))
+                .build();
+        final var proof = StateProof.newBuilder().paths(path).build();
+
+        assertNull(StateProofVerifier.inferDigestType(proof));
+    }
+
+    @Test
+    void inferDigestTypeRejectsNullProof() {
+        assertThrows(NullPointerException.class, () -> StateProofVerifier.inferDigestType(null));
     }
 
     /** A path from an explicit base hash: a right sibling, then a left sibling, then a single-child level. */

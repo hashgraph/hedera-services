@@ -191,17 +191,32 @@ class ClprGetLedgerConfigurationHandlerTest {
         assertProofVerifiedUnderMismatchedConfig(DigestType.SHA_256, "SHA_384");
     }
 
-    /**
-     * Builds a proof whose hashes are {@code proofDigest}-sized, configures the node with a different digest, and
-     * asserts the sender-side self-check still returns the proof bytes. A digest-sensitive {@link TssVerifier}
-     * accepts only the block root computed with the proof's own digest, so the proof survives the check only when
-     * the handler infers the digest from the proof rather than reading {@code configuredDigestName}.
-     */
+    @Test
+    @DisplayName("falls back to the configured SHA-256 digest when the proof carries no hash-length signal")
+    void fallsBackToConfiguredSha256WhenProofHasNoHashLengthSignal() {
+        assertProofVerified(proofWithoutHashLengthSignal(), DigestType.SHA_256, "SHA_256");
+    }
+
+    @Test
+    @DisplayName("falls back to the configured SHA-384 digest when the proof carries no hash-length signal")
+    void fallsBackToConfiguredSha384WhenProofHasNoHashLengthSignal() {
+        assertProofVerified(proofWithoutHashLengthSignal(), DigestType.SHA_384, "SHA_384");
+    }
+
     private void assertProofVerifiedUnderMismatchedConfig(
             final DigestType proofDigest, final String configuredDigestName) {
-        final var proof = proofWithHashLength(proofDigest.digestLength());
+        assertProofVerified(proofWithHashLength(proofDigest.digestLength()), proofDigest, configuredDigestName);
+    }
+
+    /**
+     * Configures the node with {@code configuredDigestName} and asserts the sender-side self-check still returns
+     * the proof bytes. A digest-sensitive {@link TssVerifier} accepts only the block root computed with
+     * {@code expectedDigest}, so the proof survives the check only when the handler hashes with that digest.
+     */
+    private void assertProofVerified(
+            final StateProof proof, final DigestType expectedDigest, final String configuredDigestName) {
         final var proofBytes = StateProof.PROTOBUF.toBytes(proof);
-        final byte[] expectedRoot = StateProofVerifier.computeBlockRootHash(proof, proofDigest.buildDigest());
+        final byte[] expectedRoot = StateProofVerifier.computeBlockRootHash(proof, expectedDigest.buildDigest());
         final var ledgerId = Bytes.wrap(new byte[] {7, 7, 7, 7});
 
         final TssVerifier digestSensitiveTss = (lid, sig, root) -> Arrays.equals(root.toByteArray(), expectedRoot);
@@ -233,6 +248,20 @@ class ClprGetLedgerConfigurationHandlerTest {
                         .isLeft(false)
                         .hash(Bytes.wrap(filled(2, size)))
                         .build()))
+                .nextPathIndex(-1)
+                .build();
+        return StateProof.newBuilder()
+                .paths(path)
+                .signedBlockProof(TssSignedBlockProof.newBuilder()
+                        .blockSignature(Bytes.wrap(new byte[] {9, 9, 9, 9}))
+                        .build())
+                .build();
+    }
+
+    /** A single self-rooting state-item leaf path with no sibling hashes, so the proof's digest can't be inferred. */
+    private static StateProof proofWithoutHashLengthSignal() {
+        final var path = MerklePath.newBuilder()
+                .stateItemLeaf(Bytes.wrap(filled(3, 17)))
                 .nextPathIndex(-1)
                 .build();
         return StateProof.newBuilder()
