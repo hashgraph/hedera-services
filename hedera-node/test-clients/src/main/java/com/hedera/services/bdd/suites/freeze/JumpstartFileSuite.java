@@ -354,6 +354,14 @@ class JumpstartFileSuite implements LifecycleTest {
         assertTrue(
                 beforeSha256.contains("stride=48B"),
                 "BEFORE SHA-256 dump should show a 48-byte trailingBlockHashes stride:\n" + beforeSha256);
+        // The digest switches once (Phase 9b); the SHA-256 cutover must not log a second transition
+        assertEquals(
+                1L,
+                Pattern.compile(Pattern.quote("Trailing hashes BEFORE SHA-384 -> SHA-256 transition"))
+                        .matcher(log)
+                        .results()
+                        .count(),
+                "Expected exactly one SHA-384 -> SHA-256 transition dump");
 
         final var afterSha256 = trailingDumpSegment(log, "Trailing hashes AFTER SHA-384 -> SHA-256 transition");
         assertTrue(
