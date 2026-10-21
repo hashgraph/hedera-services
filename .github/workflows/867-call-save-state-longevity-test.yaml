@@ -1059,6 +1059,18 @@ jobs:
           sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" cp ${nlgpod}:/app/version_run.txt "${{ github.workspace }}"/report/version_run.txt
           cp -r podlog_"${{ needs.acquire-kubernetes-resources.outputs.namespace }}" "${{ github.workspace }}"/report/
 
+      - name: Freeze cleaned CNs
+        if: ${{ !cancelled() }}
+        run: |
+          set +x
+          set +e
+          #start clean, FREEZE and kill
+          nlgpod="$(sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" get pods | grep nlg-network-load-generator | awk '{print $1}')"
+
+          sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" exec ${nlgpod} -c nlg -- bash -c \
+            "/usr/bin/env java -Xmx30g -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -cp /app/lib/*:\$(ls -1 /app/network-load-generator-*.jar) com.hedera.benchmark.Freeze"
+          sleep 60
+
       - name: Copy CN state
         run: |
           kubectl -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" exec -it network-node1-0 -c root-container -- bash -c \
