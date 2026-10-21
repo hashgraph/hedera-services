@@ -51,9 +51,6 @@ public final class VirtualHasher {
 
     private final ForkJoinPool hashingPool;
 
-    private final boolean useSha256MessageDigest;
-    private final boolean useSha384MessageDigest;
-
     /**
      * Pre-loads virtual hash chunks by chunk paths.
      */
@@ -87,8 +84,6 @@ public final class VirtualHasher {
                         (_, e) -> logger.error(
                                 EXCEPTION.getMarker(), "Virtual hasher thread terminated with exception", e))
                 .createForkJoinPool(virtualMapConfig.getNumHashThreads());
-        useSha256MessageDigest = Cryptography.DEFAULT_DIGEST_TYPE == DigestType.SHA_256;
-        useSha384MessageDigest = Cryptography.DEFAULT_DIGEST_TYPE == DigestType.SHA_384;
     }
 
     /**
@@ -642,12 +637,10 @@ public final class VirtualHasher {
     }
 
     private WritableMessageDigest getWritableMessageDigest() {
-        if (useSha256MessageDigest) {
-            return ThreadLocalStorage.getWritableMessageDigest256();
-        } else if (useSha384MessageDigest) {
-            return ThreadLocalStorage.getWritableMessageDigest384();
-        } else {
-            throw new IllegalStateException("Only SHA-256 and SHA-384 are supported");
-        }
+        return switch (Cryptography.DEFAULT_DIGEST_TYPE) {
+            case DigestType.SHA_256 -> ThreadLocalStorage.getWritableMessageDigest256();
+            case DigestType.SHA_384 -> ThreadLocalStorage.getWritableMessageDigest384();
+            default -> throw new IllegalStateException("Only SHA-256 and SHA-384 are supported");
+        };
     }
 }

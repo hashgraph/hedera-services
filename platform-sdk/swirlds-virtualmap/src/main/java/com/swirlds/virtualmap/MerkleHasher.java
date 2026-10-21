@@ -11,9 +11,9 @@ import org.hiero.base.crypto.Cryptography;
 import org.hiero.base.crypto.DigestType;
 import org.hiero.base.crypto.Hash;
 
-///
-/// A set of utility methods to compute Merkle hashes for a virtual map.
-///
+/**
+ * A set of utility methods to compute Merkle hashes for a virtual map.
+ */
 public final class MerkleHasher {
 
     private MerkleHasher() {}

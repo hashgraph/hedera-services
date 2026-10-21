@@ -25,14 +25,14 @@ public class DefaultForkJoinWorkerThread extends ForkJoinWorkerThread {
     private final Runnable onStartup;
 
     ///
-    /// Thread local field for SHA-256 message digest to avoid {@link ThreadLocal} lookups,
+    /// A local field for SHA-256 message digest to avoid {@link ThreadLocal} lookups,
     /// which may be expensive sometimes. This field is coupled with {@link
     /// #localWritableMessageDigest256}, so all bytes written to one of them is visible in
     /// the other.
     ///
     private MessageDigest localMessageDigest256;
     ///
-    /// Thread local field for SHA-256 writable message digest wrapped over the SHA-256
+    /// A local field for SHA-256 writable message digest wrapped over the SHA-256
     /// message digest above.
     ///
     private WritableMessageDigest localWritableMessageDigest256;

@@ -22,7 +22,7 @@ public class ThreadLocalStorageTest {
         Assertions.assertNotNull(digest);
         final MessageDigest digest256 = ThreadLocalStorage.getMessageDigest256();
         Assertions.assertNotNull(digest256);
-        Assertions.assertEquals(digest, digest256);
+        Assertions.assertSame(digest, digest256);
     }
 
     @Test
@@ -31,7 +31,7 @@ public class ThreadLocalStorageTest {
         Assertions.assertNotNull(digest);
         final MessageDigest digest384 = ThreadLocalStorage.getMessageDigest384();
         Assertions.assertNotNull(digest384);
-        Assertions.assertEquals(digest, digest384);
+        Assertions.assertSame(digest, digest384);
     }
 
     @Test

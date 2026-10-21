@@ -14,6 +14,10 @@ import org.hiero.base.concurrent.internal.DefaultForkJoinWorkerThread;
 /// is faster than {@link ThreadLocal} lookups, which are used, when the current thread is of
 /// a different type.
 ///
+/// All methods in this class are thread safe, they return objects specific to the calling
+/// thread. Same method called in different threads will return different objects, similar to
+/// how {@link ThreadLocal} works.
+///
 public final class ThreadLocalStorage {
 
     private static final ThreadLocal<MessageDigest> TLS_MESSAGE_DIGEST_SHA_256 = new ThreadLocal<>();
@@ -24,6 +28,17 @@ public final class ThreadLocalStorage {
 
     private ThreadLocalStorage() {}
 
+    ///
+    /// Get a thread local message digest for a given algorithm name. Currently, only
+    /// SHA-256 and SHA-384 are supported, support for more algorithms may be added.
+    ///
+    /// The message digest returned by this method is coupled with the writable message
+    /// digest returned by {@link #getWritableMessageDigest(String)} on the same thread.
+    /// All bytes written to one of them are visible in the other.
+    ///
+    /// @param algorithm message digest algorithm name, SHA-256 or SHA-384
+    /// @return message digest that is local to the current thread
+    ///
     public static MessageDigest getMessageDigest(final String algorithm) {
         return switch (algorithm) {
             case "SHA-256" -> getMessageDigest256();
@@ -43,7 +58,7 @@ public final class ThreadLocalStorage {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
             return dfjThread.getThreadLocalMessageDigest256();
         } else {
-            return getMessageDigestFromTLS("SHA-256", TLS_MESSAGE_DIGEST_SHA_256, TLS_WRITABLE_MESSAGE_DIGEST_SHA_256);
+            return getMessageDigestFromTL("SHA-256", TLS_MESSAGE_DIGEST_SHA_256, TLS_WRITABLE_MESSAGE_DIGEST_SHA_256);
         }
     }
 
@@ -54,15 +69,16 @@ public final class ThreadLocalStorage {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
             return dfjThread.getThreadLocalMessageDigest384();
         } else {
-            return getMessageDigestFromTLS("SHA-384", TLS_MESSAGE_DIGEST_SHA_384, TLS_WRITABLE_MESSAGE_DIGEST_SHA_384);
+            return getMessageDigestFromTL("SHA-384", TLS_MESSAGE_DIGEST_SHA_384, TLS_WRITABLE_MESSAGE_DIGEST_SHA_384);
         }
     }
 
     ///
-    /// Get a message digest from thread local storage, either the current thread or a
-    /// {@link ThreadLocal}. If the message digest is null, it gets initialized first.
+    /// Get a message digest from the provided {@link ThreadLocal}. If the message digest
+    /// is null, it gets initialized first. The corresponding coupled writable message digest
+    /// is initialized, too.
     ///
-    private static MessageDigest getMessageDigestFromTLS(
+    private static MessageDigest getMessageDigestFromTL(
             final String algorithm,
             final ThreadLocal<MessageDigest> tlsMD,
             final ThreadLocal<WritableMessageDigest> tlsWMD) {
@@ -74,6 +90,17 @@ public final class ThreadLocalStorage {
         return md;
     }
 
+    ///
+    /// Get a thread local writable message digest for a given algorithm name. Currently,
+    /// only SHA-256 and SHA-384 are supported, support for more algorithms may be added.
+    ///
+    /// The writable message digest returned by this method is coupled with the writable
+    /// message digest returned by {@link #getMessageDigest(String)} on the same thread.
+    /// All bytes written to one of them are visible in the other.
+    ///
+    /// @param algorithm message digest algorithm name, SHA-256 or SHA-384
+    /// @return writable message digest that is local to the current thread
+    ///
     public static WritableMessageDigest getWritableMessageDigest(final String algorithm) {
         return switch (algorithm) {
             case "SHA-256" -> getWritableMessageDigest256();
@@ -93,7 +120,7 @@ public final class ThreadLocalStorage {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
             return dfjThread.getThreadLocalWritableMessageDigest256();
         } else {
-            return getWritableMessageDigestFromTLS(
+            return getWritableMessageDigestFromTL(
                     "SHA-256", TLS_MESSAGE_DIGEST_SHA_256, TLS_WRITABLE_MESSAGE_DIGEST_SHA_256);
         }
     }
@@ -105,7 +132,7 @@ public final class ThreadLocalStorage {
         if (Thread.currentThread() instanceof DefaultForkJoinWorkerThread dfjThread) {
             return dfjThread.getThreadLocalWritableMessageDigest384();
         } else {
-            return getWritableMessageDigestFromTLS(
+            return getWritableMessageDigestFromTL(
                     "SHA-384", TLS_MESSAGE_DIGEST_SHA_384, TLS_WRITABLE_MESSAGE_DIGEST_SHA_384);
         }
     }
@@ -114,7 +141,7 @@ public final class ThreadLocalStorage {
     /// Get a writable message digest from thread local storage, either the current thread
     /// or a {@link ThreadLocal}. If the message digest is null, it gets initialized first.
     ///
-    private static WritableMessageDigest getWritableMessageDigestFromTLS(
+    private static WritableMessageDigest getWritableMessageDigestFromTL(
             final String algorithm,
             final ThreadLocal<MessageDigest> tlsMD,
             final ThreadLocal<WritableMessageDigest> tlsWMD) {
