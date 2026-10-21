@@ -60,10 +60,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     private static final String CLOSE_CHANNEL_DISABLED_REASON =
             "Disabled: §4.2 step 5b close handshake collapses; peer stuck";
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("One-way: message from ledger A arrives on ledger B")
     Stream<DynamicTest> oneWayDelivery(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
@@ -94,10 +91,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                         awaitAckedMessage(ledgerA, crypto.channelId, 1)));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Round-trip: SourceApplication on A receives onClprResponse callback with EchoApplication's payload")
     Stream<DynamicTest> fullRoundTrip(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
@@ -186,10 +180,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                                 .orElseThrow()));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Multi-message: five sequential messages from ledger A arrive on ledger B")
     Stream<DynamicTest> multipleSequentialMessages(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         final var crypto = new ClprCrypto();
@@ -227,10 +218,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     }
 
     @Disabled(CLOSE_CHANNEL_DISABLED_REASON)
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Send rejected after admin close: post-close sendMessage on A reverts")
     Stream<DynamicTest> sendRejectedAfterClose(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         // After clprCloseChannel, the local channel is no longer ACTIVE (CLOSING / DRAINED).
@@ -266,10 +254,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     }
 
     @Disabled(CLOSE_CHANNEL_DISABLED_REASON)
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Close handshake from ACTIVE: A→CLOSING propagates to B via drain handshake")
     Stream<DynamicTest> closeChannelDrainHandshakeFromActive(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -317,10 +302,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                         awaitChannelNonActive(ledgerB, crypto)));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Regression: bidirectional concurrent traffic does not deadlock on replay overlap")
     Stream<DynamicTest> bidirectionalConcurrentTraffic(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -429,10 +411,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                         awaitAckedMessage(ledgerB, crypto.channelId, messagesPerSide)));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Regression: multi-message bundle round-trip preserves every reply slot")
     Stream<DynamicTest> multiMessageBundleRoundTrip(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         // Regression for the multi-message OutboundQueue fix. Under a single-direction burst,
@@ -482,10 +461,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     }
 
     @Disabled(CLOSE_CHANNEL_DISABLED_REASON)
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Regression: in-flight bundle round-trips cleanly while channel is closing")
     Stream<DynamicTest> bundleRoundTripDuringCloseHandshake(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -540,10 +516,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                         awaitChannelNonActive(ledgerB, crypto)));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Bundle at exactly maxMessagesPerBundle: 9 messages across multiple capped bundles all delivered")
     Stream<DynamicTest> bundleAtMaxMessagesPerBundle(final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
         // Probes the boundary check at ClprSubmitBundleHandler step 4:
@@ -585,12 +558,8 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     @MultiNetworkHapiTest({
         @Network(
                 name = "ledgerA",
-                firstGrpcPort = 35400,
                 setupOverrides = @ConfigOverride(key = "clpr.connectorQueueQuotaPct", value = "100")),
-        @Network(
-                name = "ledgerB",
-                firstGrpcPort = 36400,
-                setupOverrides = @ConfigOverride(key = "clpr.connectorQueueQuotaPct", value = "100"))
+        @Network(name = "ledgerB", setupOverrides = @ConfigOverride(key = "clpr.connectorQueueQuotaPct", value = "100"))
     })
     @DisplayName("Multi-message round-trip with tight maxQueueDepth — sender + reply enqueue both respect the cap")
     Stream<DynamicTest> roundTripUnderTightMaxQueueDepth(
@@ -636,10 +605,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
     }
 
     @Disabled(CLOSE_CHANNEL_DISABLED_REASON)
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Close while multi-message bundle is in flight: 5 messages drain cleanly to non-ACTIVE")
     Stream<DynamicTest> closeWhileMultiMessageBundleInFlight(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {
@@ -685,10 +651,7 @@ public class ClprHieroToHieroSuite extends HieroToHieroBase {
                         awaitChannelNonActive(ledgerB, crypto)));
     }
 
-    @MultiNetworkHapiTest({
-        @Network(value = "ledgerA", firstGrpcPort = 35400),
-        @Network(value = "ledgerB", firstGrpcPort = 36400)
-    })
+    @MultiNetworkHapiTest({@Network("ledgerA"), @Network("ledgerB")})
     @DisplayName("Config update mid-stream: bump maxMessagesPerBundle; bundles after the update ship larger")
     Stream<DynamicTest> configUpdateMidStreamBumpsBundleCap(
             final SubProcessNetwork ledgerA, final SubProcessNetwork ledgerB) {

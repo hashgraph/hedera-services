@@ -3,7 +3,6 @@ package org.hiero.otter.fixtures.network.simulation;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hiero.consensus.model.node.NodeId;
@@ -31,7 +30,7 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
      * @param connected reports whether the connection from a sender to a receiver is currently up
      */
     public InFlightEventWindows(@NonNull final BiPredicate<NodeId, NodeId> connected) {
-        super(connected, "event window");
+        super(connected);
     }
 
     /**
@@ -47,10 +46,10 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
      */
     public void deliverArrived(@NonNull final Instant now, @NonNull final EventReceiver receiver) {
         final NodeId receiverId = receiver.getNodeId();
-        final Map<NodeId, ArrayDeque<EventWindowInTransit>> incomingConnections = incomingConnections(receiverId);
+        final Map<NodeId, InFlightQueue<EventWindowInTransit>> incomingConnections = incomingConnections(receiverId);
 
         for (final NodeId sender : sortedNodeIds()) {
-            final ArrayDeque<EventWindowInTransit> connection = incomingConnections.get(sender);
+            final InFlightQueue<EventWindowInTransit> connection = incomingConnections.get(sender);
             if (connection == null) {
                 // the receiver is the sender, so there is no connection
                 continue;
@@ -60,16 +59,14 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
                 continue;
             }
 
-            // Find the newest window that has arrived. The ones before it are superseded, but they are only discarded
-            // once the newest has actually been accepted.
-            int arrivedCount = 0;
+            // Take the newest window that has arrived, which supersedes the ones taken before it. If the receiver
+            // refuses it, it goes back, and the superseded windows stay discarded since the newest still supersedes
+            // them.
             EventWindowInTransit newestArrived = null;
-            for (final EventWindowInTransit candidate : connection) {
-                if (candidate.arrivalTime().isAfter(now)) {
-                    break;
-                }
-                newestArrived = candidate;
-                arrivedCount++;
+            for (EventWindowInTransit head = connection.peek();
+                    head != null && !head.arrivalTime().isAfter(now);
+                    head = connection.peek()) {
+                newestArrived = connection.poll();
             }
 
             if (newestArrived == null) {
@@ -78,11 +75,8 @@ public class InFlightEventWindows extends InFlightConnections<EventWindowInTrans
             }
 
             if (!receiver.receiveEventWindow(sender, newestArrived.eventWindow())) {
+                connection.add(newestArrived);
                 return;
-            }
-
-            for (int i = 0; i < arrivedCount; i++) {
-                connection.pollFirst();
             }
         }
     }

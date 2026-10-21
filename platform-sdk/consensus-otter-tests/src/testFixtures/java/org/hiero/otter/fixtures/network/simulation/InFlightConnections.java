@@ -5,7 +5,6 @@ import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,8 +18,8 @@ import org.hiero.consensus.model.node.NodeId;
  * connection. This is the storage that {@link InFlightEvents} and {@link InFlightEventWindows} share; how the queues are
  * drained into a receiver is up to each of them.
  *
- * <p>Each connection's queue is kept in arrival order, which {@link #add(NodeId, InTransit)} enforces rather than
- * arranges. Subclasses rely on that when they deliver.
+ * <p>Each connection's queue is an {@link InFlightQueue}, which hands out what it holds in arrival
+ * order. Subclasses rely on that when they deliver.
  *
  * <p>This class is not safe to use from more than one thread.
  *
@@ -38,7 +37,7 @@ abstract class InFlightConnections<T extends InTransit> {
      * What is in flight, keyed by the node that will receive it and then by the node that sent it. A node does not send
      * to itself, so a node's map holds no queue for itself.
      */
-    private final Map<NodeId, Map<NodeId, ArrayDeque<T>>> connectionsByReceiver = new HashMap<>();
+    private final Map<NodeId, Map<NodeId, InFlightQueue<T>>> connectionsByReceiver = new HashMap<>();
 
     /**
      * Every node, in node id order. Delivery walks the senders in this order so that what arrives at the same instant
@@ -52,19 +51,12 @@ abstract class InFlightConnections<T extends InTransit> {
     private final List<NodeId> sortedNodeIdsView = Collections.unmodifiableList(sortedNodeIds);
 
     /**
-     * What an item is called in the message when it is added out of order, e.g. "event window".
-     */
-    private final String itemName;
-
-    /**
      * Constructor.
      *
-     * @param connected         reports whether the connection from a sender to a receiver is currently up
-     * @param itemName          what an item is called in the message when it is added out of order
+     * @param connected reports whether the connection from a sender to a receiver is currently up
      */
-    InFlightConnections(@NonNull final BiPredicate<NodeId, NodeId> connected, @NonNull final String itemName) {
+    InFlightConnections(@NonNull final BiPredicate<NodeId, NodeId> connected) {
         this.connected = requireNonNull(connected);
-        this.itemName = requireNonNull(itemName);
     }
 
     /**
@@ -73,10 +65,10 @@ abstract class InFlightConnections<T extends InTransit> {
      * @param newNodeId the id of the node to add
      */
     public void addNode(@NonNull final NodeId newNodeId) {
-        final Map<NodeId, ArrayDeque<T>> incomingConnections = new HashMap<>();
+        final Map<NodeId, InFlightQueue<T>> incomingConnections = new HashMap<>();
         for (final NodeId existingNodeId : sortedNodeIds) {
-            incomingConnections.put(existingNodeId, new ArrayDeque<>());
-            connectionsByReceiver.get(existingNodeId).put(newNodeId, new ArrayDeque<>());
+            incomingConnections.put(existingNodeId, new InFlightQueue<>());
+            connectionsByReceiver.get(existingNodeId).put(newNodeId, new InFlightQueue<>());
         }
         connectionsByReceiver.put(newNodeId, incomingConnections);
 
@@ -87,31 +79,11 @@ abstract class InFlightConnections<T extends InTransit> {
     /**
      * Adds something that should be delivered to a receiver in the future.
      *
-     * <p>It must not have an arrival time before the item added most recently for the same connection. Delivery relies
-     * on each connection's queue being in arrival order, and appending is the only thing that puts it in that order.
-     *
      * @param receiver the node the item is traveling to
      * @param item     the item, carrying the node that sent it and the time it arrives
-     * @throws IllegalArgumentException if the item arrives before the one added most recently for the same connection
      */
     public void add(@NonNull final NodeId receiver, @NonNull final T item) {
-        final ArrayDeque<T> connection = connectionsByReceiver.get(receiver).get(item.sender());
-
-        final T previous = connection.peekLast();
-        if (previous != null && item.arrivalTime().isBefore(previous.arrivalTime())) {
-            throw new IllegalArgumentException(
-                    ("The %s sent from %s to %s arrives at %s, which is before the %s ahead of it on that "
-                                    + "connection arrives at %s. They would be delivered out of order.")
-                            .formatted(
-                                    itemName,
-                                    item.sender(),
-                                    receiver,
-                                    item.arrivalTime(),
-                                    itemName,
-                                    previous.arrivalTime()));
-        }
-
-        connection.addLast(item);
+        connectionsByReceiver.get(receiver).get(item.sender()).add(item);
     }
 
     /**
@@ -121,7 +93,7 @@ abstract class InFlightConnections<T extends InTransit> {
      * @param receiverId the node whose incoming items should be discarded
      */
     public void clearIncoming(@NonNull final NodeId receiverId) {
-        connectionsByReceiver.get(receiverId).values().forEach(ArrayDeque::clear);
+        connectionsByReceiver.get(receiverId).values().forEach(InFlightQueue::clear);
     }
 
     /**
@@ -139,7 +111,7 @@ abstract class InFlightConnections<T extends InTransit> {
      * @return the queue of each incoming connection, which the caller may drain
      */
     @NonNull
-    final Map<NodeId, ArrayDeque<T>> incomingConnections(@NonNull final NodeId receiverId) {
+    final Map<NodeId, InFlightQueue<T>> incomingConnections(@NonNull final NodeId receiverId) {
         return connectionsByReceiver.get(receiverId);
     }
 
