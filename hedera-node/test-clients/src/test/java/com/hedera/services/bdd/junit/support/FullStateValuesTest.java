@@ -123,11 +123,54 @@ class FullStateValuesTest {
                 .hasMessageContaining("Cannot reconstruct full block state values");
     }
 
+    @Test
+    void replaysArchivedPrefixBeforeActiveDeltasEvenWhenCutoverResetsBlockNumbers() throws Exception {
+        final var active = Files.createDirectories(dir.resolve("blockStreams/block-0.0.3"));
+        final var archive = Files.createDirectories(dir.resolve("blockStreams-preview-archive/block-0.0.3"));
+        written(archive, block(0, full(FIRST)));
+        written(archive, block(1, null));
+        // The preview stream ran ahead of the record stream before cutover reset numbering.
+        written(archive, block(2, full(SECOND)));
+        final var firstActive = written(active, block(1, partial(SECOND, THIRD)));
+        final var subject = new FullStateValues();
+        assertThat(accountIn(subject.expand(active, firstActive))).isEqualTo(full(THIRD));
+        assertThat(accountIn(subject.expand(active, written(active, block(2, partial(THIRD, FIRST))))))
+                .isEqualTo(full(FIRST));
+    }
+
+    @Test
+    void archiveDoesNotHideAGapInTheActiveHistory() throws Exception {
+        final var active = Files.createDirectories(dir.resolve("blockStreams/block-0.0.3"));
+        final var archive = Files.createDirectories(dir.resolve("blockStreams-preview-archive/block-0.0.3"));
+        written(archive, block(0, full(FIRST)));
+        written(active, block(1, null));
+        final var later = written(active, block(3, partial(FIRST, SECOND)));
+        assertThatThrownBy(() -> new FullStateValues().expand(active, later))
+                .hasRootCauseMessage("Blocks #1 to #2 are incomplete in " + active);
+    }
+
+    @Test
+    void gapInArchiveFailsBeforeExpandingTheActiveSuffix() throws Exception {
+        final var active = Files.createDirectories(dir.resolve("blockStreams/block-0.0.3"));
+        final var archive = Files.createDirectories(dir.resolve("blockStreams-preview-archive/block-0.0.3"));
+        written(archive, block(0, full(FIRST)));
+        written(archive, block(2, full(SECOND)));
+        final var partial = written(active, block(3, partial(SECOND, THIRD)));
+        assertThatThrownBy(() -> new FullStateValues().expand(active, partial))
+                .hasRootCauseMessage("Blocks #0 to #2 are incomplete in " + archive);
+    }
+
     private Block written(final Block block) throws Exception {
+        return written(dir, block);
+    }
+
+    private Block written(final Path destination, final Block block) throws Exception {
         final var name = String.format(
                 "%036d", block.items().getFirst().blockHeaderOrThrow().number());
-        Files.write(dir.resolve(name + ".blk"), Block.PROTOBUF.toBytes(block).toByteArray());
-        Files.createFile(dir.resolve(name + ".mf"));
+        Files.write(
+                destination.resolve(name + ".blk"),
+                Block.PROTOBUF.toBytes(block).toByteArray());
+        Files.createFile(destination.resolve(name + ".mf"));
         return block;
     }
 

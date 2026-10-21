@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-package com.hedera.services.bdd.junit.support.validators.block;
+package com.hedera.node.app.hapi.utils.blocks;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateIdentifier;
 import com.hedera.hapi.block.stream.output.schema.SingletonUpdateChangeSchema;
-import com.hedera.node.app.hapi.utils.blocks.StateChangeDeltas;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -22,16 +25,17 @@ import java.util.ArrayList;
  * {@link BinaryState} methods, which handle key composition, value wrapping, and queue state management
  * internally.
  */
-final class BinaryStateChangeParser {
+public final class BinaryStateChangeParser {
     private BinaryStateChangeParser() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    static void applyStateChanges(@NonNull final BinaryState binaryState, @NonNull final Bytes stateChangesBytes) {
+    public static void applyStateChanges(
+            @NonNull final BinaryState binaryState, @NonNull final Bytes stateChangesBytes) {
         applyStateChanges(binaryState, stateChangesBytes, null);
     }
 
-    static void applyStateChanges(
+    public static void applyStateChanges(
             @NonNull final BinaryState binaryState,
             @NonNull final Bytes stateChangesBytes,
             @Nullable final BinaryStateChangeSummary stateChangesSummary) {
@@ -181,7 +185,7 @@ final class BinaryStateChangeParser {
                 case 10 -> {
                     final int messageLength = input.readVarInt(false);
                     if (messageLength > 0) {
-                        rawKey = readMapKeyPayload(input, input.position() + messageLength);
+                        rawKey = readMapKeyPayload(stateId, input, input.position() + messageLength);
                     }
                 }
                 // value: field 2, message => (2 << 3) | 2 = 18
@@ -258,7 +262,7 @@ final class BinaryStateChangeParser {
                 case 10 -> {
                     final int messageLength = input.readVarInt(false);
                     if (messageLength > 0) {
-                        rawKey = readMapKeyPayload(input, input.position() + messageLength);
+                        rawKey = readMapKeyPayload(stateId, input, input.position() + messageLength);
                     }
                 }
                 default -> skipField(input, tag);
@@ -307,12 +311,15 @@ final class BinaryStateChangeParser {
      * Token relationship keys are the important exception: block stream uses TokenAssociation while state stores
      * EntityIDPair, whose field ordering is different.
      */
-    private static Bytes readMapKeyPayload(@NonNull final ReadableSequentialData input, final long endPosition) {
+    private static Bytes readMapKeyPayload(
+            final int stateId, @NonNull final ReadableSequentialData input, final long endPosition) {
         Bytes payload = null;
+        int fieldNumber = -1;
         while (input.position() < endPosition) {
             final int tag = input.readVarInt(false);
             final var wireType = ProtoConstants.get(tag & ProtoConstants.TAG_WIRE_TYPE_MASK);
             if (payload == null && wireType == ProtoConstants.WIRE_TYPE_DELIMITED) {
+                fieldNumber = tag >>> 3;
                 final int length = input.readVarInt(false);
                 payload = input.readBytes(length);
             } else {
@@ -321,6 +328,14 @@ final class BinaryStateChangeParser {
         }
         if (payload == null) {
             throw new IllegalStateException("MapChangeKey payload missing");
+        }
+        if (stateId == StateIdentifier.STATE_ID_TOKEN_RELS.protoOrdinal() && fieldNumber == 2) {
+            try {
+                final var association = TokenAssociation.PROTOBUF.parse(payload);
+                return EntityIDPair.PROTOBUF.toBytes(new EntityIDPair(association.accountId(), association.tokenId()));
+            } catch (ParseException e) {
+                throw new IllegalStateException("Failed to normalize token relationship key", e);
+            }
         }
         return payload;
     }

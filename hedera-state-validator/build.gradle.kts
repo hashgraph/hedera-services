@@ -8,3 +8,5 @@ plugins {
 mainModuleInfo { runtimeOnly("org.junit.jupiter.engine") }
 
 application.mainClass = "com.hedera.statevalidation.StateOperatorCommand"
+
+testModuleInfo { requires("org.junit.jupiter.api") }

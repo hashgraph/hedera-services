@@ -14,6 +14,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.ServicesMain;
+import com.hedera.node.app.hapi.utils.blocks.BinaryStateChangeParser;
+import com.hedera.node.app.hapi.utils.blocks.BinaryStateChangeSummary;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;

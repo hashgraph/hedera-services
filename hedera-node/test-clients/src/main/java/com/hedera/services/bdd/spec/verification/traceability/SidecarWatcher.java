@@ -18,6 +18,7 @@ import com.hedera.node.app.hapi.utils.blocks.StateChangeReconstructor;
 import com.hedera.services.bdd.junit.hedera.BlockNodeNetwork;
 import com.hedera.services.bdd.junit.hedera.BlockNodeReader;
 import com.hedera.services.bdd.junit.support.BlockSourceFactory;
+import com.hedera.services.bdd.junit.support.FullStateValues;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.junit.support.StreamFileAccess;
 import com.hedera.services.bdd.junit.support.translators.BlockTransactionalUnitTranslator;
@@ -429,13 +430,18 @@ public class SidecarWatcher {
     }
 
     /** Expands partial state changes for translation, failing if a complete baseline is unavailable. */
-    private List<Block> withFullStateValues(@NonNull final List<Block> blocks) {
+    List<Block> withFullStateValues(@NonNull final List<Block> blocks) {
         if (blocks.stream().noneMatch(StateChangeDeltas::hasPartialUpdates)) {
             return blocks;
         }
         final var reconstructor = new StateChangeReconstructor();
+        final var diskValues = new FullStateValues();
         try {
-            return blocks.stream().map(reconstructor::fullValuesForTranslation).toList();
+            return blocks.stream()
+                    .map(block -> blockNodeNetwork == null
+                            ? diskValues.expand(java.util.Objects.requireNonNull(blockStreamPath), block)
+                            : reconstructor.fullValuesForTranslation(block))
+                    .toList();
         } catch (final RuntimeException e) {
             blockStreamFailure.compareAndSet(null, e);
             ensureUnsubscribed();

@@ -25,7 +25,7 @@ import org.apache.logging.log4j.Logger;
  * blocks before it from the stream's source; later gaps are filled the same way. An expansion failure is terminal
  * and must be surfaced to consumers; sparse values must never be presented as complete state.
  */
-final class FullStateValues {
+public final class FullStateValues {
     private static final Logger log = LogManager.getLogger(FullStateValues.class);
 
     /** Loads the completed blocks of a stream. */
@@ -50,9 +50,22 @@ final class FullStateValues {
      * Returns the block with every partial update replaced by its full value, or the block itself when nothing
      * needs expanding. Throws if a complete baseline cannot be recovered. The result must not be used to verify proofs.
      */
-    synchronized Block expand(@NonNull final Path blockDir, @NonNull final Block block) {
+    public synchronized Block expand(@NonNull final Path blockDir, @NonNull final Block block) {
         requireNonNull(blockDir);
-        return expand(blockDir.toString(), (from, to) -> completedBlocks(blockDir, from, to), block);
+        return expand(
+                blockDir.toString(),
+                (from, to) -> {
+                    final var earlier = new java.util.ArrayList<Block>();
+                    if (from < 0) {
+                        final var archive = previewArchiveFor(blockDir);
+                        if (Files.isDirectory(archive)) {
+                            earlier.addAll(completedBlocks(archive, -1, -1));
+                        }
+                    }
+                    earlier.addAll(completedBlocks(blockDir, from, to));
+                    return earlier;
+                },
+                block);
     }
 
     /**
@@ -89,6 +102,20 @@ final class FullStateValues {
         }
     }
 
+    /**
+     * Cutover archives the configured stream root, retaining its per-node subdirectories. Replay the archive
+     * as a separate prefix: preview block numbers can exceed the first active number after cutover resets
+     * numbering to the record stream. Sorting both layers together would discard or reorder real updates.
+     */
+    private static Path previewArchiveFor(final Path dir) {
+        final var parent = dir.getParent();
+        if (dir.getFileName().toString().startsWith("block-") && parent != null) {
+            return parent.resolveSibling(parent.getFileName() + "-preview-archive")
+                    .resolve(dir.getFileName());
+        }
+        return dir.resolveSibling(dir.getFileName() + "-preview-archive");
+    }
+
     /** The completed blocks numbered from {@code from} (or the first on disk, if negative) up to {@code to}. */
     private static List<Block> completedBlocks(@NonNull final Path dir, final long from, final long to) {
         // One file per block number, preferring a finished block file over a pending one
@@ -97,19 +124,20 @@ final class FullStateValues {
             files.filter(path -> BlockStreamAccess.isBlockFile(path, true)).forEach(path -> {
                 final long number = BlockStreamAccess.extractBlockNumber(path);
                 if (number >= from
-                        && number < to
+                        && (to < 0 || number < to)
                         && !path.getFileName().toString().contains(".pnd")) {
                     paths.put(number, path);
-                } else if (number >= from && number < to) {
+                } else if (number >= from && (to < 0 || number < to)) {
                     paths.putIfAbsent(number, path);
                 }
             });
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-        final long first = from >= 0 ? from : paths.isEmpty() ? to : paths.firstKey();
-        if (to - first != paths.size()) {
-            throw new IllegalStateException("Blocks #" + first + " to #" + (to - 1) + " are incomplete in " + dir);
+        final long end = to >= 0 ? to : paths.isEmpty() ? 0 : paths.lastKey() + 1;
+        final long first = from >= 0 ? from : paths.isEmpty() ? end : paths.firstKey();
+        if (end - first != paths.size()) {
+            throw new IllegalStateException("Blocks #" + first + " to #" + (end - 1) + " are incomplete in " + dir);
         }
         return paths.values().stream().map(BlockStreamAccess::blockFrom).toList();
     }
