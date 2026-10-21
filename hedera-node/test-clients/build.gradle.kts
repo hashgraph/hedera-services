@@ -84,6 +84,18 @@ mainModuleInfo {
 
 sourceSets { create("rcdiff") }
 
+val unitTest =
+    tasks.register<Test>("unitTest") {
+        description = "Runs the test-client unit tests from src/test."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
+        useJUnitPlatform()
+    }
+
+// The default test task runs HAPI suites from src/main; keep unit tests in its verification path.
+tasks.test { dependsOn(unitTest) }
+
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
 tasks.register<JavaExec>("runTestClient") {
