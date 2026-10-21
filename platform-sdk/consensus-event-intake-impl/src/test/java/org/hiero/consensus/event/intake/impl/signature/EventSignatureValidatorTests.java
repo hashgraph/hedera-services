@@ -157,10 +157,10 @@ class EventSignatureValidatorTests {
         final EventSignatureValidator validator =
                 new DefaultEventSignatureValidator(metrics, time, trueVerifier, rh, intakeEventCounter);
 
-        final NodeId nodeId = NodeId.of(88);
-
-        final PlatformEvent event =
-                new TestingEventBuilder(random).setCreatorId(nodeId).build();
+        final PlatformEvent event = new TestingEventBuilder(random)
+                .setCreatorId(ACTIVE_ROSTER_NODE_ID)
+                .setBirthRound(ACTIVE_ROSTER_ROUND)
+                .build();
 
         assertNull(validator.validateSignature(event));
         assertEquals(1, exitedIntakePipelineCount.get());

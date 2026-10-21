@@ -284,6 +284,23 @@ class EventIntakeProcessorTests {
     }
 
     @Test
+    @DisplayName("Node without a usable certificate in the applicable roster")
+    void missingPublicKey() {
+        final RosterWrapperHistory rh = buildRosterHistory(
+                PREVIOUS_ROSTER_ROUND, ACTIVE_ROSTER_ROUND, id -> new RosterEntry(id.id(), 10, null, List.of()));
+        final EventIntakeProcessor processor = new ConcurrentEventIntakeProcessor(
+                metrics, time, eventHasher, passingValidator, trueVerifierFactory, rh, intakeEventCounter, null);
+
+        final PlatformEvent event = new TestingEventBuilder(random)
+                .setCreatorId(ACTIVE_ROSTER_NODE_ID)
+                .setBirthRound(ACTIVE_ROSTER_ROUND)
+                .build();
+
+        assertNull(processor.processHashedEvent(event));
+        assertEquals(1, exitedIntakePipelineCount.get());
+    }
+
+    @Test
     @DisplayName("Previous roster is used for events from earlier rounds")
     void previousRosterUsed() {
         final PlatformEvent event = new TestingEventBuilder(random)
