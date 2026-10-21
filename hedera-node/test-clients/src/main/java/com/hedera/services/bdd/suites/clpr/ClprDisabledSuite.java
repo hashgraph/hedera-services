@@ -40,9 +40,9 @@ import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.VERIFY_CONFIG;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toBundleProofBytes;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toConfigProofBytes;
 import static com.hedera.services.bdd.suites.interledger.ClprTestHelpers.CLPR_SERVICE_ADDRESS_20;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_TRANSACTION_IN_BLACKLIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CLPR_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INNER_TRANSACTION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -153,7 +153,7 @@ public class ClprDisabledSuite {
     }
 
     @LeakyEmbeddedHapiTest(reason = {MUST_SKIP_INGEST, NEEDS_STATE_ACCESS})
-    @DisplayName("All ten CLPR transaction types fail in batches at consensus when ingest is bypassed")
+    @DisplayName("All ten CLPR transaction types are rejected in batches at consensus when ingest is bypassed")
     final Stream<DynamicTest> allClprTransactionsInBatchesAreRejectedAtConsensus() {
         return exerciseTransactions(true, true);
     }
@@ -351,7 +351,9 @@ public class ClprDisabledSuite {
         final HapiTxnOp<?> submitted =
                 inBatch ? atomicBatch(op.batchKey(BATCH_OPERATOR)).payingWith(BATCH_OPERATOR) : op;
         if (bypassIngest) {
-            submitted.setNode(INGEST_BYPASS_NODE).hasKnownStatus(inBatch ? INNER_TRANSACTION_FAILED : CLPR_NOT_ENABLED);
+            submitted
+                    .setNode(INGEST_BYPASS_NODE)
+                    .hasKnownStatus(inBatch ? BATCH_TRANSACTION_IN_BLACKLIST : CLPR_NOT_ENABLED);
         } else {
             submitted.hasPrecheck(CLPR_NOT_ENABLED);
         }
