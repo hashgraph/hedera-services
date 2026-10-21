@@ -13,6 +13,7 @@ import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.trace.TraceData;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HookId;
+import com.hedera.hapi.node.contract.EvmTransactionResult;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.support.translators.BaseTranslator;
@@ -62,7 +63,8 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             final var derivedBuilder = resultBuilderFrom(evmResult);
                             final var contractId = evmResult.contractId();
                             final var isHook = contractId != null && contractId.contractNumOrElse(0L) == 365;
-                            final var isDispatched = isHook || dispatchedChild;
+                            final var clprDispatch = isClprDispatch(dispatchedChild, evmResult);
+                            final var isDispatched = isHook || clprDispatch;
                             if (parts.status() == SUCCESS
                                     && (isDispatched || parts.isTopLevel() || parts.isInnerBatchTxn())) {
                                 if (needsClippedTraceBloomFallback(parts)) {
@@ -71,7 +73,10 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                                 } else {
                                     mapTracesToVerboseLogs(derivedBuilder, parts.traces());
                                 }
-                                if (executingHookId == null) {
+                                if (clprDispatch) {
+                                    // Several calls dispatched in one unit: claim only this call's creations
+                                    baseTranslator.addCreatedIdsOfCallTo(derivedBuilder, parts, remainingStateChanges);
+                                } else if (executingHookId == null) {
                                     baseTranslator.addCreatedIdsTo(derivedBuilder, parts, remainingStateChanges);
                                 } else {
                                     final var hookCreations = requireNonNull(hookMetadata)
@@ -88,7 +93,7 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                             // The node sets the receipt's contract id to the call's recipient, which is unknown
                             // when a dispatched call never reached its target (e.g. a CLPR verifier call with too
                             // little gas reports another contract in its result)
-                            final var reachedTarget = !dispatchedChild
+                            final var reachedTarget = !clprDispatch
                                     || reached(
                                             parts.body().contractCallOrThrow().contractIDOrThrow(),
                                             result.contractIDOrElse(ContractID.DEFAULT));
@@ -101,6 +106,20 @@ public class ContractCallTranslator implements BlockTransactionPartsTranslator {
                 remainingStateChanges,
                 followingUnitTraces,
                 executingHookId);
+    }
+
+    /**
+     * Whether a child contract call in a unit with a CLPR transaction is a call the CLPR transaction dispatched as its
+     * own child transaction. A system contract called by such a call (e.g. a CLPR application callback calling HTS
+     * {@code isToken()}) also produces a child {@code CONTRACT_CALL}, but its result always carries the calling
+     * contract as sender, while a dispatched call's never does (only Ethereum transactions set it).
+     *
+     * @param dispatchedChild whether the call is a child contract call in a unit with a CLPR transaction
+     * @param evmResult the call's EVM result
+     * @return whether the call was dispatched by the CLPR transaction
+     */
+    static boolean isClprDispatch(final boolean dispatchedChild, @NonNull final EvmTransactionResult evmResult) {
+        return dispatchedChild && !evmResult.hasSenderId();
     }
 
     /**
