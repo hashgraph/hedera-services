@@ -117,7 +117,8 @@ then their containing AtomicBatch transaction must be signed by both `batchKey` 
     allowed in an atomic batch. If the number of transactions in a batch exceeds this limit, the batch will be rejected.
   - ```whitelist``` This property is a HederaFunctionalitySet that contains the list of transaction types
     that are allowed in an atomic batch. If an inner transaction type is not in the whitelist, the batch will be
-    rejected, so a new transaction type is not allowed in a batch until it is added to the whitelist.
+    rejected. By default the whitelist does not contain `Freeze`, `AtomicBatch`, `ScheduleCreate`, `ScheduleSign` and every CLPR
+    transaction type (all `Clpr*` transactions). A new transaction type is not allowed in a batch until it is added to the whitelist.
 
 ## Network Response Messages
 
