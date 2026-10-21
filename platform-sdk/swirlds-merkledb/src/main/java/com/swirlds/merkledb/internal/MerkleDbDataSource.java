@@ -885,9 +885,9 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             try {
                 // Stop file compaction
                 compactionCoordinator.stopAndDisableBackgroundCompaction(false);
-                // Interrupt flush work, but let started snapshot groups finish before closing their data.
+                // Shut down all executors. If a flush is currently in progress, it will be interrupted
                 flushPool.shutdownNow();
-                snapshotExecutor.close();
+                snapshotExecutor.shutdownNow();
                 // If there is a flush in progress on another thread, that thread may be
                 // stuck in waiting for hashes/leaves or HDHM writing to complete. Flushing
                 // pool shutdown interrupts all existing hashes/leaves/HDHM tasks, but the
@@ -952,9 +952,6 @@ public final class MerkleDbDataSource implements VirtualDataSource {
         }
         logger.info(MERKLE_DB.getMarker(), "[{}] Starting snapshot to {}", tableName, snapshotDirectory);
         try {
-            if (closed.get()) {
-                throw new IOException("Cannot snapshot a closed data source");
-            }
             final long start = System.currentTimeMillis();
             Files.createDirectories(snapshotDirectory);
             final MerkleDbPaths snapshotDbPaths = new MerkleDbPaths(snapshotDirectory);
@@ -1004,6 +1001,7 @@ public final class MerkleDbDataSource implements VirtualDataSource {
             }
             final Throwable failure = snapshotFailure.get();
             if (failure != null && snapshotInterrupted != null) {
+                // Report the interruption too, without replacing the snapshot failure.
                 failure.addSuppressed(snapshotInterrupted);
             }
             if (failure instanceof IOException ioException) {
@@ -1199,7 +1197,8 @@ public final class MerkleDbDataSource implements VirtualDataSource {
                 }
             });
         } catch (final RuntimeException | Error e) {
-            // A rejected group will not count down the latch itself. Still wait for the accepted groups.
+            // Submission failed, so this group's finally block will never run.
+            // Decrement the latch here to avoid waiting forever for this group.
             snapshotFailure.compareAndSet(null, e);
             countDownLatch.countDown();
         }
