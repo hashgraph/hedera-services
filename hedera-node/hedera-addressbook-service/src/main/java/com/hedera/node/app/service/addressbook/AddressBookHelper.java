@@ -79,7 +79,9 @@ public class AddressBookHelper {
     public static X509Certificate readCertificatePemFile(@NonNull final InputStream in)
             throws IOException, CertificateException {
         requireNonNull(in);
-        return PEMDecoder.readCertificate(in);
+        try (in) {
+            return PEMDecoder.readCertificate(in);
+        }
     }
 
     /**
