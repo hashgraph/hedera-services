@@ -13,6 +13,7 @@ import com.hedera.cryptography.wraps.WRAPSLibraryBridge;
 import com.hedera.node.app.history.HistoryLibrary;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.StringJoiner;
 import org.hiero.base.crypto.CryptoUtils;
@@ -21,6 +22,7 @@ import org.hiero.base.crypto.CryptoUtils;
  * Default implementation of the {@link HistoryLibrary}.
  */
 public class HistoryLibraryImpl implements HistoryLibrary {
+    private static final int ADDRESS_BOOK_HASH_LENGTH = 32;
     private static final int SCHNORR_PUBLIC_KEY_LENGTH = (int) HistoryLibrary.MISSING_SCHNORR_KEY.length();
 
     private static final SecureRandom RANDOM = CryptoUtils.getNonDetRandom();
@@ -219,22 +221,27 @@ public class HistoryLibraryImpl implements HistoryLibrary {
 
     @Override
     public Proof constructIncrementalWrapsProof(
-            @NonNull final byte[] genesisAddressBookHash,
+            @NonNull final byte[] ledgerId,
             @NonNull final byte[] sourceProof,
             @NonNull final AddressBook sourceAddressBook,
             @NonNull final AddressBook targetAddressBook,
             @NonNull final byte[] targetHintsVerificationKey,
             @NonNull final byte[] aggregatedSignature,
             @NonNull final Set<Long> signers) {
-        requireNonNull(genesisAddressBookHash);
+        requireNonNull(ledgerId);
+        if (ledgerId.length != 2 * ADDRESS_BOOK_HASH_LENGTH) {
+            throw new IllegalArgumentException("The genesis ledger id must be 64 bytes");
+        }
         requireNonNull(sourceProof);
         requireNonNull(sourceAddressBook);
         requireNonNull(targetAddressBook);
         requireNonNull(targetHintsVerificationKey);
         requireNonNull(aggregatedSignature);
         requireNonNull(signers);
+        // The native construction API takes only the genesis address book hash; it carries the genesis
+        // hinTS-key hash forward from sourceProof. Proof validation must still use the full ledger id.
         return WRAPS.constructWrapsProof(
-                genesisAddressBookHash,
+                Arrays.copyOf(ledgerId, ADDRESS_BOOK_HASH_LENGTH),
                 sourceAddressBook.publicKeys(),
                 sourceAddressBook.weights(),
                 sourceAddressBook.nodeIds(),

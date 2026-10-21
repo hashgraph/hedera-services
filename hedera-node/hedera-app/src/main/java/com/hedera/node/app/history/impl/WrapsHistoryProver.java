@@ -9,7 +9,6 @@ import static com.hedera.hapi.util.HapiUtils.asInstant;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.history.HistoryLibrary.MAX_ADDRESS_BOOK_SIZE;
 import static com.hedera.node.app.history.HistoryLibrary.MISSING_SCHNORR_KEY;
-import static com.hedera.node.app.history.HistoryLibrary.genesisAddressBookHashOf;
 import static com.hedera.node.app.history.impl.ProofControllers.groundsChainOfTrust;
 import static com.hedera.node.app.history.impl.ProofControllers.isWrapsExtensible;
 import static com.hedera.node.app.history.impl.WrapsMpcStateMachine.POST_MPC_PHASES;
@@ -777,7 +776,7 @@ public class WrapsHistoryProver implements HistoryProver {
                     signers,
                     targetBook);
             final var proof = historyLibrary.constructIncrementalWrapsProof(
-                    genesisAddressBookHashOf(requireNonNull(ledgerId)).toByteArray(),
+                    requireNonNull(ledgerId).toByteArray(),
                     foldedProof.uncompressedWrapsProof().toByteArray(),
                     sourceBook,
                     targetBook,

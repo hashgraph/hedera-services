@@ -34,23 +34,6 @@ public interface HistoryLibrary {
     int MAX_ADDRESS_BOOK_SIZE = WRAPSLibraryBridge.MAX_AB_SIZE;
 
     /**
-     * The length of the hash of an address book. A ledger id is the hash of the address book its chain of
-     * trust is grounded in, followed by the hash of the hinTS verification key that address book first proved.
-     */
-    int ADDRESS_BOOK_HASH_LENGTH = 32;
-
-    /**
-     * Returns the hash of the address book the chain of trust with the given ledger id is grounded in.
-     *
-     * @param ledgerId the ledger id
-     * @return the hash of the address book that grounds the chain of trust
-     */
-    static Bytes genesisAddressBookHashOf(@NonNull final Bytes ledgerId) {
-        requireNonNull(ledgerId);
-        return ledgerId.slice(0, ADDRESS_BOOK_HASH_LENGTH);
-    }
-
-    /**
      * An address book for use in the history library.
      * @param weights the weights of the nodes in the address book
      * @param publicKeys the public keys of the nodes in the address book
@@ -301,7 +284,7 @@ public interface HistoryLibrary {
     /**
      * Constructs an incremental WRAPS proof.
      *
-     * @param genesisAddressBookHash the genesis address book hash (see {@link #genesisAddressBookHashOf(Bytes)})
+     * @param ledgerId the full 64-byte genesis ledger id anchoring the chain of trust
      * @param sourceProof the source proof
      * @param sourceAddressBook the source address book
      * @param targetAddressBook the target address book
@@ -309,9 +292,10 @@ public interface HistoryLibrary {
      * @param aggregatedSignature an aggregated signature from the target address book
      * @param signers the set of signers contributing to the aggregated signature
      * @return the incremental WRAPS proof
+     * @throws IllegalArgumentException if the ledger id is not 64 bytes
      */
     Proof constructIncrementalWrapsProof(
-            @NonNull byte[] genesisAddressBookHash,
+            @NonNull byte[] ledgerId,
             @NonNull byte[] sourceProof,
             @NonNull AddressBook sourceAddressBook,
             @NonNull AddressBook targetAddressBook,

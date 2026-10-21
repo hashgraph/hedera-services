@@ -481,12 +481,10 @@ class WrapsHistoryProverTest {
                 true);
 
         assertSame(HistoryProver.Outcome.InProgress.INSTANCE, outcome);
-        // The incremental proof is anchored in the genesis address book hash at the front of the ledger id
+        // Pass the full genesis ledger id through orchestration to the library adapter
         verify(historyLibrary)
                 .constructIncrementalWrapsProof(
-                        aryEq(LEDGER_ID
-                                .slice(0, HistoryLibrary.ADDRESS_BOOK_HASH_LENGTH)
-                                .toByteArray()),
+                        aryEq(LEDGER_ID.toByteArray()),
                         aryEq(UNCOMPRESSED.toByteArray()),
                         any(),
                         any(),

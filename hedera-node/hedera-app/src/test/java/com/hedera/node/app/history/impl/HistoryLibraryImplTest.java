@@ -29,6 +29,8 @@ import java.util.stream.IntStream;
 import org.hiero.base.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -265,11 +267,17 @@ class HistoryLibraryImplTest {
         assertTrue(subject.wrapsProverReady());
     }
 
-    @Test
-    void genesisAddressBookHashIsPrefixOfLedgerId() {
-        final var ledgerId = Bytes.wrap(sequentialBytes(64));
+    @ParameterizedTest
+    @ValueSource(ints = {0, 31, 32, 63, 65})
+    void incrementalProofConstructionRejectsIncompleteOrOversizedLedgerIds(final int length) {
+        final var book = TestNetwork.withWeights(1L).addressBook();
 
-        assertEquals(Bytes.wrap(sequentialBytes(32)), HistoryLibrary.genesisAddressBookHashOf(ledgerId));
+        final var exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.constructIncrementalWrapsProof(
+                        new byte[length], new byte[0], book, book, new byte[VK_LENGTH], new byte[0], Set.of(0L)));
+
+        assertEquals("The genesis ledger id must be 64 bytes", exception.getMessage());
     }
 
     @Test
@@ -281,9 +289,8 @@ class HistoryLibraryImplTest {
         final var history = new History(
                 Bytes.wrap(subject.hashAddressBook(network.addressBook())), Bytes.wrap(hintsVerificationKey));
 
-        assertEquals(2 * HistoryLibrary.ADDRESS_BOOK_HASH_LENGTH, message.length);
+        assertEquals(64, message.length);
         assertEquals(Bytes.wrap(message), subject.ledgerIdOf(history));
-        assertEquals(history.addressBookHash(), HistoryLibrary.genesisAddressBookHashOf(Bytes.wrap(message)));
     }
 
     @Test
@@ -298,6 +305,16 @@ class HistoryLibraryImplTest {
                 genesisBookHash, genesisVerificationKey, genesisSignature, Set.of(1L, 2L), genesis.addressBook());
         assertNotNull(genesisProof);
         assertTrue(subject.verifyCompressedProof(genesisProof.compressed(), ledgerId, genesisVerificationKey));
+        // Keep the genesis address book identical, changing only the genesis hinTS-key hash in the ledger id.
+        // Compute a valid network id so rejection cannot be attributed to malformed field encodings.
+        final var otherGenesisVerificationKey = genesisVerificationKey.clone();
+        otherGenesisVerificationKey[0] ^= 1;
+        final var otherGenesisLedgerId =
+                subject.computeWrapsMessage(genesis.addressBook(), otherGenesisVerificationKey);
+        assertArrayEquals(Arrays.copyOf(ledgerId, 32), Arrays.copyOf(otherGenesisLedgerId, 32));
+        assertFalse(Arrays.equals(ledgerId, otherGenesisLedgerId));
+        assertFalse(
+                subject.verifyCompressedProof(genesisProof.compressed(), otherGenesisLedgerId, genesisVerificationKey));
         // The ledger id is the one implied by the grounding history
         assertEquals(
                 Bytes.wrap(ledgerId),
@@ -311,7 +328,7 @@ class HistoryLibraryImplTest {
         final var message = subject.computeWrapsMessage(target.addressBook(), targetVerificationKey);
         final var signature = genesis.sign(message, Set.of(0L, 2L));
         final var incrementalProof = subject.constructIncrementalWrapsProof(
-                HistoryLibrary.genesisAddressBookHashOf(Bytes.wrap(ledgerId)).toByteArray(),
+                ledgerId,
                 genesisProof.uncompressed(),
                 genesis.addressBook(),
                 target.addressBook(),
@@ -320,6 +337,9 @@ class HistoryLibraryImplTest {
                 Set.of(0L, 2L));
         assertNotNull(incrementalProof);
         assertTrue(subject.verifyCompressedProof(incrementalProof.compressed(), ledgerId, targetVerificationKey));
+        // Rotations remain bound to the genesis hinTS key, even with the correct current hinTS key.
+        assertFalse(subject.verifyCompressedProof(
+                incrementalProof.compressed(), otherGenesisLedgerId, targetVerificationKey));
         assertFalse(subject.verifyCompressedProof(incrementalProof.compressed(), ledgerId, genesisVerificationKey));
         // But not in the chain of trust of any other ledger id
         final var otherLedgerId = subject.computeWrapsMessage(target.addressBook(), targetVerificationKey);
@@ -391,14 +411,6 @@ class HistoryLibraryImplTest {
     private static byte[] randomBytes(final int n) {
         final var bytes = new byte[n];
         RANDOM.nextBytes(bytes);
-        return bytes;
-    }
-
-    private static byte[] sequentialBytes(final int n) {
-        final var bytes = new byte[n];
-        for (int i = 0; i < n; i++) {
-            bytes[i] = (byte) i;
-        }
         return bytes;
     }
 }
