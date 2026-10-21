@@ -156,13 +156,12 @@ networks of `@Disabled` tests).
    ```bash
    rm ledgerA_manifest-genesis-network.json.gz ledgerB_manifest-genesis-network.json.gz
    ```
-2. Remove the `@Disabled` from `ClprFixtureGeneratorSuite` and run its generator. Also supply the
-   WRAPS path, since a bare `testSubprocess` is not in the wraps map (only `hapiTestClprMultinetwork` is):
+2. Remove the `@Disabled` from `ClprFixtureGeneratorSuite` and run its generator with
+   `hapiTestClprMultinetwork`, the only task that runs multi-network tests (it also maps the WRAPS path):
 
    ```bash
-   ./gradlew :test-clients:testSubprocess \
-     --tests "*ClprFixtureGeneratorSuite.generateManifestLedgerFixtures" \
-     -Dhapi.spec.tssLibWrapsArtifactsPath="$PWD/hedera-node/test-clients/tss-startup-assets/wraps"
+   ./gradlew :test-clients:hapiTestClprMultinetwork \
+     --tests "*ClprFixtureGeneratorSuite.generateManifestLedgerFixtures"
    ```
 3. Restore the `@Disabled` and `git add` the regenerated `*-genesis-network.json.gz`.
 
@@ -173,8 +172,7 @@ that its warm consumers then reproduce:
 
 ```bash
 rm *-genesis-network.json.gz
-./gradlew :test-clients:testSubprocess --tests "*ClprFixtureGeneratorSuite" \
-  -Dhapi.spec.tssLibWrapsArtifactsPath="$PWD/hedera-node/test-clients/tss-startup-assets/wraps"
+./gradlew :test-clients:hapiTestClprMultinetwork --tests "*ClprFixtureGeneratorSuite"
 ```
 
 Restore the `@Disabled` afterwards. `TssFixtures.generateNetworkFixture` writes each fixture directly as

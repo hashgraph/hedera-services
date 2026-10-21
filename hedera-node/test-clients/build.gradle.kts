@@ -468,7 +468,8 @@ fun registerTestSubprocess(name: String, ciTagExpression: String) {
     tasks.registerHapiTest(
         name,
         ciTagExpression,
-        "none()|!(EMBEDDED|REPEATABLE)",
+        // MULTINETWORK runs only in hapiTestClprMultinetwork, which runs classes concurrently
+        "none()|!(EMBEDDED|REPEATABLE|MULTINETWORK)",
         ciDefaultTags = "|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE|ISS",
         ciDefaultTagsWithoutStreamAndLogValidation = ")&!(EMBEDDED|REPEATABLE",
         excludeTags = "CONCURRENT_SUBPROCESS_VALIDATION",
@@ -692,8 +693,8 @@ fun TaskContainer.registerHapiTest(
                     else if (name == "hapiTestClprEmbedded")
                         "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(INTEGRATION|ISS|MULTINETWORK)"
                     // We don't want to run stream or log validation for ISS or BLOCK_NODE; the
-                    // multi-network CLPR task validates each of its networks in its own
-                    // MultiNetworkValidationTest (tagged MULTINETWORK) instead
+                    // multi-network CLPR task validates its network groups in its own
+                    // MultiNetworkValidationTest instead
                     else if (
                         ciDefaultTagsWithoutStreamAndLogValidation != null &&
                             name in prCheckWithoutStreamAndLogValidation
