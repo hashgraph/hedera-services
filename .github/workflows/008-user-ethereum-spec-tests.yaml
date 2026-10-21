@@ -83,9 +83,7 @@ env:
   SOLO_CLUSTER_NAME: "solo-hedera"
   SOLO_NAMESPACE: "solo-ns-hedera"
   SOLO_DEPLOYMENT: "solo-deployment-hedera"
-  # test.sh resolves the consensus node checkout as ../../hiero-consensus-node from evm-functional-testing; with
-  # hedera-evm-testing checked out at the workspace root that is the workspace itself
-  # (.../work/hiero-consensus-node/hiero-consensus-node).
+  # Checkout folder of hashgraph/hedera-evm-testing; test.sh is run from here.
   EVM_TESTING_DIR: "hedera-evm-testing/evm-functional-testing"
   SPEC_TESTS_DIR: "regression-tests/hiero-ethereum-execution-spec-tests"
   SPEC_TESTS_RESULTS_DIR: "spec-tests-results"
@@ -193,17 +191,21 @@ jobs:
           path: hedera-evm-testing
           fetch-depth: 1
 
-      - name: Check test.sh consensus node path
-        id: check-cn-path
+      # test.sh hard-codes CONSENSUS_NODE_DIR="../../hiero-consensus-node" (a sibling checkout on a developer
+      # machine) and does not read it from the environment. On the runner the consensus node is the workspace
+      # itself, so point that one line at it; nothing else in test.sh is changed.
+      - name: Point test.sh at this checkout
+        id: patch-cn-path
         working-directory: ${{ env.EVM_TESTING_DIR }}
         run: |
           set -eo pipefail
-          cn_dir="$(cd ../../hiero-consensus-node 2>/dev/null && pwd -P || true)"
-          if [[ "${cn_dir}" != "$(cd "${GITHUB_WORKSPACE}" && pwd -P)" ]]; then
-            echo "::error::test.sh expects the consensus node checkout at ../../hiero-consensus-node, which resolves to '${cn_dir:-<missing>}' instead of the workspace ${GITHUB_WORKSPACE}."
+          if ! grep -q '^CONSENSUS_NODE_DIR=' test.sh; then§
+            echo "::error::test.sh no longer defines CONSENSUS_NODE_DIR; this step needs updating."
             exit 1
           fi
-          echo "test.sh will build the consensus node from ${cn_dir}"
+          sed -i "s|^CONSENSUS_NODE_DIR=.*|CONSENSUS_NODE_DIR=\"${GITHUB_WORKSPACE}\"|" test.sh
+          grep -n '^CONSENSUS_NODE_DIR=' test.sh
+          test -x "${GITHUB_WORKSPACE}/gradlew"
 
       - name: Setup uv
         id: setup-uv
