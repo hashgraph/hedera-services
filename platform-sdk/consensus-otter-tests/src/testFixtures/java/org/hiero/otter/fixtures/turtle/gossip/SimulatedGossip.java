@@ -5,6 +5,8 @@ import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.hiero.consensus.event.IntakeEventCounter;
 import org.hiero.consensus.gossip.impl.gossip.Gossip;
 import org.hiero.consensus.gossip.impl.gossip.sync.protocol.SyncStatusChecker;
@@ -31,6 +33,13 @@ public class SimulatedGossip implements Gossip, EventReceiver {
     private IntakeEventCounter intakeEventCounter;
 
     private StandardOutputWire<PlatformEvent> eventOutput;
+    private StandardOutputWire<SyncProgress> syncProgressOutput;
+
+    /** The most recent event window of this node, used as the local window of every {@link SyncProgress}. */
+    private volatile EventWindow ownEventWindow = EventWindow.getGenesisEventWindow();
+
+    /** The most recent event window received from each peer. */
+    private final Map<NodeId, EventWindow> lastPeerWindows = new ConcurrentHashMap<>();
 
     /** The wiring model used for this node. Used to determine if the node is running or halted. */
     private DeterministicWiringModel deterministicWiringModel;
@@ -78,13 +87,21 @@ public class SimulatedGossip implements Gossip, EventReceiver {
             @NonNull final StandardOutputWire<SyncProgress> syncLagOutput) {
 
         this.eventOutput = requireNonNull(eventOutput);
+        this.syncProgressOutput = requireNonNull(syncLagOutput);
         this.deterministicWiringModel = (DeterministicWiringModel) requireNonNull(model);
         eventInput.bindConsumer(event -> {
             // Self-created events have no sender until now; the network identifies the source by this field
             event.setSenderId(selfId);
             networkConnectivity.submitEvent(event);
         });
-        eventWindowInput.bindConsumer(eventWindow -> networkConnectivity.updateEventWindow(selfId, eventWindow));
+        eventWindowInput.bindConsumer(eventWindow -> {
+            ownEventWindow = eventWindow;
+            networkConnectivity.updateEventWindow(selfId, eventWindow);
+            // Production reports on every sync with both windows current. Without this, the lag would stay at its
+            // last value while this node catches up against peers whose windows no longer change.
+            lastPeerWindows.forEach((peerId, peerWindow) ->
+                    syncProgressOutput.forward(new SyncProgress(peerId, eventWindow, peerWindow)));
+        });
 
         startInput.bindConsumer(ignored -> {});
         stopInput.bindConsumer(ignored -> {});
@@ -127,12 +144,16 @@ public class SimulatedGossip implements Gossip, EventReceiver {
     /**
      * {@inheritDoc}
      *
-     * <p>Nothing consumes a peer's event window yet. The network delivers them so that the machinery is in place, but
-     * this node has nowhere to route them until fallen-behind detection is wired up.
+     * <p>Remembers the peer's window and reports the sync progress against that peer to the event creator.
      */
     @Override
     public boolean receiveEventWindow(@NonNull final NodeId sender, @NonNull final EventWindow eventWindow) {
-        return canReceive();
+        if (!canReceive()) {
+            return false;
+        }
+        lastPeerWindows.put(sender, eventWindow);
+        syncProgressOutput.forward(new SyncProgress(sender, ownEventWindow, eventWindow));
+        return true;
     }
 
     private void forwardEvent(@NonNull final PlatformEvent event) {
@@ -147,5 +168,7 @@ public class SimulatedGossip implements Gossip, EventReceiver {
      */
     public void onRestart() {
         networkConnectivity.resetCursor(selfId);
+        // The restarted event creator has no lag recorded; stale peer windows must not be replayed against it.
+        lastPeerWindows.clear();
     }
 }
