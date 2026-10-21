@@ -357,10 +357,14 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(99L)
                 .previewStreamOverwritten(true)
                 .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
                 .build();
-        // Post-cutover BLOCKS-only mode freezes BlockInfo.lastBlockNumber at the cutover block, so the first
-        // post-cutover block is the one whose BlockStreamInfo.blockNumber equals BlockInfo.lastBlockNumber.
-        final var bsi = BlockStreamInfo.newBuilder().blockNumber(99L).build();
+        // The first post-cutover block persists one more previous-blocks leaf (the wrapped parent) than the wrapped
+        // record history
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(100L)
+                .intermediateBlockRootsLeafCount(101L)
+                .build();
 
         assertEquals(wrappedParent, BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
@@ -372,8 +376,12 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(99L)
                 .previewStreamOverwritten(false)
                 .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
                 .build();
-        final var bsi = BlockStreamInfo.newBuilder().blockNumber(99L).build();
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(100L)
+                .intermediateBlockRootsLeafCount(101L)
+                .build();
 
         assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
@@ -385,9 +393,13 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(99L)
                 .previewStreamOverwritten(true)
                 .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
                 .build();
-        // A block numbered below the frozen cutover block number is not the first post-cutover block.
-        final var bsi = BlockStreamInfo.newBuilder().blockNumber(98L).build();
+        // The cutover seed itself holds only the wrapped record history, without the wrapped parent
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(99L)
+                .intermediateBlockRootsLeafCount(100L)
+                .build();
 
         assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
@@ -399,9 +411,13 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(99L)
                 .previewStreamOverwritten(true)
                 .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
                 .build();
-        // A block past the frozen cutover block number is no longer the first post-cutover block.
-        final var bsi = BlockStreamInfo.newBuilder().blockNumber(100L).build();
+        // A later block's previous-blocks tree also holds the first post-cutover block
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(101L)
+                .intermediateBlockRootsLeafCount(102L)
+                .build();
 
         assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
@@ -412,8 +428,12 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(99L)
                 .previewStreamOverwritten(true)
                 .previousWrappedRecordBlockRootHash(Bytes.EMPTY)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
                 .build();
-        final var bsi = BlockStreamInfo.newBuilder().blockNumber(99L).build();
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(100L)
+                .intermediateBlockRootsLeafCount(101L)
+                .build();
 
         assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
@@ -423,6 +443,63 @@ class BlockStreamManagerImplTest {
         final var bsi = BlockStreamInfo.newBuilder().blockNumber(100L).build();
 
         assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash((BlockInfo) null, bsi));
+    }
+
+    // In the tests below the last record block is 99, so the first post-cutover block is 100. The record history has
+    // 100 wrapped leaves, and the first post-cutover block's previous-blocks tree adds the wrapped parent to them.
+
+    @Test
+    void firstPostCutoverParentHashReturnsWrappedParentWhenBlockInfoStaysAtLastRecordBlock() {
+        // BLOCKS mode: the record manager no longer runs after cutover, so BlockInfo stays at the last record block
+        final var wrappedParent = Bytes.wrap(fill(new byte[32], (byte) 0x22));
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(99L)
+                .previewStreamOverwritten(true)
+                .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
+                .build();
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(100L)
+                .intermediateBlockRootsLeafCount(101L)
+                .build();
+
+        assertEquals(wrappedParent, BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
+    }
+
+    @Test
+    void firstPostCutoverParentHashReturnsWrappedParentWhenRecordStreamOpensBlockAtRestart() {
+        // BOTH mode: the first transaction after the cutover restart opens record block 100
+        final var wrappedParent = Bytes.wrap(fill(new byte[32], (byte) 0x22));
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(100L)
+                .previewStreamOverwritten(true)
+                .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
+                .build();
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(100L)
+                .intermediateBlockRootsLeafCount(101L)
+                .build();
+
+        assertEquals(wrappedParent, BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
+    }
+
+    @Test
+    void firstPostCutoverParentHashReturnsNullForLaterBlockWhenRecordNumberCatchesUp() {
+        // BOTH mode: the record stream keeps advancing, so block 101 can share its number with record block 101
+        final var wrappedParent = Bytes.wrap(fill(new byte[32], (byte) 0x22));
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(101L)
+                .previewStreamOverwritten(true)
+                .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(100L)
+                .build();
+        final var bsi = BlockStreamInfo.newBuilder()
+                .blockNumber(101L)
+                .intermediateBlockRootsLeafCount(102L)
+                .build();
+
+        assertNull(BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, bsi));
     }
 
     @Test
@@ -2612,13 +2689,10 @@ class BlockStreamManagerImplTest {
     @Test
     void initReconstructsFirstPostCutoverBlockFromWrappedParentNotRecordHash() throws Exception {
         // Regression guard for PR 27696, exercising the REAL production path (init() else branch), not a mocked
-        // predicate. Post-cutover in BLOCKS-only mode BlockInfo.lastBlockNumber freezes at the cutover block, so the
-        // first post-cutover block is the one whose BlockStreamInfo.blockNumber equals BlockInfo.lastBlockNumber. Its
-        // parent was the WRAPPED record block root (BlockInfo.previousWrappedRecordBlockRootHash), but the trailing
-        // window still holds the original record hash (kept for the EVM BLOCKHASH history). init() must reconstruct the
-        // block root from the wrapped parent, not the window. With the buggy +1 numbering relation the predicate
-        // returns
-        // null, reconstruction falls back to the window, and the reconstructed hash is WRONG -> this test fails.
+        // predicate. The first post-cutover block's parent was the WRAPPED record block root
+        // (BlockInfo.previousWrappedRecordBlockRootHash), but the trailing window still holds the original record hash
+        // (kept for the EVM BLOCKHASH history). init() must reconstruct the block root from the wrapped parent, not the
+        // window. Here BlockInfo already reports the first post-cutover block's number, as in BOTH mode.
         final long cutoverBlockNumber = 200L;
         // Distinct 48-byte values so the wrapped-parent and window reconstructions are guaranteed to differ.
         final var wrappedParent = Bytes.fromHex("11".repeat(SHA_384_HASH_SIZE)); // W: the real parent
@@ -2629,12 +2703,16 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(cutoverBlockNumber)
                 .previewStreamOverwritten(true)
                 .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(0L)
                 .build();
-        // consensusHeaderRootHash length (48) makes reconstructLastBlockHash infer SHA-384 for this block.
+        // consensusHeaderRootHash length (48) makes reconstructLastBlockHash infer SHA-384 for this block. The
+        // previous-blocks tree holds just the wrapped parent on top of the (here empty) wrapped history.
         final var firstPostCutoverBsi = BlockStreamInfo.newBuilder()
                 .blockNumber(cutoverBlockNumber)
                 .blockTime(new Timestamp(1000, 0))
                 .trailingBlockHashes(recordHashInWindow)
+                .intermediatePreviousBlockRootHashes(List.of(wrappedParent))
+                .intermediateBlockRootsLeafCount(1L)
                 .startOfBlockStateHash(subtreeHash)
                 .consensusHeaderRootHash(subtreeHash)
                 .inputTreeRootHash(subtreeHash)
@@ -2698,6 +2776,88 @@ class BlockStreamManagerImplTest {
                 wrongFromWindow,
                 actualLastBlockHash,
                 "init() must NOT reconstruct the first post-cutover block from the trailing-window record hash");
+    }
+
+    @Test
+    void initReconstructsFirstPostCutoverBlockFromWrappedParentInBlocksMode() throws Exception {
+        // In BLOCKS mode BlockInfo stays at the last record block (199), one below the first post-cutover block (200)
+        final long firstPostCutoverBlock = 200L;
+        final var wrappedParent = Bytes.fromHex("11".repeat(SHA_384_HASH_SIZE));
+        final var recordHashInWindow = Bytes.fromHex("22".repeat(SHA_384_HASH_SIZE));
+        final var subtreeHash = Bytes.wrap(new byte[SHA_384_HASH_SIZE]);
+
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(firstPostCutoverBlock - 1)
+                .previewStreamOverwritten(true)
+                .previousWrappedRecordBlockRootHash(wrappedParent)
+                .wrappedIntermediateBlockRootsLeafCount(0L)
+                .build();
+        // The previous-blocks tree holds just the wrapped parent folded on top of the (here empty) wrapped history
+        final var firstPostCutoverBsi = BlockStreamInfo.newBuilder()
+                .blockNumber(firstPostCutoverBlock)
+                .blockTime(new Timestamp(1000, 0))
+                .trailingBlockHashes(recordHashInWindow)
+                .intermediatePreviousBlockRootHashes(List.of(wrappedParent))
+                .intermediateBlockRootsLeafCount(1L)
+                .startOfBlockStateHash(subtreeHash)
+                .consensusHeaderRootHash(subtreeHash)
+                .inputTreeRootHash(subtreeHash)
+                .outputItemRootHash(subtreeHash)
+                .traceDataRootHash(subtreeHash)
+                .build();
+
+        final var expectedFromWrappedParent =
+                BlockStreamManagerImpl.reconstructLastBlockHash(firstPostCutoverBsi, DigestType.SHA_384, wrappedParent);
+        assertNotEquals(
+                BlockStreamManagerImpl.reconstructLastBlockHash(firstPostCutoverBsi, DigestType.SHA_384, null),
+                expectedFromWrappedParent);
+
+        assertEquals(
+                expectedFromWrappedParent,
+                lastBlockHashAfterRestart(blockInfo, firstPostCutoverBsi),
+                "init() must reconstruct the first post-cutover block from the wrapped record block root");
+    }
+
+    private Bytes lastBlockHashAfterRestart(
+            @NonNull final BlockInfo blockInfo, @NonNull final BlockStreamInfo blockStreamInfo) throws Exception {
+        final var config = HederaTestConfigBuilder.create()
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.roundsPerBlock", 1)
+                .withValue("blockStream.enableCutover", true)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
+        subject = new BlockStreamManagerImpl(
+                blockHashSigner,
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                boundaryStateChangeListener,
+                platform,
+                quiescenceController,
+                hashInfo,
+                SemanticVersion.DEFAULT,
+                lifecycle,
+                quiescedHeartbeat,
+                metrics,
+                null,
+                streamingObs);
+
+        final var blockRecordReadable = mock(ReadableStates.class);
+        given(blockRecordReadable.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+        given(state.getReadableStates(BlockRecordService.NAME)).willReturn(blockRecordReadable);
+        final var blockStreamReadable = mock(ReadableStates.class);
+        given(blockStreamReadable.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(
+                        BLOCK_STREAM_INFO_STATE_ID, BLOCK_STREAM_INFO_STATE_LABEL, () -> blockStreamInfo));
+        given(state.getReadableStates(BlockStreamService.NAME)).willReturn(blockStreamReadable);
+
+        // A non-genesis hash and no cutover this startup take the normal restart (reconstruct) path
+        subject.init(state, FAKE_RESTART_BLOCK_HASH, false);
+
+        final var lastBlockHashField = BlockStreamManagerImpl.class.getDeclaredField("lastBlockHash");
+        lastBlockHashField.setAccessible(true);
+        return (Bytes) lastBlockHashField.get(subject);
     }
 
     @Test
