@@ -27,8 +27,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.node.base.BlockHashAlgorithm;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
 import com.hedera.node.config.data.BlockStreamJumpstartConfig;
@@ -47,8 +49,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -246,6 +251,7 @@ class JumpstartFileSuite implements LifecycleTest {
                 // windows at the SHA-384 -> SHA-256 transition block; verifyTrailingHashTransitionLogs() asserts
                 // the exact values below, including that trailingBlockHashes stays 48-byte padded (no compaction).
                 MixedOperations.burstOfTps(5, Duration.ofSeconds(30)),
+                doingContextual(JumpstartFileSuite::verifyTrailingBlockHashesMatchChain),
                 logIt("Phase 10: Execute cutover"),
                 prepareFakeUpgrade(),
                 upgradeToNextConfigVersion(
@@ -465,6 +471,67 @@ class JumpstartFileSuite implements LifecycleTest {
         assertLogContains(log, "nMinus3", rh.nMinus3RunningHash().toHex());
         assertLogContains(log, "intermediatePreviousBlockRootHashes", bi.wrappedIntermediatePreviousBlockRootHashes());
         assertLogContains(log, "intermediateBlockRootsLeafCount", bi.wrappedIntermediateBlockRootsLeafCount());
+    }
+
+    /**
+     * Decodes every persisted {@code trailingBlockHashes} window in node 0's block stream the way the node reads it
+     * (stride from {@code trailing_block_hashes_compacted}, digest from the block header) and checks each entry
+     * against the real hash of that block, i.e. the next block's footer {@code previousBlockRootHash}. Runs before
+     * cutover, so it covers windows written before, at and after the SHA-384 -&gt; SHA-256 switch.
+     */
+    private static void verifyTrailingBlockHashesMatchChain(final HapiSpec spec) {
+        final var node0 = spec.targetNetworkOrThrow().getRequiredNode(NodeSelector.byNodeId(0));
+        final var blocks = BlockStreamAccess.BLOCK_STREAM_ACCESS.readBlocksIgnoringMarkersAndReadErrors(
+                node0.getExternalPath(BLOCK_STREAMS_DIR));
+        final Map<Long, Bytes> realHashes = new HashMap<>();
+        final Map<Long, Integer> digestLengths = new HashMap<>();
+        final Map<Long, BlockStreamInfo> windows = new TreeMap<>();
+        for (final var block : blocks) {
+            long number = -1;
+            for (final var item : block.items()) {
+                if (item.hasBlockHeader()) {
+                    final var header = item.blockHeaderOrThrow();
+                    number = header.number();
+                    digestLengths.put(number, header.hashAlgorithm() == BlockHashAlgorithm.SHA2_256 ? 32 : 48);
+                } else if (item.hasBlockFooter()) {
+                    realHashes.put(number - 1, item.blockFooterOrThrow().previousBlockRootHash());
+                } else if (item.hasStateChanges()) {
+                    for (final var change : item.stateChangesOrThrow().stateChanges()) {
+                        if (change.hasSingletonUpdate()
+                                && change.singletonUpdateOrThrow().hasBlockStreamInfoValue()) {
+                            windows.put(number, change.singletonUpdateOrThrow().blockStreamInfoValueOrThrow());
+                        }
+                    }
+                }
+            }
+        }
+
+        int checked = 0;
+        final List<String> mismatches = new ArrayList<>();
+        for (final var entry : windows.entrySet()) {
+            final var info = entry.getValue();
+            final long lastInWindow = info.blockNumber() - 1;
+            final int digestLength = digestLengths.get(entry.getKey());
+            for (long n = Math.max(0, lastInWindow - 255); n <= lastInWindow; n++) {
+                final var real = realHashes.get(n);
+                if (real == null) {
+                    continue;
+                }
+                checked++;
+                final var decoded = BlockImplUtils.realBlockHashByBlockNumber(
+                        info.trailingBlockHashes(), lastInWindow, n, digestLength, info.trailingBlockHashesCompacted());
+                if (!real.equals(decoded)) {
+                    mismatches.add("window of block " + entry.getKey() + " (compacted="
+                            + info.trailingBlockHashesCompacted() + "): block " + n + " expected " + real.toHex()
+                            + " but decoded " + (decoded == null ? "null" : decoded.toHex()));
+                }
+            }
+        }
+        assertTrue(checked > 0, "No trailing block hash entries could be checked against the chain");
+        assertTrue(
+                mismatches.isEmpty(),
+                mismatches.size() + " of " + checked + " trailing block hash entries don't match the chain, e.g.:\n"
+                        + String.join("\n", mismatches.subList(0, Math.min(5, mismatches.size()))));
     }
 
     private static void verifyPostCutoverBlocks(final HapiSpec spec, final AtomicReference<String> liveBlockNum) {
