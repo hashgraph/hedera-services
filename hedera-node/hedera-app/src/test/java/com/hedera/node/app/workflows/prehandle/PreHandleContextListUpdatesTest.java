@@ -23,6 +23,7 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -157,7 +158,7 @@ class PreHandleContextListUpdatesTest {
     }
 
     @Test
-    void payerIsIgnoredWhenRequired() throws PreCheckException {
+    void payerKeyProjectionIsDeduplicatedButRequirementIsRetained() throws PreCheckException {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
@@ -168,8 +169,9 @@ class PreHandleContextListUpdatesTest {
         // When we require the payer key on the context
         subject.requireKey(payerKey);
 
-        // Then the call is ignored and the payerKey is not added to requiredNonPayerKeys
+        // The payer's signature is expanded separately, but its explicit requirement is retained.
         assertEquals(Set.of(), subject.requiredNonPayerKeys());
+        assertEquals(Set.of(KeyRequirement.forKey(payerKey)), subject.requiredKeyRequirements());
     }
 
     @Test
@@ -190,6 +192,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
@@ -198,6 +201,7 @@ class PreHandleContextListUpdatesTest {
         subject.requireKeyOrThrow(payer, INVALID_ACCOUNT_ID);
 
         // Then the call succeeds, although the payer key is not added to requiredNonPayerKeys
+        assertEquals(Set.of(KeyRequirement.forAccount(payer, payerKey)), subject.requiredKeyRequirements());
         assertEquals(payerKey, subject.payerKey());
         assertIterableEquals(Set.of(), subject.requiredNonPayerKeys());
 

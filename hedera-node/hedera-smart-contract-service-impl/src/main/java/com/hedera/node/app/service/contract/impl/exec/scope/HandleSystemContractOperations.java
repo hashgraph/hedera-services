@@ -4,7 +4,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static com.hedera.node.app.spi.fees.NoopFeeCharging.DISPATCH_ONLY_NOOP_FEE_CHARGING;
-import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatch;
+import static com.hedera.node.app.spi.workflows.DispatchOptions.subDispatchWithRequirements;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.signedTxWith;
 import static com.hedera.node.config.types.StreamMode.BLOCKS;
 import static java.util.Objects.requireNonNull;
@@ -23,6 +23,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.key.RequirementVerifier;
 import com.hedera.node.app.spi.workflows.DispatchOptions.PropagateFeeChargingStrategy;
 import com.hedera.node.app.spi.workflows.DispatchOptions.StakingRewards;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
@@ -69,6 +70,12 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         return strategy.asSignatureTestIn(context, maybeEthSenderKey);
     }
 
+    @NonNull
+    @Override
+    public RequirementVerifier requirementTestWith(@NonNull final VerificationStrategy strategy) {
+        return requireNonNull(strategy).asRequirementTestIn(context, maybeEthSenderKey);
+    }
+
     @Override
     public @NonNull <T extends StreamBuilder> T dispatch(
             @NonNull final TransactionBody syntheticBody,
@@ -83,10 +90,10 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(streamBuilderType);
         requireNonNull(authorizingKeys);
         requireNonNull(usePresetTxnId);
-        return context.dispatch(subDispatch(
+        return context.dispatch(subDispatchWithRequirements(
                 syntheticPayerId,
                 syntheticBody,
-                primitiveSignatureTestWith(strategy),
+                requirementTestWith(strategy),
                 authorizingKeys,
                 streamBuilderType,
                 StakingRewards.OFF,

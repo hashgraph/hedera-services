@@ -49,6 +49,7 @@ import com.hedera.node.app.service.token.records.CryptoTransferStreamBuilder;
 import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -565,7 +566,7 @@ public class TransferExecutor extends BaseTokenHandler {
                     if (isHollow(account)) {
                         ctx.requireSignatureForHollowAccount(account);
                     } else {
-                        ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
+                        ctx.requireKeyOrThrow(account.accountIdOrThrow(), INVALID_ACCOUNT_ID);
                     }
 
                 } else if (isCredit && account.receiverSigRequired()) {
@@ -574,9 +575,10 @@ public class TransferExecutor extends BaseTokenHandler {
                     // pending airdrops
                     // if receiver has hook, key is optional
                     if (receiverKeyCheck == RECEIVER_KEY_IS_OPTIONAL || usesHook) {
-                        ctx.optionalKey(account.keyOrThrow());
+                        ctx.optionalKeyRequirement(
+                                KeyRequirement.forAccount(account.accountIdOrThrow(), account.keyOrThrow()));
                     } else {
-                        ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
+                        ctx.requireKeyOrThrow(account.accountIdOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
                     }
                 }
             } else {

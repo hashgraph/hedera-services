@@ -15,6 +15,7 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.records.ContractCallStreamBuilder;
+import com.hedera.node.app.spi.key.RequirementVerifier;
 import com.hedera.node.app.spi.workflows.DispatchOptions.UsePresetTxnId;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -73,6 +74,12 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     public Predicate<Key> signatureTestWith(@NonNull final VerificationStrategy strategy) {
         throw new UnsupportedOperationException("Cannot compute a signature test");
+    }
+
+    @NonNull
+    @Override
+    public RequirementVerifier requirementTestWith(@NonNull final VerificationStrategy strategy) {
+        throw new UnsupportedOperationException("Cannot compute a requirement test");
     }
 
     @Override

@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.NodeFeeAccumulator;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.ReadableStoreFactory;
@@ -51,6 +52,8 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -227,6 +230,49 @@ class ChildDispatchFactoryTest {
         assertThat(derivedVerifier.verificationFor(A_THRESHOLD_KEY).passed()).isFalse();
         verify(verifierCallback).test(AN_ED25519_KEY);
         verify(verifierCallback).test(A_CONTRACT_ID_KEY);
+    }
+
+    @Test
+    void accountExemptionNeverAuthorizesAnotherAccountOrExplicitKey() {
+        final var contract = AccountID.newBuilder().accountNum(1001).build();
+        final var victim = AccountID.newBuilder().accountNum(1002).build();
+        final var contractRequirement = KeyRequirement.forAccount(contract, A_THRESHOLD_KEY);
+        final var victimRequirement = KeyRequirement.forAccount(victim, A_THRESHOLD_KEY);
+        final var observed = new ArrayList<KeyRequirement>();
+        final var verifier = ChildDispatchFactory.getRequirementVerifier(
+                requirement -> {
+                    observed.add(requirement);
+                    return requirement instanceof KeyRequirement.AccountKey accountKey
+                            && accountKey.accountId().equals(contract);
+                },
+                DEFAULT_CONFIG,
+                Set.of(A_CONTRACT_ID_KEY));
+
+        assertThat(verifier.verificationFor(contractRequirement).passed()).isTrue();
+        assertThat(verifier.verificationFor(victimRequirement).passed()).isFalse();
+        assertThat(verifier.verificationFor(A_THRESHOLD_KEY).passed()).isFalse();
+        assertThat(observed)
+                .containsExactly(contractRequirement, victimRequirement, KeyRequirement.forKey(A_THRESHOLD_KEY));
+        assertThat(verifier.authorizingSimpleKeys()).containsExactly(A_CONTRACT_ID_KEY);
+        assertThat(verifier.authorizingSimpleKeys()).doesNotContain(AN_ED25519_KEY);
+    }
+
+    @Test
+    void requirementVerifierReceivesComposedRequirementWithoutFlatteningItsBranches() {
+        final var contract = AccountID.newBuilder().accountNum(1001).build();
+        final var requirement = KeyRequirement.anyOf(
+                List.of(KeyRequirement.forAccount(contract, AN_ED25519_KEY), KeyRequirement.forKey(AN_ED25519_KEY)));
+        final var observed = new ArrayList<KeyRequirement>();
+        final var verifier = ChildDispatchFactory.getRequirementVerifier(
+                candidate -> {
+                    observed.add(candidate);
+                    return candidate.equals(requirement);
+                },
+                DEFAULT_CONFIG,
+                Set.of());
+
+        assertThat(verifier.verificationFor(requirement).passed()).isTrue();
+        assertThat(observed).containsExactly(requirement);
     }
 
     @Test

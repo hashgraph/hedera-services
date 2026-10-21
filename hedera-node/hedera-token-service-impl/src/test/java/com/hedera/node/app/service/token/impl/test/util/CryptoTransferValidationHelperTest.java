@@ -66,7 +66,8 @@ class CryptoTransferValidationHelperTest {
 
         checkSender(SENDER_ID, PLAIN_TRANSFER, meta, accountStore);
 
-        verify(meta).requireKey(SENDER_KEY);
+        verify(meta)
+                .requireKeyRequirement(com.hedera.node.app.spi.key.KeyRequirement.forAccount(SENDER_ID, SENDER_KEY));
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.FeeCharging;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
@@ -143,6 +144,18 @@ public interface Dispatch extends FeeCharging.Context {
      * @return the required keys
      */
     Set<Key> requiredKeys();
+
+    /**
+     * The individual authority requirements for this dispatch. Equal keys belonging to different
+     * accounts remain separate requirements.
+     *
+     * @return the identity-scoped requirements
+     */
+    default Set<KeyRequirement> requiredKeyRequirements() {
+        return requiredKeys().stream()
+                .map(KeyRequirement::forKey)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
 
     /**
      * The hollow accounts that must have provided signatures proving

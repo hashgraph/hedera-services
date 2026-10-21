@@ -6,6 +6,7 @@ import static com.hedera.node.app.service.contract.impl.exec.scope.VerificationS
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -53,5 +54,20 @@ public class EitherOrVerificationStrategy implements VerificationStrategy {
             }
             return secondDecision == INVALID ? firstDecision : secondDecision;
         }
+    }
+
+    @Override
+    public Decision decideForPrimitive(@NonNull final KeyRequirement requirement, @NonNull final Key key) {
+        requireNonNull(requirement);
+        requireNonNull(key);
+        final var firstDecision = firstStrategy.decideForPrimitive(requirement, key);
+        if (firstDecision == VALID) {
+            return VALID;
+        }
+        final var secondDecision = secondStrategy.decideForPrimitive(requirement, key);
+        if (secondDecision == VALID) {
+            return VALID;
+        }
+        return secondDecision == INVALID ? firstDecision : secondDecision;
     }
 }

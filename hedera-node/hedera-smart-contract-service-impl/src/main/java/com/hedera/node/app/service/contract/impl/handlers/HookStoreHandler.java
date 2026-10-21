@@ -22,9 +22,6 @@ import static org.hiero.hapi.fees.FeeScheduleUtils.lookupServiceFee;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.HookEntityId;
 import com.hedera.hapi.node.base.HookId;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.hooks.EvmHookMappingEntry;
 import com.hedera.hapi.node.hooks.EvmHookStorageSlot;
 import com.hedera.hapi.node.hooks.EvmHookStorageUpdate;
@@ -34,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.state.WritableEvmHookStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.ServiceFeeCalculator;
 import com.hedera.node.app.spi.fees.SimpleFeeContext;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -127,14 +125,9 @@ public class HookStoreHandler implements TransactionHandler {
         final var ownerAccountId = hookId.entityIdOrThrow().accountIdOrThrow();
         if (hook.hasAdminKey()) {
             // Storage for an EVM with an admin key can be managed by either the creator or the admin
-            context.requireKeyOrThrow(
-                    ownerAccountId,
-                    ownerKey -> Key.newBuilder()
-                            .thresholdKey(ThresholdKey.newBuilder()
-                                    .threshold(1)
-                                    .keys(new KeyList(List.of(ownerKey, hook.adminKeyOrThrow()))))
-                            .build(),
-                    INVALID_HOOK_ID);
+            context.requireKeyRequirement(KeyRequirement.anyOf(List.of(
+                    context.keyRequirementFor(ownerAccountId, INVALID_HOOK_ID),
+                    KeyRequirement.forKey(hook.adminKeyOrThrow()))));
         } else {
             context.requireKeyOrThrowOnDeleted(ownerAccountId, INVALID_HOOK_ID);
         }

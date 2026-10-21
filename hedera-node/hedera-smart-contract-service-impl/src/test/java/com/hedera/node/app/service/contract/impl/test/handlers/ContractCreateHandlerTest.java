@@ -403,6 +403,7 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
                 final var autoRenewAccount = mock(Account.class);
                 given(accountStore.getAccountById(autoRenewId)).willReturn(autoRenewAccount);
                 given(autoRenewAccount.key()).willReturn(autoRenewKey);
+                given(autoRenewAccount.accountIdOrThrow()).willReturn(autoRenewId);
             }
             createTxnBody.autoRenewAccountId(autoRenewId);
         }
