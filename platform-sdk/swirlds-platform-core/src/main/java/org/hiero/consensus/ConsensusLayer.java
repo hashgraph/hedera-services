@@ -24,14 +24,16 @@ import org.hiero.consensus.model.quiescence.QuiescenceCommand;
 public interface ConsensusLayer {
 
     /**
-     * Starts the consensus layer. This method must be called before any other methods are called.
+     * Starts the consensus layer. This method must be called before any other methods are called. The method returns
+     * once the consensus layer is fully started.
      */
     void start();
 
     /**
      * Destroys the consensus layer in an orderly manner. This method must be called when the consensus layer is no
      * longer needed. After this method is called, no other methods should be called, including {@link #start()}. A new
-     * instance must be created and started. This method destroys all resources and closes all open connections.
+     * instance must be created and started. This method destroys all resources and closes all open connections. The
+     * method returns once the consensus layer is fully destroyed.
      */
     void destroy();
 

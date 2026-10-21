@@ -11,7 +11,8 @@ import org.hiero.consensus.main.model.TimestampedTransaction;
 import org.hiero.consensus.model.status.ConsensusLayerStatus;
 
 /**
- * The API of the Execution Layer exposed to the Consensus Layer.
+ * The API of the Execution Layer exposed to the Consensus Layer. All methods are blocking; therefore they must
+ * return quickly to allow the Consensus Layer to continue its work.
  */
 public interface ExecutionLayerCallbacks {
 

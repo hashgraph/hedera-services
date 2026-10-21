@@ -37,7 +37,7 @@ public interface Round {
     }
 
     /**
-     * Get the events in this round, in consensus order.
+     * Get the immutable list of events in this round, in consensus order.
      *
      * @return the events of the round
      */
@@ -86,6 +86,12 @@ public interface Round {
      */
     Instant getReachedConsTimestamp();
 
+    /**
+     * The legacy running event hash of the last event in this round. This method will be removed when the consensus
+     * event stream is retired.
+     *
+     * @return the running event hash of the last event
+     */
     @NonNull
     RunningHash getLastEventRunningHash();
 }

@@ -4,7 +4,7 @@ package org.hiero.consensus.model.status;
 import org.hiero.base.UniqueId;
 
 /**
- * The status of the consensus layer
+ * The status of the consensus layer. Various statuses permit different actions, such as gossip and event creation.
  */
 public enum ConsensusLayerStatus implements UniqueId {
     /**
@@ -12,7 +12,8 @@ public enum ConsensusLayerStatus implements UniqueId {
      */
     STARTING_UP(1),
     /**
-     * The consensus layer is actively trying to produce the next consensus round. Gossip and event creation are permitted.
+     * The consensus layer is actively trying to produce the next consensus round. Gossip and event creation are
+     * permitted.
      */
     ACTIVE(2),
     /**
@@ -32,25 +33,28 @@ public enum ConsensusLayerStatus implements UniqueId {
      */
     REPLAYING_EVENTS(7),
     /**
-     * The consensus layer has just started, and is observing the network. The consensus layer may gossip, but not create events.
+     * The consensus layer has just started, and is observing the network. The consensus layer may gossip, but not
+     * create events.
      */
     OBSERVING(8),
     /**
-     * The consensus layer has started up or has finished reconnecting, and is now ready to join the network. It may
-     * be gossiping and creating empty events, but not yet accepting app transactions.
-     * TODO come back to this. Do we need an IDLE status?
+     * A self event has not reached consensus in a configurable amount of wall clock time. The node is not healthy, and
+     * transactions submitted to this node are not reaching consensus. This status is only possible when a round has
+     * been requested but not yet provided to the execution layer. If no round was requested, the node will transition
+     * to {@link #IDLE} instead.
+     * <p>
+     * Events created while in this status do not contain any transactions.
      */
     CHECKING(9),
+    /**
+     * The consensus layer has no work to do. All requested rounds have been provided to the execution layer and the
+     * consensus layer is waiting for the next request.
+     */
+    IDLE(10),
     /**
      * The consensus layer has encountered a failure, and is unable to continue. The consensus layer is idle.
      */
     CATASTROPHIC_FAILURE(11);
-
-
-    // TODO Consider adding a new "IDLE" status that kicks in if a new round has not been requested by the
-    // Execution layer in a configurable amount of wall clock time. The consensus layer can only report CHECKING/ACTIVE
-    // type status if it is creating events and reaching consensus, which it cannot do if the Execution layer
-    // is not requesting new rounds.
 
     /**
      * Unique ID of the enum value

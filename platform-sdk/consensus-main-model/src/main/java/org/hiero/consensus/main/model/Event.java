@@ -18,7 +18,7 @@ import java.util.List;
 public interface Event {
 
     /**
-     * Returns a List application events in this transaction.
+     * Returns an immutable List of transactions in this event.
      *
      * @return a transaction iterator
      */
@@ -72,12 +72,12 @@ public interface Event {
     boolean isPcesEvent();
 
     /**
-     * Wait until all transactions have been prehandled for this event.
+     * Wait until all transactions have been pre-handled for this event.
      */
     void awaitPrehandleCompletion();
 
     /**
-     * Signal that all transactions have been prehandled for this event.
+     * Signal that all transactions have been pre-handled for this event.
      */
     void signalPrehandleCompletion();
 }
