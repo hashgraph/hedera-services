@@ -343,6 +343,18 @@ public class FrameUtils {
     }
 
     /**
+     * Returns true if the given address is the coinbase of the given frame.
+     *
+     * @param frame the current message frame
+     * @param address the address to check
+     * @return true if the address is the coinbase
+     */
+    public static boolean isCoinbase(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        final var coinbase = frame.getMiningBeneficiary();
+        return coinbase != null && address.getBytes().equals(coinbase.getBytes());
+    }
+
+    /**
      * Returns true if the given address is the coinbase and is already warm in the given frame, as it is
      * from the start of every transaction (EIP-3651).
      *
@@ -351,7 +363,7 @@ public class FrameUtils {
      * @return true if the address is the warm coinbase
      */
     public static boolean isWarmCoinbase(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        return address.getBytes().equals(frame.getMiningBeneficiary().getBytes()) && frame.isAddressWarm(address);
+        return isCoinbase(frame, address) && frame.isAddressWarm(address);
     }
 
     /**

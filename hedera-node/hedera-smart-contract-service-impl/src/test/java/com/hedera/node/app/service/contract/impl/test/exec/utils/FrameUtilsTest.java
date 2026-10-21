@@ -389,6 +389,13 @@ class FrameUtilsTest {
     }
 
     @Test
+    void noAddressIsTheCoinbaseOfAFrameWithoutOne() {
+        final var coinbase = Address.fromHexString("0x62");
+        assertFalse(FrameUtils.isCoinbase(frame, coinbase));
+        assertFalse(FrameUtils.isWarmCoinbase(frame, coinbase));
+    }
+
+    @Test
     void configuredPrecompileShouldBeDisabled() {
         Configuration DISABLED_PRECOMPILE_CONFIG = HederaTestConfigBuilder.create()
                 .withValue("contracts.precompile.disabled", "2,4")
