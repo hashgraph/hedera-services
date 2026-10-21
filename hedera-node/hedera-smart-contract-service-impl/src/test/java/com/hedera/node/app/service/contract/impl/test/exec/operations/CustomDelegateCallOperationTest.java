@@ -11,9 +11,11 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -120,6 +122,27 @@ class CustomDelegateCallOperationTest {
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
+        }
+    }
+
+    @Test
+    void coinbaseIsPricedWarmInGasPreCheck() {
+        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
+            givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
+            given(frame.getRemainingGas()).willReturn(0L);
+            given(frame.getRecipientAddress()).willReturn(SYSTEM_ADDRESS);
+            frameUtils
+                    .when(() -> FrameUtils.isWarmCoinbase(frame, SYSTEM_ADDRESS))
+                    .thenReturn(true);
+            given(gasCalculator.callOperationGasCost(
+                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(),
+                            eq(true)))
+                    .willReturn(REQUIRED_GAS);
+            final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);
+            assertSameResult(expected, subject.execute(frame, evm));
+            verify(gasCalculator)
+                    .callOperationStaticGasCost(
+                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), eq(true));
         }
     }
 

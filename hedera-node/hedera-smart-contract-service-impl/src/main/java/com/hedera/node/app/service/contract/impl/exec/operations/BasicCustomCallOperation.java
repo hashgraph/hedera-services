@@ -3,6 +3,7 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isWarmCoinbase;
 import static com.hedera.node.app.service.contract.impl.exec.utils.OperationUtils.isDeficientGas;
 import static java.util.Objects.requireNonNull;
 
@@ -120,7 +121,8 @@ public interface BasicCustomCallOperation {
     Address address(@NonNull MessageFrame frame);
 
     /**
-     * Calculates the gas cost for the call operation.
+     * Calculates the gas cost for the call operation, pricing the target as cold unless it is the
+     * coinbase, which is warm from the start of the transaction (EIP-3651).
      *
      * @param frame the frame in which the call is being made
      * @return the gas cost
@@ -133,6 +135,7 @@ public interface BasicCustomCallOperation {
         final var outputLength = outputDataLength(frame);
         final var transferValue = value(frame);
         final var recipientAddress = address(frame);
+        final var accountIsWarm = isWarmCoinbase(frame, to(frame));
 
         final var staticCost = gasCalculator()
                 .callOperationStaticGasCost(
@@ -144,7 +147,7 @@ public interface BasicCustomCallOperation {
                         outputLength,
                         transferValue,
                         recipientAddress,
-                        false);
+                        accountIsWarm);
 
         if (isDeficientGas(frame, staticCost)) {
             return staticCost;
@@ -161,7 +164,7 @@ public interface BasicCustomCallOperation {
                         outputLength,
                         transferValue,
                         recipientAddress,
-                        false);
+                        accountIsWarm);
     }
 
     /**

@@ -351,7 +351,7 @@ public class FrameUtils {
      * @return true if the address is the warm coinbase
      */
     public static boolean isWarmCoinbase(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        return address.equals(frame.getMiningBeneficiary()) && frame.isAddressWarm(address);
+        return address.getBytes().equals(frame.getMiningBeneficiary().getBytes()) && frame.isAddressWarm(address);
     }
 
     /**
