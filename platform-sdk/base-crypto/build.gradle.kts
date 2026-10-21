@@ -19,6 +19,7 @@ testModuleInfo {
     requires("org.hiero.consensus.fakes")
     requires("org.apache.logging.log4j.core")
     requires("org.assertj.core")
+    requires("org.bouncycastle.provider")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
 }
