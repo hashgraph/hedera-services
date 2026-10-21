@@ -185,6 +185,10 @@ public class ChildDispatchFactory {
         requireNonNull(consensusNow);
         requireNonNull(blockRecordInfo);
         requireNonNull(options);
+        if (overridePreHandleResult != null && options.requirementVerifier() != null) {
+            throw new IllegalArgumentException(
+                    "A dispatch cannot use both pre-handle signature evidence and a requirement verifier");
+        }
         // If there is an override pre-handle result, then this is an atomic batch inner transaction.
         // If there is an override pre-handle result, we re-use it, and this dispatch will check signatures using the
         // results from the override pre-handle result
@@ -403,9 +407,7 @@ public class ChildDispatchFactory {
                     null,
                     null,
                     0,
-                    preHandleContext.requiredKeyRequirements(),
-                    preHandleContext.optionalKeyRequirements(),
-                    preHandleContext.payerKeyRequirement());
+                    preHandleContext.requiredKeyRequirements());
         } catch (final PreCheckException e) {
             return new PreHandleResult(
                     null,

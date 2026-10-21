@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.contract.impl.exec.scope.AccountAuthorizingVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
-import com.hedera.node.app.service.contract.impl.exec.scope.EitherOrVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.key.KeyVerifier;
@@ -128,8 +127,6 @@ class AccountAuthorizingVerificationStrategyTest {
         assertFalse(test.test(forAccount(OTHER, AN_ED25519_KEY)));
         assertTrue(
                 test.test(forKey(Key.newBuilder().contractID(contractId(OTHER)).build())));
-        assertFalse(new EitherOrVerificationStrategy(original, legacy).authorizesAccount(CALLER));
-        assertFalse(new EitherOrVerificationStrategy(original, legacy).authorizesAccount(OTHER));
     }
 
     @Test

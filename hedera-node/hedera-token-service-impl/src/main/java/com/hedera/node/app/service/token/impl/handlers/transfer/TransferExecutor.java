@@ -35,6 +35,7 @@ import com.hedera.hapi.node.hooks.HookExecution;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.utils.contracts.HookUtils;
+import com.hedera.node.app.hapi.utils.keys.KeyUtils;
 import com.hedera.node.app.service.entityid.EntityIdFactory;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -578,7 +579,11 @@ public class TransferExecutor extends BaseTokenHandler {
                         ctx.optionalKeyRequirement(
                                 KeyRequirement.forAccount(account.accountIdOrThrow(), account.keyOrThrow()));
                     } else {
-                        ctx.requireKeyOrThrow(account.accountIdOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
+                        if (!KeyUtils.isValid(account.key())) {
+                            throw new PreCheckException(INVALID_TRANSFER_ACCOUNT_ID);
+                        }
+                        ctx.requireKeyRequirement(
+                                KeyRequirement.forAccount(account.accountIdOrThrow(), account.keyOrThrow()));
                     }
                 }
             } else {

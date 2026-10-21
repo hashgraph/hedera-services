@@ -10,10 +10,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP2
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
@@ -36,7 +34,6 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.key.RequirementVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.DispatchOptions;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -87,25 +84,10 @@ class HandleSystemContractOperationsTest {
     }
 
     @Test
-    void returnsExpectedPrimitiveTest() {
-        given(strategy.asPrimitiveSignatureTestIn(context, A_SECP256K1_KEY)).willReturn(callback);
-        assertSame(callback, subject.primitiveSignatureTestWith(strategy));
-    }
-
-    @Test
-    void returnsExpectedTest() {
-        final var captor = forClass(VerificationAssistant.class);
-        doCallRealMethod().when(strategy).asSignatureTestIn(context, A_SECP256K1_KEY);
-        given(strategy.asPrimitiveSignatureTestIn(context, A_SECP256K1_KEY)).willReturn(callback);
-        given(context.keyVerifier()).willReturn(keyVerifier);
-        given(keyVerifier.verificationFor(eq(Key.DEFAULT), captor.capture())).willReturn(passed);
-        given(passed.passed()).willReturn(true);
-
-        final var test = subject.signatureTestWith(strategy);
-
-        assertTrue(test.test(Key.DEFAULT));
-        captor.getValue().test(Key.DEFAULT, failed);
-        verify(callback).test(Key.DEFAULT);
+    void returnsExpectedRequirementTest() {
+        final var callback = mock(RequirementVerifier.class);
+        given(strategy.asRequirementTestIn(context, A_SECP256K1_KEY)).willReturn(callback);
+        assertSame(callback, subject.requirementTestWith(strategy));
     }
 
     @Test

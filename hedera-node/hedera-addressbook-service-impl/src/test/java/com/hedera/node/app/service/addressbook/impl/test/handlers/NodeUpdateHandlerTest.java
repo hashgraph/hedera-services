@@ -2,6 +2,7 @@
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.GRPC_WEB_PROXY_NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GRPC_CERTIFICATE_HASH;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 import com.hedera.hapi.node.addressbook.AssociatedRegisteredNodeList;
@@ -760,6 +762,21 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         assertDoesNotThrow(() -> subject.handle(handleContext));
         // Verify decline reward was updated to true
         assertTrue(writableStore.get(nodeId.number()).declineReward());
+    }
+
+    @Test
+    void accountOnlyUpdatePreservesOldAccountLookupFailure() throws PreCheckException {
+        givenValidNode();
+        final var newAccountId = idFactory.newAccountId(4);
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAccountId(newAccountId)
+                .build();
+        final var context = spy(setupPreHandle(true, txn));
+        mockAccountLookup(aPrimitiveKey, newAccountId, accountStore);
+        doThrow(new PreCheckException(INVALID_ACCOUNT_ID)).when(context).getAccountKey(accountId);
+
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ACCOUNT_ID);
     }
 
     @Test

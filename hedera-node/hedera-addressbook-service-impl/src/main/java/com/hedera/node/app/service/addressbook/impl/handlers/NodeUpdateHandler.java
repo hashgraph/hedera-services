@@ -10,6 +10,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_ACCOUNT_HAS_ZERO_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.node.app.hapi.utils.keys.KeyUtils.isValid;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.parseX509Certificate;
 import static com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator.validateX509Certificate;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -223,9 +224,12 @@ public class NodeUpdateHandler implements TransactionHandler {
     private void handleAccountIdOnlyUpdate(PreHandleContext context, Node existingNode) throws PreCheckException {
         if (existingNode.hasAccountId()) {
             // Allow signature from either admin key or existing account key
-            context.requireKeyRequirement(KeyRequirement.anyOf(List.of(
+            final var accountId = existingNode.accountIdOrThrow();
+            final var requirement = KeyRequirement.anyOf(List.of(
                     KeyRequirement.forKey(existingNode.adminKeyOrThrow()),
-                    context.keyRequirementFor(existingNode.accountIdOrThrow(), INVALID_SIGNATURE))));
+                    KeyRequirement.forAccount(accountId, context.getAccountKey(accountId))));
+            validateTruePreCheck(isValid(requirement.key()), INVALID_SIGNATURE);
+            context.requireKeyRequirement(requirement);
         } else {
             // No account ID exists, so only admin key signature is acceptable
             context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);

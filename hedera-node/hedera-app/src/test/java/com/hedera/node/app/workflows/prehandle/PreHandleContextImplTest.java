@@ -103,6 +103,7 @@ class PreHandleContextImplTest implements Scenarios {
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(PAYER)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(PAYER);
 
         final var txn = createAccountTransaction();
         subject =

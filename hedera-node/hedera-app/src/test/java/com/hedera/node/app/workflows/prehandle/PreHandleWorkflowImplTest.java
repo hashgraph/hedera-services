@@ -936,9 +936,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     Map.of(payerKey, sigFuture),
                     null,
                     DEFAULT_CONFIG_VERSION,
-                    Set.of(previousRequirement),
-                    Set.of(),
-                    previousRequirement);
+                    Set.of(previousRequirement));
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.requireKeyRequirement(currentRequirement);
@@ -957,7 +955,6 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
             assertThat(result.status()).isEqualTo(SO_FAR_SO_GOOD);
             assertThat(result.getRequiredKeyRequirements()).containsExactly(currentRequirement);
-            assertThat(result.getPayerKeyRequirement()).isEqualTo(previousRequirement);
             assertThat(result.getVerificationResults().get(payerKey)).isSameAs(sigFuture);
             verifyNoInteractions(signatureVerifier);
         }

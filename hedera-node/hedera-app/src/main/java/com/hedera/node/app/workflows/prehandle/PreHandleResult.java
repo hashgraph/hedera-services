@@ -48,8 +48,6 @@ import java.util.concurrent.Future;
  * @param innerResults {@link PreHandleResult}s of the inner transactions if this is an atomic batch transaction.
  * @param configVersion The version of the configuration that was used during pre-handle
  * @param requiredKeyRequirements Required authorization requirements, preserving their originating identities
- * @param optionalKeyRequirements Optional authorization requirements, preserving their originating identities
- * @param payerKeyRequirement The payer's resolved authorization requirement
  */
 public record PreHandleResult(
         @Nullable AccountID payer,
@@ -63,9 +61,7 @@ public record PreHandleResult(
         @Nullable Map<Key, SignatureVerificationFuture> verificationResults,
         @Nullable List<PreHandleResult> innerResults,
         long configVersion,
-        @Nullable Set<KeyRequirement> requiredKeyRequirements,
-        @Nullable Set<KeyRequirement> optionalKeyRequirements,
-        @Nullable KeyRequirement payerKeyRequirement) {
+        @Nullable Set<KeyRequirement> requiredKeyRequirements) {
 
     /**
      * Compatibility constructor for callers that have only key material. Such callers cannot
@@ -95,9 +91,7 @@ public record PreHandleResult(
                 verificationResults,
                 innerResults,
                 configVersion,
-                explicitRequirements(requiredKeys),
-                explicitRequirements(optionalKeys),
-                payerKey == null ? null : KeyRequirement.forKey(payerKey));
+                explicitRequirements(requiredKeys));
     }
 
     private static Set<KeyRequirement> explicitRequirements(@Nullable final Set<Key> keys) {
@@ -164,14 +158,6 @@ public record PreHandleResult(
         return requiredKeyRequirements == null ? Collections.emptySet() : requiredKeyRequirements;
     }
 
-    public @NonNull Set<KeyRequirement> getOptionalKeyRequirements() {
-        return optionalKeyRequirements == null ? Collections.emptySet() : optionalKeyRequirements;
-    }
-
-    public @NonNull KeyRequirement getPayerKeyRequirement() {
-        return payerKeyRequirement == null ? KeyRequirement.forKey(getPayerKey()) : payerKeyRequirement;
-    }
-
     public @NonNull Key getPayerKey() {
         return payerKey == null ? IMMUTABILITY_SENTINEL_KEY : payerKey;
     }
@@ -222,9 +208,6 @@ public record PreHandleResult(
         requiredKeyRequirements = requiredKeyRequirements == null
                 ? null
                 : Collections.unmodifiableSet(new LinkedHashSet<>(requiredKeyRequirements));
-        optionalKeyRequirements = optionalKeyRequirements == null
-                ? null
-                : Collections.unmodifiableSet(new LinkedHashSet<>(optionalKeyRequirements));
         hollowAccounts =
                 hollowAccounts == null ? null : Collections.unmodifiableSet(new LinkedHashSet<>(hollowAccounts));
         verificationResults = verificationResults == null

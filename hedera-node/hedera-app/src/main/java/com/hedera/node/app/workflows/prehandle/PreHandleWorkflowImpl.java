@@ -379,9 +379,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                 results,
                 isAtomicBatch(txInfo) ? new ArrayList<>() : null,
                 configuration.getVersion(),
-                context.requiredKeyRequirements(),
-                context.optionalKeyRequirements(),
-                context.payerKeyRequirement());
+                context.requiredKeyRequirements());
     }
 
     /**

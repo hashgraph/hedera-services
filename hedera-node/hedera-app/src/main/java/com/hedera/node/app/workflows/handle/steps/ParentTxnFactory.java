@@ -506,9 +506,7 @@ public class ParentTxnFactory {
                     null,
                     null,
                     0,
-                    preHandleContext.requiredKeyRequirements(),
-                    preHandleContext.optionalKeyRequirements(),
-                    preHandleContext.payerKeyRequirement());
+                    preHandleContext.requiredKeyRequirements());
         } catch (final PreCheckException e) {
             return new PreHandleResult(
                     null,

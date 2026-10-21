@@ -131,8 +131,6 @@ final class PreHandleResultTest implements Scenarios {
                 1L);
 
         assertThat(result.getRequiredKeyRequirements()).containsExactly(KeyRequirement.forKey(key));
-        assertThat(result.getOptionalKeyRequirements()).containsExactly(KeyRequirement.forKey(key));
-        assertThat(result.getPayerKeyRequirement()).isEqualTo(KeyRequirement.forKey(key));
     }
 
     @Test
@@ -141,7 +139,6 @@ final class PreHandleResultTest implements Scenarios {
         final var aliceRequirement = KeyRequirement.forAccount(ALICE.accountID(), key);
         final var bobRequirement = KeyRequirement.forAccount(BOB.accountID(), key);
         final var required = new LinkedHashSet<>(List.of(aliceRequirement, bobRequirement));
-        final var optional = new LinkedHashSet<>(List.of(KeyRequirement.forKey(key), bobRequirement));
         final var result = new PreHandleResult(
                 ALICE.accountID(),
                 key,
@@ -154,19 +151,12 @@ final class PreHandleResultTest implements Scenarios {
                 Map.of(),
                 null,
                 1L,
-                required,
-                optional,
-                aliceRequirement);
+                required);
 
         required.clear();
-        optional.clear();
 
         assertThat(result.getRequiredKeyRequirements()).containsExactly(aliceRequirement, bobRequirement);
-        assertThat(result.getOptionalKeyRequirements()).containsExactly(KeyRequirement.forKey(key), bobRequirement);
-        assertThat(result.getPayerKeyRequirement()).isEqualTo(aliceRequirement);
         assertThatThrownBy(() -> result.getRequiredKeyRequirements().clear())
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> result.getOptionalKeyRequirements().clear())
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

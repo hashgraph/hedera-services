@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -34,6 +35,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.idAsHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -118,7 +120,12 @@ public class HbarAllowanceApprovalTest {
                                     .signedBy(SIGNER)
                                     .refusingEthConversion()
                                     .gas(1_000_000)
+                                    .via("beforeSharedAdmin")
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            childRecordsCheck(
+                                    "beforeSharedAdmin",
+                                    CONTRACT_REVERT_EXECUTED,
+                                    recordWith().status(INVALID_SIGNATURE)),
                             // Legitimately setting the contract's admin key must not delegate the
                             // owner's unrelated account authority to that contract's callers.
                             contractUpdate(HRC632_CONTRACT).newKey(ownerKey).signedBy(GENESIS, originalAdmin, ownerKey),
@@ -127,7 +134,12 @@ public class HbarAllowanceApprovalTest {
                                     .signedBy(SIGNER)
                                     .refusingEthConversion()
                                     .gas(1_000_000)
+                                    .via("afterSharedAdmin")
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            childRecordsCheck(
+                                    "afterSharedAdmin",
+                                    CONTRACT_REVERT_EXECUTED,
+                                    recordWith().status(INVALID_SIGNATURE)),
                             getAccountDetails(ACCOUNT)
                                     .payingWith(GENESIS)
                                     .has(accountDetailsWith().cryptoAllowancesCount(0)),

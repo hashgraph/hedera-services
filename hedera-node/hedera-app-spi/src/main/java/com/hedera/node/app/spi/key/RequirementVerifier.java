@@ -9,5 +9,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 @FunctionalInterface
 public interface RequirementVerifier {
+    /**
+     * Evaluates the complete requirement without promoting account authority into signature evidence.
+     * @param requirement the originating authority and its key or alternatives
+     * @return whether the requirement is authorized in this dispatch
+     */
     boolean test(@NonNull KeyRequirement requirement);
 }

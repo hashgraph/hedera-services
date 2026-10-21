@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.ObjLongConsumer;
+import java.util.stream.Collectors;
 
 /**
  * The fundamental unit of work in the handle workflow.
@@ -152,9 +153,7 @@ public interface Dispatch extends FeeCharging.Context {
      * @return the identity-scoped requirements
      */
     default Set<KeyRequirement> requiredKeyRequirements() {
-        return requiredKeys().stream()
-                .map(KeyRequirement::forKey)
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        return requiredKeys().stream().map(KeyRequirement::forKey).collect(Collectors.toUnmodifiableSet());
     }
 
     /**

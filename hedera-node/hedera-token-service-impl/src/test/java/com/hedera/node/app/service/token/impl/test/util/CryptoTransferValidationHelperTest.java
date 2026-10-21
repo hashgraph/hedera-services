@@ -2,11 +2,15 @@
 package com.hedera.node.app.service.token.impl.test.util;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -16,8 +20,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -66,8 +72,7 @@ class CryptoTransferValidationHelperTest {
 
         checkSender(SENDER_ID, PLAIN_TRANSFER, meta, accountStore);
 
-        verify(meta)
-                .requireKeyRequirement(com.hedera.node.app.spi.key.KeyRequirement.forAccount(SENDER_ID, SENDER_KEY));
+        verify(meta).requireKeyRequirement(KeyRequirement.forAccount(SENDER_ID, SENDER_KEY));
     }
 
     @Test
@@ -159,6 +164,30 @@ class CryptoTransferValidationHelperTest {
 
         verify(accountStore).getAliasedAccountById(SENDER_ID);
         verifyNoInteractions(meta);
+    }
+
+    @Test
+    void hollowReceiverWithRequiredSignatureKeepsLegacyRejection() {
+        final var receiver = hollowSender()
+                .copyBuilder()
+                .accountId(RECEIVER_ID)
+                .receiverSigRequired(true)
+                .build();
+        given(accountStore.getAliasedAccountById(RECEIVER_ID)).willReturn(receiver);
+        given(meta.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+
+        assertThatThrownBy(() -> checkReceiver(
+                        RECEIVER_ID,
+                        SENDER_ID,
+                        PLAIN_TRANSFER,
+                        meta,
+                        null,
+                        null,
+                        accountStore,
+                        RECEIVER_KEY_IS_REQUIRED))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TRANSFER_ACCOUNT_ID));
+        verify(meta, never()).requireSignatureForHollowAccount(receiver);
     }
 
     private static Account senderWithKey(final Key key) {

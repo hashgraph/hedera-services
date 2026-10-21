@@ -111,6 +111,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = createAccountTransaction();
 
@@ -129,6 +130,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
@@ -145,6 +147,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
@@ -162,6 +165,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
@@ -215,6 +219,7 @@ class PreHandleContextListUpdatesTest {
         // Given an account with a key, and a transaction using that account as the payer and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
@@ -230,6 +235,7 @@ class PreHandleContextListUpdatesTest {
         // and a contract account with a key, and a PreHandleContext
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(accountStore.getContractById(otherContractId)).willReturn(contractAccount);
         given(contractAccount.key()).willReturn(contractIdKey);
         given(contractAccount.keyOrElse(EMPTY_KEY_LIST)).willReturn(contractIdKey);
@@ -252,8 +258,8 @@ class PreHandleContextListUpdatesTest {
         given(accountStore.getAccountById(alias)).willReturn(account);
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
-        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(account.accountIdOrThrow()).willReturn(payer);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         subject = new PreHandleContextImpl(
                 storeFactory, createAccountTransaction(), CONFIG, dispatcher, transactionChecker, creatorInfo);
 
@@ -274,6 +280,7 @@ class PreHandleContextListUpdatesTest {
         given(contractAccount.accountIdOrThrow()).willReturn(asAccount(0L, 0L, otherContractId.contractNum()));
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         subject = new PreHandleContextImpl(
@@ -290,6 +297,7 @@ class PreHandleContextListUpdatesTest {
         given(accountStore.getAccountById(alias)).willReturn(null);
         given(accountStore.getAccountById(payer)).willReturn(account);
         given(account.keyOrThrow()).willReturn(payerKey);
+        given(account.accountIdOrThrow()).willReturn(payer);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
 
         subject = new PreHandleContextImpl(

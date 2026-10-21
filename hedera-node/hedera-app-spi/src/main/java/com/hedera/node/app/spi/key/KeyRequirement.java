@@ -23,7 +23,11 @@ public sealed interface KeyRequirement {
     @NonNull
     Key key();
 
-    /** Creates a requirement for an account, using its canonical ID and controlling key from state. */
+    /**
+     * Creates a requirement from an account's canonical ID and controlling key read together from trusted state.
+     * This factory validates structure only; callers must not supply an identity or key from transaction input.
+     * Prefer {@link com.hedera.node.app.spi.workflows.PreHandleContext#keyRequirementFor} when collecting requirements.
+     */
     @NonNull
     static KeyRequirement forAccount(@NonNull final AccountID accountId, @NonNull final Key key) {
         return new AccountKey(accountId, key);

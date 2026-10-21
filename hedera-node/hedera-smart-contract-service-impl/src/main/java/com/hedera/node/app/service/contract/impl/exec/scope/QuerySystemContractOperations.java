@@ -23,7 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.InstantSource;
 import java.util.Set;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -63,17 +62,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
             @NonNull final ResponseCodeEnum preemptingStatus,
             @NonNull final HederaFunctionality functionality) {
         throw new UnsupportedOperationException("Cannot externalize preempted dispatch");
-    }
-
-    @Override
-    public @NonNull Predicate<Key> primitiveSignatureTestWith(@NonNull final VerificationStrategy strategy) {
-        throw new UnsupportedOperationException("Cannot compute a signature test");
-    }
-
-    @NonNull
-    @Override
-    public Predicate<Key> signatureTestWith(@NonNull final VerificationStrategy strategy) {
-        throw new UnsupportedOperationException("Cannot compute a signature test");
     }
 
     @NonNull

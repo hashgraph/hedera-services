@@ -97,6 +97,9 @@ public interface PreHandleContext extends TransactionKeys {
      * Adds an explicit signing requirement for the given key. Repeated identical requirements are
      * deduplicated; equality with the payer key does not remove the requirement. The key must not be null.
      *
+     * <p>For an existing account's authority, use the account-ID overloads instead of passing
+     * {@code account.key()}. An explicit key never receives an account-execution exemption.
+     *
      * @param key key to be added
      * @return {@code this} object
      * @throws NullPointerException if the key is null

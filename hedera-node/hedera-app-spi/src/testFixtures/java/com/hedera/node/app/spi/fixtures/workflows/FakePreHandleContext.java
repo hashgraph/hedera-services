@@ -122,8 +122,7 @@ public class FakePreHandleContext implements PreHandleContext {
         // account 800, those accounts cannot be the payer.
         payerKey = account.key();
         mustExist(payerKey, INVALID_PAYER_ACCOUNT_ID);
-        payerKeyRequirement =
-                KeyRequirement.forAccount(account.accountId() == null ? payer : account.accountId(), payerKey);
+        payerKeyRequirement = KeyRequirement.forAccount(account.accountIdOrThrow(), payerKey);
     }
 
     @Override
@@ -338,6 +337,10 @@ public class FakePreHandleContext implements PreHandleContext {
         }
         if (failOnDeleted && account.deleted()) {
             throw new PreCheckException(ACCOUNT_DELETED);
+        }
+        if (isHollow(account)) {
+            requiredHollowAccounts.add(account);
+            return this;
         }
 
         var key = account.key();

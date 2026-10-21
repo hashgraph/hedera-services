@@ -33,7 +33,6 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -55,19 +54,6 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     public HandleSystemContractOperations(@NonNull final HandleContext context, @Nullable Key maybeEthSenderKey) {
         this.context = requireNonNull(context);
         this.maybeEthSenderKey = maybeEthSenderKey;
-    }
-
-    @Override
-    public @NonNull Predicate<Key> primitiveSignatureTestWith(@NonNull final VerificationStrategy strategy) {
-        requireNonNull(strategy);
-        return strategy.asPrimitiveSignatureTestIn(context, maybeEthSenderKey);
-    }
-
-    @NonNull
-    @Override
-    public Predicate<Key> signatureTestWith(@NonNull final VerificationStrategy strategy) {
-        requireNonNull(strategy);
-        return strategy.asSignatureTestIn(context, maybeEthSenderKey);
     }
 
     @NonNull

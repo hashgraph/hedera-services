@@ -155,8 +155,7 @@ public class PreHandleContextImpl implements PreHandleContext {
         final var payer = mustExist(accountStore.getAccountById(payerId), INVALID_PAYER_ACCOUNT_ID);
         // It would be a catastrophic invariant failure if an account in state didn't have a key
         payerKey = payer.keyOrThrow();
-        payerKeyRequirement =
-                KeyRequirement.forAccount(payer.accountId() == null ? payerId : payer.accountId(), payerKey);
+        payerKeyRequirement = KeyRequirement.forAccount(payer.accountIdOrThrow(), payerKey);
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null!");
     }
 

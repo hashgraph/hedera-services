@@ -100,13 +100,19 @@ public class CryptoTransferValidationHelper {
         } else if (!hasReceiverHook) {
             if (receiverAccount.receiverSigRequired()) {
                 if (receiverKeyCheck == RECEIVER_KEY_IS_OPTIONAL) {
-                    TokenHandlerHelper.verifyNotEmptyKey(receiverKey, INVALID_ACCOUNT_ID);
+                    if (receiverKey == null) {
+                        throw new PreCheckException(INVALID_ACCOUNT_ID);
+                    }
                     meta.optionalKeyRequirement(
                             KeyRequirement.forAccount(receiverAccount.accountIdOrThrow(), receiverKey));
                 } else {
                     // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
                     // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
-                    meta.requireKeyOrThrow(receiverAccount.accountIdOrThrow(), INVALID_TRANSFER_ACCOUNT_ID);
+                    if (!isValid(receiverKey)) {
+                        throw new PreCheckException(INVALID_TRANSFER_ACCOUNT_ID);
+                    }
+                    meta.requireKeyRequirement(
+                            KeyRequirement.forAccount(receiverAccount.accountIdOrThrow(), receiverKey));
                 }
             } else if (tokenMeta.hasRoyaltyWithFallback()) {
                 // For airdrops, we don't support tokens with royalties with fallback

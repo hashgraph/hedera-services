@@ -48,6 +48,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -276,6 +277,33 @@ class ChildDispatchFactoryTest {
     }
 
     @Test
+    void rejectsCompetingSignatureSources() {
+        final var options = DispatchOptions.subDispatchWithRequirements(
+                payerId,
+                TransactionBody.DEFAULT,
+                requirement -> true,
+                emptySet(),
+                StreamBuilder.class,
+                DispatchOptions.StakingRewards.ON,
+                DispatchOptions.UsePresetTxnId.NO,
+                UNIVERSAL_NOOP_FEE_CHARGING,
+                PropagateFeeChargingStrategy.YES);
+        assertThatThrownBy(() -> subject.createChildDispatch(
+                        configuration,
+                        savepointStack,
+                        readableStoreFactory,
+                        creatorInfo,
+                        CONTRACT_CALL,
+                        throttleAdviser,
+                        Instant.ofEpochSecond(12345L),
+                        blockRecordInfo,
+                        options,
+                        PreHandleResult.unknownFailure()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("both pre-handle signature evidence and a requirement verifier");
+    }
+
+    @Test
     void testFunctionOfTxnThrowsException() {
         mainSetup();
         var txBody = TransactionBody.newBuilder()
@@ -314,7 +342,8 @@ class ChildDispatchFactoryTest {
         given(parentDispatch.readableStoreFactory()).willReturn(readableStoreFactory);
         given(readableStoreFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(payerId))
-                .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
+                .willReturn(
+                        Account.newBuilder().accountId(payerId).key(Key.DEFAULT).build());
         given(parentDispatch.stack()).willReturn(savepointStack);
     }
 }
