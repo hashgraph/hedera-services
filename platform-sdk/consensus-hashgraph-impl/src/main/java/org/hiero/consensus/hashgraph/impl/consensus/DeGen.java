@@ -29,6 +29,7 @@ public class DeGen {
     public static void calculateDeGen(@NonNull final EventImpl event) {
         int maxParentDeGen = GENERATION_UNDEFINED;
         final List<EventImpl> allParents = event.getAllParents();
+        // an index loop, so that no iterator is allocated on this hot path
         for (int i = 0, n = allParents.size(); i < n; i++) {
             final EventImpl parent = allParents.get(i);
             maxParentDeGen = Math.max(maxParentDeGen, parentDeGen(parent));
