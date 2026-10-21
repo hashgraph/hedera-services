@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.node.base.BlockHashAlgorithm;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -99,10 +100,18 @@ public class VerifyCutoverBlockStreamOp extends UtilOp {
                 blockStreamInfo.trailingBlockHashes(),
                 "BlockStreamInfo.trailingBlockHashes should equal BlockInfo.blockHashes" + " (original record hashes)");
 
-        // The digest in effect after cutover; the block-root Merkle tree and the post-cutover
-        // running-hash chain both use it (SHA_384 by default, SHA_256 on networks that opt in).
-        final var digestTypeName = spec.startupProperties().get("blockStream.digestType");
-        final var digestType = digestTypeName != null ? DigestType.valueOf(digestTypeName) : DigestType.SHA_384;
+        // The digest in effect after cutover, as declared by the first post-cutover block (the startup
+        // properties may not reflect later upgrade overrides); the block-root Merkle tree and the
+        // post-cutover running-hash chain both use it.
+        final var digestType = firstPostCutover.items().stream()
+                                .filter(BlockItem::hasBlockHeader)
+                                .findFirst()
+                                .orElseThrow()
+                                .blockHeaderOrThrow()
+                                .hashAlgorithm()
+                        == BlockHashAlgorithm.SHA2_256
+                ? DigestType.SHA_256
+                : DigestType.SHA_384;
 
         // === Verify trailingOutputHashes by evolving captured RunningHashes ===
         // The BSI from endRound has trailingOutputHashes AFTER processing all

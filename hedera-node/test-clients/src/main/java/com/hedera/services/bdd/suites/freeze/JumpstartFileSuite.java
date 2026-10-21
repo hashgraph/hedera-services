@@ -267,7 +267,10 @@ class JumpstartFileSuite implements LifecycleTest {
                                 "blockStream.streamMode",
                                 // The real cutover value will be BLOCKS, but to keep record stream balance validation
                                 // working, keep BOTH enabled
-                                "BOTH"),
+                                "BOTH",
+                                // Overrides apply only to this restart, so keep the SHA-256 switch from Phase 9b
+                                "blockStream.digestType",
+                                "SHA_256"),
                         // Pre-restart: capture the final BlockInfo before cutover, and save preview block stream files
                         // for later replay
                         // Capture the genuine pre-cutover windows here, at the quiesced pre-restart point (the
@@ -305,7 +308,9 @@ class JumpstartFileSuite implements LifecycleTest {
                         "blockStream.enableCutover",
                         "true",
                         "blockStream.streamMode",
-                        "BOTH")),
+                        "BOTH",
+                        "blockStream.digestType",
+                        "SHA_256")),
                 waitForActive(NodeSelector.allNodes(), Duration.ofSeconds(60)),
                 assertHgcaaLogContainsPattern(
                         NodeSelector.exceptNodeIds(LATER_NODE_IDS),
