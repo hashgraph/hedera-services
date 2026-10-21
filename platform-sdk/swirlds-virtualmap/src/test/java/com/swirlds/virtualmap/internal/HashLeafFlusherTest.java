@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -110,9 +111,7 @@ public class HashLeafFlusherTest {
         flusher.init(1, 2);
         // The batch is due, so it's flushed in the flusher thread, which is interrupted by the data source
         flusher.updateLeaf(leaf(1, 1, 1));
-        final Thread thread = flusher.getFlusherThread();
-        thread.join(SECONDS.toMillis(10));
-        assertFalse(thread.isAlive(), "Flusher thread must exit after a failed flush");
+        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after a failed flush");
         // The flush must not be treated as a success, the failure is sticky
         final IllegalStateException update =
                 assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(2, 2, 2)));
@@ -129,11 +128,8 @@ public class HashLeafFlusherTest {
                 DEFAULT_FLUSH_INTERVAL,
                 new VirtualMapStatistics("testFinishStopsFlusherThread"));
         flusher.init(1, 2);
-        final Thread thread = flusher.getFlusherThread();
-        assertTrue(thread.isAlive());
         flusher.finish();
-        thread.join(SECONDS.toMillis(10));
-        assertFalse(thread.isAlive(), "Flusher thread must exit after finish()");
+        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after finish()");
     }
 
     @Test
@@ -143,11 +139,8 @@ public class HashLeafFlusherTest {
                 DEFAULT_FLUSH_INTERVAL,
                 new VirtualMapStatistics("testCancelStopsIdleFlusherThread"));
         flusher.init(1, 2);
-        final Thread thread = flusher.getFlusherThread();
-        assertTrue(thread.isAlive());
         flusher.cancel();
-        thread.join(SECONDS.toMillis(10));
-        assertFalse(thread.isAlive(), "Flusher thread must exit after cancel()");
+        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after cancel()");
     }
 
     @Test
@@ -159,9 +152,7 @@ public class HashLeafFlusherTest {
         // Reconnect may be aborted before the flusher is initialized
         flusher.cancel();
         flusher.init(1, 2);
-        final Thread thread = flusher.getFlusherThread();
-        thread.join(SECONDS.toMillis(10));
-        assertFalse(thread.isAlive(), "Flusher thread of a cancelled flusher must exit");
+        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread of a cancelled flusher must exit");
         final IllegalStateException update =
                 assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
         assertInstanceOf(CancellationException.class, update.getCause());
@@ -438,10 +429,13 @@ public class HashLeafFlusherTest {
                 result.get(10, SECONDS);
             }
 
-            // Waits till the thread is blocked in the flusher. Stops waiting early, if the thread completes instead
+            // Waits till the thread is blocked in the flusher. Stops waiting early, if the thread completes instead.
+            // Producers wait in Future.get(), finish() waits in a timed ExecutorService.awaitTermination()
             void awaitBlocked() {
                 assertEventuallyTrue(
-                        () -> result.isDone() || thread.getState() == Thread.State.WAITING,
+                        () -> result.isDone()
+                                || thread.getState() == Thread.State.WAITING
+                                || thread.getState() == Thread.State.TIMED_WAITING,
                         Duration.ofSeconds(10),
                         "Producer didn't block in time");
                 assertFalse(result.isDone(), "Producer must block");
@@ -662,9 +656,7 @@ public class HashLeafFlusherTest {
             assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
-            final Thread flusherThread = flusher.getFlusherThread();
-            flusherThread.join(SECONDS.toMillis(10));
-            assertFalse(flusherThread.isAlive(), "Flusher thread must exit after finish()");
+            assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after finish()");
             assertLeavesPresent(ds, 1, INTERVAL);
             // The final flush is never run, and the flusher can't be finished again
             assertEquals(1, ds.saves.get());
@@ -712,9 +704,7 @@ public class HashLeafFlusherTest {
             assertInstanceOf(CancellationException.class, released.getCause().getCause());
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
-            final Thread flusherThread = flusher.getFlusherThread();
-            flusherThread.join(SECONDS.toMillis(10));
-            assertFalse(flusherThread.isAlive(), "Flusher thread must exit after cancel()");
+            assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after cancel()");
             assertLeavesPresent(ds, 1, INTERVAL);
             // No new flushes are started, all subsequent calls fail
             assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(300, 300, 300)));
@@ -793,7 +783,11 @@ public class HashLeafFlusherTest {
                     assertLeavesPresent(ds, 1, count);
                     // Flushes run on the flusher thread, and the final one in the thread that calls finish(),
                     // never on producer workers
-                    assertEquals(Set.of(flusher.getFlusherThread(), Thread.currentThread()), ds.saveThreads);
+                    assertEquals(2, ds.saveThreads.size(), "Flushes must run on two threads");
+                    assertTrue(ds.saveThreads.contains(Thread.currentThread()), "The final flush must run in finish()");
+                    assertTrue(
+                            ds.saveThreads.stream().noneMatch(ForkJoinWorkerThread.class::isInstance),
+                            "Flushes must not run on producer workers");
                 }
             } finally {
                 producerPool.shutdownNow();
