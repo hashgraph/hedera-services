@@ -949,7 +949,7 @@ public class ConsensusImpl implements Consensus {
         long maxRound = ConsensusConstants.ROUND_NEGATIVE_INFINITY;
         final List<EventImpl> allParents = x.getAllParents();
         // an index loop, so that no iterator is allocated on this hot path
-        for (int i = 0, n = allParents.size(); i < n; i++) {
+        for (int i = 0, allParentsSize = allParents.size(); i < allParentsSize; i++) {
             final EventImpl parent = allParents.get(i);
             if (ancient(parent)) {
                 continue;
@@ -1006,7 +1006,7 @@ public class ConsensusImpl implements Consensus {
             EventImpl latestEventSeen = null;
             EventImpl parentWhichSeesLatestEvent = null;
             // an index loop, so that no iterator is allocated on this hot path
-            for (int i = 0, n = allParents.size(); i < n; i++) {
+            for (int i = 0, allParentsSize = allParents.size(); i < allParentsSize; i++) {
                 final EventImpl parent = allParents.get(i);
                 if (ancient(parent)) {
                     // we can ignore ancient parents
@@ -1092,10 +1092,11 @@ public class ConsensusImpl implements Consensus {
 
         x.initStronglySeeP(roster.size());
         final List<EventImpl> allParents = x.getAllParents();
+        final int rosterSize = roster.size();
         perMemberLoop:
-        for (int mm = 0, rosterSize = roster.size(); mm < rosterSize; mm++) {
+        for (int mm = 0; mm < rosterSize; mm++) {
             // an index loop, so that no iterator is allocated on this hot path
-            for (int i = 0, n = allParents.size(); i < n; i++) {
+            for (int i = 0, allParentsSize = allParents.size(); i < allParentsSize; i++) {
                 final EventImpl parent = allParents.get(i);
                 if (ancient(parent)) {
                     continue;
@@ -1114,7 +1115,7 @@ public class ConsensusImpl implements Consensus {
                 x.setStronglySeeP(mm, null);
             } else {
                 long weight = 0;
-                for (int m3 = 0; m3 < roster.size(); m3++) {
+                for (int m3 = 0; m3 < rosterSize; m3++) {
                     if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
                         weight += roster.weightAtIndex(m3);
                     }
@@ -1190,7 +1191,7 @@ public class ConsensusImpl implements Consensus {
         long greatestParentRound = ConsensusConstants.ROUND_NEGATIVE_INFINITY;
         boolean singleParentHasTheGreatestParentRound = true;
         // an index loop, so that no iterator is allocated on this hot path
-        for (int i = 0, n = allParents.size(); i < n; i++) {
+        for (int i = 0, allParentsSize = allParents.size(); i < allParentsSize; i++) {
             final EventImpl parent = allParents.get(i);
             if (ancient(parent)) {
                 continue;
@@ -1308,7 +1309,7 @@ public class ConsensusImpl implements Consensus {
         // first witness of x is x.
         final List<EventImpl> allParents = x.getAllParents();
         // an index loop, so that no iterator is allocated on this hot path
-        for (int i = 0, n = allParents.size(); i < n; i++) {
+        for (int i = 0, allParentsSize = allParents.size(); i < allParentsSize; i++) {
             final EventImpl parent = allParents.get(i);
             if (round(parent) == round(x)) {
                 x.setFirstWitnessS(firstWitnessS(parent));
