@@ -47,6 +47,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -316,6 +317,42 @@ class PreHandleContextImplTest implements Scenarios {
             assertThat(subject.keyRequirementFor(alias, INVALID_ACCOUNT_ID))
                     .isEqualTo(KeyRequirement.forAccount(ownerId, payerKey));
             assertThat(subject.requiredKeyRequirements()).isEmpty();
+        }
+
+        @Test
+        void hollowPayerAccountRequiresHollowSignature() throws PreCheckException {
+            final var hollowPayerId = AccountID.newBuilder().accountNum(1234L).build();
+            final var hollowPayer = Account.newBuilder()
+                    .accountId(hollowPayerId)
+                    .key(EMPTY_KEY_LIST)
+                    .alias(Bytes.wrap(new byte[20]))
+                    .build();
+            given(accountStore.getAccountById(hollowPayerId)).willReturn(hollowPayer);
+            final var context = new PreHandleContextImpl(
+                    storeFactory,
+                    createAccountTransaction(),
+                    hollowPayerId,
+                    configuration,
+                    dispatcher,
+                    transactionChecker,
+                    creatorInfo);
+
+            context.requireKeyOrThrow(hollowPayerId, INVALID_ACCOUNT_ID);
+
+            assertThat(context.requiredHollowAccounts()).containsExactly(hollowPayer);
+            assertThat(context.requiredKeyRequirements()).isEmpty();
+            assertThat(context.requiredNonPayerKeys()).isEmpty();
+        }
+
+        @Test
+        void composedRequirementWithInvalidAlternativeIsIgnored() {
+            final var requirement = KeyRequirement.anyOf(
+                    List.of(KeyRequirement.forAccount(ownerId, payerKey), KeyRequirement.forKey(Key.DEFAULT)));
+
+            subject.requireKeyRequirement(requirement);
+
+            assertThat(subject.requiredKeyRequirements()).isEmpty();
+            assertThat(subject.requiredNonPayerKeys()).isEmpty();
         }
     }
 

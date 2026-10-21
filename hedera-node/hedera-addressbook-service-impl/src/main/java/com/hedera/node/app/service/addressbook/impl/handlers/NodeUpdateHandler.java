@@ -225,6 +225,7 @@ public class NodeUpdateHandler implements TransactionHandler {
         if (existingNode.hasAccountId()) {
             // Allow signature from either admin key or existing account key
             final var accountId = existingNode.accountIdOrThrow();
+            validateTruePreCheck(existingNode.hasAdminKey(), INVALID_SIGNATURE);
             final var requirement = KeyRequirement.anyOf(List.of(
                     KeyRequirement.forKey(existingNode.adminKeyOrThrow()),
                     KeyRequirement.forAccount(accountId, context.getAccountKey(accountId))));

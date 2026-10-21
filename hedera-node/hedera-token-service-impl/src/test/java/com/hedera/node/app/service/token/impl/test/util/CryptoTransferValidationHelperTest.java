@@ -4,6 +4,7 @@ package com.hedera.node.app.service.token.impl.test.util;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.node.app.hapi.utils.keys.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_OPTIONAL;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.TransferExecutor.OptionalKeyCheck.RECEIVER_KEY_IS_REQUIRED;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
@@ -188,6 +189,52 @@ class CryptoTransferValidationHelperTest {
                 .isInstanceOf(PreCheckException.class)
                 .has(responseCode(INVALID_TRANSFER_ACCOUNT_ID));
         verify(meta, never()).requireSignatureForHollowAccount(receiver);
+    }
+
+    @Test
+    void requiredReceiverSignatureIsAccountScoped() throws PreCheckException {
+        given(accountStore.getAliasedAccountById(RECEIVER_ID)).willReturn(receiverRequiringSignature(SENDER_KEY));
+        given(meta.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+
+        checkReceiver(RECEIVER_ID, SENDER_ID, PLAIN_TRANSFER, meta, null, null, accountStore, RECEIVER_KEY_IS_REQUIRED);
+
+        verify(meta).requireKeyRequirement(KeyRequirement.forAccount(RECEIVER_ID, SENDER_KEY));
+    }
+
+    @Test
+    void optionalReceiverSignatureIsAccountScoped() throws PreCheckException {
+        given(accountStore.getAliasedAccountById(RECEIVER_ID)).willReturn(receiverRequiringSignature(SENDER_KEY));
+        given(meta.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+
+        checkReceiver(RECEIVER_ID, SENDER_ID, PLAIN_TRANSFER, meta, null, null, accountStore, RECEIVER_KEY_IS_OPTIONAL);
+
+        verify(meta).optionalKeyRequirement(KeyRequirement.forAccount(RECEIVER_ID, SENDER_KEY));
+    }
+
+    @Test
+    void optionalReceiverSignatureWithoutKeyIsRejected() {
+        given(accountStore.getAliasedAccountById(RECEIVER_ID)).willReturn(receiverRequiringSignature(null));
+        given(meta.configuration()).willReturn(HederaTestConfigBuilder.createConfig());
+
+        assertThatThrownBy(() -> checkReceiver(
+                        RECEIVER_ID,
+                        SENDER_ID,
+                        PLAIN_TRANSFER,
+                        meta,
+                        null,
+                        null,
+                        accountStore,
+                        RECEIVER_KEY_IS_OPTIONAL))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_ACCOUNT_ID));
+    }
+
+    private static Account receiverRequiringSignature(final Key key) {
+        return Account.newBuilder()
+                .accountId(RECEIVER_ID)
+                .key(key)
+                .receiverSigRequired(true)
+                .build();
     }
 
     private static Account senderWithKey(final Key key) {
