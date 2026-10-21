@@ -629,6 +629,10 @@ jobs:
           sed -e "s@%PVC_SIZE%@100Mi@g" -e "s@%PVC_NAME%@sentinel-data-solo-shared-resources-redis-node-0@g" "${{ github.workspace }}"/.github/workflows/support/citr/mirror-node-pvc.yaml > mirror-node-pvc-sentinel.yaml
           sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" create -f mirror-node-pvc-sentinel.yaml
 
+          #redis-master-0
+          sed -e "s@%PVC_SIZE%@100Mi@g" -e "s@%PVC_NAME%@redis-data-solo-shared-resources-redis-master-0@g" "${{ github.workspace }}"/.github/workflows/support/citr/mirror-node-pvc.yaml > mirror-node-pvc-master.yaml
+          sh "${{ github.workspace }}"/.github/workflows/support/citr/kubectlt -n "${{ needs.acquire-kubernetes-resources.outputs.namespace }}" create -f mirror-node-pvc-master.yaml
+
       - name: Add Mirror Node
         run: |
           set +x
