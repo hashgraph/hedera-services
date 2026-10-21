@@ -11,6 +11,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafBytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -64,7 +65,8 @@ import org.hiero.base.concurrent.framework.config.ThreadConfiguration;
 /// backpressure or in [#finish()] are released, and all subsequent calls throw an [IllegalStateException]
 /// with a [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
 /// flushes are started. Cancellation only unblocks and fails calls into this flusher, the caller is still
-/// responsible for stopping the producers.
+/// responsible for stopping the producers. If the caller is going to close the data source after cancelling,
+/// it must wait for the running flush first, see [#awaitTermination(Duration)].
 public class HashLeafFlusher {
 
     private static final Logger logger = LogManager.getLogger(HashLeafFlusher.class);
@@ -247,8 +249,8 @@ public class HashLeafFlusher {
     /// [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
     /// flushes are started, and the executor thread exits once the running flush is complete. May be called
     /// multiple times, from any thread, at any moment, including before [#init(long, long)]. Never waits for
-    /// a running flush. On the first call, if this flusher is initialized and not finished yet, the total time
-    /// producers were blocked on backpressure is logged.
+    /// a running flush, use [#awaitTermination(Duration)] for that. On the first call, if this flusher is
+    /// initialized and not finished yet, the total time producers were blocked on backpressure is logged.
     ///
     /// This method only affects calls into this flusher. It doesn't stop producers themselves, this is the
     /// caller's responsibility.
@@ -446,8 +448,15 @@ public class HashLeafFlusher {
         }
     }
 
-    // Test only
-    boolean awaitFlusherTermination(final long timeout, @NonNull final TimeUnit unit) throws InterruptedException {
-        return executor.awaitTermination(timeout, unit);
+    /// Waits till the flusher thread exits, after [#cancel()] or [#finish()]. A flush that is already running
+    /// when this flusher is cancelled keeps writing to the data source, so a caller that is going to close the
+    /// data source must wait for it first. Doesn't wait for the final flush in [#finish()], it runs in the
+    /// calling thread. If neither [#cancel()] nor [#finish()] has been called, waits for the whole timeout.
+    ///
+    /// @param timeout the maximum time to wait
+    /// @return true if the flusher thread has exited, false if the timeout elapsed first
+    /// @throws InterruptedException if the current thread is interrupted while waiting
+    public boolean awaitTermination(@NonNull final Duration timeout) throws InterruptedException {
+        return executor.awaitTermination(timeout.toNanos(), TimeUnit.NANOSECONDS);
     }
 }

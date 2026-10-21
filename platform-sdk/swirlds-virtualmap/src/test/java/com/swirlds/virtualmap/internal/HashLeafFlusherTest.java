@@ -130,7 +130,7 @@ public class HashLeafFlusherTest {
         assertInstanceOf(IllegalStateException.class, update.get().getCause());
         final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
         assertSame(update.get().getCause(), finish.getCause());
-        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after finish()");
+        assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after finish()");
         assertFalse(Thread.currentThread().isInterrupted(), "Only the flusher thread must be interrupted");
     }
 
@@ -142,7 +142,7 @@ public class HashLeafFlusherTest {
                 new VirtualMapStatistics("testFinishStopsFlusherThread"));
         flusher.init(1, 2);
         flusher.finish();
-        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after finish()");
+        assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after finish()");
     }
 
     @Test
@@ -153,7 +153,7 @@ public class HashLeafFlusherTest {
                 new VirtualMapStatistics("testCancelStopsIdleFlusherThread"));
         flusher.init(1, 2);
         flusher.cancel();
-        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after cancel()");
+        assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after cancel()");
     }
 
     @Test
@@ -165,7 +165,7 @@ public class HashLeafFlusherTest {
         // Reconnect may be aborted before the flusher is initialized
         flusher.cancel();
         flusher.init(1, 2);
-        assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread of a cancelled flusher must exit");
+        assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread of a cancelled flusher must exit");
         final IllegalStateException update =
                 assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
         assertInstanceOf(CancellationException.class, update.getCause());
@@ -775,7 +775,7 @@ public class HashLeafFlusherTest {
             assertInstanceOf(CancellationException.class, e.getCause().getCause());
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
-            assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after cancel()");
+            assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after cancel()");
             assertLeavesPresent(ds, 1, INTERVAL);
             // The final flush is never run
             assertEquals(1, ds.saves.get());
@@ -805,7 +805,7 @@ public class HashLeafFlusherTest {
             assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
-            assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after finish()");
+            assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after finish()");
             assertLeavesPresent(ds, 1, INTERVAL);
             // The final flush is never run, and the flusher can't be finished again
             assertEquals(1, ds.saves.get());
@@ -853,12 +853,30 @@ public class HashLeafFlusherTest {
             assertInstanceOf(CancellationException.class, released.getCause().getCause());
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
-            assertTrue(flusher.awaitFlusherTermination(10, SECONDS), "Flusher thread must exit after cancel()");
+            assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after cancel()");
             assertLeavesPresent(ds, 1, INTERVAL);
             // No new flushes are started, all subsequent calls fail
             assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(300, 300, 300)));
             final IllegalStateException finish = assertThrows(IllegalStateException.class, flusher::finish);
             assertInstanceOf(CancellationException.class, finish.getCause());
+            assertEquals(1, ds.saves.get());
+        }
+
+        @Test
+        void testAwaitTerminationWaitsForRunningFlushAfterCancel() throws Exception {
+            final GatedDataSource ds = gatedDataSource("awaitTermination");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            startBlockedFlush(flusher, ds);
+            flusher.cancel();
+            // The running flush still writes to the data source, so the flusher thread doesn't exit yet
+            assertFalse(
+                    flusher.awaitTermination(Duration.ofMillis(200)),
+                    "Flusher thread must not exit while a flush is running");
+            ds.open();
+            assertTrue(
+                    flusher.awaitTermination(Duration.ofSeconds(10)),
+                    "Flusher thread must exit once the running flush is complete");
+            assertLeavesPresent(ds, 1, INTERVAL);
             assertEquals(1, ds.saves.get());
         }
 
