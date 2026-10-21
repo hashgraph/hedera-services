@@ -1412,9 +1412,9 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         }
         // For the first post-cutover block the trailing window holds the original record hash (kept for the EVM
         // BLOCKHASH history), not the wrapped record block root production actually used as the parent. The wrapped
-        // root lives in that block's own (frozen) BlockInfo update; provide it so reconstruction links to the correct
-        // parent. BlockInfo is frozen post-cutover, so only the first post-cutover block carries a BlockInfo update;
-        // every other block yields null here, preserving the normal trailing-window behavior.
+        // root lives in that block's own BlockInfo update; provide it so reconstruction links to the correct parent.
+        // firstPostCutoverParentHash returns null for every other block (with or without a BlockInfo update),
+        // preserving the normal trailing-window behavior.
         final var blockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
                 List.of(block), SingletonUpdateChange::blockInfoValue, StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
         final var providedParent = BlockStreamManagerImpl.firstPostCutoverParentHash(blockInfo, blockStreamInfo);

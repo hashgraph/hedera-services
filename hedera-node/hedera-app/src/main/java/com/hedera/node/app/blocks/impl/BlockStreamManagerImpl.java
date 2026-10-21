@@ -543,10 +543,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * <p>Only the first post-cutover block needs this: its parent was the wrapped record block root, but the trailing
      * window holds the original record hash (kept for the EVM BLOCKHASH history), which cannot be turned into the
      * wrapped root. The wrapped root is already persisted in {@code BlockInfo.previousWrappedRecordBlockRootHash}; this
-     * reads it rather than storing a redundant copy in {@link BlockStreamInfo}. After cutover the node runs in
-     * BLOCKS-only mode, so {@code BlockInfo.lastBlockNumber} freezes at the cutover block; the first post-cutover block
-     * is therefore the one whose {@code BlockStreamInfo.blockNumber} equals {@code BlockInfo.lastBlockNumber()}, after
-     * the preview stream has been overwritten by the cutover.
+     * reads it rather than storing a redundant copy in {@link BlockStreamInfo}. See
+     * {@link #firstPostCutoverParentHash(BlockInfo, BlockStreamInfo)} for how the first post-cutover block is identified.
      *
      * @param state the current state
      * @param blockStreamInfo the block stream info being reconstructed
@@ -570,12 +568,13 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * {@link #firstPostCutoverParentHash(State, BlockStreamInfo)}; it is also used by offline callers that already hold
      * the {@link BlockInfo} (e.g. read from a block's own state-change updates) rather than a live {@link State}.
      *
-     * <p>After cutover the node runs in BLOCKS-only mode, so {@code BlockInfo.lastBlockNumber} freezes at the cutover
-     * block; the first post-cutover block is therefore the one whose {@code BlockStreamInfo.blockNumber} equals
-     * {@code BlockInfo.lastBlockNumber()}, after the preview stream has been overwritten by the cutover; only then is the
-     * wrapped parent returned.
+     * <p>The first post-cutover block is identified by its previous-blocks tree: the cutover seeds that tree with the
+     * wrapped record history ({@code BlockInfo.wrappedIntermediateBlockRootsLeafCount} leaves) and adds the wrapped
+     * parent, so only the first post-cutover block persists one more leaf than the wrapped history. Block numbers
+     * can't be used: after cutover {@code BlockInfo.lastBlockNumber} stays at the last record block in BLOCKS mode,
+     * but keeps advancing with the record stream in BOTH mode, while the wrapped fields stay frozen in both.
      *
-     * @param blockInfo the (frozen, post-cutover) block info, or {@code null} if none is available
+     * @param blockInfo the post-cutover block info, or {@code null} if none is available
      * @param blockStreamInfo the block stream info being reconstructed
      * @return the wrapped parent root hash, or {@code null} if the trailing window should be used
      */
@@ -585,7 +584,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         if (blockInfo == null || !blockInfo.previewStreamOverwritten()) {
             return null;
         }
-        if (blockStreamInfo.blockNumber() != blockInfo.lastBlockNumber()) {
+        if (blockStreamInfo.intermediateBlockRootsLeafCount()
+                != blockInfo.wrappedIntermediateBlockRootsLeafCount() + 1) {
             return null;
         }
         final var wrappedParent = blockInfo.previousWrappedRecordBlockRootHash();
