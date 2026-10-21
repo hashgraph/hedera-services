@@ -325,6 +325,19 @@ class AtomicBatchHandlerTest {
     }
 
     @Test
+    void failsOnInnerTxnWithUnknownFunctionality() throws PreCheckException {
+        // No data set, so the inner transaction has no functionality to look up in the whitelist
+        final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
+                .nodeAccountID(ATOMIC_BATCH_NODE_ACCOUNT_ID)
+                .build();
+        final var bytes = transactionsToBytes(innerTxnFrom("123"));
+        given(preHandleContext.body()).willReturn(newAtomicBatch(payerId1, consensusTimestamp, bytes));
+        given(transactionParser.parse(eq(bytes.getFirst()), any())).willReturn(innerTxnBody);
+        final var msg = assertThrows(PreCheckException.class, () -> subject.preHandle(preHandleContext));
+        assertEquals(BATCH_TRANSACTION_IN_BLACKLIST, msg.responseCode());
+    }
+
+    @Test
     void failsOnInnerBatchTx() throws PreCheckException {
         final var innerTxnBody = newTxnBodyBuilder(payerId2, consensusTimestamp, SIMPLE_KEY_A)
                 .atomicBatch(AtomicBatchTransactionBody.DEFAULT)
