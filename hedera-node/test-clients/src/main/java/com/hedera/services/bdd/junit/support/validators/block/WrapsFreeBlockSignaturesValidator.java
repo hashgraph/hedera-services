@@ -1410,7 +1410,8 @@ public class WrapsFreeBlockSignaturesValidator implements BlockStreamValidator {
         if (blockStreamInfo == null || blockStreamInfo.blockNumber() != blockNumberOf(block)) {
             return null;
         }
-        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with
+        // Reconstruct the persisted last-block hash with the same digest type the validator hashes blocks with. The
+        // trailing-window stride comes from the persisted trailing_block_hashes_compacted flag, not a window size.
         return BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType);
     }
 

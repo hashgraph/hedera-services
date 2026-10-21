@@ -14,6 +14,7 @@ import static com.hedera.node.app.blocks.impl.BlockImplUtils.hashLeaf;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_STATE_ID;
 import static com.hedera.node.app.blocks.schemas.V0560BlockStreamSchema.BLOCK_STREAM_INFO_STATE_LABEL;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.hapi.utils.CommonUtils.digestOrThrow;
 import static com.hedera.node.app.hapi.utils.CommonUtils.sha384DigestOrThrow;
 import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.RECORD_HASH_SIZE;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
@@ -327,6 +328,63 @@ class BlockStreamManagerImplTest {
 
         // With SHA-256, each trailing output hash entry is 32 bytes, not 48
         assertEquals(64, infoRef.get().trailingOutputHashes().length());
+    }
+
+    @Test
+    void startBlockThreadsPostCutoverFalseWhenPreviewNotOverwritten() {
+        // previewStreamOverwritten=false => postCutover=false, so the padded window is NOT compacted
+        final var window = runSha256BlockOverPaddedWindowWith(
+                BlockInfo.newBuilder().previewStreamOverwritten(false).build());
+
+        assertEquals(2 * RECORD_HASH_SIZE, window.length());
+    }
+
+    @Test
+    void startBlockThreadsPostCutoverTrueWhenPreviewOverwritten() {
+        // previewStreamOverwritten=true => postCutover=true, so the all-padded window is compacted to 32-byte entries
+        final var window = runSha256BlockOverPaddedWindowWith(
+                BlockInfo.newBuilder().previewStreamOverwritten(true).build());
+
+        assertEquals(2 * DigestType.SHA_256.digestLength(), window.length());
+    }
+
+    @Test
+    void startBlockTreatsNullBlockInfoAsPreCutover() {
+        // A missing BlockInfo singleton must not throw and is treated as postCutover=false
+        final var window = runSha256BlockOverPaddedWindowWith(null);
+
+        assertEquals(2 * RECORD_HASH_SIZE, window.length());
+    }
+
+    /**
+     * Runs one SHA-256 block whose starting trailing window is a single fully padded 48-byte entry, with the given
+     * {@link BlockInfo} (possibly null) in the block record service state; returns the resulting trailing window.
+     */
+    private Bytes runSha256BlockOverPaddedWindowWith(@Nullable final BlockInfo blockInfo) {
+        digestType = DigestType.SHA_256;
+        // A single 48-byte entry whose leading 16 bytes are zero pad (no genuine pre-cutover hash remains)
+        final var paddedEntry = Bytes.wrap(new byte[RECORD_HASH_SIZE]);
+        final var startingInfo = blockStreamInfoWith(Bytes.EMPTY, CREATION_VERSION)
+                .copyBuilder()
+                .trailingBlockHashes(paddedEntry)
+                .build();
+        givenSubjectWith(1, 0, startingInfo, platformStateWithFreezeTime(null), aWriter);
+        givenEndOfRoundSetup();
+        given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(blockHashSigner.isReady()).willReturn(true);
+        lenient()
+                .when(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .thenReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+
+        subject.init(state, FAKE_RESTART_BLOCK_HASH);
+        subject.startRound(round, state);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        subject.endRound(state, ROUND_NO);
+
+        return infoRef.get().trailingBlockHashes();
     }
 
     @Test
@@ -774,7 +832,9 @@ class BlockStreamManagerImplTest {
                         "c2973cea38b088de3996cf45ce5dbe339ae9b2c217204b40b7c6176c42a6000ed8619c487cd1db3509dc84bde58b18a2"),
                 HASH_OF_ZERO_384,
                 List.of(FAKE_PATCH_RESTART_HASH),
-                1);
+                1,
+                // Active digest is SHA-384, so entries stay 48 bytes and the window is not compacted
+                false);
 
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
@@ -1216,7 +1276,9 @@ class BlockStreamManagerImplTest {
                         "b14cb3ba5c0610ba2c18c12540725aa65eac623190c37014123b371aa2aaa86506b687a1fec7f03de5c7dfb30934dc7e"),
                 HASH_OF_ZERO_384,
                 List.of(FAKE_NON_EMPTY_RESULTS_RESTART_HASH),
-                1);
+                1,
+                // Active digest is SHA-384, so entries stay 48 bytes and the window is not compacted
+                false);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
@@ -2124,8 +2186,11 @@ class BlockStreamManagerImplTest {
                 null,
                 streamingObs);
 
-        // init with HASH_OF_ZERO should NOT read from BlockRecordService at all
-        subject.init(state, HASH_OF_ZERO_384, true);
+        // init with the configured-digest genesis sentinel should take the genesis branch and NOT read
+        // from BlockRecordService/BlockStreamService at all (the sentinel tracks the configured digest, so it
+        // is the 32-byte sha256(0x00) under SHA_256 and the 48-byte HASH_OF_ZERO_384 under SHA_384).
+        subject.init(
+                state, hashOfZero(config.getConfigData(BlockStreamConfig.class).digestType()), true);
         // If cutover had run, it would have tried to read BlockRecordService states,
         // which are not mocked here; the test succeeding proves cutover was skipped.
     }
@@ -2199,8 +2264,10 @@ class BlockStreamManagerImplTest {
                 .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
         given(state.getReadableStates(BlockRecordService.NAME)).willReturn(blockRecordReadable);
 
-        // loadCutoverData should see previewStreamOverwritten=false and skip
-        subject.init(state, HASH_OF_ZERO_384, true);
+        // loadCutoverData should see previewStreamOverwritten=false and skip; init then takes the genesis
+        // branch via the configured-digest sentinel without reading BlockStreamService.
+        subject.init(
+                state, hashOfZero(config.getConfigData(BlockStreamConfig.class).digestType()), true);
     }
 
     @Test
@@ -2323,9 +2390,6 @@ class BlockStreamManagerImplTest {
                 .lastBlockNumber(100)
                 .previewStreamOverwritten(true)
                 .build();
-        // BlockStreamInfo has advanced — real blocks were produced after cutover
-        final var advancedBsi = BlockStreamInfo.newBuilder().blockNumber(137).build();
-
         final var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(BlockStreamConfig.class)
                 .withValue("blockStream.roundsPerBlock", 1)
@@ -2348,6 +2412,25 @@ class BlockStreamManagerImplTest {
                 null,
                 streamingObs);
 
+        // BlockStreamInfo has advanced — real blocks were produced after cutover. The normal init path calls
+        // reconstructLastBlockHash, which needs a block time, the previous block's trailing hash, and non-null
+        // subtree roots, each sized to the configured digest.
+        final var hash = Bytes.wrap(
+                new byte
+                        [config.getConfigData(BlockStreamConfig.class)
+                                .digestType()
+                                .digestLength()]);
+        final var advancedBsi = BlockStreamInfo.newBuilder()
+                .blockNumber(137)
+                .blockTime(new Timestamp(1000, 0))
+                .trailingBlockHashes(hash)
+                .startOfBlockStateHash(hash)
+                .consensusHeaderRootHash(hash)
+                .inputTreeRootHash(hash)
+                .outputItemRootHash(hash)
+                .traceDataRootHash(hash)
+                .build();
+
         final var blockRecordReadable = mock(ReadableStates.class);
         given(blockRecordReadable.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
                 .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
@@ -2359,8 +2442,347 @@ class BlockStreamManagerImplTest {
                         BLOCK_STREAM_INFO_STATE_ID, BLOCK_STREAM_INFO_STATE_LABEL, () -> advancedBsi));
         given(state.getReadableStates(BlockStreamService.NAME)).willReturn(blockStreamReadable);
 
-        // init with HASH_OF_ZERO — cutover should be skipped since BSI has advanced
+        // init with a non-genesis hash — cutover should be skipped since BSI has advanced, and init takes the
+        // normal path (reconstructing the last block hash from the advanced BlockStreamInfo).
         subject.init(state, HASH_OF_ZERO_384, true);
+    }
+
+    @Test
+    void cutoverSkippedUsesSha256NormalPathWhenBlockStreamInfoHasAdvanced() {
+        // Same "BSI advanced, cutover skipped" scenario as above, but forcing digestType=SHA_256 so the normal
+        // init path reconstructs the last block hash entirely with 32-byte SHA-256 subtree hashes.
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(100)
+                .previewStreamOverwritten(true)
+                .build();
+
+        final var config = HederaTestConfigBuilder.create()
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.roundsPerBlock", 1)
+                .withValue("blockStream.enableCutover", true)
+                .withValue("blockStream.digestType", "SHA_256")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
+        subject = new BlockStreamManagerImpl(
+                blockHashSigner,
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                boundaryStateChangeListener,
+                platform,
+                quiescenceController,
+                hashInfo,
+                SemanticVersion.DEFAULT,
+                lifecycle,
+                quiescedHeartbeat,
+                metrics,
+                null,
+                streamingObs);
+
+        // Every reconstructed subtree hash must be the SHA-256 digest length (32 bytes).
+        final var sha256Size = DigestType.SHA_256.digestLength();
+        assertEquals(32, sha256Size);
+        final var hash = Bytes.wrap(new byte[sha256Size]);
+        // trailingBlockHashes entries are stored at the uniform 48-byte RECORD_HASH_SIZE (SHA-256 block hashes are
+        // left-padded), so block 136's prev-block hash must be a 48-byte entry for reconstruction to resolve it.
+        final var paddedTrailingHash = Bytes.wrap(new byte[DigestType.SHA_384.digestLength()]);
+        final var advancedBsi = BlockStreamInfo.newBuilder()
+                .blockNumber(137)
+                .blockTime(new Timestamp(1000, 0))
+                .trailingBlockHashes(paddedTrailingHash)
+                .startOfBlockStateHash(hash)
+                .consensusHeaderRootHash(hash)
+                .inputTreeRootHash(hash)
+                .outputItemRootHash(hash)
+                .traceDataRootHash(hash)
+                .build();
+
+        final var blockRecordReadable = mock(ReadableStates.class);
+        given(blockRecordReadable.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+        given(state.getReadableStates(BlockRecordService.NAME)).willReturn(blockRecordReadable);
+
+        final var blockStreamReadable = mock(ReadableStates.class);
+        given(blockStreamReadable.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(
+                        BLOCK_STREAM_INFO_STATE_ID, BLOCK_STREAM_INFO_STATE_LABEL, () -> advancedBsi));
+        given(state.getReadableStates(BlockStreamService.NAME)).willReturn(blockStreamReadable);
+
+        // A non-genesis hash (the SHA-256 genesis sentinel is the 32-byte sha256(0x00), so HASH_OF_ZERO_384 is
+        // non-genesis here too) routes init through the normal SHA-256 reconstruction path.
+        subject.init(state, HASH_OF_ZERO_384, true);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void firstPostCutoverBlockSeedsRunningHashFromFullSha384ThenEvolvesWithSha256() {
+        // Regression test for the SHA-384 -> SHA-256 running-hash cutover.
+        //
+        // The first post-cutover block's seed trailingOutputHashes are the four pre-cutover
+        // block-stream running hashes, each a full 48-byte SHA-384 value (192 bytes total).
+        // RunningHashManager.startBlock must slice that seed in 48-byte (SHA-384) units on the
+        // cutover block so the running hash stays mathematically continuous across the transition,
+        // then evolve the chain with SHA-256.
+        //
+        // The pre-fix bug sliced the 192-byte seed in 32-byte (SHA-256) units, so the seed
+        // "current" running hash was a misaligned 32-byte fragment and the whole post-cutover
+        // chain diverged. This test fails if the cutover block seeds "current" from anything other
+        // than the full 48-byte last running hash.
+        digestType = DigestType.SHA_256;
+
+        // Four distinct 48-byte (SHA-384) pre-cutover running hashes. v3 is the seed "current"
+        // (bytes [144,192)); a 32-byte mis-slice would seed "current" from a shorter, misaligned
+        // value and the SHA-256 evolution below would diverge.
+        final var seedRunningHashes = Bytes.fromHex("11".repeat(SHA_384_HASH_SIZE)
+                + "22".repeat(SHA_384_HASH_SIZE)
+                + "33".repeat(SHA_384_HASH_SIZE)
+                + "44".repeat(SHA_384_HASH_SIZE));
+        final var seedCurrent = Bytes.fromHex("44".repeat(SHA_384_HASH_SIZE));
+
+        final var seedBsi = blockStreamInfoWith(seedRunningHashes, CREATION_VERSION);
+        givenSubjectWith(1, 0, seedBsi, platformStateWithFreezeTime(null), aWriter);
+
+        // Rebuild the subject with cutover enabled and the SHA-256 digest selected.
+        final var config = HederaTestConfigBuilder.create()
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.roundsPerBlock", 1)
+                .withValue("blockStream.blockPeriod", Duration.ZERO)
+                .withValue("blockStream.streamMode", StreamMode.BOTH.name())
+                .withValue("blockStream.digestType", DigestType.SHA_256.name())
+                .withValue("blockStream.enableCutover", true)
+                .withValue("clpr.enabled", false)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
+        subject = new BlockStreamManagerImpl(
+                blockHashSigner,
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                boundaryStateChangeListener,
+                platform,
+                quiescenceController,
+                hashInfo,
+                SemanticVersion.DEFAULT,
+                lifecycle,
+                quiescedHeartbeat,
+                metrics,
+                clprStateAccessor,
+                streamingObs);
+
+        givenEndOfRoundSetup();
+
+        // BlockInfo that triggers the cutover init path: previewStreamOverwritten + a last block
+        // number matching the BlockStreamInfo's block number. The block hashes are SHA-256 (32 bytes) post-migration;
+        // the pre-migration block hashes stay 48 bytes.
+        final var wrappedHash = Bytes.wrap(new byte[32]);
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(N_MINUS_1_BLOCK_NO)
+                .blockHashes(Bytes.wrap(new byte[RECORD_HASH_SIZE * 2]))
+                .previousWrappedRecordBlockRootHash(wrappedHash)
+                .wrappedIntermediatePreviousBlockRootHashes(List.of(wrappedHash))
+                .wrappedIntermediateBlockRootsLeafCount(1)
+                .previewStreamOverwritten(true)
+                .build();
+        given(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+
+        given(blockHashSigner.isReady()).willReturn(true);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+
+        // Enter via the cutover path: null last block hash + schema executed -> cutoverTrailingBlockHash set.
+        subject.init(state, null, true);
+        subject.startRound(round, state);
+
+        // Four post-cutover transaction results so all four running-hash slots roll over to fresh
+        // 32-byte SHA-256 values, each derived (directly or transitively) from the 48-byte seed.
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+
+        final CompletableFuture<Void> postAcceptFuture = (CompletableFuture<Void>) mock(CompletableFuture.class);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        given(mockSigningFuture.thenAcceptAsync(any())).willReturn(postAcceptFuture);
+        subject.endRound(state, ROUND_NO);
+
+        // Expected: seed "current" is the full 48-byte v3, evolved four times with SHA-256
+        // (running hash_{n+1} = SHA256(running hash_n || hashLeaf(SHA256, serialized result))).
+        final var serialized = BlockItem.PROTOBUF.toBytes(FAKE_TRANSACTION_RESULT);
+        Bytes current = seedCurrent;
+        Bytes expected = Bytes.EMPTY;
+        for (int i = 0; i < 4; i++) {
+            final var hashedLeaf = hashLeaf(digestOrThrow(DigestType.SHA_256), serialized);
+            current = combine(digestOrThrow(DigestType.SHA_256), current, hashedLeaf);
+            expected = appendHash(current, expected, 4);
+        }
+
+        assertEquals(128, expected.length(), "Four SHA-256 running hashes should be 128 bytes");
+        assertEquals(
+                expected,
+                infoRef.get().trailingOutputHashes(),
+                "Post-cutover running hashes must seed from the full 48-byte SHA-384 running hash "
+                        + "and evolve with SHA-256");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void cutoverBlockWithFewerThanFourResultsPreservesFullSha384TrailingHashes() {
+        // Regression test for the SHA-384 -> SHA-256 cutover when the first post-cutover block closes
+        // with FEWER THAN FOUR transaction results. In that window the four trailing output running
+        // hashes are a mix of pre-cutover 48-byte SHA-384 values (not yet rolled off) and post-cutover
+        // 32-byte SHA-256 values. latestHashes() must emit each entry at its NATIVE length so as not to corrupt the
+        // still-48-byte seed entries.
+        digestType = DigestType.SHA_256;
+
+        final var seedRunningHashes = Bytes.fromHex("11".repeat(SHA_384_HASH_SIZE)
+                + "22".repeat(SHA_384_HASH_SIZE)
+                + "33".repeat(SHA_384_HASH_SIZE)
+                + "44".repeat(SHA_384_HASH_SIZE));
+        // s2 and s3 (the two youngest pre-cutover seeds) are still in the window after only two results.
+        final var s2 = Bytes.fromHex("33".repeat(SHA_384_HASH_SIZE));
+        final var s3 = Bytes.fromHex("44".repeat(SHA_384_HASH_SIZE));
+
+        final var seedBsi = blockStreamInfoWith(seedRunningHashes, CREATION_VERSION);
+        givenSubjectWith(1, 0, seedBsi, platformStateWithFreezeTime(null), aWriter);
+
+        final var config = HederaTestConfigBuilder.create()
+                .withConfigDataType(BlockStreamConfig.class)
+                .withValue("blockStream.roundsPerBlock", 1)
+                .withValue("blockStream.blockPeriod", Duration.ZERO)
+                .withValue("blockStream.streamMode", StreamMode.BOTH.name())
+                .withValue("blockStream.digestType", DigestType.SHA_256.name())
+                .withValue("blockStream.enableCutover", true)
+                .withValue("clpr.enabled", false)
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1L));
+        subject = new BlockStreamManagerImpl(
+                blockHashSigner,
+                () -> aWriter,
+                ForkJoinPool.commonPool(),
+                configProvider,
+                boundaryStateChangeListener,
+                platform,
+                quiescenceController,
+                hashInfo,
+                SemanticVersion.DEFAULT,
+                lifecycle,
+                quiescedHeartbeat,
+                metrics,
+                clprStateAccessor,
+                streamingObs);
+
+        givenEndOfRoundSetup();
+
+        final var wrappedHash = Bytes.wrap(new byte[32]);
+        final var blockInfo = BlockInfo.newBuilder()
+                .lastBlockNumber(N_MINUS_1_BLOCK_NO)
+                .blockHashes(Bytes.wrap(new byte[RECORD_HASH_SIZE * 2]))
+                .previousWrappedRecordBlockRootHash(wrappedHash)
+                .wrappedIntermediatePreviousBlockRootHashes(List.of(wrappedHash))
+                .wrappedIntermediateBlockRootsLeafCount(1)
+                .previewStreamOverwritten(true)
+                .build();
+        given(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .willReturn(new FunctionReadableSingletonState<>(BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> blockInfo));
+
+        given(blockHashSigner.isReady()).willReturn(true);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+
+        subject.init(state, null, true);
+        subject.startRound(round, state);
+
+        // Only TWO post-cutover results: two of the four slots are still the 48-byte SHA-384 seeds.
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+
+        final CompletableFuture<Void> postAcceptFuture = (CompletableFuture<Void>) mock(CompletableFuture.class);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        given(mockSigningFuture.thenAcceptAsync(any())).willReturn(postAcceptFuture);
+        subject.endRound(state, ROUND_NO);
+
+        // Expected window after two results: [s2(48B), s3(48B), h1(32B), h2(32B)] = 160 bytes, where
+        // h1 = SHA256(s3 || leaf) and h2 = SHA256(h1 || leaf).
+        final var serialized = BlockItem.PROTOBUF.toBytes(FAKE_TRANSACTION_RESULT);
+        final var leaf = hashLeaf(digestOrThrow(DigestType.SHA_256), serialized);
+        final var h1 = combine(digestOrThrow(DigestType.SHA_256), s3, leaf);
+        final var h2 = combine(digestOrThrow(DigestType.SHA_256), h1, leaf);
+        final byte[] exp = new byte[SHA_384_HASH_SIZE * 2 + 32 * 2];
+        System.arraycopy(s2.toByteArray(), 0, exp, 0, SHA_384_HASH_SIZE);
+        System.arraycopy(s3.toByteArray(), 0, exp, SHA_384_HASH_SIZE, SHA_384_HASH_SIZE);
+        System.arraycopy(h1.toByteArray(), 0, exp, SHA_384_HASH_SIZE * 2, 32);
+        System.arraycopy(h2.toByteArray(), 0, exp, SHA_384_HASH_SIZE * 2 + 32, 32);
+        final var expected = Bytes.wrap(exp);
+
+        assertEquals(
+                160,
+                infoRef.get().trailingOutputHashes().length(),
+                "A cutover block with two results must keep two 48-byte seeds plus two 32-byte hashes");
+        assertEquals(
+                expected,
+                infoRef.get().trailingOutputHashes(),
+                "latestHashes() must preserve the full 48-byte pre-cutover running hashes still in the window");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void nonCutoverBlockDecodesMixedSizeTrailingOutputHashesSeed() {
+        // After a cutover block closes with <4 results, its stored trailingOutputHashes is a mixed-size
+        // window (some 48-byte SHA-384 seeds, some 32-byte SHA-256 hashes). A subsequent NON-cutover block
+        // must decode that window by deriving the pre/post boundary from its length, so the live "current"
+        // running hash is the final 32-byte entry (not a misaligned fragment).
+        digestType = DigestType.SHA_256;
+
+        final var p0 = Bytes.fromHex("a1".repeat(SHA_384_HASH_SIZE));
+        final var p1 = Bytes.fromHex("b2".repeat(SHA_384_HASH_SIZE));
+        final var c0 = Bytes.fromHex("c3".repeat(32));
+        final var c1 = Bytes.fromHex("d4".repeat(32));
+        final byte[] seed = new byte[SHA_384_HASH_SIZE * 2 + 32 * 2];
+        System.arraycopy(p0.toByteArray(), 0, seed, 0, SHA_384_HASH_SIZE);
+        System.arraycopy(p1.toByteArray(), 0, seed, SHA_384_HASH_SIZE, SHA_384_HASH_SIZE);
+        System.arraycopy(c0.toByteArray(), 0, seed, SHA_384_HASH_SIZE * 2, 32);
+        System.arraycopy(c1.toByteArray(), 0, seed, SHA_384_HASH_SIZE * 2 + 32, 32);
+        final var mixedSeed = Bytes.wrap(seed);
+
+        givenSubjectWith(
+                1, 0, blockStreamInfoWith(mixedSeed, CREATION_VERSION), platformStateWithFreezeTime(null), aWriter);
+        givenEndOfRoundSetup();
+        given(round.getConsensusTimestamp()).willReturn(CONSENSUS_NOW);
+        given(round.getRoundNum()).willReturn(ROUND_NO);
+        given(blockHashSigner.isReady()).willReturn(true);
+
+        subject.init(state, FAKE_RESTART_BLOCK_HASH);
+        subject.startRound(round, state);
+        subject.writeItem(FAKE_TRANSACTION_RESULT);
+
+        final CompletableFuture<Void> postAcceptFuture = (CompletableFuture<Void>) mock(CompletableFuture.class);
+        given(blockHashSigner.sign(any(), any()))
+                .willReturn(new BlockHashSigner.Attempt(null, null, mockSigningFuture));
+        given(mockSigningFuture.thenAcceptAsync(any())).willReturn(postAcceptFuture);
+        subject.endRound(state, ROUND_NO);
+
+        // After one result the window rolls to [p1(48B), c0(32B), c1(32B), SHA256(c1 || leaf)(32B)] = 144 bytes.
+        final var serialized = BlockItem.PROTOBUF.toBytes(FAKE_TRANSACTION_RESULT);
+        final var leaf = hashLeaf(digestOrThrow(DigestType.SHA_256), serialized);
+        final var next = combine(digestOrThrow(DigestType.SHA_256), c1, leaf);
+        final byte[] exp = new byte[SHA_384_HASH_SIZE + 32 * 3];
+        System.arraycopy(p1.toByteArray(), 0, exp, 0, SHA_384_HASH_SIZE);
+        System.arraycopy(c0.toByteArray(), 0, exp, SHA_384_HASH_SIZE, 32);
+        System.arraycopy(c1.toByteArray(), 0, exp, SHA_384_HASH_SIZE + 32, 32);
+        System.arraycopy(next.toByteArray(), 0, exp, SHA_384_HASH_SIZE + 64, 32);
+        final var expected = Bytes.wrap(exp);
+
+        assertEquals(
+                144,
+                infoRef.get().trailingOutputHashes().length(),
+                "A mixed-size seed window must decode and roll forward preserving entry sizes");
+        assertEquals(
+                expected,
+                infoRef.get().trailingOutputHashes(),
+                "The chain must continue from the correctly decoded 32-byte current, keeping the 48-byte seed");
     }
 
     private void givenSingleRoundPerBlockSubject() {
@@ -2510,6 +2932,11 @@ class BlockStreamManagerImplTest {
                 .when(readableStates.<PlatformState>getSingleton(PLATFORM_STATE_STATE_ID))
                 .thenReturn(new FunctionWritableSingletonState<>(
                         PLATFORM_STATE_STATE_ID, PLATFORM_STATE_STATE_LABEL, stateRef::get, stateRef::set));
+        // startBlock reads previewStreamOverwritten from the block record service's BlockInfo; default to pre-cutover
+        lenient()
+                .when(readableStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID))
+                .thenReturn(new FunctionReadableSingletonState<>(
+                        BLOCKS_STATE_ID, BLOCKS_STATE_LABEL, () -> BlockInfo.DEFAULT));
         lenient()
                 .doAnswer(ignored -> {
                     blockStreamInfoState.commit();
