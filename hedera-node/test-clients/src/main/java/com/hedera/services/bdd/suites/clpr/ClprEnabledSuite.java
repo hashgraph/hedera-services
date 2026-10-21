@@ -125,7 +125,11 @@ public class ClprEnabledSuite {
 
     @BeforeAll
     static void beforeAll(final TestLifecycle lifecycle) {
-        lifecycle.overrideInClass(Map.of("clpr.enabled", System.getProperty("clpr.test.enabled", "true")));
+        lifecycle.overrideInClass(Map.of(
+                "clpr.enabled",
+                System.getProperty("clpr.test.enabled", "true"),
+                "hedera.ingestThrottle.enabled",
+                "true"));
     }
 
     @HapiTest
@@ -156,10 +160,11 @@ public class ClprEnabledSuite {
     @DisplayName("Both CLPR queries accept COST_ANSWER and ANSWER_ONLY when enabled")
     final Stream<DynamicTest> clprQueriesSucceed() {
         return hapiTest(
-                clprGetLedgerConfiguration().payingWith(GENESIS).hasCostAnswerPrecheck(OK),
-                clprGetEndpointManifest().payingWith(GENESIS).hasCostAnswerPrecheck(OK),
-                clprGetLedgerConfiguration().payingWith(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(OK),
-                clprGetEndpointManifest().payingWith(GENESIS).nodePayment(1L).hasAnswerOnlyPrecheck(OK));
+                cryptoCreate(CALLER).balance(ONE_HUNDRED_HBARS),
+                clprGetLedgerConfiguration().payingWith(CALLER).hasCostAnswerPrecheck(OK),
+                clprGetEndpointManifest().payingWith(CALLER).hasCostAnswerPrecheck(OK),
+                clprGetLedgerConfiguration().payingWith(CALLER).nodePayment(1L).hasAnswerOnlyPrecheck(OK),
+                clprGetEndpointManifest().payingWith(CALLER).nodePayment(1L).hasAnswerOnlyPrecheck(OK));
     }
 
     @HapiTest
@@ -168,14 +173,15 @@ public class ClprEnabledSuite {
         // Deliberately invalid proof with the supported shared bundle selector. Enabled execution reverts; a disabled
         // native contract's address behaves as a plain system account and succeeds without executing anything, so it
         // cannot satisfy this test.
-        return hapiTest(CLPR_SYSTEM_CONTRACT_NUMS.stream()
-                .map(num -> contractCallWithFunctionAbi(
-                                num, VERIFY_CONFIG.toJson(false), new byte[] {1}, new byte[32], new byte[0])
-                        .payingWith(GENESIS)
+        final var operations = new ArrayList<SpecOperation>();
+        operations.add(cryptoCreate(CALLER).balance(ONE_HUNDRED_HBARS));
+        CLPR_SYSTEM_CONTRACT_NUMS.forEach(num -> operations.add(
+                contractCallWithFunctionAbi(num, VERIFY_CONFIG.toJson(false), new byte[] {1}, new byte[32], new byte[0])
+                        .payingWith(CALLER)
                         .gas(GAS_TO_OFFER)
                         .refusingEthConversion()
-                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))
-                .toArray(SpecOperation[]::new));
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        return hapiTest(operations.toArray(SpecOperation[]::new));
     }
 
     @HapiTest
@@ -358,7 +364,7 @@ public class ClprEnabledSuite {
     }
 
     private static HapiTxnOp<?> dispatch(final HapiTxnOp<?> op, final boolean inBatch, final boolean bypassIngest) {
-        op.payingWith(GENESIS).hasKnownStatus(SUCCESS);
+        op.hasKnownStatus(SUCCESS);
         final HapiTxnOp<?> submitted = inBatch
                 ? atomicBatch(op.batchKey(BATCH_OPERATOR))
                         .payingWith(BATCH_OPERATOR)
@@ -440,6 +446,13 @@ public class ClprEnabledSuite {
                         .bundlePayload(
                                 toBundleProofBytes(ClprChannelStatus.ACTIVE, 0L, 0L, new byte[32], List.of(payload))));
         txns.put("closeChannel", clprCloseChannel().channelId(crypto.channelId()));
+        // Only governance operations require an administrator; public operations must exercise user throttles.
+        txns.values()
+                .forEach(op -> op.payingWith(
+                        switch (op.type()) {
+                            case ClprUpdateLedgerConfiguration, ClprCloseChannel -> GENESIS;
+                            default -> CALLER;
+                        }));
         return txns;
     }
 
@@ -489,6 +502,7 @@ public class ClprEnabledSuite {
         // Reuse a transaction transport but replace its oneof body before signing. This checks
         // the actual parsed functionality, including an internal operation without its own RPC.
         return clprRegisterChannel()
+                .payingWith(GENESIS)
                 .withBodyMutation((body, spec) ->
                         body.setClprEndpointPublication(ClprEndpointPublicationTransactionBody.newBuilder()
                                 .setEndpoint(ClprEndpoint.newBuilder()
