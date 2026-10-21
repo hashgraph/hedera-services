@@ -419,7 +419,10 @@ public class CustomMessageCallProcessor extends PublicMessageCallProcessor {
 
     private static boolean isInternalCallToCoinbase(@NonNull final CustomMessageCallContext context) {
         final var frame = context.frame;
-        return frame.getDepth() > 0 && context.executableCodeAddress.getBytes().equals(frame.getMiningBeneficiary().getBytes());
+        return frame.getDepth() > 0
+                && context.executableCodeAddress
+                        .getBytes()
+                        .equals(frame.getMiningBeneficiary().getBytes());
     }
 
     private void handleRegularCall(
