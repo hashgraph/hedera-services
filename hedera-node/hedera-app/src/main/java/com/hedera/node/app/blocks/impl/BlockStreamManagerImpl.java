@@ -2018,7 +2018,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
      * Emits a decoded dump of the trailing-hash windows at the block digest transition (e.g. SHA-384 -> SHA-256).
      * Logs a BEFORE snapshot (the window entering the transition block) now, and an AFTER snapshot (the window
      * entering the following block) on the next call. The previous block's digest length is seeded from the
-     * incoming window on the first block so a transition that coincides with a restart is still detected.
+     * incoming consensus header root on the first block so a transition that coincides with a restart is still
+     * detected.
      *
      * <p>The block-stream cutover is logged separately, by {@code V0740BlockStreamSchema.restart}, which can see
      * the genuine pre-cutover window before it overwrites it (this restarted node cannot).
@@ -2039,9 +2040,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             pendingTransitionLabel = null;
         }
         if (previousDigestLength == -1) {
-            final int[] sizes = BlockImplUtils.outputEntrySizes(
-                    blockStreamInfo.trailingOutputHashes().length(), activeDigestLength);
-            previousDigestLength = sizes.length == 0 ? activeDigestLength : sizes[sizes.length - 1];
+            // The stored consensus header root was hashed with the previous block's digest (empty at genesis); the
+            // output window can't tell, since a cutover seed holds 48-byte record hashes on any digest
+            final int storedLength =
+                    (int) blockStreamInfo.consensusHeaderRootHash().length();
+            previousDigestLength = storedLength == 0 ? activeDigestLength : storedLength;
         }
         if (previousDigestLength != activeDigestLength) {
             final String t =
