@@ -416,7 +416,10 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                             .map(Bytes::toByteArray)
                             .toList(),
                     blockStreamInfo.intermediateBlockRootsLeafCount());
-            effectiveLastBlockHash = reconstructLastBlockHash(blockStreamInfo, digestType());
+            // For the first post-cutover block the window holds the record hash, not the wrapped parent production
+            // used; provide the wrapped parent from BlockInfo so reconstruction links to the correct parent.
+            effectiveLastBlockHash = reconstructLastBlockHash(
+                    blockStreamInfo, digestType(), firstPostCutoverParentHash(state, blockStreamInfo));
         }
         this.lastBlockHash = effectiveLastBlockHash;
         if (!previousBlockHashesUpdated && !Objects.equals(effectiveLastBlockHash, hashOfZero())) {
@@ -426,6 +429,27 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     public static Bytes reconstructLastBlockHash(
             @NonNull final BlockStreamInfo blockStreamInfo, @NonNull final DigestType digestType) {
+        return reconstructLastBlockHash(blockStreamInfo, digestType, null);
+    }
+
+    /**
+     * Reconstructs the root hash of the last completed block from its persisted {@link BlockStreamInfo}.
+     *
+     * <p>The parent (block N-1) is normally recovered from the trailing-block-hash window. For the first post-cutover
+     * block the window holds the original 48-byte record hash (kept for the EVM BLOCKHASH history), but the block's
+     * actual parent was the <b>wrapped</b> record block root. Since the wrapped root cannot be derived from the record
+     * hash, callers that have it (reading {@code BlockInfo.previousWrappedRecordBlockRootHash}) pass it in via
+     * {@code providedParentHash}; it then overrides the window-derived parent. All other callers pass {@code null}.
+     *
+     * @param blockStreamInfo the persisted block stream info of the last completed block
+     * @param digestType the active digest type
+     * @param providedParentHash the parent (block N-1) root hash to use instead of the window, or {@code null} to
+     *                           derive the parent from the trailing-block-hash window as usual
+     */
+    public static Bytes reconstructLastBlockHash(
+            @NonNull final BlockStreamInfo blockStreamInfo,
+            @NonNull final DigestType digestType,
+            @Nullable final Bytes providedParentHash) {
         requireNonNull(blockStreamInfo);
         requireNonNull(digestType);
         if (blockStreamInfo.blockNumber() < 0L) {
@@ -449,7 +473,12 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
         final int hashSize = blockDigest.digestLength();
         final Bytes prevBlockHash;
-        if (blockStreamInfo.blockNumber() == 0L) {
+        if (providedParentHash != null) {
+            // The caller supplied the real parent (block N-1) root hash. This is the first post-cutover block: its
+            // parent was the wrapped record block root, but the trailing window holds the original record hash (kept
+            // for the EVM BLOCKHASH history), which cannot be turned into the wrapped root. Use the provided value.
+            prevBlockHash = providedParentHash;
+        } else if (blockStreamInfo.blockNumber() == 0L) {
             prevBlockHash = BlockRootTreeHasher.emptySubtreeFor(blockDigest);
         } else {
             // The trailing window may be in 48-byte padded mode (mixed era) or compacted 32-byte native mode; the
@@ -505,6 +534,62 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 blockStreamInfo.outputItemRootHash(),
                 lastBlockFinalStateChangesHash,
                 blockStreamInfo.traceDataRootHash());
+    }
+
+    /**
+     * Returns the wrapped record block root to use as the parent when reconstructing the given {@link BlockStreamInfo},
+     * or {@code null} when the normal trailing-window parent should be used.
+     *
+     * <p>Only the first post-cutover block needs this: its parent was the wrapped record block root, but the trailing
+     * window holds the original record hash (kept for the EVM BLOCKHASH history), which cannot be turned into the
+     * wrapped root. The wrapped root is already persisted in {@code BlockInfo.previousWrappedRecordBlockRootHash}; this
+     * reads it rather than storing a redundant copy in {@link BlockStreamInfo}. After cutover the node runs in
+     * BLOCKS-only mode, so {@code BlockInfo.lastBlockNumber} freezes at the cutover block; the first post-cutover block
+     * is therefore the one whose {@code BlockStreamInfo.blockNumber} equals {@code BlockInfo.lastBlockNumber()}, after
+     * the preview stream has been overwritten by the cutover.
+     *
+     * @param state the current state
+     * @param blockStreamInfo the block stream info being reconstructed
+     * @return the wrapped parent root hash, or {@code null} if the trailing window should be used
+     */
+    @Nullable
+    public static Bytes firstPostCutoverParentHash(
+            @NonNull final State state, @NonNull final BlockStreamInfo blockStreamInfo) {
+        final var blockRecordStates = state.getReadableStates(BlockRecordService.NAME);
+        if (blockRecordStates == null) {
+            return null;
+        }
+        final var blockInfo =
+                blockRecordStates.<BlockInfo>getSingleton(BLOCKS_STATE_ID).get();
+        return firstPostCutoverParentHash(blockInfo, blockStreamInfo);
+    }
+
+    /**
+     * Returns the wrapped record block root to use as the parent when reconstructing the given {@link BlockStreamInfo},
+     * or {@code null} when the normal trailing-window parent should be used. This is the pure predicate behind
+     * {@link #firstPostCutoverParentHash(State, BlockStreamInfo)}; it is also used by offline callers that already hold
+     * the {@link BlockInfo} (e.g. read from a block's own state-change updates) rather than a live {@link State}.
+     *
+     * <p>After cutover the node runs in BLOCKS-only mode, so {@code BlockInfo.lastBlockNumber} freezes at the cutover
+     * block; the first post-cutover block is therefore the one whose {@code BlockStreamInfo.blockNumber} equals
+     * {@code BlockInfo.lastBlockNumber()}, after the preview stream has been overwritten by the cutover; only then is the
+     * wrapped parent returned.
+     *
+     * @param blockInfo the (frozen, post-cutover) block info, or {@code null} if none is available
+     * @param blockStreamInfo the block stream info being reconstructed
+     * @return the wrapped parent root hash, or {@code null} if the trailing window should be used
+     */
+    @Nullable
+    public static Bytes firstPostCutoverParentHash(
+            @Nullable final BlockInfo blockInfo, @NonNull final BlockStreamInfo blockStreamInfo) {
+        if (blockInfo == null || !blockInfo.previewStreamOverwritten()) {
+            return null;
+        }
+        if (blockStreamInfo.blockNumber() != blockInfo.lastBlockNumber()) {
+            return null;
+        }
+        final var wrappedParent = blockInfo.previousWrappedRecordBlockRootHash();
+        return wrappedParent.length() == 0 ? null : wrappedParent;
     }
 
     @Override

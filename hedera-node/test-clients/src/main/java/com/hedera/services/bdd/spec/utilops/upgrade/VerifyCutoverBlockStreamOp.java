@@ -13,12 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.SingletonUpdateChange;
+import com.hedera.hapi.block.stream.output.StateIdentifier;
 import com.hedera.hapi.node.base.BlockHashAlgorithm;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.blocks.impl.BlockImplUtils;
 import com.hedera.node.app.blocks.impl.BlockRootTreeHasher;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
 import com.hedera.node.app.blocks.impl.IncrementalStreamingHasher;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.blocks.BlockStreamAccess;
@@ -226,6 +228,44 @@ public class VerifyCutoverBlockStreamOp extends UtilOp {
 
             final var computedRootHash = computeBlockRootHash(block, prevBlockHash, prevBlockHashesTree, digestType);
             log.info("Block #{}: computed root hash {}", blockNum, computedRootHash.toHex());
+
+            if (i == 0) {
+                // The first post-cutover block's parent was the wrapped record block root, not the trailing-window
+                // record hash. Reconstructing it via firstPostCutoverParentHash (reading the block's own BlockInfo
+                // delta) must therefore yield the block's true root, while the window-only reconstruction must not.
+                final var firstBlockInfo = BlockStreamAccess.computeSingletonValueFromUpdates(
+                        List.of(firstPostCutover),
+                        SingletonUpdateChange::blockInfoValue,
+                        StateIdentifier.STATE_ID_BLOCKS.protoOrdinal());
+                assertNotNull(firstBlockInfo, "First post-cutover block should contain a BlockInfo state change");
+
+                // Ground truth: block 0's true root is block 1's footer.previousBlockRootHash. Only enforce when a
+                // following block exists to supply it.
+                if (postCutoverBlocks.size() > 1) {
+                    final var trueRoot = postCutoverBlocks.get(1).items().stream()
+                            .filter(BlockItem::hasBlockFooter)
+                            .findFirst()
+                            .orElseThrow()
+                            .blockFooterOrThrow()
+                            .previousBlockRootHash();
+                    final var providedParent =
+                            BlockStreamManagerImpl.firstPostCutoverParentHash(firstBlockInfo, blockStreamInfo);
+                    final var reconstructWithWrappedParent = BlockStreamManagerImpl.reconstructLastBlockHash(
+                            blockStreamInfo, digestType, providedParent);
+                    final var reconstructWithWindow =
+                            BlockStreamManagerImpl.reconstructLastBlockHash(blockStreamInfo, digestType, null);
+                    assertEquals(
+                            trueRoot,
+                            reconstructWithWrappedParent,
+                            "First post-cutover block root reconstructed via firstPostCutoverParentHash should equal the"
+                                    + " true root (block 1's footer.previousBlockRootHash)");
+                    assertNotEquals(
+                            trueRoot,
+                            reconstructWithWindow,
+                            "Window-only reconstruction (null parent) must NOT match the true root for the first"
+                                    + " post-cutover block");
+                }
+            }
 
             prevBlockHash = computedRootHash;
             prevBlockHashesTree.addNodeByHash(computedRootHash.toByteArray());
