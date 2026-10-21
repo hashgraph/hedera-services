@@ -199,7 +199,7 @@ jobs:
         working-directory: ${{ env.EVM_TESTING_DIR }}
         run: |
           set -eo pipefail
-          if ! grep -q '^CONSENSUS_NODE_DIR=' test.sh; then§
+          if ! grep -q '^CONSENSUS_NODE_DIR=' test.sh; then
             echo "::error::test.sh no longer defines CONSENSUS_NODE_DIR; this step needs updating."
             exit 1
           fi
