@@ -565,8 +565,45 @@ class BlockImplUtilsTest {
     }
 
     @Test
+    void appendTrailingBlockHashKeepsFullSizeStrideAcrossPreCutoverDigestSwitch() {
+        // A SHA-384 window that switches to SHA-256 before cutover must pad the new hashes, not append them natively
+        final byte[] s0 = seq(48, 0);
+        final byte[] s1 = seq(48, 50);
+        final byte[] r2 = seq(32, 100);
+        final byte[] r3 = seq(32, 150);
+
+        var appended = BlockImplUtils.appendTrailingBlockHash(Bytes.wrap(s0), Bytes.EMPTY, 256, 48, 48, false, false);
+        appended = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(s1), appended.window(), 256, 48, 48, false, appended.compacted());
+        appended = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(r2), appended.window(), 256, 48, 32, false, appended.compacted());
+        appended = BlockImplUtils.appendTrailingBlockHash(
+                Bytes.wrap(r3), appended.window(), 256, 48, 32, false, appended.compacted());
+
+        assertFalse(appended.compacted());
+        assertEquals(4L * 48, appended.window().length());
+        final var window = appended.window();
+        assertArrayEquals(
+                s0,
+                BlockImplUtils.realBlockHashByBlockNumber(window, 3L, 0L, 32, false)
+                        .toByteArray());
+        assertArrayEquals(
+                s1,
+                BlockImplUtils.realBlockHashByBlockNumber(window, 3L, 1L, 32, false)
+                        .toByteArray());
+        assertArrayEquals(
+                r2,
+                BlockImplUtils.realBlockHashByBlockNumber(window, 3L, 2L, 32, false)
+                        .toByteArray());
+        assertArrayEquals(
+                r3,
+                BlockImplUtils.realBlockHashByBlockNumber(window, 3L, 3L, 32, false)
+                        .toByteArray());
+    }
+
+    @Test
     void appendTrailingBlockHashNeverCompactsWhenPreSizeEqualsActiveSize() {
-        // Degenerate SHA-384 case (preSize == activeSize == 48): always 48, always "native".
+        // SHA-384 case (preSize == activeSize == 48): entries stay 48 bytes and the window is never marked compacted
         final byte[] e0 = seq(48, 0);
         final byte[] window = e0.clone();
         final byte[] newHash = seq(48, 100);
@@ -574,7 +611,7 @@ class BlockImplUtilsTest {
         final var result = BlockImplUtils.appendTrailingBlockHash(
                 Bytes.wrap(newHash), Bytes.wrap(window), 256, 48, 48, true, false);
         assertEquals(96L, result.window().length());
-        assertTrue(result.compacted(), "a preSize==activeSize window is native at that single size");
+        assertFalse(result.compacted(), "a SHA-384 window stores full-size entries, so it is not compacted");
         final byte[] out = result.window().toByteArray();
         assertArrayEquals(e0, java.util.Arrays.copyOfRange(out, 0, 48));
         assertArrayEquals(newHash, java.util.Arrays.copyOfRange(out, 48, 96));

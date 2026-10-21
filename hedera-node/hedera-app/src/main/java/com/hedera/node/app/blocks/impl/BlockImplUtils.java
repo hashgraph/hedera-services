@@ -192,7 +192,8 @@ public class BlockImplUtils {
      * window is padded ({@code compacted == false}) shorter hashes are left-padded to {@code preSize}; once the oldest
      * entry is itself padded (no genuine hashes remain) <b>and the block stream has cut over</b>, the window is
      * compacted once to {@code activeSize} and {@code compacted} flips to true for this and all subsequent appends.
-     * Before cutover the window is never compacted. A degenerate {@code preSize == activeSize} window is always native.
+     * Before cutover the window is never compacted. A {@code preSize == activeSize} window stores full-size entries,
+     * so it is never marked compacted; a later switch to a shorter digest then pads instead of misreading it.
      *
      * @param newHash the new native block hash to append
      * @param window the current trailing block hashes
@@ -212,8 +213,8 @@ public class BlockImplUtils {
             final boolean postCutover,
             final boolean compacted) {
         if (preSize == activeSize) {
-            // Pre-size and active size coincide: the window is "native" at that single size; nothing to compact.
-            return new AppendResult(appendHash(leftPadTo(newHash, activeSize), window, maxHashes), true);
+            // Entries are already stored at the full (uncompacted) size, so the window is not compacted
+            return new AppendResult(appendHash(leftPadTo(newHash, activeSize), window, maxHashes), false);
         }
         if (compacted) {
             // Already native: append the (native-size) hash directly and stay compacted.

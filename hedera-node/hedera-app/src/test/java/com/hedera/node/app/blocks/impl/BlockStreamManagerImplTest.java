@@ -833,8 +833,8 @@ class BlockStreamManagerImplTest {
                 HASH_OF_ZERO_384,
                 List.of(FAKE_PATCH_RESTART_HASH),
                 1,
-                // Active digest is SHA-384, so preSize == activeSize (48): the window is "native" at 48 bytes.
-                true);
+                // Active digest is SHA-384, so entries stay 48 bytes and the window is not compacted
+                false);
 
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
@@ -1277,8 +1277,8 @@ class BlockStreamManagerImplTest {
                 HASH_OF_ZERO_384,
                 List.of(FAKE_NON_EMPTY_RESULTS_RESTART_HASH),
                 1,
-                // Active digest is SHA-384, so preSize == activeSize (48): the window is "native" at 48 bytes.
-                true);
+                // Active digest is SHA-384, so entries stay 48 bytes and the window is not compacted
+                false);
         final var actualBlockInfo = infoRef.get();
         assertEquals(expectedBlockInfo, actualBlockInfo);
 
