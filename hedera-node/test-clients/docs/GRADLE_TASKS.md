@@ -6,8 +6,8 @@
 ## Unit tests
 
 `./gradlew :test-clients:unitTest` runs the test-client unit tests in `src/test/java`. These test
-the client framework and helpers without starting HAPI suites. The `check` task includes
-`unitTest`. Use `--tests '*BinaryStateChangeParserTest'` to run an individual class.
+the client framework and helpers without starting HAPI suites. Both `test` and `check` include
+`unitTest`. Use `--tests '*FullStateValuesTest'` to run an individual class.
 
 The executable HAPI suites live in `src/main/java` and are packaged with the test-client
 application. The tasks below run those suites with the appropriate network setup.
@@ -16,6 +16,7 @@ application. The tasks below run those suites with the appropriate network setup
 
 |            Task            |            Targets             |             Tag filter             |                                                                                                                                                       Notes                                                                                                                                                        |
 |----------------------------|--------------------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `unitTest`                 | Unit tests from `src/test`     | none                               | Runs all test-client unit tests with JUnit Platform. The `test` task depends on it, so CI's test aggregation runs it automatically. Run directly with `./gradlew :test-clients:unitTest`.                                                                                                                          |
 | `test`                     | Embedded (per-class)           | `(INTEGRATION\|STREAM_VALIDATION)` | Default Gradle `test` task. Uses `hapi.spec.embedded.mode=per-class` so each class picks its mode via `@TargetEmbeddedMode`. Skips standard log validation after the suite, because the embedded tests intentionally corrupt state to exercise `FAIL_INVALID` paths.                                               |
 | `testSubprocess`           | `SubProcessNetwork` (serial)   | varies by caller                   | Runs HAPI tests in subprocess mode, one test class at a time within JUnit (`mode.classes.default=same_thread`). Used by all serial `hapiTest*Serial` checks.                                                                                                                                                       |
 | `testSubprocessConcurrent` | `SubProcessNetwork` (parallel) | varies by caller                   | Same as `testSubprocess` but runs test classes concurrently (`mode.classes.default=concurrent`) with `fixed` parallelism — 3 threads when `hapi.spec.network.size ≤ 3`, else 2. Excludes `SERIAL` tests other than `CONCURRENT_SUBPROCESS_VALIDATION`. See [`SUBPROCESS_CONCURRENT.md`](SUBPROCESS_CONCURRENT.md). |

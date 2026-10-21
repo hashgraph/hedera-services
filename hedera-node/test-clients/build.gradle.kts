@@ -89,16 +89,17 @@ testModuleInfo {
 
 sourceSets { create("rcdiff") }
 
-// HAPI tasks run the executable suites in main; unit tests for that client live in test.
-val unitTest by
-    tasks.registering(Test::class) {
+val unitTest =
+    tasks.register<Test>("unitTest") {
+        description = "Runs the test-client unit tests from src/test."
         group = "verification"
-        description = "Run test-client unit tests from src/test without starting HAPI suites."
-        val unitSourceSet = sourceSets.test.get()
-        testClassesDirs = unitSourceSet.output.classesDirs
-        classpath = unitSourceSet.runtimeClasspath
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath = sourceSets.test.get().runtimeClasspath
         useJUnitPlatform()
     }
+
+// The default test task runs HAPI suites from src/main; keep unit tests in its verification path.
+tasks.test { dependsOn(unitTest) }
 
 tasks.check { dependsOn(unitTest) }
 
@@ -739,6 +740,18 @@ fun TaskContainer.registerHapiTest(
             prCheckJunitMaxPoolSizes[name]?.let {
                 systemProperty("junit.jupiter.execution.parallel.config.fixed.max-pool-size", it)
             }
+        }
+        // MULTINETWORK groups run in parallel with both CLASSES and METHODS concurrent. Per-network
+        // serialization is JUnit's job via ClprNetworkLocksProvider (a @ResourceLock provider on
+        // @MultiNetworkHapiTest): same-network readers overlap, a @MultiNetworkLeakyHapiTest writer
+        // runs alone, and disjoint groups run in parallel. One worker per available processor; the
+        // node budget in MultiNetworkGroupQueue, not this, limits how many networks run at once.
+        if (name == "hapiTestClprMultinetwork") {
+            systemProperty("junit.jupiter.execution.parallel.enabled", true)
+            systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "concurrent")
+            systemProperty("junit.jupiter.execution.parallel.config.strategy", "dynamic")
+            systemProperty("junit.jupiter.execution.parallel.config.dynamic.factor", "1")
         }
         if (embeddedMode != null) {
             systemProperty("hapi.spec.embedded.mode", embeddedMode)
