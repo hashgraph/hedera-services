@@ -35,12 +35,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.withSettings;
@@ -81,6 +83,7 @@ import com.hedera.node.internal.network.PendingProof;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
@@ -100,7 +103,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -248,6 +253,10 @@ class BlockStreamManagerImplTest {
 
     private boolean clprEnabled = false;
 
+    // Mock counters and gauges for the max block size throttle diagnostics, keyed by metric name
+    private final Map<String, Counter> throttleCounters = new HashMap<>();
+    private final Map<String, LongGauge> throttleGauges = new HashMap<>();
+
     private DigestType digestType = DigestType.SHA_384;
 
     @BeforeEach
@@ -255,9 +264,18 @@ class BlockStreamManagerImplTest {
         writableStates = mock(WritableStates.class, withSettings().extraInterfaces(CommittableWritableStates.class));
         lenient().when(metrics.getOrCreate(any(Counter.Config.class))).thenAnswer(invocation -> {
             final Counter.Config counterConfig = invocation.getArgument(0);
-            return "numBlockSizeCircuitBreakerTrips".equals(counterConfig.getName())
-                    ? blockSizeCircuitBreakerTripsCounter
-                    : indirectProofsCounter;
+            return switch (counterConfig.getName()) {
+                case "numBlockSizeCircuitBreakerTrips" -> blockSizeCircuitBreakerTripsCounter;
+                case "numMaxBlockSizeThrottleRejections",
+                        "maxBlockSizeThrottleRejectedBytes",
+                        "numMaxBlockSizeThrottleSignedTxns" ->
+                    throttleCounters.computeIfAbsent(counterConfig.getName(), name -> mock(Counter.class));
+                default -> indirectProofsCounter;
+            };
+        });
+        lenient().when(metrics.getOrCreate(any(LongGauge.Config.class))).thenAnswer(invocation -> {
+            final LongGauge.Config gaugeConfig = invocation.getArgument(0);
+            return throttleGauges.computeIfAbsent(gaugeConfig.getName(), name -> mock(LongGauge.class));
         });
     }
 
@@ -485,17 +503,12 @@ class BlockStreamManagerImplTest {
         subject.writeSavepointItems(items, CONSENSUS_NOW.plusNanos(2));
         final long batchBytes = Block.PROTOBUF.measureRecord(new Block(items));
         assertEquals(before + 2 * batchBytes, bytesField.getLong(subject));
-        final var expected = java.util.Map.of(
-                "submittedTransactionCount", 1L,
-                "nodeSubmittedTransactionCount", 1L,
-                "blockFullRejectionCount", 1L,
-                "blockFullRejectionBytes", batchBytes,
-                "signedTransactionCount", 2L);
-        for (final var entry : expected.entrySet()) {
-            final var field = BlockStreamManagerImpl.class.getDeclaredField(entry.getKey());
-            field.setAccessible(true);
-            assertEquals(entry.getValue().longValue(), field.getLong(subject), entry.getKey());
-        }
+        verify(throttleCounters.get("numMaxBlockSizeThrottleRejections")).increment();
+        verify(throttleCounters.get("maxBlockSizeThrottleRejectedBytes")).add(batchBytes);
+        verify(throttleCounters.get("numMaxBlockSizeThrottleSignedTxns"), times(2))
+                .add(1L);
+        verify(throttleGauges.get("submittedTxnsAtMaxBlockSizeCutoff")).set(0L);
+        verify(throttleGauges.get("bytesAtMaxBlockSizeCutoff")).set(longThat(bytes -> bytes > 1L));
     }
 
     @Test

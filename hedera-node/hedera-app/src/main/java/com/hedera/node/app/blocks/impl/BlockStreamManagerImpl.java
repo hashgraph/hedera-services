@@ -73,6 +73,7 @@ import com.hedera.node.config.types.DiskNetworkExport;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.state.notifications.StateHashedNotification;
@@ -197,11 +198,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
     private boolean maxBlockSizeReached;
     private long submittedTransactionCount;
     private long nodeSubmittedTransactionCount;
-    private long blockFullRejectionCount;
-    private long blockFullRejectionBytes;
-    private long submittedAtCutoff;
-    private long bytesAtCutoff;
-    private long signedTransactionCount;
 
     // Block merkle subtrees and leaves
     private IncrementalStreamingHasher previousBlockHashes;
@@ -296,6 +292,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     private final Counter blockSizeCircuitBreakerTripsCounter;
     private final Counter maxBlockSizeThrottleTripsCounter;
+    private final Counter maxBlockSizeThrottleRejectionsCounter;
+    private final Counter maxBlockSizeThrottleRejectedBytesCounter;
+    private final Counter maxBlockSizeThrottleSignedTxnsCounter;
+    private final LongGauge submittedTxnsAtMaxBlockSizeCutoffGauge;
+    private final LongGauge bytesAtMaxBlockSizeCutoffGauge;
 
     @Inject
     public BlockStreamManagerImpl(
@@ -353,7 +354,26 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         maxBlockSizeThrottleTripsCounter = metrics.getOrCreate(new Counter.Config(
                         "block", "numMaxBlockSizeThrottleTrips")
                 .withDescription("Number of canonical blocks that reached the max block size limit, rejecting further"
-                        + " dispatches with BUSY for the rest of the block"));
+                        + " dispatches with THROTTLED_AT_CONSENSUS for the rest of the block"));
+        maxBlockSizeThrottleRejectionsCounter =
+                metrics.getOrCreate(new Counter.Config("block", "numMaxBlockSizeThrottleRejections")
+                        .withDescription("Number of submitted transactions rejected with THROTTLED_AT_CONSENSUS because"
+                                + " the canonical block had reached the max block size limit"));
+        maxBlockSizeThrottleRejectedBytesCounter =
+                metrics.getOrCreate(new Counter.Config("block", "maxBlockSizeThrottleRejectedBytes")
+                        .withDescription("Serialized bytes of block items written for transactions rejected because the"
+                                + " canonical block had reached the max block size limit"));
+        maxBlockSizeThrottleSignedTxnsCounter =
+                metrics.getOrCreate(new Counter.Config("block", "numMaxBlockSizeThrottleSignedTxns")
+                        .withDescription("Number of signed transactions written to canonical blocks while the max block"
+                                + " size throttle is enabled"));
+        submittedTxnsAtMaxBlockSizeCutoffGauge =
+                metrics.getOrCreate(new LongGauge.Config("block", "submittedTxnsAtMaxBlockSizeCutoff")
+                        .withDescription("Number of non-node submitted transactions in the most recent canonical block"
+                                + " when it reached the max block size limit"));
+        bytesAtMaxBlockSizeCutoffGauge = metrics.getOrCreate(new LongGauge.Config("block", "bytesAtMaxBlockSizeCutoff")
+                .withDescription("Serialized size in bytes of the most recent canonical block when it reached the"
+                        + " max block size limit"));
         if (!quiescenceEnabled) {
             log.info("Quiescence is disabled");
             quiescedHeartbeat.shutdown();
@@ -543,11 +563,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             maxBlockSizeReached = false;
             submittedTransactionCount = 0;
             nodeSubmittedTransactionCount = 0;
-            blockFullRejectionCount = 0;
-            blockFullRejectionBytes = 0;
-            submittedAtCutoff = 0;
-            bytesAtCutoff = 0;
-            signedTransactionCount = 0;
             writer = writerSupplier.get();
             blockTimestamp = asTimestamp(firstConsensusTimestampOf(round));
 
@@ -1112,8 +1127,11 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             submittedTransactionCount++;
         }
         if (rejectedForBlockSize) {
-            blockFullRejectionCount++;
-            blockFullRejectionBytes = saturatedAdd(blockFullRejectionBytes, serializedBlockSize(items));
+            maxBlockSizeThrottleRejectionsCounter.increment();
+            final long rejectedBytes = serializedBlockSize(items);
+            if (rejectedBytes > 0) {
+                maxBlockSizeThrottleRejectedBytesCounter.add(rejectedBytes);
+            }
         }
     }
 
@@ -1130,11 +1148,14 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         }
         final long addedSize = serializedBlockSize(items);
         currentThrottleBlockSizeBytes = saturatedAdd(currentThrottleBlockSizeBytes, addedSize);
-        signedTransactionCount +=
+        final long signedTxns =
                 items.stream().filter(BlockItem::hasSignedTransaction).count();
+        if (signedTxns > 0) {
+            maxBlockSizeThrottleSignedTxnsCounter.add(signedTxns);
+        }
         if (!maxBlockSizeReached && currentThrottleBlockSizeBytes > maxBlockExecutionSizeBytes) {
-            submittedAtCutoff = submittedTransactionCount;
-            bytesAtCutoff = currentThrottleBlockSizeBytes;
+            submittedTxnsAtMaxBlockSizeCutoffGauge.set(submittedTransactionCount);
+            bytesAtMaxBlockSizeCutoffGauge.set(currentThrottleBlockSizeBytes);
             maxBlockSizeReached = true;
             maxBlockSizeThrottleTripsCounter.increment();
             log.warn(
