@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.VERIFY_CONFIG;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toBundleProofBytes;
 import static com.hedera.services.bdd.suites.clpr.ClprTestProofs.toConfigProofBytes;
 import static com.hedera.services.bdd.suites.interledger.ClprTestHelpers.CLPR_SERVICE_ADDRESS_20;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_TRANSACTION_IN_BLACKLIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -139,8 +140,8 @@ public class ClprEnabledSuite {
     }
 
     @HapiTest
-    @DisplayName("All ten CLPR transaction types succeed inside separate atomic batches")
-    final Stream<DynamicTest> allClprTransactionsSucceedInsideAtomicBatches() {
+    @DisplayName("All ten CLPR transaction types are blacklisted inside separate atomic batches")
+    final Stream<DynamicTest> allClprTransactionsAreBlacklistedInsideAtomicBatches() {
         return exerciseTransactions(true, false);
     }
 
@@ -151,8 +152,8 @@ public class ClprEnabledSuite {
     }
 
     @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST)
-    @DisplayName("All ten CLPR transaction types succeed in batches when ingest is bypassed")
-    final Stream<DynamicTest> allClprTransactionsSucceedInBatchesAtConsensus() {
+    @DisplayName("All ten CLPR transaction types are blacklisted in batches when ingest is bypassed")
+    final Stream<DynamicTest> allClprTransactionsAreBlacklistedInBatchesAtConsensus() {
         return exerciseTransactions(true, true);
     }
 
@@ -368,8 +369,8 @@ public class ClprEnabledSuite {
         final HapiTxnOp<?> submitted = inBatch
                 ? atomicBatch(op.batchKey(BATCH_OPERATOR))
                         .payingWith(BATCH_OPERATOR)
-                        .hasKnownStatus(SUCCESS)
-                : op;
+                        .hasKnownStatus(BATCH_TRANSACTION_IN_BLACKLIST)
+                : op.hasKnownStatus(SUCCESS);
         if (bypassIngest) {
             submitted.setNode(INGEST_BYPASS_NODE);
         }
