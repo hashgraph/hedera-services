@@ -20,7 +20,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,32 +43,34 @@ import org.hiero.base.concurrent.framework.config.ThreadConfiguration;
 /// called in the end, after all producers are done. If the job is aborted instead, [#cancel()] must be called,
 /// possibly even before [#init(long, long)]. Either of them shuts down the executor.
 ///
-/// Memory is bounded by backpressure: at most one flush is running or queued at a time. A batch that becomes
-/// full while a flush is running stays in memory, till the next producer call after the flush is complete
-/// submits it, or till [#finish()] flushes it. Until then, producers block instead of adding to the full batch.
-/// So at most about two batches are kept in memory, one being flushed and one being filled. Producers block in
-/// [Future#get()] of the running flush. It parks the thread without `ForkJoinPool.managedBlock()`, so that
-/// ForkJoinPool workers don't spawn compensation threads, and it never runs other tasks.
+/// Memory is bounded by backpressure: at most one flush is running at a time. A producer call that makes the
+/// current batch full waits for the previous flush, if it's still running, and only then submits the batch.
+/// It waits with the lock held, so all other producers block on the lock till then, and nothing is added to
+/// the full batch. So at most about two batches are kept in memory, one being flushed and one being filled.
+/// The waiting producer is parked in [Future#get()] of the running flush, and the others on the lock. Neither
+/// uses `ForkJoinPool.managedBlock()`, so that ForkJoinPool workers don't spawn compensation threads, and
+/// neither runs other tasks.
 ///
 /// Deadlock freedom relies on producers waiting for flush tasks only, while flush tasks never wait for
-/// producers. Flushes don't run on producer threads, so a producer that is a ForkJoinPool worker can't be
-/// made to run another producer task, while it waits inside a flush (FJ helping), and then block on the
-/// flush it runs itself. The final flush in [#finish()] may run on such a worker, but it's safe, since all
-/// producers are done by then. The data source must never call back into this flusher.
+/// producers and never take the lock. Flushes don't run on producer threads, so a producer that is a
+/// ForkJoinPool worker can't be made to run another producer task, while it waits inside a flush (FJ helping),
+/// and then block on the flush it runs itself. The final flush in [#finish()] may run on such a worker, but
+/// it's safe, since all producers are done by then. The data source must never call back into this flusher.
 ///
-/// If a flush fails, the failure is sticky. Once the failed flush is complete, no new flushes are started,
-/// producers blocked on backpressure are released, and all subsequent calls, including [#finish()], throw an
+/// If a flush fails, the failure is sticky. Once the failed flush is complete, no new flushes are started, the
+/// producer waiting for it is released, and all subsequent calls, including [#finish()], throw an
 /// [IllegalStateException] with the failure as the cause. Data in the failed batch and in the batches after it
 /// is lost, so the caller must treat it as a failure of the whole job. The failure isn't logged here, this is
 /// up to the caller. If this flusher is cancelled while a flush is running, a failure of that flush isn't
 /// reported at all.
 ///
-/// If the job that feeds this flusher fails or times out, it must call [#cancel()]. Producers blocked on
-/// backpressure or in [#finish()] are released, and all subsequent calls throw an [IllegalStateException]
-/// with a [CancellationException] as the cause. A flush that is already running isn't interrupted, but no new
-/// flushes are started. Cancellation only unblocks and fails calls into this flusher, the caller is still
-/// responsible for stopping the producers. If the caller is going to close the data source after cancelling,
-/// it must wait for the running flush first, see [#awaitTermination(Duration)].
+/// If the job that feeds this flusher fails or times out, it must call [#cancel()]. It doesn't take the lock,
+/// so it never waits for the producer that holds it. Producers blocked on backpressure or in [#finish()] are
+/// released, and all subsequent calls throw an [IllegalStateException] with a [CancellationException] as the
+/// cause. A flush that is already running isn't interrupted, but no new flushes are started. Cancellation only
+/// unblocks and fails calls into this flusher, the caller is still responsible for stopping the producers. If
+/// the caller is going to close the data source after cancelling, it must wait for the running flush first, see
+/// [#awaitTermination(Duration)].
 public class HashLeafFlusher {
 
     private static final Logger logger = LogManager.getLogger(HashLeafFlusher.class);
@@ -88,27 +92,29 @@ public class HashLeafFlusher {
     private final Marker logMarker;
 
     // Runs all flushes, except the final one. Its thread is only started on the first submitted flush. Shut
-    // down by cancel() or finish(), always with the lock held. Once shut down, no more flushes are submitted
+    // down by cancel() or finish(). Once shut down, no more flushes are submitted
     private final ExecutorService executor;
 
-    // Set by cancel(). Synchronized on this
-    private boolean cancelled = false;
+    // Set by cancel(), which doesn't take the lock. Set before the executor is shut down
+    private final AtomicBoolean cancelled = new AtomicBoolean();
 
-    // The batch that is currently being filled. Null before init() and after finish(). Synchronized on this
-    private Batch batch;
+    // The batch that is currently being filled. Null before init() and after finish(). Modified with the lock
+    // held, volatile for cancel()
+    private volatile Batch batch;
 
     // The last submitted flush, or null if no flush has been submitted yet. Never cleared, a flush is in progress
-    // while it isn't done. If it has failed, no new flushes are started, and its failure is rethrown to all
-    // subsequent calls. Synchronized on this
-    private Future<?> flushingFuture;
+    // while it isn't done. If it has failed, it's never replaced, so no new flushes are started, and its failure
+    // is rethrown to all subsequent calls. Modified with the lock held, volatile for cancel()
+    private volatile Future<?> flushingFuture;
 
-    // When producers started blocking on backpressure, or 0 if none are blocked. Synchronized on this
-    private long backpressureSince = 0;
+    // When the producer that holds the lock started waiting for the previous flush, or 0 if it doesn't wait.
+    // Modified with the lock held, volatile for cancel()
+    private volatile long backpressureSince = 0;
 
     // Total time producers were blocked on backpressure, logged in finish() or cancel(). A long total may
     // indicate a slow disk, and it may make reconnect fail, since a blocked learner stops reading from the
-    // teacher, which times out. Synchronized on this
-    private long backpressureTotalMs = 0;
+    // teacher, which times out. Modified with the lock held, volatile for cancel()
+    private volatile long backpressureTotalMs = 0;
 
     // Passed to the data source with every flush, see VirtualDataSource.saveRecords()
     private final boolean reconnectContext;
@@ -204,15 +210,17 @@ public class HashLeafFlusher {
                 lastLeafPath);
     }
 
-    /// Adds an updated hash chunk to the current batch. May be called from multiple threads.
+    /// Adds an updated hash chunk to the current batch. May be called from multiple threads, only after
+    /// [#init(long, long)] and before [#finish()].
     ///
-    /// If the current batch is already due for a flush, while the previous flush is still in progress, this
-    /// method blocks till the previous flush is complete. Never runs a flush in the current thread.
+    /// If this call makes the current batch full, while the previous flush is still in progress, it blocks till
+    /// the previous flush is complete, and then submits the batch for a flush. Other calls block till then too.
+    /// Never runs a flush in the current thread. If interrupted while blocked, the chunk stays in the batch, and
+    /// it's flushed later.
     ///
     /// @param chunk the hash chunk to save
-    /// @throws IllegalStateException if this flusher is not initialized or already finished, if it's cancelled,
-    ///     if a flush has failed, or if the current thread is interrupted while blocked. The interrupted flag is
-    ///     left set
+    /// @throws IllegalStateException if this flusher is cancelled, if a flush has failed, or if the current thread
+    ///     is interrupted while blocked. The interrupted flag is left set
     public void updateHashChunk(@NonNull final VirtualHashChunk chunk) {
         addToBatch(batch -> batch.hashChunks.add(chunk));
     }
@@ -221,9 +229,8 @@ public class HashLeafFlusher {
     /// as [#updateHashChunk(VirtualHashChunk)].
     ///
     /// @param leaf the leaf to save
-    /// @throws IllegalStateException if this flusher is not initialized or already finished, if it's cancelled,
-    ///     if a flush has failed, or if the current thread is interrupted while blocked. The interrupted flag is
-    ///     left set
+    /// @throws IllegalStateException if this flusher is cancelled, if a flush has failed, or if the current thread
+    ///     is interrupted while blocked. The interrupted flag is left set
     public void updateLeaf(final VirtualLeafBytes<?> leaf) {
         addToBatch(batch -> batch.leaves.add(leaf));
     }
@@ -236,9 +243,8 @@ public class HashLeafFlusher {
     /// been moved to a different path isn't lost. Otherwise, the key is removed unconditionally.
     ///
     /// @param leaf the leaf to delete
-    /// @throws IllegalStateException if this flusher is not initialized or already finished, if it's cancelled,
-    ///     if a flush has failed, or if the current thread is interrupted while blocked. The interrupted flag is
-    ///     left set
+    /// @throws IllegalStateException if this flusher is cancelled, if a flush has failed, or if the current thread
+    ///     is interrupted while blocked. The interrupted flag is left set
     public void deleteLeaf(final VirtualLeafBytes<?> leaf) {
         addToBatch(batch -> batch.deletedLeaves.add(leaf));
     }
@@ -254,20 +260,23 @@ public class HashLeafFlusher {
     ///
     /// This method only affects calls into this flusher. It doesn't stop producers themselves, this is the
     /// caller's responsibility.
-    public synchronized void cancel() {
-        if (cancelled) {
+    public void cancel() {
+        // Doesn't take the lock, since a producer may hold it while waiting for the running flush
+        if (!cancelled.compareAndSet(false, true)) {
             return;
         }
-        // Subsequent calls fail, see throwIfCancelled()
-        cancelled = true;
+        // After the flag is set, so a producer whose flush is rejected reports the cancellation
         executor.shutdown();
-        if (flushingFuture != null) {
-            // Releases threads blocked waiting for a flush. The running flush, if any, isn't interrupted
-            flushingFuture.cancel(false);
-        }
-        // Not initialized or already finished, nothing to log
+        // Not initialized or already finished, nothing to log. Logged before blocked producers are released,
+        // so a stall that is still in progress is included
         if (batch != null) {
             logBackpressureTotal();
+        }
+        final Future<?> running = flushingFuture;
+        if (running != null) {
+            // Releases the producer that waits for the flush with the lock held, and finish(). Producers blocked
+            // on the lock then fail one by one. The running flush, if any, isn't interrupted
+            running.cancel(false);
         }
     }
 
@@ -290,68 +299,47 @@ public class HashLeafFlusher {
             last = batch;
             batch = null;
             // Flushes are submitted by producers only, and they are done by now, so the running flush, if any, is
-            // the last one. It may be already complete, or failed. The current batch may be full, then it's flushed
-            // below
+            // the last one. It may be already complete, or failed. The current batch may be full, if a producer was
+            // interrupted while waiting, then it's flushed below
             running = flushingFuture;
             executor.shutdown();
             logBackpressureTotal();
         }
         if (running != null) {
-            // Wait outside of the synchronized block, so cancel() isn't blocked, and can release this thread.
-            // Throws, if the flush has failed
+            // Wait outside of the synchronized block, the lock isn't needed. Throws, if the flush has failed, or if
+            // this flusher is cancelled meanwhile
             awaitFlush(running);
         }
         // Nodes / leaves lists may be empty, but a flush is still needed to make sure all stale leaves are
-        // removed from the data source. The flush is run outside the synchronized block, so cancel() isn't
-        // blocked till the final flush is complete
+        // removed from the data source. The flush is run outside the synchronized block, the lock isn't needed
         flush(last);
     }
 
-    private void addToBatch(final Consumer<Batch> batchConsumer) {
-        // Wait outside of the synchronized block, so other producers block the same way, and cancel() isn't
-        // blocked. After every wait, try again, since other producers may have filled the next batch, or this
-        // flusher may have been cancelled or failed
-        Future<?> running;
-        while ((running = tryAddToBatch(batchConsumer)) != null) {
-            awaitFlush(running);
-        }
-    }
-
-    // Adds to the current batch and returns null, or returns the flush to wait for, if the current batch is full,
-    // but the previous flush is still in progress. Producers never add to a batch that is already full
-    private synchronized Future<?> tryAddToBatch(final Consumer<Batch> batchConsumer) {
-        // Checked before throwIfCancelled(), so a call after finish() isn't reported as cancelled
-        throwIfNotInitializedOrFinished();
+    private synchronized void addToBatch(final Consumer<Batch> batchConsumer) {
+        // Producers are only called between init() and finish(), see the class contract
+        assert batch != null : "Flusher is not initialized or already finished";
         throwIfCancelled();
+        throwIfFlushFailed();
 
-        // The state of the last flush is read once. A flush completes without the lock, so if it was read again
-        // below, a flush seen as running here could be seen as done there, and then its failure would be missed,
-        // and replaced with a new flush. Acting on a running state that is already stale is safe: the caller
-        // waits for the flush, which returns immediately, or the full batch is left for the next call
-        final Future.State lastFlushState = (flushingFuture != null) ? flushingFuture.state() : Future.State.SUCCESS;
-        if (lastFlushState == Future.State.FAILED) {
-            throw new IllegalStateException("Flush failed", flushingFuture.exceptionNow());
-        }
-        boolean flushInProgress = (lastFlushState == Future.State.RUNNING);
-
-        if (batch.isFull()) {
-            if (flushInProgress) {
-                // Backpressure: the batch is full, but it can't be flushed yet
-                if (backpressureSince == 0) {
-                    backpressureSince = System.currentTimeMillis();
-                }
-                return flushingFuture;
-            }
-            // The batch became full while the previous flush was in progress
-            submitFlush();
-            flushInProgress = true;
-        }
         batchConsumer.accept(batch);
-        // If a flush is in progress, the batch is submitted by the first call after that flush is complete
-        if (batch.isFull() && !flushInProgress) {
-            submitFlush();
+        if (!batch.isFull()) {
+            return;
         }
-        return null;
+        if (flushingFuture != null) {
+            // Backpressure: wait for the previous flush with the lock held, so other producers wait too, and
+            // nothing is added to the full batch. If this throws, the batch stays full, and it's submitted by
+            // the next call, or flushed in finish()
+            final long since = System.currentTimeMillis();
+            backpressureSince = since;
+            try {
+                awaitFlush(flushingFuture);
+            } finally {
+                // Only the lock holder modifies these fields
+                backpressureTotalMs += (System.currentTimeMillis() - since);
+                backpressureSince = 0;
+            }
+        }
+        submitFlush();
     }
 
     // Fails the flush if the current thread is interrupted. The interrupted flag is left set
@@ -368,11 +356,18 @@ public class HashLeafFlusher {
         }
     }
 
-    // Must be called with the lock held. CancellationException is only the cause: if thrown directly, it would
-    // make futures and fork join tasks of the callers look cancelled rather than failed
+    // CancellationException is only the cause: if thrown directly, it would make futures and fork join tasks of
+    // the callers look cancelled rather than failed
     private void throwIfCancelled() {
-        if (cancelled) {
+        if (cancelled.get()) {
             throw new IllegalStateException("Flusher is cancelled", new CancellationException("Flusher is cancelled"));
+        }
+    }
+
+    // Fails fast, without waiting till the current batch is full. Must be called with the lock held
+    private void throwIfFlushFailed() {
+        if ((flushingFuture != null) && (flushingFuture.state() == Future.State.FAILED)) {
+            throw new IllegalStateException("Flush failed", flushingFuture.exceptionNow());
         }
     }
 
@@ -393,29 +388,30 @@ public class HashLeafFlusher {
     }
 
     // Takes the current batch and submits a flush for it. Must be called with the lock held, when no flush
-    // is in progress, and this flusher isn't cancelled or failed
+    // is in progress, and no flush has failed
     private void submitFlush() {
         final Batch toFlush = batch;
-        flushingFuture = executor.submit(() -> flush(toFlush));
+        try {
+            flushingFuture = executor.submit(() -> flush(toFlush));
+        } catch (final RejectedExecutionException e) {
+            // cancel() doesn't take the lock, so it may shut down the executor after this call has checked the
+            // flag. The flag is set before that, so this throws
+            throwIfCancelled();
+            throw e;
+        }
         // Replaced only once submitted, so the batch isn't lost, if submit() throws
         batch = new Batch();
-        // The full batch is taken, so the stall, if any, is over
-        stopBackpressureTimer();
     }
 
-    // Adds the ongoing stall, if any, to the total. Must be called with the lock held
-    private void stopBackpressureTimer() {
-        if (backpressureSince != 0) {
-            backpressureTotalMs += System.currentTimeMillis() - backpressureSince;
-            backpressureSince = 0;
-        }
-    }
-
-    // Logs the total time producers were blocked on backpressure, in finish() or cancel(). If producers are
-    // still blocked, e.g. when cancelled, the ongoing stall is included. Must be called with the lock held
+    // Logs the total time producers were blocked on backpressure, in finish() or cancel(). If a producer is still
+    // blocked, e.g. when cancelled, the ongoing stall is included
     private void logBackpressureTotal() {
-        stopBackpressureTimer();
-        logger.info(logMarker, "Producers were blocked on backpressure for {} ms in total", backpressureTotalMs);
+        final long since = backpressureSince;
+        final long ongoingMs = (since != 0) ? System.currentTimeMillis() - since : 0;
+        logger.info(
+                logMarker,
+                "Producers were blocked on backpressure for {} ms in total",
+                backpressureTotalMs + ongoingMs);
     }
 
     // Since flushes may take quite some time, this method is always called outside synchronized blocks

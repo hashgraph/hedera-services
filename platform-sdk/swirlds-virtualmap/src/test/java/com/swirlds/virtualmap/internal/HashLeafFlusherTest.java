@@ -112,8 +112,8 @@ public class HashLeafFlusherTest {
         flusher.init(1, 2);
         // The batch is due, so it's flushed in the flusher thread, which is interrupted by the data source
         flusher.updateLeaf(leaf(1, 1, 1));
-        // The flush must not be treated as a success, the failure is sticky. Calls before the flush completes
-        // may succeed, they only add to the next batch
+        // The flush must not be treated as a success, the failure is sticky. The next call fills the next batch,
+        // so it waits for the flush, and fails
         final AtomicReference<IllegalStateException> update = new AtomicReference<>();
         assertEventuallyTrue(
                 () -> {
@@ -223,15 +223,11 @@ public class HashLeafFlusherTest {
                 new InMemoryDataSource("testUpdateWithoutInitOrAfterFinishFails"),
                 DEFAULT_FLUSH_INTERVAL,
                 new VirtualMapStatistics("testUpdateWithoutInitOrAfterFinishFails"));
-        final IllegalStateException beforeInit =
-                assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
-        assertNull(beforeInit.getCause());
+        // A contract violation, only checked with assertions enabled
+        assertThrows(AssertionError.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
         flusher.init(1, 2);
         flusher.finish();
-        // The executor is shut down by finish(), but it must not be reported as cancelled
-        final IllegalStateException afterFinish =
-                assertThrows(IllegalStateException.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
-        assertNull(afterFinish.getCause());
+        assertThrows(AssertionError.class, () -> flusher.updateLeaf(leaf(1, 1, 1)));
     }
 
     @Test
@@ -460,12 +456,13 @@ public class HashLeafFlusherTest {
             }
 
             // Waits till the thread is blocked in the flusher. Stops waiting early, if the thread completes instead.
-            // Producers and finish() wait in Future.get()
+            // The producer that fills a batch and finish() wait in Future.get(), other producers on the lock
             void awaitBlocked() {
                 assertEventuallyTrue(
                         () -> result.isDone()
                                 || thread.getState() == Thread.State.WAITING
-                                || thread.getState() == Thread.State.TIMED_WAITING,
+                                || thread.getState() == Thread.State.TIMED_WAITING
+                                || thread.getState() == Thread.State.BLOCKED,
                         Duration.ofSeconds(10),
                         "Producer didn't block in time");
                 assertFalse(result.isDone(), "Producer must block");
@@ -531,55 +528,23 @@ public class HashLeafFlusherTest {
         }
 
         @Test
-        void testProducerBlocksWhenNextBatchFull() throws Exception {
+        void testProducerFillingNextBatchBlocks() throws Exception {
             final GatedDataSource ds = gatedDataSource("blocks");
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             startBlockedFlush(flusher, ds);
-            // The next batch can be filled up to the threshold without blocking
-            addLeaves(flusher, 100, INTERVAL).await();
-            // One more producer blocks
-            final Producer blocked = addLeaves(flusher, 200, 1);
+            // The next batch can be filled up to one below the threshold without blocking
+            addLeaves(flusher, 100, INTERVAL - 1).await();
+            // The producer that fills it blocks, the batch isn't submitted yet
+            final Producer blocked = addLeaves(flusher, 100 + INTERVAL - 1, 1);
             blocked.awaitBlocked();
             assertEquals(1, ds.saves.get());
             ds.open();
+            // Once the first flush is complete, the blocked producer submits the next batch
             blocked.await();
+            awaitSaves(ds, 2);
             flusher.finish();
             // The first batch, the next batch, and the final flush
             assertEquals(3, ds.saves.get());
-            assertLeavesPresent(ds, 1, INTERVAL);
-            assertLeavesPresent(ds, 100, INTERVAL);
-            assertLeavesPresent(ds, 200, 1);
-        }
-
-        @Test
-        void testDueBatchFlushedByNextProducer() throws Exception {
-            final GatedDataSource ds = gatedDataSource("dueBatchNextProducer");
-            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
-            startBlockedFlush(flusher, ds);
-            // The next batch becomes due while the first flush is running
-            addLeaves(flusher, 100, INTERVAL).await();
-            ds.open();
-            // The next call, once the first flush is complete, submits the due batch, and adds to a new one
-            addLeaves(flusher, 200, 1).await();
-            awaitSaves(ds, 2);
-            assertLeavesPresent(ds, 100, INTERVAL);
-            flusher.finish();
-            assertEquals(3, ds.saves.get());
-            assertLeavesPresent(ds, 200, 1);
-        }
-
-        @Test
-        void testDueBatchFlushedInFinish() throws Exception {
-            final GatedDataSource ds = gatedDataSource("dueBatchFinish");
-            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
-            startBlockedFlush(flusher, ds);
-            // The next batch becomes due while the first flush is running. No more producer calls after that
-            addLeaves(flusher, 100, INTERVAL).await();
-            ds.open();
-            // finish() waits for the first flush, then flushes the due batch in the final flush
-            flusher.finish();
-            assertEquals(2, ds.saves.get());
-            assertTrue(ds.saveThreads.contains(Thread.currentThread()), "The final flush must run in finish()");
             assertLeavesPresent(ds, 1, INTERVAL);
             assertLeavesPresent(ds, 100, INTERVAL);
         }
@@ -609,18 +574,18 @@ public class HashLeafFlusherTest {
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             // The first batch: leaves 1 to INTERVAL, values equal to paths
             startBlockedFlush(flusher, ds);
-            // The second batch, due while the first flush is running: the same leaves with new values
-            start(() -> {
-                        for (int i = 1; i <= INTERVAL; i++) {
-                            flusher.updateLeaf(leaf(i, i, i + 1000));
-                        }
-                    })
-                    .await();
-            // The final batch: the first leaf with yet another value. Blocks till the first flush is complete
-            final Producer last = start(() -> flusher.updateLeaf(leaf(1, 1, 2000)));
-            last.awaitBlocked();
+            // The second batch, filled while the first flush is running: the same leaves with new values. The last
+            // leaf blocks till the first flush is complete
+            final Producer second = start(() -> {
+                for (int i = 1; i <= INTERVAL; i++) {
+                    flusher.updateLeaf(leaf(i, i, i + 1000));
+                }
+            });
+            second.awaitBlocked();
             ds.open();
-            last.await();
+            second.await();
+            // The final batch: the first leaf with yet another value
+            flusher.updateLeaf(leaf(1, 1, 2000));
             flusher.finish();
             assertEquals(3, ds.saves.get());
             // Batches are flushed in the order they are filled
@@ -631,21 +596,27 @@ public class HashLeafFlusherTest {
         }
 
         @Test
-        void testNextBatchDueBlocksAllProducerKinds() throws Exception {
+        void testBlockedProducerBlocksAllProducerKinds() throws Exception {
             final GatedDataSource ds = gatedDataSource("crossCategory");
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             final int chunkHeight = ds.getHashChunkHeight();
             startBlockedFlush(flusher, ds);
-            // The next batch is due because of updated leaves only
-            addLeaves(flusher, 100, INTERVAL).await();
+            // The next batch is filled with updated leaves only, the producer that fills it blocks
+            addLeaves(flusher, 100, INTERVAL - 1).await();
+            final Producer filler = addLeaves(flusher, 100 + INTERVAL - 1, 1);
+            filler.awaitBlocked();
+            // Producers of other kinds block on the lock, even though their own lists are nearly empty
             final Producer delete = start(() -> flusher.deleteLeaf(leaf(300, 300, 300)));
             final Producer hashes = start(() -> flusher.updateHashChunk(chunk(0, chunkHeight)));
             delete.awaitBlocked();
             hashes.awaitBlocked();
+            assertEquals(1, ds.saves.get());
             ds.open();
+            filler.await();
             delete.await();
             hashes.await();
             flusher.finish();
+            assertLeavesPresent(ds, 100, INTERVAL);
             assertNotNull(ds.loadHashChunk(0));
         }
 
@@ -655,20 +626,22 @@ public class HashLeafFlusherTest {
             final int chunkHeight = ds.getHashChunkHeight();
             // A flush is due once two chunks are collected
             final HashLeafFlusher flusher = flusher(ds, 2 * VirtualHashChunk.getChunkSize(chunkHeight));
-            final Runnable addTwoChunks = () -> {
-                flusher.updateHashChunk(chunk(0, chunkHeight));
-                flusher.updateHashChunk(chunk(1, chunkHeight));
-            };
-            start(addTwoChunks).await();
+            start(() -> {
+                        flusher.updateHashChunk(chunk(0, chunkHeight));
+                        flusher.updateHashChunk(chunk(1, chunkHeight));
+                    })
+                    .await();
             awaitSaves(ds, 1);
-            // The next batch can be filled with two chunks without blocking
-            start(addTwoChunks).await();
-            final Producer blocked = start(() -> flusher.updateHashChunk(chunk(2, chunkHeight)));
+            // A single chunk in the next batch doesn't make it full
+            start(() -> flusher.updateHashChunk(chunk(2, chunkHeight))).await();
+            // The second one does, so it blocks
+            final Producer blocked = start(() -> flusher.updateHashChunk(chunk(3, chunkHeight)));
             blocked.awaitBlocked();
             ds.open();
             blocked.await();
             flusher.finish();
             assertNotNull(ds.loadHashChunk(2));
+            assertNotNull(ds.loadHashChunk(3));
         }
 
         @Test
@@ -692,8 +665,8 @@ public class HashLeafFlusherTest {
             ds.failWith = failure;
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             startBlockedFlush(flusher, ds);
-            addLeaves(flusher, 100, INTERVAL).await();
-            final Producer blocked = addLeaves(flusher, 200, 1);
+            addLeaves(flusher, 100, INTERVAL - 1).await();
+            final Producer blocked = addLeaves(flusher, 100 + INTERVAL - 1, 1);
             blocked.awaitBlocked();
             ds.open();
             // The blocked producer is released with the original exception as the cause
@@ -733,10 +706,9 @@ public class HashLeafFlusherTest {
             ds.failWith = failure;
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             startBlockedFlush(flusher, ds);
-            // One leaf short of a due batch, so the next call makes it due, while the flush is failing
-            addLeaves(flusher, 100, INTERVAL - 1).await();
             ds.open();
-            // Calls may succeed till the failed flush is complete, but they never start a new flush
+            // Calls may succeed till the failed flush is complete, but they never start a new flush. Once it's
+            // complete, calls fail, even if the current batch isn't full
             final AtomicInteger path = new AtomicInteger(200);
             final AtomicReference<IllegalStateException> update = new AtomicReference<>();
             assertEventuallyTrue(
@@ -817,11 +789,11 @@ public class HashLeafFlusherTest {
             final GatedDataSource ds = gatedDataSource("interruptBlocked");
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             startBlockedFlush(flusher, ds);
-            addLeaves(flusher, 100, INTERVAL).await();
+            addLeaves(flusher, 100, INTERVAL - 1).await();
             final CompletableFuture<Boolean> interruptedFlag = new CompletableFuture<>();
             final Producer blocked = start(() -> {
                 try {
-                    flusher.updateLeaf(leaf(200, 200, 200));
+                    flusher.updateLeaf(leaf(100 + INTERVAL - 1, 100 + INTERVAL - 1, 100 + INTERVAL - 1));
                 } finally {
                     interruptedFlag.complete(Thread.currentThread().isInterrupted());
                 }
@@ -830,12 +802,37 @@ public class HashLeafFlusherTest {
             blocked.thread().interrupt();
             final ExecutionException e = assertThrows(ExecutionException.class, blocked::await);
             assertInstanceOf(IllegalStateException.class, e.getCause());
+            assertInstanceOf(InterruptedException.class, e.getCause().getCause());
             assertTrue(interruptedFlag.get(10, SECONDS), "Interrupted flag must be preserved");
             // Interrupting a waiting producer isn't a flush failure, the flusher remains usable
             ds.open();
+            // The full batch, including the leaf of the interrupted call, is left for the final flush
             flusher.finish();
+            assertEquals(2, ds.saves.get());
+            assertTrue(ds.saveThreads.contains(Thread.currentThread()), "The final flush must run in finish()");
             assertLeavesPresent(ds, 1, INTERVAL);
             assertLeavesPresent(ds, 100, INTERVAL);
+        }
+
+        @Test
+        void testFullBatchLeftByInterruptedProducerSubmittedByNextCall() throws Exception {
+            final GatedDataSource ds = gatedDataSource("interruptedNextCall");
+            final HashLeafFlusher flusher = flusher(ds, INTERVAL);
+            startBlockedFlush(flusher, ds);
+            addLeaves(flusher, 100, INTERVAL - 1).await();
+            final Producer blocked = addLeaves(flusher, 100 + INTERVAL - 1, 1);
+            blocked.awaitBlocked();
+            blocked.thread().interrupt();
+            assertThrows(ExecutionException.class, blocked::await);
+            ds.open();
+            // The batch is still full, so the next call waits for the first flush, and then submits it
+            addLeaves(flusher, 200, 1).await();
+            awaitSaves(ds, 2);
+            flusher.finish();
+            // The first batch, the full batch with the next call's leaf, and the empty final flush
+            assertEquals(3, ds.saves.get());
+            assertLeavesPresent(ds, 100, INTERVAL);
+            assertLeavesPresent(ds, 200, 1);
         }
 
         @Test
@@ -843,14 +840,22 @@ public class HashLeafFlusherTest {
             final GatedDataSource ds = gatedDataSource("cancel");
             final HashLeafFlusher flusher = flusher(ds, INTERVAL);
             startBlockedFlush(flusher, ds);
-            addLeaves(flusher, 100, INTERVAL).await();
-            final Producer blocked = addLeaves(flusher, 200, 1);
+            addLeaves(flusher, 100, INTERVAL - 1).await();
+            // Waits for the running flush with the lock held
+            final Producer blocked = addLeaves(flusher, 100 + INTERVAL - 1, 1);
             blocked.awaitBlocked();
-            flusher.cancel();
-            // Released without waiting for the running flush
-            final ExecutionException released = assertThrows(ExecutionException.class, blocked::await);
-            assertInstanceOf(IllegalStateException.class, released.getCause());
-            assertInstanceOf(CancellationException.class, released.getCause().getCause());
+            // Waits for the lock
+            final Producer queued = addLeaves(flusher, 200, 1);
+            queued.awaitBlocked();
+            // Must not wait for the lock held by the blocked producer
+            start(flusher::cancel).await();
+            // Both are released without waiting for the running flush
+            for (final Producer producer : List.of(blocked, queued)) {
+                final ExecutionException released = assertThrows(ExecutionException.class, producer::await);
+                assertInstanceOf(IllegalStateException.class, released.getCause());
+                assertInstanceOf(
+                        CancellationException.class, released.getCause().getCause());
+            }
             // The running flush isn't interrupted and completes normally, then the flusher thread exits
             ds.open();
             assertTrue(flusher.awaitTermination(Duration.ofSeconds(10)), "Flusher thread must exit after cancel()");
@@ -915,7 +920,7 @@ public class HashLeafFlusherTest {
                 producer.await();
             }
             flusher.finish();
-            // Producers never add to a batch that is already due
+            // A full batch is submitted before any other producer can add to it
             assertTrue(
                     ds.maxLeavesPerSave.get() <= INTERVAL,
                     "Batch size must be bounded, but was " + ds.maxLeavesPerSave.get());
