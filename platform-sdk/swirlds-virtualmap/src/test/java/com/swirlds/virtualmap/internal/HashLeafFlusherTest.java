@@ -561,10 +561,12 @@ public class HashLeafFlusherTest {
             ds.open();
             // The next call, once the first flush is complete, submits the due batch, and adds to a new one
             addLeaves(flusher, 200, 1).await();
+            // Only confirms that the flush has started, so its leaves are checked after finish(), which waits for it
             awaitSaves(ds, 2);
-            assertLeavesPresent(ds, 100, INTERVAL);
             flusher.finish();
+            // The first batch, the due batch, and the final flush
             assertEquals(3, ds.saves.get());
+            assertLeavesPresent(ds, 100, INTERVAL);
             assertLeavesPresent(ds, 200, 1);
         }
 
