@@ -66,22 +66,20 @@ public class AddressBookHelper {
      */
     public static X509Certificate readCertificatePemFile(@NonNull final Path pemFile)
             throws IOException, CertificateException {
-        return readCertificatePemFile(Files.newInputStream(pemFile));
+        try (final InputStream in = Files.newInputStream(pemFile)) {
+            return readCertificatePemStream(in);
+        }
     }
 
     /**
-     * Reads a PEM-encoded X509 certificate from the given input stream.
+     * Reads a PEM-encoded X509 certificate from the given input stream, w/o closing the stream.
      * @param in the input stream to read from
      * @return the X509Certificate
-     * @throws IOException if an I/O error occurs while reading the certificate
      * @throws CertificateException if the file does not contain a valid X509Certificate
      */
-    public static X509Certificate readCertificatePemFile(@NonNull final InputStream in)
-            throws IOException, CertificateException {
+    public static X509Certificate readCertificatePemStream(@NonNull final InputStream in) throws CertificateException {
         requireNonNull(in);
-        try (in) {
-            return PEMDecoder.readCertificate(in);
-        }
+        return PEMDecoder.readCertificate(in);
     }
 
     /**
