@@ -7,7 +7,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
 import static com.hedera.hapi.util.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.blocks.BlockStreamManager.HASH_OF_ZERO;
 import static com.hedera.node.app.quiescence.QuiescenceUtils.isRelevantTransaction;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCKS_STATE_ID;
 import static com.hedera.node.app.spi.workflows.record.StreamBuilder.nodeSignedTxWith;
@@ -24,7 +23,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hiero.consensus.model.status.PlatformStatus.FREEZING;
 import static org.hiero.consensus.model.status.PlatformStatus.STARTING_UP;
 import static org.hiero.consensus.platformstate.PlatformStateAccessor.GENESIS_ROUND;
 import static org.hiero.consensus.platformstate.PlatformStateUtils.creationSemanticVersionOf;
@@ -996,13 +994,12 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
     }
 
     /**
-     * Called by this class when we detect it is time to do migration. The {@code deserializedVersion} must not be newer
-     * than the current software version. If it is prior to the current version, then each migration between the
-     * {@code deserializedVersion} and the current version, including the current version, will be executed, thus
-     * bringing the state up to date.
+     * Called by this class when we detect it is time to initialize the state's services. The {@code deserializedVersion}
+     * must not be newer than the current software version. Every service's registered schemas are applied in order no
+     * matter what the two versions are; the versions only determine whether this is an upgrade (and hence whether
+     * post-upgrade work is pending) and are made available to each latest schema's restart hook.
      *
-     * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started,
-     * and thus all schemas will be executed.
+     * <p>If the {@code deserializedVersion} is {@code null}, then this is the first time the node has been started.
      *
      * @param state current state
      * @param deserializedVersion version deserialized
@@ -1572,7 +1569,11 @@ public final class Hedera implements SwirldMain, AppContext.Gossip, StaleEventCo
         }
         if (blockStreamEnabled) {
             notifications.register(StateHashedListener.class, daggerApp.blockStreamManager());
-            final var lastBlockHash = (trigger == GENESIS) ? HASH_OF_ZERO : null;
+            final var digestType = configProvider
+                    .getConfiguration()
+                    .getConfigData(BlockStreamConfig.class)
+                    .digestType();
+            final var lastBlockHash = (trigger == GENESIS) ? BlockStreamManager.hashOfZero(digestType) : null;
             daggerApp
                     .blockStreamManager()
                     .init(state, lastBlockHash, blockStreamService.consumeBsiSchemaOverwriteExecuted());
