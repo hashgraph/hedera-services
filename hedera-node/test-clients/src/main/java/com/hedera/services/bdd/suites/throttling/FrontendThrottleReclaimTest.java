@@ -34,24 +34,16 @@ import org.junit.jupiter.api.Tag;
  * throttle but fails at consensus. The reclaim must return capacity to exactly the bucket that was charged, and
  * only that bucket.
  *
-<<<<<<< HEAD
- * <p>Both scenarios follow the same shape: constrain one frontend bucket to a single logical operation, prove
- * it is saturated, run a transaction that fails at consensus, then assert that capacity comes back only to the
- * bucket that was actually charged. They run in embedded mode so there is a single frontend throttle to observe,
- * and the throttled transactions are paid by {@link com.hedera.services.bdd.suites.HapiSuite#CIVILIAN_PAYER}
- * because system accounts are exempt from throttling.
- *
- * <p>The same definitions also drive the consensus throttle, where an auto-creation claims {@code CRYPTO_CREATE}
- * capacity for the transfer's implicit creation and again for the child {@code CRYPTO_CREATE} dispatch. The 4s
- * burst period on the one-op buckets leaves the consensus throttle room for both claims, while the frontend, which
- * splits capacity across nodes, still fits exactly one operation.
-=======
  * <p>Each scenario constrains a frontend bucket to a single operation, then observes which buckets a
  * transaction charges at ingest and which get capacity back when it fails at consensus. They run in embedded
  * mode so there is a single frontend throttle to observe, and the throttled transactions are paid by
  * {@link com.hedera.services.bdd.suites.HapiSuite#CIVILIAN_PAYER} because system accounts are exempt from
  * throttling.
->>>>>>> 4b139b1 (fix: meter auto associations independently of implicit creations (#547))
+ *
+ * <p>The same definitions also drive the consensus throttle, where an auto-creation claims {@code CRYPTO_CREATE}
+ * capacity for the transfer's implicit creation and again for the child {@code CRYPTO_CREATE} dispatch. The 4s
+ * burst period on the one-op buckets leaves the consensus throttle room for both claims, while the frontend, which
+ * splits capacity across nodes, still fits exactly one operation.
  */
 @Tag(TOKEN)
 public class FrontendThrottleReclaimTest {
