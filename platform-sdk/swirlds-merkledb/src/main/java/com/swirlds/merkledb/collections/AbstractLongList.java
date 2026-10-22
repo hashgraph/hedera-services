@@ -574,9 +574,16 @@ public abstract class AbstractLongList<C> implements LongList {
             // Accepted writes must finish before the shared channel closes, even after a failure.
             CompletableFuture.allOf(tasks.toArray(CompletableFuture[]::new)).join();
         } catch (final CompletionException e) {
-            // Unwrap the IOException so callers receive the original checked exception.
-            final Throwable writeFailure =
-                    e.getCause() instanceof UncheckedIOException ioException ? ioException.getCause() : e;
+            // Preserve the writer failure type, unwrapping checked I/O failures.
+            final Throwable cause = e.getCause();
+            final Throwable writeFailure;
+            if (cause instanceof UncheckedIOException ioException) {
+                writeFailure = ioException.getCause();
+            } else if (cause instanceof RuntimeException || cause instanceof Error) {
+                writeFailure = cause;
+            } else {
+                writeFailure = e;
+            }
             if (failure == null) {
                 failure = writeFailure;
             } else {
