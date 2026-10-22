@@ -131,7 +131,7 @@ public class CryptoDeleteAllowanceSimpleFeesTest {
 
         @HapiTest
         @DisplayName("CryptoDeleteAllowance - two NFT serials allowance - each serial charged")
-        final Stream<DynamicTest> cryptoDeleteAllowanceTwoNftSerialsBaseFeesOnly() {
+        final Stream<DynamicTest> cryptoDeleteAllowanceTwoNftSerialsEachSerialCharged() {
             return hapiTest(
                     newKeyNamed(SUPPLY_KEY),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),
@@ -165,7 +165,7 @@ public class CryptoDeleteAllowanceSimpleFeesTest {
 
         @HapiTest
         @DisplayName("CryptoDeleteAllowance - five NFT serials allowance - each serial charged")
-        final Stream<DynamicTest> cryptoDeleteAllowanceFiveNftSerialsBaseFeesOnly() {
+        final Stream<DynamicTest> cryptoDeleteAllowanceFiveNftSerialsEachSerialCharged() {
             return hapiTest(
                     newKeyNamed(SUPPLY_KEY),
                     cryptoCreate(PAYER).balance(ONE_HUNDRED_HBARS),

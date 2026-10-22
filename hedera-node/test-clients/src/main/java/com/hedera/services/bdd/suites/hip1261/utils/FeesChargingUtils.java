@@ -88,6 +88,7 @@ import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleCon
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_AIRDROP_BASE_FEE_USD;
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_ASSOCIATE_BASE_FEE_USD;
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_ASSOCIATE_EXTRA_FEE_USD;
+import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_ASSOCIATE_INCLUDED_TOKENS;
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_BURN_BASE_FEE_USD;
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_CREATE_BASE_FEE_USD;
 import static com.hedera.services.bdd.suites.hip1261.utils.SimpleFeesScheduleConstantsInUsd.TOKEN_CREATE_INCLUDED_KEYS;
@@ -1352,7 +1353,7 @@ public class FeesChargingUtils {
      */
     private static double expectedTokenAssociateFullFeeUsd(long sigs, long tokens, int txnSize) {
         // ----- service fees -----
-        final long extraTokens = Math.max(0L, tokens - TOKEN_DISSOCIATE_INCLUDED_TOKENS);
+        final long extraTokens = Math.max(0L, tokens - TOKEN_ASSOCIATE_INCLUDED_TOKENS);
         final double serviceFee = TOKEN_ASSOCIATE_BASE_FEE_USD + extraTokens * TOKEN_ASSOCIATE_EXTRA_FEE_USD;
         return expectedNodeAndNetworkFeeUsd(sigs, txnSize) + serviceFee;
     }

@@ -8,12 +8,17 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.ServiceFeeCalculator;
 import com.hedera.node.app.spi.fees.SimpleFeeContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hiero.hapi.fees.FeeResult;
 import org.hiero.hapi.support.fees.Extra;
 import org.hiero.hapi.support.fees.FeeSchedule;
 import org.hiero.hapi.support.fees.ServiceFeeDefinition;
 
 public class TokenDissociateFeeCalculator implements ServiceFeeCalculator {
+    private static final Logger log = LogManager.getLogger(TokenDissociateFeeCalculator.class);
+    private static final AtomicBoolean MISSING_EXTRA_WARNED = new AtomicBoolean();
 
     @Override
     public void accumulateServiceFee(
@@ -34,6 +39,8 @@ public class TokenDissociateFeeCalculator implements ServiceFeeCalculator {
                     Extra.TOKEN_DISSOCIATE,
                     feeSchedule,
                     op.tokens().size());
+        } else if (MISSING_EXTRA_WARNED.compareAndSet(false, true)) {
+            log.warn("Fee schedule has no TOKEN_DISSOCIATE extra; charging TokenDissociate base fee only");
         }
     }
 

@@ -17,6 +17,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
@@ -266,7 +267,7 @@ public class IdFuzzingProviderFactory {
                     .via(BASE_APPROVE_TXN)
                     .logged()
                     .signedBy(UNIQUE_PAYER_ACCOUNT, OWNER)
-                    .fee(ONE_HUNDRED_HBARS)
+                    .fee(10 * ONE_HBAR)
         };
     }
 
