@@ -117,6 +117,25 @@ class AccountAuthorizingVerificationStrategyTest {
     }
 
     @Test
+    void allAuthorizingParentVerifierCannotWaiveStrategyRules() {
+        // A dispatch's verifier may treat its (absent) signatures as all-authorizing, e.g. the no-op
+        // verifier used for hook and CLPR dispatches. The strategy must still apply its own rules
+        // instead of trusting that verifier to walk the key tree.
+        final var context = contextWithAllAuthorizingVerifier();
+        final var test = scoped(CALLER, false, UseTopLevelSigs.NO).asRequirementTestIn(context, null);
+
+        assertTrue(test.test(forAccount(CALLER, AN_ED25519_KEY)));
+        assertFalse(test.test(forAccount(OTHER, AN_ED25519_KEY)));
+        assertFalse(test.test(forKey(AN_ED25519_KEY)));
+        assertFalse(test.test(forAccount(
+                OTHER,
+                Key.newBuilder()
+                        .keyList(new KeyList(List.of(AN_ED25519_KEY, A_SECP256K1_KEY)))
+                        .build())));
+        assertFalse(test.test(forAccount(OTHER, thresholdKey())));
+    }
+
+    @Test
     void extraLegacyActivationDoesNotAcquireAccountAuthority() {
         final var original = scoped(CALLER, false, UseTopLevelSigs.NO);
         final var legacy = scoped(OTHER, false, UseTopLevelSigs.NO);
@@ -205,6 +224,27 @@ class AccountAuthorizingVerificationStrategyTest {
                     passed = callback.test(key, verificationFor(key));
                 }
                 return new Verification(key, passed);
+            }
+        });
+        return context;
+    }
+
+    /**
+     * Mimics {@code NoOpKeyVerifier}: every key passes, and the {@link VerificationAssistant} is never
+     * consulted. The contextual requirement overload is left as the interface default, which routes
+     * through this all-authorizing key overload, exactly as the no-op verifier does in production.
+     */
+    private static HandleContext contextWithAllAuthorizingVerifier() {
+        final var context = mock(HandleContext.class);
+        given(context.keyVerifier()).willReturn(new KeyVerifier() {
+            @Override
+            public SignatureVerification verificationFor(final Key key) {
+                return new Verification(key, true);
+            }
+
+            @Override
+            public SignatureVerification verificationFor(final Key key, final VerificationAssistant callback) {
+                return new Verification(key, true);
             }
         });
         return context;

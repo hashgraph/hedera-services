@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.spi.key.KeyRequirement;
 import com.hedera.node.app.spi.key.RequirementVerifier;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -82,6 +83,12 @@ public interface VerificationStrategy {
      * Account authority is checked before traversing the key, so even an empty or compound
      * admin key is never promoted into cryptographic evidence.
      *
+     * <p>The key structure is traversed here rather than through the handle context's verifier,
+     * because a dispatch's verifier may treat its (non-existent) signatures as all-authorizing;
+     * relying on it would let every primitive pass without applying this strategy's rules. Only
+     * an individual {@link Decision#DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION} primitive consults the
+     * context's verifier, which preserves the pre-existing cryptographic-delegation behavior.
+     *
      * @param context the handle context
      * @param maybeEthSenderKey the Ethereum sender's verified key, if applicable
      * @return the complete requirement verifier
@@ -100,18 +107,36 @@ public interface VerificationStrategy {
                         && authorizesAccount(accountKey.accountId())) {
                     return true;
                 }
-                return context.keyVerifier()
-                        .verificationFor(
-                                requirement, (origin, key, verification) -> switch (decideForPrimitive(origin, key)) {
-                                    case VALID -> true;
-                                    case INVALID -> false;
-                                    case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION ->
-                                        Objects.equals(key, maybeEthSenderKey)
-                                                || context.keyVerifier()
-                                                        .verificationFor(key)
-                                                        .passed();
-                                })
-                        .passed();
+                return passesFor(requirement, requirement.key());
+            }
+
+            private boolean passesFor(@NonNull final KeyRequirement requirement, @NonNull final Key key) {
+                return switch (key.key().kind()) {
+                    case KEY_LIST -> {
+                        final var keys = key.keyListOrThrow().keys();
+                        yield !keys.isEmpty() && keys.stream().allMatch(child -> passesFor(requirement, child));
+                    }
+                    case THRESHOLD_KEY -> {
+                        final var thresholdKey = key.thresholdKeyOrThrow();
+                        final var keys =
+                                thresholdKey.keysOrElse(KeyList.DEFAULT).keys();
+                        final var threshold = Math.max(1, Math.min(thresholdKey.threshold(), keys.size()));
+                        yield keys.stream()
+                                        .filter(child -> passesFor(requirement, child))
+                                        .count()
+                                >= threshold;
+                    }
+                    default ->
+                        switch (decideForPrimitive(requirement, key)) {
+                            case VALID -> true;
+                            case INVALID -> false;
+                            case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION ->
+                                Objects.equals(key, maybeEthSenderKey)
+                                        || context.keyVerifier()
+                                                .verificationFor(key)
+                                                .passed();
+                        };
+                };
             }
         };
     }
